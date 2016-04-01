@@ -1,0 +1,11 @@
+# IntelliJ
+**/.idea/
+**/target/
+*.iml
+
+# ImageJ
+.classpath
+.metadata
+.project
+.settings
+*.swp
