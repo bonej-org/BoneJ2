@@ -1,124 +1,129 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>org.bonej</groupId>
-		<artifactId>pom-bonej</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>..</relativePath>
-	</parent>
+    <parent>
+        <groupId>org.bonej</groupId>
+        <artifactId>pom-bonej</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>..</relativePath>
+    </parent>
 
-	<artifactId>pqct</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+    <artifactId>pqct</artifactId>
+    <version>1.0.0</version>
 
-	<name>plugins/pqct.jar</name>
-	<description>BoneJ distribution of pqct plugin.</description>
-	<inceptionYear>2012</inceptionYear>
+    <name>plugins/pqct.jar</name>
+    <description>BoneJ distribution of PQCT plugin. Originally developed by Timo Rantalainen.</description>
 
-	<developers>
-		<developer>
-			<id>mdoube</id>
-			<name>Michael Doube</name>
-			<email>mdoube@rvc.ac.uk</email>
-			<url></url>
-			<roles>
-				<role>lead</role>
-				<role>developer</role>
-				<role>debugger</role>
-				<role>reviewer</role>
-				<role>support</role>
-				<role>maintainer</role>
-			</roles>
-			<timezone>+0</timezone>
-		</developer>
-		<developer>
-			<id>rimadoma</id>
-			<name>Richard Domander</name>
-			<email>rdomander@rvc.ac.uk</email>
-			<url></url>
-			<roles>
-				<role>lead</role>
-				<role>developer</role>
-				<role>debugger</role>
-				<role>reviewer</role>
-				<role>support</role>
-				<role>maintainer</role>
-			</roles>
-			<timezone>+0</timezone>
-		</developer>
-		<developer>
-			<id>ctrueden</id>
-			<name>Curtis Rueden</name>
-			<email>ctrueden@wisc.edu</email>
-			<url>http://loci.wisc.edu/people/curtis-rueden</url>
-			<organization>UW-Madison LOCI</organization>
-			<organizationUrl>http://loci.wisc.edu/</organizationUrl>
-			<roles>
-				<role>maintainer</role>
-			</roles>
-			<timezone>-6</timezone>
-		</developer>
-		<developer>
-			<id>hinerm</id>
-			<name>Mark Hiner</name>
-			<email>hiner@wisc.edu</email>
-			<url>http://loci.wisc.edu/people/mark-hiner</url>
-			<organization>UW-Madison LOCI</organization>
-			<organizationUrl>http://loci.wisc.edu/</organizationUrl>
-			<roles>
-				<role>maintainer</role>
-			</roles>
-			<timezone>-6</timezone>
-		</developer>
-	</developers>
+    <developers>
+        <developer>
+            <id>mdoube</id>
+            <name>Michael Doube</name>
+            <email>mdoube@rvc.ac.uk</email>
+            <url>http://www.rvc.ac.uk/about/our-people/michael-doube</url>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <roles>
+                <role>lead</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+0</timezone>
+        </developer>
+        <developer>
+            <id>tjrantal</id>
+            <name>Timo Rantalainen</name>
+            <email>t.rantalainen@deakin.edu.au</email>
+            <organization>Deakin University IPAN</organization>
+            <organizationUrl>www.deakin.edu.au</organizationUrl>
+            <roles>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+10</timezone>
+        </developer>
+        <developer>
+            <id>rimadoma</id>
+            <name>Richard Domander</name>
+            <email>rdomander@rvc.ac.uk</email>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <roles>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+0</timezone>
+        </developer>
+        <developer>
+            <id>ctrueden</id>
+            <name>Curtis Rueden</name>
+            <email>ctrueden@wisc.edu</email>
+            <url>http://loci.wisc.edu/people/curtis-rueden</url>
+            <organization>UW-Madison LOCI</organization>
+            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
+            <roles>
+                <role>maintainer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <id>hinerm</id>
+            <name>Mark Hiner</name>
+            <email>hiner@wisc.edu</email>
+            <url>http://loci.wisc.edu/people/mark-hiner</url>
+            <organization>UW-Madison LOCI</organization>
+            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
+            <roles>
+                <role>maintainer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+    </developers>
 
-	<scm>
-		<connection>scm:git:git://github.com/bonej-org/bonej</connection>
-		<developerConnection>scm:git:git@github.com:bonej-org/bonej</developerConnection>
-		<tag>HEAD</tag>
-		<url>https://github.com/bonej-org/bonej</url>
-	</scm>
-	<issueManagement>
-		<system>GitHub Issues</system>
-		<url>https://github.com/bonej-org/bonej/issues</url>
-	</issueManagement>
-	<ciManagement>
-		<system>Jenkins</system>
-	</ciManagement>
+    <ciManagement>
+        <system>Jenkins</system>
+    </ciManagement>
 
-	<repositories>
-		<repository>
-			<id>imagej.public</id>
-			<url>http://maven.imagej.net/content/groups/public</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <repository>
+            <id>imagej.public</id>
+            <url>http://maven.imagej.net/content/groups/public</url>
+        </repository>
+    </repositories>
 
-	<dependencies>
-		<!-- BoneJ dependencies -->
-		<dependency>
-			<groupId>org.bonej</groupId>
-			<artifactId>util</artifactId>
-		</dependency>
+    <dependencies>
+        <!-- BoneJ dependencies -->
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>util</artifactId>
+        </dependency>
 
-		<!-- ImageJ dependencies -->
-		<dependency>
-			<groupId>net.imagej</groupId>
-			<artifactId>ij</artifactId>
-		</dependency>
-	</dependencies>
+        <!-- ImageJ dependencies -->
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>ij</artifactId>
+        </dependency>
+    </dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<configuration>
-					<licenseName>gpl_v3</licenseName>
-					<organizationName>Timo Rantalainen, Michael Doube, BoneJ developers.</organizationName>
-					<projectName>PQCT: ImageJ density distribution analysis plugin.</projectName>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseName>gpl_v3</licenseName>
+                    <organizationName>Timo Rantalainen, Michael Doube, BoneJ developers.</organizationName>
+                    <projectName>PQCT: ImageJ density distribution analysis plugin.</projectName>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

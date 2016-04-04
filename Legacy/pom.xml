@@ -4,10 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>sc.fiji</groupId>
-        <artifactId>pom-fiji</artifactId>
-        <version>21.2.0</version>
-        <relativePath/>
+        <groupId>net.imagej</groupId>
+        <artifactId>pom-imagej</artifactId>
+        <version>14.8.0</version>
     </parent>
 
     <groupId>org.bonej</groupId>
@@ -15,14 +14,16 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <description>Parent pom for BoneJ components.</description>
+    <description>Parent POM for legacy BoneJ1 components.</description>
 
     <developers>
         <developer>
             <id>mdoube</id>
             <name>Michael Doube</name>
             <email>mdoube@rvc.ac.uk</email>
-            <url></url>
+            <url>http://www.rvc.ac.uk/about/our-people/michael-doube</url>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
                 <role>lead</role>
                 <role>developer</role>
@@ -37,9 +38,9 @@
             <id>rimadoma</id>
             <name>Richard Domander</name>
             <email>rdomander@rvc.ac.uk</email>
-            <url></url>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
-                <role>lead</role>
                 <role>developer</role>
                 <role>debugger</role>
                 <role>reviewer</role>
@@ -85,12 +86,12 @@
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>pqct</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>thickness</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
@@ -100,16 +101,6 @@
         </dependencies>
     </dependencyManagement>
 
-    <scm>
-        <connection>scm:git:git://github.com/bonej-org/bonej</connection>
-        <developerConnection>scm:git:git@github.com:bonej-org/bonej</developerConnection>
-        <tag>HEAD</tag>
-        <url>https://github.com/bonej-org/bonej</url>
-    </scm>
-    <issueManagement>
-        <system>GitHub Issues</system>
-        <url>https://github.com/bonej-org/bonej/issues</url>
-    </issueManagement>
     <ciManagement>
         <system>Jenkins</system>
     </ciManagement>
@@ -124,7 +115,6 @@
         <module>pqct</module>
         <module>thickness</module>
         <module>util</module>
-        <module>geometry</module>
     </modules>
 
     <repositories>
