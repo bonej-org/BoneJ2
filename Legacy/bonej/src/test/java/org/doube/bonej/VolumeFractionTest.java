@@ -103,7 +103,6 @@ public class VolumeFractionTest {
 	}
 
 	// FIXME: out of memory error from command line
-    // FIXME: resolve JOGL library needed for new Java3D versions
     @Ignore
 	@Test
 	public void testGetSurfaceVolumeImagePlusDoubleDoubleInt() {
@@ -117,8 +116,6 @@ public class VolumeFractionTest {
 		assertArrayEquals(expectedBrick, vols, 200);
 	}
 
-    // FIXME: resolve JOGL library needed for new Java3D versions
-	@Ignore
 	@Test
 	public void testGetSurfaceVolumeImagePlusDoubleDoubleIntBooleanBoolean() {
 		RoiManager roiMan = new RoiManager();

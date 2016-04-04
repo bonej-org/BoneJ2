@@ -49,8 +49,6 @@ public class StructureModelIndexTest {
 		assertEquals(0.0, smi, 0.05);
 	}
 
-	// FIXME: resolve JOGL library needed for new Java3D versions
-	@Ignore
 	@Test
 	public void testHildRuegSphere() {
 		final ImagePlus imp = TestDataMaker.sphere(256);
