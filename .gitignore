@@ -1,7 +1,8 @@
-# IntelliJ
-**/.idea/
-**/target/
-*.iml
+# Eclipse #
+**/.classpath
+**/.project
+**/.settings/
+**/doc
 
 # ImageJ
 .classpath
@@ -9,3 +10,13 @@
 .project
 .settings
 *.swp
+
+# IntelliJ
+**/.idea/
+*.iml
+
+# Maven
+**/target/
+
+# GEdit
+*.txt~

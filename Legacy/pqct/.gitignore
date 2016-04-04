@@ -1,7 +1,19 @@
 # Eclipse #
-*/.classpath
-*/.project
-*/.settings/
-*/doc
-# Maven #
-*/target/
+**/.classpath
+**/.project
+**/.settings/
+**/doc
+
+# ImageJ
+.classpath
+.metadata
+.project
+.settings
+*.swp
+
+# IntelliJ
+**/.idea/
+*.iml
+
+# Maven
+**/target/
