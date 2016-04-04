@@ -1,0 +1,111 @@
+Integration test reports on Mavenized legacy BoneJ1 plugins.
+These are superficial tests that check that the plugins can still be run after Mavenization.
+NB Not all the options of the plugins have been tested to work
+
+Orientation
+Particle Analyser
+Calibrate SCANCO
+
+Analyze Skeleton
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1) 
+
+Expected result
+-----------------------------------------------------------------------
+
+Compeleted successfully --/--/2016 Test O'Tester
+-----------------------------------------------------------------------
+
+
+Anisotropy
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1)
+
+Expected result
+-----------------------------------------------------------------------
+
+Compeleted successfully --/--/2016 Test O'Tester
+-----------------------------------------------------------------------
+
+Connectivity
+Ellipsoid Factor
+Fractal Dimension
+Isosurface
+Optimise Threshold
+Plateness
+Purify
+Skeletonise 3D
+
+
+Structure Model Index
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+x) Check if results have changed against BoneJ_.jar from www.bonej.org
+
+Expected result
+-----------------------------------------------------------------------
+
+Compeleted successfully --/--/2016 Test O'Tester
+-----------------------------------------------------------------------
+
+Thickness
+TriplePointAngles
+
+Volume Fraction (surface)
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+x) Select "Surface"
+y) Check if results have changed against BoneJ_.jar from www.bonej.org
+
+Expected result
+-----------------------------------------------------------------------
+
+Compeleted successfully --/--/2016 Richard Domander
+-----------------------------------------------------------------------
+
+
+Volume Fraction (voxel)
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+x) Select "Surface"
+y) Check if results have changed against BoneJ_.jar from www.bonej.org
+
+Expected result
+-----------------------------------------------------------------------
+
+Compeleted successfully --/--/2016 Test O'Tester
+-----------------------------------------------------------------------
+
+Fit Ellipsoid
+Fit Sphere
+Moments of Inertia
+Neck Shaft Angle
+Slice Geometry
+
+Erode 3D
+Dilate 3D
+
+Delete Slice Range
+Check Voxel Depth
+Interpolate ROIs
+
+Distribution Analysis
+Export Stratec Header
+Strip Stratec Header
+
+Kontron IMG
+Scanco ISQ
+Stratec pQCT
+
+BoneJ Usage
+
+BoneJ About
+
+
