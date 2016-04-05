@@ -17,6 +17,8 @@
 
 # Maven
 **/target/
+out
+MANIFEST.MF
 
 # GEdit
 *.txt~

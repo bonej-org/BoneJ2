@@ -106,7 +106,7 @@
     </ciManagement>
 
     <properties>
-        <scijava.jvm.version>1.8</scijava.jvm.version>
+        <scijava.jvm.version>1.6</scijava.jvm.version>
         <javadoc.skip>true</javadoc.skip>
     </properties>
 
@@ -126,6 +126,16 @@
 
     <build>
         <plugins>
+            <!-- Set a compiler level -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.3</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>

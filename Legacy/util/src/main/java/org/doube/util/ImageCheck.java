@@ -25,6 +25,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
+import ij.plugin.ClassChecker;
 import ij.process.ImageStatistics;
 
 /**
@@ -131,7 +132,7 @@ public class ImageCheck {
 	 * @return false if voxel dimensions are not equal
 	 */
 	public static boolean isVoxelIsotropic(final ImagePlus imp) {
-		return isVoxelIsotropic(imp, 0);
+		return isVoxelIsotropic(imp, 0.0);
 	}
 
 	/**
@@ -245,29 +246,16 @@ public class ImageCheck {
 		return true;
 	}
 
-	/**
-	 * Show a message a return false if any requirement of the environment is
-	 * missing
-	 *
-	 * @return
-	 */
+	/** Returns true if the environment has everything BoneJ needs ot run */
 	public static boolean checkEnvironment() {
-		try {
-			Class.forName("javax.media.j3d.VirtualUniverse");
-		} catch (final ClassNotFoundException e) {
-			IJ.showMessage("Java 3D libraries are not installed.\n" + "Please install and run the ImageJ 3D Viewer,\n"
-					+ "which will automatically install Java's 3D libraries.");
-			return false;
-		}
 		try {
 			Class.forName("ij3d.ImageJ3DViewer");
 		} catch (final ClassNotFoundException e) {
 			IJ.showMessage("ImageJ 3D Viewer is not installed.\n" + "Please install and run the ImageJ 3D Viewer.");
 			return false;
 		}
-		if (!checkIJVersion())
-			return false;
-		return true;
+
+		return checkIJVersion();
 	}
 
 	/**

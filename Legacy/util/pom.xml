@@ -19,33 +19,40 @@
     </repositories>
 
     <dependencies>
+        <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>ij</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>gov.nist.math.jama</groupId>
-            <artifactId>gov.nist.math.jama</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-
+        <!-- SciJava dependencies -->
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>vecmath</artifactId>
         </dependency>
 
+        <!-- Fiji dependencies -->
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
+            <version>3.0.0</version>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
+            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>VIB-lib</artifactId>
+            <version>2.1.1</version>
+        </dependency>
+
+        <!-- Other dependencies -->
+        <dependency>
+            <groupId>gov.nist.math.jama</groupId>
+            <artifactId>gov.nist.math.jama</artifactId>
+            <version>1.1.1</version>
         </dependency>
 
         <!-- Test dependencies -->
@@ -59,6 +66,7 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>2.0.31-beta</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
