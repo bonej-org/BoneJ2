@@ -224,12 +224,11 @@ public class ImageCheck {
 	}
 
 	/**
-	 * Show a message and return false if the version of IJ is too old for BoneJ
-	 * or is a known bad version
+	 * Checks if the version of ImageJ is compatible with BoneJ
 	 *
 	 * @return false if the IJ version is too old or blacklisted
 	 */
-	private static boolean checkIJVersion() {
+	public static boolean checkIJVersion() {
 		if (isIJVersionBlacklisted()) {
 			IJ.error("Bad ImageJ version",
 					"The version of ImageJ you are using (v" + IJ.getVersion()

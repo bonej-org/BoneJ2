@@ -18,14 +18,13 @@ public class AnalyseSkeleton implements PlugIn {
 
     @Override
     public void run(String arg) {
-        if (arg.equals("about"))
-        {
+        if (arg.equals("about")) {
             // show about dialog and exit
             analyser.setup(arg, null);
             return;
         }
-        
-        if (!ImageCheck.checkEnvironment()) {
+
+        if (!ImageCheck.checkIJVersion()) {
             return;
         }
 
@@ -34,6 +33,7 @@ public class AnalyseSkeleton implements PlugIn {
         try {
             image = IJ.getImage();
         } catch (RuntimeException e) {
+            // If no image is open, getImage() throws an exception
             return;
         }
 
