@@ -116,6 +116,11 @@
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
+            <artifactId>LocalThickness_</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
             <version>2.0.0</version>
         </dependency>
@@ -124,7 +129,6 @@
             <artifactId>VIB_</artifactId>
             <version>2.0.3</version>
         </dependency>
-
 
         <!-- Java 3D dependencies -->
         <dependency>
@@ -140,7 +144,7 @@
             <artifactId>vecmath</artifactId>
         </dependency>
 
-        <!-- JOGL dependencies  -->
+        <!-- JOGL dependencies for Java3d -->
         <dependency>
             <groupId>org.jogamp.gluegen</groupId>
             <artifactId>gluegen-rt-main</artifactId>

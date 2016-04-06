@@ -11,10 +11,13 @@ import ij.plugin.PlugIn;
 /**
  * A simple wrapper plugin to add the AnalyzeSkeleton_ plugin under Plugins>BoneJ menu path
  *
+ * Displays additional incompatibility warnings to the user
+ *
+ * @author Michael Doube
  * @author Richard Domander
  */
 public class AnalyseSkeleton implements PlugIn {
-    private static final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
+    private final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
 
     @Override
     public void run(String arg) {

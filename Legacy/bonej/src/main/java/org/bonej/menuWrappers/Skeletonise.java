@@ -10,14 +10,17 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
 /**
  * A simple wrapper plugin to add the Skeletonize_ plugin under Plugins>BoneJ menu path
  *
+ * Displays additional incompatibility warnings to the user
+ *
  * NB Does not overwrite the input image. Follows the logic in BoneJ1
  *
+ * @author Michael Doube
  * @author Richard Domander
  * @todo Discuss if plugin should overwrite input, like all the others do
  * @todo What should this plugin be called in the menu? Valid for 2D and 3D images...
  */
 public class Skeletonise implements PlugIn {
-    private static final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+    private final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 
     @Override
     public void run(String arg) {
@@ -35,14 +38,14 @@ public class Skeletonise implements PlugIn {
         }
 
         if (!ImageCheck.isBinary(inputImage)) {
-            IJ.error("Skeletonise requires a binary image");
+            IJ.error("Skeletonise requires an 8-bit greyscale binary image");
             return;
         }
 
         // Duplicate input image without changing the title
-        final String origalTitle = inputImage.getTitle();
+        final String originalTitle = inputImage.getTitle();
         final ImagePlus outputImage = inputImage.duplicate();
-        outputImage.setTitle(origalTitle);
+        outputImage.setTitle(originalTitle);
 
         skeletoniser.setup("", outputImage);
         skeletoniser.run(null);
