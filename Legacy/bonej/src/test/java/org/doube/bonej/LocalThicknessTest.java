@@ -23,17 +23,18 @@ package org.doube.bonej;
 
 import static org.junit.Assert.assertEquals;
 
+import org.bonej.menuWrappers.LocalThickness;
 import org.doube.geometry.TestDataMaker;
 import org.doube.util.StackStats;
 import org.junit.Test;
 
 import ij.ImagePlus;
 
-public class ThicknessTest {
+public class LocalThicknessTest {
 
 	@Test
 	public void testGetLocalThicknessRod() {
-		final Thickness th = new Thickness();
+		final LocalThickness th = new LocalThickness();
 		for (int d = 1; d < 25; d += 1) {
 			final ImagePlus rod = TestDataMaker.rod(d * 100, d);
 			final ImagePlus imp = th.getLocalThickness(rod, false);
@@ -45,7 +46,7 @@ public class ThicknessTest {
 
 	@Test
 	public void testGetLocalThicknessSphere() {
-		final Thickness th = new Thickness();
+		final LocalThickness th = new LocalThickness();
 		for (int r = 2; r < 25; r++) {
 			final ImagePlus sphere = TestDataMaker.sphere(r);
 			final ImagePlus imp = th.getLocalThickness(sphere, false);
@@ -58,7 +59,7 @@ public class ThicknessTest {
 
 	@Test
 	public void testGetLocalThicknessBrick() {
-		final Thickness th = new Thickness();
+		final LocalThickness th = new LocalThickness();
 		for (int t = 1; t < 21; t++) {
 			final ImagePlus brick = TestDataMaker.brick(128, 128, t);
 			final ImagePlus imp = th.getLocalThickness(brick, false);

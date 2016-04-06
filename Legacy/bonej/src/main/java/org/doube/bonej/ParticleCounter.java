@@ -34,6 +34,7 @@ import java.util.ListIterator;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.bonej.menuWrappers.LocalThickness;
 import org.doube.geometry.FitEllipsoid;
 import org.doube.util.DialogModifier;
 import org.doube.util.ImageCheck;
@@ -279,7 +280,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		double[][] thick = new double[nParticles][2];
 		if (doThickness) {
-			final Thickness th = new Thickness();
+			final LocalThickness th = new LocalThickness();
 			final ImagePlus thickImp = th.getLocalThickness(imp, false, doMask);
 			thick = getMeanStdDev(thickImp, particleLabels, particleSizes, 0);
 			if (doThickImage) {

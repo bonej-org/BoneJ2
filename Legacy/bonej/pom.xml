@@ -96,10 +96,6 @@
         </dependency>
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>thickness</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.bonej</groupId>
             <artifactId>util</artifactId>
         </dependency>
 

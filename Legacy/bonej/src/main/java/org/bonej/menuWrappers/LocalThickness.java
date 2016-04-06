@@ -91,7 +91,7 @@ public class LocalThickness implements PlugIn {
         }
 
         if (doThickness) {
-            final ImagePlus resultImage = getLocalThickness(inputImage, true);
+            final ImagePlus resultImage = calculateLocalThickness(inputImage, true);
             if(resultImage == null) {
                 return;
             }
@@ -102,7 +102,7 @@ public class LocalThickness implements PlugIn {
         }
 
         if (doSpacing) {
-            final ImagePlus resultImage = getLocalThickness(inputImage, false);
+            final ImagePlus resultImage = calculateLocalThickness(inputImage, false);
             if(resultImage == null) {
                 return;
             }
@@ -113,6 +113,50 @@ public class LocalThickness implements PlugIn {
         }
 
         UsageReporter.reportEvent(this).send();
+    }
+
+    /**
+     * Get a local thickness map from an ImagePlus with optional masking
+     * correction
+     *
+     * A convenience method for legacy code
+     *
+     * @param imp
+     *            Binary ImagePlus
+     * @param invert
+     *            false if you want the thickness of the foreground and true if
+     *            you want the thickness of the background
+     * @param doMask
+     *            true to apply a masking operation to enforce the map to
+     *            contain thickness values only at coordinates where there is a
+     *            corresponding input pixel
+     * @return 32-bit ImagePlus containing a local thickness map
+     */
+    public ImagePlus getLocalThickness(final ImagePlus imp, final boolean invert, final boolean doMask) {
+        if (!ImageCheck.isVoxelIsotropic(imp, 1E-3)) {
+            IJ.log("Warning: voxels are anisotropic. Local thickness results will be inaccurate");
+        }
+
+        this.doMask = doMask;
+
+        return processThicknessSteps(imp, !invert, "");
+    }
+
+    /**
+     * Get a local thickness map from an ImagePlus, without masking correction
+     *
+     * A convenience method for legacy code
+     *
+     * @see #getLocalThickness(ImagePlus, boolean, boolean)
+     * @param imp
+     *            Binary ImagePlus
+     * @param invert
+     *            false if you want the thickness of the foreground and true if
+     *            you want the thickness of the background
+     * @return 32-bit ImagePlus containing a local thickness map
+     */
+    public ImagePlus getLocalThickness(final ImagePlus imp, final boolean invert) {
+        return getLocalThickness(imp, invert, false);
     }
 
     private void createSetupDialog() {
@@ -160,7 +204,7 @@ public class LocalThickness implements PlugIn {
      *                      If false, then process the thickness of the background (trabecular spacing).
      * @return Returns true if localThickness succeeded, and resultImage != null
      */
-    private ImagePlus getLocalThickness(final ImagePlus inputImage, final boolean doForeground) {
+    private ImagePlus calculateLocalThickness(final ImagePlus inputImage, final boolean doForeground) {
         String suffix = doForeground ? "_" + TRABECULAR_THICKNESS : "_" + TRABECULAR_SPACING;
 
         if (doRoi) {
@@ -198,7 +242,7 @@ public class LocalThickness implements PlugIn {
         return thickness.processImage(image);
     }
 
-    public void showThicknessStats(final ImagePlus resultImage, final StackStatistics resultStats,
+    private void showThicknessStats(final ImagePlus resultImage, final StackStatistics resultStats,
                                    final boolean doForeground) {
         String units = resultImage.getCalibration().getUnits();
         String legend = doForeground ? TRABECULAR_THICKNESS : TRABECULAR_SPACING;

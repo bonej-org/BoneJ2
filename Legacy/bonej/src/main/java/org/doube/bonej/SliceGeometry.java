@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import org.bonej.menuWrappers.LocalThickness;
 import org.doube.geometry.Orienteer;
 import org.doube.util.DialogModifier;
 import org.doube.util.ImageCheck;
@@ -804,7 +805,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		this.meanCortThick3D = new double[this.al];
 		this.stdevCortThick3D = new double[this.al];
 		final Rectangle r = imp.getProcessor().getRoi();
-		final Thickness th = new Thickness();
+		final LocalThickness th = new LocalThickness();
 
 		// convert to binary
 		final ImagePlus binaryImp = convertToBinary(imp, min, max);
@@ -926,7 +927,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				final Calibration cal = impT.getCalibration();
 				binaryImp.setCalibration(cal);
 				// calculate thickness
-				final Thickness th = new Thickness();
+				final LocalThickness th = new LocalThickness();
 				final ImagePlus thickImp = th.getLocalThickness(binaryImp, false, doMask);
 				final FloatProcessor thickIp = (FloatProcessor) thickImp.getProcessor();
 				double sumPix = 0;
