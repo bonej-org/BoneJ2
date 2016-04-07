@@ -90,7 +90,7 @@ public class ResultInserter {
 		// the value, so make a new row for it
 		final String label = "Image";
 		rt.incrementCounter();
-		rt.addLabel(label, title);
+		rt.addLabel(label);
 		rt.addValue(colHeading, value);
 	}
 
