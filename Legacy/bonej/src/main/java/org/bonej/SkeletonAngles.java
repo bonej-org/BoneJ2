@@ -29,19 +29,18 @@ import org.doube.util.ResultInserter;
 import org.doube.util.SkeletonUtils;
 import org.doube.util.UsageReporter;
 
-import ij.IJ;
-import ij.ImagePlus;
-import ij.WindowManager;
-import ij.gui.GenericDialog;
-import ij.plugin.PlugIn;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Edge;
 import sc.fiji.analyzeSkeleton.Graph;
 import sc.fiji.analyzeSkeleton.Point;
 import sc.fiji.analyzeSkeleton.Vertex;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.gui.GenericDialog;
+import ij.plugin.PlugIn;
 
 public class SkeletonAngles implements PlugIn {
-
 	/** Measure angles between vertices */
 	public static final int VERTEX_TO_VERTEX = -1;
 
@@ -100,6 +99,11 @@ public class SkeletonAngles implements PlugIn {
 	 * in the skeleton. Angles can be calculated between opposite vertices or an
 	 * arbitrary number of points from the triple point.
 	 *
+	 * Runs in three steps:
+	 * 1) Creates a skeleton of the input image
+	 * 2) Analyses the skeleton
+	 * 3) Calculates the triple point angles
+	 *
 	 * @param imp
 	 *            A binary 8-bit image
 	 * @param nthPixel
@@ -111,10 +115,10 @@ public class SkeletonAngles implements PlugIn {
 	 *         calculated
 	 */
 	public double[][][] calculateTriplePointAngles(final ImagePlus imp, final int nthPixel) {
-		final ImagePlus skeletonizedImage = SkeletonUtils.getSkeleton(imp);
+		final ImagePlus skeleton = SkeletonUtils.getSkeleton(imp);
 
 		final AnalyzeSkeleton_ skeletonAnalyzer = new AnalyzeSkeleton_();
-		skeletonAnalyzer.setup("", skeletonizedImage);
+		skeletonAnalyzer.setup("", skeleton);
 		skeletonAnalyzer.run();
 		final Graph[] graphs = skeletonAnalyzer.getGraphs();
 

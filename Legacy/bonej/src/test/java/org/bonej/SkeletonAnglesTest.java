@@ -21,8 +21,9 @@
  */
 package org.bonej;
 
+import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertEquals;
 
 import org.doube.geometry.TestDataMaker;
 import org.junit.Test;
@@ -30,72 +31,77 @@ import org.junit.Test;
 import ij.ImagePlus;
 
 public class SkeletonAnglesTest {
-
-	private final double pi4 = Math.PI / 4;
-	private final double pi2 = Math.PI / 2;
+	private static final ImagePlus crossedCircle = TestDataMaker.crossedCircle(256);
+	private static final ImagePlus boxFrame = TestDataMaker.boxFrame(128, 128, 128);
+	private static final SkeletonAngles skeletonAngles = new SkeletonAngles();
+	private static final double PI_4 = Math.PI / 4;
+	private static final double PI_2 = Math.PI / 2;
 	/** Not quite pi / 2 because vertex isn't exactly at corner */
-	private final double pi2ish = 1.5904976894727854;
+	private static final double PI_2_ISH = 1.5904976894727854;
+	private static final double DELTA = 1e-12;
 
-	private final double[][][] circleCrossResult = {
-			{ { pi4, pi4, pi2 }, null, { pi4, pi2, pi4 }, { pi4, pi2, pi4 }, { pi4, pi4, pi2 } } };
+	private final static double[][][] circleCrossResult = {
+			{{PI_4, PI_4, PI_2}, null, {PI_4, PI_2, PI_4}, {PI_4, PI_2, PI_4}, {PI_4, PI_4, PI_2}}};
 
-	private final double[][][] circleCrossResultNth = {
-			{ { pi2, pi2, Math.PI }, null, { pi2, Math.PI, pi2 }, { pi2, Math.PI, pi2 }, { pi2, pi2, Math.PI } } };
+	private final static double[][][] circleCrossResultNth = {
+			{{PI_2, PI_2, Math.PI}, null, {PI_2, Math.PI, PI_2}, {PI_2, Math.PI, PI_2}, {PI_2, PI_2, Math.PI}}};
 
-	private final double[][][] boxFrameResult = { { { pi2, pi2, pi2 }, { pi2, pi2, pi2 }, { pi2, pi2, pi2 },
-			{ pi2, pi2, pi2 }, { pi2, pi2, pi2 }, { pi2, pi2, pi2 }, { pi2, pi2, pi2 }, { pi2, pi2, pi2 } } };
-
-	private final double[][][] boxFrameResultNth = { { { pi2ish, pi2ish, pi2ish }, { pi2ish, pi2ish, pi2ish },
-			{ pi2ish, pi2ish, pi2ish }, { pi2ish, pi2ish, pi2ish }, { pi2ish, pi2ish, pi2ish },
-			{ pi2ish, pi2ish, pi2ish }, { pi2ish, pi2ish, pi2ish }, { pi2ish, pi2ish, pi2ish } } };
-
-	// FIXME: requires updates to Analyze Skeleton behavior
-	// @Test
+	@Test
 	public void testCalculateTriplePointAnglesCrossedCircle() {
-		final ImagePlus imp = TestDataMaker.crossedCircle(256);
-		final double[][][] result = (new SkeletonAngles()).calculateTriplePointAngles(imp,
+		final double[][][] result = skeletonAngles.calculateTriplePointAngles(crossedCircle,
 				SkeletonAngles.VERTEX_TO_VERTEX);
+
 		for (int g = 0; g < circleCrossResult.length; g++)
 			for (int v = 0; v < circleCrossResult[g].length; v++)
-				assertArrayEquals(circleCrossResult[g][v], result[g][v], 1e-12);
+				assertArrayEquals("Angle measured incorrectly", circleCrossResult[g][v], result[g][v], DELTA);
 	}
 
-	// FIXME: requires updates to Analyze Skeleton behavior
-	// @Test
+	@Test
 	public void testCalculateTriplePointAnglesCrossedCircleNth() {
-		final ImagePlus imp = TestDataMaker.crossedCircle(256);
-		final double[][][] result = (new SkeletonAngles()).calculateTriplePointAngles(imp, 8);
+		final double[][][] result = skeletonAngles.calculateTriplePointAngles(crossedCircle, 8);
+
 		for (int g = 0; g < circleCrossResultNth.length; g++)
 			for (int v = 0; v < circleCrossResultNth[g].length; v++)
-				assertArrayEquals(circleCrossResultNth[g][v], result[g][v], 1e-12);
+				assertArrayEquals("Angle measured incorrectly", circleCrossResultNth[g][v], result[g][v], DELTA);
 	}
 
 	@Test
 	public void testCalculateTriplePointAnglesBoxFrame() {
-		final ImagePlus imp = TestDataMaker.boxFrame(128, 128, 128);
-		final double[][][] result = (new SkeletonAngles()).calculateTriplePointAngles(imp,
+		final double[][][] result = skeletonAngles.calculateTriplePointAngles(boxFrame,
 				SkeletonAngles.VERTEX_TO_VERTEX);
-		for (int g = 0; g < boxFrameResult.length; g++)
-			for (int v = 0; v < boxFrameResult[g].length; v++)
-				assertArrayEquals(boxFrameResult[g][v], result[g][v], 1e-12);
+
+		assertEquals("Incorrect number of graphs", 1, result.length);
+		for (final double[][] graph : result) {
+			assertEquals("Incorrect number of vertices", 8, graph.length);
+			for (final double[] vertex : graph) {
+				assertEquals("Incorrect number of angles", 3, vertex.length);
+				for (double angle : vertex) {
+					assertEquals("Angle measured incorrectly", PI_2, angle, DELTA);
+				}
+			}
+		}
 	}
 
-	// FIXME
-	// @Test
+	@Test
 	public void testCalculateTriplePointAnglesBoxFrameNth() {
-		final ImagePlus imp = TestDataMaker.boxFrame(128, 128, 128);
-		final double[][][] result = (new SkeletonAngles()).calculateTriplePointAngles(imp, 32);
-		for (int g = 0; g < boxFrameResultNth.length; g++)
-			for (int v = 0; v < boxFrameResultNth[g].length; v++)
-				assertArrayEquals(boxFrameResultNth[g][v], result[g][v], 1e-12);
+		final double[][][] result = skeletonAngles.calculateTriplePointAngles(boxFrame, 32);
+
+		assertEquals("Incorrect number of graphs", 1, result.length);
+		for (final double[][] graph : result) {
+			assertEquals("Incorrect number of vertices", 8, graph.length);
+			for (final double[] vertex : graph) {
+				assertEquals("Incorrect number of angles", 3, vertex.length);
+				for (double angle : vertex) {
+					assertEquals("Angle measured incorrectly", PI_2_ISH, angle, DELTA);
+				}
+			}
+		}
 	}
 
-	// FIXME
-	// @Test
+	@Test
 	public void testCalculateTriplePointAnglesReturnsNullIfImageCannotBeSkeletonized() {
 		final ImagePlus imp = TestDataMaker.brick(10, 10, 10);
-		final double[][][] result = (new SkeletonAngles()).calculateTriplePointAngles(imp,
-				SkeletonAngles.VERTEX_TO_VERTEX);
+		final double[][][] result = skeletonAngles.calculateTriplePointAngles(imp, SkeletonAngles.VERTEX_TO_VERTEX);
 		assertNull("Result should be null if image cannot be skeletonized", result);
 	}
 }

@@ -166,8 +166,7 @@ public class TestDataMaker {
 		ip.drawOval(size / 4, size / 4, size / 2, size / 2);
 		ip.drawLine(size / 2, size / 4, size / 2, 3 * size / 4);
 		ip.drawLine(size / 4, size / 2, 3 * size / 4, size / 2);
-		final ImagePlus imp = new ImagePlus("crossed-circle", ip);
-		return SkeletonUtils.getSkeleton(imp);
+		return new ImagePlus("crossed-circle", ip);
 	}
 
 	/**
