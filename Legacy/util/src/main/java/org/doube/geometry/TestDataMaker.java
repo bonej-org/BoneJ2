@@ -24,7 +24,6 @@ package org.doube.geometry;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.doube.util.SkeletonUtils;
 import org.scijava.vecmath.Point3f;
 
 import ij.ImagePlus;

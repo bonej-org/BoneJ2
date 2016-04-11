@@ -31,8 +31,6 @@ import javax.swing.WindowConstants;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
-import org.doube.util.UsageReporter;
-
 import ij.plugin.BrowserLauncher;
 import ij.plugin.PlugIn;
 
