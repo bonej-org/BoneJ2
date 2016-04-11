@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- FIXME add VCS & issue info -->
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.bonej</groupId>
-        <artifactId>pom-bonej</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <artifactId>bonej-legacy</artifactId>
+        <version>1.0.0</version>
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>pqct</artifactId>
+    <artifactId>bonej-legacy-pqct</artifactId>
     <version>1.0.0</version>
 
     <name>plugins/pqct.jar</name>
-    <description>BoneJ distribution of PQCT plugin. Originally developed by Timo Rantalainen.</description>
+    <description>BoneJ1 distribution of PQCT plugin. Originally developed by Timo Rantalainen.</description>
 
     <developers>
         <developer>
@@ -103,7 +104,7 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>util</artifactId>
+            <artifactId>bonej-legacy-util</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->
@@ -120,7 +121,7 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <licenseName>gpl_v3</licenseName>
-                    <organizationName>Timo Rantalainen, Michael Doube, BoneJ developers.</organizationName>
+                    <organizationName>Michael Doube, BoneJ developers.</organizationName>
                     <projectName>PQCT: ImageJ density distribution analysis plugin.</projectName>
                 </configuration>
             </plugin>

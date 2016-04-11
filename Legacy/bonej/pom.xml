@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- FIXME add VCS & issue info -->
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.bonej</groupId>
-        <artifactId>pom-bonej</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <artifactId>bonej-legacy</artifactId>
+        <version>1.0.0</version>
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>BoneJ</artifactId>
+    <artifactId>boneJ1-core-plugins</artifactId>
     <version>1.5.0-SNAPSHOT</version>
 
     <name>plugins/BoneJ_.jar</name>
-    <description>BoneJ is a plugin for bone image analysis in ImageJ. It provides free, open source tools for trabecular
-        geometry and whole bone shape analysis.
+    <description> The essential, mavenized versions of the BoneJ1 plugins developed by Michael Doube
     </description>
 
     <developers>
@@ -92,11 +92,11 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>pqct</artifactId>
+            <artifactId>bonej-legacy-pqct</artifactId>
         </dependency>
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>util</artifactId>
+            <artifactId>bonej-legacy-util</artifactId>
         </dependency>
 
         <!-- Fiji dependencies -->
