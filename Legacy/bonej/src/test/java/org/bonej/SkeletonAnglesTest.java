@@ -21,9 +21,9 @@
  */
 package org.bonej;
 
-import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.doube.geometry.TestDataMaker;
 import org.junit.Test;
