@@ -21,6 +21,8 @@
  */
 package org.doube.geometry;
 
+import ij.IJ;
+
 /**
  * Provides simple trigonometric calculations
  *
@@ -127,7 +129,13 @@ public class Trig {
 		final double d0 = distance3D(x0, y0, z0);
 		final double d1 = distance3D(x1, y1, z1);
 
-		final double cosTheta = dot / (d0 * d1);
+		double cosTheta = dot / (d0 * d1);
+
+		if (cosTheta < -1.0D) {
+			cosTheta = -1.0D;
+		} else if (cosTheta > 1.0D) {
+			cosTheta = 1.0D;
+		}
 
 		return Math.acos(cosTheta);
 	}
