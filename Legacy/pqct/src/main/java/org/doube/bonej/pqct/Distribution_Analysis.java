@@ -29,6 +29,7 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 //Analysis stuff..
+import ij.plugin.ImageInfo;
 import org.doube.bonej.pqct.analysis.ConcentricRingAnalysis;
 import org.doube.bonej.pqct.analysis.CorticalAnalysis;
 import org.doube.bonej.pqct.analysis.DetermineAlfa;
@@ -56,7 +57,6 @@ import ij.io.FileSaver;
 //Calibration
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
-import ij.plugin.filter.Info;
 import ij.text.TextPanel;
 
 public class Distribution_Analysis implements PlugIn {
@@ -86,7 +86,7 @@ public class Distribution_Analysis implements PlugIn {
 											// filtering and second for soft
 											// tissue analysis filtering. ?x?
 											// median filter.
-		imageInfo = new Info().getImageInfo(imp, imp.getChannelProcessor());
+		imageInfo = new ImageInfo().getImageInfo(imp);
 		/* Check image calibration */
 		final Calibration cal = imp.getCalibration();
 		double[] calibrationCoefficients = { 0, 1 };

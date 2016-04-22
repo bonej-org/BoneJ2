@@ -25,13 +25,13 @@ package org.doube.bonej.pqct;
 //Vector
 import java.util.StringTokenizer;
 
+import ij.plugin.ImageInfo;
 import org.doube.util.UsageReporter;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.plugin.PlugIn;
-import ij.plugin.filter.Info;
 import ij.text.TextPanel;
 
 public class Export_Header implements PlugIn {
@@ -46,7 +46,7 @@ public class Export_Header implements PlugIn {
 			IJ.error("Distribution analysis expects 16-bit greyscale data");
 			return;
 		}
-		imageInfo = new Info().getImageInfo(imp, imp.getChannelProcessor());
+		imageInfo = new ImageInfo().getImageInfo(imp);
 		String imageName;
 		if (getInfoProperty(imageInfo, "File Name") != null) {
 			imageName = getInfoProperty(imageInfo, "File Name");
