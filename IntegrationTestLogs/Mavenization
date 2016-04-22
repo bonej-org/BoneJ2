@@ -1,6 +1,9 @@
 Integration test reports on Mavenized legacy BoneJ1 plugins.
-These are superficial tests that check that the plugins can still be run after Mavenization.
+These are superficial tests that check that the plugins still function after Mavenization.
+
 NB Not all the options of the plugins have been tested to work
+NB Settings in BoneJ1 don't persist so plugins can be run with "default options"
+
 
 Orientation
 =======================================================================
@@ -24,12 +27,18 @@ Particle Analyser
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File > Open Samples > Bat Cochlea Volume)
+2) Run Particle Analyser (Plugins > Analyze > Particle Analyser)
+3) Press "OK" on the setup dialog (default options)
+4) Verify that Results table opens
+5) Verify that "bat-cochlea-volume_parts" image opens
+6) Verify that 3D image opens (3D Viewer)
 
 Expected result
 -----------------------------------------------------------------------
+Plugin runs successfully and Results table and images open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 21 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -37,7 +46,8 @@ Calibrate SCANCO
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open img
+2) Run Calibrate SCANCO (Plugins > Analyze > Calibrate SCANCO)
 
 Expected result
 -----------------------------------------------------------------------
@@ -53,13 +63,16 @@ Steps
 1) Open bundled bone sample image (File > Open Samples > Bat Cochlea Volume)
 2) Run Skeletonise (Plugins > BoneJ > Skeletonise 3D)
 3) Run Analyse Skeleton (Plugins > BoneJ > Analyse Skeleton)
+3) Set all checkboxes false, and "Prune cycle method" to "none"
 4) Press "OK" on the setup dialog
+5) Verify that "Tagged skeleton" image opens
+5) Verify that "Results" table opens
 
 Expected result
 -----------------------------------------------------------------------
-Analyse Skeleton completes and shows the result table
+Analyse Skeleton completes and shows the "Results" table and image
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 21st 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -69,7 +82,7 @@ Steps
 -----------------------------------------------------------------------
 1) Open bundled bone sample image (File > Open Samples > Bat Cochlea Volume)
 2) Run Anisotropy (Plugins > BoneJ > Anisotropy)
-3) Press "OK" on the setup dialog
+3) Press "OK" on the setup dialog (default options)
 
 Expected result
 -----------------------------------------------------------------------
@@ -83,12 +96,15 @@ Connectivity
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Connectivity (Plugins>BoneJ>Connectivity)
+3) Verify that Results table opens
 
 Expected result
 -----------------------------------------------------------------------
+Connectivity runs successfully and "Results" pops open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -96,12 +112,17 @@ Ellipsoid Factor
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Ellipsoid Factor (Plugins>BoneJ>Ellipsoid Factor)
+3) Press "OK" on the setup dialog (default options)
+4) Verify that "FlinnPeaks_bat-cochlea-volume.tif" opens
+5) Verify that "EF-bat-cochlea-volume.tif" opens
 
 Expected result
 -----------------------------------------------------------------------
+Ellipsoid Factor runs successfully and result images pop open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -109,12 +130,16 @@ Fractal Dimension
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Fractal Dimension (Plugins>BoneJ>Fractal Dimension)
+3) Verify that Results table opens
+4) Verify that Plot window opens
 
 Expected result
 -----------------------------------------------------------------------
+Fractal Dimension runs successfully and result windows pop open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -122,12 +147,17 @@ Isosurface
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Isosurface (Plugins>BoneJ>Isosurface)
+3) Press "OK" on the setup dialog (default options)
+4) Verify that Results table opens
+5) Verify that 3D model opens (3D Viewer)
 
 Expected result
 -----------------------------------------------------------------------
+Isosurface runs successfully and Results table and 3D Viewer open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -135,12 +165,17 @@ Optimise Threshold
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open MRI sample image (File>Open Samples>MRI Stack)
+2) Run Optimise Threshold (Plugins>Bonej>Optimise Threshold)
+3) Press "OK" on the setup dialog (default options)
+4) Verify that intermediate threshold images pop up
+5) Verify that Plot window opens
 
 Expected result
 -----------------------------------------------------------------------
+Isosurface runs successfully and images and Plot open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -148,25 +183,32 @@ Purify
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Purify (Plugins>BoneJ>Purify)
+3) Press "OK" on the setup dialog (default options)
+4) Verify that "Purified" image opens
 
 Expected result
 -----------------------------------------------------------------------
+Purify runs successfully and images and purified image opens
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
-Skeletonise 3D
+Skeletonise
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Skeletonise (Plugins>BoneJ>Skeletonise)
+3) Verify that skeletonised image opens
 
 Expected result
 -----------------------------------------------------------------------
+Skeletonise runs successfully and skeletonised image opens
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -174,24 +216,35 @@ Structure Model Index
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-x) Check if results have changed against BoneJ_.jar from www.bonej.org
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Structure Model Index (Plugins>BoneJ>Structure Model Index)
+3) Press "OK" on the setup dialog (default options)
+4) Press "OK" on the warning dialog
+5) Verify that Results table opens
 
 Expected result
 -----------------------------------------------------------------------
+Structure Model Index runs successfully and Results table pops open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 Thickness
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Thickness (Plugins>BoneJ>Thickness)
+3) Checkboxes Thickness, Graphic Result and Mask thickness map checked
+4) Press "OK" on the setup dialog
+5) Verify that thickness map opens (bat-cochlea-volume_Tb.Th)
+6) Verify that Results table opens
 
 Expected result
 -----------------------------------------------------------------------
+Thickness runs successfully and Results table and thickness map pop open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -199,7 +252,9 @@ TriplePointAngles
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+
 
 Expected result
 -----------------------------------------------------------------------
@@ -433,9 +488,16 @@ Completed successfully -- -- 2016 Test O'Tester
 
 Stratec pQCT
 =======================================================================
+Pre requirements
+-----------------------------------------------------------------------
+1) Download SyntheticData.zip from http://bonej.org and extract
+
 Steps
 -----------------------------------------------------------------------
-1)
+1) Import a Stratec pQCT file (File > Import > Stratec pQCT)
+2) Select "SyntheticData/SyntheticData/Ellipse_10_20_0.M02"
+3) Verify that file opens correctly
+
 
 Expected result
 -----------------------------------------------------------------------
