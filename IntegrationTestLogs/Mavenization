@@ -235,7 +235,8 @@ Steps
 -----------------------------------------------------------------------
 1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
 2) Run Thickness (Plugins>BoneJ>Thickness)
-3) Checkboxes Thickness, Graphic Result and Mask thickness map checked
+3) Checkboxes Thickness, Graphic Result and Mask thickness map checked,
+   others unchecked
 4) Press "OK" on the setup dialog
 5) Verify that thickness map opens (bat-cochlea-volume_Tb.Th)
 6) Verify that Results table opens
@@ -248,18 +249,19 @@ Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
-TriplePointAngles
+Triple point angles
 =======================================================================
 Steps
 -----------------------------------------------------------------------
 1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
 2) Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
-
+3) Verify that Results table opens
 
 Expected result
 -----------------------------------------------------------------------
+Triple point angles runs successfully and Results table opens
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -267,13 +269,21 @@ Volume Fraction (surface)
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-x) Select "Surface"
-y) Check if results have changed against BoneJ_.jar from www.bonej.org
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Volume Fraction (Plugins>BoneJ>Volume Fraction)
+3) Set "Algorithm" to "Surface",
+   check "Show 3D result",
+   uncheck "Use ROI Manager",
+   Set "Surface resampling" to '6'.
+4) Press "OK" on the setup dialog
+5) Verify that "Results" table opens
+6) Verify that mesh images open (3D Viewer)
 
 Expected result
 -----------------------------------------------------------------------
+Volume Fraction runs successfully and "Results" and meshes open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -281,13 +291,18 @@ Volume Fraction (voxel)
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-x) Select "Surface"
-y) Check if results have changed against BoneJ_.jar from www.bonej.org
+1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
+2) Run Volume Fraction (Plugins>BoneJ>Volume Fraction)
+3) Set "Algorithm" to "Voxel",
+   uncheck "Use ROI Manager".
+4) Press "OK" on the setup dialog
+5) Verify that "Results" table opens
 
 Expected result
 -----------------------------------------------------------------------
+Volume Fraction runs successfully and "Results"
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
