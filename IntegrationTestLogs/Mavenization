@@ -300,7 +300,7 @@ Steps
 
 Expected result
 -----------------------------------------------------------------------
-Volume Fraction runs successfully and "Results"
+Volume Fraction runs successfully and "Results" opens
 
 Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
@@ -310,12 +310,22 @@ Fit Ellipsoid
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+2. Select slide 3
+3. Select point tool
+4. Draw a point ROI on the white area
+5. Press T to add the point to ROI manager
+6. Select next slide
+7. Return to step 4 until you have 9 points on 9 consecutive slides.
+   Place the points roughly on the same xy-coordinates.
+8. Run Fit Ellipsoid (Plugins > BoneJ > Fit Ellipsoid)
+9. Verify that "Results" table opens
 
 Expected result
 -----------------------------------------------------------------------
+Fit Ellipsoid runs successfully and "Results" opens
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -323,12 +333,24 @@ Fit Sphere
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+ 1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+ 2. Select slide 3
+ 3. Select point tool
+ 4. Draw a point ROI on the white area
+ 5. Press T to add the point to ROI manager
+ 6. Select next slide
+ 7. Return to step 4 until you have 9 points on 9 consecutive slides.
+    Place the points roughly on the same xy-coordinates.
+ 8. Run Fit Sphere (Plugins > BoneJ > Fit Sphere)
+ 9. Press "OK" on the setup dialog (default options)
+10. Verify that images "Inner Cube", "Outer Cube" and "Sphere" open
+11. Verify that "Results" table opens
 
 Expected result
 -----------------------------------------------------------------------
+Fit Ellipsoid runs successfully and "Results" and images open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -336,12 +358,19 @@ Moments of Inertia
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+2. Run Moments of Inertia (Plugins>BoneJ>Moments of Inertia)
+3. Press "OK" on the setup dialog (default options)
+4. Verify that "Results" table opens
+5. Verify that image "Aligned_bat-cochlea-volume.tif" opens
+6. Verify taht 3D image opens (3D Viewer)
 
 Expected result
 -----------------------------------------------------------------------
 
-Completed successfully -- -- 2016 Test O'Tester
+Moments of Inertia runs successfully and "Results", image and 3D Viewer open
+
+Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
