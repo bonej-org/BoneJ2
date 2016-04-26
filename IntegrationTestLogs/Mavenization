@@ -1,9 +1,14 @@
-Integration test reports on Mavenized legacy BoneJ1 plugins.
-These are superficial tests that check that the plugins still function after Mavenization.
+=======================================================================
+Legacy module integration tests
+=======================================================================
+These quick tests were performed to verify that all the plugins
+in the Mavenized version of BoneJ1 (the Legacy module) run correctly,
+and thus provide a solid starting point for developing BoneJ2.
 
 NB Not all the options of the plugins have been tested to work
 NB Settings in BoneJ1 don't persist so plugins can be run with "default options"
 
+Commit of last test: x
 
 Orientation
 =======================================================================
@@ -512,25 +517,40 @@ Export Stratec Header
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open DICOM sample (File > Open Samples > CT)
+2. Run Export Stratec Header (Plugins > pQCT > Export Stratec Header)
+3. Verify that "Results" table opens
 
 Expected result
 -----------------------------------------------------------------------
+"Results" open and patient name equals "DOE, JOHN"
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
 Strip Stratec Header
 =======================================================================
+Pre requirements
+-----------------------------------------------------------------------
+I Download SyntheticData.zip from http://bonej.org and extract
+
 Steps
 -----------------------------------------------------------------------
-1)
+1. Run Strip Stratec Header (Plugins > pQCT > Strip Stratec Header)
+2. Set "Stratec file to strip" to "Synthetic Data/Synthetic Data/Ellipse_10_20_0.M02"
+3. Set "File save name" to "Synthetic Data/Synthetic Data/Test.M02"
+4. Check "Strip PatName"
+5. Press "OK"
+6. Import the "Test.M02" file (File > Import > Stratec pQCT)
+7. Run Export Stratec Header (Plugins > pQCT > Export Stratec Header)
+8. Verify that "Patient's Name" column is empty
 
 Expected result
 -----------------------------------------------------------------------
+"Patient's Name" metadata is stripped from the file
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -583,7 +603,7 @@ BoneJ Usage
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1) Run BoneJ usage (Edit>Options>BoneJ Usage)
+1) Run BoneJ Usage (Edit>Options>BoneJ Usage)
 2) Verify that dialog pops open ("Allow usage data collection?")
 
 Expected result
@@ -598,11 +618,13 @@ BoneJ About
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Run BoneJ About (Help>About Plugins>BoneJ)
+2) Verify that help window opens
 
 Expected result
 -----------------------------------------------------------------------
+Help page opens
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
