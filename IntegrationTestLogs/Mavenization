@@ -404,29 +404,37 @@ Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
-Erode 3D
+Erode (3D)
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+2. Run Erode (Plugins>Process>Erode (3D))
+3. Set "Iso value" to "255"
+4. Press "OK" on the setup dialog
 
 Expected result
 -----------------------------------------------------------------------
+Erode runs successfully and white are on the image becomes smaller
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
-Dilate 3D
+Dilate (3D)
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+2. Run Dilate (Plugins>Process>Erode (3D))
+3. Set "Iso value" to "255"
+4. Press "OK" on the setup dialog
 
 Expected result
 -----------------------------------------------------------------------
+Dilate runs successfully and white are on the image becomes bigger
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -434,12 +442,18 @@ Delete Slice Range
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+2. Run Delete Slice Range (Plugins>Stacks>Delete Slice Range)
+3. Set "First" to "1" and "Last" to "5"
+4. Press "OK" on the setup dialog
+5. Verify that image now has 109 slides, and that the first slide
+   has two white blobs
 
 Expected result
 -----------------------------------------------------------------------
+Delete Slice Range runs successfully, and the stack changes
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -538,19 +552,19 @@ Stratec pQCT
 =======================================================================
 Pre requirements
 -----------------------------------------------------------------------
-1) Download SyntheticData.zip from http://bonej.org and extract
+I Download SyntheticData.zip from http://bonej.org and extract
 
 Steps
 -----------------------------------------------------------------------
-1) Import a Stratec pQCT file (File > Import > Stratec pQCT)
-2) Select "SyntheticData/SyntheticData/Ellipse_10_20_0.M02"
-3) Verify that file opens correctly
+1. Import a Stratec pQCT file (File > Import > Stratec pQCT)
+2. Select "SyntheticData/SyntheticData/Ellipse_10_20_0.M02"
 
 
 Expected result
 -----------------------------------------------------------------------
+Image opens correctly
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
