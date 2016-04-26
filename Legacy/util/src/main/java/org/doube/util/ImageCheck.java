@@ -143,8 +143,14 @@ public class ImageCheck {
 	 *         there is no DICOM slice position information.
 	 */
 	public static double dicomVoxelDepth(final ImagePlus imp) {
+		if (imp == null) {
+			IJ.error("Cannot check DICOM header of a null image");
+			return -1;
+		}
+
 		final Calibration cal = imp.getCalibration();
 		final double vD = cal.pixelDepth;
+		final int stackSize = imp.getStackSize();
 
 		String position = getDicomAttribute(imp, 1, "0020,0032");
 		if (position == null) {
@@ -153,30 +159,30 @@ public class ImageCheck {
 		}
 		String[] xyz = position.split("\\\\");
 		double first = 0;
+
 		if (xyz.length == 3) // we have 3 values
 			first = Double.parseDouble(xyz[2]);
 		else
 			return -1;
 
-		position = getDicomAttribute(imp, imp.getStackSize(), "0020,0032");
+		position = getDicomAttribute(imp, stackSize, "0020,0032");
 		xyz = position.split("\\\\");
 		double last = 0;
+
 		if (xyz.length == 3) // we have 3 values
 			last = Double.parseDouble(xyz[2]);
 		else
 			return -1;
 
-		final double sliceSpacing = Math.abs((last - first) / (imp.getStackSize() - 1));
-
+		final double sliceSpacing = (Math.abs(last - first) + 1) / stackSize;
 		final String units = cal.getUnits();
+		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100.0;
 
-		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100;
-
-		if (vD != sliceSpacing) {
+		if (Double.compare(vD, sliceSpacing) != 0) {
 			IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " + error
-					+ "% with DICOM header slice spacing.\n" + "Current voxel depth: " + IJ.d2s(vD, 6) + " " + units
-					+ "\n" + "DICOM slice spacing: " + IJ.d2s(sliceSpacing, 6) + " " + units + "\n"
-					+ "Updating image properties...");
+						   + "% with DICOM header slice spacing.\n" + "Current voxel depth: " + IJ.d2s(vD, 6) + " " + units
+						   + "\n" + "DICOM slice spacing: " + IJ.d2s(sliceSpacing, 6) + " " + units + "\n"
+						   + "Updating image properties...");
 			cal.pixelDepth = sliceSpacing;
 			imp.setCalibration(cal);
 		} else
