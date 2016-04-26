@@ -363,11 +363,10 @@ Steps
 3. Press "OK" on the setup dialog (default options)
 4. Verify that "Results" table opens
 5. Verify that image "Aligned_bat-cochlea-volume.tif" opens
-6. Verify taht 3D image opens (3D Viewer)
+6. Verify that 3D image opens (3D Viewer)
 
 Expected result
 -----------------------------------------------------------------------
-
 Moments of Inertia runs successfully and "Results", image and 3D Viewer open
 
 Completed successfully April 25 2016 Richard Domander
@@ -391,12 +390,17 @@ Slice Geometry
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+2. Run Moments of Inertia (Plugins>BoneJ>Moments of Inertia)
+3. Press "OK" on the setup dialog (default options)
+4. Verify that "Results" table opens
+5. Verify that image "Annotated_bat-cochlea-volume.tif" opens
 
 Expected result
 -----------------------------------------------------------------------
+Slice Geometry runs successfully and "Results" & "Annotated" slice open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 

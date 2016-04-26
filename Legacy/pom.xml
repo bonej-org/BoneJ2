@@ -81,7 +81,7 @@
             <!-- BoneJ modules -->
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>bonej-legacy-plugins</artifactId>
+                <artifactId>boneJ1-core-plugins</artifactId>
                 <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>

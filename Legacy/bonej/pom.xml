@@ -92,11 +92,13 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>bonej-legacy-pqct</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.bonej</groupId>
             <artifactId>bonej-legacy-util</artifactId>
+        </dependency>
+
+        <!-- ImageJ dependencies -->
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>ij</artifactId>
         </dependency>
 
         <!-- Fiji dependencies -->
@@ -126,44 +128,20 @@
             <version>3.0.0</version>
         </dependency>
 
-        <!-- Java 3D dependencies -->
+        <!-- Other dependencies -->
         <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>j3dcore</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>j3dutils</artifactId>
+            <groupId>gov.nist.math</groupId>
+            <artifactId>jama</artifactId>
         </dependency>
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>vecmath</artifactId>
         </dependency>
 
-        <!-- JOGL dependencies for Java3d -->
-        <dependency>
-            <groupId>org.jogamp.gluegen</groupId>
-            <artifactId>gluegen-rt-main</artifactId>
-            <version>2.3.2</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jogamp.jogl</groupId>
-            <artifactId>jogl-all-main</artifactId>
-            <version>2.3.2</version>
-            <scope>runtime</scope>
-        </dependency>
-
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>2.0.9-beta</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
