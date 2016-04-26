@@ -461,12 +461,15 @@ Check Voxel Depth
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open sample DICOM image (File>Open Samples>CT)
+2. Run Check Voxel Depth (Plugins>Stacks>Check Voxel Depth)
+3. Verify that "Log" window opens
 
 Expected result
 -----------------------------------------------------------------------
+Check Voxel Depth runs successfully, and the "Log" opens
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -474,12 +477,20 @@ Interpolate ROIs
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
+2. Select rectangular ROI tool
+3. Draw a ROI on the first slice
+4. Add the Roi to the ROI manager with [t]
+5. Advance to slide 6
+6. Draw another ROI and add it to the manager
+7. Run Interpolate ROIs (Plugins>Stacks>Interpolate ROIs)
+8. Verify that 4 new ROIs appear to the manager (slides 2 - 4)
 
 Expected result
 -----------------------------------------------------------------------
+Interpolate ROIs creates new ROIs
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -487,7 +498,8 @@ Distribution Analysis
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1.
+2. Run Distribution Analysis (Plugins>pQCT>Distribution Analysis)
 
 Expected result
 -----------------------------------------------------------------------
@@ -559,7 +571,6 @@ Steps
 1. Import a Stratec pQCT file (File > Import > Stratec pQCT)
 2. Select "SyntheticData/SyntheticData/Ellipse_10_20_0.M02"
 
-
 Expected result
 -----------------------------------------------------------------------
 Image opens correctly
@@ -572,12 +583,14 @@ BoneJ Usage
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1) Run BoneJ usage (Edit>Options>BoneJ Usage)
+2) Verify that dialog pops open ("Allow usage data collection?")
 
 Expected result
 -----------------------------------------------------------------------
+Data collection dialog opens
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
