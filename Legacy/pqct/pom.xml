@@ -104,7 +104,7 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>bonej-legacy-util</artifactId>
+            <artifactId>boneJ1-core-plugins</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->

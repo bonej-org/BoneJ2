@@ -2,10 +2,10 @@ package org.bonej.menuWrappers;
 
 import java.awt.Checkbox;
 
-import org.doube.util.ImageCheck;
-import org.doube.util.ResultInserter;
-import org.doube.util.RoiMan;
-import org.doube.util.UsageReporter;
+import org.bonej.util.ImageCheck;
+import org.bonej.util.ResultInserter;
+import org.bonej.util.RoiMan;
+import org.bonej.plugins.UsageReporter;
 
 import sc.fiji.localThickness.LocalThicknessWrapper;
 import ij.IJ;

@@ -1,7 +1,7 @@
 package org.bonej.menuWrappers;
 
-import org.doube.util.ImageCheck;
-import org.doube.util.UsageReporter;
+import org.bonej.util.ImageCheck;
+import org.bonej.plugins.UsageReporter;
 
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 import ij.IJ;
