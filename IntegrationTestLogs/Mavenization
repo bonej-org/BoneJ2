@@ -51,7 +51,7 @@ Calibrate SCANCO
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1) Open img
+1) Open test image (C003562.ISQ)
 2) Run Calibrate SCANCO (Plugins > Analyze > Calibrate SCANCO)
 
 Expected result
@@ -382,12 +382,24 @@ Neck Shaft Angle
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+ 1. Open femoral images (File > Import > Image Sequence...)
+ 2. Select point tool
+ 3. Draw a point ROI on the femoral head
+ 4. Press T to add the point to ROI manager
+ 5. Select next slide
+ 6. Return to step 3 until you have 5 points
+ 7. Run Neck Shaft Angle (Plugins>BoneJ>Neck Shaft Angle)
+ 8. Set the start and end slices of the shaft
+ 9. Press "OK" on the setup dialog
+10. Verify that "Results" table opens
+11. When the dialog pops up, click the neck shaft
+12. Verify that "Results" table updates with "Angle" and "Skew" columns
 
 Expected result
 -----------------------------------------------------------------------
+Neck Shaft Angle runs successfully, "Results" opens and reacts to user
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 28 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -503,13 +515,16 @@ Distribution Analysis
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1.
+1. Open a .dcm image (NHM1940afem1 _Se0_Im119.dcm)
 2. Run Distribution Analysis (Plugins>pQCT>Distribution Analysis)
+3. Verify that "Results" table opens
+4. Verify that a <image name>.dcm-result image opens
 
 Expected result
 -----------------------------------------------------------------------
+Distribution Analysis runs successfully and "Results" and image open
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 28 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -558,12 +573,13 @@ Kontron IMG
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Import an .IMG file (File > Import > Kontron IMG)
 
 Expected result
 -----------------------------------------------------------------------
+Image opens correctly
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 28 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -571,12 +587,14 @@ Scanco ISQ
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1)
+1. Import an .ISQ file (File > Import > Scanco ISQ)
+2. Press "OK" on the dialog
 
 Expected result
 -----------------------------------------------------------------------
+Image opens correctly
 
-Completed successfully -- -- 2016 Test O'Tester
+Completed successfully April 28 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
