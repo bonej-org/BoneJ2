@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- FIXME add VCS & issue info -->
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>net.imagej</groupId>
+        <artifactId>pom-imagej</artifactId>
+        <version>15.5.0</version>
+    </parent>
+
+    <groupId>org.bonej</groupId>
+    <artifactId>bonej-legacy</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <description>Parent POM for the mavenized legacy BoneJ1 code.</description>
+
+    <developers>
+        <developer>
+            <id>mdoube</id>
+            <name>Michael Doube</name>
+            <email>mdoube@rvc.ac.uk</email>
+            <url>http://www.rvc.ac.uk/about/our-people/michael-doube</url>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <roles>
+                <role>lead</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+0</timezone>
+        </developer>
+        <developer>
+            <id>rimadoma</id>
+            <name>Richard Domander</name>
+            <email>rdomander@rvc.ac.uk</email>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <roles>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+0</timezone>
+        </developer>
+        <developer>
+            <id>ctrueden</id>
+            <name>Curtis Rueden</name>
+            <email>ctrueden@wisc.edu</email>
+            <url>http://loci.wisc.edu/people/curtis-rueden</url>
+            <organization>UW-Madison LOCI</organization>
+            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
+            <roles>
+                <role>maintainer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <id>hinerm</id>
+            <name>Mark Hiner</name>
+            <email>hiner@wisc.edu</email>
+            <url>http://loci.wisc.edu/people/mark-hiner</url>
+            <organization>UW-Madison LOCI</organization>
+            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
+            <roles>
+                <role>maintainer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
+    </developers>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- BoneJ modules -->
+            <dependency>
+                <groupId>org.bonej</groupId>
+                <artifactId>boneJ1-core-plugins</artifactId>
+                <version>1.5.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bonej</groupId>
+                <artifactId>bonej-legacy-pqct</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bonej</groupId>
+                <artifactId>bonej-legacy-util</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <ciManagement>
+        <system>Jenkins</system>
+    </ciManagement>
+
+    <properties>
+        <scijava.jvm.version>1.8</scijava.jvm.version>
+        <javadoc.skip>true</javadoc.skip>
+    </properties>
+
+    <modules>
+        <module>bonej</module>
+        <module>pqct</module>
+        <module>util</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <id>imagej.public</id>
+            <url>http://maven.imagej.net/content/groups/public</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <!-- Set a compiler level -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <!-- Add enforcer -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <!-- Set license plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseName>gpl_v3</licenseName>
+                    <organizationName>Michael Doube, BoneJ developers. See also individual class @authors.
+                    </organizationName>
+                    <projectName>BoneJ: open source tools for trabecular geometry and whole bone shape analysis.
+                    </projectName>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
