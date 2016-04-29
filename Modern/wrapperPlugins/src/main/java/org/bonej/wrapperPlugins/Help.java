@@ -1,5 +1,9 @@
 package org.bonej.wrapperPlugins;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import net.imagej.ImageJ;
 
 import org.scijava.command.Command;
@@ -7,10 +11,8 @@ import org.scijava.log.LogService;
 import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
-
-import java.io.IOException;
-import java.net.URL;
 
 /**
  * A plugin for opening the user documentation for BoneJ2
@@ -29,17 +31,27 @@ public class Help implements Command {
     private UIService uiService;
 
     @Override public void run() {
-        try {
-            URL helpUrl = new URL("http://bonej.org/");
-            platformService.open(helpUrl);
-        } catch (final IOException e) {
-            uiService.showDialog("An error occurred while trying to open the help page");
-            logService.error(e);
-        }
+        openHelpPage("http://bonej.org/", platformService, uiService, logService);
     }
 
     public static void main(String... args) {
         final ImageJ imageJ = net.imagej.Main.launch();
         imageJ.command().run(Help.class, true);
+    }
+
+    public static void openHelpPage(String url, PlatformService platformService, UIService uiService,
+            LogService logService) {
+        try {
+            URL helpUrl = new URL(url);
+            platformService.open(helpUrl);
+        } catch (final MalformedURLException mue) {
+            uiService.showDialog("Help page could not be opened: invalid address",
+                                 DialogPrompt.MessageType.ERROR_MESSAGE);
+            logService.error(mue);
+        } catch (final IOException e) {
+            uiService.showDialog("An unexpected error occurred while trying to open the help page",
+                                 DialogPrompt.MessageType.ERROR_MESSAGE);
+            logService.error(e);
+        }
     }
 }

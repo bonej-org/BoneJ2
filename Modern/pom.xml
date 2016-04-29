@@ -78,6 +78,7 @@
 
     <modules>
         <module>wrapperPlugins</module>
+        <module>utilities</module>
     </modules>
 
     <dependencyManagement>
