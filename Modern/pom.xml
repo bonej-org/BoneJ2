@@ -10,12 +10,12 @@
         <version>15.5.0</version>
     </parent>
 
-    <groupId>org.bonej2</groupId>
+    <groupId>org.bonej</groupId>
     <artifactId>pom-bonej2</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <description>Parent POM for the BoneJ2</description>
+    <description>Parent POM for BoneJ2</description>
 
     <developers>
         <developer>
@@ -83,7 +83,7 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.bonej2</groupId>
+                <groupId>org.bonej</groupId>
                 <artifactId>wrapperPlugins</artifactId>
                 <version>0.1.0-SNAPSHOT</version>
             </dependency>

@@ -1,4 +1,4 @@
-package org.bonej2.wrapperPlugins;
+package org.bonej.wrapperPlugins;
 
 import net.imagej.ImageJ;
 
@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * A plugin for opening user documentation for BoneJ2
+ * A plugin for opening the user documentation for BoneJ2
  *
  * @author Richard Domander 
  */
