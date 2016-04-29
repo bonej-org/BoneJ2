@@ -14,8 +14,7 @@
     <artifactId>bonej-legacy-pqct</artifactId>
     <version>1.0.0</version>
 
-    <name>plugins/pqct.jar</name>
-    <description>BoneJ1 distribution of PQCT plugin. Originally developed by Timo Rantalainen.</description>
+    <description>BoneJ1 distribution of PQCT plugin</description>
 
     <developers>
         <developer>
@@ -104,7 +103,7 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>boneJ1-core-plugins</artifactId>
+            <artifactId>boneJ-legacy-plugins</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->
@@ -121,8 +120,15 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <licenseName>gpl_v3</licenseName>
-                    <organizationName>Michael Doube, BoneJ developers.</organizationName>
-                    <projectName>PQCT: ImageJ density distribution analysis plugin.</projectName>
+                    <organizationName>Michael Doube, BoneJ developers</organizationName>
+                    <projectName>PQCT: ImageJ density distribution analysis plugin</projectName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <finalName>bonejLegacyPQCT_</finalName>
                 </configuration>
             </plugin>
         </plugins>

@@ -11,12 +11,10 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>boneJ1-core-plugins</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <artifactId>boneJ-legacy-plugins</artifactId>
+    <version>1.0.0</version>
 
-    <name>plugins/BoneJ_.jar</name>
-    <description> The essential, mavenized versions of the BoneJ1 plugins developed by Michael Doube
-    </description>
+    <description> The essential, mavenized versions of the BoneJ1 plugins developed by Michael Doube</description>
 
     <developers>
         <developer>
@@ -158,10 +156,17 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <licenseName>gpl_v3</licenseName>
-                    <organizationName>Michael Doube, BoneJ developers. See also individual class @authors.
+                    <organizationName>Michael Doube, BoneJ developers
                     </organizationName>
-                    <projectName>BoneJ: open source tools for trabecular geometry and whole bone shape analysis.
+                    <projectName>BoneJ: open source tools for trabecular geometry and whole bone shape analysis
                     </projectName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <finalName>bonejLegacyPlugins_</finalName>
                 </configuration>
             </plugin>
         </plugins>

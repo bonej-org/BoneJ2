@@ -73,4 +73,16 @@
             <url>http://maven.imagej.net/content/groups/public</url>
         </repository>
     </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <finalName>bonejLegacyUtil_</finalName>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
