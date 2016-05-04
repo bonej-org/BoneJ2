@@ -22,9 +22,11 @@ public class ImagePlusHelper {
 	/**
 	 * Tries to convert the given Dataset into an ImagePlus
 	 *
-	 * @param convertService 	The convert service of the context
+	 * @param convertService
+	 *            The convert service of the context
 	 * @return An Optional of ImagePlus, or empty if could not convert
-	 * @throws NullPointerException if convertService == null or dataset == null
+	 * @throws NullPointerException
+	 *             if convertService == null or dataset == null
 	 */
 	public static Optional<ImagePlus> toImagePlus(final ConvertService convertService, final Dataset dataset)
 			throws NullPointerException {

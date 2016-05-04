@@ -1,38 +1,61 @@
 package org.bonej.utilities;
 
-import net.imagej.Dataset;
-import net.imagej.ImageJ;
-import net.imagej.axis.Axes;
-import net.imagej.axis.AxisType;
-import net.imglib2.type.logic.BitType;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.junit.AfterClass;
+import java.util.Optional;
+
+import net.imagej.Dataset;
+
 import org.junit.Test;
+import org.scijava.convert.ConvertService;
+
+import ij.ImagePlus;
 
 /**
  * Unit tests for the ImagePlusHelper class
  *
  * @author Richard Domander
- * FIXME: add tests for convertable and unconvertable datasets
  */
 public class ImagePlusHelperTest {
-	private static final ImageJ IMAGE_J = new ImageJ();
-
-    @AfterClass
-    public static void oneTimeTearDown() throws Exception {
-        IMAGE_J.context().dispose();
-    }
-
 	@Test(expected = NullPointerException.class)
 	public void testToImagePlusThrowsNPEifConvertServiceNull() throws Exception {
-		final Dataset dataset = IMAGE_J.dataset().create(new BitType(), new long[]{10, 10}, "",
-				new AxisType[]{Axes.X, Axes.Y});
+		final Dataset dataset = mock(Dataset.class);
 
 		ImagePlusHelper.toImagePlus(null, dataset);
 	}
 
-    @Test(expected = NullPointerException.class)
-    public void testToImagePlusThrowsThrowsNPEifDatasetNull() throws Exception {
-        ImagePlusHelper.toImagePlus(IMAGE_J.convert(), null);
-    }
+	@Test(expected = NullPointerException.class)
+	public void testToImagePlusThrowsThrowsNPEifDatasetNull() throws Exception {
+		final ConvertService convertService = mock(ConvertService.class);
+
+		ImagePlusHelper.toImagePlus(convertService, null);
+	}
+
+	@Test
+	public void testToImagePlusOptionalEmptyIfCannotConvert() {
+		final Dataset dataset = mock(Dataset.class);
+		final ConvertService convertService = mock(ConvertService.class);
+		when(convertService.supports(dataset, ImagePlus.class)).thenReturn(false);
+
+		final Optional<ImagePlus> result = ImagePlusHelper.toImagePlus(convertService, dataset);
+
+		assertFalse("Optional should be empty", result.isPresent());
+	}
+
+	@Test
+	public void testToImagePlusOptionalPresentIfCanConvert() {
+		final Dataset dataset = mock(Dataset.class);
+		final ConvertService convertService = mock(ConvertService.class);
+		when(convertService.supports(dataset, ImagePlus.class)).thenReturn(true);
+		when(convertService.convert(dataset, ImagePlus.class)).thenReturn(new ImagePlus());
+
+		final Optional<ImagePlus> result = ImagePlusHelper.toImagePlus(convertService, dataset);
+
+		assertTrue("Optional should be present", result.isPresent());
+		assertEquals("Optional should contain an ImagePlus", result.get().getClass(), ImagePlus.class);
+	}
 }
