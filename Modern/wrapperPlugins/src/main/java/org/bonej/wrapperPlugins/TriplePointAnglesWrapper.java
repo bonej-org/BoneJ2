@@ -97,7 +97,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		}
 
 		try {
-			if (!ImagePlusHelper.isImagePlusCompatible(convertService, inputImage)) {
+			if (!convertService.supports(inputImage, ImagePlus.class)) {
 				cancel("Image cannot be skeletonised (incompatible with IJ1)");
 			}
 		} catch (NullPointerException npe) {

@@ -19,17 +19,19 @@ public class ImagePlusHelper {
 	private ImagePlusHelper() {
 	}
 
-	public static boolean isImagePlusCompatible(final ConvertService convertService, final Dataset dataset)
+	/**
+	 * Tries to convert the given Dataset into an ImagePlus
+	 *
+	 * @param convertService 	The convert service of the context
+	 * @return An Optional of ImagePlus, or empty if could not convert
+	 * @throws NullPointerException if convertService == null or dataset == null
+	 */
+	public static Optional<ImagePlus> toImagePlus(final ConvertService convertService, final Dataset dataset)
 			throws NullPointerException {
 		checkNotNull(convertService, "ConvertService is null");
 		checkNotNull(dataset, "Dataset is null");
 
-		return convertService.supports(dataset, ImagePlus.class);
-	}
-
-	public static Optional<ImagePlus> toImagePlus(final ConvertService convertService, final Dataset dataset)
-			throws NullPointerException {
-		if (!isImagePlusCompatible(convertService, dataset)) {
+		if (!convertService.supports(dataset, ImagePlus.class)) {
 			return Optional.empty();
 		}
 
