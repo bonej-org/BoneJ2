@@ -19,26 +19,6 @@ public class ImagePlusHelper {
 	private ImagePlusHelper() {
 	}
 
-	/**
-	 * This is a HACKy method to check if a dataset is a greyscale image.
-	 * Needed, because the Dataset class doesn't contain the necessary metadata
-	 * yet
-	 *
-	 * @throws NullPointerException
-	 *             if convertService == null or dataset == null
-	 * @param convertService
-	 *            The service needed to convert the Dataset
-	 * @param dataset
-	 *            The Dataset to inspect
-	 * @return true if an ImagePlus converted from the dataset has the type
-	 *         ImagePlus.GRAY8
-	 */
-	public static boolean is8BitGreyScale(final ConvertService convertService, final Dataset dataset)
-			throws NullPointerException {
-		final Optional<ImagePlus> imagePlus = toImagePlus(convertService, dataset);
-		return imagePlus.isPresent() && imagePlus.get().getType() == ImagePlus.GRAY8;
-	}
-
 	public static boolean isImagePlusCompatible(final ConvertService convertService, final Dataset dataset)
 			throws NullPointerException {
 		checkNotNull(convertService, "ConvertService is null");

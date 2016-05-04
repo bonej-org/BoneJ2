@@ -1,5 +1,6 @@
 package org.bonej.wrapperPlugins;
 
+import ij.IJ;
 import net.imagej.Dataset;
 import net.imagej.ImageJ;
 
@@ -58,6 +59,9 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
 		final ImagePlus skeleton = ImagePlusHelper.toImagePlus(convertService, inputImage).get();
 
+        // Skeletonize3D_ only accepts 8-bit greyscale images
+        IJ.run(skeleton, "8-bit", "");
+
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
 
@@ -79,6 +83,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		final ImageJ imageJ = net.imagej.Main.launch();
 	}
 
+    @SuppressWarnings("unused")
 	private void initializeImage() {
 		if (inputImage == null) {
 			cancel("No image open");
@@ -94,11 +99,6 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		try {
 			if (!ImagePlusHelper.isImagePlusCompatible(convertService, inputImage)) {
 				cancel("Image cannot be skeletonised (incompatible with IJ1)");
-				return;
-			}
-
-			if (!ImagePlusHelper.is8BitGreyScale(convertService, inputImage)) {
-				cancel("Need an 8-bit grayscale image");
 			}
 		} catch (NullPointerException npe) {
 			cancel("An unexpected error occurred when running Triple Point Angles (" + npe.getMessage() + ")");
@@ -106,6 +106,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		}
 	}
 
+    @SuppressWarnings("unused")
 	private void openHelpPage() {
 		Help.openHelpPage("http://bonej.org/triplepointangles", platformService, uiService, logService);
 	}
