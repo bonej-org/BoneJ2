@@ -1,28 +1,38 @@
 package org.bonej.utilities;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.space.AnnotatedSpace;
 
 /**
  * Various utility methods for inspecting image properties
  *
- * @author Richard Domander 
+ * @author Richard Domander
  */
 public class ImageCheck {
-    private ImageCheck() {}
+	private ImageCheck() {
+	}
 
-    public static <T extends AnnotatedSpace<CalibratedAxis>> long countSpatialDimensions(final T space) {
-        long spatialDimensions = 0;
+	/**
+	 * Counts the number of spatial dimensions in the given space
+	 * @throws NullPointerException if space == null
+	 */
+	public static <T extends AnnotatedSpace<CalibratedAxis>> long countSpatialDimensions(final T space)
+			throws NullPointerException {
+		checkNotNull(space, "Cannot count axes of a null space");
 
-        final CalibratedAxis[] axes = new CalibratedAxis[space.numDimensions()];
-        space.axes(axes);
+		long spatialDimensions = 0;
 
-        for (CalibratedAxis axis : axes) {
-            if (axis.type().isSpatial()) {
-                spatialDimensions++;
-            }
-        }
+		final CalibratedAxis[] axes = new CalibratedAxis[space.numDimensions()];
+		space.axes(axes);
 
-        return spatialDimensions;
-    }
+		for (CalibratedAxis axis : axes) {
+			if (axis.type().isSpatial()) {
+				spatialDimensions++;
+			}
+		}
+
+		return spatialDimensions;
+	}
 }
