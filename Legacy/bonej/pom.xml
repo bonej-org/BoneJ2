@@ -78,13 +78,6 @@
         <system>Jenkins</system>
     </ciManagement>
 
-    <repositories>
-        <repository>
-            <id>imagej.public</id>
-            <url>http://maven.imagej.net/content/groups/public</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <!-- BoneJ dependencies -->
         <dependency>
