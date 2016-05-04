@@ -78,14 +78,8 @@
         <system>Jenkins</system>
     </ciManagement>
 
-    <repositories>
-        <repository>
-            <id>imagej.public</id>
-            <url>http://maven.imagej.net/content/groups/public</url>
-        </repository>
-    </repositories>
-
     <dependencies>
+        <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej</artifactId>
@@ -103,21 +97,25 @@
             <artifactId>imagej-ops</artifactId>
         </dependency>
 
+        <!-- ImgLib2 dependencies -->
         <dependency>
             <groupId>net.imglib2</groupId>
             <artifactId>imglib2</artifactId>
         </dependency>
 
+        <!-- SciJava dependencies -->
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>scijava-common</artifactId>
         </dependency>
 
+        <!-- Other dependencies -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
 
+        <!-- Testing dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -130,4 +128,27 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseName>gpl_v3</licenseName>
+                    <organizationName>Michael Doube, BoneJ developers. See also individual class @authors.
+                    </organizationName>
+                    <projectName>BoneJ2: open source tools for trabecular geometry and whole bone shape analysis.
+                    </projectName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <finalName>BoneJ2Util</finalName>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

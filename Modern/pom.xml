@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>net.imagej</groupId>
-        <artifactId>pom-imagej</artifactId>
-        <version>15.5.0</version>
+        <groupId>sc.fiji</groupId>
+        <artifactId>pom-fiji</artifactId>
+        <version>22.3.0</version>
     </parent>
 
     <groupId>org.bonej</groupId>
@@ -86,7 +86,12 @@
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>wrapperPlugins</artifactId>
-                <version>0.1.0-SNAPSHOT</version>
+                <version>${wrapperPlugins.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bonej</groupId>
+                <artifactId>utilities</artifactId>
+                <version>${utilities.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -98,6 +103,8 @@
     <properties>
         <scijava.jvm.version>1.8</scijava.jvm.version>
         <javadoc.skip>true</javadoc.skip>
+        <wrapperPlugins.version>0.1.0-SNAPSHOT</wrapperPlugins.version>
+        <utilities.version>0.1.0-SNAPSHOT</utilities.version>
     </properties>
 
     <repositories>
