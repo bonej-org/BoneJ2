@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import javax.annotation.Nullable;
+
 import net.imagej.ImageJ;
 
 import org.scijava.command.Command;
@@ -17,41 +19,74 @@ import org.scijava.ui.UIService;
 /**
  * A plugin for opening the user documentation for BoneJ2
  *
- * @author Richard Domander 
+ * @author Richard Domander
  */
 @Plugin(type = Command.class, name = "BoneJ2Help", menuPath = "Help>About Plugins>BoneJ2")
 public class Help implements Command {
-    @Parameter
-    private LogService logService;
+	@Parameter
+	private LogService logService;
 
-    @Parameter
-    private PlatformService platformService;
+	@Parameter
+	private PlatformService platformService;
 
-    @Parameter
-    private UIService uiService;
+	@Parameter
+	private UIService uiService;
 
-    @Override public void run() {
-        openHelpPage("http://bonej.org/", platformService, uiService, logService);
-    }
+	@Override
+	public void run() {
+		openHelpPage("http://bonej.org/", platformService, uiService, logService);
+	}
 
-    public static void main(String... args) {
-        final ImageJ imageJ = net.imagej.Main.launch();
-        imageJ.command().run(Help.class, true);
-    }
+	public static void main(String... args) {
+		final ImageJ imageJ = net.imagej.Main.launch();
+		imageJ.command().run(Help.class, true);
+	}
 
-    public static void openHelpPage(String url, PlatformService platformService, UIService uiService,
-            LogService logService) {
-        try {
-            URL helpUrl = new URL(url);
-            platformService.open(helpUrl);
-        } catch (final MalformedURLException mue) {
-            uiService.showDialog("Help page could not be opened: invalid address",
-                                 DialogPrompt.MessageType.ERROR_MESSAGE);
-            logService.error(mue);
-        } catch (final IOException e) {
-            uiService.showDialog("An unexpected error occurred while trying to open the help page",
-                                 DialogPrompt.MessageType.ERROR_MESSAGE);
-            logService.error(e);
-        }
-    }
+	/**
+	 * Opens the given help page using the PlatformService
+	 *
+	 * @see PlatformService#open(URL)
+	 * @param url
+	 *            The address of the help page
+	 * @param platformService
+	 *            PlatformService of the context
+	 * @param uiService
+	 *            UIService to show potential error messages
+	 * @param logService
+	 *            LogService to log potential exceptions, e.g.
+	 *            MalformedURLException
+	 */
+	public static void openHelpPage(final String url, @Nullable final PlatformService platformService,
+			@Nullable final UIService uiService, @Nullable final LogService logService) {
+		if (platformService == null) {
+			showErrorSafely(uiService, "Help page could not be opened: no platform service");
+			if (logService != null) {
+				logService.error("Platform service is null");
+			}
+			return;
+		}
+
+		try {
+			URL helpUrl = new URL(url);
+			platformService.open(helpUrl);
+		} catch (final MalformedURLException mue) {
+			showErrorSafely(uiService, "Help page could not be opened: invalid address (" + url + ")");
+			if (logService != null) {
+				logService.error(mue);
+			}
+		} catch (final IOException e) {
+			showErrorSafely(uiService, "An unexpected error occurred while trying to open the help page");
+			if (logService != null) {
+				logService.error(e);
+			}
+		}
+	}
+
+	private static void showErrorSafely(@Nullable final UIService uiService, @Nullable final String message) {
+		if (uiService == null) {
+			return;
+		}
+
+		uiService.showDialog(message, DialogPrompt.MessageType.ERROR_MESSAGE);
+	}
 }

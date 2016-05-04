@@ -87,6 +87,13 @@
     </repositories>
 
     <dependencies>
+        <!-- BoneJ dependencies -->
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>utilities</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+
         <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
@@ -97,18 +104,15 @@
             <artifactId>ij</artifactId>
         </dependency>
         <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-common</artifactId>
+        </dependency>
+        <dependency>
             <!-- Needed for UI -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
-        </dependency>
-
-        <!-- BoneJ dependencies -->
-        <dependency>
-            <groupId>org.bonej</groupId>
-            <artifactId>utilities</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Fiji dependencies -->
@@ -127,6 +131,13 @@
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>scijava-common</artifactId>
+        </dependency>
+
+        <!-- Other dependencies -->
+        <dependency>
+            <groupId>net.sourceforge.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>1.3.7</version>
         </dependency>
 
         <!-- Testing dependencies -->
