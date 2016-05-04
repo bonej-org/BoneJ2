@@ -82,17 +82,17 @@
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>boneJ-legacy-plugins</artifactId>
-                <version>1.0.0</version>
+                <version>${legacy-plugins.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>bonej-legacy-pqct</artifactId>
-                <version>1.0.0</version>
+                <version>${legacy-pqct.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>bonej-legacy-util</artifactId>
-                <version>1.0.0</version>
+                <version>${legacy-util.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -104,6 +104,9 @@
     <properties>
         <scijava.jvm.version>1.8</scijava.jvm.version>
         <javadoc.skip>true</javadoc.skip>
+        <legacy-util.version>1.0.0-SNAPSHOT</legacy-util.version>
+        <legacy-plugins.version>1.0.0-SNAPSHOT</legacy-plugins.version>
+        <legacy-pqct.version>1.0.0-SNAPSHOT</legacy-pqct.version>
     </properties>
 
     <modules>
