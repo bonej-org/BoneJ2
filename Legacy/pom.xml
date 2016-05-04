@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>net.imagej</groupId>
-        <artifactId>pom-imagej</artifactId>
-        <version>15.5.0</version>
+        <groupId>sc.fiji</groupId>
+        <artifactId>pom-fiji</artifactId>
+        <version>22.3.0</version>
     </parent>
 
     <groupId>org.bonej</groupId>
