@@ -1,11 +1,9 @@
 package org.bonej.wrapperPlugins;
 
-import java.io.IOException;
-
 import net.imagej.Dataset;
 import net.imagej.ImageJ;
-
 import net.imagej.patcher.LegacyInjector;
+
 import org.bonej.utilities.ImageCheck;
 import org.bonej.utilities.ImagePlusHelper;
 import org.scijava.command.Command;
@@ -34,13 +32,13 @@ import ij.ImagePlus;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>TriplePointAngles")
 public class TriplePointAnglesWrapper extends ContextCommand {
-    static {
-        // NB: Needed if you mix-and-match IJ1 and IJ2 classes.
-        // And even then: do not use IJ1 classes in the API!
-        LegacyInjector.preinit();
-    }
+	static {
+		// NB: Needed if you mix-and-match IJ1 and IJ2 classes.
+		// And even then: do not use IJ1 classes in the API!
+		LegacyInjector.preinit();
+	}
 
-    /** @implNote Use Dataset because it has a conversion to ImagePlus */
+	/** @implNote Use Dataset because it has a conversion to ImagePlus */
 	@Parameter(initializer = "initializeImage")
 	private Dataset inputImage;
 
@@ -88,6 +86,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		if (graphs == null || graphs.length == 0) {
 			uiService.showDialog("Cannot calculate triple point angles: image contains no skeletons",
 					DialogPrompt.MessageType.ERROR_MESSAGE);
+			return;
 		}
 
 		if (showSkeleton) {

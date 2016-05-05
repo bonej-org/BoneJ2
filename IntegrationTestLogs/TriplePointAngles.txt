@@ -1,0 +1,127 @@
+Integration tests for the TriplePointAngles plugin
+
+Case 1
+=======================================================================
+User should see an error dialog when no images are open
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Close all images
+2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- 2016
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+User should see an error dialog if image cannot be skeletonised
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Create a new image (File>New>Image...)
+2. Type: "8-bit", Fill with: "Black", Slices: "1"
+3. Press OK
+4. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- 2016
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+User should see an error dialog if image is not 8-bit binary
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "clown.jpg" (File>Open Samples>Clown)
+2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- 2016
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+Results are displayed correctly
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+
+Expected result
+-----------------------------------------------------------------------
+Results table opens, columns have correct headings ("Skeleton #",
+"Triple point #", "α (rad)", "β (rad)", "γ (rad)"), no cell is "NaN"
+
+Completed -- -- 2016
+-----------------------------------------------------------------------
+
+
+Case 5
+=======================================================================
+Measurement mode options function
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+ 2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+ 3. Set "Measurement mode" to "Opposite vertex"
+ 4. Press "OK"
+ 5. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+ 6. Set "Measurement mode" to "Edge point"
+ 7. Set "Edge point" to 0
+ 8. Press "OK"
+9. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+10. Set "Edge point" to 10
+11. Press "OK"
+
+Expected result
+-----------------------------------------------------------------------
+Angle results from each three runs differ
+
+Completed -- -- 2016
+-----------------------------------------------------------------------
+
+
+Case 6
+=======================================================================
+Input image is skeletonised if necessary
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "mri-stack.tif" (File>Open Samples>MRI stack)
+2. Binarize the image (Process>Binary>Make binary)
+3. Press OK
+4. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+5. Press OK
+
+Expected result
+-----------------------------------------------------------------------
+An info dialog ("Image was skeletonised") and the skeletonised image
+open
+
+Completed -- -- 2016
+-----------------------------------------------------------------------
+
+
+Don't know how to test
+=======================================================================
+Show an error if input image does not have 2 or 3 spatial dimensions
+Show an error if input image cannot be converted into an ImagePlus
+Show an error if the help page cannot be opened
