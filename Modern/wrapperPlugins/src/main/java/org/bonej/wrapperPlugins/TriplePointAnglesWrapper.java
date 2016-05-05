@@ -5,6 +5,7 @@ import java.io.IOException;
 import net.imagej.Dataset;
 import net.imagej.ImageJ;
 
+import net.imagej.patcher.LegacyInjector;
 import org.bonej.utilities.ImageCheck;
 import org.bonej.utilities.ImagePlusHelper;
 import org.scijava.command.Command;
@@ -33,6 +34,13 @@ import ij.ImagePlus;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>TriplePointAngles")
 public class TriplePointAnglesWrapper extends ContextCommand {
+    static {
+        // NB: Needed if you mix-and-match IJ1 and IJ2 classes.
+        // And even then: do not use IJ1 classes in the API!
+        LegacyInjector.preinit();
+    }
+
+    /** @implNote Use Dataset because it has a conversion to ImagePlus */
 	@Parameter(initializer = "initializeImage")
 	private Dataset inputImage;
 
@@ -93,14 +101,6 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 
 	public static void main(String... args) {
 		final ImageJ imageJ = net.imagej.Main.launch();
-
-		try {
-			final Dataset dataset = imageJ.scifio().datasetIO().open("http://imagej.net/images/clown.jpg");
-			imageJ.ui().show(dataset);
-			imageJ.command().run(TriplePointAnglesWrapper.class, true);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	@SuppressWarnings("unused")
