@@ -6,7 +6,6 @@ import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 
 import org.bonej.utilities.ImageCheck;
-import org.bonej.utilities.ImagePlusHelper;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.convert.ConvertService;
@@ -68,7 +67,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 	public void run() {
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 		final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
-		final ImagePlus skeleton = ImagePlusHelper.toImagePlus(convertService, inputImage).get();
+		final ImagePlus skeleton = convertService.convert(inputImage, ImagePlus.class);
 
 		// TODO announce if image needed skeletonisation and show the skeleton
 		skeletoniser.setup("", skeleton);
@@ -112,13 +111,8 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 			return;
 		}
 
-		try {
-			if (!convertService.supports(inputImage, ImagePlus.class)) {
-				cancel("Image cannot be skeletonised (incompatible with IJ1)");
-			}
-		} catch (NullPointerException npe) {
-			cancel("An unexpected error occurred when running Triple Point Angles (" + npe.getMessage() + ")");
-			logService.error(npe);
+		if (!convertService.supports(inputImage, ImagePlus.class)) {
+			cancel("The image is incompatible with this plugin (cannot convert to ImagePlus)");
 		}
 	}
 
