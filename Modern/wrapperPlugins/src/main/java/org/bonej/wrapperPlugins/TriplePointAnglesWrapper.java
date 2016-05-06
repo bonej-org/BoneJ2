@@ -49,9 +49,6 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 	@Parameter(label = "Edge point #", min = "0", max = "100", stepSize = "1", description = "Ordinal of the edge point used for measuring", style = NumberWidget.SLIDER_STYLE, persist = false)
 	private int edgePoint = 0;
 
-	@Parameter(label = "Show skeleton", description = "Show the skeleton of the image")
-	private boolean showSkeleton = false;
-
 	@Parameter(label = "Help", callback = "openHelpPage")
 	private Button helpButton;
 
@@ -73,7 +70,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
 		final ImagePlus skeleton = ImagePlusHelper.toImagePlus(convertService, inputImage).get();
 
-        // TODO announce if image needed skeletonisation and show the skeleton
+		// TODO announce if image needed skeletonisation and show the skeleton
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
 
@@ -85,10 +82,6 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 			uiService.showDialog("Cannot calculate triple point angles: image contains no skeletons",
 					DialogPrompt.MessageType.ERROR_MESSAGE);
 			return;
-		}
-
-		if (showSkeleton) {
-			uiService.show(skeleton);
 		}
 
 		// TODO call Op
