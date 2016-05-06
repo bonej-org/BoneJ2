@@ -22,6 +22,10 @@
 package org.bonej.plugins;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Matchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import java.awt.Rectangle;
 
@@ -32,7 +36,12 @@ import org.junit.Test;
 import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
+import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(RoiManager.class)
 public class VolumeFractionTest {
 	private final ImagePlus rod = TestDataMaker.rod(256, 64);
 	private final ImagePlus sphere = TestDataMaker.sphere(64);
@@ -79,27 +88,40 @@ public class VolumeFractionTest {
 
 	@Test
 	public void testGetVolumesImagePlusDoubleDoubleBoolean() {
-		RoiManager roiMan = new RoiManager();
+		//Mock a RoiManager with a roi that covers a quarter of the rod
+		final RoiManager roiMan = mock(RoiManager.class);
 		int w = rod.getWidth();
-		roiMan.addRoi(new Roi(new Rectangle(0, 0, w / 2, w / 2)));
+		final Roi rodRoi = new Roi(0, 0, w / 2, w / 2);
+		rodRoi.setName(""); // mocking fails with a null name
+		when(roiMan.getRoisAsArray()).thenReturn(new Roi[]{rodRoi});
+		when(roiMan.getSliceNumber(anyString())).thenReturn(-1);
+		mockStatic(RoiManager.class);
+		when(RoiManager.getInstance()).thenReturn(roiMan);
+
 		double[] vols = vf.getVolumes(rod, 1, 255, true);
+
 		assertArrayEquals(quarterRod, vols, 0);
-		roiMan.close();
 
-		roiMan = new RoiManager();
+		//Mock a RoiManager with a roi that covers a quarter of the sphere
 		w = sphere.getWidth();
-		roiMan.addRoi(new Roi(new Rectangle(0, 0, w / 2, w / 2)));
-		vols = vf.getVolumes(sphere, 1, 255, true);
-		assertArrayEquals(quarterSphere, vols, 0);
-		roiMan.close();
+		final Roi sphereRoi = new Roi(0, 0, w / 2, w / 2);
+		sphereRoi.setName("");
+		when(roiMan.getRoisAsArray()).thenReturn(new Roi[]{sphereRoi});
 
-		roiMan = new RoiManager();
+		vols = vf.getVolumes(sphere, 1, 255, true);
+
+		assertArrayEquals(quarterSphere, vols, 0);
+
+		//Mock a RoiManager with a roi that covers a quarter of the brick
 		w = brick.getWidth();
 		final int h = brick.getHeight();
-		roiMan.addRoi(new Roi(new Rectangle(0, 0, w / 2, h / 2)));
+		final Roi brickRoi = new Roi(0, 0, w / 2, h / 2);
+		brickRoi.setName("");
+		when(roiMan.getRoisAsArray()).thenReturn(new Roi[]{brickRoi});
+
 		vols = vf.getVolumes(brick, 1, 255, true);
+
 		assertArrayEquals(quarterBrick, vols, 0);
-		roiMan.close();
 	}
 
 	// FIXME: out of memory error from command line
@@ -118,27 +140,40 @@ public class VolumeFractionTest {
 
 	@Test
 	public void testGetSurfaceVolumeImagePlusDoubleDoubleIntBooleanBoolean() {
-		RoiManager roiMan = new RoiManager();
+		//Mock a RoiManager with a roi that covers a quarter of the rod
+		final RoiManager roiMan = mock(RoiManager.class);
 		int w = rod.getWidth();
-		roiMan.addRoi(new Roi(new Rectangle(0, 0, w / 2, w / 2)));
+		final Roi rodRoi = new Roi(0, 0, w / 2, w / 2);
+		rodRoi.setName(""); // mocking fails with a null name
+		when(roiMan.getRoisAsArray()).thenReturn(new Roi[]{rodRoi});
+		when(roiMan.getSliceNumber(anyString())).thenReturn(-1);
+		mockStatic(RoiManager.class);
+		when(RoiManager.getInstance()).thenReturn(roiMan);
+
 		double[] vols = vf.getSurfaceVolume(rod, 1, 255, 1, true, false);
+
 		assertArrayEquals(quarterRod, vols, 500);
-		roiMan.close();
 
-		roiMan = new RoiManager();
+		//Mock a RoiManager with a roi that covers a quarter of the sphere
 		w = sphere.getWidth();
-		roiMan.addRoi(new Roi(new Rectangle(0, 0, w / 2, w / 2)));
-		vols = vf.getSurfaceVolume(sphere, 1, 255, 1, true, false);
-		assertArrayEquals(quarterSphere, vols, 300);
-		roiMan.close();
+		final Roi sphereRoi = new Roi(0, 0, w / 2, w / 2);
+		sphereRoi.setName("");
+		when(roiMan.getRoisAsArray()).thenReturn(new Roi[]{sphereRoi});
 
-		roiMan = new RoiManager();
+		vols = vf.getSurfaceVolume(sphere, 1, 255, 1, true, false);
+
+		assertArrayEquals(quarterSphere, vols, 300);
+
+		//Mock a RoiManager with a roi that covers a quarter of the brick
 		w = brick.getWidth();
 		final int h = brick.getHeight();
-		roiMan.addRoi(new Roi(new Rectangle(0, 0, w / 2, h / 2)));
+		final Roi brickRoi = new Roi(0, 0, w / 2, h / 2);
+		brickRoi.setName("");
+		when(roiMan.getRoisAsArray()).thenReturn(new Roi[]{brickRoi});
+
 		vols = vf.getSurfaceVolume(brick, 1, 255, 1, true, false);
+
 		assertArrayEquals(quarterBrick, vols, 200);
-		roiMan.close();
 	}
 
 }

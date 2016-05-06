@@ -35,7 +35,7 @@ public class AnisotropyTest {
 	@Test
 	public void testRunToStableResultIsotropy() {
 		final ImagePlus imp = TestDataMaker.binaryNoise(256, 256, 256, 0.25);
-		final Object[] result = anisotropy.runToStableResult(imp, 100, 2000, 50000, 256 / 4, 2.3, 0.005, true);
+		final Object[] result = anisotropy.runToStableResult(imp, 100, 2000, 50000, 256 / 4, 2.3, 0.005, false);
 		final double da = ((double[]) result[0])[0];
 		assertEquals(0, da, 1e-2);
 	}
@@ -43,7 +43,7 @@ public class AnisotropyTest {
 	@Test
 	public void testRunToStableResultAnisotropy() {
 		final ImagePlus imp = TestDataMaker.plates(256, 256, 256, 8);
-		final Object[] result = anisotropy.runToStableResult(imp, 100, 2000, 50000, 256 / 4, 2.3, 0.005, true);
+		final Object[] result = anisotropy.runToStableResult(imp, 100, 2000, 50000, 256 / 4, 2.3, 0.005, false);
 		final double da = ((double[]) result[0])[0];
 		assertEquals(1, da, 1e-12);
 	}
