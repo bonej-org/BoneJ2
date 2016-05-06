@@ -3,6 +3,7 @@ package org.bonej.wrapperPlugins;
 import net.imagej.Dataset;
 import net.imagej.ImageJ;
 import net.imagej.patcher.LegacyInjector;
+import net.imglib2.IterableInterval;
 
 import org.bonej.utilities.ImageCheck;
 import org.bonej.utilities.ImagePlusHelper;
@@ -22,7 +23,6 @@ import org.scijava.widget.NumberWidget;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Graph;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
-import ij.IJ;
 import ij.ImagePlus;
 
 /**
@@ -73,9 +73,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
 		final ImagePlus skeleton = ImagePlusHelper.toImagePlus(convertService, inputImage).get();
 
-		// Skeletonize3D_ only accepts 8-bit greyscale images
-		IJ.run(skeleton, "8-bit", "");
-
+        // TODO announce if image needed skeletonisation and show the skeleton
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
 
@@ -112,6 +110,12 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		final long spatialDimensions = ImageCheck.countSpatialDimensions(inputImage);
 		if (spatialDimensions < 2 || spatialDimensions > 3) {
 			cancel("Need a 2D or 3D image");
+			return;
+		}
+
+		IterableInterval interval = inputImage;
+		if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
+			cancel("Need an 8-bit binary image");
 			return;
 		}
 

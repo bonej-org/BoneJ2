@@ -92,10 +92,6 @@
             <groupId>net.imagej</groupId>
             <artifactId>ij</artifactId>
         </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>imagej-ops</artifactId>
-        </dependency>
 
         <!-- ImgLib2 dependencies -->
         <dependency>
