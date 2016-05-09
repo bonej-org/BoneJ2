@@ -8,7 +8,6 @@
         <groupId>org.bonej</groupId>
         <artifactId>pom-bonej2</artifactId>
         <version>0.1.0-SNAPSHOT</version>
-        <relativePath>..</relativePath>
     </parent>
 
     <artifactId>wrapperPlugins</artifactId>

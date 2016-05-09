@@ -84,25 +84,11 @@
             <groupId>net.imagej</groupId>
             <artifactId>imagej</artifactId>
         </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>imagej-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>ij</artifactId>
-        </dependency>
 
         <!-- ImgLib2 dependencies -->
         <dependency>
             <groupId>net.imglib2</groupId>
             <artifactId>imglib2</artifactId>
-        </dependency>
-
-        <!-- SciJava dependencies -->
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>scijava-common</artifactId>
         </dependency>
 
         <!-- Other dependencies -->
@@ -115,12 +101,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>2.0.9-beta</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
