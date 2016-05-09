@@ -5,17 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>sc.fiji</groupId>
-        <artifactId>pom-fiji</artifactId>
-        <version>22.3.0</version>
+        <artifactId>pom-bonej2</artifactId>
+        <groupId>org.bonej</groupId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.bonej</groupId>
-    <artifactId>pom-bonej2</artifactId>
+    <artifactId>ops</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
 
-    <description>Parent POM for BoneJ2</description>
+    <description>Ops created for BoneJ2</description>
 
     <developers>
         <developer>
@@ -76,68 +74,59 @@
         </developer>
     </developers>
 
-    <modules>
-        <module>wrapperPlugins</module>
-        <module>utilities</module>
-        <module>ops</module>
-    </modules>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.bonej</groupId>
-                <artifactId>wrapperPlugins</artifactId>
-                <version>${wrapperPlugins.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bonej</groupId>
-                <artifactId>utilities</artifactId>
-                <version>${utilities.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bonej</groupId>
-                <artifactId>ops</artifactId>
-                <version>${ops.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <ciManagement>
         <system>Jenkins</system>
     </ciManagement>
 
-    <properties>
-        <scijava.jvm.version>1.8</scijava.jvm.version>
-        <javadoc.skip>true</javadoc.skip>
-        <wrapperPlugins.version>0.1.0-SNAPSHOT</wrapperPlugins.version>
-        <utilities.version>0.1.0-SNAPSHOT</utilities.version>
-        <ops.version>0.1.0-SNAPSHOT</ops.version>
-    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
+        </dependency>
 
-    <repositories>
-        <repository>
-            <id>imagej.public</id>
-            <url>http://maven.imagej.net/content/groups/public</url>
-        </repository>
-    </repositories>
+        <dependency>
+            <groupId>sc.fiji</groupId>
+            <artifactId>AnalyzeSkeleton_</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>scijava-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>vecmath</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>sc.fiji</groupId>
+            <artifactId>Skeletonize3D_</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>ij</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
-            <!-- Set a compiler level -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-            <!-- Add enforcer -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-            <!-- Set license plugin -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
@@ -147,6 +136,13 @@
                     </organizationName>
                     <projectName>BoneJ2: open source tools for trabecular geometry and whole bone shape analysis.
                     </projectName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <finalName>BoneJ2DPL</finalName>
                 </configuration>
             </plugin>
         </plugins>
