@@ -83,7 +83,10 @@
         <dependency>
             <groupId>org.bonej</groupId>
             <artifactId>utilities</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>ops</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->
@@ -98,6 +101,10 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
         </dependency>
         <dependency>
             <!-- Needed for UI -->

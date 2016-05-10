@@ -1,5 +1,6 @@
 package org.bonej.ops;
 
+import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
@@ -39,13 +40,18 @@ import static java.util.stream.Collectors.toList;
 @Plugin(type = Op.class)
 public class TriplePointAngles
         extends
-        AbstractBinaryFunctionOp<Graph[], Integer, List<List<TriplePointAngles.TriplePoint>>> {
+        AbstractBinaryFunctionOp<Graph[], Integer, List<List<TriplePointAngles.TriplePoint>>> implements Contingent {
     /**
      * A special value for measurementPoint
      * @see #getMeasurementPoint(Vertex, Edge, int)
      */
     public static final int VERTEX_TO_VERTEX = -1;
     private UnaryFunctionOp<List<Vector3d>, Tuple3d> centroidOp;
+
+    @Override
+    public boolean conforms() {
+        return in2() >= VERTEX_TO_VERTEX;
+    }
 
     @Override
     public void initialize() {
@@ -230,7 +236,7 @@ public class TriplePointAngles
     /** A simple helper class to present the results of the Op */
     public static class TriplePoint {
         private final int graphNumber;
-        private final int vertexNumber;
+        private final int triplePointNumber;
         private final List<Double> angles;
 
         /**
@@ -239,14 +245,14 @@ public class TriplePointAngles
          * @throws NullPointerException if angles == null
          * @throws IllegalArgumentException if angles.size() != 3 || angles.get(i) == null
          */
-        public TriplePoint(final int graphNumber, final int vertexNumber, final List<Double> angles)
+        public TriplePoint(final int graphNumber, final int triplePointNumber, final List<Double> angles)
                 throws NullPointerException, IllegalArgumentException {
             checkNotNull(angles, "Angles list cannot be null");
             checkArgument(angles.size() == 3, "There must be three angles");
             checkArgument(angles.stream().allMatch(a -> a != null), "An angle must not be null");
 
             this.graphNumber = graphNumber;
-            this.vertexNumber = vertexNumber;
+            this.triplePointNumber = triplePointNumber;
             this.angles = angles;
         }
 
@@ -261,8 +267,8 @@ public class TriplePointAngles
         }
 
         /** Returns the number of the triple point in the graph */
-        public int getVertexNumber() {
-            return vertexNumber;
+        public int getTriplePointNumber() {
+            return triplePointNumber;
         }
     }
     // endregion

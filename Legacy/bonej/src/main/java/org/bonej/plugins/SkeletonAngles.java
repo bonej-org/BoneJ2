@@ -39,6 +39,8 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.plugin.PlugIn;
 
+/** @deprecated Replaced by TriplePointAngles in BoneJ2 */
+@Deprecated
 public class SkeletonAngles implements PlugIn {
 	/** Measure angles between vertices */
 	public static final int VERTEX_TO_VERTEX = -1;
