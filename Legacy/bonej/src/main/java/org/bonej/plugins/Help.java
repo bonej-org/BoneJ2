@@ -34,6 +34,8 @@ import javax.swing.event.HyperlinkListener;
 import ij.plugin.BrowserLauncher;
 import ij.plugin.PlugIn;
 
+/** @deprecated Replaced by Help in BoneJ2 */
+@Deprecated
 public class Help implements PlugIn {
 
 	/**

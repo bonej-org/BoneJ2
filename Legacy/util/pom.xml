@@ -60,6 +60,16 @@
         </dependency>
     </dependencies>
 
+    <scm>
+        <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
+        <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/bonej-org/BoneJ2</url>
+    </scm>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/bonej-org/BoneJ2/issues</url>
+    </issueManagement>
     <ciManagement>
         <system>Jenkins</system>
     </ciManagement>

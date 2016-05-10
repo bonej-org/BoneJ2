@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.bonej</groupId>
-        <artifactId>bonej-legacy</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <artifactId>pom-bonej2</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>bonej-legacy-pqct</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>wrapperPlugins</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
 
-    <description>BoneJ1 distribution of PQCT plugin</description>
+    <description>ImageJ2 plugins that populate the menus and handle user interaction for BoneJ2</description>
 
     <developers>
         <developer>
@@ -31,19 +32,6 @@
                 <role>maintainer</role>
             </roles>
             <timezone>+0</timezone>
-        </developer>
-        <developer>
-            <id>tjrantal</id>
-            <name>Timo Rantalainen</name>
-            <email>t.rantalainen@deakin.edu.au</email>
-            <organization>Deakin University IPAN</organization>
-            <organizationUrl>www.deakin.edu.au</organizationUrl>
-            <roles>
-                <role>developer</role>
-                <role>debugger</role>
-                <role>maintainer</role>
-            </roles>
-            <timezone>+10</timezone>
         </developer>
         <developer>
             <id>rimadoma</id>
@@ -104,13 +92,80 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>boneJ-legacy-plugins</artifactId>
+            <artifactId>utilities</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>ops</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
+            <artifactId>imagej</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
             <artifactId>ij</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Needed for UI -->
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-legacy</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>ij1-patcher</artifactId>
+        </dependency>
+
+        <!-- Fiji dependencies -->
+        <dependency>
+            <groupId>sc.fiji</groupId>
+            <artifactId>AnalyzeSkeleton_</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>sc.fiji</groupId>
+            <artifactId>Skeletonize3D_</artifactId>
+        </dependency>
+
+        <!-- SciJava dependencies -->
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>scijava-common</artifactId>
+        </dependency>
+
+        <!-- Other dependencies -->
+        <dependency>
+            <groupId>net.imglib2</groupId>
+            <artifactId>imglib2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>1.3.7</version>
+        </dependency>
+
+        <!-- Testing dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.0.9-beta</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -121,15 +176,17 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <licenseName>gpl_v3</licenseName>
-                    <organizationName>Michael Doube, BoneJ developers</organizationName>
-                    <projectName>PQCT: ImageJ density distribution analysis plugin</projectName>
+                    <organizationName>Michael Doube, BoneJ developers. See also individual class @authors.
+                    </organizationName>
+                    <projectName>BoneJ2: open source tools for trabecular geometry and whole bone shape analysis.
+                    </projectName>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <finalName>bonejLegacyPQCT_</finalName>
+                    <finalName>BoneJ2DPL</finalName>
                 </configuration>
             </plugin>
         </plugins>
