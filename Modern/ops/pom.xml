@@ -74,21 +74,34 @@
         </developer>
     </developers>
 
+    <scm>
+        <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
+        <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/bonej-org/BoneJ2</url>
+    </scm>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/bonej-org/BoneJ2/issues</url>
+    </issueManagement>
     <ciManagement>
         <system>Jenkins</system>
     </ciManagement>
 
     <dependencies>
+        <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
         </dependency>
 
+        <!-- Fiji dependencies -->
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
         </dependency>
 
+        <!-- Scijava dependencies -->
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>scijava-common</artifactId>
@@ -98,11 +111,13 @@
             <artifactId>vecmath</artifactId>
         </dependency>
 
+        <!-- Other dependencies -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
 
+        <!-- Testing dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
