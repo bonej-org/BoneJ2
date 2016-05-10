@@ -83,6 +83,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
         /* TODO apply when Skeletonize3D_ 2.0.1 comes out
         final int iterations = skeletoniser.getThinningIterations();
         if (iterations > 1) {
+            skeleton.show();
             uiService.showDialog("The image was skeletonised", DialogPrompt.MessageType.INFORMATION_MESSAGE);
         }
         */
