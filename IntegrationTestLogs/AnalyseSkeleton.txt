@@ -1,0 +1,77 @@
+Integration tests for the AnalyseSkeleton plugin
+
+Case 1
+=======================================================================
+User should see an error dialog when no images are open
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Close all images
+2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Case 2
+=======================================================================
+User should see an error dialog if image is not 8-bit binary
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "blobs.gif" (File>Open Samples>Blobs)
+2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Case 3
+=======================================================================
+User should see an info dialog if image contains no skeletons
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Create a new image (File>New>Image...)
+2. Type: "8-bit", Fill with: "Black", Slices: "1"
+3. Click "OK"
+4. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+5. Click "OK"
+
+
+Expected result
+-----------------------------------------------------------------------
+The plugin should run and display an info dialog
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Case 4
+=======================================================================
+Results are displayed correctly
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Skeletonise image (Plugins>BoneJ>Skeletonise)
+2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+3. Click "OK"
+
+Expected result
+-----------------------------------------------------------------------
+Setup dialog opens, plugin runs successfully, and results table opens
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Don't know how to test
+=======================================================================
+Show an error if input image does not have 2 or 3 spatial dimensions
+Show an error if input image cannot be converted into an ImagePlus

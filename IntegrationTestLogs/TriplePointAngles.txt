@@ -19,7 +19,7 @@ Completed May 10 2016 Richard Domander
 
 Case 2
 =======================================================================
-User should see an error dialog if image cannot be skeletonised
+User should see an error dialog if image contains no skeletons
 =======================================================================
 Steps
 -----------------------------------------------------------------------
