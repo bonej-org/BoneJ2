@@ -2,7 +2,6 @@ package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
 import net.imagej.Dataset;
-import net.imagej.Main;
 import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 import org.bonej.utilities.ImageCheck;
