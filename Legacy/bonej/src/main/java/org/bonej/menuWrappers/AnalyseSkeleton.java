@@ -16,7 +16,9 @@ import ij.plugin.PlugIn;
  *
  * @author Michael Doube
  * @author Richard Domander
+ * @deprecated Replaced by Replaced by AnalyseSkeletonWrapper in BoneJ2
  */
+@Deprecated
 public class AnalyseSkeleton implements PlugIn {
 	private final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
 
