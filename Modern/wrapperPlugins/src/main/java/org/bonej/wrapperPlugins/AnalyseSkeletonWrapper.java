@@ -1,7 +1,9 @@
 package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
+import ij.ImageStack;
 import net.imagej.Dataset;
+import net.imagej.Main;
 import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 import org.bonej.utilities.ImageCheck;
@@ -46,9 +48,11 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
         skeletonAnalyser.setup("", imagePlus);
         skeletonAnalyser.run(null);
         final Graph[] graphs = skeletonAnalyser.getGraphs();
+        // Get resultImage to check that the plugin actually ran, and wasn't cancelled by the user
+        final ImageStack resultImage = skeletonAnalyser.getResultImage(false);
 
-        if (graphs == null || graphs.length == 0) {
-            uiService.showDialog(NO_SKELETONS, DialogPrompt.MessageType.WARNING_MESSAGE);
+        if ((graphs == null || graphs.length == 0) && resultImage != null) {
+            uiService.showDialog(NO_SKELETONS, DialogPrompt.MessageType.INFORMATION_MESSAGE);
         }
     }
 
