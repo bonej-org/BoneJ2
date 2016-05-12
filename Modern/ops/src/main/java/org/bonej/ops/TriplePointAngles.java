@@ -72,18 +72,19 @@ public class TriplePointAngles
     @Override
     public List<List<TriplePoint>> compute2(final Graph[] graphs, final Integer measurementPoint) {
         final List<List<TriplePoint>> skeletons = new ArrayList<>();
+        int graphNumber = 1;
 
-        for (int g = 0; g < graphs.length; g++) {
-            Graph graph = graphs[g];
-            final List<Vertex> vertices = graph.getVertices().stream().filter(this::isTriplePoint)
-                    .collect(toList());
+        for (Graph graph : graphs) {
+            int triplePointNumber = 1;
+            final List<Vertex> vertices = graph.getVertices().stream().filter(this::isTriplePoint).collect(toList());
             final List<TriplePoint> triplePoints = new ArrayList<>(vertices.size());
-            for (int v = 0; v < vertices.size(); v++) {
-                final Vertex vertex = vertices.get(v);
+            for (final Vertex vertex : vertices) {
                 List<Double> angles = triplePointAngles(vertex, measurementPoint);
-                triplePoints.add(new TriplePoint(g, v, angles));
+                triplePoints.add(new TriplePoint(graphNumber, triplePointNumber, angles));
+                triplePointNumber++;
             }
             skeletons.add(triplePoints);
+            graphNumber++;
         }
 
         return skeletons;
