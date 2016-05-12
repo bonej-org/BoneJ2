@@ -54,7 +54,7 @@ Expected result
 -----------------------------------------------------------------------
 Plugin produces an image of a skeleton correctly
 
-Failed May 12 2016 Richard Domander (step 8)
+Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
 Don't know how to test

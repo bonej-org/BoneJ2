@@ -4,6 +4,7 @@ import ij.ImagePlus;
 import net.imagej.Dataset;
 import net.imagej.DatasetService;
 import net.imagej.ImgPlus;
+import net.imagej.Main;
 import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 import net.imglib2.img.ImagePlusAdapter;
@@ -50,7 +51,7 @@ public class SkeletoniseWrapper extends ContextCommand {
     @Override
     public void run() {
         final String inputImageName = inputImage.getName();
-        final ImagePlus skeleton = convertService.convert(inputImage, ImagePlus.class);
+        final ImagePlus skeleton = convertService.convert(inputImage.duplicate(), ImagePlus.class);
         final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 
         skeletoniser.setup("", skeleton);
@@ -84,5 +85,9 @@ public class SkeletoniseWrapper extends ContextCommand {
         if (!convertService.supports(inputImage, ImagePlus.class)) {
             cancel(CANNOT_CONVERT_TO_IMAGE_PLUS);
         }
+    }
+
+    public static void main(String... args) {
+        Main.launch(args);
     }
 }
