@@ -13,7 +13,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed -- -- ---- - -
+Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
 Case 2
@@ -29,7 +29,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed -- -- ---- - -
+Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
 Case 3
@@ -43,17 +43,18 @@ Steps
     2.1 Set "Distance in pixels" to "1"
     2.2 Set "Known distance" to "1"
     2.3 Set "Unit of length" to "mm"
-3. Run Skeletonise (Plugins>BoneJ>Skeletonise)
-4. Verify that an output image opens
-5. Verify that it's title is "Skeleton of bat-cochlea-volume.tif"
-6. Verify that the output image has the same calibration than the input
-7. Verify that input image remained the same
+3. Press "OK"
+4. Run Skeletonise (Plugins>BoneJ>Skeletonise)
+5. Verify that an output image opens
+6. Verify that it's title is "Skeleton of bat-cochlea-volume.tif"
+7. Verify that the output image has the same calibration than the input
+8. Verify that input image remained the same
 
 Expected result
 -----------------------------------------------------------------------
 Plugin produces an image of a skeleton correctly
 
-Completed -- -- ---- - -
+Failed May 12 2016 Richard Domander (step 8)
 -----------------------------------------------------------------------
 
 Don't know how to test
