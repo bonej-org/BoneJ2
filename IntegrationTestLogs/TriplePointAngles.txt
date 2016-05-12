@@ -100,7 +100,7 @@ Angle results from each three runs differ
 Completed May 10 2016 Richard Domander
 -----------------------------------------------------------------------
 
-
+//TODO: Perform when Skeletonize3D_ 2.0.1 comes out
 Case 6
 =======================================================================
 Input image is skeletonised if necessary
@@ -121,6 +121,29 @@ open
 Completed -- -- 2016
 -----------------------------------------------------------------------
 
+Case 7
+=======================================================================
+Verify that correct settings persist
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+3. Set options:
+    - Measurement mode: "Edge point"
+    - Edge point #: "10"
+4. Press "OK"
+5. Close ImageJ and repeat steps 1 & 2
+6. Verify that:
+    - Measurement mode persists
+    - Edge point resets to "0"
+
+Expected result
+-----------------------------------------------------------------------
+Options persist and reset as expected
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
 
 Don't know how to test
 =======================================================================

@@ -1,0 +1,63 @@
+Integration tests for the Skeletonise plugin
+
+Case 1
+=======================================================================
+User should see an error dialog when no images are open
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Close all images
+2. Run Skeletonise (Plugins>BoneJ>Skeletonise)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Case 2
+=======================================================================
+User should see an error dialog if image is not 8-bit binary
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "blobs.gif" (File>Open Samples>Blobs)
+2. Run Skeletonise (Plugins>BoneJ>Skeletonise)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Case 3
+=======================================================================
+Skeletonise produces an image of the skeleton
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Calibrate image (Analyze>Set Scale)
+    2.1 Set "Distance in pixels" to "1"
+    2.2 Set "Known distance" to "1"
+    2.3 Set "Unit of length" to "mm"
+3. Run Skeletonise (Plugins>BoneJ>Skeletonise)
+4. Verify that an output image opens
+5. Verify that it's title is "Skeleton of bat-cochlea-volume.tif"
+6. Verify that the output image has the same calibration than the input
+7. Verify that input image remained the same
+
+Expected result
+-----------------------------------------------------------------------
+Plugin produces an image of a skeleton correctly
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Don't know how to test
+=======================================================================
+Show an error if input image does not have 2 or 3 spatial dimensions
+Show an error if input image cannot be converted into an ImagePlus
+

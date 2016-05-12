@@ -25,7 +25,6 @@ Steps
 1. Open "blobs.gif" (File>Open Samples>Blobs)
 2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
 
-
 Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
@@ -67,6 +66,49 @@ Steps
 Expected result
 -----------------------------------------------------------------------
 Setup dialog opens, plugin runs successfully, and results table opens
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Case 4
+=======================================================================
+Results are displayed correctly
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Skeletonise image (Plugins>BoneJ>Skeletonise)
+2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+3. Click "OK"
+
+Expected result
+-----------------------------------------------------------------------
+Setup dialog opens, plugin runs successfully, and results table opens
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+Case 5
+=======================================================================
+Verify that settings persist
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+3. Set options:
+    - Prune cycle method: shortest branch
+    - Prune ends: check
+    - Calculate largest shortest path: check
+    - Show detailed info: check
+    - Display labeled skeletons: check
+4. Press "OK"
+5. Close ImageJ and repeat steps 1 & 2
+6. Verify that the options above have not changed
+
+Expected result
+-----------------------------------------------------------------------
+Settings persist between runs
 
 Completed -- -- ---- - -
 -----------------------------------------------------------------------
