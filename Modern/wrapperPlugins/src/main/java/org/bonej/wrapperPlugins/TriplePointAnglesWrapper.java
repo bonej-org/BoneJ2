@@ -34,7 +34,7 @@ import static org.bonej.wrapperPlugins.ErrorMessages.*;
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>TriplePointAngles")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Triple Point Angles")
 public class TriplePointAnglesWrapper extends ContextCommand {
     static {
         // NB: Needed if you mix-and-match IJ1 and IJ2 classes.
