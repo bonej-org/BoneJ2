@@ -56,7 +56,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
             persist = false)
     private int edgePoint = 0;
 
-    @Parameter(label = "Help", callback = "openHelpPage")
+    @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
     private Button helpButton;
 
     @Parameter
