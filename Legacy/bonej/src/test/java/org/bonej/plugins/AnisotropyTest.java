@@ -24,6 +24,7 @@ package org.bonej.plugins;
 import static org.junit.Assert.assertEquals;
 
 import org.bonej.geometry.TestDataMaker;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import ij.ImagePlus;
@@ -32,6 +33,7 @@ public class AnisotropyTest {
 
 	private final Anisotropy anisotropy = new Anisotropy();
 
+	//FIXME Rewrite tests without random data?
 	@Test
 	public void testRunToStableResultIsotropy() {
 		final ImagePlus imp = TestDataMaker.binaryNoise(256, 256, 256, 0.25);
@@ -48,6 +50,9 @@ public class AnisotropyTest {
 		assertEquals(1, da, 1e-12);
 	}
 
+	//FIXME In rare cases delta > 0.01 which leads to test failure
+	//FIXME Rewrite tests without random data?
+	@Ignore
 	@Test
 	public void testCalculateSingleSphereIsotropy() {
 		final ImagePlus imp = TestDataMaker.binaryNoise(256, 256, 256, 0.25);
