@@ -27,12 +27,14 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 import java.util.List;
 
+import static org.bonej.wrapperPlugins.ErrorMessages.*;
+
 /**
  * A wrapper UI class for the TriplePointAngles Op
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>TriplePointAngles")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Triple Point Angles")
 public class TriplePointAnglesWrapper extends ContextCommand {
     static {
         // NB: Needed if you mix-and-match IJ1 and IJ2 classes.
@@ -54,7 +56,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
             persist = false)
     private int edgePoint = 0;
 
-    @Parameter(label = "Help", callback = "openHelpPage")
+    @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
     private Button helpButton;
 
     @Parameter
@@ -96,7 +98,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 
         if (graphs == null || graphs.length == 0) {
             uiService.showDialog(
-                    "Cannot calculate triple point angles: image contains no skeletons",
+                    "Can't calculate triple point angles: " + NO_SKELETONS,
                     DialogPrompt.MessageType.ERROR_MESSAGE);
             return;
         }
@@ -135,24 +137,24 @@ public class TriplePointAnglesWrapper extends ContextCommand {
     @SuppressWarnings("unused")
     private void initializeImage() {
         if (inputImage == null) {
-            cancel("No image open");
+            cancel(NO_IMAGE_OPEN);
             return;
         }
 
         final long spatialDimensions = ImageCheck.countSpatialDimensions(inputImage);
         if (spatialDimensions < 2 || spatialDimensions > 3) {
-            cancel("Need a 2D or 3D image");
+            cancel(NOT_2D_OR_3D_IMAGE);
             return;
         }
 
         IterableInterval interval = inputImage;
         if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
-            cancel("Need an 8-bit binary image");
+            cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
         }
 
         if (!convertService.supports(inputImage, ImagePlus.class)) {
-            cancel("The image is incompatible with this plugin (cannot convert to ImagePlus)");
+            cancel(CANNOT_CONVERT_TO_IMAGE_PLUS);
         }
     }
 

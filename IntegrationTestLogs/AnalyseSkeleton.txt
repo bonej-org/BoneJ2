@@ -1,4 +1,4 @@
-Integration tests for the TriplePointAngles plugin
+Integration tests for the AnalyseSkeleton plugin
 
 
 Case 1
@@ -8,52 +8,50 @@ User should see an error dialog when no images are open
 Steps
 -----------------------------------------------------------------------
 1. Close all images
-2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
 
 Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 10 2016 Richard Domander
+Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
 Case 2
 =======================================================================
-User should see an error dialog if image contains no skeletons
+User should see an error dialog if image is not 8-bit binary
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "blobs.gif" (File>Open Samples>Blobs)
+2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed May 12 2016 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+User should see an info dialog if image contains no skeletons
 =======================================================================
 Steps
 -----------------------------------------------------------------------
 1. Create a new image (File>New>Image...)
 2. Type: "8-bit", Fill with: "Black", Slices: "1"
 3. Click "OK"
-4. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+4. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
 5. Click "OK"
 
-
 Expected result
 -----------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
+The plugin should run and display an info dialog
 
-Completed May 10 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 3
-=======================================================================
-User should see an error dialog if image is not 8-bit binary
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "clown.jpg" (File>Open Samples>Clown)
-2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
-
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-
-Completed May 10 2016 Richard Domander
+Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -64,62 +62,78 @@ Results are displayed correctly
 Steps
 -----------------------------------------------------------------------
 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
-3. Click "OK"
+2. Skeletonise image (Plugins>BoneJ>Skeletonise)
+3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+4. Click "OK"
 
 Expected result
 -----------------------------------------------------------------------
-Results table opens, columns have correct headings ("Skeleton #",
-"Triple point #", "α (rad)", "β (rad)", "γ (rad)"), no cell is "NaN"
+Setup dialog opens, plugin runs successfully, and results table opens
 
-Completed May 10 2016 Richard Domander
+Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
 Case 5
 =======================================================================
-Measurement mode options function
+Verify that settings persist
 =======================================================================
 Steps
 -----------------------------------------------------------------------
- 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
- 2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
- 3. Set "Measurement mode" to "Opposite vertex"
- 4. Click "OK"
- 5. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
- 6. Set "Measurement mode" to "Edge point"
- 7. Set "Edge point" to 0
- 8. Click "OK"
-9. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
-10. Set "Edge point" to 10
-11. Click "OK"
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Skeletonise image (Plugins>BoneJ>Skeletonise)
+3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+4. Set options:
+    - Prune cycle method: shortest branch
+    - Prune ends: check
+    - Calculate largest shortest path: check
+    - Show detailed info: check
+    - Display labeled skeletons: check
+5. Press "OK"
+6. Close ImageJ and repeat steps 1 - 3
+7. Verify that the options above have not changed
 
 Expected result
 -----------------------------------------------------------------------
-Angle results from each three runs differ
+Settings persist between runs
 
-Completed May 10 2016 Richard Domander
+Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
-//TODO: Perform when Skeletonize3D_ 2.0.1 comes out
+
 Case 6
 =======================================================================
-Input image is skeletonised if necessary
+Verify that settings don't change if user cancels plugin
 =======================================================================
+Prerequisites
+-----------------------------------------------------------------------
+Complete case 5
+
 Steps
 -----------------------------------------------------------------------
-1. Open "mri-stack.tif" (File>Open Samples>MRI stack)
-2. Binarize the image (Process>Binary>Make binary)
-3. Click "OK"
-4. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
-5. Click "OK"
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Skeletonise image (Plugins>BoneJ>Skeletonise)
+3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+4. Set options:
+    - Prune cycle method: none
+    - Prune ends: unchecked
+    - Calculate largest shortest path: unchecked
+    - Show detailed info: unchecked
+    - Display labeled skeletons: unchecked
+5. Press "Cancel"
+6. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+7. Verify that the options have reset to:
+    - Prune cycle method: shortest branch
+    - Prune ends: check
+    - Calculate largest shortest path: check
+    - Show detailed info: check
+    - Display labeled skeletons: check
 
 Expected result
 -----------------------------------------------------------------------
-An info dialog ("Image was skeletonised") and the skeletonised image
-open
+Settings don't persist if dialog is cancelled
 
-Completed -- -- 2016
+Completed May 13 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -127,4 +141,3 @@ Don't know how to test
 =======================================================================
 Show an error if input image does not have 2 or 3 spatial dimensions
 Show an error if input image cannot be converted into an ImagePlus
-Show an error if the help page cannot be opened

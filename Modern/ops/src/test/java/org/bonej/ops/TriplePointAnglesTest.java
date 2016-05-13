@@ -65,13 +65,14 @@ public class TriplePointAnglesTest {
         assertEquals("Wrong number of skeletons (graphs)", 1, graphs.size());
         final List<TriplePoint> triplePoints = graphs.get(0);
         assertEquals("Wrong number of triple points", 8, triplePoints.size());
-        for (int t = 0; t < triplePoints.size(); t++) {
-            final TriplePoint triplePoint = triplePoints.get(t);
-            assertEquals("A triple point has wrong graph number", 0, triplePoint.getGraphNumber());
-            assertEquals("A triple point has the wrong number", t, triplePoint.getTriplePointNumber());
+        int triplePointNumber = 1;
+        for (final TriplePoint triplePoint : triplePoints) {
+            assertEquals("A triple point has wrong graph number", 1, triplePoint.getGraphNumber());
+            assertEquals("A triple point has the wrong number", triplePointNumber, triplePoint.getTriplePointNumber());
             final List<Double> angles = triplePoint.getAngles();
             assertEquals("Wrong number of angles", angles.size(), 3);
             angles.forEach(a -> assertEquals("Triple point angle should be a right angle", HALF_PI, a, 1e-12));
+            triplePointNumber++;
         }
     }
 
@@ -85,13 +86,14 @@ public class TriplePointAnglesTest {
         assertEquals("Wrong number of skeletons (graphs)", 1, graphs.size());
         final List<TriplePoint> triplePoints = graphs.get(0);
         assertEquals("Wrong number of triple points", 8, triplePoints.size());
-        for (int t = 0; t < triplePoints.size(); t++) {
-            final TriplePoint triplePoint = triplePoints.get(t);
-            assertEquals("A triple point has wrong graph number", 0, triplePoint.getGraphNumber());
-            assertEquals("A triple point has the wrong number", t, triplePoint.getTriplePointNumber());
+        int triplePointNumber = 1;
+        for (final TriplePoint triplePoint : triplePoints) {
+            assertEquals("A triple point has wrong graph number", 1, triplePoint.getGraphNumber());
+            assertEquals("A triple point has the wrong number", triplePointNumber, triplePoint.getTriplePointNumber());
             final List<Double> angles = triplePoint.getAngles();
             assertEquals("Wrong number of angles", angles.size(), 3);
             angles.forEach(a -> assertEquals("Triple point angle should be a right angle", HALF_PI, a, 1e-12));
+            triplePointNumber++;
         }
     }
 

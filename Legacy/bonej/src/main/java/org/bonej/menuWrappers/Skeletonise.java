@@ -18,10 +18,9 @@ import ij.plugin.PlugIn;
  *
  * @author Michael Doube
  * @author Richard Domander
- * @todo Discuss if plugin should overwrite input, like all the others do
- * @todo What should this plugin be called in the menu? Valid for 2D and 3D
- *       images...
+ * @deprecated Replaced by Replaced by SkeletoniseWrapper in BoneJ2
  */
+@Deprecated
 public class Skeletonise implements PlugIn {
 	private final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 
