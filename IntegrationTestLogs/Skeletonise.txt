@@ -1,5 +1,6 @@
 Integration tests for the Skeletonise plugin
 
+
 Case 1
 =======================================================================
 User should see an error dialog when no images are open
@@ -16,6 +17,7 @@ An error dialog should open, and the plugin stop running
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
+
 Case 2
 =======================================================================
 User should see an error dialog if image is not 8-bit binary
@@ -31,6 +33,7 @@ An error dialog should open, and the plugin stop running
 
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
+
 
 Case 3
 =======================================================================
@@ -56,6 +59,7 @@ Plugin produces an image of a skeleton correctly
 
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
+
 
 Don't know how to test
 =======================================================================

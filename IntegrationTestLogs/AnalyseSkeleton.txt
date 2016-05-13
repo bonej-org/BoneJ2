@@ -1,5 +1,6 @@
 Integration tests for the AnalyseSkeleton plugin
 
+
 Case 1
 =======================================================================
 User should see an error dialog when no images are open
@@ -15,6 +16,7 @@ An error dialog should open, and the plugin stop running
 
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
+
 
 Case 2
 =======================================================================
@@ -32,6 +34,7 @@ An error dialog should open, and the plugin stop running
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
 
+
 Case 3
 =======================================================================
 User should see an info dialog if image contains no skeletons
@@ -44,13 +47,13 @@ Steps
 4. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
 5. Click "OK"
 
-
 Expected result
 -----------------------------------------------------------------------
 The plugin should run and display an info dialog
 
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
+
 
 Case 4
 =======================================================================
@@ -69,6 +72,7 @@ Setup dialog opens, plugin runs successfully, and results table opens
 
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
+
 
 Case 5
 =======================================================================
@@ -95,6 +99,43 @@ Settings persist between runs
 
 Completed May 12 2016 Richard Domander
 -----------------------------------------------------------------------
+
+
+Case 6
+=======================================================================
+Verify that settings don't change if user cancels plugin
+=======================================================================
+Prerequisites
+-----------------------------------------------------------------------
+Complete case 5
+
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Skeletonise image (Plugins>BoneJ>Skeletonise)
+3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+4. Set options:
+    - Prune cycle method: none
+    - Prune ends: unchecked
+    - Calculate largest shortest path: unchecked
+    - Show detailed info: unchecked
+    - Display labeled skeletons: unchecked
+5. Press "Cancel"
+6. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+7. Verify that the options have reset to:
+    - Prune cycle method: shortest branch
+    - Prune ends: check
+    - Calculate largest shortest path: check
+    - Show detailed info: check
+    - Display labeled skeletons: check
+
+Expected result
+-----------------------------------------------------------------------
+Settings don't persist if dialog is cancelled
+
+Completed May 13 2016 Richard Domander
+-----------------------------------------------------------------------
+
 
 Don't know how to test
 =======================================================================
