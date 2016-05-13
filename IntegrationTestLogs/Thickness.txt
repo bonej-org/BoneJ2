@@ -1,0 +1,100 @@
+Integration tests for the Thickness plugin
+
+
+Case 1
+=======================================================================
+User should see an error dialog when no images are open
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Close all images
+2. Run Analyse Skeleton (Plugins>BoneJ>Thickness)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+User should see an error dialog if image is not 8-bit binary colour
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "mri-stack.tif" (File>Open Samples>MRI Stack)
+2. Run Thickness (Plugins>BoneJ>Thickness)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+User should see an error dialog if image is not 3D
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "blobs.gif" (File>Open Samples>Blobs)
+2. Binarise image (Process>Binary>Make Binary)
+3. Run Thickness (Plugins>BoneJ>Thickness)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+User should see a warning dialog if image elements are not isotropic
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Set scale (Analyze>Set Scale)
+3. Set "Pixel aspect ratio" to "0.5" and click "OK"
+4. Run Thickness (Plugins>BoneJ>Thickness)
+5. Click "OK"
+6. Verify that warning dialog opens and click "Cancel"
+7. Run Thickness (Plugins>BoneJ>Thickness)
+8. Click "OK"
+9. Verify that warning dialog opens and click "OK"
+
+Expected result
+-----------------------------------------------------------------------
+Warning dialog should open. Plugin should stop if user clicks "Cancel",
+and continue if they click "OK"
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+
+Case 5
+=======================================================================
+User should see an error dialog if no map options selected
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Thickness (Plugins>BoneJ>Thickness)
+3. Uncheck options "Trabecular spacing" and "Trabeculer thickness"
+4. Click "OK"
+5. Run Thickness (Plugins>BoneJ>Thickness)
+6. Verify that settings haven't changed from step 2
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+Settings should not have persisted
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
