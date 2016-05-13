@@ -11,7 +11,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>bonej-legacy</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <description>Parent POM for the mavenized legacy BoneJ1 code.</description>
@@ -113,9 +113,9 @@
     <properties>
         <scijava.jvm.version>1.8</scijava.jvm.version>
         <javadoc.skip>true</javadoc.skip>
-        <legacy-util.version>1.0.0-SNAPSHOT</legacy-util.version>
-        <legacy-plugins.version>1.0.0-SNAPSHOT</legacy-plugins.version>
-        <legacy-pqct.version>1.0.0-SNAPSHOT</legacy-pqct.version>
+        <legacy-util.version>1.0.0</legacy-util.version>
+        <legacy-plugins.version>1.0.0</legacy-plugins.version>
+        <legacy-pqct.version>1.0.0</legacy-pqct.version>
     </properties>
 
     <modules>
