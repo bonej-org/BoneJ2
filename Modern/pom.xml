@@ -12,7 +12,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej2</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>Parent POM for BoneJ2</description>
@@ -119,9 +119,9 @@
     <properties>
         <scijava.jvm.version>1.8</scijava.jvm.version>
         <javadoc.skip>true</javadoc.skip>
-        <wrapperPlugins.version>0.1.0</wrapperPlugins.version>
-        <utilities.version>0.1.0</utilities.version>
-        <ops.version>0.1.0</ops.version>
+        <wrapperPlugins.version>0.2.0-SNAPSHOT</wrapperPlugins.version>
+        <utilities.version>0.2.0-SNAPSHOT</utilities.version>
+        <ops.version>0.2.0-SNAPSHOT</ops.version>
     </properties>
 
     <repositories>
