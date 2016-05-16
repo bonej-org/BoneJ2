@@ -2,6 +2,7 @@ package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
 import net.imagej.Dataset;
+import net.imagej.Main;
 import net.imglib2.IterableInterval;
 import org.bonej.utilities.ImageCheck;
 import org.scijava.command.Command;
@@ -15,6 +16,9 @@ import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 
 import static org.bonej.wrapperPlugins.ErrorMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType;
+import static org.scijava.ui.DialogPrompt.OptionType;
+import static org.scijava.ui.DialogPrompt.Result;
 
 /**
  * A GUI wrapper class for the LocalThickness plugin
@@ -83,7 +87,7 @@ public class LocalThicknessWrapper extends ContextCommand {
         }
 
         IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
+        if (inputImage.getValidBits() != 8 || !ImageCheck.isColoursBinary(interval)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
         }
@@ -93,11 +97,21 @@ public class LocalThicknessWrapper extends ContextCommand {
             return;
         }
 
-        //TODO: check pixel isotropy
+        if (!ImageCheck.isSpatialCalibrationIsotropic(inputImage)) {
+            final Result result = uiService.showDialog("The image is anisotropic. Continue anyway?",
+                                                       MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
+            if (result == Result.CANCEL_OPTION) {
+                cancel(null);
+            }
+        }
     }
 
     @SuppressWarnings("unused")
     private void openHelpPage() {
         Help.openHelpPage("http://bonej.org/thickness", platformService, uiService, logService);
+    }
+
+    public static void main(String... args) {
+        Main.launch(args);
     }
 }

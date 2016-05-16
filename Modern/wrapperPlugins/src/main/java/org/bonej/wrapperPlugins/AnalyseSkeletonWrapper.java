@@ -3,7 +3,6 @@ package org.bonej.wrapperPlugins;
 import ij.ImagePlus;
 import ij.ImageStack;
 import net.imagej.Dataset;
-import net.imagej.Main;
 import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 import org.bonej.utilities.ImageCheck;
@@ -70,7 +69,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
         }
 
         IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
+        if (inputImage.getValidBits() != 8 || !ImageCheck.isColoursBinary(interval)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
         }
