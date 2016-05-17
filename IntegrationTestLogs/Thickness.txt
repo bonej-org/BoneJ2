@@ -108,3 +108,82 @@ Settings should not have persisted
 
 Completed -- -- ---- - -
 -----------------------------------------------------------------------
+
+
+Case 6
+=======================================================================
+User should not see units when image is uncalibrated
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Thickness (Plugins>BoneJ>Thickness)
+3. Check option "Trabecular spacing" and click "OK"
+4. Verify that column heading don't show units
+
+Expected result
+-----------------------------------------------------------------------
+Results should show without units
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+
+Case 7
+=======================================================================
+User should see correct thickness maps
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Thickness all the combinations of "Trabecular thickness" & "Trabecular spacing"
+   (one selected, other selected, both selected)
+3. Verify that correct thickness maps open.
+   Ensure that option "Show thickness maps" is selected
+4. Rerun Thickness with "Show thickness maps" disabled
+5. Verify that no images open
+
+Expected result
+-----------------------------------------------------------------------
+Thickness maps should open according to the options
+(one, the other, both, none)
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+
+Case 8
+=======================================================================
+Results should match BoneJ1
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Calibrate
+2. Run Thickness (Plugins>BoneJ>Thickness)
+3. Set options
+   - Trabecular thickness: checked
+   - Trabecular spacing: checked
+   - Show thickness maps: unchecked
+   - Mask thickness maps: checked
+4. Rerun Thickness (Plugins>BoneJ>Thickness)
+5. Set options
+   - Trabecular thickness: checked
+   - Trabecular spacing: checked
+   - Show thickness maps: unchecked
+   - Mask thickness maps: unchecked
+
+
+Expected result
+-----------------------------------------------------------------------
+All results in the results table in all four cases match those from BoneJ1
+
+Completed -- -- ---- - -
+-----------------------------------------------------------------------
+
+
+Don't know how to test
+=======================================================================
+Show an error if input image cannot be converted into an ImagePlus
+Show an error if the help page cannot be opened
+User should see warning if image calibration is undetermined
