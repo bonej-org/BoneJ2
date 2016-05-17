@@ -79,6 +79,11 @@ Expected result
 Warning dialog should open. Plugin should stop if user clicks "Cancel",
 and continue if they click "OK"
 
+Notes
+-----------------------------------------------------------------------
+Because of IJ1 <-> IJ2 syncing issues, run this test separate from
+the others (restart ImageJ).
+
 Completed -- -- ---- - -
 -----------------------------------------------------------------------
 
@@ -91,7 +96,7 @@ Steps
 -----------------------------------------------------------------------
 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
 2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Uncheck options "Trabecular spacing" and "Trabeculer thickness"
+3. Uncheck options "Trabecular spacing" and "Trabecular thickness"
 4. Click "OK"
 5. Run Thickness (Plugins>BoneJ>Thickness)
 6. Verify that settings haven't changed from step 2

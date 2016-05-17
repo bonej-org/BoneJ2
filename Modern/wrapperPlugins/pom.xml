@@ -135,6 +135,10 @@
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
+            <artifactId>LocalThickness_</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
         </dependency>
 

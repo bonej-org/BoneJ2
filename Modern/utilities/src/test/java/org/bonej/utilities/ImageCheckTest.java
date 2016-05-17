@@ -3,10 +3,8 @@ package org.bonej.utilities;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.axis.LinearAxis;
-import net.imagej.axis.PolynomialAxis;
 import net.imagej.axis.PowerAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.DefaultLinearSpace;
@@ -17,6 +15,7 @@ import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -36,6 +35,65 @@ public class ImageCheckTest {
     @AfterClass
     public static void oneTimeTearDown() {
         IMAGE_J.context().dispose();
+    }
+
+    @Test
+    public void testGetSpatialUnit() throws Exception {
+        final String unit = "mm";
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final Optional<String> result = ImageCheck.getSpatialUnit(imgPlus);
+
+        assertTrue("Unit String should be present", result.isPresent());
+        assertEquals("Unit String should be " + unit, unit, result.get());
+    }
+
+    @Test
+    public void testGetSpatialUnitReturnEmptyIfAxesHaveDifferentUnits() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "cm");
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final Optional<String> result = ImageCheck.getSpatialUnit(imgPlus);
+
+        assertFalse("Optional should be empty when axes have different units", result.isPresent());
+    }
+
+    @Test
+    public void testGetSpatialUnitReturnEmptyIfSomeAxesUncalibrated() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "");
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
+
+        final Optional<String> result = ImageCheck.getSpatialUnit(imgPlus);
+
+        assertFalse("Optional should be empty when some axes are uncalibrated", result.isPresent());
+    }
+
+    @Test
+    public void testGetSpatialUnitReturnEmptyIfSpaceNull() throws Exception {
+        final Optional<String> result = ImageCheck.getSpatialUnit(null);
+
+        assertFalse("Optional should be empty when space is null", result.isPresent());
+    }
+
+    @Test
+    public void testGetSpatialUnitReturnEmptyStringIfAllAxesUncalibrated() {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "");
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final Optional<String> result = ImageCheck.getSpatialUnit(imgPlus);
+
+        assertTrue("Optional should be present when all axes are uncalibrated", result.isPresent());
+        assertTrue("The unit should be an empty string (uncalibrated)", result.get().isEmpty());
     }
 
     @Test
@@ -101,7 +159,7 @@ public class ImageCheckTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
         final int[] dimensions = {10, 10, 3};
-        Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, channelAxis);
 
         final long result = ImageCheck.countSpatialDimensions(imgPlus);
@@ -134,7 +192,7 @@ public class ImageCheckTest {
         final double secondScale = 0.5;
         final DefaultLinearAxis secondAxis = new DefaultLinearAxis(secondScale);
         final int[] dimensions = {10, 10};
-        Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", firstAxis, secondAxis);
 
         final double[] result = ImageCheck.axisStream(imgPlus).mapToDouble(a -> a.averageScale(0, 1)).toArray();
@@ -157,7 +215,7 @@ public class ImageCheckTest {
         // Create a test image with a nonlinear spatial axis
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
-        Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final boolean result = ImageCheck.isSpatialCalibrationIsotropic(imgPlus);
@@ -170,7 +228,7 @@ public class ImageCheckTest {
         // Create a test image with no spatial axes
         final DefaultLinearAxis timeAxis = new DefaultLinearAxis(Axes.TIME);
         final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 3});
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 3});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", timeAxis, channelAxis);
 
         final boolean result = ImageCheck.isSpatialCalibrationIsotropic(imgPlus);
@@ -183,7 +241,7 @@ public class ImageCheckTest {
         // Create a test image with anisotropic calibration
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1000.0);
-        Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final boolean result = ImageCheck.isSpatialCalibrationIsotropic(imgPlus, 1.0);
@@ -196,7 +254,7 @@ public class ImageCheckTest {
         // Create a test image with anisotropic calibration (within tolerance)
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1.5);
-        Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final boolean result = ImageCheck.isSpatialCalibrationIsotropic(imgPlus, 1.0);

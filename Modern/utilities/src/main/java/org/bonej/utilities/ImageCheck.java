@@ -1,5 +1,6 @@
 package org.bonej.utilities;
 
+import com.google.common.base.Strings;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
@@ -21,6 +22,27 @@ import java.util.stream.Stream;
  */
 public class ImageCheck {
     private ImageCheck() {
+    }
+
+    /**
+     * Returns the unit of the spatial calibration of the given space
+     *
+     * @return The Optional is empty if the space == null, or the units of the axes in the space don't match.
+     *         The Optional contains an empty string if all the axes are uncalibrated
+     */
+    public static <T extends AnnotatedSpace<CalibratedAxis>> Optional<String> getSpatialUnit(@Nullable final T space) {
+        if (space == null || !spatialUnitsMatch(space)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(space.axis(0).unit());
+    }
+
+    private static <T extends AnnotatedSpace<CalibratedAxis>> boolean spatialUnitsMatch(final T space) {
+        final long uncalibrated = axisStream(space).map(CalibratedAxis::unit).filter(Strings::isNullOrEmpty).count();
+        final long units = axisStream(space).map(CalibratedAxis::unit).distinct().count();
+
+        return uncalibrated == space.numDimensions() || units == 1;
     }
 
     /**
@@ -55,6 +77,7 @@ public class ImageCheck {
 
     /**
      * Counts the number of spatial dimensions in the given space
+     *
      * @return Number of spatial dimensions in the space, or 0 if space == null
      */
     public static <T extends AnnotatedSpace<S>, S extends TypedAxis> long countSpatialDimensions(
@@ -64,6 +87,7 @@ public class ImageCheck {
 
     /**
      * Generates a Stream from the axes in the given space
+     *
      * @return A Stream<S> of the axes. An empty stream if space == null or space has no axes
      */
     public static <T extends AnnotatedSpace<S>, S extends TypedAxis> Stream<S> axisStream(@Nullable final T space) {
@@ -85,19 +109,22 @@ public class ImageCheck {
      *
      * @see #isSpatialCalibrationIsotropic(AnnotatedSpace, double)
      */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(final T space) {
+    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(
+            @Nullable final T space) {
         return isSpatialCalibrationIsotropic(space, 0.0);
     }
 
     /**
-     * Checks if the calibration of the linear, spatial axes in the space is isotropic (within tolerance)
+     * Checks if the linear, spatial dimensions in the given space are isotropic. Isotropic means that the calibration
+     * of the different axes vary only within tolerance.
      *
      * @param tolerance How many percent the calibration may vary ([0.0, 1.0]) for the space to still be isotropic
      * @implNote tolerance is clamped to [0.0, 1.0]
      * @return true if the scales of all linear spatial axes in the space are within tolerance of each other,
      *         i.e. the space is isotropic. False if not, or space == null
      */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(final T space,
+    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(
+            @Nullable final T space,
             double tolerance) {
         if (space == null) {
             return false;
@@ -109,9 +136,9 @@ public class ImageCheck {
             tolerance = 1.0;
         }
 
-        final Optional<CalibratedAxis> nonLinearAxis =
-                axisStream(space).filter(a -> !(a instanceof LinearAxis) && a.type().isSpatial()).findAny();
-        if (nonLinearAxis.isPresent()) {
+        final boolean nonLinearAxes =
+                axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
+        if (nonLinearAxes) {
             return false;
         }
 
@@ -145,6 +172,7 @@ public class ImageCheck {
         } else if (Double.compare(a, b * (1.0 + tolerance)) > 0) {
             return false;
         }
+
         return true;
     }
 }
