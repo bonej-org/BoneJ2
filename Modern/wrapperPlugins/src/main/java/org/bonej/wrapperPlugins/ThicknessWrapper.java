@@ -183,7 +183,7 @@ public class ThicknessWrapper extends ContextCommand {
                 // Don't show the default units
                 unitHeader = "";
             } else if (!unitHeader.isEmpty()) {
-                unitHeader = "(" + unitHeader + "³)";
+                unitHeader = "(" + unitHeader + ")";
             }
         }
 
