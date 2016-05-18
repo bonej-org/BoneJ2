@@ -77,7 +77,7 @@ Expected result
 Warning dialog opens and shows the amount of anisotropy.
 Plugin should stop if user clicks "Cancel", and continue if they click "OK"
 
-Completed -- -- ---- - -
+Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -161,7 +161,7 @@ Expected result
 -----------------------------------------------------------------------
 All results in the results table in all four cases match those from BoneJ1
 
-Completed -- -- ---- - -
+Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
