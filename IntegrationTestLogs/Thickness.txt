@@ -83,35 +83,13 @@ Completed May 18 2016 Richard Domander
 
 Case 5
 =======================================================================
-User should see an error dialog if no map options selected
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Uncheck options "Trabecular spacing" and "Trabecular thickness"
-4. Click "OK"
-5. Run Thickness (Plugins>BoneJ>Thickness)
-6. Verify that settings haven't changed from step 2
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-Settings should not have persisted
-
-Completed -- -- ---- - -
------------------------------------------------------------------------
-
-
-Case 6
-=======================================================================
 User should not see units when image is uncalibrated
 =======================================================================
 Steps
 -----------------------------------------------------------------------
 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
 2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Check option "Trabecular spacing" and click "OK"
+3. Select "Trabecular spacing" and click "OK"
 4. Verify that column heading don't show units
 
 Expected result
@@ -122,19 +100,27 @@ Completed -- -- ---- - -
 -----------------------------------------------------------------------
 
 
-Case 7
+Case 6
 =======================================================================
 User should see correct thickness maps
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Run Thickness all the combinations of "Trabecular thickness" & "Trabecular spacing"
-   (one selected, other selected, both selected)
-3. Verify that correct thickness maps open.
-   Ensure that option "Show thickness maps" is selected
-4. Rerun Thickness with "Show thickness maps" disabled
-5. Verify that no images open
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+ 2. Run Thickness with:
+    - "Calculate" set to "Trabecular thickness"
+    - "Show thickness maps" checked
+ 3. Verify that correct thickness maps open
+ 4. Verify that input image is not overwritten
+ 5. Verify that thickness maps show calibrated values,
+    and "NaN" instead of "0"
+ 6. Verify that thickness maps have the correct title
+    - "bat-cochlea-volume_Tb.Th" for "Trabecular thickness"
+    - "bat-cochlea-volume_Tb.Sp" for "Trabecular spacing"
+ 7. Repeat 2 - 6 with "Calculate" set to "Trabecular spacing"
+ 8. Repeat 2 - 6 with "Calculate" set to "Both"
+ 9. Rerun Thickness with "Show thickness maps" disabled
+10. Verify that no images open
 
 Expected result
 -----------------------------------------------------------------------
@@ -145,27 +131,27 @@ Completed -- -- ---- - -
 -----------------------------------------------------------------------
 
 
-Case 8
+Case 7
 =======================================================================
 Results should match BoneJ1
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Calibrate
-2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Set options
-   - Trabecular thickness: checked
-   - Trabecular spacing: checked
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+ 2. Calibrate
+ 3. Run Thickness (Plugins>BoneJ>Thickness)
+ 4. Set options
+   - Calculate: "Both"
    - Show thickness maps: unchecked
    - Mask thickness maps: checked
-4. Rerun Thickness (Plugins>BoneJ>Thickness)
-5. Set options
-   - Trabecular thickness: checked
-   - Trabecular spacing: checked
+ 5. Rerun Thickness (Plugins>BoneJ>Thickness)
+ 6. Set options
+   - Calculate: "Both"
    - Show thickness maps: unchecked
    - Mask thickness maps: unchecked
-
+ 7. Verify that Results table has headers "Mean", "Std Dev" and "Max"
+    for both "Tb.Th" and "Tb.Sp"
+ 8. Verify that headers have the unit mm³
 
 Expected result
 -----------------------------------------------------------------------
