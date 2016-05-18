@@ -23,6 +23,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
+import org.scijava.widget.ChoiceWidget;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
 import java.util.DoubleSummaryStatistics;
@@ -57,11 +58,10 @@ public class ThicknessWrapper extends ContextCommand {
     @Parameter(initializer = "initializeImage")
     private Dataset inputImage;
 
-    @Parameter(label = "Trabecular thickness", description = "Calculate the thickness of the trabeculae")
-    private boolean doThickness = true;
-
-    @Parameter(label = "Trabecular spacing", description = "Calculate the thickness of the spaces between trabeculae")
-    private boolean doSpacing;
+    @Parameter(label = "Calculate:", description = "Which thickness measures to calculate",
+            style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE,
+            choices = {"Trabecular thickness", "Trabecular spacing", "Both"})
+    private String maps;
 
     @Parameter(label = "Show thickness maps", description = "Show resulting map images after calculations")
     private boolean showMaps = true;
@@ -94,19 +94,23 @@ public class ThicknessWrapper extends ContextCommand {
     public void run() {
         anisotropyWarningShown = false;
 
-        if (!doThickness && !doSpacing) {
-            cancel("Select either \"Trabecular thickness\" or \"Trabecular spacing\"");
-            return;
-        }
-
-        if (doThickness) {
-            thicknessMap = createMap(true);
-            showMapStatistics(thicknessMap, true);
-        }
-
-        if (doSpacing) {
-            spacingMap = createMap(false);
-            showMapStatistics(spacingMap, false);
+        switch (maps) {
+            case "Trabecular thickness":
+                thicknessMap = createMap(true);
+                showMapStatistics(thicknessMap, true);
+                break;
+            case "Trabecular spacing":
+                spacingMap = createMap(false);
+                showMapStatistics(spacingMap, false);
+                break;
+            case "Both":
+                thicknessMap = createMap(true);
+                showMapStatistics(thicknessMap, true);
+                spacingMap = createMap(false);
+                showMapStatistics(spacingMap, false);
+                break;
+            default:
+                throw new RuntimeException("Unexpected map choice");
         }
     }
 
