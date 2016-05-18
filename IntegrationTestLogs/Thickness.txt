@@ -74,10 +74,10 @@ Steps
 
 Expected result
 -----------------------------------------------------------------------
-Warning dialog should open. Plugin should stop if user clicks "Cancel",
-and continue if they click "OK"
+Warning dialog opens and shows the amount of anisotropy.
+Plugin should stop if user clicks "Cancel", and continue if they click "OK"
 
-Completed May 18 2016 Richard Domander
+Completed -- -- ---- - -
 -----------------------------------------------------------------------
 
 
@@ -96,7 +96,7 @@ Expected result
 -----------------------------------------------------------------------
 Results should show without units
 
-Completed -- -- ---- - -
+Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -112,8 +112,7 @@ Steps
     - "Show thickness maps" checked
  3. Verify that correct thickness maps open
  4. Verify that input image is not overwritten
- 5. Verify that thickness maps show calibrated values,
-    and "NaN" instead of "0"
+ 5. Verify that thickness maps show "NaN" instead of "0"
  6. Verify that thickness maps have the correct title
     - "bat-cochlea-volume_Tb.Th" for "Trabecular thickness"
     - "bat-cochlea-volume_Tb.Sp" for "Trabecular spacing"
@@ -127,7 +126,7 @@ Expected result
 Thickness maps should open according to the options
 (one, the other, both, none)
 
-Completed -- -- ---- - -
+Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -138,20 +137,25 @@ Results should match BoneJ1
 Steps
 -----------------------------------------------------------------------
  1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
- 2. Calibrate
- 3. Run Thickness (Plugins>BoneJ>Thickness)
- 4. Set options
+ 2. Set scale (Analyze>Set Scale)
+ 3. Set options
+    - "Distance in pixels" to "1"
+    - "Known distance" to "1.00"
+    - "Pixel aspect ratio" to "1.0"
+    - "Unit of length" to "mm"
+ 4. Run Thickness (Plugins>BoneJ>Thickness)
+ 5. Set options
    - Calculate: "Both"
    - Show thickness maps: unchecked
    - Mask thickness maps: checked
- 5. Rerun Thickness (Plugins>BoneJ>Thickness)
- 6. Set options
+ 6. Rerun Thickness (Plugins>BoneJ>Thickness)
+ 7. Set options
    - Calculate: "Both"
    - Show thickness maps: unchecked
    - Mask thickness maps: unchecked
- 7. Verify that Results table has headers "Mean", "Std Dev" and "Max"
+ 8. Verify that Results table has headers "Mean", "Std Dev" and "Max"
     for both "Tb.Th" and "Tb.Sp"
- 8. Verify that headers have the unit mm³
+ 9. Verify that headers have the unit mm
 
 Expected result
 -----------------------------------------------------------------------
