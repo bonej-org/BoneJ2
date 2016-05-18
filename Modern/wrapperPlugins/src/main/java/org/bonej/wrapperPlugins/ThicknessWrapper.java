@@ -7,6 +7,7 @@ import net.imagej.DatasetService;
 import net.imagej.ImgPlus;
 import net.imagej.Main;
 import net.imagej.ops.OpService;
+import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 import net.imglib2.img.ImagePlusAdapter;
 import net.imglib2.type.numeric.ComplexType;
@@ -42,6 +43,10 @@ import static org.scijava.ui.DialogPrompt.Result;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Thickness")
 public class ThicknessWrapper extends ContextCommand {
+    static {
+        LegacyInjector.preinit();
+    }
+
     private boolean anisotropyWarningShown;
 
     // TODO fix "NaN" value issue (NaNs make Datasets black) so that Dataset can be made outputs
