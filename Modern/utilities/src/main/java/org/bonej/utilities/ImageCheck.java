@@ -118,6 +118,7 @@ public class ImageCheck {
      * Checks if the linear, spatial dimensions in the given space are isotropic. Isotropic means that the calibration
      * of the different axes vary only within tolerance.
      *
+     * //FIXME Add check that units match
      * @param tolerance How many percent the calibration may vary ([0.0, 1.0]) for the space to still be isotropic
      * @implNote tolerance is clamped to [0.0, 1.0]
      * @return true if the scales of all linear spatial axes in the space are within tolerance of each other,
@@ -126,7 +127,7 @@ public class ImageCheck {
     public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(
             @Nullable final T space,
             double tolerance) {
-        if (space == null) {
+        if (space == null || hasNonLinearSpatialAxes(space)) {
             return false;
         }
 
@@ -134,12 +135,6 @@ public class ImageCheck {
             tolerance = 0.0;
         } else if (tolerance > 1.0) {
             tolerance = 1.0;
-        }
-
-        final boolean nonLinearAxes =
-                axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
-        if (nonLinearAxes) {
-            return false;
         }
 
         final double[] scales =
@@ -158,6 +153,42 @@ public class ImageCheck {
         }
 
         return true;
+    }
+
+    /**
+     * Returns the maximum difference between the scales of the spatial calibrated axes in the given space
+     *
+     * @return The difference in scaling. Returns Double.NaN if space == null, or it has non-linear spatial axes,
+     *         or calibration units don't match, or if there are no spatial axes
+     */
+    public static <T extends AnnotatedSpace<CalibratedAxis>> double getSpatialCalibrationAnisotropy(
+            @Nullable final T space) {
+        if (space == null || hasNonLinearSpatialAxes(space) || !spatialUnitsMatch(space)) {
+            return Double.NaN;
+        }
+
+        final double[] scales =
+                axisStream(space).filter(a -> a.type().isSpatial()).mapToDouble(a -> a.averageScale(0, 1)).distinct()
+                        .toArray();
+        if (scales.length == 0) {
+            return Double.NaN;
+        }
+
+        double maxDifference = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < scales.length - 1; i++) {
+            for (int j = i + 1; j < scales.length; j++) {
+                final double difference = Math.abs(scales[i] - scales[j]);
+                if (difference > maxDifference) {
+                    maxDifference = difference;
+                }
+            }
+        }
+
+        return maxDifference;
+    }
+
+    private static <T extends AnnotatedSpace<CalibratedAxis>> boolean hasNonLinearSpatialAxes(final T space) {
+        return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
     }
 
     private static boolean withinTolerance(double a, double b, final double tolerance) {

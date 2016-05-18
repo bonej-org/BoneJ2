@@ -214,8 +214,11 @@ public class ThicknessWrapper extends ContextCommand {
         }
 
         if (!ImageCheck.isSpatialCalibrationIsotropic(inputImage)) {
-            final Result result = uiService.showDialog("The image is anisotropic. Continue anyway?",
-                                                       MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
+            final double anisotropy = ImageCheck.getSpatialCalibrationAnisotropy(inputImage);
+            final Result result =
+                    uiService.showDialog("The image is anisotropic (" + String.format("%.2g", anisotropy) +
+                                                 " difference). Continue anyway?",
+                                         MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
             if (result == Result.CANCEL_OPTION) {
                 cancel(null);
             }

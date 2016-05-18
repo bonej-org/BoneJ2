@@ -38,6 +38,60 @@ public class ImageCheckTest {
     }
 
     @Test
+    public void testGetSpatialCalibrationAnisotropy() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 2);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final double result = ImageCheck.getSpatialCalibrationAnisotropy(imgPlus);
+
+        assertEquals(result, 1.0, 1e-12);
+    }
+
+    @Test
+    public void testGetSpatialCalibrationAnisotropyReturnNaNWhenSpaceNull() throws Exception {
+        final double result = ImageCheck.getSpatialCalibrationAnisotropy(null);
+
+        assertTrue("Anisotropy should be NaN when space is null", Double.isNaN(result));
+    }
+
+    @Test
+    public void testGetSpatialCalibrationAnisotropyReturnNaNWhenNoSpatialAxes() throws Exception {
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", tAxis);
+
+        final double result = ImageCheck.getSpatialCalibrationAnisotropy(imgPlus);
+
+        assertTrue("Anisotropy should be NaN when space has no spatial axes", Double.isNaN(result));
+    }
+
+    @Test
+    public void testGetSpatialCalibrationAnisotropyReturnNaNWhenUnitsMismatch() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "cm");
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final double result = ImageCheck.getSpatialCalibrationAnisotropy(imgPlus);
+
+        assertTrue("Anisotropy should be NaN when units don't match", Double.isNaN(result));
+    }
+
+    @Test
+    public void testGetSpatialCalibrationAnisotropyReturnNaNWithNonlinearAxes() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final double result = ImageCheck.getSpatialCalibrationAnisotropy(imgPlus);
+
+        assertTrue("Anisotropy should be NaN when there are nonlinear axes", Double.isNaN(result));
+    }
+
+    @Test
     public void testGetSpatialUnit() throws Exception {
         final String unit = "mm";
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit);
@@ -95,6 +149,8 @@ public class ImageCheckTest {
         assertTrue("Optional should be present when all axes are uncalibrated", result.isPresent());
         assertTrue("The unit should be an empty string (uncalibrated)", result.get().isEmpty());
     }
+
+    //TODO add test for getSpatialUnit no spatial axes
 
     @Test
     public void testIsColorsBinaryFalseWhenIntervalNull() throws Exception {
