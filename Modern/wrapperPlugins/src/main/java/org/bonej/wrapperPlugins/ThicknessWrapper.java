@@ -194,7 +194,7 @@ public class ThicknessWrapper extends ContextCommand {
         }
 
         if (ImageCheck.countSpatialDimensions(inputImage) != 3) {
-            cancel(NOT_2D_OR_3D_IMAGE);
+            cancel(NOT_3D_IMAGE);
             return;
         }
 

@@ -8,13 +8,13 @@ User should see an error dialog when no images are open
 Steps
 -----------------------------------------------------------------------
 1. Close all images
-2. Run Analyse Skeleton (Plugins>BoneJ>Thickness)
+2. Run Thickness (Plugins>BoneJ>Thickness)
 
 Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed -- -- ---- - -
+Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -31,7 +31,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed -- -- ---- - -
+Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -49,7 +49,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed -- -- ---- - -
+Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 

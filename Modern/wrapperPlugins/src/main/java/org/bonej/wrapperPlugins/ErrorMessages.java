@@ -6,6 +6,7 @@ package org.bonej.wrapperPlugins;
  * @author Richard Domander 
  */
 public class ErrorMessages {
+    public static final String NOT_3D_IMAGE = "Need a 3D image";
     public static final String NOT_2D_OR_3D_IMAGE = "Need a 2D or 3D image";
     public static final String NOT_8_BIT_BINARY_IMAGE = "Need an 8-bit binary image";
     public static final String CANNOT_CONVERT_TO_IMAGE_PLUS =
