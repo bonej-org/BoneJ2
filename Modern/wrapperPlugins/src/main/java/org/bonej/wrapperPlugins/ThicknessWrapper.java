@@ -230,8 +230,4 @@ public class ThicknessWrapper extends ContextCommand {
         Help.openHelpPage("http://bonej.org/thickness", platformService, uiService, logService);
     }
     //endregion
-
-    public static void main(String... args) {
-        Main.launch(args);
-    }
 }
