@@ -18,7 +18,7 @@ import ij.plugin.PlugIn;
  *
  * @author Michael Doube
  * @author Richard Domander
- * @deprecated Replaced by Replaced by SkeletoniseWrapper in BoneJ2
+ * @deprecated Replaced by SkeletoniseWrapper in BoneJ2
  */
 @Deprecated
 public class Skeletonise implements PlugIn {

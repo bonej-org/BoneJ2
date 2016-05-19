@@ -28,7 +28,9 @@ import ij.process.StackStatistics;
  * @author Michael Doube
  * @author Richard Domander
  * @todo Overwrite input or not?
+ * @deprecated Replaced by ThicknessWrapper in BoneJ2
  */
+@Deprecated
 public class LocalThickness implements PlugIn {
 	private static final boolean THICKNESS_DEFAULT = true;
 	private static final boolean SPACING_DEFAULT = false;
