@@ -69,7 +69,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
         }
 
         IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ImageCheck.isColoursBinary(interval)) {
+        if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
         }

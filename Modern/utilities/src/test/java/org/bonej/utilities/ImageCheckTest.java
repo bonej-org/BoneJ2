@@ -165,27 +165,27 @@ public class ImageCheckTest {
 
     @Test
     public void testIsColorsBinaryFalseWhenIntervalNull() throws Exception {
-        final boolean result = ImageCheck.isColoursBinary(null);
+        final boolean result = ImageCheck.isColorsBinary(null);
 
-        assertFalse("A null interval should not be binary colour", result);
+        assertFalse("A null interval should not be binary color", result);
     }
 
     @Test
     public void testIsColorsBinaryReturnsFalseIfIntervalEmpty() throws Exception {
         final IterableInterval<DoubleType> interval = IMAGE_J.op().create().img(new long[]{0});
 
-        final boolean result = ImageCheck.isColoursBinary(interval);
+        final boolean result = ImageCheck.isColorsBinary(interval);
 
-        assertFalse("An empty image should not be binary colour", result);
+        assertFalse("An empty image should not be binary color", result);
     }
 
     @Test
     public void testIsColorsBinaryReturnsTrueForMonochrome() throws Exception {
         final IterableInterval<DoubleType> interval = IMAGE_J.op().create().img(new long[]{5, 5});
 
-        final boolean result = ImageCheck.isColoursBinary(interval);
+        final boolean result = ImageCheck.isColorsBinary(interval);
 
-        assertTrue("Monochrome image should be binary colour", result);
+        assertTrue("Monochrome image should be binary color", result);
     }
 
     @Test
@@ -195,9 +195,9 @@ public class ImageCheckTest {
         final Iterator<Integer> intIterator = IntStream.iterate(0, i -> (i + 1) % 2).iterator();
         interval.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-        final boolean result = ImageCheck.isColoursBinary(interval);
+        final boolean result = ImageCheck.isColorsBinary(interval);
 
-        assertTrue("An image with two colours should be binary colour", result);
+        assertTrue("An image with two colours should be binary color", result);
     }
 
     @Test
@@ -207,9 +207,9 @@ public class ImageCheckTest {
         final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1).iterator();
         interval.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-        final boolean result = ImageCheck.isColoursBinary(interval);
+        final boolean result = ImageCheck.isColorsBinary(interval);
 
-        assertFalse("An image with more than two colours should not be binary colour", result);
+        assertFalse("An image with more than two colours should not be binary color", result);
     }
 
     @Test

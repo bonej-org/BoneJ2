@@ -51,7 +51,7 @@ public class ImageCheck {
      * @implNote A hacky brute force approach
      * @return True if only two distinct values, false if interval is null, empty or has more colors
      */
-    public static <T extends RealType<T>> boolean isColoursBinary(@Nullable final IterableInterval<T> interval) {
+    public static <T extends RealType<T>> boolean isColorsBinary(@Nullable final IterableInterval<T> interval) {
         if (interval == null || interval.size() == 0) {
             return false;
         }
