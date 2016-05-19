@@ -65,7 +65,7 @@ public class ImageCheck {
                 StreamSupport.stream(interval.spliterator(), false).mapToDouble(RealType::getRealDouble).distinct()
                         .count();
 
-        return colours < 2;
+        return colours <= 2;
     }
 
     /**

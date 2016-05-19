@@ -192,7 +192,7 @@ public class ImageCheckTest {
     public void testIsColorsBinaryReturnsTrueForDichromatic() throws Exception {
         // Create a test image with two colors
         final IterableInterval<DoubleType> interval = IMAGE_J.op().create().img(new long[]{5, 5});
-        final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i % 2).iterator();
+        final Iterator<Integer> intIterator = IntStream.iterate(0, i -> (i + 1) % 2).iterator();
         interval.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
         final boolean result = ImageCheck.isColoursBinary(interval);
