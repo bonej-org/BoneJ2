@@ -32,9 +32,11 @@ import static org.junit.Assert.assertTrue;
 public class ImageCheckTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
+
     @AfterClass
     public static void oneTimeTearDown() {
         IMAGE_J.context().dispose();
+        //IMAGE_J.op().create().
     }
 
     @Test
@@ -150,7 +152,16 @@ public class ImageCheckTest {
         assertTrue("The unit should be an empty string (uncalibrated)", result.get().isEmpty());
     }
 
-    //TODO add test for getSpatialUnit no spatial axes
+    @Test
+    public void testGetSpatialUnitReturnEmptyIfNoSpatialAxes() throws Exception {
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", tAxis);
+
+        final Optional<String> result = ImageCheck.getSpatialUnit(imgPlus);
+
+        assertFalse("Optional should be empty when space has no spatial axes", result.isPresent());
+    }
 
     @Test
     public void testIsColorsBinaryFalseWhenIntervalNull() throws Exception {
@@ -293,6 +304,19 @@ public class ImageCheckTest {
     }
 
     @Test
+    public void testIsSpatialCalibrationIsotropicFalseIfUnitsMismatch() throws Exception {
+        // Create a test image with no spatial axes
+        final DefaultLinearAxis timeAxis = new DefaultLinearAxis(Axes.X, "cm");
+        final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.Y, "mm");
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 3});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", timeAxis, channelAxis);
+
+        final boolean result = ImageCheck.isSpatialCalibrationIsotropic(imgPlus);
+
+        assertFalse("Calibration should not be isotropic if there are no spatial axes", result);
+    }
+
+    @Test
     public void testIsSpatialCalibrationIsotropicFalseIfScalesNotWithinTolerance() throws Exception {
         // Create a test image with anisotropic calibration
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
@@ -309,11 +333,11 @@ public class ImageCheckTest {
     public void testIsSpatialCalibrationIsotropic() throws Exception {
         // Create a test image with anisotropic calibration (within tolerance)
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1.5);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1.1);
         final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
-        final boolean result = ImageCheck.isSpatialCalibrationIsotropic(imgPlus, 1.0);
+        final boolean result = ImageCheck.isSpatialCalibrationIsotropic(imgPlus, 0.1);
 
         assertTrue("Calibration should be isotropic when anisotropy is within tolerance", result);
     }

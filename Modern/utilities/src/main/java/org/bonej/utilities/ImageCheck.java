@@ -5,15 +5,14 @@ import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
-import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.numeric.RealType;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
-import java.util.TreeSet;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Various utility methods for inspecting image properties
@@ -21,8 +20,7 @@ import java.util.stream.Stream;
  * @author Richard Domander
  */
 public class ImageCheck {
-    private ImageCheck() {
-    }
+    private ImageCheck() {}
 
     /**
      * Returns the unit of the spatial calibration of the given space
@@ -31,7 +29,7 @@ public class ImageCheck {
      *         The Optional contains an empty string if all the axes are uncalibrated
      */
     public static <T extends AnnotatedSpace<CalibratedAxis>> Optional<String> getSpatialUnit(@Nullable final T space) {
-        if (space == null || !spatialUnitsMatch(space)) {
+        if (space == null || countSpatialDimensions(space) == 0 || !spatialUnitsMatch(space)) {
             return Optional.empty();
         }
 
@@ -39,10 +37,12 @@ public class ImageCheck {
     }
 
     private static <T extends AnnotatedSpace<CalibratedAxis>> boolean spatialUnitsMatch(final T space) {
-        final long uncalibrated = axisStream(space).map(CalibratedAxis::unit).filter(Strings::isNullOrEmpty).count();
-        final long units = axisStream(space).map(CalibratedAxis::unit).distinct().count();
+        final long spatialDimensions = countSpatialDimensions(space);
+        final long uncalibrated =
+                spatialAxisStream(space).map(CalibratedAxis::unit).filter(Strings::isNullOrEmpty).count();
+        final long units = spatialAxisStream(space).map(CalibratedAxis::unit).distinct().count();
 
-        return uncalibrated == space.numDimensions() || units == 1;
+        return uncalibrated == spatialDimensions || units == 1;
     }
 
     /**
@@ -61,18 +61,11 @@ public class ImageCheck {
             return true;
         }
 
-        final Cursor<T> cursor = interval.cursor();
-        final TreeSet<Double> values = new TreeSet<>();
+        final long colours =
+                StreamSupport.stream(interval.spliterator(), false).mapToDouble(RealType::getRealDouble).distinct()
+                        .count();
 
-        while (cursor.hasNext()) {
-            final double value = cursor.next().getRealDouble();
-            values.add(value);
-            if (values.size() > 2) {
-                return false;
-            }
-        }
-
-        return true;
+        return colours < 2;
     }
 
     /**
@@ -82,7 +75,7 @@ public class ImageCheck {
      */
     public static <T extends AnnotatedSpace<S>, S extends TypedAxis> long countSpatialDimensions(
             @Nullable final T space) {
-        return axisStream(space).filter(a -> a.type().isSpatial()).count();
+        return spatialAxisStream(space).count();
     }
 
     /**
@@ -118,16 +111,15 @@ public class ImageCheck {
      * Checks if the linear, spatial dimensions in the given space are isotropic. Isotropic means that the calibration
      * of the different axes vary only within tolerance.
      *
-     * //FIXME Add check that units match
      * @param tolerance How many percent the calibration may vary ([0.0, 1.0]) for the space to still be isotropic
      * @implNote tolerance is clamped to [0.0, 1.0]
      * @return true if the scales of all linear spatial axes in the space are within tolerance of each other,
-     *         i.e. the space is isotropic. False if not, or space == null
+     *         i.e. the space is isotropic. False if not, or space == null, or there are no spatial axes
      */
     public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(
             @Nullable final T space,
             double tolerance) {
-        if (space == null || hasNonLinearSpatialAxes(space)) {
+        if (space == null || hasNonLinearSpatialAxes(space) || !spatialUnitsMatch(space)) {
             return false;
         }
 
@@ -137,9 +129,7 @@ public class ImageCheck {
             tolerance = 1.0;
         }
 
-        final double[] scales =
-                axisStream(space).filter(a -> a.type().isSpatial()).mapToDouble(a -> a.averageScale(0, 1)).distinct()
-                        .toArray();
+        final double[] scales = spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
         if (scales.length == 0) {
             return false;
         }
@@ -156,7 +146,7 @@ public class ImageCheck {
     }
 
     /**
-     * Returns the maximum difference between the scales of the spatial calibrated axes in the given space
+     * Returns the maximum difference between the scales of the calibrated axes in the given space
      *
      * @return The difference in scaling. Returns Double.NaN if space == null, or it has non-linear spatial axes,
      *         or calibration units don't match, or if there are no spatial axes
@@ -167,9 +157,7 @@ public class ImageCheck {
             return Double.NaN;
         }
 
-        final double[] scales =
-                axisStream(space).filter(a -> a.type().isSpatial()).mapToDouble(a -> a.averageScale(0, 1)).distinct()
-                        .toArray();
+        final double[] scales = spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
         if (scales.length == 0) {
             return Double.NaN;
         }
@@ -185,6 +173,11 @@ public class ImageCheck {
         }
 
         return maxDifference;
+    }
+
+    private static <T extends AnnotatedSpace<S>, S extends TypedAxis> Stream<S> spatialAxisStream(
+            @Nullable final T space) {
+        return axisStream(space).filter(a -> a.type().isSpatial());
     }
 
     private static <T extends AnnotatedSpace<CalibratedAxis>> boolean hasNonLinearSpatialAxes(final T space) {
