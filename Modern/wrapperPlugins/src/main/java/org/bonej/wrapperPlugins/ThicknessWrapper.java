@@ -5,7 +5,6 @@ import ij.ImagePlus;
 import net.imagej.Dataset;
 import net.imagej.DatasetService;
 import net.imagej.ImgPlus;
-import net.imagej.Main;
 import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
@@ -48,7 +47,7 @@ public class ThicknessWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    private boolean anisotropyWarningShown;
+    private boolean calibrationWarningShown;
 
     // TODO fix "NaN" value issue (NaNs make Datasets black) so that Dataset can be made outputs
     private Dataset thicknessMap;
@@ -92,7 +91,7 @@ public class ThicknessWrapper extends ContextCommand {
 
     @Override
     public void run() {
-        anisotropyWarningShown = false;
+        calibrationWarningShown = false;
 
         switch (maps) {
             case "Trabecular thickness":
@@ -171,11 +170,11 @@ public class ThicknessWrapper extends ContextCommand {
         final Optional<String> unit = ImageCheck.getSpatialUnit(map);
         String unitHeader = "";
         if (!unit.isPresent()) {
-            if (!anisotropyWarningShown) {
+            if (!calibrationWarningShown) {
                 uiService.showDialog(
                         "Cannot not determine the unit of calibration - showing plain values",
                         MessageType.WARNING_MESSAGE);
-                anisotropyWarningShown = true;
+                calibrationWarningShown = true;
             }
         } else {
             unitHeader = unit.get();
