@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
-import org.bonej.geometry.TestDataMaker;
+import org.bonej.util.TestDataMaker;
 import org.junit.Test;
 import org.scijava.vecmath.Point3f;
 

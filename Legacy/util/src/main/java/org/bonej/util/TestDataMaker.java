@@ -19,11 +19,13 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
-package org.bonej.geometry;
+package org.bonej.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
+import ij.gui.NewImage;
 import org.scijava.vecmath.Point3f;
 
 import ij.ImagePlus;
@@ -205,13 +207,21 @@ public class TestDataMaker {
 		return imp;
 	}
 
-	public static ImagePlus binaryNoise(final int width, final int height, final int depth, final double ratio) {
+	/**
+	 * Creates an ImagePlus with black (0x00) & white (0xFF) noise
+	 *
+	 * @param ratio 		Probability that pixel P(x is black)
+	 * @param generator		A random generator for the noise. Using a generator with predetermined
+	 * 						{@link Random#Random(long)} seed} makes the result of this method repeatable
+	 */
+	public static ImagePlus binaryNoise(final int width, final int height, final int depth, final double ratio,
+										final Random generator) {
 		final int npixels = width * height;
 		final ImageStack stack = new ImageStack(width, height);
 		for (int i = 0; i < depth; i++) {
 			final ByteProcessor bp = new ByteProcessor(width, height);
 			for (int index = 0; index < npixels; index++) {
-				final double random = Math.random();
+				final double random = generator.nextDouble();
 				if (random > ratio)
 					bp.set(index, 255);
 			}
@@ -219,6 +229,12 @@ public class TestDataMaker {
 		}
 		final ImagePlus imp = new ImagePlus("binary-noise", stack);
 		return imp;
+	}
+
+	/** @deprecated Use {@link #binaryNoise(int, int, int, double, Random) binaryNoise} instead */
+	@Deprecated
+	public static ImagePlus binaryNoise(final int width, final int height, final int depth, final double ratio) {
+		return  binaryNoise(width, height, depth, ratio, new Random());
 	}
 
 	public static ImagePlus plates(final int width, final int height, final int depth, final int spacing) {

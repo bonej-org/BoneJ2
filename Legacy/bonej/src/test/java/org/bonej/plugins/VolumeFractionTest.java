@@ -29,7 +29,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import java.awt.Rectangle;
 
-import org.bonej.geometry.TestDataMaker;
+import org.bonej.util.TestDataMaker;
 import org.junit.Ignore;
 import org.junit.Test;
 
