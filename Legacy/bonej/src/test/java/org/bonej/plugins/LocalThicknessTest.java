@@ -24,7 +24,7 @@ package org.bonej.plugins;
 import static org.junit.Assert.assertEquals;
 
 import org.bonej.menuWrappers.LocalThickness;
-import org.bonej.geometry.TestDataMaker;
+import org.bonej.util.TestDataMaker;
 import org.bonej.util.StackStats;
 import org.junit.Test;
 

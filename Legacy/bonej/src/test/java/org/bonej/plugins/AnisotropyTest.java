@@ -23,8 +23,7 @@ package org.bonej.plugins;
 
 import static org.junit.Assert.assertEquals;
 
-import org.bonej.geometry.TestDataMaker;
-import org.junit.Ignore;
+import org.bonej.util.TestDataMaker;
 import org.junit.Test;
 
 import ij.ImagePlus;

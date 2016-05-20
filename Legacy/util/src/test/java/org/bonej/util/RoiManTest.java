@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import java.awt.Polygon;
 import java.util.ArrayList;
 
-import org.bonej.geometry.TestDataMaker;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;

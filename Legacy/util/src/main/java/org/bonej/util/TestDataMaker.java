@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
-package org.bonej.geometry;
+package org.bonej.util;
 
 import java.util.ArrayList;
 import java.util.List;
