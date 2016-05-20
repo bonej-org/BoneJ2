@@ -201,6 +201,14 @@ public class ThicknessWrapper extends ContextCommand {
             return;
         }
 
+        if (ImageCheck.hasChannelDimensions(inputImage)) {
+            cancel(HAS_CHANNEL_DIMENSIONS);
+        }
+
+        if (ImageCheck.hasTimeDimensions(inputImage)) {
+            cancel(HAS_TIME_DIMENSIONS);
+        }
+
         IterableInterval interval = inputImage;
         if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);

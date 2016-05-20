@@ -32,11 +32,73 @@ import static org.junit.Assert.assertTrue;
 public class ImageCheckTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
-
     @AfterClass
     public static void oneTimeTearDown() {
         IMAGE_J.context().dispose();
-        //IMAGE_J.op().create().
+    }
+
+    @Test
+    public void testHasTimeDimensionsFalseIfSpaceNull() throws Exception {
+        final boolean result = ImageCheck.hasTimeDimensions(null);
+
+        assertFalse("Null image should not have a time dimension", result);
+    }
+
+    @Test
+    public void testHasTimeDimensionsFalseIfNoTimeDimensions() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final boolean result = ImageCheck.hasTimeDimensions(imgPlus);
+
+        assertFalse("Should be false when image does not have a time dimension", result);
+    }
+
+    @Test
+    public void testHasTimeDimensions() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, tAxis);
+
+        final boolean result = ImageCheck.hasTimeDimensions(imgPlus);
+
+        assertTrue("Should be true when image has time dimensions", result);
+    }
+
+    @Test
+    public void testHasChannelDimensionsFalseIfSpaceNull() throws Exception {
+        final boolean result = ImageCheck.hasChannelDimensions(null);
+
+        assertFalse("Null image should not have a channel dimension", result);
+    }
+
+    @Test
+    public void testHasChannelDimensionsFalseIfNoChannelDimensions() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final boolean result = ImageCheck.hasTimeDimensions(imgPlus);
+
+        assertFalse("Should be false when image does not have a channel dimension", result);
+    }
+
+    @Test
+    public void testHasChannelDimensions() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis);
+
+        final boolean result = ImageCheck.hasChannelDimensions(imgPlus);
+
+        assertTrue("Should be true when image has channel dimensions", result);
     }
 
     @Test

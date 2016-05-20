@@ -1,6 +1,7 @@
 package org.bonej.utilities;
 
 import com.google.common.base.Strings;
+import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
@@ -21,6 +22,26 @@ import java.util.stream.StreamSupport;
  */
 public class ImageCheck {
     private ImageCheck() {}
+
+    /**
+     * Checks if the given space has a channel dimension
+     *
+     * @return true if for any axis CalibratedAxis.type() == Axes.CHANNEL,
+     *         false if not, or space == null
+     */
+    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean hasChannelDimensions(@Nullable final T space) {
+        return axisStream(space).anyMatch(a -> a.type() == Axes.CHANNEL);
+    }
+
+    /**
+     * Checks if the given space has a time dimension
+     *
+     * @return true if for any axis CalibratedAxis.type() == Axes.TIME,
+     *         false if not, or space == null
+     */
+    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean hasTimeDimensions(@Nullable final T space) {
+        return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
+    }
 
     /**
      * Returns the unit of the spatial calibration of the given space
