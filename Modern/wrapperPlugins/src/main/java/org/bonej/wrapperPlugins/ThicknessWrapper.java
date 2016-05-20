@@ -203,10 +203,12 @@ public class ThicknessWrapper extends ContextCommand {
 
         if (ImageCheck.hasChannelDimensions(inputImage)) {
             cancel(HAS_CHANNEL_DIMENSIONS);
+            return;
         }
 
         if (ImageCheck.hasTimeDimensions(inputImage)) {
             cancel(HAS_TIME_DIMENSIONS);
+            return;
         }
 
         IterableInterval interval = inputImage;
