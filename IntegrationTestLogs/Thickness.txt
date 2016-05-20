@@ -165,6 +165,44 @@ Completed May 18 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
+Case 8
+=======================================================================
+User should see an error dialog if image is composite
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "organ-of-corti.tif" (File>Open Samples>Organ of Corti)
+2. Binarise image (Process>Binary>Make Binary)
+3. Run Thickness (Plugins>BoneJ>Thickness)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed May 20 2016 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 9
+=======================================================================
+User should see an error dialog if image has a time axis
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "mitosis.tif" (File>Open Samples>Mitosis)
+2. Remove channels (Image>Color>Stack to RBG)
+3. Uncheck "Keep original" on click "OK"
+4. Binarise image (Process>Binary>Make Binary)
+5. Run Thickness (Plugins>BoneJ>Thickness)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed May 20 2016 Richard Domander
+-----------------------------------------------------------------------
+
+
 Don't know how to test
 =======================================================================
 Show an error if input image cannot be converted into an ImagePlus
