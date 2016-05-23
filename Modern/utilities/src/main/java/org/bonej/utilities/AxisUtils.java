@@ -117,8 +117,7 @@ public class AxisUtils {
      *         or their units don't match
      */
     public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(
-            @Nullable final T space,
-            double tolerance) {
+            @Nullable final T space, double tolerance) {
         if (!getSpatialUnit(space).isPresent() || hasNonLinearSpatialAxes(space)) {
             return false;
         }
@@ -143,7 +142,8 @@ public class AxisUtils {
         return true;
     }
 
-    private static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(final T space) {
+    private static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(
+            @Nullable final T space) {
         return Streamers.axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
     }
 

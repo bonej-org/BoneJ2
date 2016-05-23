@@ -3,6 +3,7 @@ package org.bonej.utilities;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.numeric.RealType;
+import org.jetbrains.annotations.Contract;
 
 import javax.annotation.Nullable;
 
@@ -20,6 +21,7 @@ public class ElementUtil {
      * @implNote A hacky brute force approach
      * @return True if only two distinct values, false if interval is null, empty or has more colors
      */
+    @Contract("null -> false")
     public static <T extends RealType<T>> boolean isColorsBinary(@Nullable final IterableInterval<T> interval) {
         if (interval == null || interval.size() == 0) {
             return false;
