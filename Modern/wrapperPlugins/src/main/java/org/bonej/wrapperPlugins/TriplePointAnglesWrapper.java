@@ -7,7 +7,8 @@ import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 import org.bonej.ops.TriplePointAngles;
 import org.bonej.ops.TriplePointAngles.TriplePoint;
-import org.bonej.utilities.ImageCheck;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -141,14 +142,14 @@ public class TriplePointAnglesWrapper extends ContextCommand {
             return;
         }
 
-        final long spatialDimensions = ImageCheck.countSpatialDimensions(inputImage);
+        final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
         if (spatialDimensions < 2 || spatialDimensions > 3) {
             cancel(NOT_2D_OR_3D_IMAGE);
             return;
         }
 
         IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
+        if (inputImage.getValidBits() != 8 || !ElementUtil.isColorsBinary(interval)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
         }

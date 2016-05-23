@@ -9,9 +9,9 @@ import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
 import net.imglib2.IterableInterval;
 import net.imglib2.img.ImagePlusAdapter;
-import net.imglib2.type.numeric.ComplexType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import org.bonej.utilities.ImageCheck;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -27,9 +27,8 @@ import sc.fiji.localThickness.LocalThicknessWrapper;
 
 import java.util.DoubleSummaryStatistics;
 import java.util.Optional;
-import java.util.stream.DoubleStream;
-import java.util.stream.StreamSupport;
 
+import static org.bonej.utilities.Streamers.realDoubleStream;
 import static org.bonej.wrapperPlugins.ErrorMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType;
 import static org.scijava.ui.DialogPrompt.OptionType;
@@ -148,10 +147,13 @@ public class ThicknessWrapper extends ContextCommand {
         final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
 
         // Can't call stats Ops because we have NaN values in the Dataset
-        final DoubleSummaryStatistics statistics = getDoubleStream(map).summaryStatistics();
+        IterableInterval interval = map;
+        final DoubleSummaryStatistics statistics =
+                realDoubleStream(interval).filter(e -> !Double.isNaN(e)).summaryStatistics();
         final double mean = statistics.getAverage();
         final double max = statistics.getMax();
-        final double sum = getDoubleStream(map).reduce(0.0, (a, b) -> a + (b - mean) * (b - mean));
+        final double sum = realDoubleStream(interval).filter(e -> !Double.isNaN(e))
+                .reduce(0.0, (a, b) -> a + (b - mean) * (b - mean));
         final double stdDev = Math.sqrt(sum / statistics.getCount());
 
         ResultsInserter inserter = new ResultsInserter();
@@ -161,13 +163,8 @@ public class ThicknessWrapper extends ContextCommand {
         inserter.updateResults();
     }
 
-    private DoubleStream getDoubleStream(final Dataset dataset) {
-        return StreamSupport.stream(dataset.spliterator(), false).mapToDouble(ComplexType::getRealDouble)
-                .filter(e -> !Double.isNaN(e));
-    }
-
     private String getUnitHeader(final Dataset map) {
-        final Optional<String> unit = ImageCheck.getSpatialUnit(map);
+        final Optional<String> unit = AxisUtils.getSpatialUnit(map);
         String unitHeader = "";
         if (!unit.isPresent()) {
             if (!calibrationWarningShown) {
@@ -196,23 +193,23 @@ public class ThicknessWrapper extends ContextCommand {
             return;
         }
 
-        if (ImageCheck.countSpatialDimensions(inputImage) != 3) {
+        if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
             cancel(NOT_3D_IMAGE);
             return;
         }
 
-        if (ImageCheck.hasChannelDimensions(inputImage)) {
+        if (AxisUtils.hasChannelDimensions(inputImage)) {
             cancel(HAS_CHANNEL_DIMENSIONS);
             return;
         }
 
-        if (ImageCheck.hasTimeDimensions(inputImage)) {
+        if (AxisUtils.hasTimeDimensions(inputImage)) {
             cancel(HAS_TIME_DIMENSIONS);
             return;
         }
 
         IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ImageCheck.isColorsBinary(interval)) {
+        if (inputImage.getValidBits() != 8 || !ElementUtil.isColorsBinary(interval)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
         }
@@ -222,8 +219,8 @@ public class ThicknessWrapper extends ContextCommand {
             return;
         }
 
-        if (!ImageCheck.isSpatialCalibrationIsotropic(inputImage)) {
-            final double anisotropy = ImageCheck.getSpatialCalibrationAnisotropy(inputImage);
+        if (!AxisUtils.isSpatialCalibrationIsotropic(inputImage)) {
+            final double anisotropy = AxisUtils.getSpatialCalibrationAnisotropy(inputImage);
             final String difference = Double.isNaN(anisotropy) ? "" : String.format(" (%.2g difference)", anisotropy);
             final Result result =
                     uiService.showDialog("The image is anisotropic" + difference + ". Continue anyway?",
