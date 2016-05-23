@@ -20,7 +20,7 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
-import static org.bonej.wrapperPlugins.ErrorMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 
 /**
  * A wrapper plugin to bundle Skeletonize3D into BoneJ2

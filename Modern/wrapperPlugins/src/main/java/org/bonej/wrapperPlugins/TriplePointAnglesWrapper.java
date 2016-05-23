@@ -17,7 +17,6 @@ import org.scijava.log.LogService;
 import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
@@ -28,7 +27,9 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 import java.util.List;
 
-import static org.bonej.wrapperPlugins.ErrorMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
 /**
  * A wrapper UI class for the TriplePointAngles Op
@@ -83,13 +84,11 @@ public class TriplePointAnglesWrapper extends ContextCommand {
         skeletoniser.setup("", skeleton);
         skeletoniser.run(null);
 
-        /* TODO apply when Skeletonize3D_ 2.0.1 comes out
         final int iterations = skeletoniser.getThinningIterations();
         if (iterations > 1) {
             skeleton.show();
-            uiService.showDialog("The image was skeletonised", DialogPrompt.MessageType.INFORMATION_MESSAGE);
+            uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
         }
-        */
 
         // Analyse skeleton
         final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
@@ -100,7 +99,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
         if (graphs == null || graphs.length == 0) {
             uiService.showDialog(
                     "Can't calculate triple point angles: " + NO_SKELETONS,
-                    DialogPrompt.MessageType.ERROR_MESSAGE);
+                    ERROR_MESSAGE);
             return;
         }
 

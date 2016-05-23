@@ -1,11 +1,11 @@
 package org.bonej.wrapperPlugins;
 
 /**
- * Common error messages displayed for the user
+ * Common messages displayed for the user
  *
  * @author Richard Domander 
  */
-public class ErrorMessages {
+public class CommonMessages {
     public static final String NOT_3D_IMAGE = "Need a 3D image";
     public static final String NOT_2D_OR_3D_IMAGE = "Need a 2D or 3D image";
     public static final String HAS_TIME_DIMENSIONS = "Image cannot have time axis";
@@ -16,6 +16,7 @@ public class ErrorMessages {
             "The image is incompatible with this plugin (cannot convert to ImagePlus)";
     public static final String NO_IMAGE_OPEN = "No image open";
     public static final String NO_SKELETONS = "Image contains no skeletons";
+    public static final String GOT_SKELETONISED = "The image was skeletonised";
 
-    private ErrorMessages() {}
+    private CommonMessages() {}
 }

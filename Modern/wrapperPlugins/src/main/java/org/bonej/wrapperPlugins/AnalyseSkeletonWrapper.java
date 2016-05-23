@@ -12,12 +12,13 @@ import org.scijava.command.ContextCommand;
 import org.scijava.convert.ConvertService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Graph;
+import sc.fiji.skeletonize3D.Skeletonize3D_;
 
-import static org.bonej.wrapperPlugins.ErrorMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
 /**
  * A wrapper plugin to bundle AnalyzeSkeleton into BoneJ2
@@ -42,17 +43,28 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 
     @Override
     public void run() {
-        final ImagePlus imagePlus = convertService.convert(inputImage, ImagePlus.class);
-        final AnalyzeSkeleton_ skeletonAnalyser = new AnalyzeSkeleton_();
+        final ImagePlus skeleton = convertService.convert(inputImage, ImagePlus.class);
 
-        skeletonAnalyser.setup("", imagePlus);
-        skeletonAnalyser.run(null);
-        final Graph[] graphs = skeletonAnalyser.getGraphs();
+        final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+        skeletoniser.setup("", skeleton);
+        skeletoniser.run(null);
+
+        final int iterations = skeletoniser.getThinningIterations();
+        if (iterations > 1) {
+            skeleton.show();
+            uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
+        }
+
+        final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
+
+        analyser.setup("", skeleton);
+        analyser.run(null);
+        final Graph[] graphs = analyser.getGraphs();
         // Get resultImage to check that the plugin actually ran, and wasn't cancelled by the user
-        final ImageStack resultImage = skeletonAnalyser.getResultImage(false);
+        final ImageStack resultImage = analyser.getResultImage(false);
 
         if ((graphs == null || graphs.length == 0) && resultImage != null) {
-            uiService.showDialog(NO_SKELETONS, DialogPrompt.MessageType.INFORMATION_MESSAGE);
+            uiService.showDialog(NO_SKELETONS, INFORMATION_MESSAGE);
         }
     }
 

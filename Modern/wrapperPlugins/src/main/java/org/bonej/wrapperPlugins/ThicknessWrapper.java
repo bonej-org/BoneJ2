@@ -29,7 +29,7 @@ import java.util.DoubleSummaryStatistics;
 import java.util.Optional;
 
 import static org.bonej.utilities.Streamers.realDoubleStream;
-import static org.bonej.wrapperPlugins.ErrorMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType;
 import static org.scijava.ui.DialogPrompt.OptionType;
 import static org.scijava.ui.DialogPrompt.Result;
