@@ -14,7 +14,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -31,7 +31,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -57,7 +57,7 @@ Expected result
 -----------------------------------------------------------------------
 Plugin produces an image of a skeleton correctly
 
-Completed
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -77,7 +77,7 @@ Expected result
 -----------------------------------------------------------------------
 Plugin produces a skeleton correctly
 
-Completed
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -99,7 +99,7 @@ Expected result
 -----------------------------------------------------------------------
 Plugin produces a skeleton correctly
 
-Completed
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
