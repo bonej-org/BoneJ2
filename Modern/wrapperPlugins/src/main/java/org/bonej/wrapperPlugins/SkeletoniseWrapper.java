@@ -1,23 +1,14 @@
 package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
-import net.imagej.Dataset;
-import net.imagej.DatasetService;
-import net.imagej.ImgPlus;
 import net.imagej.Main;
 import net.imagej.patcher.LegacyInjector;
-import net.imglib2.IterableInterval;
-import net.imglib2.img.ImagePlusAdapter;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
-import org.bonej.utilities.AxisUtils;
-import org.bonej.utilities.ElementUtil;
+import org.bonej.utilities.ImagePlusCheck;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.convert.ConvertService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.UIService;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
@@ -33,35 +24,24 @@ public class SkeletoniseWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    /** @implNote Use Dataset because it has a conversion to ImagePlus */
+    /** @implNote Use ImagePlus because of conversion issues of composite images */
     @Parameter(initializer = "initializeImage")
-    private Dataset inputImage;
+    private ImagePlus inputImage;
 
+    /** @implNote Use ImagePlus because a (converted) Dataset has display issues with a composite image */
     @Parameter(type = ItemIO.OUTPUT)
-    private Dataset outputImage;
-
-    @Parameter
-    private ConvertService convertService;
-
-    @Parameter
-    private DatasetService datasetService;
-
-    @Parameter
-    private UIService uiService;
+    private ImagePlus skeleton;
 
     @Override
     public void run() {
-        final String inputImageName = inputImage.getName();
-        final ImagePlus skeleton = convertService.convert(inputImage.duplicate(), ImagePlus.class);
-        final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+        skeleton = inputImage.duplicate();
+        skeleton.setTitle("Skeleton of " + inputImage.getTitle());
 
+        final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
         skeletoniser.setup("", skeleton);
         skeletoniser.run(null);
 
-        final ImgPlus<UnsignedByteType> imgPlus = ImagePlusAdapter.wrapImgPlus(skeleton);
-        outputImage = datasetService.create(imgPlus);
-        outputImage.setName("Skeleton of " + inputImageName);
-        uiService.show(outputImage);
+        skeleton.show();
     }
 
     @SuppressWarnings("unused")
@@ -71,20 +51,8 @@ public class SkeletoniseWrapper extends ContextCommand {
             return;
         }
 
-        final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
-        if (spatialDimensions < 2 || spatialDimensions > 3) {
-            cancel(NOT_2D_OR_3D_IMAGE);
-            return;
-        }
-
-        IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ElementUtil.isColorsBinary(interval)) {
+        if (inputImage.getType() != ImagePlus.GRAY8 || !ImagePlusCheck.isBinaryColour(inputImage)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
-            return;
-        }
-
-        if (!convertService.supports(inputImage, ImagePlus.class)) {
-            cancel(CANNOT_CONVERT_TO_IMAGE_PLUS);
         }
     }
 
