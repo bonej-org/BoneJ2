@@ -14,7 +14,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed
+Completed May 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -31,7 +31,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed
+Completed May 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -145,13 +145,14 @@ Steps
 -----------------------------------------------------------------------
 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
 2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+3. Click "OK"
 
 Expected result
 -----------------------------------------------------------------------
 An info dialog ("Image was skeletonised") and the skeletonised image
 open
 
-Completed -- -- 2016
+Completed May 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -172,7 +173,7 @@ Expected result
 -----------------------------------------------------------------------
 Plugin runs successfully and "Tagged skeleton" image has 3 channels
 
-Completed -- -- ---- - -
+Completed May 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -195,5 +196,5 @@ Expected result
 -----------------------------------------------------------------------
 Plugin runs successfully and "Tagged skeleton" image has a time axis
 
-Completed -- -- ---- - -
+FIXME: Tagged skeleton doesn't have time axis
 -----------------------------------------------------------------------
