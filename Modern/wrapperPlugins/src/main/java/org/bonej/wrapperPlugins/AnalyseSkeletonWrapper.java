@@ -44,6 +44,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 
         final int iterations = skeletoniser.getThinningIterations();
         if (iterations > 1) {
+            skeleton.setTitle("Skeleton of " + inputImage.getTitle());
             skeleton.show();
             uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
         }

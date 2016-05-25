@@ -86,6 +86,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 
         final int iterations = skeletoniser.getThinningIterations();
         if (iterations > 1) {
+            skeleton.setTitle("Skeleton of " + inputImage.getName());
             skeleton.show();
             uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
         }
