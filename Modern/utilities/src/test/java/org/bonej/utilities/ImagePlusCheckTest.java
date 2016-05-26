@@ -118,4 +118,31 @@ public class ImagePlusCheckTest {
         boolean result = ImagePlusCheck.isBinaryColour(testImage);
         assertTrue("Image with two colors (black & white) should be binary", result);
     }
+
+    @Test
+    public void testIs3DFalseIfImageNull() throws Exception {
+        final boolean result = ImagePlusCheck.is3D(null);
+
+        assertFalse("Null image should not be 3D", result);
+    }
+
+    @Test
+    public void testIs3DFalseIfImage2D() throws Exception {
+        final ImagePlus imagePlus = mock(ImagePlus.class);
+        when(imagePlus.getNSlices()).thenReturn(0);
+
+        final boolean result = ImagePlusCheck.is3D(imagePlus);
+
+        assertFalse("2D image should not be 3D", result);
+    }
+
+    @Test
+    public void testIs3D() throws AssertionError {
+        final ImagePlus imagePlus = mock(ImagePlus.class);
+        when(imagePlus.getNSlices()).thenReturn(10);
+
+        final boolean result = ImagePlusCheck.is3D(imagePlus);
+
+        assertTrue("Image with more than 1 slice should be 3D", result);
+    }
 }
