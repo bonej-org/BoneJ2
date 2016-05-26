@@ -55,8 +55,4 @@ public class SkeletoniseWrapper extends ContextCommand {
             cancel(NOT_8_BIT_BINARY_IMAGE);
         }
     }
-
-    public static void main(String... args) {
-        Main.launch(args);
-    }
 }
