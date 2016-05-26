@@ -9,6 +9,7 @@ import org.bonej.ops.TriplePointAngles;
 import org.bonej.ops.TriplePointAngles.TriplePoint;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
+import org.bonej.utilities.ImagePlusCheck;
 import org.bonej.utilities.ResultsInserter;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -17,7 +18,6 @@ import org.scijava.log.LogService;
 import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
@@ -28,7 +28,9 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 import java.util.List;
 
-import static org.bonej.wrapperPlugins.ErrorMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
 /**
  * A wrapper UI class for the TriplePointAngles Op
@@ -43,9 +45,9 @@ public class TriplePointAnglesWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    /** @implNote Use Dataset because it has a conversion to ImagePlus */
+    /** @implNote Use ImagePlus because of conversion issues of composite images */
     @Parameter(initializer = "initializeImage")
-    private Dataset inputImage;
+    private ImagePlus inputImage;
 
     @Parameter(label = "Measurement mode", description = "Where to measure the triple point angles",
             style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
@@ -78,18 +80,17 @@ public class TriplePointAnglesWrapper extends ContextCommand {
     @Override
     public void run() {
         //Skeletonise input image
-        final ImagePlus skeleton = convertService.convert(inputImage, ImagePlus.class);
+        final ImagePlus skeleton = inputImage.duplicate();
         final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
         skeletoniser.setup("", skeleton);
         skeletoniser.run(null);
 
-        /* TODO apply when Skeletonize3D_ 2.0.1 comes out
         final int iterations = skeletoniser.getThinningIterations();
         if (iterations > 1) {
+            skeleton.setTitle("Skeleton of " + inputImage.getTitle());
             skeleton.show();
-            uiService.showDialog("The image was skeletonised", DialogPrompt.MessageType.INFORMATION_MESSAGE);
+            uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
         }
-        */
 
         // Analyse skeleton
         final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
@@ -98,9 +99,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
         final Graph[] graphs = analyser.getGraphs();
 
         if (graphs == null || graphs.length == 0) {
-            uiService.showDialog(
-                    "Can't calculate triple point angles: " + NO_SKELETONS,
-                    DialogPrompt.MessageType.ERROR_MESSAGE);
+            uiService.showDialog("Can't calculate triple point angles: " + NO_SKELETONS, ERROR_MESSAGE);
             return;
         }
 
@@ -118,7 +117,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 
     private void showResults(final List<List<TriplePoint>> graphList) {
         ResultsInserter resultsInserter = new ResultsInserter();
-        String label = inputImage.getName();
+        String label = inputImage.getTitle();
 
         for (List<TriplePoint> triplePointList : graphList) {
             for (TriplePoint triplePoint : triplePointList) {
@@ -142,20 +141,9 @@ public class TriplePointAnglesWrapper extends ContextCommand {
             return;
         }
 
-        final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
-        if (spatialDimensions < 2 || spatialDimensions > 3) {
-            cancel(NOT_2D_OR_3D_IMAGE);
-            return;
-        }
-
-        IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ElementUtil.isColorsBinary(interval)) {
+        if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(inputImage)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
-        }
-
-        if (!convertService.supports(inputImage, ImagePlus.class)) {
-            cancel(CANNOT_CONVERT_TO_IMAGE_PLUS);
         }
     }
 

@@ -14,7 +14,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 12 2016 Richard Domander
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -31,7 +31,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 12 2016 Richard Domander
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -57,12 +57,50 @@ Expected result
 -----------------------------------------------------------------------
 Plugin produces an image of a skeleton correctly
 
-Completed May 12 2016 Richard Domander
+Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
-Don't know how to test
+Case 4
 =======================================================================
-Show an error if input image does not have 2 or 3 spatial dimensions
-Show an error if input image cannot be converted into an ImagePlus
+Skeletonise produces a skeleton of a composite image
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "hela-cells.tif" (File>Open Samples>HeLa Cells)
+2. Binarise image (Process>Binary>Make Binary)
+3. Click "OK"
+4. Run Skeletonise (Plugins>BoneJ>Skeletonise)
+5. Verify that an output image has three channels like the input
+
+Expected result
+-----------------------------------------------------------------------
+Plugin produces a skeleton correctly
+
+Completed May 24 2016 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 5
+=======================================================================
+Skeletonise produces a skeleton of a image with time axis
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "mitosis.tif" (File>Open Samples>Mitosis)
+2. Remove channels (Image>Color>Stack to RBG)
+3. Uncheck "Keep original" on click "OK"
+4. Binarise image (Process>Binary>Make Binary)
+5. Click "OK"
+6. Run Skeletonise (Plugins>BoneJ>Skeletonise)
+7. Verify that an output image has a time axis
+
+Expected result
+-----------------------------------------------------------------------
+Plugin produces a skeleton correctly
+
+Completed May 24 2016 Richard Domander
+-----------------------------------------------------------------------
+
+
 

@@ -132,6 +132,7 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
+            <!-- TODO Use version 3.1.1 when released -->
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
@@ -140,6 +141,8 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
+            <!-- TODO Remove version pom-fiji updates -->
+            <version>2.1.0</version>
         </dependency>
 
         <!-- SciJava dependencies -->
@@ -156,7 +159,7 @@
         <dependency>
             <groupId>net.imglib2</groupId>
             <artifactId>imglib2-ij</artifactId>
-            <!-- TODO: remove version when pom-fiji updates to beta-32 -->
+            <!-- TODO: remove version when pom-imagej updates to beta-32 -->
             <version>2.0.0-beta-32</version>
         </dependency>
         <dependency>
