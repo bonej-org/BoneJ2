@@ -1,19 +1,14 @@
 package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
-import net.imagej.Dataset;
 import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
-import net.imglib2.IterableInterval;
 import org.bonej.ops.TriplePointAngles;
 import org.bonej.ops.TriplePointAngles.TriplePoint;
-import org.bonej.utilities.AxisUtils;
-import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ImagePlusCheck;
 import org.bonej.utilities.ResultsInserter;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.convert.ConvertService;
 import org.scijava.log.LogService;
 import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;

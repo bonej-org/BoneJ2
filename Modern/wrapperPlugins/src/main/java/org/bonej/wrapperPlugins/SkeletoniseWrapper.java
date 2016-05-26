@@ -1,7 +1,6 @@
 package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
-import net.imagej.Main;
 import net.imagej.patcher.LegacyInjector;
 import org.bonej.utilities.ImagePlusCheck;
 import org.scijava.ItemIO;
