@@ -196,5 +196,5 @@ Expected result
 -----------------------------------------------------------------------
 Plugin runs successfully and "Tagged skeleton" image has a time axis
 
-FIXME: Tagged skeleton doesn't have time axis
+TODO: Complete when AnalyzeSkeleton 3.1.1 is released
 -----------------------------------------------------------------------
