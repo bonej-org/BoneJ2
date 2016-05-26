@@ -63,9 +63,6 @@ public class TriplePointAnglesWrapper extends ContextCommand {
     private Button helpButton;
 
     @Parameter
-    private ConvertService convertService;
-
-    @Parameter
     private LogService logService;
 
     @Parameter
