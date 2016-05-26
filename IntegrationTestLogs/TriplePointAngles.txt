@@ -14,7 +14,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 10 2016 Richard Domander
+Completed -- -- 2016 - -
 -----------------------------------------------------------------------
 
 
@@ -53,7 +53,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 10 2016 Richard Domander
+Completed -- -- 2016 - -
 -----------------------------------------------------------------------
 
 
@@ -101,7 +101,7 @@ Angle results from each three runs differ
 Completed May 10 2016 Richard Domander
 -----------------------------------------------------------------------
 
-//TODO: Perform when Skeletonize3D_ 2.0.1 comes out
+
 Case 6
 =======================================================================
 Input image is skeletonised if necessary
@@ -119,12 +119,53 @@ Expected result
 An info dialog ("Image was skeletonised") and the skeletonised image
 open
 
-Completed -- -- 2016
+Completed -- -- 2016 - -
 -----------------------------------------------------------------------
 
 
+Case 7
+=======================================================================
+Calculates the triple point angles of a composite image
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "hela-cells.tif" (File>Open Samples>HeLa Cells)
+2. Binarise image (Process>Binary>Make Binary)
+3. Click "OK"
+4. Skeletonise image (Plugins>BoneJ>Skeletonise)
+5. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+6. Click "OK"
+
+Expected result
+-----------------------------------------------------------------------
+Plugin runs successfully
+
+Completed -- -- 2016 - -
+-----------------------------------------------------------------------
+
+
+Case 8
+=======================================================================
+Calculates the triple point angles of an image with a time axis
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "mitosis.tif" (File>Open Samples>Mitosis)
+2. Remove channels (Image>Color>Stack to RBG)
+3. Uncheck "Keep original" on click "OK"
+4. Binarise image (Process>Binary>Make Binary)
+5. Click "OK"
+6. Skeletonise image (Plugins>BoneJ>Skeletonise)
+7. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+8. Click "OK"
+
+Expected result
+-----------------------------------------------------------------------
+Plugin runs successfully and "Tagged skeleton" image has a time axis
+
+FIXME: Tagged skeleton doesn't have time axis
+-----------------------------------------------------------------------
+
 Don't know how to test
 =======================================================================
-Show an error if input image does not have 2 or 3 spatial dimensions
-Show an error if input image cannot be converted into an ImagePlus
 Show an error if the help page cannot be opened
