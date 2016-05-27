@@ -14,7 +14,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed
+Completed May 27 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -31,7 +31,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed
+Completed May 27 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -49,7 +49,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed
+Completed May 27 Richard Domander
 -----------------------------------------------------------------------
 
 
