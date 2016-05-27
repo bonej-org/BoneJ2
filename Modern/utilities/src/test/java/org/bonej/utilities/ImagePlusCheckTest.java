@@ -30,7 +30,7 @@ public class ImagePlusCheckTest {
         anisotropicCalibration.pixelWidth = 1.001;
         anisotropicCalibration.pixelHeight = 1;
         when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
-        when(testImage.getStackSize()).thenReturn(0);
+        when(testImage.getNSlices()).thenReturn(1);
 
         final boolean result = ImagePlusCheck.isIsotropic(testImage, 0.0);
 
@@ -46,7 +46,7 @@ public class ImagePlusCheckTest {
         anisotropicCalibration.pixelHeight = 1;
         anisotropicCalibration.pixelDepth = 1.0001;
         when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
-        when(testImage.getStackSize()).thenReturn(10);
+        when(testImage.getNSlices()).thenReturn(10);
 
         final boolean result = ImagePlusCheck.isIsotropic(testImage, 0.0);
 
@@ -61,7 +61,7 @@ public class ImagePlusCheckTest {
         anisotropicCalibration.pixelWidth = 1;
         anisotropicCalibration.pixelHeight = 1;
         when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
-        when(testImage.getStackSize()).thenReturn(0);
+        when(testImage.getNSlices()).thenReturn(1);
 
         final boolean result = ImagePlusCheck.isIsotropic(testImage, 0.0);
 
@@ -129,7 +129,7 @@ public class ImagePlusCheckTest {
     @Test
     public void testIs3DFalseIfImage2D() throws Exception {
         final ImagePlus imagePlus = mock(ImagePlus.class);
-        when(imagePlus.getNSlices()).thenReturn(0);
+        when(imagePlus.getNSlices()).thenReturn(1);
 
         final boolean result = ImagePlusCheck.is3D(imagePlus);
 
