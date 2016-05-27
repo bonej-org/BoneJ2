@@ -210,25 +210,12 @@ public class TriplePointAngles
         return (Vector3d) centroidOp.compute1(oppositeVertexVectors);
     }
 
-    /** Calculates the angle between u and v at the given point */
-    private double vectorAngleAtPoint(final Vector3d u, final Vector3d v, final Vector3d point) {
-        // Round vectors to whole numbers to avoid angle measurement errors
-        final Vector3d p0 = roundVector(u);
-        final Vector3d p1 = roundVector(v);
-        final Vector3d p = roundVector(point);
+    /** Calculates the angle between u and v at the given point p */
+    private double vectorAngleAtPoint(final Vector3d u, final Vector3d v, final Vector3d p) {
+        u.sub(p);
+        v.sub(p);
 
-        p0.sub(p);
-        p1.sub(p);
-
-        return p0.angle(p1);
-    }
-
-    /** Returns a copy of the given vector where each coordinate has been rounded */
-    private Vector3d roundVector(final Vector3d vector) {
-        final long x = Math.round(vector.getX());
-        final long y = Math.round(vector.getY());
-        final long z = Math.round(vector.getZ());
-        return new Vector3d(x, y, z);
+        return u.angle(v);
     }
     // endregion
 
