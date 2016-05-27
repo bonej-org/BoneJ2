@@ -16,7 +16,7 @@ public class ImagePlusCheck {
 
     @Contract("null -> false")
     public static boolean is3D(@Nullable final ImagePlus image) {
-        return image != null && image.getNSlices() > 0;
+        return image != null && image.getNSlices() > 1;
     }
 
     /**
@@ -46,13 +46,12 @@ public class ImagePlusCheck {
         final double tLow = 1.0 - tolerance;
         final double tHigh = 1.0 + tolerance;
         final double widthHeightRatio = vW > vH ? vW / vH : vH / vW;
-        final boolean imageIs3D = (image.getStackSize() >= 1);
 
         if (widthHeightRatio < tLow || widthHeightRatio > tHigh) {
             return false;
         }
 
-        if (!imageIs3D) {
+        if (!is3D(image)) {
             return true;
         }
 
