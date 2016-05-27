@@ -19,50 +19,39 @@ public class ImagePlusCheck {
         return image != null && image.getNSlices() > 1;
     }
 
-    /**
-     * Check if the image's voxels are isotropic in all 3 dimensions (i.e. are
-     * placed on a cubic grid)
-     *
-     * @param image     image to test
-     * @param tolerance tolerated relative deviation in voxel dimensions [0.0, 1.0]
-     * @return true if voxel width == height and height == depth (within tolerance),
-     *         false if not or if image == null
-     */
-    @Contract("null, _ -> false")
-    public static boolean isIsotropic(@Nullable final ImagePlus image, double tolerance) {
-        if (image == null) {
-            return false;
-        }
-
-        if (tolerance < 0.0) {
-            tolerance = 0.0;
-        } else if (tolerance > 1.0) {
-            tolerance = 1.0;
-        }
-
-        final Calibration cal = image.getCalibration();
-        final double vW = cal.pixelWidth;
-        final double vH = cal.pixelHeight;
-        final double tLow = 1.0 - tolerance;
-        final double tHigh = 1.0 + tolerance;
-        final double widthHeightRatio = vW > vH ? vW / vH : vH / vW;
-
-        if (widthHeightRatio < tLow || widthHeightRatio > tHigh) {
-            return false;
-        }
-
-        if (!is3D(image)) {
-            return true;
-        }
-
-        final double vD = cal.pixelDepth;
-        final double widthDepthRatio = vW > vD ? vW / vD : vD / vW;
-
-        return (widthDepthRatio >= tLow && widthDepthRatio <= tHigh);
-    }
-
     @Contract("null -> false")
     public static boolean isBinaryColour(@Nullable final ImagePlus image) {
         return image != null && Arrays.stream(image.getStatistics().histogram).filter(p -> p > 0).count() <= 2;
+    }
+
+
+    /**
+     * Calculates the degree of anisotropy in the image, i.e. the maximum difference in the ratios of the dimensions
+     *
+     * @return Anisotropy fraction [0.0, Double.MAX_VALUE], an isotropic image returns 0.0
+     *         Returns Double.NaN if image == null
+     */
+    public static double anisotropy(@Nullable final ImagePlus image) {
+        if (image == null) {
+            return Double.NaN;
+        }
+
+        final Calibration cal = image.getCalibration();
+        final double w = cal.pixelWidth;
+        final double h = cal.pixelHeight;
+        final double widthHeightRatio = w > h ? w / h : h / w;
+        final double widthHeightAnisotropy = Math.abs(1.0 - widthHeightRatio);
+
+        if (!is3D(image)) {
+            return widthHeightAnisotropy;
+        }
+
+        final double d = cal.pixelDepth;
+        final double widthDepthRatio = w > d ? w / d : d / w;
+        final double heightDepthRatio = h > d ? h / d : d / h;
+        final double widthDepthAnisotropy = Math.abs(1.0 - widthDepthRatio);
+        final double heightDepthAnisotropy = Math.abs(1.0 - heightDepthRatio);
+
+        return Math.max(widthHeightAnisotropy, Math.max(widthDepthAnisotropy, heightDepthAnisotropy));
     }
 }
