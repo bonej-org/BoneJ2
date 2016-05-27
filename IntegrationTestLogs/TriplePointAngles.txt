@@ -1,4 +1,4 @@
-Integration tests for the TriplePointAngles plugin
+﻿Integration tests for the TriplePointAngles plugin
 
 
 Case 1
@@ -135,6 +135,8 @@ Steps
 4. Skeletonise image (Plugins>BoneJ>Skeletonise)
 5. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
 6. Click "OK"
+7. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+8. Click "OK"
 
 Expected result
 -----------------------------------------------------------------------
@@ -150,14 +152,16 @@ Calculates the triple point angles of an image with a time axis
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Open "mitosis.tif" (File>Open Samples>Mitosis)
-2. Remove channels (Image>Color>Stack to RBG)
-3. Uncheck "Keep original" on click "OK"
-4. Binarise image (Process>Binary>Make Binary)
-5. Click "OK"
-6. Skeletonise image (Plugins>BoneJ>Skeletonise)
-7. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-8. Click "OK"
+ 1. Open "mitosis.tif" (File>Open Samples>Mitosis)
+ 2. Remove channels (Image>Color>Stack to RBG)
+ 3. Uncheck "Keep original" on click "OK"
+ 4. Binarise image (Process>Binary>Make Binary)
+ 5. Click "OK"
+ 6. Skeletonise image (Plugins>BoneJ>Skeletonise)
+ 7. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+ 8. Click "OK"
+ 9. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+10. Click "OK"
 
 Expected result
 -----------------------------------------------------------------------
@@ -165,6 +169,35 @@ Plugin runs successfully
 
 TODO: Complete when AnalyzeSkeleton 3.1.1 is released
 -----------------------------------------------------------------------
+
+
+Case 9
+=======================================================================
+Results should match BoneJ1
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+3. Set options
+   - Measurement mode: "Opposite vertex"
+2. Rerun Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+3. Set options
+   - Measurement mode: "Edge point"
+   - Edge point #: "0"
+2. Rerun Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+3. Set options
+   - Measurement mode: "Edge point"
+   - Edge point #: "10"
+
+
+Expected result
+-----------------------------------------------------------------------
+All results in the results table match those from BoneJ1
+
+Completed 
+-----------------------------------------------------------------------
+
 
 Don't know how to test
 =======================================================================
