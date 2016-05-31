@@ -46,6 +46,7 @@ public class ImagePlusCheckTest {
         final Calibration anisotropicCalibration = new Calibration();
         anisotropicCalibration.pixelWidth = 1;
         anisotropicCalibration.pixelHeight = 1;
+
         // Should not care about pixelDepth because image is 2D
         anisotropicCalibration.pixelDepth = 5;
         when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
