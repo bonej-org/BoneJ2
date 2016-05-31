@@ -77,7 +77,7 @@ Expected result
 Warning dialog opens and shows the amount of anisotropy.
 Plugin should stop if user clicks "Cancel", and continue if they click "OK"
 
-Completed
+Completed May 31 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -89,14 +89,14 @@ Steps
 -----------------------------------------------------------------------
 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
 2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Select "Trabecular spacing" and click "OK"
-4. Verify that column heading don't show units
+3. Select "Trabecular thickness" and click "OK"
+4. Verify that column heading doesn't show units
 
 Expected result
 -----------------------------------------------------------------------
 Results should show without units
 
-Completed
+Completed May 31 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -186,7 +186,7 @@ Expected result
 -----------------------------------------------------------------------
 Statistics show up correctly in the Results table
 
-Completed
+Completed May 31 Richard Domander
 -----------------------------------------------------------------------
 
 
