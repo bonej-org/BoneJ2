@@ -14,7 +14,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 18 2016 Richard Domander
+Completed May 27 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -31,7 +31,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 18 2016 Richard Domander
+Completed May 27 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -49,7 +49,7 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog should open, and the plugin stop running
 
-Completed May 18 2016 Richard Domander
+Completed May 27 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -77,7 +77,7 @@ Expected result
 Warning dialog opens and shows the amount of anisotropy.
 Plugin should stop if user clicks "Cancel", and continue if they click "OK"
 
-Completed May 18 2016 Richard Domander
+Completed May 31 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -89,14 +89,14 @@ Steps
 -----------------------------------------------------------------------
 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
 2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Select "Trabecular spacing" and click "OK"
-4. Verify that column heading don't show units
+3. Select "Trabecular thickness" and click "OK"
+4. Verify that column heading doesn't show units
 
 Expected result
 -----------------------------------------------------------------------
 Results should show without units
 
-Completed May 18 2016 Richard Domander
+Completed May 31 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -153,9 +153,6 @@ Steps
    - Calculate: "Both"
    - Show thickness maps: unchecked
    - Mask thickness maps: unchecked
- 8. Verify that Results table has headers "Mean", "Std Dev" and "Max"
-    for both "Tb.Th" and "Tb.Sp"
- 9. Verify that headers have the unit mm
 
 Expected result
 -----------------------------------------------------------------------
@@ -167,25 +164,57 @@ Completed May 18 2016 Richard Domander
 
 Case 8
 =======================================================================
-User should see an error dialog if image is composite
+Thickness statistics show up correctly
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Set scale (Analyze>Set Scale)
+3. Set options
+   - "Distance in pixels" to "1"
+   - "Known distance" to "1.00"
+   - "Pixel aspect ratio" to "1.0"
+   - "Unit of length" to "mm"
+4. Run Thickness (Plugins>BoneJ>Thickness)
+5. Set options
+  - Calculate: "Both"
+6. Verify that Results table has headers "Mean", "Std Dev" and "Max"
+    for both "Tb.Th" and "Tb.Sp"
+7. Verify that headers have the unit mm
+
+Expected result
+-----------------------------------------------------------------------
+Statistics show up correctly in the Results table
+
+Completed May 31 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 9
+=======================================================================
+Creates the thicknes map of a composite image
 =======================================================================
 Steps
 -----------------------------------------------------------------------
 1. Open "organ-of-corti.tif" (File>Open Samples>Organ of Corti)
 2. Binarise image (Process>Binary>Make Binary)
 3. Run Thickness (Plugins>BoneJ>Thickness)
+4. Set options
+  - Calculate: "Trabecular thickness"
+  - Show thickness maps: checked
+  - Mask thickness maps: checked
 
 Expected result
 -----------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
+Resulting thickness map has 3 channels
 
-Completed May 20 2016 Richard Domander
+TODO: Perform once the LocalThickness_ plugin has been updated
 -----------------------------------------------------------------------
 
 
-Case 9
+Case 10
 =======================================================================
-User should see an error dialog if image has a time axis
+Creates the thicknes map of an image with a time axis
 =======================================================================
 Steps
 -----------------------------------------------------------------------
@@ -194,17 +223,19 @@ Steps
 3. Uncheck "Keep original" on click "OK"
 4. Binarise image (Process>Binary>Make Binary)
 5. Run Thickness (Plugins>BoneJ>Thickness)
+6. Set options
+   - Calculate: "Trabecular thickness"
+   - Show thickness maps: checked
+   - Mask thickness maps: checked
 
 Expected result
 -----------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
+Resulting thickness map has a time axis
 
-Completed May 20 2016 Richard Domander
+TODO: Perform once the LocalThickness_ plugin has been updated
 -----------------------------------------------------------------------
 
 
 Don't know how to test
 =======================================================================
-Show an error if input image cannot be converted into an ImagePlus
 Show an error if the help page cannot be opened
-User should see warning if image calibration is undetermined

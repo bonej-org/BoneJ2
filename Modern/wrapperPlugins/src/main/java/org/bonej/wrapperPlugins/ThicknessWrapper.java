@@ -1,21 +1,15 @@
 package org.bonej.wrapperPlugins;
 
+import com.google.common.base.Strings;
 import ij.IJ;
 import ij.ImagePlus;
-import net.imagej.Dataset;
-import net.imagej.DatasetService;
-import net.imagej.ImgPlus;
-import net.imagej.ops.OpService;
+import ij.process.StackStatistics;
 import net.imagej.patcher.LegacyInjector;
-import net.imglib2.IterableInterval;
-import net.imglib2.img.ImagePlusAdapter;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
-import org.bonej.utilities.AxisUtils;
-import org.bonej.utilities.ElementUtil;
+import org.bonej.utilities.ImagePlusCheck;
 import org.bonej.utilities.ResultsInserter;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.convert.ConvertService;
 import org.scijava.log.LogService;
 import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
@@ -25,20 +19,13 @@ import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
-import java.util.DoubleSummaryStatistics;
-import java.util.Optional;
-
-import static org.bonej.utilities.Streamers.realDoubleStream;
 import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType;
-import static org.scijava.ui.DialogPrompt.OptionType;
-import static org.scijava.ui.DialogPrompt.Result;
+import static org.scijava.ui.DialogPrompt.*;
 
 /**
  * A GUI wrapper class for the LocalThickness plugin
  *
  * @author Richard Domander
- * TODO Fix display issues with Datasets
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Thickness")
 public class ThicknessWrapper extends ContextCommand {
@@ -46,15 +33,17 @@ public class ThicknessWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    private boolean calibrationWarningShown;
-
-    // TODO fix "NaN" value issue (NaNs make Datasets black) so that Dataset can be made outputs
-    private Dataset thicknessMap;
-    private Dataset spacingMap;
-
-    /** @implNote Use Dataset because it has a conversion to ImagePlus */
+    /**
+     * @implNote Use ImagePlus because of conversion issues of composite images
+     */
     @Parameter(initializer = "initializeImage")
-    private Dataset inputImage;
+    private ImagePlus inputImage;
+
+    @Parameter(type = ItemIO.OUTPUT)
+    private ImagePlus thicknessMap;
+
+    @Parameter(type = ItemIO.OUTPUT)
+    private ImagePlus spacingMap;
 
     @Parameter(label = "Calculate:", description = "Which thickness measures to calculate",
             style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE,
@@ -71,16 +60,7 @@ public class ThicknessWrapper extends ContextCommand {
     private Button helpButton;
 
     @Parameter
-    private ConvertService convertService;
-
-    @Parameter
-    private DatasetService datasetService;
-
-    @Parameter
     private LogService logService;
-
-    @Parameter
-    private OpService opService;
 
     @Parameter
     private PlatformService platformService;
@@ -88,10 +68,30 @@ public class ThicknessWrapper extends ContextCommand {
     @Parameter
     private UIService uiService;
 
+    private static void showMapStatistics(final ImagePlus map, final boolean foreground) {
+        final String unitHeader = getUnitHeader(map);
+        final String label = map.getTitle();
+        final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
+        final StackStatistics resultStats = new StackStatistics(map);
+
+        ResultsInserter inserter = new ResultsInserter();
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, resultStats.mean);
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" + unitHeader, resultStats.stdDev);
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader, resultStats.max);
+        inserter.updateResults();
+    }
+
+    private static String getUnitHeader(final ImagePlus map) {
+        final String unit = map.getCalibration().getUnit();
+        if (Strings.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) || "unit".equalsIgnoreCase(unit)) {
+            return "";
+        }
+
+        return " (" + unit + ")";
+    }
+
     @Override
     public void run() {
-        calibrationWarningShown = false;
-
         switch (maps) {
             case "Trabecular thickness":
                 thicknessMap = createMap(true);
@@ -113,8 +113,7 @@ public class ThicknessWrapper extends ContextCommand {
     }
 
     //region -- Helper methods --
-    private Dataset createMap(final boolean foreground) {
-        final ImagePlus imagePlus = convertService.convert(inputImage, ImagePlus.class);
+    private ImagePlus createMap(final boolean foreground) {
         final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
 
         final LocalThicknessWrapper localThickness = new LocalThicknessWrapper();
@@ -124,66 +123,14 @@ public class ThicknessWrapper extends ContextCommand {
         localThickness.maskThicknessMap = maskArtefacts;
         localThickness.setTitleSuffix(suffix);
         localThickness.calibratePixels = true;
-        final ImagePlus map = localThickness.processImage(imagePlus);
+        final ImagePlus map = localThickness.processImage(inputImage);
 
         if (showMaps) {
-            /* Show ImagePlus because of Dataset display issues:
-               1. Dataset doesn't get correctly scaled to pixel values
-               2. Dataset doesn't show in "Fire" LUT
-               3. NaN values make the Dataset completely black
-             */
             map.show();
             IJ.run("Fire");
         }
 
-        final ImgPlus<UnsignedByteType> imgPlus = ImagePlusAdapter.wrapImgPlus(map);
-
-        return datasetService.create(imgPlus);
-    }
-
-    private void showMapStatistics(final Dataset map, final boolean foreground) {
-        final String unitHeader = getUnitHeader(map);
-        final String label = map.getName();
-        final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
-
-        // Can't call stats Ops because we have NaN values in the Dataset
-        IterableInterval interval = map;
-        final DoubleSummaryStatistics statistics =
-                realDoubleStream(interval).filter(e -> !Double.isNaN(e)).summaryStatistics();
-        final double mean = statistics.getAverage();
-        final double max = statistics.getMax();
-        final double sum = realDoubleStream(interval).filter(e -> !Double.isNaN(e))
-                .reduce(0.0, (a, b) -> a + (b - mean) * (b - mean));
-        final double stdDev = Math.sqrt(sum / statistics.getCount());
-
-        ResultsInserter inserter = new ResultsInserter();
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean " + unitHeader, mean);
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev " + unitHeader, stdDev);
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Max " + unitHeader, max);
-        inserter.updateResults();
-    }
-
-    private String getUnitHeader(final Dataset map) {
-        final Optional<String> unit = AxisUtils.getSpatialUnit(map);
-        String unitHeader = "";
-        if (!unit.isPresent()) {
-            if (!calibrationWarningShown) {
-                uiService.showDialog(
-                        "Cannot not determine the unit of calibration - showing plain values",
-                        MessageType.WARNING_MESSAGE);
-                calibrationWarningShown = true;
-            }
-        } else {
-            unitHeader = unit.get();
-            if ("pixel".equals(unitHeader) || "unit".equals(unitHeader)) {
-                // Don't show the default units
-                unitHeader = "";
-            } else if (!unitHeader.isEmpty()) {
-                unitHeader = "(" + unitHeader + ")";
-            }
-        }
-
-        return unitHeader;
+        return map;
     }
 
     @SuppressWarnings("unused")
@@ -193,38 +140,22 @@ public class ThicknessWrapper extends ContextCommand {
             return;
         }
 
-        if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+        if (!ImagePlusCheck.is3D(inputImage)) {
             cancel(NOT_3D_IMAGE);
             return;
         }
 
-        if (AxisUtils.hasChannelDimensions(inputImage)) {
-            cancel(HAS_CHANNEL_DIMENSIONS);
-            return;
-        }
-
-        if (AxisUtils.hasTimeDimensions(inputImage)) {
-            cancel(HAS_TIME_DIMENSIONS);
-            return;
-        }
-
-        IterableInterval interval = inputImage;
-        if (inputImage.getValidBits() != 8 || !ElementUtil.isColorsBinary(interval)) {
+        if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(inputImage)) {
             cancel(NOT_8_BIT_BINARY_IMAGE);
             return;
         }
 
-        if (!convertService.supports(inputImage, ImagePlus.class)) {
-            cancel(CANNOT_CONVERT_TO_IMAGE_PLUS);
-            return;
-        }
-
-        if (!AxisUtils.isSpatialCalibrationIsotropic(inputImage)) {
-            final double anisotropy = AxisUtils.getSpatialCalibrationAnisotropy(inputImage);
-            final String difference = Double.isNaN(anisotropy) ? "" : String.format(" (%.2g difference)", anisotropy);
+        final double anisotropy = ImagePlusCheck.anisotropy(inputImage);
+        if (anisotropy > 1E-3) {
+            final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy * 100.0);
             final Result result =
-                    uiService.showDialog("The image is anisotropic" + difference + ". Continue anyway?",
-                                         MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
+                    uiService.showDialog("The image is anisotropic" + anisotropyPercent + ". Continue anyway?",
+                            MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
             if (result == Result.CANCEL_OPTION) {
                 cancel(null);
             }
