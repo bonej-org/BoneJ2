@@ -4,22 +4,12 @@ import com.google.common.base.Strings;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.StackStatistics;
-import net.imagej.Dataset;
-import net.imagej.DatasetService;
-import net.imagej.ImgPlus;
-import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
-import net.imglib2.IterableInterval;
-import net.imglib2.img.ImagePlusAdapter;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
-import org.bonej.utilities.AxisUtils;
-import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ImagePlusCheck;
 import org.bonej.utilities.ResultsInserter;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.convert.ConvertService;
 import org.scijava.log.LogService;
 import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
@@ -29,20 +19,13 @@ import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
-import java.util.DoubleSummaryStatistics;
-import java.util.Optional;
-
-import static org.bonej.utilities.Streamers.realDoubleStream;
 import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType;
-import static org.scijava.ui.DialogPrompt.OptionType;
-import static org.scijava.ui.DialogPrompt.Result;
+import static org.scijava.ui.DialogPrompt.*;
 
 /**
  * A GUI wrapper class for the LocalThickness plugin
  *
  * @author Richard Domander
- * TODO Fix display issues with Datasets
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Thickness")
 public class ThicknessWrapper extends ContextCommand {
@@ -50,9 +33,9 @@ public class ThicknessWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    private boolean calibrationWarningShown;
-
-    /** @implNote Use ImagePlus because of conversion issues of composite images */
+    /**
+     * @implNote Use ImagePlus because of conversion issues of composite images
+     */
     @Parameter(initializer = "initializeImage")
     private ImagePlus inputImage;
 
@@ -80,9 +63,6 @@ public class ThicknessWrapper extends ContextCommand {
     private LogService logService;
 
     @Parameter
-    private OpService opService;
-
-    @Parameter
     private PlatformService platformService;
 
     @Parameter
@@ -90,8 +70,6 @@ public class ThicknessWrapper extends ContextCommand {
 
     @Override
     public void run() {
-        calibrationWarningShown = false;
-
         switch (maps) {
             case "Trabecular thickness":
                 thicknessMap = createMap(true);
@@ -172,11 +150,12 @@ public class ThicknessWrapper extends ContextCommand {
             return;
         }
 
-        if (!ImagePlusCheck.isIsotropic(inputImage, 1E-3)) {
-            final String difference = "";
+        final double anisotropy = ImagePlusCheck.anisotropy(inputImage);
+        if (anisotropy > 1E-3) {
+            final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy * 100.0);
             final Result result =
-                    uiService.showDialog("The image is anisotropic" + difference + ". Continue anyway?",
-                                         MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
+                    uiService.showDialog("The image is anisotropic" + anisotropyPercent + ". Continue anyway?",
+                            MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
             if (result == Result.CANCEL_OPTION) {
                 cancel(null);
             }

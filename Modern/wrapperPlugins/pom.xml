@@ -110,10 +110,6 @@
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
-            <artifactId>imagej-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
         </dependency>
         <dependency>
@@ -141,7 +137,7 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
-            <!-- TODO Remove version pom-fiji updates -->
+            <!-- TODO Remove when pom-fiji updates -->
             <version>2.1.0</version>
         </dependency>
 
@@ -152,16 +148,6 @@
         </dependency>
 
         <!-- Other dependencies -->
-        <dependency>
-            <groupId>net.imglib2</groupId>
-            <artifactId>imglib2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.imglib2</groupId>
-            <artifactId>imglib2-ij</artifactId>
-            <!-- TODO: remove version when pom-imagej updates to beta-32 -->
-            <version>2.0.0-beta-32</version>
-        </dependency>
         <dependency>
             <groupId>net.sourceforge.findbugs</groupId>
             <artifactId>jsr305</artifactId>
@@ -177,7 +163,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>2.0.9-beta</version>
+            <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
