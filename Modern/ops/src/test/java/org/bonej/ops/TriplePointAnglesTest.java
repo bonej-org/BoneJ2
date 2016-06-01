@@ -23,6 +23,12 @@ import static org.junit.Assert.assertEquals;
  * @author Richard Domander
  */
 public class TriplePointAnglesTest {
+    /**
+     * When measuring angles from the nth slab of the edges you get an error
+     * because the vertex centroid doesn't align with them.
+     * The error is the smaller the further away from the vertex you measure.
+     * */
+    public static final double HALF_PI_W_ERROR = 1.9106332362490184;
     private static final double HALF_PI = Math.PI / 2.0;
     private static final ImageJ IMAGE_J = new ImageJ();
     private static Graph[] cuboidGraphs;
@@ -55,7 +61,7 @@ public class TriplePointAnglesTest {
         IMAGE_J.context().dispose();
     }
 
-    /** Regression test */
+    /** Regression test to check that results don't change */
     @Test
     public void testTriplePointAnglesNthPoint() throws AssertionError {
         final int nthPoint = 4;
@@ -71,12 +77,12 @@ public class TriplePointAnglesTest {
             assertEquals("A triple point has the wrong number", triplePointNumber, triplePoint.getTriplePointNumber());
             final List<Double> angles = triplePoint.getAngles();
             assertEquals("Wrong number of angles", angles.size(), 3);
-            angles.forEach(a -> assertEquals("Triple point angle should be a right angle", HALF_PI, a, 1e-12));
+            angles.forEach(a -> assertEquals("Triple point angle should be a right angle", HALF_PI_W_ERROR, a, 1e-12));
             triplePointNumber++;
         }
     }
 
-    /** Regression test */
+    /** Regression test to check that results don't change */
     @Test
     public void testTriplePointAnglesVertexToVertex() throws AssertionError {
         final List<List<TriplePoint>> graphs = triplePointAnglesOp.compute2(
