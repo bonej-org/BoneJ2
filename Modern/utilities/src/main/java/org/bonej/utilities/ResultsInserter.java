@@ -13,9 +13,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *      then add a column, and set its value on the first row with the label.
  * 3)   If there are rows with the given label, and there's a column with the given heading,
  *      then find the first row which has no value in the column (Double.NaN),
- *      and add the new value there.
- *      If there are no such rows, then add a new row.
- *
+ *      and add the new value there. If there are no such rows, then add a new row.
+ * <p>>
  * By default the class uses the instance returned by ResultsTable.getResultsTable()
  *
  * @author Michael Doube
@@ -40,7 +39,7 @@ public class ResultsInserter {
      * @param resultsTable  The table where the values are inserted
      * @throws NullPointerException if resultsTable == null
      */
-    public void setResultsTable(ResultsTable resultsTable) throws NullPointerException {
+    public void setResultsTable(final ResultsTable resultsTable) throws NullPointerException {
         checkNotNull(resultsTable, "The ResultsTable in ResultsInserter must not be set null");
 
         this.resultsTable = resultsTable;
@@ -48,15 +47,16 @@ public class ResultsInserter {
     }
 
     /**
-     * Adds new data to the underlying ResultsTable according to the policy
-     * described in @see ResultsInserter
+     * Adds new data to the underlying ResultsTable according to the policy described in {@link ResultsInserter ResultsInserter }
      *
+     * @implNote if Double.isNaN(measurementValue) then it's written in as Double.NEGATIVE_INFINITY
      * @param rowLabel              The row label of the new data
      * @param measurementHeading    The column heading of the new data
      * @param measurementValue      The value of the new data
      * @throws IllegalArgumentException if either String argument is null or empty
      */
-    public void setMeasurementInFirstFreeRow(String rowLabel, String measurementHeading, double measurementValue)
+    public void setMeasurementInFirstFreeRow(final String rowLabel, final String measurementHeading,
+            double measurementValue)
             throws IllegalArgumentException {
         checkArgument(!Strings.isNullOrEmpty(rowLabel), "Row label must not be null or empty");
         checkArgument(!Strings.isNullOrEmpty(measurementHeading), "Measurement heading must not be null or empty");
@@ -92,7 +92,7 @@ public class ResultsInserter {
     }
 
     //region -- Helper methods --
-    private void addNewRow(String label, String measurementTitle, double measurementValue) {
+    private void addNewRow(final String label, final String measurementTitle, final double measurementValue) {
         resultsTable.incrementCounter();
         resultsTable.addLabel(label);
         resultsTable.addValue(measurementTitle, measurementValue);
@@ -104,7 +104,7 @@ public class ResultsInserter {
      * @param label The label to be searched
      * @return Index of the row, or -1 if none of rows has the given label.
      */
-    private int rowOfLabel(String label) {
+    private int rowOfLabel(final String label) {
         final int rows = resultsTable.getCounter();
         for (int row = 0; row < rows; row++) {
             String rowLabel = resultsTable.getLabel(row);
@@ -124,7 +124,7 @@ public class ResultsInserter {
      * @param heading   The heading of the column
      * @return Index of the first row with no data, or -1 if there are no such rows
      */
-    private int rowOfLabelWithNoColumnData(String label, String heading) {
+    private int rowOfLabelWithNoColumnData(final String label, final String heading) {
         final int rows = resultsTable.getCounter();
         for (int row = 0; row < rows; row++) {
             String rowLabel = resultsTable.getLabel(row);
