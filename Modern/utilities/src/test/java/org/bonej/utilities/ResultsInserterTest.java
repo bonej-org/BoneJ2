@@ -6,6 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for the ResultsInserter class
@@ -137,5 +138,14 @@ public class ResultsInserterTest {
                      resultsTable.getValueAsDouble(1, 1), DELTA);
         assertEquals("The new value was inserted on the wrong row", Double.NaN, resultsTable.getValueAsDouble(1, 2),
                      0.00000001);
+    }
+
+    @Test
+    public void testSetMeasurementInFirstFreeRowNaNMeasurementIsMarkedAsNegInfinity() throws Exception {
+        resultsInserter.setMeasurementInFirstFreeRow(LABEL, MEASUREMENT_HEADING, Double.NaN);
+
+        final double value = resultsTable.getValueAsDouble(0, 0);
+
+        assertEquals("NaN value not marked down as negative infinity", Double.NEGATIVE_INFINITY, value, 1e-12);
     }
 }

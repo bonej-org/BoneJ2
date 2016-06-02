@@ -61,6 +61,10 @@ public class ResultsInserter {
         checkArgument(!Strings.isNullOrEmpty(rowLabel), "Row label must not be null or empty");
         checkArgument(!Strings.isNullOrEmpty(measurementHeading), "Measurement heading must not be null or empty");
 
+        if (Double.isNaN(measurementValue)) {
+            measurementValue = Double.NEGATIVE_INFINITY;
+        }
+
         int rowNumber = rowOfLabel(rowLabel);
         if (rowNumber < 0) {
             addNewRow(rowLabel, measurementHeading, measurementValue);
