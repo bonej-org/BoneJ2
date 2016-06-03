@@ -33,9 +33,7 @@ public class ThicknessWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    /**
-     * @implNote Use ImagePlus because of conversion issues of composite images
-     */
+    /** @implNote Use ImagePlus because of conversion issues of composite images */
     @Parameter(initializer = "initializeImage")
     private ImagePlus inputImage;
 
@@ -143,6 +141,14 @@ public class ThicknessWrapper extends ContextCommand {
         if (!ImagePlusCheck.is3D(inputImage)) {
             cancel(NOT_3D_IMAGE);
             return;
+        }
+
+        if (inputImage.getNChannels() > 1) {
+            cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+        }
+
+        if (inputImage.getNFrames() > 1) {
+            cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
         }
 
         if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(inputImage)) {
