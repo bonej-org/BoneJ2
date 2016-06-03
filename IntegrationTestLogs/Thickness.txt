@@ -204,7 +204,7 @@ Expected result
 -----------------------------------------------------------------------
 The plugin shows an error message and stops running
 
-Completed
+Completed June 03 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -219,12 +219,13 @@ Steps
 3. Uncheck "Keep original" on click "OK"
 4. Binarise image (Process>Binary>Make Binary)
 5. Run Thickness (Plugins>BoneJ>Thickness)
+6. Click "OK" when the anisotropy warning pops up
 
 Expected result
 -----------------------------------------------------------------------
 The plugin shows an error message and stops running
 
-Completed
+Completed June 03 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
