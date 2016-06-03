@@ -21,6 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Richard Domander
  */
 public class ResultsInserter {
+    /** String to display when Double.NaN is inserted (to differentiate from empty cells) */
+    public static final String ERROR_VALUE = "ERR";
     private static final String DEFAULT_RESULTS_TABLE_TITLE = "Results";
     private ResultsTable resultsTable;
 
@@ -49,7 +51,6 @@ public class ResultsInserter {
     /**
      * Adds new data to the underlying ResultsTable according to the policy described in {@link ResultsInserter ResultsInserter }
      *
-     * @implNote if Double.isNaN(measurementValue) then it's written in as Double.NEGATIVE_INFINITY
      * @param rowLabel              The row label of the new data
      * @param measurementHeading    The column heading of the new data
      * @param measurementValue      The value of the new data
@@ -61,10 +62,6 @@ public class ResultsInserter {
         checkArgument(!Strings.isNullOrEmpty(rowLabel), "Row label must not be null or empty");
         checkArgument(!Strings.isNullOrEmpty(measurementHeading), "Measurement heading must not be null or empty");
 
-        if (Double.isNaN(measurementValue)) {
-            measurementValue = Double.NEGATIVE_INFINITY;
-        }
-
         int rowNumber = rowOfLabel(rowLabel);
         if (rowNumber < 0) {
             addNewRow(rowLabel, measurementHeading, measurementValue);
@@ -73,7 +70,7 @@ public class ResultsInserter {
 
         int columnNumber = resultsTable.getColumnIndex(measurementHeading);
         if (columnNumber == ResultsTable.COLUMN_NOT_FOUND) {
-            resultsTable.setValue(measurementHeading, rowNumber, measurementValue);
+            insertValue(measurementHeading, rowNumber, measurementValue);
             return;
         }
 
@@ -86,6 +83,14 @@ public class ResultsInserter {
         resultsTable.setValue(measurementHeading, firstFreeDataRow, measurementValue);
     }
 
+    private void insertValue(String measurementHeading, int rowNumber, double measurementValue) {
+        if (Double.isNaN(measurementValue)) {
+            resultsTable.setValue(measurementHeading, rowNumber, ERROR_VALUE);
+        } else {
+            resultsTable.setValue(measurementHeading, rowNumber, measurementValue);
+        }
+    }
+
     /** Displays the results */
     public void updateResults() {
         resultsTable.show(DEFAULT_RESULTS_TABLE_TITLE);
@@ -95,7 +100,12 @@ public class ResultsInserter {
     private void addNewRow(final String label, final String measurementTitle, final double measurementValue) {
         resultsTable.incrementCounter();
         resultsTable.addLabel(label);
-        resultsTable.addValue(measurementTitle, measurementValue);
+
+        if (Double.isNaN(measurementValue)) {
+            resultsTable.addValue(measurementTitle, ERROR_VALUE);
+        } else {
+            resultsTable.addValue(measurementTitle, measurementValue);
+        }
     }
 
     /**
