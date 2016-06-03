@@ -195,7 +195,10 @@ Expected result
 -----------------------------------------------------------------------
 All results in the results table match those from BoneJ1
 
-Completed 
+TODO: Complete if & when following bugfixes are applied to BoneJ1:
+- Fix to org.doube.geometry.Trig.angle3D
+- NaN-value fix to org.doube.util.ResultInserter
+- Zero slabs fix to nth edge point in org.bonej.SkeletonAngles
 -----------------------------------------------------------------------
 
 
