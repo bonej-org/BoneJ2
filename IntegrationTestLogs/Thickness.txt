@@ -192,29 +192,25 @@ Completed May 31 Richard Domander
 
 Case 9
 =======================================================================
-Creates the thicknes map of a composite image
+Shows an error message if the image is composite
 =======================================================================
 Steps
 -----------------------------------------------------------------------
 1. Open "organ-of-corti.tif" (File>Open Samples>Organ of Corti)
 2. Binarise image (Process>Binary>Make Binary)
 3. Run Thickness (Plugins>BoneJ>Thickness)
-4. Set options
-  - Calculate: "Trabecular thickness"
-  - Show thickness maps: checked
-  - Mask thickness maps: checked
 
 Expected result
 -----------------------------------------------------------------------
-Resulting thickness map has 3 channels
+The plugin shows an error message and stops running
 
-TODO: Perform once the LocalThickness_ plugin has been updated
+Completed
 -----------------------------------------------------------------------
 
 
 Case 10
 =======================================================================
-Creates the thicknes map of an image with a time axis
+Shows an error message if the image has a time axis
 =======================================================================
 Steps
 -----------------------------------------------------------------------
@@ -223,16 +219,12 @@ Steps
 3. Uncheck "Keep original" on click "OK"
 4. Binarise image (Process>Binary>Make Binary)
 5. Run Thickness (Plugins>BoneJ>Thickness)
-6. Set options
-   - Calculate: "Trabecular thickness"
-   - Show thickness maps: checked
-   - Mask thickness maps: checked
 
 Expected result
 -----------------------------------------------------------------------
-Resulting thickness map has a time axis
+The plugin shows an error message and stops running
 
-TODO: Perform once the LocalThickness_ plugin has been updated
+Completed
 -----------------------------------------------------------------------
 
 
