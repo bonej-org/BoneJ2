@@ -3,10 +3,13 @@ package org.bonej.wrapperPlugins;
 import com.google.common.base.Strings;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
+import ij.plugin.frame.RoiManager;
 import ij.process.StackStatistics;
 import net.imagej.patcher.LegacyInjector;
 import org.bonej.utilities.ImagePlusCheck;
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.RoiManagerUtil;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -18,6 +21,8 @@ import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 import sc.fiji.localThickness.LocalThicknessWrapper;
+
+import java.util.Optional;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.*;
@@ -33,7 +38,9 @@ public class ThicknessWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    /** @implNote Use ImagePlus because of conversion issues of composite images */
+    /**
+     * @implNote Use ImagePlus because of conversion issues of composite images
+     */
     @Parameter(initializer = "initializeImage")
     private ImagePlus inputImage;
 
@@ -53,6 +60,9 @@ public class ThicknessWrapper extends ContextCommand {
 
     @Parameter(label = "Mask thickness maps", description = "Remove pixel artifacts from the thickness maps")
     private boolean maskArtefacts = true;
+
+    @Parameter(label = "Crop to ROI manager", description = "Limit the maps to the ROIs in the ROI manager")
+    private boolean cropToRois = false;
 
     @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
     private Button helpButton;
@@ -113,6 +123,19 @@ public class ThicknessWrapper extends ContextCommand {
     //region -- Helper methods --
     private ImagePlus createMap(final boolean foreground) {
         final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
+        final ImagePlus image = inputImage.duplicate();
+        //FIXME fix image title
+
+        if (cropToRois) {
+            final RoiManager roiManager = RoiManager.getInstance2();
+            Optional<ImageStack> resultStack =
+                    RoiManagerUtil.cropToRois(roiManager, image.getStack(), true, 0x00);
+            if (!resultStack.isPresent()) {
+                cancel("There are no valid ROIs in the ROI Manager for cropping");
+                return null;
+            }
+            //FIXME assign stack
+        }
 
         final LocalThicknessWrapper localThickness = new LocalThicknessWrapper();
         localThickness.setSilence(true);
