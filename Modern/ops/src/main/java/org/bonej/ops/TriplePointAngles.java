@@ -77,8 +77,9 @@ public class TriplePointAngles
         for (Graph graph : graphs) {
             int triplePointNumber = 1;
             final List<Vertex> vertices = graph.getVertices().stream().filter(this::isTriplePoint).collect(toList());
-            final List<TriplePoint> triplePoints = new ArrayList<>(vertices.size());
-            for (final Vertex vertex : vertices) {
+            final List<Vertex> safeVertices = vertices.stream().filter(v -> !hasCircularEdges(v)).collect(toList());
+            final List<TriplePoint> triplePoints = new ArrayList<>(safeVertices.size());
+            for (final Vertex vertex : safeVertices) {
                 List<Double> angles = triplePointAngles(vertex, measurementPoint);
                 triplePoints.add(new TriplePoint(graphNumber, triplePointNumber, angles));
                 triplePointNumber++;
@@ -93,6 +94,10 @@ public class TriplePointAngles
     // region -- Helper methods --
     private boolean isTriplePoint(final Vertex vertex) {
         return vertex.getBranches().size() == 3;
+    }
+
+    private boolean hasCircularEdges(final Vertex vertex) {
+        return vertex.getBranches().stream().anyMatch(e -> e.getV1() == e.getV2());
     }
 
     /**

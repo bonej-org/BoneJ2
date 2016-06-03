@@ -13,7 +13,6 @@ import static org.junit.Assert.assertEquals;
  * @author Richard Domander
  */
 public class ResultsInserterTest {
-    private static ResultsInserter resultsInserter;
     private static final String emptyString = "";
     private static final String LABEL = "title";
     private static final String MEASUREMENT_HEADING = "mean";
@@ -21,7 +20,7 @@ public class ResultsInserterTest {
     private static final String NEW_MEASUREMENT_HEADING = "max";
     private static final double NEW_MEASUREMENT_VALUE = 1000.0;
     private static final double DELTA = 0.000000001;
-
+    private static ResultsInserter resultsInserter;
     private ResultsTable resultsTable;
     private int beforeCount;
     private int afterCount;
@@ -95,7 +94,7 @@ public class ResultsInserterTest {
 
         assertEquals(0, beforeCount);
         assertEquals("ResultsInserter should add a new row for a repeat measurement with the same label", 2,
-                     afterCount);
+                afterCount);
     }
 
     @Test
@@ -106,7 +105,7 @@ public class ResultsInserterTest {
         afterCount = resultsTable.getCounter();
 
         assertEquals("Adding multiple measures for the same label should only create one row", beforeCount + 1,
-                     afterCount);
+                afterCount);
     }
 
     @Test
@@ -119,9 +118,9 @@ public class ResultsInserterTest {
         int lastColumn = resultsTable.getLastColumn();
 
         assertEquals("The new measurement was inserted on the wrong row", Double.NaN,
-                     resultsTable.getValueAsDouble(lastColumn, 2), DELTA);
+                resultsTable.getValueAsDouble(lastColumn, 2), DELTA);
         assertEquals("The new measurement should have been inserted on the first row with the same label",
-                     NEW_MEASUREMENT_VALUE, resultsTable.getValueAsDouble(lastColumn, 1), DELTA);
+                NEW_MEASUREMENT_VALUE, resultsTable.getValueAsDouble(lastColumn, 1), DELTA);
     }
 
     @Test
@@ -134,8 +133,17 @@ public class ResultsInserterTest {
 
         assertEquals(3, resultsTable.getCounter());
         assertEquals("The new value should be inserted on the first row with no data", NEW_MEASUREMENT_VALUE,
-                     resultsTable.getValueAsDouble(1, 1), DELTA);
+                resultsTable.getValueAsDouble(1, 1), DELTA);
         assertEquals("The new value was inserted on the wrong row", Double.NaN, resultsTable.getValueAsDouble(1, 2),
-                     0.00000001);
+                0.00000001);
+    }
+
+    @Test
+    public void testSetMeasurementInFirstFreeRowNaNMeasurementIsMarkedErr() throws Exception {
+        resultsInserter.setMeasurementInFirstFreeRow(LABEL, MEASUREMENT_HEADING, Double.NaN);
+
+        final String value = resultsTable.getStringValue(0, 0);
+
+        assertEquals("NaN value not marked down as " + ResultsInserter.ERROR_VALUE, ResultsInserter.ERROR_VALUE, value);
     }
 }
