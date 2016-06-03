@@ -229,6 +229,75 @@ Completed June 03 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
+Case 11
+=======================================================================
+The user should see an error dialog if trying to crop without a manager
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Thickness (Plugins>BoneJ>Thickness)
+3. Select option "Crop to ROI manager", and click "OK"
+
+Expected result
+-----------------------------------------------------------------------
+User should see an error dialog about missing ROIs.
+
+Completed - - ---- - -
+-----------------------------------------------------------------------
+
+
+Case 12
+======================================================================
+The user should see an error dialog if trying to crop with a manager
+without any valid ROIs
+======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Draw a polygonal ROI on the image
+3. Drag the ROI completely outside the image
+4. Add a ROI Manager (Analyze>Tools>RoiManager)
+5. Press "Add" on the ROI Manager window
+6. Run Thickness (Plugins>BoneJ>Thickness)
+7. Select option "Crop to ROI manager", and click "OK" 
+
+Expected result
+-----------------------------------------------------------------------
+User should see an error dialog about missing ROIs.
+
+Completed - - ---- - -
+-----------------------------------------------------------------------
+
+
+Case 13
+=========================================================================
+Local thickness map should confine to the limits of ROIs in ROIManager
+when cropping is selected.
+=========================================================================
+Steps
+-------------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Draw a rectangular ROI on the image
+3. Add a ROI Manager (Analyze > Tools > RoiManager)
+4. Press "Add" on the ROI Manager window
+5. Run Thickness (Plugins>BoneJ>Thickness)
+6. Set options
+   - Calculate: "Trabecular thickness"
+   - Show thickness maps: checked
+   - Mask thickness maps: checked
+   - Crop to ROI manager: checked
+7. Confirm that the resulting image matches the area of the ROI
+
+Expected result
+-------------------------------------------------------------------------
+The resulting thickness map should be the same size, and from the same 
+area as the ROI. 
+
+Completed - - ---- - -
+-------------------------------------------------------------------------
+
+
 Don't know how to test
 =======================================================================
 Show an error if the help page cannot be opened
