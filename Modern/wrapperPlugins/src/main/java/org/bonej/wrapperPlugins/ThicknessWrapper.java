@@ -3,10 +3,13 @@ package org.bonej.wrapperPlugins;
 import com.google.common.base.Strings;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
+import ij.plugin.frame.RoiManager;
 import ij.process.StackStatistics;
 import net.imagej.patcher.LegacyInjector;
 import org.bonej.utilities.ImagePlusCheck;
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.RoiManagerUtil;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -18,6 +21,8 @@ import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 import sc.fiji.localThickness.LocalThicknessWrapper;
+
+import java.util.Optional;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.*;
@@ -33,7 +38,9 @@ public class ThicknessWrapper extends ContextCommand {
         LegacyInjector.preinit();
     }
 
-    /** @implNote Use ImagePlus because of conversion issues of composite images */
+    /**
+     * @implNote Use ImagePlus because of conversion issues of composite images
+     */
     @Parameter(initializer = "initializeImage")
     private ImagePlus inputImage;
 
@@ -54,6 +61,10 @@ public class ThicknessWrapper extends ContextCommand {
     @Parameter(label = "Mask thickness maps", description = "Remove pixel artifacts from the thickness maps")
     private boolean maskArtefacts = true;
 
+    @Parameter(label = "Crop to ROI manager", description = "Limit the maps to the ROIs in the ROI manager",
+            persist = false)
+    private boolean cropToRois = false;
+
     @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
     private Button helpButton;
 
@@ -66,41 +77,28 @@ public class ThicknessWrapper extends ContextCommand {
     @Parameter
     private UIService uiService;
 
-    private static void showMapStatistics(final ImagePlus map, final boolean foreground) {
-        final String unitHeader = getUnitHeader(map);
-        final String label = map.getTitle();
-        final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
-        final StackStatistics resultStats = new StackStatistics(map);
-
-        ResultsInserter inserter = new ResultsInserter();
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, resultStats.mean);
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" + unitHeader, resultStats.stdDev);
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader, resultStats.max);
-        inserter.updateResults();
-    }
-
-    private static String getUnitHeader(final ImagePlus map) {
-        final String unit = map.getCalibration().getUnit();
-        if (Strings.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) || "unit".equalsIgnoreCase(unit)) {
-            return "";
-        }
-
-        return " (" + unit + ")";
-    }
-
     @Override
     public void run() {
         switch (maps) {
             case "Trabecular thickness":
                 thicknessMap = createMap(true);
+                if (thicknessMap == null) {
+                    return;
+                }
                 showMapStatistics(thicknessMap, true);
                 break;
             case "Trabecular spacing":
                 spacingMap = createMap(false);
+                if (spacingMap == null) {
+                    return;
+                }
                 showMapStatistics(spacingMap, false);
                 break;
             case "Both":
                 thicknessMap = createMap(true);
+                if (thicknessMap == null) {
+                    return;
+                }
                 showMapStatistics(thicknessMap, true);
                 spacingMap = createMap(false);
                 showMapStatistics(spacingMap, false);
@@ -113,6 +111,23 @@ public class ThicknessWrapper extends ContextCommand {
     //region -- Helper methods --
     private ImagePlus createMap(final boolean foreground) {
         final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
+        ImagePlus image;
+
+        if (cropToRois) {
+            final RoiManager roiManager = RoiManager.getInstance2();
+
+            Optional<ImageStack> stackOptional =
+                    RoiManagerUtil.cropToRois(roiManager, inputImage.getStack(), true, 0x00);
+
+            if (!stackOptional.isPresent()) {
+                uiService.showDialog("There are no ROIs in the ROI Manager", MessageType.ERROR_MESSAGE);
+                return null;
+            }
+            image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
+        } else {
+            image = inputImage.duplicate();
+            image.setTitle(inputImage.getTitle());
+        }
 
         final LocalThicknessWrapper localThickness = new LocalThicknessWrapper();
         localThickness.setSilence(true);
@@ -121,7 +136,7 @@ public class ThicknessWrapper extends ContextCommand {
         localThickness.maskThicknessMap = maskArtefacts;
         localThickness.setTitleSuffix(suffix);
         localThickness.calibratePixels = true;
-        final ImagePlus map = localThickness.processImage(inputImage);
+        final ImagePlus map = localThickness.processImage(image);
 
         if (showMaps) {
             map.show();
@@ -129,6 +144,31 @@ public class ThicknessWrapper extends ContextCommand {
         }
 
         return map;
+    }
+
+    private static void showMapStatistics(final ImagePlus map, final boolean foreground) {
+        final String unitHeader = getUnitHeader(map);
+        final String label = map.getTitle();
+        final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
+        final StackStatistics resultStats = new StackStatistics(map);
+        double mean = resultStats.mean;
+        double stdDev = resultStats.stdDev;
+        double max = resultStats.max;
+
+        ResultsInserter inserter = new ResultsInserter();
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, mean);
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" + unitHeader, stdDev);
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader, max);
+        inserter.updateResults();
+    }
+
+    private static String getUnitHeader(final ImagePlus map) {
+        final String unit = map.getCalibration().getUnit();
+        if (Strings.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) || "unit".equalsIgnoreCase(unit)) {
+            return "";
+        }
+
+        return " (" + unit + ")";
     }
 
     @SuppressWarnings("unused")
