@@ -243,7 +243,7 @@ Expected result
 -----------------------------------------------------------------------
 User should see an error dialog about missing ROIs.
 
-Completed - - ---- - -
+Completed June 6 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -266,7 +266,7 @@ Expected result
 -----------------------------------------------------------------------
 User should see an error dialog about missing ROIs.
 
-Completed - - ---- - -
+Completed June 6 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -294,7 +294,7 @@ Expected result
 The resulting thickness map should be the same size, and from the same 
 area as the ROI. 
 
-Completed - - ---- - -
+Completed June 6 2016 Richard Domander
 -------------------------------------------------------------------------
 
 
