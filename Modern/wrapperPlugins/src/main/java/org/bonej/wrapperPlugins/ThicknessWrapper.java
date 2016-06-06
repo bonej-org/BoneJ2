@@ -77,28 +77,6 @@ public class ThicknessWrapper extends ContextCommand {
     @Parameter
     private UIService uiService;
 
-    private static void showMapStatistics(final ImagePlus map, final boolean foreground) {
-        final String unitHeader = getUnitHeader(map);
-        final String label = map.getTitle();
-        final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
-        final StackStatistics resultStats = new StackStatistics(map);
-
-        ResultsInserter inserter = new ResultsInserter();
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, resultStats.mean);
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" + unitHeader, resultStats.stdDev);
-        inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader, resultStats.max);
-        inserter.updateResults();
-    }
-
-    private static String getUnitHeader(final ImagePlus map) {
-        final String unit = map.getCalibration().getUnit();
-        if (Strings.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) || "unit".equalsIgnoreCase(unit)) {
-            return "";
-        }
-
-        return " (" + unit + ")";
-    }
-
     @Override
     public void run() {
         switch (maps) {
@@ -166,6 +144,31 @@ public class ThicknessWrapper extends ContextCommand {
         }
 
         return map;
+    }
+
+    private static void showMapStatistics(final ImagePlus map, final boolean foreground) {
+        final String unitHeader = getUnitHeader(map);
+        final String label = map.getTitle();
+        final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
+        final StackStatistics resultStats = new StackStatistics(map);
+        double mean = resultStats.mean;
+        double stdDev = resultStats.stdDev;
+        double max = resultStats.max;
+
+        ResultsInserter inserter = new ResultsInserter();
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, mean);
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" + unitHeader, stdDev);
+        inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader, max);
+        inserter.updateResults();
+    }
+
+    private static String getUnitHeader(final ImagePlus map) {
+        final String unit = map.getCalibration().getUnit();
+        if (Strings.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) || "unit".equalsIgnoreCase(unit)) {
+            return "";
+        }
+
+        return " (" + unit + ")";
     }
 
     @SuppressWarnings("unused")
