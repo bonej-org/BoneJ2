@@ -61,7 +61,8 @@ public class ThicknessWrapper extends ContextCommand {
     @Parameter(label = "Mask thickness maps", description = "Remove pixel artifacts from the thickness maps")
     private boolean maskArtefacts = true;
 
-    @Parameter(label = "Crop to ROI manager", description = "Limit the maps to the ROIs in the ROI manager")
+    @Parameter(label = "Crop to ROI manager", description = "Limit the maps to the ROIs in the ROI manager",
+            persist = false)
     private boolean cropToRois = false;
 
     @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
@@ -103,14 +104,23 @@ public class ThicknessWrapper extends ContextCommand {
         switch (maps) {
             case "Trabecular thickness":
                 thicknessMap = createMap(true);
+                if (thicknessMap == null) {
+                    return;
+                }
                 showMapStatistics(thicknessMap, true);
                 break;
             case "Trabecular spacing":
                 spacingMap = createMap(false);
+                if (spacingMap == null) {
+                    return;
+                }
                 showMapStatistics(spacingMap, false);
                 break;
             case "Both":
                 thicknessMap = createMap(true);
+                if (thicknessMap == null) {
+                    return;
+                }
                 showMapStatistics(thicknessMap, true);
                 spacingMap = createMap(false);
                 showMapStatistics(spacingMap, false);
@@ -123,18 +133,22 @@ public class ThicknessWrapper extends ContextCommand {
     //region -- Helper methods --
     private ImagePlus createMap(final boolean foreground) {
         final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
-        final ImagePlus image = inputImage.duplicate();
-        //FIXME fix image title
+        ImagePlus image;
 
         if (cropToRois) {
             final RoiManager roiManager = RoiManager.getInstance2();
-            Optional<ImageStack> resultStack =
-                    RoiManagerUtil.cropToRois(roiManager, image.getStack(), true, 0x00);
-            if (!resultStack.isPresent()) {
-                cancel("There are no valid ROIs in the ROI Manager for cropping");
+
+            Optional<ImageStack> stackOptional =
+                    RoiManagerUtil.cropToRois(roiManager, inputImage.getStack(), true, 0x00);
+
+            if (!stackOptional.isPresent()) {
+                uiService.showDialog("There are no ROIs in the ROI Manager", MessageType.ERROR_MESSAGE);
                 return null;
             }
-            //FIXME assign stack
+            image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
+        } else {
+            image = inputImage.duplicate();
+            image.setTitle(inputImage.getTitle());
         }
 
         final LocalThicknessWrapper localThickness = new LocalThicknessWrapper();
@@ -144,7 +158,7 @@ public class ThicknessWrapper extends ContextCommand {
         localThickness.maskThicknessMap = maskArtefacts;
         localThickness.setTitleSuffix(suffix);
         localThickness.calibratePixels = true;
-        final ImagePlus map = localThickness.processImage(inputImage);
+        final ImagePlus map = localThickness.processImage(image);
 
         if (showMaps) {
             map.show();
