@@ -22,7 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class ResultsInserter {
     /** String to display when Double.NaN is inserted (to differentiate from empty cells) */
-    public static final String ERROR_VALUE = "ERR";
+    public static final String NAN_VALUE = "N/A";
     private static final String DEFAULT_RESULTS_TABLE_TITLE = "Results";
     private ResultsTable resultsTable;
 
@@ -85,7 +85,7 @@ public class ResultsInserter {
 
     private void insertValue(String measurementHeading, int rowNumber, double measurementValue) {
         if (Double.isNaN(measurementValue)) {
-            resultsTable.setValue(measurementHeading, rowNumber, ERROR_VALUE);
+            resultsTable.setValue(measurementHeading, rowNumber, NAN_VALUE);
         } else {
             resultsTable.setValue(measurementHeading, rowNumber, measurementValue);
         }
@@ -102,7 +102,7 @@ public class ResultsInserter {
         resultsTable.addLabel(label);
 
         if (Double.isNaN(measurementValue)) {
-            resultsTable.addValue(measurementTitle, ERROR_VALUE);
+            resultsTable.addValue(measurementTitle, NAN_VALUE);
         } else {
             resultsTable.addValue(measurementTitle, measurementValue);
         }
