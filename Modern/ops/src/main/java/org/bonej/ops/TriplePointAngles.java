@@ -1,6 +1,5 @@
 package org.bonej.ops;
 
-import com.sun.istack.internal.Nullable;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
@@ -15,6 +14,7 @@ import sc.fiji.analyzeSkeleton.Graph;
 import sc.fiji.analyzeSkeleton.Point;
 import sc.fiji.analyzeSkeleton.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
