@@ -202,6 +202,29 @@ TODO: Complete if & when following bugfixes are applied to BoneJ1:
 -----------------------------------------------------------------------
 
 
+Case 10
+=======================================================================
+User sees a warning if image contains circular edges
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "mri-stack.tif" (File>Open Samples>MRI Stack)
+2. Binarise image (Process>Binary>Make Binary)
+3. Skeletonise image (Plugins>BoneJ>Skeletonise)
+4. Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
+5. Set options
+   - Measurement mode: "Opposite vertex"
+
+
+Expected result
+-----------------------------------------------------------------------
+A warning about circular edges pops up.
+User can see them in the Results table ("N/A" values)
+
+Completed - - ---- - -
+-----------------------------------------------------------------------
+
+
 Don't know how to test
 =======================================================================
 Show an error if the help page cannot be opened
