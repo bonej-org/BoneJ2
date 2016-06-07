@@ -151,9 +151,20 @@ public class ThicknessWrapper extends ContextCommand {
         final String label = map.getTitle();
         final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
         final StackStatistics resultStats = new StackStatistics(map);
-        double mean = resultStats.mean;
-        double stdDev = resultStats.stdDev;
-        double max = resultStats.max;
+        double mean;
+        double stdDev;
+        double max;
+
+        if (resultStats.pixelCount == 0) {
+            // All pixels are background (NaN)
+            mean = Double.NaN;
+            stdDev = Double.NaN;
+            max = Double.NaN;
+        } else {
+            mean = resultStats.mean;
+            stdDev = resultStats.stdDev;
+            max = resultStats.max;
+        }
 
         ResultsInserter inserter = new ResultsInserter();
         inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, mean);
