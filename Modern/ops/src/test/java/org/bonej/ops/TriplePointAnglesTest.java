@@ -8,14 +8,22 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
+import sc.fiji.analyzeSkeleton.Edge;
 import sc.fiji.analyzeSkeleton.Graph;
+import sc.fiji.analyzeSkeleton.Vertex;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.bonej.ops.TriplePointAngles.TriplePoint;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for the TriplePointAngles class
@@ -101,6 +109,58 @@ public class TriplePointAnglesTest {
             angles.forEach(a -> assertEquals("Triple point angle should be a right angle", HALF_PI, a, 1e-12));
             triplePointNumber++;
         }
+    }
+
+    @Test
+    public void testHasCircularEdgesReturnsFalseIfGraphsNull() throws Exception {
+        final boolean result = TriplePointAngles.hasCircularEdges(null);
+
+        assertFalse("Null Graphs should return false", result);
+    }
+
+    @Test
+    public void testHasCircularEdgesReturnsFalse() throws Exception {
+        // Mock a Graph which has a triple point without a circular edge
+        final Vertex vertex1 = mock(Vertex.class);
+        final Vertex vertex2 = mock(Vertex.class);
+        final Edge edge = mock(Edge.class);
+        when(edge.getV1()).thenReturn(vertex1);
+        when(edge.getV2()).thenReturn(vertex2);
+        final ArrayList<Edge> edges = new ArrayList<>();
+        edges.add(edge);
+        edges.add(edge);
+        edges.add(edge);
+        when(vertex1.getBranches()).thenReturn(edges);
+        final Graph graph = mock(Graph.class);
+        final ArrayList<Vertex> vertices = new ArrayList<>();
+        vertices.add(vertex1);
+        when(graph.getVertices()).thenReturn(vertices);
+
+        final boolean result = TriplePointAngles.hasCircularEdges(new Graph[]{graph});
+
+        assertFalse("The graphs should not have circular edges", result);
+    }
+
+    @Test
+    public void testHasCircularEdges() throws Exception {
+        // Mock a Graph which has a triple point with a circular edge
+        final Vertex vertex = mock(Vertex.class);
+        final Edge edge = mock(Edge.class);
+        when(edge.getV1()).thenReturn(vertex);
+        when(edge.getV2()).thenReturn(vertex);
+        final ArrayList<Edge> edges = new ArrayList<>();
+        edges.add(edge);
+        edges.add(edge);
+        edges.add(edge);
+        when(vertex.getBranches()).thenReturn(edges);
+        final Graph graph = mock(Graph.class);
+        final ArrayList<Vertex> vertices = new ArrayList<>();
+        vertices.add(vertex);
+        when(graph.getVertices()).thenReturn(vertices);
+
+        final boolean result = TriplePointAngles.hasCircularEdges(new Graph[]{graph});
+
+        assertTrue("The graphs should have circular edges", result);
     }
 
     @Test(expected = NullPointerException.class)
