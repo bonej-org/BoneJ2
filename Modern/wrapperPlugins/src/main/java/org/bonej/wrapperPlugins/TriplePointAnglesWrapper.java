@@ -26,6 +26,7 @@ import java.util.List;
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
  * A wrapper UI class for the TriplePointAngles Op
@@ -97,6 +98,13 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 
         final List<List<TriplePoint>> results = callTPAOp(graphs);
 
+        if (TriplePointAngles.hasCircularEdges(graphs)) {
+            uiService.showDialog(
+                    "The skeletons contained circular edges." +
+                            "Please try running the plugin with \"Measurement mode\" set to \"Edge point\".",
+                    WARNING_MESSAGE);
+        }
+
         showResults(results);
     }
 
@@ -117,6 +125,9 @@ public class TriplePointAnglesWrapper extends ContextCommand {
                 resultsInserter
                         .setMeasurementInFirstFreeRow(label, "Triple point #", triplePoint.getTriplePointNumber());
                 final List<Double> angles = triplePoint.getAngles();
+                if (triplePoint.getGraphNumber() == 61) {
+                    System.out.println();
+                }
                 resultsInserter.setMeasurementInFirstFreeRow(label, "α (rad)", angles.get(0));
                 resultsInserter.setMeasurementInFirstFreeRow(label, "β (rad)", angles.get(1));
                 resultsInserter.setMeasurementInFirstFreeRow(label, "γ (rad)", angles.get(2));

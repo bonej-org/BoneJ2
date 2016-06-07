@@ -1,10 +1,12 @@
 package org.bonej.ops;
 
+import com.sun.istack.internal.Nullable;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import org.jetbrains.annotations.Contract;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
@@ -76,10 +78,10 @@ public class TriplePointAngles
 
         for (Graph graph : graphs) {
             int triplePointNumber = 1;
-            final List<Vertex> vertices = graph.getVertices().stream().filter(this::isTriplePoint).collect(toList());
-            final List<Vertex> safeVertices = vertices.stream().filter(v -> !hasCircularEdges(v)).collect(toList());
-            final List<TriplePoint> triplePoints = new ArrayList<>(safeVertices.size());
-            for (final Vertex vertex : safeVertices) {
+            final List<Vertex> vertices =
+                    graph.getVertices().stream().filter(TriplePointAngles::isTriplePoint).collect(toList());
+            final List<TriplePoint> triplePoints = new ArrayList<>(vertices.size());
+            for (final Vertex vertex : vertices) {
                 List<Double> angles = triplePointAngles(vertex, measurementPoint);
                 triplePoints.add(new TriplePoint(graphNumber, triplePointNumber, angles));
                 triplePointNumber++;
@@ -91,13 +93,40 @@ public class TriplePointAngles
         return skeletons;
     }
 
-    // region -- Helper methods --
-    private boolean isTriplePoint(final Vertex vertex) {
-        return vertex.getBranches().size() == 3;
+    /**
+     * Checks whether the graphs contain triple points that have circular edges
+     *
+     * @see TriplePointAngles#hasCircularEdges(Vertex) hasCircularEdges
+     * @see TriplePointAngles#isTriplePoint(Vertex) isTriplePoint
+     */
+    @Contract("null -> false")
+    public static boolean hasCircularEdges(@Nullable final Graph[] graphs) {
+        if (graphs == null) {
+            return false;
+        }
+
+        for (Graph graph : graphs) {
+            if (graph.getVertices().stream().anyMatch(v -> isTriplePoint(v) && hasCircularEdges(v))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    private boolean hasCircularEdges(final Vertex vertex) {
+    /**
+     * Checks if the vertex has circular edges
+     * <p>
+     * For a circular edge e.getV1() == e.getV2()
+     */
+    // region -- Helper methods --
+    private static boolean hasCircularEdges(final Vertex vertex) {
         return vertex.getBranches().stream().anyMatch(e -> e.getV1() == e.getV2());
+    }
+
+    /** Checks if the vertex has three branches */
+    private static boolean isTriplePoint(final Vertex vertex) {
+        return vertex.getBranches().size() == 3;
     }
 
     /**
