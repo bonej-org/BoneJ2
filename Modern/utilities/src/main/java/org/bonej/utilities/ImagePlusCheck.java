@@ -14,16 +14,27 @@ import java.util.Arrays;
  */
 public class ImagePlusCheck {
 
+    /**
+     * Checks if the image is 3D
+     *
+     * @return true if the image has more than one slice,
+     *         false if not, or image is null
+     */
     @Contract("null -> false")
     public static boolean is3D(@Nullable final ImagePlus image) {
         return image != null && image.getNSlices() > 1;
     }
 
+    /**
+     * Checks if the image has only two different colours
+     *
+     * @return true if there are only two distinct pixel values present in the image,
+     *         false if more, or the image is null
+     */
     @Contract("null -> false")
     public static boolean isBinaryColour(@Nullable final ImagePlus image) {
         return image != null && Arrays.stream(image.getStatistics().histogram).filter(p -> p > 0).count() <= 2;
     }
-
 
     /**
      * Calculates the degree of anisotropy in the image, i.e. the maximum difference in the ratios of the dimensions
