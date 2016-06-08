@@ -125,9 +125,6 @@ public class TriplePointAnglesWrapper extends ContextCommand {
                 resultsInserter
                         .setMeasurementInFirstFreeRow(label, "Triple point #", triplePoint.getTriplePointNumber());
                 final List<Double> angles = triplePoint.getAngles();
-                if (triplePoint.getGraphNumber() == 61) {
-                    System.out.println();
-                }
                 resultsInserter.setMeasurementInFirstFreeRow(label, "α (rad)", angles.get(0));
                 resultsInserter.setMeasurementInFirstFreeRow(label, "β (rad)", angles.get(1));
                 resultsInserter.setMeasurementInFirstFreeRow(label, "γ (rad)", angles.get(2));

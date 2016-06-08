@@ -80,7 +80,7 @@ public class ResultsInserter {
             return;
         }
 
-        resultsTable.setValue(measurementHeading, firstFreeDataRow, measurementValue);
+        insertValue(measurementHeading, firstFreeDataRow, measurementValue);
     }
 
     private void insertValue(String measurementHeading, int rowNumber, double measurementValue) {
@@ -138,8 +138,13 @@ public class ResultsInserter {
         final int rows = resultsTable.getCounter();
         for (int row = 0; row < rows; row++) {
             String rowLabel = resultsTable.getLabel(row);
-            double columnValue = resultsTable.getValue(heading, row);
-            if (label.equals(rowLabel) && Double.isNaN(columnValue)) {
+            final String stringValue = resultsTable.getStringValue(heading, row);
+            double value = resultsTable.getValue(heading, row);
+            /*
+             * Mixing string and numerical values in a table is a bad idea:
+             * Even if the column string value has been set, its numerical value is NaN
+             */
+            if (label.equals(rowLabel) && Double.isNaN(value) && !NAN_VALUE.equals(stringValue)) {
                 return row;
             }
         }

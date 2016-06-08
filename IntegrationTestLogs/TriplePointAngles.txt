@@ -221,7 +221,7 @@ Expected result
 A warning about circular edges pops up.
 User can see them in the Results table ("N/A" values)
 
-Completed - - ---- - -
+Completed June 08 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
