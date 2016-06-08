@@ -118,7 +118,7 @@ Expected result
 Verify that the output image has the same color scheme as the input
 (Background white, foreground black)
 
-Completed - - ---- - -
+Completed June 8 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
