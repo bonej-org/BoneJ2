@@ -138,9 +138,6 @@ public class ResultsInserter {
         final int rows = resultsTable.getCounter();
         for (int row = 0; row < rows; row++) {
             String rowLabel = resultsTable.getLabel(row);
-            if (row == 180) {
-                System.out.println();
-            }
             final String stringValue = resultsTable.getStringValue(heading, row);
             double value = resultsTable.getValue(heading, row);
             /*
