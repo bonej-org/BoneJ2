@@ -194,12 +194,12 @@ public class ThicknessWrapper extends ContextCommand {
             return;
         }
 
-        if (inputImage.getNChannels() > 1) {
+        if (inputImage.isComposite()) {
             cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
-        }
-
-        if (inputImage.getNFrames() > 1) {
+            return;
+        } else if (inputImage.isHyperStack()) {
             cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
+            return;
         }
 
         if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(inputImage)) {
