@@ -1,6 +1,7 @@
 package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
+import ij.plugin.LutLoader;
 import net.imagej.patcher.LegacyInjector;
 import org.bonej.utilities.ImagePlusCheck;
 import org.scijava.ItemIO;
@@ -41,6 +42,11 @@ public class SkeletoniseWrapper extends ContextCommand {
         skeletoniser.run(null);
 
         skeleton.show();
+        if (inputImage.isInvertedLut() != skeleton.isInvertedLut()) {
+            // FIXME Does *not* work in headless mode!
+            LutLoader lutLoader = new LutLoader();
+            lutLoader.run("invert");
+        }
     }
 
     @SuppressWarnings("unused")
