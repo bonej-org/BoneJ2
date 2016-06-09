@@ -6,10 +6,15 @@ import org.bonej.ops.connectivity.DeltaEuler;
 import org.bonej.ops.connectivity.EulerCharacteristic;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
+import org.bonej.utilities.ResultsInserter;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.DialogPrompt;
+import org.scijava.ui.UIService;
+
+import java.util.Optional;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 
@@ -26,6 +31,9 @@ public class ConnectivityWrapper extends ContextCommand {
     @Parameter
     private OpService opService;
 
+    @Parameter
+    private UIService uiService;
+
     @Override
     public void run() {
         final Integer eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, inputImage);
@@ -39,7 +47,34 @@ public class ConnectivityWrapper extends ContextCommand {
     //region -- Helper methods --
     private void showResults(final Integer eulerCharacteristic, final Integer deltaEuler, final int connectivity,
             final double connectivityDensity) {
+        final String label = inputImage.getName();
+        final String unitHeader = getUnitHeader(inputImage);
+        final ResultsInserter inserter = new ResultsInserter();
 
+        inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)", eulerCharacteristic);
+        inserter.setMeasurementInFirstFreeRow(label, "Contribution (Δχ)", deltaEuler);
+        inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
+        inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader, connectivityDensity);
+        inserter.updateResults();
+    }
+
+    // TODO Refactor into some share utility class
+    private String getUnitHeader(final ImgPlus inputImage) {
+        final Optional<String> unit = AxisUtils.getSpatialUnit(inputImage);
+        if (!unit.isPresent()) {
+                uiService.showDialog(
+                        "Cannot not determine the unit of calibration - showing plain values",
+                        DialogPrompt.MessageType.WARNING_MESSAGE);
+            return "";
+        }
+
+        final String unitHeader = unit.get();
+        if ("pixel".equals(unitHeader) || "unit".equals(unitHeader) || unitHeader.isEmpty()) {
+            // Don't show default units
+            return "";
+        }
+
+        return "(" + unitHeader + "³)";
     }
 
     private double calculateConnectivityDensity(final int connectivity) {
