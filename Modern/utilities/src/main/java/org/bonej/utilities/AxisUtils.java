@@ -6,9 +6,13 @@ import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
+import net.imglib2.Dimensions;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
+
+import static org.bonej.utilities.Streamers.axisStream;
+import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 /**
  * Various utils for inspecting image axis properties
@@ -17,13 +21,55 @@ import java.util.Optional;
  */
 public class AxisUtils {
     /**
+     * Counts the number of spatial elements in the given space
+     *
+     * @return Space size or Double.NaN if space == null
+     */
+    public static <T extends AnnotatedSpace<A> & Dimensions, A extends TypedAxis> double spatialSpaceSize(
+            @Nullable final T space) {
+        if (space == null) {
+            return Double.NaN;
+        }
+
+        final int numDimensions = space.numDimensions();
+        double spaceSize = 1.0;
+
+        for (int d = 0; d < numDimensions; d++) {
+            if (!space.axis(d).type().isSpatial()) {
+                continue;
+            }
+
+            final long dimensionSize = space.dimension(d);
+            spaceSize = spaceSize * dimensionSize;
+        }
+
+        return spaceSize;
+    }
+
+    /**
+     * Returns the calibrated size of a single spatial element in the given space,
+     * e.g. the volume of an element in a 3D space
+     *
+     * @return Calibrated size of a spatial element, or Double.NaN if space == null,
+     *         has nonlinear axes, or calibration units don't match
+     */
+    public static <T extends AnnotatedSpace<CalibratedAxis>> double calibratedSpatialElementSize(
+            @Nullable final T space) {
+        if (space == null || hasNonLinearSpatialAxes(space) || !spatialUnitsMatch(space)) {
+            return Double.NaN;
+        }
+
+        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce(1.0, (x, y) -> x * y);
+    }
+
+    /**
      * Counts the number of spatial dimensions in the given space
      *
      * @return Number of spatial dimensions in the space, or 0 if space == null
      */
     public static <T extends AnnotatedSpace<S>, S extends TypedAxis> long countSpatialDimensions(
             @Nullable final T space) {
-        return Streamers.spatialAxisStream(space).count();
+        return spatialAxisStream(space).count();
     }
 
     /**
@@ -38,8 +84,7 @@ public class AxisUtils {
             return Double.NaN;
         }
 
-        final double[] scales =
-                Streamers.spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
+        final double[] scales = spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
 
         double maxDifference = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < scales.length - 1; i++) {
@@ -77,12 +122,12 @@ public class AxisUtils {
      */
     public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasChannelDimensions(
             @Nullable final T space) {
-        return Streamers.axisStream(space).anyMatch(a -> a.type() == Axes.CHANNEL);
+        return axisStream(space).anyMatch(a -> a.type() == Axes.CHANNEL);
     }
 
     public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasSpatialDimensions(
             @Nullable final T space) {
-        return Streamers.axisStream(space).anyMatch(a -> a.type().isSpatial());
+        return axisStream(space).anyMatch(a -> a.type().isSpatial());
     }
 
     /**
@@ -93,7 +138,7 @@ public class AxisUtils {
      */
     public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasTimeDimensions(
             @Nullable final T space) {
-        return Streamers.axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
+        return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
     }
 
     /**
@@ -129,7 +174,7 @@ public class AxisUtils {
         }
 
         final double[] scales =
-                Streamers.spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
+                spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
 
         for (int i = 0; i < scales.length - 1; i++) {
             for (int j = i + 1; j < scales.length; j++) {
@@ -144,13 +189,13 @@ public class AxisUtils {
 
     private static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(
             @Nullable final T space) {
-        return Streamers.axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
+        return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
     }
 
     private static <T extends AnnotatedSpace<CalibratedAxis>> boolean spatialUnitsMatch(final T space) {
         final boolean allUncalibrated =
-                Streamers.spatialAxisStream(space).map(CalibratedAxis::unit).allMatch(Strings::isNullOrEmpty);
-        final long units = Streamers.spatialAxisStream(space).map(CalibratedAxis::unit).distinct().count();
+                spatialAxisStream(space).map(CalibratedAxis::unit).allMatch(Strings::isNullOrEmpty);
+        final long units = spatialAxisStream(space).map(CalibratedAxis::unit).distinct().count();
 
         return allUncalibrated || units == 1;
     }

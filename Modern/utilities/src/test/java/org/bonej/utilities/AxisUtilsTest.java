@@ -10,6 +10,7 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -27,6 +28,72 @@ public class AxisUtilsTest {
     @AfterClass
     public static void oneTimeTearDown() {
         IMAGE_J.context().dispose();
+    }
+
+    @Test
+    public void testSpatialSpaceSizeNaNIfSpaceNull() throws Exception {
+        final double result = AxisUtils.spatialSpaceSize(null);
+
+        assertTrue("Size should be NaN when space is null", Double.isNaN(result));
+    }
+
+    @Test
+    public void testSpatialSpaceSize() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final int[] dimSizes = {123, 12};
+        final int expectedSize = Arrays.stream(dimSizes).reduce(1, (i, j) -> i * j);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(dimSizes);
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final double result = AxisUtils.spatialSpaceSize(imgPlus);
+
+        assertEquals("Space size is incorrect", expectedSize, result, 1e-12);
+    }
+
+    @Test
+    public void testCalibratedSpatialElementSizeNaNIfSpaceNull() throws Exception {
+        final double result = AxisUtils.calibratedSpatialElementSize(null);
+
+        assertTrue("Size should be NaN when space is null", Double.isNaN(result));
+    }
+
+    @Test
+    public void testCalibratedSpatialElementSizeNaNIfNonLinear() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
+
+        assertTrue("Size should be NaN when space has nonlinear axes", Double.isNaN(result));
+    }
+
+    @Test
+    public void testCalibratedSpatialElementSizeNaNIfUnitsMismatch() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm");
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
+
+        assertTrue("Size should be NaN when the units of axes mismatch", Double.isNaN(result));
+    }
+
+    @Test
+    public void testCalibratedSpatialElementSize() throws Exception {
+        final double xScale = 1.5;
+        final double yScale = 2.25;
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, xScale);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, yScale);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
+
+        assertEquals("Element size is wrong", xScale * yScale, result, 1e-12);
     }
 
     @Test
