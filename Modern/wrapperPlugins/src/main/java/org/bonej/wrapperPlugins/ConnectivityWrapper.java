@@ -11,12 +11,10 @@ import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 
-import java.util.Optional;
-
 import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
  * A wrapper UI class for the Connectivity Ops
@@ -48,33 +46,18 @@ public class ConnectivityWrapper extends ContextCommand {
     private void showResults(final Integer eulerCharacteristic, final Integer deltaEuler, final int connectivity,
             final double connectivityDensity) {
         final String label = inputImage.getName();
-        final String unitHeader = getUnitHeader(inputImage);
-        final ResultsInserter inserter = new ResultsInserter();
+        final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
 
+        if (unitHeader.isEmpty()) {
+            uiService.showDialog("Calibration has no unit: showing plain values", WARNING_MESSAGE);
+        }
+
+        final ResultsInserter inserter = new ResultsInserter();
         inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)", eulerCharacteristic);
         inserter.setMeasurementInFirstFreeRow(label, "Contribution (Δχ)", deltaEuler);
         inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
         inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader, connectivityDensity);
         inserter.updateResults();
-    }
-
-    // TODO Refactor into some share utility class
-    private String getUnitHeader(final ImgPlus inputImage) {
-        final Optional<String> unit = AxisUtils.getSpatialUnit(inputImage);
-        if (!unit.isPresent()) {
-                uiService.showDialog(
-                        "Cannot not determine the unit of calibration - showing plain values",
-                        DialogPrompt.MessageType.WARNING_MESSAGE);
-            return "";
-        }
-
-        final String unitHeader = unit.get();
-        if ("pixel".equals(unitHeader) || "unit".equals(unitHeader) || unitHeader.isEmpty()) {
-            // Don't show default units
-            return "";
-        }
-
-        return "(" + unitHeader + "³)";
     }
 
     private double calculateConnectivityDensity(final int connectivity) {
