@@ -75,6 +75,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
         if (AxisUtils.countSpatialDimensions(inputImage) < 3) {
             cancel(NOT_3D_IMAGE);
+            return;
         }
 
         if (!ElementUtil.isColorsBinary(inputImage)) {
