@@ -1,0 +1,78 @@
+Case 1
+=======================================================================
+User should see an error dialog when no images are open
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Close all images
+2. Run Connectivity (Plugins>BoneJ>Connectivity)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed - - ---- - -
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+User should see an error dialog if image is not binary
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "blobs.gif" (File>Open Samples>Blobs)
+2. Run Connectivity (Plugins>BoneJ>Connectivity)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed - - ---- - -
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+User should see an error dialog if image is not 3D
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "blobs.gif" (File>Open Samples>Blobs)
+2. Binarise image (Process>Binary>Make Binary)
+3. Run Connectivity (Plugins>BoneJ>Connectivity)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog should open, and the plugin stop running
+
+Completed - - ---- - -
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+Connectivity results show up correctly
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Set scale (Analyze>Set Scale)
+3. Set options
+   - "Distance in pixels" to "1"
+   - "Known distance" to "1.00"
+   - "Pixel aspect ratio" to "1.0"
+   - "Unit of length" to "mm"
+4. Run Connectivity (Plugins>BoneJ>Connectivity)
+5. Verify that Results table has the headers "Euler char. (χ)"",
+  "Contribution (Δχ)", "Connectivity" and "Conn. density"
+6. Verify that "Conn. density" have the unit mm³
+
+Expected result
+-----------------------------------------------------------------------
+Statistics show up correctly in the Results table
+
+Completed - - ---- - -
+-----------------------------------------------------------------------
+
+
