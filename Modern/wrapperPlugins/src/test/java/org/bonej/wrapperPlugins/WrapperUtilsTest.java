@@ -9,7 +9,8 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.junit.AfterClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for the {@link WrapperUtils WrapperUtils} class.
