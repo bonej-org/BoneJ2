@@ -1,57 +1,5 @@
 Case 1
 =======================================================================
-User should see an error dialog when no images are open
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Close all images
-2. Run Connectivity (Plugins>BoneJ>Connectivity)
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-
-Completed - - ---- - -
------------------------------------------------------------------------
-
-
-Case 2
-=======================================================================
-User should see an error dialog if image is not binary
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "blobs.gif" (File>Open Samples>Blobs)
-2. Run Connectivity (Plugins>BoneJ>Connectivity)
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-
-Completed - - ---- - -
------------------------------------------------------------------------
-
-
-Case 3
-=======================================================================
-User should see an error dialog if image is not 3D
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "blobs.gif" (File>Open Samples>Blobs)
-2. Binarise image (Process>Binary>Make Binary)
-3. Run Connectivity (Plugins>BoneJ>Connectivity)
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-
-Completed - - ---- - -
------------------------------------------------------------------------
-
-
-Case 4
-=======================================================================
 Connectivity results show up correctly
 =======================================================================
 Steps
