@@ -4,9 +4,14 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.ops.Ops;
+import net.imagej.ops.special.function.Functions;
+import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.img.Img;
 import net.imglib2.type.numeric.real.DoubleType;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
@@ -22,7 +27,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -33,12 +41,21 @@ import static org.mockito.Mockito.when;
 public class ConnectivityWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
     private static final UserInterface mockUI = mock(UserInterface.class);
-    private static final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 
     @BeforeClass
     public static void oneTimeSetup() {
         IMAGE_J.ui().setDefaultUI(mockUI);
+    }
+
+    @Before
+    public void setup() {
+        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
         when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
+    }
+
+    @After
+    public void tearDown() {
+        reset(mockUI);
     }
 
     @AfterClass
@@ -55,6 +72,7 @@ public class ConnectivityWrapperTest {
             final CommandModule module = future.get();
             assertTrue("Null image should have canceled the plugin", module.isCanceled());
             assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
+            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -73,6 +91,7 @@ public class ConnectivityWrapperTest {
             final CommandModule module = future.get();
             assertTrue("2D image should have cancelled the plugin", module.isCanceled());
             assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE, module.getCancelReason());
+            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -95,6 +114,7 @@ public class ConnectivityWrapperTest {
             final CommandModule module = future.get();
             assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
             assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
+            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
