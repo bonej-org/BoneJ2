@@ -24,15 +24,31 @@ public class ResultsInserter {
     /** String to display when Double.NaN is inserted (to differentiate from empty cells) */
     public static final String NAN_VALUE = "N/A";
     private static final String DEFAULT_RESULTS_TABLE_TITLE = "Results";
+    private static ResultsInserter instance;
     private ResultsTable resultsTable;
+    private boolean headless;
 
-    public ResultsInserter() {
+    private ResultsInserter() {
+        instance = this;
         setResultsTable(ResultsTable.getResultsTable());
+    }
+
+    public static ResultsInserter getInstance() {
+        if (instance == null) {
+            instance = new ResultsInserter();
+        }
+
+        return instance;
     }
 
     /** Returns the underlying ResultsTable  */
     public ResultsTable getResultsTable() {
         return resultsTable;
+    }
+
+    /** If headless == true then the ResultsTable won't be shown in the UI */
+    public void setHeadless(boolean headless) {
+        this.headless = headless;
     }
 
     /**
@@ -91,8 +107,16 @@ public class ResultsInserter {
         }
     }
 
-    /** Displays the results */
+    /**
+     * Displays the results unless running headless
+     * @see ResultsInserter#setHeadless setHeadless
+     */
     public void updateResults() {
+        if (headless) {
+            // TODO Print to a file?
+            return;
+        }
+
         resultsTable.show(DEFAULT_RESULTS_TABLE_TITLE);
     }
 

@@ -6,6 +6,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 /**
  * Unit tests for the ResultsInserter class
@@ -27,11 +32,12 @@ public class ResultsInserterTest {
 
     @BeforeClass
     public static void oneTimeSetup() {
-        resultsInserter = new ResultsInserter();
+        resultsInserter = ResultsInserter.getInstance();
     }
 
     @Before
     public void setUp() {
+        resultsInserter.setResultsTable(ResultsTable.getResultsTable());
         resultsTable = resultsInserter.getResultsTable();
         resultsTable.reset();
         beforeCount = 0;
@@ -145,5 +151,16 @@ public class ResultsInserterTest {
         final String value = resultsTable.getStringValue(0, 0);
 
         assertEquals("NaN value not marked down as " + ResultsInserter.NAN_VALUE, ResultsInserter.NAN_VALUE, value);
+    }
+
+    @Test
+    public void testDoesNotShowTableWhenHeadless() throws Exception {
+        final ResultsTable mockTable = mock(ResultsTable.class);
+        resultsInserter.setResultsTable(mockTable);
+        resultsInserter.setHeadless(true);
+
+        resultsInserter.updateResults();
+
+        verify(mockTable, never()).show(anyString());
     }
 }

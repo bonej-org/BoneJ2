@@ -166,7 +166,7 @@ public class ThicknessWrapper extends ContextCommand {
             max = resultStats.max;
         }
 
-        ResultsInserter inserter = new ResultsInserter();
+        ResultsInserter inserter = ResultsInserter.getInstance();
         inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, mean);
         inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" + unitHeader, stdDev);
         inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader, max);
@@ -194,12 +194,12 @@ public class ThicknessWrapper extends ContextCommand {
             return;
         }
 
-        if (inputImage.getNChannels() > 1) {
+        if (inputImage.isComposite()) {
             cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
-        }
-
-        if (inputImage.getNFrames() > 1) {
+            return;
+        } else if (inputImage.isHyperStack()) {
             cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
+            return;
         }
 
         if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(inputImage)) {

@@ -21,7 +21,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  *
  * @author Richard Domander 
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity", headless = true)
 public class ConnectivityWrapper extends ContextCommand {
     @Parameter(initializer = "initializeImage")
     private ImgPlus inputImage;
@@ -35,7 +35,7 @@ public class ConnectivityWrapper extends ContextCommand {
     @Override
     public void run() {
         final Integer eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, inputImage);
-        final Integer deltaEuler = (Integer) opService.run(DeltaEuler.class, inputImage);
+        final Integer deltaEuler = (Integer) opService.run(DeltaEuler.class, inputImage, eulerCharacteristic);
         final int connectivity = 1 - deltaEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
 
@@ -49,10 +49,10 @@ public class ConnectivityWrapper extends ContextCommand {
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
 
         if (unitHeader.isEmpty()) {
-            uiService.showDialog("Calibration has no unit: showing plain values", WARNING_MESSAGE);
+            uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
         }
 
-        final ResultsInserter inserter = new ResultsInserter();
+        final ResultsInserter inserter = ResultsInserter.getInstance();
         inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)", eulerCharacteristic);
         inserter.setMeasurementInFirstFreeRow(label, "Contribution (Δχ)", deltaEuler);
         inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
@@ -82,7 +82,7 @@ public class ConnectivityWrapper extends ContextCommand {
             cancel(NOT_BINARY);
         }
 
-        //TODO check for non-linear axis
+        //TODO check for non-linear axes
     }
     //endregion
 }

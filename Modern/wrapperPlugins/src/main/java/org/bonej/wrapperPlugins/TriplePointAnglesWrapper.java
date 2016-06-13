@@ -116,7 +116,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
     }
 
     private void showResults(final List<List<TriplePoint>> graphList) {
-        ResultsInserter resultsInserter = new ResultsInserter();
+        ResultsInserter resultsInserter = ResultsInserter.getInstance();
         String label = inputImage.getTitle();
 
         for (List<TriplePoint> triplePointList : graphList) {
