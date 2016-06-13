@@ -81,8 +81,6 @@ public class ConnectivityWrapper extends ContextCommand {
         if (!ElementUtil.isColorsBinary(inputImage)) {
             cancel(NOT_BINARY);
         }
-
-        //TODO check for non-linear axes
     }
     //endregion
 }
