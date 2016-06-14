@@ -104,7 +104,7 @@ public class AxisUtilsTest {
     }
 
     @Test
-    public void testHasSpatial() throws Exception {
+    public void testHasSpatialDimensions() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
         final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5});
