@@ -1,6 +1,6 @@
 Case 1
 =======================================================================
-Connectivity results show up correctly
+Results should match BoneJ1
 =======================================================================
 Steps
 -----------------------------------------------------------------------
@@ -15,10 +15,11 @@ Steps
 5. Verify that Results table has the headers "Euler char. (χ)"",
   "Contribution (Δχ)", "Connectivity" and "Conn. density"
 6. Verify that "Conn. density" have the unit mm³
+7. Verify that connectivity numbers match BoneJ1
 
 Expected result
 -----------------------------------------------------------------------
-Statistics show up correctly in the Results table
+Results match BoneJ!
 
 Completed - - ---- - -
 -----------------------------------------------------------------------
