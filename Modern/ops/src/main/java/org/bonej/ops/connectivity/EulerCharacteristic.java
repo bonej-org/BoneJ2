@@ -10,6 +10,7 @@ import org.bonej.utilities.AxisUtils;
 import org.scijava.plugin.Plugin;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * An Op which calculates the euler characteristic (χ) of the given image.
@@ -28,10 +29,9 @@ import java.util.Arrays;
 @Plugin(type = Op.class, name = "eulerCharacteristic")
 public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFunctionOp<ImgPlus<B>, Integer> implements
         Contingent {
-    // TODO Determine indices of spatial dimensions
-    private static final int U_INDEX = 0;
-    private static final int V_INDEX = 1;
-    private static final int W_INDEX = 2;
+    private int xIndex;
+    private int yIndex;
+    private int zIndex;
     private static final int[] EULER_LUT = new int[256];
 
     //region fill EULER_LUT
@@ -162,19 +162,40 @@ public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFun
 
     @Override
     public Integer compute1(final ImgPlus<B> imgPlus) {
-        final int[] eulerSums = new int[(int) imgPlus.dimension(W_INDEX)];
+        assignIndices(imgPlus);
+
+        final int[] eulerSums = new int[(int) imgPlus.dimension(zIndex)];
         final Cursor<B> cursor = imgPlus.localizingCursor();
-        final Octant<B> octant = new Octant<>(imgPlus);
+        final Octant<B> octant = new Octant<>(imgPlus, xIndex, yIndex, zIndex);
 
         cursor.forEachRemaining(c -> {
-            long u = cursor.getLongPosition(U_INDEX);
-            long v = cursor.getLongPosition(V_INDEX);
-            long w = cursor.getLongPosition(W_INDEX);
-            octant.setNeighborhood(u, v, w);
-            eulerSums[(int) w] += getDeltaEuler(octant);
+            long x = cursor.getLongPosition(xIndex);
+            long y = cursor.getLongPosition(yIndex);
+            long z = cursor.getLongPosition(zIndex);
+            octant.setNeighborhood(x, y, z);
+            eulerSums[(int) z] += getDeltaEuler(octant);
         });
 
         return (int) Math.round(Arrays.stream(eulerSums).sum() / 8.0);
+    }
+
+    private void assignIndices(final ImgPlus<B> imgPlus) {
+        final Optional<int[]> optional = AxisUtils.getXYZIndices(imgPlus);
+        if (optional.isPresent()) {
+            final int[] indices = optional.get();
+            xIndex = indices[0];
+            yIndex = indices[1];
+            zIndex = indices[2];
+        } else {
+            /* Images often don't open with correct metadata (AxisType),
+             * e.g. the sample "bat-cochlea-volume.tif".
+             * Just go with the first three axes,
+             * and hope for the best until ImgPlus / Dataset design stabilises
+             */
+            xIndex = 0;
+            yIndex = 1;
+            zIndex = 2;
+        }
     }
 
     private static int getDeltaEuler(final Octant octant) {

@@ -89,6 +89,11 @@
     </ciManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>utilities</artifactId>
+        </dependency>
+
         <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>

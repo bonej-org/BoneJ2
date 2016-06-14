@@ -1,6 +1,9 @@
 package org.bonej.ops.connectivity;
 
 import net.imagej.ImageJ;
+import net.imagej.ImgPlus;
+import net.imagej.axis.Axes;
+import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.ops.Ops;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
@@ -37,9 +40,13 @@ public class OctantTest {
     }
 
     @Test
-    public void testIsNeighborhoodEmpty() throws AssertionError {
+    public void testIsNeighborhoodEmpty() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final Img<BitType> img = imgCreator.compute1(new FinalDimensions(2, 2, 2));
-        Octant<BitType> octant = new Octant<>(img);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, zAxis);
+        Octant<BitType> octant = new Octant<>(imgPlus, 0, 1, 2);
 
         octant.setNeighborhood(1, 1, 1);
 
@@ -52,22 +59,30 @@ public class OctantTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testSetIntervalThrowsIllegalArgumentExceptionIfIntervalHasTooFewDimensions() throws AssertionError {
-        final Img<BitType> img = imgCreator.compute1(new FinalDimensions(10, 10));
-        new Octant<>(img);
+    public void testSetIntervalThrowsIllegalArgumentExceptionIfIntervalHasTooFewDimensions() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final Img<BitType> img = imgCreator.compute1(new FinalDimensions(10, 10, 3));
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, cAxis);
+        new Octant<>(imgPlus, 0, 1, 2);
     }
 
     @Test(expected = NullPointerException.class)
-    public void testSetIntervalThrowsNullPointerExceptionIfIntervalIsNull() throws AssertionError {
-        new Octant<>(null);
+    public void testSetIntervalThrowsNullPointerExceptionIfIntervalIsNull() throws Exception {
+        new Octant<>(null, 0, 1, 2);
     }
 
     @Test
-    public void testSetNeighborhood() throws AssertionError {
-        final Img<BitType> testInterval = imgCreator.compute1(new FinalDimensions(3, 3, 3));
-        final Cursor<BitType> cursor = testInterval.localizingCursor();
+    public void testSetNeighborhood() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
+        final Img<BitType> img = imgCreator.compute1(new FinalDimensions(3, 3, 3));
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, zAxis);
+        Octant<BitType> octant = new Octant<>(imgPlus, 0, 1, 2);
+        final Cursor<BitType> cursor = imgPlus.localizingCursor();
         final long[] location = new long[3];
-        Octant<BitType> octant = new Octant<>(testInterval);
 
         // fill test interval
         while (cursor.hasNext()) {

@@ -10,6 +10,7 @@ import net.imglib2.Dimensions;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.bonej.utilities.Streamers.axisStream;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
@@ -20,6 +21,18 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
  * @author Richard Domander 
  */
 public class AxisUtils {
+    public static <T extends AnnotatedSpace<A>, A extends TypedAxis> Optional<int[]> getXYZIndices(
+            @Nullable final T space) {
+        if (space == null) {
+            return Optional.empty();
+        }
+
+        final int dimensions = space.numDimensions();
+        final int[] indices = IntStream.range(0, dimensions).filter(d -> space.axis(d).type().isSpatial()).toArray();
+
+        return indices.length == 3 ? Optional.of(indices) : Optional.empty();
+    }
+
     /**
      * Counts the number of spatial elements in the given space
      *

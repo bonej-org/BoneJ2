@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -28,6 +29,41 @@ public class AxisUtilsTest {
     @AfterClass
     public static void oneTimeTearDown() {
         IMAGE_J.context().dispose();
+    }
+
+    @Test
+    public void testGetXYZIndicesEmptyIfSpaceNull() throws Exception {
+        final Optional<int[]> result = AxisUtils.getXYZIndices(null);
+
+        assertFalse("Optional should be empty", result.isPresent());
+    }
+
+    @Test
+    public void testGetXYZIndicesEmptyIfSpaceNot3D() throws Exception {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final Optional<int[]> result = AxisUtils.getXYZIndices(imgPlus);
+
+        assertFalse("Optional should be empty", result.isPresent());
+    }
+
+    @Test
+    public void testGetXYZIndices() throws Exception {
+        final int[] expectedIndices = {0, 1, 3};
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10, 3, 10});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis, zAxis);
+
+        final Optional<int[]> result = AxisUtils.getXYZIndices(imgPlus);
+
+        assertTrue("Optional should be present", result.isPresent());
+        assertArrayEquals("Indices are incorrect", expectedIndices, result.get());
     }
 
     @Test
