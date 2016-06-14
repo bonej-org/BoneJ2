@@ -1,8 +1,11 @@
 package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
+import net.imagej.axis.Axis;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imglib2.img.Img;
+import net.imglib2.type.logic.BitType;
 import org.bonej.ops.connectivity.DeltaEuler;
 import org.bonej.ops.connectivity.EulerCharacteristic;
 import org.bonej.utilities.AxisUtils;
@@ -35,9 +38,17 @@ public class ConnectivityWrapper extends ContextCommand {
 
     @Override
     public void run() {
-        final Img bitImage = opService.convert().bit(inputImage);
-        final Integer eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, bitImage);
-        final Integer deltaEuler = (Integer) opService.run(DeltaEuler.class, bitImage, eulerCharacteristic);
+        final Img<BitType> bitImg = opService.convert().bit(inputImage);
+        final int dimensions = inputImage.numDimensions();
+        final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
+        for (int d = 0; d < dimensions; d++) {
+            // Copy metadata
+            final CalibratedAxis axis = (CalibratedAxis) inputImage.axis(d);
+            bitImgPlus.setAxis(axis, d);
+        }
+
+        final Integer eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, bitImgPlus);
+        final Integer deltaEuler = (Integer) opService.run(DeltaEuler.class, bitImgPlus, eulerCharacteristic);
         final int connectivity = 1 - deltaEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
 
