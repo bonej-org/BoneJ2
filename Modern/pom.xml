@@ -80,7 +80,6 @@
         <module>wrapperPlugins</module>
         <module>utilities</module>
         <module>ops</module>
-        <module>testImgs</module>
     </modules>
 
     <dependencyManagement>
