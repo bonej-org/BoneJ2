@@ -164,7 +164,7 @@ public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFun
     public Integer compute1(final ImgPlus<B> imgPlus) {
         assignIndices(imgPlus);
 
-        final int[] eulerSums = new int[(int) imgPlus.dimension(zIndex)];
+        final int[] eulerSum = {0};
         final Cursor<B> cursor = imgPlus.localizingCursor();
         final Octant<B> octant = new Octant<>(imgPlus, xIndex, yIndex, zIndex);
 
@@ -173,10 +173,10 @@ public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFun
             long y = cursor.getLongPosition(yIndex);
             long z = cursor.getLongPosition(zIndex);
             octant.setNeighborhood(x, y, z);
-            eulerSums[(int) z] += getDeltaEuler(octant);
+            eulerSum[0] += getDeltaEuler(octant);
         });
 
-        return (int) Math.round(Arrays.stream(eulerSums).sum() / 8.0);
+        return (int) Math.round(eulerSum[0] / 8.0);
     }
 
     private void assignIndices(final ImgPlus<B> imgPlus) {
