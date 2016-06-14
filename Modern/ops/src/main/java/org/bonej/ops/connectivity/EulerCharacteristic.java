@@ -1,10 +1,12 @@
 package org.bonej.ops.connectivity;
 
 import net.imagej.ImgPlus;
+import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imglib2.Cursor;
 import net.imglib2.type.BooleanType;
+import org.bonej.utilities.AxisUtils;
 import org.scijava.plugin.Plugin;
 
 import java.util.Arrays;
@@ -24,7 +26,8 @@ import java.util.Arrays;
  * @author Richard Domander 
  */
 @Plugin(type = Op.class, name = "eulerCharacteristic")
-public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFunctionOp<ImgPlus<B>, Integer> {
+public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFunctionOp<ImgPlus<B>, Integer> implements
+        Contingent {
     // TODO Determine indices of spatial dimensions
     private static final int U_INDEX = 0;
     private static final int V_INDEX = 1;
@@ -151,6 +154,11 @@ public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFun
         EULER_LUT[253] = 1;
     }
     //endregion
+
+    @Override
+    public boolean conforms() {
+        return AxisUtils.countSpatialDimensions(in()) == 3;
+    }
 
     @Override
     public Integer compute1(final ImgPlus<B> imgPlus) {
