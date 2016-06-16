@@ -44,7 +44,7 @@ public class EulerCharacteristicTest {
 
         final Integer result = (Integer) IMAGE_J.op().run(EulerCharacteristic.class, cuboid);
 
-        assertEquals("Euler characteristic is incorrect", 2, result.intValue());
+        assertEquals("Euler characteristic is incorrect", 1, result.intValue());
     }
 
     /** Regression test for EulerCharacteristic */

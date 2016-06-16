@@ -25,55 +25,51 @@ public class ConnectivityProtos {
     public static class Neighborhood {
         public boolean [][][] neighbors = new boolean[2][2][2];
         public Neighborhood(int n) {
-            neighbors[0][0][0] = (n & 1) > 0;
-            neighbors[1][0][0] = (n & 2) > 0;
-            neighbors[0][1][0] = (n & 4) > 0;
-            neighbors[1][1][0] = (n & 8) > 0;
-            neighbors[0][0][1] = (n & 16) > 0;
-            neighbors[1][0][1] = (n & 32) > 0;
-            neighbors[0][1][1] = (n & 64) > 0;
-            neighbors[1][1][1] = (n & 128) > 0;
+            neighbors[0][0][0] = (n & 0b00000001) > 0;
+            neighbors[1][0][0] = (n & 0b00000010) > 0;
+            neighbors[0][1][0] = (n & 0b00000100) > 0;
+            neighbors[1][1][0] = (n & 0b00001000) > 0;
+            neighbors[0][0][1] = (n & 0b00010000) > 0;
+            neighbors[1][0][1] = (n & 0b00100000) > 0;
+            neighbors[0][1][1] = (n & 0b01000000) > 0;
+            neighbors[1][1][1] = (n & 0b10000000) > 0;
         }
         
         public int getIndex() {
-            int index = 1;
-            if (neighbors[1][1][1]) {
-                if (neighbors[0][0][0]) { index |= 128; }
-                if (neighbors[0][1][0]) { index |= 64; }
-                if (neighbors[1][0][0]) { index |= 32; }
-                if (neighbors[1][1][0]) { index |= 16; }
-                if (neighbors[0][0][1]) { index |= 8; }
-                if (neighbors[0][1][1]) { index |= 4; }
-                if (neighbors[1][0][1]) { index |= 2; }
-            } else if (neighbors[1][0][1]) {
-                if (neighbors[0][1][0]) { index |= 128; }
-                if (neighbors[1][1][0]) { index |= 64; }
-                if (neighbors[0][0][0]) { index |= 32; }
-                if (neighbors[1][0][0]) { index |= 16; }
-                if (neighbors[0][1][1]) { index |= 8; }
-                if (neighbors[0][0][1]) { index |= 2; }
-            } else if (neighbors[0][1][1]) {
-                if (neighbors[1][0][0]) { index |= 128; }
-                if (neighbors[0][0][0]) { index |= 64; }
-                if (neighbors[1][1][0]) { index |= 32; }
-                if (neighbors[0][1][0]) { index |= 16; }
-                if (neighbors[0][0][1]) { index |= 4; }
-            } else if (neighbors[0][0][1]) {
-                if (neighbors[1][1][0]) { index |= 128; }
-                if (neighbors[1][0][0]) { index |= 64; }
-                if (neighbors[0][1][0]) { index |= 32; }
-                if (neighbors[0][0][0]) { index |= 16; }
-            } else if (neighbors[1][1][0]) {
-                if (neighbors[0][0][0]) { index |= 8; }
-                if (neighbors[1][0][0]) { index |= 4; }
-                if (neighbors[0][1][0]) { index |= 2; }
-            } else if (neighbors[1][0][0]) {
-                if (neighbors[0][1][0]) { index |= 8; }
-                if (neighbors[0][0][0]) { index |= 4; }
-            } else if (neighbors[0][1][0]) {
-                if (neighbors[0][0][0]) { index |= 2; }
+            int index = 0;
+
+            if (neighbors[0][0][0]) {
+                index |= 0b00000001;
             }
-            
+
+            if (neighbors[1][0][0]) {
+                index |= 0b00000010;
+            }
+
+            if (neighbors[0][1][0]) {
+                index |= 0b00000100;
+            }
+
+            if (neighbors[1][1][0]) {
+                index |= 0b00001000;
+            }
+
+            if (neighbors[0][0][1]) {
+                index |= 0b00010000;
+            }
+
+            if (neighbors[1][0][1]) {
+                index |= 0b00100000;
+            }
+
+            if (neighbors[0][1][1]) {
+                index |= 0b01000000;
+            }
+
+            if (neighbors[1][1][1]) {
+                index |= 0b10000000;
+            }
+
             return index;
         }
     }
