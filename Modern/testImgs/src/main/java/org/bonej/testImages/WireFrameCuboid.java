@@ -17,6 +17,7 @@ import org.scijava.plugin.Plugin;
  * Creates an ImgPlus<BitType> of a wire-frame cuboid.
  *
  * @author Richard Domander
+ * //TODO fix bug with very small cuboids (< 3)
  */
 @Plugin(type = Op.class, name = "wireFrameCuboid", menuPath = "Plugins>Test Images>Wire-frame cuboid")
 public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
