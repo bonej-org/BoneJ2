@@ -14,16 +14,17 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 /**
- * Creates an ImgPlus<BitType> of a wire-frame cuboid.
+ * Creates an ImgPlus<BitType> of a solid cuboid.
  *
  * @author Richard Domander
  */
-@Plugin(type = Op.class, name = "wireFrameCuboid", menuPath = "Plugins>Test Images>Wire-frame cuboid")
-public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
+@Plugin(type = Op.class, name = "cuboid", menuPath = "Plugins>Test Images>Cuboid")
+public class Cuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     private static final int X_DIM = 0;
     private static final int Y_DIM = 1;
+    private static final int CHANNEL_DIM = 2;
     private static final int Z_DIM = 3;
-    private final long[] cuboidLocation = new long[5];
+    private static final int TIME_DIM = 4;
 
     @Parameter(label = "X-size", description = "Cuboid width", min = "1")
     private long xSize = 50;
@@ -64,71 +65,41 @@ public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
                         frames), new BitType());
         double[] calibration = new double[]{scale, scale, 1.0, scale, 1.0};
         String[] units = new String[]{unit, unit, "", unit, ""};
-        return new ImgPlus<>(img, "Wire-frame cuboid", AXIS_TYPES, calibration, units);
+        return new ImgPlus<>(img, "Cuboid", AXIS_TYPES, calibration, units);
     }
 
     @Override
-    public void compute0(final ImgPlus<BitType> output) {
-        for (int f = 0; f < frames; f++) {
-            for (int c = 0; c < channels; c++) {
-                drawCuboidEdges(output, c, f);
-            }
-        }
-    }
-
-    //region -- Helper methods --
-    private void drawCuboidEdges(final ImgPlus<BitType> cuboid, final long channel, final long frame) {
+    public void compute0(ImgPlus<BitType> image) {
         final long x0 = padding;
         final long x1 = padding + xSize;
         final long y0 = padding;
         final long y1 = padding + ySize;
         final long z0 = padding;
         final long z1 = padding + zSize;
+        final RandomAccess<BitType> access = image.randomAccess();
 
-        setCuboidLocation(x0, y0, z0, channel, frame);
-        drawLine(cuboid, X_DIM, xSize);
-        drawLine(cuboid, Y_DIM, ySize);
-        drawLine(cuboid, Z_DIM, zSize);
-        setCuboidLocation(x1, y0, z0, channel, frame);
-        drawLine(cuboid, Y_DIM, ySize);
-        drawLine(cuboid, Z_DIM, zSize);
-        setCuboidLocation(x1, y1, z0, channel, frame);
-        drawLine(cuboid, Z_DIM, zSize);
-        setCuboidLocation(x0, y1, z0, channel, frame);
-        drawLine(cuboid, X_DIM, ySize);
-        drawLine(cuboid, Z_DIM, zSize);
-        setCuboidLocation(x0, y0, z1, channel, frame);
-        drawLine(cuboid, X_DIM, xSize);
-        drawLine(cuboid, Y_DIM, ySize);
-        setCuboidLocation(x1, y0, z1, channel, frame);
-        drawLine(cuboid, Y_DIM, ySize);
-        setCuboidLocation(x0, y1, z1, channel, frame);
-        drawLine(cuboid, X_DIM, xSize);
-    }
-
-    private void drawLine(final ImgPlus<BitType> cuboid, final int dim, final long length) {
-        final RandomAccess<BitType> randomAccess = cuboid.randomAccess();
-        randomAccess.setPosition(cuboidLocation);
-
-        for (int i = 0; i < length; i++) {
-            randomAccess.get().setOne();
-            randomAccess.fwd(dim);
+        for (long f = 0; f < frames; f++) {
+            access.setPosition(f, TIME_DIM);
+            for (long c = 0; c < channels; c++) {
+                access.setPosition(c, CHANNEL_DIM);
+                for (long z = z0; z < z1; z++) {
+                    access.setPosition(z, Z_DIM);
+                    for (long y = y0; y < y1; y++) {
+                        access.setPosition(y, Y_DIM);
+                        for (long x = x0; x < x1; x++) {
+                            access.setPosition(x, X_DIM);
+                            access.get().setOne();
+                        }
+                    }
+                }
+            }
         }
     }
-
-    private void setCuboidLocation(final long x, final long y, final long z, final long channel, final long frame) {
-        cuboidLocation[X_DIM] = x;
-        cuboidLocation[Y_DIM] = y;
-        cuboidLocation[2] = channel;
-        cuboidLocation[Z_DIM] = z;
-        cuboidLocation[4] = frame;
-    }
-    //endregion
 
     public static void main(String... args) {
         final ImageJ ij = net.imagej.Main.launch(args);
         // Call the hybrid op without a ready buffer (null)
-        Object cuboid = ij.op().run(WireFrameCuboid.class, null, 100L, 100L, 10L, 3L, 10L, 5L);
+        Object cuboid = ij.op().run(Cuboid.class, null, 100L, 100L, 10L, 1L, 1L, 5L);
         ij.ui().show(cuboid);
     }
 }

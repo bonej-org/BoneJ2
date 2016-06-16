@@ -7,11 +7,12 @@ import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.FinalDimensions;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
+import org.bonej.testImages.Cuboid;
 import org.bonej.testImages.WireFrameCuboid;
 import org.junit.AfterClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Richard Domander 
@@ -37,9 +38,20 @@ public class EulerCharacteristicTest {
 
     /** Regression test for EulerCharacteristic */
     @Test
-    public void testCompute1() throws Exception {
+    public void testCompute1Cuboid() throws Exception {
         final ImgPlus<BitType> cuboid =
-                (ImgPlus<BitType>) IMAGE_J.op().run(WireFrameCuboid.class, null, 10, 10, 10, 1, 1, 1, 0.2);
+                (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, 10, 10, 10, 1, 1, 1);
+
+        final Integer result = (Integer) IMAGE_J.op().run(EulerCharacteristic.class, cuboid);
+
+        assertEquals("Euler characteristic is incorrect", 2, result.intValue());
+    }
+
+    /** Regression test for EulerCharacteristic */
+    @Test
+    public void testCompute1WireFrameCuboid() throws Exception {
+        final ImgPlus<BitType> cuboid =
+                (ImgPlus<BitType>) IMAGE_J.op().run(WireFrameCuboid.class, null, 10, 10, 10, 1, 1, 1);
 
         final Integer result = (Integer) IMAGE_J.op().run(EulerCharacteristic.class, cuboid);
 
