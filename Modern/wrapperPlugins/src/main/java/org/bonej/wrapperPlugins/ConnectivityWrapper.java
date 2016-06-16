@@ -1,7 +1,6 @@
 package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
-import net.imagej.axis.Axis;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imglib2.img.Img;

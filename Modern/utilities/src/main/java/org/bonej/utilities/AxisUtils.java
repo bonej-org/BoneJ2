@@ -21,6 +21,11 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
  * @author Richard Domander 
  */
 public class AxisUtils {
+    /**
+     * Indices of the first three spatial dimensions in the Axes array of the given space
+     *
+     * @return An Optional containing the indices, or empty if failed to find three spatial dimensions
+     */
     public static <T extends AnnotatedSpace<A>, A extends TypedAxis> Optional<int[]> getXYZIndices(
             @Nullable final T space) {
         if (space == null) {
@@ -200,6 +205,7 @@ public class AxisUtils {
         return true;
     }
 
+    //region -- Helper methods --
     private static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(
             @Nullable final T space) {
         return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
@@ -228,4 +234,5 @@ public class AxisUtils {
 
         return true;
     }
+    //endregion
 }

@@ -16,6 +16,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *      and add the new value there. If there are no such rows, then add a new row.
  * <p>>
  * By default the class uses the instance returned by ResultsTable.getResultsTable()
+ * <p>
+ * The class is a Singleton so that you can used it in automated tests.
+ * Remember to reset the ResultsTable (getResultsTable) in @After / @AfterClass in your test suite!
  *
  * @author Michael Doube
  * @author Richard Domander
