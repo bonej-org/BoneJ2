@@ -18,7 +18,8 @@ import static org.junit.Assert.assertEquals;
 /**
  * Unit tests for the {@link EulerCharacteristic EulerCharacteristic} Op
  *
- * @author Richard Domander 
+ * @author Richard Domander
+ * //TODO Add regression tests for torus, hollow sphere etc...
  */
 public class EulerCharacteristicTest {
     private static final ImageJ IMAGE_J = new ImageJ();

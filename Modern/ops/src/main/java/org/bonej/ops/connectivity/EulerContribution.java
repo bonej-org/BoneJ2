@@ -7,10 +7,14 @@ import net.imglib2.type.BooleanType;
 import org.scijava.plugin.Plugin;
 
 /**
- * An Op which calculates the images's contribution to the euler characteristic of the structure
- * to which it's connected.
+ * An Op which calculates the edge correction needed for the Euler characteristic of the image to approximate its
+ * contribution to the whole image. That is, it's assumed that the image is a small part cut from a larger image.
  * <p>
- * Calculated by counting the intersections of foreground elements and the edges of the "stack".
+ * Based on the article
+ * Odgaard A, Gundersen HJG (1993) Quantification of connectivity in cancellous bone,
+ * with special emphasis on 3-D reconstructions.
+ * Bone 14: 173-182.
+ * <a href="http://dx.doi.org/10.1016/8756-3282(93)90245-6">doi:10.1016/8756-3282(93)90245-6</a>
  *
  * @author Michael Doube
  * @author Richard Domander 
