@@ -11,6 +11,8 @@ import org.bonej.utilities.AxisUtils;
 import org.scijava.plugin.Plugin;
 
 import java.util.Optional;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 /**
  * An Op which calculates the edge correction needed for the Euler characteristic of the image to approximate its
@@ -44,20 +46,43 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
     }
 
     /**
-     * Calculates χ_0 from Odgaard and Gundersen, i.e. counts the number of foreground voxels in stack corners
+     * Counts the foreground voxels in stack corners
+     * <p>
+     * Calculates χ_0 from Odgaard and Gundersen
      * @implNote Public and static for testing purposes
      */
     public static <B extends BooleanType<B>> int cornerVertices(final Traverser<B> traverser) {
-        int foreground = 0;
-        foreground += getAtLocation(traverser, traverser.x0, traverser.y0, traverser.z0);
-        foreground += getAtLocation(traverser, traverser.x1, traverser.y0, traverser.z0);
-        foreground += getAtLocation(traverser, traverser.x1, traverser.y1, traverser.z0);
-        foreground += getAtLocation(traverser, traverser.x0, traverser.y1, traverser.z0);
-        foreground += getAtLocation(traverser, traverser.x0, traverser.y0, traverser.z1);
-        foreground += getAtLocation(traverser, traverser.x1, traverser.y0, traverser.z1);
-        foreground += getAtLocation(traverser, traverser.x1, traverser.y1, traverser.z1);
-        foreground += getAtLocation(traverser, traverser.x0, traverser.y1, traverser.z1);
-        return foreground;
+        int foregroundVoxels = 0;
+        foregroundVoxels += getAtLocation(traverser, traverser.x0, traverser.y0, traverser.z0);
+        foregroundVoxels += getAtLocation(traverser, traverser.x1, traverser.y0, traverser.z0);
+        foregroundVoxels += getAtLocation(traverser, traverser.x1, traverser.y1, traverser.z0);
+        foregroundVoxels += getAtLocation(traverser, traverser.x0, traverser.y1, traverser.z0);
+        foregroundVoxels += getAtLocation(traverser, traverser.x0, traverser.y0, traverser.z1);
+        foregroundVoxels += getAtLocation(traverser, traverser.x1, traverser.y0, traverser.z1);
+        foregroundVoxels += getAtLocation(traverser, traverser.x1, traverser.y1, traverser.z1);
+        foregroundVoxels += getAtLocation(traverser, traverser.x0, traverser.y1, traverser.z1);
+        return foregroundVoxels;
+    }
+
+    /**
+     * Count the foreground voxels on the edges lining the stack
+     * <p>
+     * Contributes to χ_1 from Odgaard and Gundersen
+     */
+    public static <B extends BooleanType<B>> long stackEdges(final Traverser<B> traverser) {
+        final long[] foregroundVoxels = {0};
+
+        // left to right stack edges
+        LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
+            LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
+                for (long x = 1; x < traverser.xSize; x++) {
+                    foregroundVoxels[0] += getAtLocation(traverser, x, y, z);
+                }
+            });
+        });
+
+
+        return foregroundVoxels[0];
     }
 
     //region -- Helper methods --
