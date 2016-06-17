@@ -38,6 +38,7 @@ import java.util.Optional;
  *
  * @author Richard Domander
  * @author Michael Doube
+ * //TODO Fix generic signature
  */
 @Plugin(type = Op.class, name = "eulerCharacteristic")
 public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFunctionOp<ImgPlus<B>, Integer> implements

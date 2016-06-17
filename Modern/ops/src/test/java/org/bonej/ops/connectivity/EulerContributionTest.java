@@ -27,9 +27,12 @@ public class EulerContributionTest {
     public void testCompute1CuboidFreeFloat() throws Exception {
         final ImgPlus<BitType> cuboid =
                 (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, 10, 10, 10, 1, 1, 5);
+        final EulerContribution.Traverser<BitType> traverser = new EulerContribution.Traverser<>(cuboid);
 
-        final Integer result = (Integer) IMAGE_J.op().run(EulerContribution.class, cuboid);
+        final int cornerVertices = EulerContribution.cornerVertices(traverser);
+        assertEquals(0, cornerVertices);
 
+        final Double result = (Double) IMAGE_J.op().run(EulerContribution.class, cuboid);
         assertEquals("Euler contribution is incorrect", 0, result.intValue());
     }
 
@@ -41,9 +44,12 @@ public class EulerContributionTest {
     public void testCompute1CuboidStackSize() throws Exception {
         final ImgPlus<BitType> cuboid =
                 (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, 10, 10, 10, 1, 1, 0);
+        final EulerContribution.Traverser<BitType> traverser = new EulerContribution.Traverser<>(cuboid);
 
-        final Integer result = (Integer) IMAGE_J.op().run(EulerContribution.class, cuboid);
+        final int cornerVertices = EulerContribution.cornerVertices(traverser);
+        assertEquals(8, cornerVertices);
 
+        final Double result = (Double) IMAGE_J.op().run(EulerContribution.class, cuboid);
         assertEquals("Euler contribution is incorrect", 1, result.intValue());
     }
 }
