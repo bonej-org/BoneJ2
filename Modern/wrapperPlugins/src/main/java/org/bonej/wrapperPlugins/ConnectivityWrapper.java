@@ -46,16 +46,16 @@ public class ConnectivityWrapper extends ContextCommand {
             bitImgPlus.setAxis(axis, d);
         }
 
-        final Integer eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, bitImgPlus);
-        final Integer deltaEuler = (Integer) opService.run(EulerContribution.class, bitImgPlus, eulerCharacteristic);
-        final int connectivity = 1 - eulerCharacteristic;
+        final double eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, bitImgPlus);
+        final double edgeCorrection = (Double) opService.run(EulerContribution.class, bitImgPlus);
+        final double connectivity = 1 - eulerCharacteristic;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
 
-        showResults(eulerCharacteristic, deltaEuler, connectivity, connectivityDensity);
+        showResults(eulerCharacteristic + edgeCorrection, edgeCorrection, connectivity, connectivityDensity);
     }
 
     //region -- Helper methods --
-    private void showResults(final Integer eulerCharacteristic, final Integer deltaEuler, final int connectivity,
+    private void showResults(final double eulerCharacteristic, final double deltaEuler, final double connectivity,
             final double connectivityDensity) {
         final String label = inputImage.getName();
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
@@ -66,13 +66,13 @@ public class ConnectivityWrapper extends ContextCommand {
 
         final ResultsInserter inserter = ResultsInserter.getInstance();
         inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)", eulerCharacteristic);
-        inserter.setMeasurementInFirstFreeRow(label, "Contribution (Δχ)", deltaEuler);
+        inserter.setMeasurementInFirstFreeRow(label, "Edge correction (Δχ)", deltaEuler);
         inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
         inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader, connectivityDensity);
         inserter.updateResults();
     }
 
-    private double calculateConnectivityDensity(final int connectivity) {
+    private double calculateConnectivityDensity(final double connectivity) {
         final double elements = AxisUtils.spatialSpaceSize(inputImage);
         final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
         return connectivity / (elements * elementSize);
