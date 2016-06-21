@@ -7,7 +7,6 @@ import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.BooleanType;
-import net.imglib2.view.Views;
 import org.bonej.utilities.AxisUtils;
 import org.scijava.plugin.Plugin;
 
@@ -38,30 +37,150 @@ import java.util.Optional;
  *
  * @author Richard Domander
  * @author Michael Doube
- * //TODO Fix generic signature
  */
 @Plugin(type = Op.class, name = "eulerCharacteristic")
-public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFunctionOp<ImgPlus<B>, Integer> implements
-        Contingent {
-    /**Δχ(v) for all 256 possible configurations of a 2x2x2 voxel neighborhood  */
-    private static final int[] EULER_LUT = {
-             0,  1,  1,  0,  1,  0, -2, -1,  1, -2,  0, -1,  0, -1, -1,  0,
-             1,  0, -2, -1, -2, -1, -1, -2, -6, -3, -3, -2, -3, -2,  0, -1,
-             1, -2,  0, -1, -6, -3, -3, -2, -2, -1, -1, -2, -3,  0, -2, -1,
-             0, -1, -1,  0, -3, -2,  0, -1, -3,  0, -2, -1,  0,  1,  1,  0,
-             1, -2, -6, -3,  0, -1, -3, -2, -2, -1, -3,  0, -1, -2, -2, -1,
-             0, -1, -3, -2, -1,  0,  0, -1, -3,  0,  0,  1, -2, -1,  1,  0,
-            -2, -1, -3,  0, -3,  0,  0,  1, -1,  4,  0,  3,  0,  3,  1,  2,
-            -1, -2, -2, -1, -2, -1,  1,  0,  0,  3,  1,  2,  1,  2,  2,  1,
-             1, -6, -2, -3, -2, -3, -1,  0,  0, -3, -1, -2, -1, -2, -2, -1,
-            -2, -3, -1,  0, -1,  0,  4,  3, -3,  0,  0,  1,  0,  1,  3,  2,
-             0, -3, -1, -2, -3,  0,  0,  1, -1,  0,  0, -1, -2,  1, -1,  0,
-            -1, -2, -2, -1,  0,  1,  3,  2, -2,  1, -1,  0,  1,  2,  2,  1,
-             0, -3, -3,  0, -1, -2,  0,  1, -1,  0, -2,  1,  0, -1, -1,  0,
-            -1, -2,  0,  1, -2, -1,  3,  2, -2,  1,  1,  2, -1,  0,  2,  1,
-            -1,  0, -2,  1, -2,  1,  1,  2, -2,  3, -1,  2, -1,  2,  0,  1,
-             0, -1, -1,  0, -1,  0,  2,  1, -1,  2,  0,  1,  0,  1,  1,  0
-    };
+public class EulerCharacteristic<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<ImgPlus<B>, Double>
+        implements Contingent {
+    /**Δχ(v) for all configurations of a 2x2x2 voxel neighborhood  */
+    private static final int[] EULER_LUT = new int[256];
+
+    //region fill EULER_LUT
+    static {
+        EULER_LUT[1] = 1;
+        EULER_LUT[3] = 0;
+        EULER_LUT[5] = 0;
+        EULER_LUT[7] = -1;
+        EULER_LUT[9] = -2;
+        EULER_LUT[11] = -1;
+        EULER_LUT[13] = -1;
+        EULER_LUT[15] = 0;
+        EULER_LUT[17] = 0;
+        EULER_LUT[19] = -1;
+        EULER_LUT[21] = -1;
+        EULER_LUT[23] = -2;
+        EULER_LUT[25] = -3;
+        EULER_LUT[27] = -2;
+        EULER_LUT[29] = -2;
+        EULER_LUT[31] = -1;
+        EULER_LUT[33] = -2;
+        EULER_LUT[35] = -1;
+        EULER_LUT[37] = -3;
+        EULER_LUT[39] = -2;
+        EULER_LUT[41] = -1;
+        EULER_LUT[43] = -2;
+        EULER_LUT[45] = 0;
+        EULER_LUT[47] = -1;
+        EULER_LUT[49] = -1;
+
+        EULER_LUT[51] = 0;
+        EULER_LUT[53] = -2;
+        EULER_LUT[55] = -1;
+        EULER_LUT[57] = 0;
+        EULER_LUT[59] = -1;
+        EULER_LUT[61] = 1;
+        EULER_LUT[63] = 0;
+        EULER_LUT[65] = -2;
+        EULER_LUT[67] = -3;
+        EULER_LUT[69] = -1;
+        EULER_LUT[71] = -2;
+        EULER_LUT[73] = -1;
+        EULER_LUT[75] = 0;
+        EULER_LUT[77] = -2;
+        EULER_LUT[79] = -1;
+        EULER_LUT[81] = -1;
+        EULER_LUT[83] = -2;
+        EULER_LUT[85] = 0;
+        EULER_LUT[87] = -1;
+        EULER_LUT[89] = 0;
+        EULER_LUT[91] = 1;
+        EULER_LUT[93] = -1;
+        EULER_LUT[95] = 0;
+        EULER_LUT[97] = -1;
+        EULER_LUT[99] = 0;
+
+        EULER_LUT[101] = 0;
+        EULER_LUT[103] = 1;
+        EULER_LUT[105] = 4;
+        EULER_LUT[107] = 3;
+        EULER_LUT[109] = 3;
+        EULER_LUT[111] = 2;
+        EULER_LUT[113] = -2;
+        EULER_LUT[115] = -1;
+        EULER_LUT[117] = -1;
+        EULER_LUT[119] = 0;
+        EULER_LUT[121] = 3;
+        EULER_LUT[123] = 2;
+        EULER_LUT[125] = 2;
+        EULER_LUT[127] = 1;
+        EULER_LUT[129] = -6;
+        EULER_LUT[131] = -3;
+        EULER_LUT[133] = -3;
+        EULER_LUT[135] = 0;
+        EULER_LUT[137] = -3;
+        EULER_LUT[139] = -2;
+        EULER_LUT[141] = -2;
+        EULER_LUT[143] = -1;
+        EULER_LUT[145] = -3;
+        EULER_LUT[147] = 0;
+        EULER_LUT[149] = 0;
+
+        EULER_LUT[151] = 3;
+        EULER_LUT[153] = 0;
+        EULER_LUT[155] = 1;
+        EULER_LUT[157] = 1;
+        EULER_LUT[159] = 2;
+        EULER_LUT[161] = -3;
+        EULER_LUT[163] = -2;
+        EULER_LUT[165] = 0;
+        EULER_LUT[167] = 1;
+        EULER_LUT[169] = 0;
+        EULER_LUT[171] = -1;
+        EULER_LUT[173] = 1;
+        EULER_LUT[175] = 0;
+        EULER_LUT[177] = -2;
+        EULER_LUT[179] = -1;
+        EULER_LUT[181] = 1;
+        EULER_LUT[183] = 2;
+        EULER_LUT[185] = 1;
+        EULER_LUT[187] = 0;
+        EULER_LUT[189] = 2;
+        EULER_LUT[191] = 1;
+        EULER_LUT[193] = -3;
+        EULER_LUT[195] = 0;
+        EULER_LUT[197] = -2;
+        EULER_LUT[199] = 1;
+
+        EULER_LUT[201] = 0;
+        EULER_LUT[203] = 1;
+        EULER_LUT[205] = -1;
+        EULER_LUT[207] = 0;
+        EULER_LUT[209] = -2;
+        EULER_LUT[211] = 1;
+        EULER_LUT[213] = -1;
+        EULER_LUT[215] = 2;
+        EULER_LUT[217] = 1;
+        EULER_LUT[219] = 2;
+        EULER_LUT[221] = 0;
+        EULER_LUT[223] = 1;
+        EULER_LUT[225] = 0;
+        EULER_LUT[227] = 1;
+        EULER_LUT[229] = 1;
+        EULER_LUT[231] = 2;
+        EULER_LUT[233] = 3;
+        EULER_LUT[235] = 2;
+        EULER_LUT[237] = 2;
+        EULER_LUT[239] = 1;
+        EULER_LUT[241] = -1;
+        EULER_LUT[243] = 0;
+        EULER_LUT[245] = 0;
+        EULER_LUT[247] = 1;
+        EULER_LUT[249] = 2;
+        EULER_LUT[251] = 1;
+        EULER_LUT[253] = 1;
+        EULER_LUT[255] = 0;
+    }
+    //endregion
+
 
     /** The algorithm is only defined for 3D images  */
     @Override
@@ -70,58 +189,71 @@ public class EulerCharacteristic<B extends BooleanType> extends AbstractUnaryFun
     }
 
     @Override
-    public Integer compute1(final ImgPlus<B> imgPlus) {
-        final RandomAccess<B> access = Views.extendZero(imgPlus).randomAccess();
-        final Cursor<B> cursor = imgPlus.localizingCursor();
+    public Double compute1(final ImgPlus<B> imgPlus) {
         final Optional<int[]> optional = AxisUtils.getXYZIndices(imgPlus);
         final int[] indices = optional.get();
         final int xIndex = indices[0];
         final int yIndex = indices[1];
         final int zIndex = indices[2];
+        final Octant<B> octant = new Octant<>(imgPlus, xIndex, yIndex, zIndex);
         final int[] sumDeltaEuler = {0};
 
-        cursor.forEachRemaining(e -> {
-            final long x = cursor.getLongPosition(xIndex);
-            final long y = cursor.getLongPosition(yIndex);
-            final long z = cursor.getLongPosition(zIndex);
-            int index = neighborhoodEulerIndex(access, x, y, z, xIndex, yIndex, zIndex);
-            sumDeltaEuler[0] += EULER_LUT[index];
-        });
+        for (int z = 0; z <= imgPlus.dimension(zIndex); z++) {
+            for (int y = 0; y <= imgPlus.dimension(yIndex); y++) {
+                for (int x = 0; x <= imgPlus.dimension(xIndex); x++) {
+                    octant.setNeighborhood(x, y, z);
+                    sumDeltaEuler[0] += getDeltaEuler(octant);
+                }
+            }
+        }
 
-        return (int) Math.round(sumDeltaEuler[0] / 8.0);
+        return sumDeltaEuler[0] / 8.0;
     }
 
-    /**
-     * Determines the LUT index for this 2x2x2 neighborhood
-     *
-     * @implNote Public and static only for testing purposes
-     * @param access    The space where the neighborhood is
-     * @param x         Location of the neighborhood in the 1st spatial dimension (x)
-     * @param y         Location of the neighborhood in the 2nd spatial dimension (y)
-     * @param z         Location of the neighborhood in the 3rd spatial dimension (z)
-     * @return index of the Δχ value of for configuration of voxels
-     */
-    public static <B extends BooleanType> int neighborhoodEulerIndex(final RandomAccess<B> access, final long x,
-            final long y, final long z, final int xIndex, final int yIndex, final int zIndex) {
-        int index = 0;
+    /** Determines the Δχ from Toriwaki & Yonekura value for this 2x2x2 neighborhood */
+    private static int getDeltaEuler(final Octant octant) {
+        if (octant.isNeighborhoodEmpty()) {
+            return 0;
+        }
 
-        index += getAtLocation(access, x, y, z, xIndex, yIndex, zIndex);
-        index += getAtLocation(access, x + 1, y, z, xIndex, yIndex, zIndex)         << 1;
-        index += getAtLocation(access, x, y + 1, z, xIndex, yIndex, zIndex)         << 2;
-        index += getAtLocation(access, x + 1, y + 1, z, xIndex, yIndex, zIndex)     << 3;
-        index += getAtLocation(access, x, y, z + 1, xIndex, yIndex, zIndex)         << 4;
-        index += getAtLocation(access, x + 1, y, z + 1, xIndex, yIndex, zIndex)     << 5;
-        index += getAtLocation(access, x, y + 1, z + 1, xIndex, yIndex, zIndex)     << 6;
-        index += getAtLocation(access, x + 1, y + 1, z + 1, xIndex, yIndex, zIndex) << 7;
+        int index = 1;
+        if (octant.isNeighborForeground(8)) {
+            if (octant.isNeighborForeground(1)) { index |= 128; }
+            if (octant.isNeighborForeground(2)) { index |= 64; }
+            if (octant.isNeighborForeground(3)) { index |= 32; }
+            if (octant.isNeighborForeground(4)) { index |= 16; }
+            if (octant.isNeighborForeground(5)) { index |= 8; }
+            if (octant.isNeighborForeground(6)) { index |= 4; }
+            if (octant.isNeighborForeground(7)) { index |= 2; }
+        } else if (octant.isNeighborForeground(7)) {
+            if (octant.isNeighborForeground(2)) { index |= 128; }
+            if (octant.isNeighborForeground(4)) { index |= 64; }
+            if (octant.isNeighborForeground(1)) { index |= 32; }
+            if (octant.isNeighborForeground(3)) { index |= 16; }
+            if (octant.isNeighborForeground(6)) { index |= 8; }
+            if (octant.isNeighborForeground(5)) { index |= 2; }
+        } else if (octant.isNeighborForeground(6)) {
+            if (octant.isNeighborForeground(3)) { index |= 128; }
+            if (octant.isNeighborForeground(1)) { index |= 64; }
+            if (octant.isNeighborForeground(4)) { index |= 32; }
+            if (octant.isNeighborForeground(2)) { index |= 16; }
+            if (octant.isNeighborForeground(5)) { index |= 4; }
+        } else if (octant.isNeighborForeground(5)) {
+            if (octant.isNeighborForeground(4)) { index |= 128; }
+            if (octant.isNeighborForeground(3)) { index |= 64; }
+            if (octant.isNeighborForeground(2)) { index |= 32; }
+            if (octant.isNeighborForeground(1)) { index |= 16; }
+        } else if (octant.isNeighborForeground(4)) {
+            if (octant.isNeighborForeground(1)) { index |= 8; }
+            if (octant.isNeighborForeground(3)) { index |= 4; }
+            if (octant.isNeighborForeground(2)) { index |= 2; }
+        } else if (octant.isNeighborForeground(3)) {
+            if (octant.isNeighborForeground(2)) { index |= 8; }
+            if (octant.isNeighborForeground(1)) { index |= 4; }
+        } else if (octant.isNeighborForeground(2)) {
+            if (octant.isNeighborForeground(1)) { index |= 2; }
+        }
 
-        return index;
-    }
-
-    private static <B extends BooleanType> int getAtLocation(final RandomAccess<B> access, final long x, final long y,
-            final long z, final int xIndex, final int yIndex, final int zIndex) {
-        access.setPosition(x, xIndex);
-        access.setPosition(y, yIndex);
-        access.setPosition(z, zIndex);
-        return (int) access.get().getRealDouble();
+        return EULER_LUT[index];
     }
 }

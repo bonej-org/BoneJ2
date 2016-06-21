@@ -47,7 +47,7 @@ public class ConnectivityWrapper extends ContextCommand {
             bitImgPlus.setAxis(axis, d);
         }
 
-        final double eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, bitImgPlus);
+        final double eulerCharacteristic = (Double) opService.run(EulerCharacteristic.class, bitImgPlus);
         final double edgeCorrection = (Double) opService.run(EulerContribution.class, bitImgPlus);
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
