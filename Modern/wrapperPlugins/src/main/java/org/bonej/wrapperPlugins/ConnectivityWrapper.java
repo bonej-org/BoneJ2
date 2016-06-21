@@ -5,8 +5,9 @@ import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
-import org.bonej.ops.connectivity.EulerContribution;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import org.bonej.ops.connectivity.EulerCharacteristic;
+import org.bonej.ops.connectivity.EulerContribution;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -27,7 +28,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity", headless = true)
 public class ConnectivityWrapper extends ContextCommand {
     @Parameter(initializer = "initializeImage")
-    private ImgPlus inputImage;
+    private ImgPlus<UnsignedByteType> inputImage;
 
     @Parameter
     private OpService opService;
@@ -42,16 +43,17 @@ public class ConnectivityWrapper extends ContextCommand {
         final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
         for (int d = 0; d < dimensions; d++) {
             // Copy metadata
-            final CalibratedAxis axis = (CalibratedAxis) inputImage.axis(d);
+            final CalibratedAxis axis = inputImage.axis(d);
             bitImgPlus.setAxis(axis, d);
         }
 
         final double eulerCharacteristic = (Integer) opService.run(EulerCharacteristic.class, bitImgPlus);
         final double edgeCorrection = (Double) opService.run(EulerContribution.class, bitImgPlus);
-        final double connectivity = 1 - eulerCharacteristic;
+        final double correctedEuler = eulerCharacteristic - edgeCorrection;
+        final double connectivity = 1 - correctedEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
 
-        showResults(eulerCharacteristic + edgeCorrection, edgeCorrection, connectivity, connectivityDensity);
+        showResults(eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
     }
 
     //region -- Helper methods --
