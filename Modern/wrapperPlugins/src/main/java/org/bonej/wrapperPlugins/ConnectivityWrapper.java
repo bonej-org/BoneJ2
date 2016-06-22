@@ -68,7 +68,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
         final ResultsInserter inserter = ResultsInserter.getInstance();
         inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)", eulerCharacteristic);
-        inserter.setMeasurementInFirstFreeRow(label, "Corrected euler (Δχ)", deltaEuler);
+        inserter.setMeasurementInFirstFreeRow(label, "Corrected Euler (Δχ)", deltaEuler);
         inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
         inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader, connectivityDensity);
         inserter.updateResults();

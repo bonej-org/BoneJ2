@@ -6,7 +6,9 @@ import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.Img;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
+import org.bonej.testImages.Cuboid;
 import org.bonej.utilities.ResultsInserter;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -164,14 +166,15 @@ public class ConnectivityWrapperTest {
     }
 
     @Test
-    public void testResultsTable() {
-        // Create an image with bad calibration (units don't match)
+    public void testResults() {
+        // Create an test image of a cuboid
         final String unit = "mm";
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit);
-        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
+        final double scale = 0.9;
+        final int elements = 5;
+        final int spaceSize = elements * elements * elements;
+        final double elementSize = scale * scale * scale;
+        final ImgPlus<BitType> imgPlus =
+                (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, elements, elements, elements, 1, 1, 0, scale, unit);
 
         final Future<CommandModule> future =
                 IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
@@ -179,15 +182,29 @@ public class ConnectivityWrapperTest {
         try {
             future.get();
             final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
-            assertEquals("Results table has wrong number of rows", 1, resultsTable.size());
             final String[] headings = resultsTable.getHeadings();
+            assertEquals("Results table has wrong number of rows", 1, resultsTable.size());
+
+            final double eulerCharacteristic = resultsTable.getValue(headings[1], 0);
             assertEquals("Results table has incorrect heading", "Euler char. (χ)", headings[1]);
-            assertEquals("Results table has incorrect heading", "Contribution (Δχ)", headings[2]);
+            assertEquals("The reported χ is incorrect", 1.0, eulerCharacteristic, 1e-12);
+
+            final double correctedEuler = resultsTable.getValue(headings[2], 0);
+            assertEquals("Results table has incorrect heading", "Corrected Euler (Δχ)", headings[2]);
+            assertEquals("The reported Δχ is incorrect", 0.0, correctedEuler, 1e-12);
+
+            final double connectivity = resultsTable.getValue(headings[3], 0);
             assertEquals("Results table has incorrect heading", "Connectivity", headings[3]);
+            assertEquals("The reported connectivity is incorrect", 1.0, connectivity, 1e-12);
+
+            final double expectedConnDensity = connectivity / (spaceSize * elementSize);
+            final double connDensity = resultsTable.getValue(headings[4], 0);
             assertEquals(
                     "Results table has incorrect heading",
                     String.format("Conn. density (%s³)", unit),
                     headings[4]);
+            assertEquals("The reported connectivity density is incorrect", expectedConnDensity, connDensity, 1e-12);
+
             assertFalse("Results table should not have empty cells", hasEmptyCells(resultsTable));
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
