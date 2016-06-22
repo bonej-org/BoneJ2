@@ -7,7 +7,7 @@ import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import org.bonej.ops.connectivity.EulerCharacteristic;
-import org.bonej.ops.connectivity.EulerContribution;
+import org.bonej.ops.connectivity.EulerCorrection;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -48,7 +48,7 @@ public class ConnectivityWrapper extends ContextCommand {
         }
 
         final double eulerCharacteristic = (Double) opService.run(EulerCharacteristic.class, bitImgPlus);
-        final double edgeCorrection = (Double) opService.run(EulerContribution.class, bitImgPlus);
+        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, bitImgPlus);
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
@@ -68,7 +68,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
         final ResultsInserter inserter = ResultsInserter.getInstance();
         inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)", eulerCharacteristic);
-        inserter.setMeasurementInFirstFreeRow(label, "Edge correction (Δχ)", deltaEuler);
+        inserter.setMeasurementInFirstFreeRow(label, "Corrected euler (Δχ)", deltaEuler);
         inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
         inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader, connectivityDensity);
         inserter.updateResults();

@@ -14,10 +14,18 @@ import java.util.Optional;
 import java.util.stream.LongStream;
 
 /**
- * An Op which calculates the edge correction needed for the Euler characteristic of the image to approximate its
- * contribution to the whole image. That is, it's assumed that the image is a small part cut from a larger image.
+ * An Op which calculates the correction needed to approximate the contribution of the image to the
+ * Euler characteristic χ of the whole image. That is, it's assumed that the image is a small part cut
+ * from a larger sample.
  * <p>
- * Based on the article
+ * From Odgaard & Gundersen (see below): "-- the Euler characteristic of the entire 3-D space will not be obtained
+ * by simply adding the Euler characteristics of cubic specimens. By doing this,
+ * the contribution of the lower dimensional elements will not be considered".
+ * They give the correction as c = -1/2χ_2 - 1/4χ_1 - -1/8χ_0,
+ * where χ_2 = χ of all the faces, χ_1 = χ of all the edges,
+ * and χ_0 = χ of all the corner vertices of the stack.
+ * Each face contributes to two, each edge to four, and each corner to eight stacks.
+ * <p>
  * Odgaard A, Gundersen HJG (1993) Quantification of connectivity in cancellous bone,
  * with special emphasis on 3-D reconstructions.
  * Bone 14: 173-182.
@@ -25,10 +33,10 @@ import java.util.stream.LongStream;
  *
  * @author Michael Doube
  * @author Richard Domander
- * @implNote Methods are written statically to help testing
+ * @implNote Methods are public and static to help testing
  */
 @Plugin(type = Op.class, name = "eulerContribution")
-public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<ImgPlus<B>, Double> implements
+public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<ImgPlus<B>, Double> implements
         Contingent {
     /** The algorithm is only defined for 3D images  */
     @Override
@@ -41,10 +49,10 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         final Traverser<B> traverser = new Traverser<>(imgPlus);
         final long chiZero = stackCorners(traverser);
         final long e = stackEdges(traverser) + 3 * chiZero;
-        final long d = voxelVertices(traverser) + chiZero;
+        final long d = voxelEdgeIntersections(traverser) + chiZero;
         final long c = stackFaces(traverser) + 2 * e - 3 * chiZero;
-        final long b = voxelEdges(traverser);
-        final long a = voxelFaces(traverser);
+        final long b = voxelEdgeFaceIntersections(traverser);
+        final long a = voxelFaceIntersections(traverser);
 
         final long chiOne = d - e;
         final long chiTwo = a - b + c;
@@ -56,7 +64,6 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
      * Counts the foreground voxels in stack corners
      * <p>
      * Calculates χ_0 from Odgaard and Gundersen
-     * @implNote Public and static for testing purposes
      */
     public static <B extends BooleanType<B>> int stackCorners(final Traverser<B> traverser) {
         int foregroundVoxels = 0;
@@ -75,7 +82,6 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
      * Count the foreground voxels on the edges lining the stack
      * <p>
      * Contributes to χ_1 from Odgaard and Gundersen
-     * @implNote Public and static for testing purposes
      */
     public static <B extends BooleanType<B>> long stackEdges(final Traverser<B> traverser) {
         final long[] foregroundVoxels = {0};
@@ -109,10 +115,9 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
     }
 
     /**
-     * Count the foreground voxels on the faces that line the edges of the stack
+     * Count the foreground voxels on the faces that line the stack
      * <p>
      * Contributes to χ_2 from Odgaard and Gundersen
-     * @implNote Public and static for testing purposes
      */
     public static <B extends BooleanType<B>> int stackFaces(final Traverser<B> traverser) {
         final int[] foregroundVoxels = {0};
@@ -144,7 +149,13 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         return foregroundVoxels[0];
     }
 
-    public static <B extends BooleanType<B>> long voxelVertices(final Traverser<B> traverser) {
+    /**
+     * Count the number of intersections between voxels in each 2x1 neighborhood and the the edges of the stack
+     * <p>
+     * Contributes to χ_1 from Odgaard and Gundersen
+     * @implNote Public and static for testing purposes
+     */
+    public static <B extends BooleanType<B>> long voxelEdgeIntersections(final Traverser<B> traverser) {
         final int[] voxelVertices = {0};
 
         LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
@@ -186,8 +197,15 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         return voxelVertices[0];
     }
 
-    public static <B extends BooleanType<B>> long voxelEdges(final Traverser<B> traverser) {
+    /**
+     * Count the intersections between voxel edges in each 2x2 neighborhood and the faces lining the stack
+     * <p>
+     * Contributes to χ_2 from Odgaard and Gundersen
+     * @implNote Public and static for testing purposes
+     */
+    public static <B extends BooleanType<B>> long voxelEdgeFaceIntersections(final Traverser<B> traverser) {
         final long[] voxelEdges = {0};
+        final long[] iterations = {0};
 
         // Front and back faces (all 4 edges). Check 2 edges per voxel
         LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
@@ -195,6 +213,7 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
                 for (int x = 0; x <= traverser.xSize; x++) {
                     final int voxel = getAtLocation(traverser, x, y, z);
                     if (voxel > 0) {
+                        iterations[0]++;
                         voxelEdges[0] += 2;
                         continue;
                     }
@@ -258,7 +277,13 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         return voxelEdges[0];
     }
 
-    public static <B extends BooleanType<B>> long voxelFaces(final Traverser<B> traverser) {
+    /**
+     * Count the intersections between voxels in each 2x2 neighborhood and the faces lining the stack
+     * <p>
+     * Contributes to χ_2 from Odgaard and Gundersen
+     * @implNote Public and static for testing purposes
+     */
+    public static <B extends BooleanType<B>> long voxelFaceIntersections(final Traverser<B> traverser) {
         final long[] voxelFaces = {0};
 
         LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
