@@ -152,9 +152,9 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
             LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
                 traverser.access.setPosition(y, traverser.yIndex);
                 for (long x = 1; x < traverser.xSize; x++) {
-                    if (isTwoNeighborhoodForeground(traverser.access, x, traverser.xIndex)) {
-                        voxelVertices[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x - 1, y, z);
+                    voxelVertices[0] += voxelA | voxelB;
                 }
             });
         });
@@ -164,9 +164,9 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
             LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
                 traverser.access.setPosition(x, traverser.xIndex);
                 for (long y = 1; y < traverser.ySize; y++) {
-                    if (isTwoNeighborhoodForeground(traverser.access, y, traverser.yIndex)) {
-                        voxelVertices[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x, y - 1, z);
+                    voxelVertices[0] += voxelA | voxelB;
                 }
             });
         });
@@ -176,9 +176,9 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
             LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
                 traverser.access.setPosition(x, traverser.xIndex);
                 for (long z = 1; z < traverser.zSize; z++) {
-                    if (isTwoNeighborhoodForeground(traverser.access, z, traverser.zIndex)) {
-                        voxelVertices[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x, y, z - 1);
+                    voxelVertices[0] += voxelA | voxelB;
                 }
             });
         });
@@ -191,7 +191,6 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
 
         // Front and back faces (all 4 edges). Check 2 edges per voxel
         LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
-            traverser.access.setPosition(z, traverser.zIndex);
             for (int y = 0; y <= traverser.ySize; y++) {
                 for (int x = 0; x <= traverser.xSize; x++) {
                     final int voxel = getAtLocation(traverser, x, y, z);
@@ -208,12 +207,11 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
 
         // Top and bottom faces (horizontal edges)
         LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
-            traverser.access.setPosition(y, traverser.yIndex);
-            for (int z = 1; z < traverser.zSize; z++) {
-                for (int x = 0; x < traverser.xSize; x++) {
-                    if (isTwoNeighborhoodForeground(traverser.access, z, traverser.zIndex)) {
-                        voxelEdges[0]++;
-                    }
+            for (int x = 0; x < traverser.xSize; x++) {
+                for (int z = 1; z < traverser.zSize; z++) {
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x, y, z - 1);
+                    voxelEdges[0] += voxelA | voxelB;
                 }
             }
         });
@@ -222,10 +220,11 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
             traverser.access.setPosition(y, traverser.yIndex);
             for (int z = 0; z < traverser.zSize; z++) {
+                traverser.access.setPosition(z, traverser.zIndex);
                 for (int x = 0; x <= traverser.xSize; x++) {
-                    if (isTwoNeighborhoodForeground(traverser.access, x, traverser.xIndex)) {
-                        voxelEdges[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x - 1, y, z);
+                    voxelEdges[0] += voxelA | voxelB;
                 }
             }
         });
@@ -233,11 +232,12 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         // Left and right faces (horizontal edges)
         LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
             traverser.access.setPosition(x, traverser.xIndex);
-            for (int z = 1; z < traverser.zSize; z++) {
-                for (int y = 0; y < traverser.ySize; y++) {
-                    if (isTwoNeighborhoodForeground(traverser.access, z, traverser.zIndex)) {
-                        voxelEdges[0]++;
-                    }
+            for (int y = 0; y < traverser.ySize; y++) {
+                traverser.access.setPosition(y, traverser.yIndex);
+                for (int z = 1; z < traverser.zSize; z++) {
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x, y, z - 1);
+                    voxelEdges[0] += voxelA | voxelB;
                 }
             }
         });
@@ -246,10 +246,11 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
             traverser.access.setPosition(x, traverser.xIndex);
             for (int z = 0; z < traverser.zSize; z++) {
+                traverser.access.setPosition(z, traverser.zIndex);
                 for (int y = 1; y < traverser.ySize; y++) {
-                    if (isTwoNeighborhoodForeground(traverser.access, y, traverser.yIndex)) {
-                        voxelEdges[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x, y - 1, z);
+                    voxelEdges[0] += voxelA | voxelB;
                 }
             }
         });
@@ -264,9 +265,11 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
             traverser.access.setPosition(z, traverser.zIndex);
             for (int y = 0; y <= traverser.ySize; y++) {
                 for (int x = 0; x <= traverser.xSize; x++) {
-                    if (isFourNeighborhoodForeground(traverser.access, x, traverser.xIndex, y, traverser.yIndex)) {
-                        voxelFaces[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x - 1, y, z);
+                    final int voxelC = getAtLocation(traverser, x, y - 1, z);
+                    final int voxelD = getAtLocation(traverser, x - 1, y - 1, z);
+                    voxelFaces[0] += voxelA | voxelB | voxelC | voxelD;
                 }
             }
         });
@@ -275,20 +278,23 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
             traverser.access.setPosition(x, traverser.xIndex);
             for (int y = 0; y <= traverser.ySize; y++) {
                 for (int z = 1; z < traverser.zSize; z++) {
-                    if (isFourNeighborhoodForeground(traverser.access, y, traverser.yIndex, z, traverser.zIndex)) {
-                        voxelFaces[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x, y - 1, z);
+                    final int voxelC = getAtLocation(traverser, x, y, z - 1);
+                    final int voxelD = getAtLocation(traverser, x, y - 1, z - 1);
+                    voxelFaces[0] += voxelA | voxelB | voxelC | voxelD;
                 }
             }
         });
 
         LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
-            traverser.access.setPosition(y, traverser.yIndex);
-            for (int x = 1; x < traverser.ySize; x++) {
+            for (int x = 1; x < traverser.xSize; x++) {
                 for (int z = 1; z < traverser.zSize; z++) {
-                    if (isFourNeighborhoodForeground(traverser.access, x, traverser.yIndex, z, traverser.zIndex)) {
-                        voxelFaces[0]++;
-                    }
+                    final int voxelA = getAtLocation(traverser, x, y, z);
+                    final int voxelB = getAtLocation(traverser, x, y, z - 1);
+                    final int voxelC = getAtLocation(traverser, x - 1, y, z);
+                    final int voxelD = getAtLocation(traverser, x - 1, y, z - 1);
+                    voxelFaces[0] += voxelA | voxelB | voxelC | voxelD;
                 }
             }
         });
@@ -302,35 +308,9 @@ public class EulerContribution<B extends BooleanType<B>> extends AbstractUnaryFu
         traverser.access.setPosition(x, traverser.xIndex);
         traverser.access.setPosition(y, traverser.yIndex);
         traverser.access.setPosition(z, traverser.zIndex);
-        return (int) traverser.access.get().getRealDouble();
-    }
+        final double realDouble = traverser.access.get().getRealDouble();
 
-    private static <B extends BooleanType<B>> boolean isTwoNeighborhoodForeground(final RandomAccess<B> access,
-            final long pos, final int dim) {
-        access.setPosition(pos, dim);
-        final boolean voxelA = access.get().get();
-        access.setPosition(pos - 1, dim);
-        final boolean voxelB = access.get().get();
-
-        return voxelA || voxelB;
-    }
-
-    private static <B extends BooleanType<B>> boolean isFourNeighborhoodForeground(final RandomAccess<B> access,
-            final long pos1, final int dim1, final long pos2, final int dim2) {
-        access.setPosition(pos1, dim1);
-        access.setPosition(pos2, dim2);
-        final boolean voxelA = access.get().get();
-        access.setPosition(pos1 - 1, dim1);
-        access.setPosition(pos2, dim2);
-        final boolean voxelB = access.get().get();
-        access.setPosition(pos1, dim1);
-        access.setPosition(pos2 - 1, dim2);
-        final boolean voxelC = access.get().get();
-        access.setPosition(pos1 - 1, dim1);
-        access.setPosition(pos2 - 1, dim2);
-        final boolean voxelD = access.get().get();
-
-        return voxelA || voxelB || voxelC || voxelD;
+        return (int) realDouble;
     }
     //endregion
 
