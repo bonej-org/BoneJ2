@@ -34,15 +34,15 @@ public class IJ1ImgPlus {
 
     private IJ1ImgPlus() {}
 
-    public static ImgPlus<BitType> createIJ1ImgPlus(final OpEnvironment ops, final long xSize, final long ySize,
-            final long zSize, final long channels, final long frames, final long padding, final double scale,
-            final String unit) {
+    public static ImgPlus<BitType> createIJ1ImgPlus(final OpEnvironment ops, String title, final long xSize,
+            final long ySize, final long zSize, final long channels, final long frames, final long padding,
+            final double scale, final String unit) {
         final long totalPadding = 2 * padding;
         final Img<BitType> img = ops.create().img(
                 new FinalDimensions(xSize + totalPadding, ySize + totalPadding,
                                     channels, zSize + totalPadding, frames), new BitType());
         double[] calibration = new double[]{scale, scale, 1.0, scale, 1.0};
         String[] units = new String[]{unit, unit, "", unit, ""};
-        return new ImgPlus<>(img, "Hollow cuboid", IJ1_AXES, calibration, units);
+        return new ImgPlus<>(img, title, IJ1_AXES, calibration, units);
     }
 }

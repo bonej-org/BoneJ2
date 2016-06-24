@@ -46,7 +46,7 @@ public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
 
     @Override
     public ImgPlus<BitType> createOutput() {
-        return createIJ1ImgPlus(ops(), xSize, ySize, zSize, channels, frames, padding, scale, unit);
+        return createIJ1ImgPlus(ops(), "Hollow cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
     }
 
     @Override

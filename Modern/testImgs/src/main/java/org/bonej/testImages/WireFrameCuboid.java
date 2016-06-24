@@ -15,7 +15,6 @@ import static org.bonej.testImages.IJ1ImgPlus.*;
  * Creates an ImgPlus<BitType> of a wire-frame cuboid.
  *
  * @author Richard Domander
- * //TODO fix bug with very small cuboids (< 3)
  */
 @Plugin(type = Op.class, name = "wireFrameCuboid", menuPath = "Plugins>Test Images>Wire-frame cuboid")
 public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
@@ -47,7 +46,17 @@ public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
 
     @Override
     public ImgPlus<BitType> createOutput() {
-        return createIJ1ImgPlus(ops(), xSize, ySize, zSize, channels, frames, padding, scale, unit);
+        return createIJ1ImgPlus(
+                ops(),
+                "Wire-frame cuboid",
+                xSize,
+                ySize,
+                zSize,
+                channels,
+                frames,
+                padding,
+                scale,
+                unit);
     }
 
     @Override
@@ -62,26 +71,31 @@ public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     //region -- Helper methods --
     private void drawCuboidEdges(final ImgPlus<BitType> cuboid, final long channel, final long frame) {
         final long x0 = padding;
-        final long x1 = padding + xSize;
+        final long x1 = padding + xSize - 1;
         final long y0 = padding;
-        final long y1 = padding + ySize;
+        final long y1 = padding + ySize - 1;
         final long z0 = padding;
-        final long z1 = padding + zSize;
+        final long z1 = padding + zSize - 1;
 
         setCuboidLocation(x0, y0, z0, channel, frame);
         drawLine(cuboid, X_DIM, xSize);
+        setCuboidLocation(x0, y0, z0, channel, frame);
         drawLine(cuboid, Y_DIM, ySize);
+        setCuboidLocation(x0, y0, z0, channel, frame);
         drawLine(cuboid, Z_DIM, zSize);
         setCuboidLocation(x1, y0, z0, channel, frame);
         drawLine(cuboid, Y_DIM, ySize);
+        setCuboidLocation(x1, y0, z0, channel, frame);
         drawLine(cuboid, Z_DIM, zSize);
         setCuboidLocation(x1, y1, z0, channel, frame);
         drawLine(cuboid, Z_DIM, zSize);
         setCuboidLocation(x0, y1, z0, channel, frame);
         drawLine(cuboid, X_DIM, ySize);
+        setCuboidLocation(x0, y1, z0, channel, frame);
         drawLine(cuboid, Z_DIM, zSize);
         setCuboidLocation(x0, y0, z1, channel, frame);
         drawLine(cuboid, X_DIM, xSize);
+        setCuboidLocation(x0, y0, z1, channel, frame);
         drawLine(cuboid, Y_DIM, ySize);
         setCuboidLocation(x1, y0, z1, channel, frame);
         drawLine(cuboid, Y_DIM, ySize);
@@ -111,7 +125,7 @@ public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     public static void main(String... args) {
         final ImageJ ij = net.imagej.Main.launch(args);
         // Call the hybrid op without a ready buffer (null)
-        Object cuboid = ij.op().run(WireFrameCuboid.class, null, 100L, 100L, 10L, 3L, 10L, 5L);
+        Object cuboid = ij.op().run(WireFrameCuboid.class, null, 50L, 50L, 5L, 1L, 1L, 1L);
         ij.ui().show(cuboid);
     }
 }
