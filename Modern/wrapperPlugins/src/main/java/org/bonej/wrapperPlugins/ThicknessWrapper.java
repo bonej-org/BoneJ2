@@ -25,7 +25,9 @@ import sc.fiji.localThickness.LocalThicknessWrapper;
 import java.util.Optional;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.*;
+import static org.scijava.ui.DialogPrompt.MessageType;
+import static org.scijava.ui.DialogPrompt.OptionType;
+import static org.scijava.ui.DialogPrompt.Result;
 
 /**
  * A GUI wrapper class for the LocalThickness plugin
@@ -166,7 +168,7 @@ public class ThicknessWrapper extends ContextCommand {
             max = resultStats.max;
         }
 
-        ResultsInserter inserter = new ResultsInserter();
+        ResultsInserter inserter = ResultsInserter.getInstance();
         inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader, mean);
         inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" + unitHeader, stdDev);
         inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader, max);
@@ -212,7 +214,7 @@ public class ThicknessWrapper extends ContextCommand {
             final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy * 100.0);
             final Result result =
                     uiService.showDialog("The image is anisotropic" + anisotropyPercent + ". Continue anyway?",
-                            MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
+                                         MessageType.WARNING_MESSAGE, OptionType.OK_CANCEL_OPTION);
             if (result == Result.CANCEL_OPTION) {
                 cancel(null);
             }

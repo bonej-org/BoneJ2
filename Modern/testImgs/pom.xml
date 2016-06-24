@@ -2,18 +2,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <artifactId>pom-bonej2</artifactId>
         <groupId>org.bonej</groupId>
         <version>0.2.0-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>ops</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <artifactId>testImgs</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
 
-    <description>Ops created for BoneJ2</description>
+    <description>Commands that create test images for BoneJ2</description>
 
     <developers>
         <developer>
@@ -25,11 +24,8 @@
             <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
                 <role>lead</role>
-                <role>developer</role>
-                <role>debugger</role>
                 <role>reviewer</role>
                 <role>support</role>
-                <role>maintainer</role>
             </roles>
             <timezone>+0</timezone>
         </developer>
@@ -74,6 +70,36 @@
         </developer>
     </developers>
 
+    <dependencies>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Needed for UI -->
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-legacy</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>net.imglib2</groupId>
+            <artifactId>imglib2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>scijava-common</artifactId>
+        </dependency>
+    </dependencies>
+
     <scm>
         <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
         <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
@@ -87,85 +113,6 @@
     <ciManagement>
         <system>Jenkins</system>
     </ciManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.bonej</groupId>
-            <artifactId>utilities</artifactId>
-        </dependency>
-
-        <!-- ImageJ dependencies -->
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>imagej-ops</artifactId>
-        </dependency>
-
-        <!-- Fiji dependencies -->
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>AnalyzeSkeleton_</artifactId>
-        </dependency>
-
-        <!-- Scijava dependencies -->
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>scijava-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>vecmath</artifactId>
-        </dependency>
-
-        <!-- Other dependencies -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.sourceforge.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>1.3.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>15.0</version>
-        </dependency>
-
-        <!-- Testing dependencies -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>Skeletonize3D_</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>imagej</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>ij</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>1.10.19</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.bonej</groupId>
-            <artifactId>testImgs</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
@@ -184,7 +131,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <finalName>BoneJ2Ops</finalName>
+                    <finalName>BoneJ2TestImgs</finalName>
                 </configuration>
             </plugin>
         </plugins>

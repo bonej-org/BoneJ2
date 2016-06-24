@@ -1,0 +1,19 @@
+Case 1
+=======================================================================
+Results should match BoneJ1
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Run Connectivity (Plugins>BoneJ>Connectivity)
+3. Verify that connectivity numbers match BoneJ1
+4. Repeat 1-3 for "binary_trabeculae_small.tif" (local file)
+
+Expected result
+-----------------------------------------------------------------------
+Results match BoneJ1
+
+Completed June 24 2016 Richard Domander
+-----------------------------------------------------------------------
+
+

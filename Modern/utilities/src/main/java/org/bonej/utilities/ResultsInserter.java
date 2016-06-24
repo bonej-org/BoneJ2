@@ -16,6 +16,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *      and add the new value there. If there are no such rows, then add a new row.
  * <p>>
  * By default the class uses the instance returned by ResultsTable.getResultsTable()
+ * <p>
+ * The class is a Singleton so that you can used it in automated tests.
+ * Remember to reset the ResultsTable (getResultsTable) in @After / @AfterClass in your test suite!
  *
  * @author Michael Doube
  * @author Richard Domander
@@ -24,15 +27,31 @@ public class ResultsInserter {
     /** String to display when Double.NaN is inserted (to differentiate from empty cells) */
     public static final String NAN_VALUE = "N/A";
     private static final String DEFAULT_RESULTS_TABLE_TITLE = "Results";
+    private static ResultsInserter instance;
     private ResultsTable resultsTable;
+    private boolean headless;
 
-    public ResultsInserter() {
+    private ResultsInserter() {
+        instance = this;
         setResultsTable(ResultsTable.getResultsTable());
+    }
+
+    public static ResultsInserter getInstance() {
+        if (instance == null) {
+            instance = new ResultsInserter();
+        }
+
+        return instance;
     }
 
     /** Returns the underlying ResultsTable  */
     public ResultsTable getResultsTable() {
         return resultsTable;
+    }
+
+    /** If headless == true then the ResultsTable won't be shown in the UI */
+    public void setHeadless(boolean headless) {
+        this.headless = headless;
     }
 
     /**
@@ -91,8 +110,16 @@ public class ResultsInserter {
         }
     }
 
-    /** Displays the results */
+    /**
+     * Displays the results unless running headless
+     * @see ResultsInserter#setHeadless setHeadless
+     */
     public void updateResults() {
+        if (headless) {
+            // TODO Print to a file?
+            return;
+        }
+
         resultsTable.show(DEFAULT_RESULTS_TABLE_TITLE);
     }
 

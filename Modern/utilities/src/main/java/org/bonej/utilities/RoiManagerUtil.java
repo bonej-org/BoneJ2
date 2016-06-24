@@ -33,9 +33,9 @@ public class RoiManagerUtil {
      * @param roiMan      The collection of all the current ROIs
      * @param sliceNumber Number of the slice to be searched
      * @return In addition to the active ROIs, returns all the ROIs without a
-     * slice number (assumed to be active in all slices).
-     * Returns an empty list if sliceNumber is out of bounds,
-     * or roiMan == null, or stack == null
+     *         slice number (assumed to be active in all slices).
+     *         Returns an empty list if sliceNumber is out of bounds,
+     *         or roiMan == null, or stack == null
      */
     public static List<Roi> getSliceRoi(@Nullable final RoiManager roiMan, @Nullable final ImageStack stack,
             final int sliceNumber) {
@@ -65,7 +65,7 @@ public class RoiManagerUtil {
      * @param roiMan The collection of all the current ROIs
      * @param stack  The stack inside which the ROIs must fit (max limits).
      * @return Returns an Optional with the limits in an int array {x0, x1, y0, y1, z0, z1}.
-     * Returns an empty Optional if roiMan == null or stack == null or roiMan is empty
+     *         Returns an empty Optional if roiMan == null or stack == null or roiMan is empty
      * @implNote If for any ROI isActiveOnAllSlices == true, then z0 == 1 and z1 == stack.getSize().
      */
     public static Optional<int[]> getLimits(@Nullable final RoiManager roiMan, @Nullable final ImageStack stack) {
@@ -132,7 +132,7 @@ public class RoiManagerUtil {
      * @param width  Maximum width of the rectangle
      * @param height Maximum height of the rectangle
      * @return false if the height or width of the fitted rectangle is 0
-     * (Couldn't be cropped inside the area).
+     *         (Couldn't be cropped inside the area).
      */
     public static boolean getSafeRoiBounds(final Rectangle bounds, final int width, final int height) {
         int xMin = clamp(bounds.x, 0, width);
@@ -163,7 +163,7 @@ public class RoiManagerUtil {
      * @param fillColor      Color of the background of the cropped image
      * @param padding        Number of pixels added to the each side of the resulting image
      * @return An Optional with the cropped stack of the given image.
-     * The Optional is empty if roiMan == null, or sourceStack == null, or roiMan is empty
+     *         The Optional is empty if roiMan == null, or sourceStack == null, or roiMan is empty
      */
     public static Optional<ImageStack> cropToRois(@Nullable final RoiManager roiMan,
             @Nullable final ImageStack sourceStack, final boolean fillBackground, final int fillColor,
@@ -190,11 +190,12 @@ public class RoiManagerUtil {
         final int croppedHeight = yMax - yMin + 2 * padding;
         final int croppedDepth = zMax - zMin + 2 * padding + 1;
 
-        final ImageStack targetStack = ImageStack.create(croppedWidth, croppedHeight, croppedDepth, sourceStack.getBitDepth());
+        final ImageStack targetStack =
+                ImageStack.create(croppedWidth, croppedHeight, croppedDepth, sourceStack.getBitDepth());
         int targetZ = padding + 1;
 
         for (int sourceZ = zMin; sourceZ <= zMax; sourceZ++) {
-            final  List<Roi> sliceRois = getSliceRoi(roiMan, sourceStack, sourceZ);
+            final List<Roi> sliceRois = getSliceRoi(roiMan, sourceStack, sourceZ);
             if (sliceRois.size() == 0) {
                 continue;
             }

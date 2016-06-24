@@ -11,6 +11,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * Utility functions to generate streams from various ImageJ2 collections
+ *
  * @author Richard Domander 
  */
 public class Streamers {

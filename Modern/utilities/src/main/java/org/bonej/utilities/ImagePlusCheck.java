@@ -17,8 +17,7 @@ public class ImagePlusCheck {
     /**
      * Checks if the image is 3D
      *
-     * @return true if the image has more than one slice,
-     *         false if not, or image is null
+     * @return true if the image has more than one slice, false if not, or image is null
      */
     @Contract("null -> false")
     public static boolean is3D(@Nullable final ImagePlus image) {
