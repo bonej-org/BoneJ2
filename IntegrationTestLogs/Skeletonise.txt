@@ -103,4 +103,22 @@ Completed May 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
+Case 6
+=======================================================================
+Skeleton has the same LUT as input
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Invert the LUT (Image>Lookup Tables>Invert LUT)
+3. Run Skeletonise (Plugins>BoneJ>Skeletonise)
+
+Expected result
+-----------------------------------------------------------------------
+Verify that the output image has the same color scheme as the input
+(Background white, foreground black)
+
+Completed June 8 2016 Richard Domander
+-----------------------------------------------------------------------
+
 
