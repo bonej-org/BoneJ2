@@ -5,23 +5,15 @@ Results should match BoneJ1
 Steps
 -----------------------------------------------------------------------
 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Set scale (Analyze>Set Scale)
-3. Set options
-   - "Distance in pixels" to "1"
-   - "Known distance" to "1.00"
-   - "Pixel aspect ratio" to "1.0"
-   - "Unit of length" to "mm"
-4. Run Connectivity (Plugins>BoneJ>Connectivity)
-5. Verify that Results table has the headers "Euler char. (χ)"",
-  "Contribution (Δχ)", "Connectivity" and "Conn. density"
-6. Verify that "Conn. density" have the unit mm³
-7. Verify that connectivity numbers match BoneJ1
+2. Run Connectivity (Plugins>BoneJ>Connectivity)
+3. Verify that connectivity numbers match BoneJ1
+4. Repeat 1-3 for "binary_trabeculae_small.tif" (local file)
 
 Expected result
 -----------------------------------------------------------------------
-Results match BoneJ!
+Results match BoneJ1
 
-Completed - - ---- - -
+Completed June 24 2016 Richard Domander
 -----------------------------------------------------------------------
 
 

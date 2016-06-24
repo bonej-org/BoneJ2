@@ -13,7 +13,8 @@ import org.scijava.plugin.Plugin;
 import java.util.Optional;
 
 /**
- * An Op which calculates the euler characteristic (χ) of the given image.
+ * An Op which calculates the euler characteristic (χ) of the given image. The object(s) in the image
+ * are handled as if they were floating freely in space (no border conditions).
  * Here Euler characteristic is defined as χ = β_0 - β_1 + β_2, where β_i are so called Betti numbers.
  * β_0 = number of separate particles
  * β_1 = number of handles
