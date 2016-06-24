@@ -10,17 +10,18 @@ import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import org.bonej.testImages.Cuboid;
 import org.bonej.testImages.HollowCuboid;
+import org.bonej.testImages.IJ1ImgPlus;
 import org.bonej.testImages.WireFrameCuboid;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import static org.bonej.testImages.IJ1ImgPlus.*;
 import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for the {@link EulerCharacteristic EulerCharacteristic} Op
  *
  * @author Richard Domander
- * //TODO Add regression tests for torus, hollow sphere etc...
  */
 public class EulerCharacteristicTest {
     private static final ImageJ IMAGE_J = new ImageJ();
@@ -84,7 +85,36 @@ public class EulerCharacteristicTest {
 
         final Double result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, cuboid);
 
-        // I don't really understand why this is -4, but it's the same in BoneJ1
         assertEquals("Euler characteristic is incorrect", 2, result.intValue());
+    }
+
+    /**
+     * Regression test EulerCharacteristic with a hollow cuboid that has a handle
+     * <p>
+     * Here χ = β_0 - β_1 + β_2 = 1 - 1 + 1 = 1
+     */
+    @Test
+    public void testCompute1HollowCuboidHandle() throws Exception {
+        final ImgPlus<BitType> cuboid =
+                (ImgPlus<BitType>) IMAGE_J.op().run(HollowCuboid.class, null, 9, 9, 9, 1, 1, 5);
+
+        // Draw a handle on the front xy-face of the cuboid
+        final RandomAccess<BitType> access = cuboid.randomAccess();
+        access.setPosition(9, X_DIM);
+        access.setPosition(6, Y_DIM);
+        access.setPosition(4, Z_DIM);
+        access.get().setOne();
+        access.setPosition(3, Z_DIM);
+        access.get().setOne();
+        access.setPosition(7, Y_DIM);
+        access.get().setOne();
+        access.setPosition(8, Y_DIM);
+        access.get().setOne();
+        access.setPosition(4, Z_DIM);
+        access.get().setOne();
+
+        final Double result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, cuboid);
+
+        assertEquals("Euler characteristic is incorrect", 1, result.intValue());
     }
 }
