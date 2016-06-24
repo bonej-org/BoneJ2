@@ -5,6 +5,8 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imglib2.FinalDimensions;
+import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
@@ -25,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.ConnectivityWrapper.NEGATIVE_CONNECTIVITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -35,6 +38,7 @@ import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
@@ -139,12 +143,43 @@ public class ConnectivityWrapperTest {
     }
 
     @Test
+    public void testNegativeConnectivityShowsInfoDialog() {
+        // Mock UI
+        final UserInterface mockUI = mock(UserInterface.class);
+        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+        when(mockUI.dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any()))
+                .thenReturn(mockPrompt);
+        IMAGE_J.ui().setDefaultUI(mockUI);
+
+        // Create an image with two particles
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
+        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(5, 5, 5), new BitType());
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
+        final RandomAccess<BitType> access = imgPlus.randomAccess();
+        access.setPosition(new long[]{1, 1, 1});
+        access.get().setOne();
+        access.setPosition(new long[]{3, 3, 3});
+        access.get().setOne();
+
+        final Future<CommandModule> future =
+                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
+        try {
+            future.get();
+            verify(mockUI, after(100))
+                    .dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
     public void testBadCalibrationShowsWarning() {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
         when(mockUI.dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-        when(mockPrompt.prompt()).thenReturn(DialogPrompt.Result.YES_OPTION);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
         // Create an image with bad calibration (units don't match)
@@ -174,7 +209,8 @@ public class ConnectivityWrapperTest {
         final int spaceSize = elements * elements * elements;
         final double elementSize = scale * scale * scale;
         final ImgPlus<BitType> imgPlus =
-                (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, elements, elements, elements, 1, 1, 0, scale, unit);
+                (ImgPlus<BitType>) IMAGE_J.op()
+                        .run(Cuboid.class, null, elements, elements, elements, 1, 1, 0, scale, unit);
 
         final Future<CommandModule> future =
                 IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);

@@ -18,6 +18,7 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
@@ -27,6 +28,10 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity", headless = true)
 public class ConnectivityWrapper extends ContextCommand {
+    public static final String NEGATIVE_CONNECTIVITY =
+            "Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
+                    "Try running Purify prior to Connectivity.\n";
+
     @Parameter(initializer = "initializeImage")
     private ImgPlus<UnsignedByteType> inputImage;
 
@@ -61,6 +66,10 @@ public class ConnectivityWrapper extends ContextCommand {
             final double connectivityDensity) {
         final String label = inputImage.getName();
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
+
+        if (connectivity < 0) {
+            uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
+        }
 
         if (unitHeader.isEmpty()) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
