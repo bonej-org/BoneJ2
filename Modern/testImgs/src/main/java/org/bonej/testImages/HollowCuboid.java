@@ -24,7 +24,9 @@ import java.util.stream.LongStream;
 public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     private static final int X_DIM = 0;
     private static final int Y_DIM = 1;
+    private static final int CHANNEL_DIM = 2;
     private static final int Z_DIM = 3;
+    private static final int TIME_DIM = 4;
     private final long[] cuboidLocation = new long[5];
 
     @Parameter(label = "X-size", description = "Cuboid width", min = "1")
@@ -73,9 +75,15 @@ public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     public void compute0(final ImgPlus<BitType> cuboid) {
         final RandomAccess<BitType> access = cuboid.randomAccess();
 
-        drawFaces(access, X_DIM, Y_DIM, Z_DIM, xSize, ySize, zSize);
-        drawFaces(access, X_DIM, Z_DIM, Y_DIM, xSize, zSize, ySize);
-        drawFaces(access, Y_DIM, Z_DIM, X_DIM, ySize, zSize, xSize);
+        for (int t = 0; t < frames; t++) {
+            access.setPosition(t, TIME_DIM);
+            for (int c = 0; c < channels; c++) {
+                access.setPosition(c, CHANNEL_DIM);
+                drawFaces(access, X_DIM, Y_DIM, Z_DIM, xSize, ySize, zSize);
+                drawFaces(access, X_DIM, Z_DIM, Y_DIM, xSize, zSize, ySize);
+                drawFaces(access, Y_DIM, Z_DIM, X_DIM, ySize, zSize, xSize);
+            }
+        }
     }
 
     /**
@@ -110,7 +118,7 @@ public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     public static void main(String... args) {
         final ImageJ ij = net.imagej.Main.launch(args);
         // Call the hybrid op without a ready buffer (null)
-        Object cuboid = ij.op().run(HollowCuboid.class, null, 100L, 100L, 10L, 1L, 1L, 5L);
+        Object cuboid = ij.op().run(HollowCuboid.class, null, 100L, 100L, 10L, 3L, 5L, 5L);
         ij.ui().show(cuboid);
     }
 }
