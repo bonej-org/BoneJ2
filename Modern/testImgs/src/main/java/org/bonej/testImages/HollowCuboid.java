@@ -2,18 +2,16 @@ package org.bonej.testImages;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
-import net.imagej.axis.Axes;
-import net.imagej.axis.AxisType;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.hybrid.AbstractNullaryHybridCF;
-import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccess;
-import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import java.util.stream.LongStream;
+
+import static org.bonej.testImages.IJ1ImgPlus.*;
 
 /**
  * Creates an ImgPlus<BitType> of a hollow cuboid.
@@ -22,13 +20,6 @@ import java.util.stream.LongStream;
  */
 @Plugin(type = Op.class, name = "hollowCuboid", menuPath = "Plugins>Test Images>Hollow cuboid")
 public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
-    private static final int X_DIM = 0;
-    private static final int Y_DIM = 1;
-    private static final int CHANNEL_DIM = 2;
-    private static final int Z_DIM = 3;
-    private static final int TIME_DIM = 4;
-    private final long[] cuboidLocation = new long[5];
-
     @Parameter(label = "X-size", description = "Cuboid width", min = "1")
     private long xSize = 50;
 
@@ -53,22 +44,9 @@ public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     @Parameter(label = "Unit", description = "The unit of calibration", required = false)
     private String unit = "";
 
-    /** The correct order for axis types. Without it the image won't display correctly at least in legacy ui */
-    private static final AxisType[] AXIS_TYPES = new AxisType[]{Axes.X, Axes.Y, Axes.CHANNEL, Axes.Z, Axes.TIME};
-
     @Override
     public ImgPlus<BitType> createOutput() {
-        final long totalPadding = 2 * padding;
-        final Img<BitType> img =
-                ops().create().img(new FinalDimensions(
-                        xSize + totalPadding,
-                        ySize + totalPadding,
-                        channels,
-                        zSize + totalPadding,
-                        frames), new BitType());
-        double[] calibration = new double[]{scale, scale, 1.0, scale, 1.0};
-        String[] units = new String[]{unit, unit, "", unit, ""};
-        return new ImgPlus<>(img, "Hollow cuboid", AXIS_TYPES, calibration, units);
+        return createIJ1ImgPlus(ops(), xSize, ySize, zSize, channels, frames, padding, scale, unit);
     }
 
     @Override
