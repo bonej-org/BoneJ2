@@ -9,7 +9,10 @@ import net.imagej.space.AnnotatedSpace;
 import net.imglib2.Dimensions;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 import static org.bonej.utilities.Streamers.axisStream;
@@ -36,6 +39,28 @@ public class AxisUtils {
         final int[] indices = IntStream.range(0, dimensions).filter(d -> space.axis(d).type().isSpatial()).toArray();
 
         return indices.length == 3 ? Optional.of(indices) : Optional.empty();
+    }
+
+    /** Gets the index of the first time dimension in the space, or -1 if there are no such dimensions */
+    public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int getTimeIndex(
+            @Nullable final T space) {
+        if (space == null) {
+            return -1;
+        }
+
+        final int dimensions = space.numDimensions();
+        return IntStream.range(0, dimensions).filter(d -> space.axis(d).type() == Axes.TIME).findFirst().orElse(-1);
+    }
+
+    /** Gets the index of the first channel dimension in the space, or -1 if there are no such dimensions */
+    public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int getChannelIndex(
+            @Nullable final T space) {
+        if (space == null) {
+            return -1;
+        }
+
+        final int dimensions = space.numDimensions();
+        return IntStream.range(0, dimensions).filter(d -> space.axis(d).type() == Axes.CHANNEL).findFirst().orElse(-1);
     }
 
     /**
