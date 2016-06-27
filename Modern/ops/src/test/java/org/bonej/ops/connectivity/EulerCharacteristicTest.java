@@ -15,6 +15,9 @@ import org.bonej.testImages.WireFrameCuboid;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.bonej.testImages.IJ1ImgPlus.*;
 import static org.junit.Assert.assertEquals;
 
@@ -116,5 +119,34 @@ public class EulerCharacteristicTest {
         final Double result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, cuboid);
 
         assertEquals("Euler characteristic is incorrect", 1, result.intValue());
+    }
+
+    @Test
+    public void testHyperStack() throws Exception {
+        // Create a hyperstack with two channels and frames
+        final ImgPlus<BitType> imgPlus = IJ1ImgPlus.createIJ1ImgPlus(IMAGE_J.op(), "", 3, 3, 3, 2, 2);
+        final RandomAccess<BitType> access = imgPlus.randomAccess();
+        // Add a particle to the middle of the stack in channel 1, frame 0
+        access.setPosition(new long[]{1, 1, 1, 1, 0});
+        access.get().setOne();
+        // Add a particle to the middle of the stack in channel 0, frame 1
+        access.setPosition(new long[]{1, 1, 0, 1, 1});
+        access.get().setOne();
+
+        // Tests channel 0, frame 0
+        Double result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, imgPlus, Arrays.asList(0L, 0L, 0L, 0L, 0L));
+        assertEquals("Euler characteristic is incorrect", 0, result.intValue());
+
+        // Tests channel 1, frame 0
+        result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, imgPlus, Arrays.asList(0L, 0L, 1L, 0L, 0L));
+        assertEquals("Euler characteristic is incorrect", 1, result.intValue());
+
+        // Tests channel 0, frame 1
+        result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, imgPlus, Arrays.asList(0L, 0L, 0L, 0L, 1L));
+        assertEquals("Euler characteristic is incorrect", 1, result.intValue());
+
+        // Tests channel 1, frame 1
+        result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, imgPlus, Arrays.asList(0L, 0L, 1L, 0L, 1L));
+        assertEquals("Euler characteristic is incorrect", 0, result.intValue());
     }
 }

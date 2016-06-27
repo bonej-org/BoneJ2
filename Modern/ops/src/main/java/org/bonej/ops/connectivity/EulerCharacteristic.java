@@ -4,12 +4,12 @@ import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
-import net.imglib2.Cursor;
-import net.imglib2.RandomAccess;
 import net.imglib2.type.BooleanType;
 import org.bonej.utilities.AxisUtils;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -44,6 +44,13 @@ public class EulerCharacteristic<B extends BooleanType<B>> extends AbstractUnary
         implements Contingent {
     /**Δχ(v) for all configurations of a 2x2x2 voxel neighborhood  */
     private static final int[] EULER_LUT = new int[256];
+
+    @Parameter(persist = false, required = false)
+    /**
+     * Position of the 3D image in the hyperstack
+     * @implNote Use List to avoid confusion with varargs when calling / matching Op
+     */
+    private List<Long> hyperPosition = null;
 
     //region fill EULER_LUT
     static {
@@ -196,8 +203,15 @@ public class EulerCharacteristic<B extends BooleanType<B>> extends AbstractUnary
         final int xIndex = indices[0];
         final int yIndex = indices[1];
         final int zIndex = indices[2];
-        final Octant<B> octant = new Octant<>(imgPlus, xIndex, yIndex, zIndex);
+        final Octant<B> octant;
         final int[] sumDeltaEuler = {0};
+
+        if (hyperPosition == null) {
+            octant = new Octant<>(imgPlus, null, xIndex, yIndex, zIndex);
+        } else {
+            final long[] position = hyperPosition.stream().mapToLong(Long::longValue).toArray();
+            octant = new Octant<>(imgPlus, position, xIndex, yIndex, zIndex);
+        }
 
         for (int z = 0; z <= imgPlus.dimension(zIndex); z++) {
             for (int y = 0; y <= imgPlus.dimension(yIndex); y++) {
