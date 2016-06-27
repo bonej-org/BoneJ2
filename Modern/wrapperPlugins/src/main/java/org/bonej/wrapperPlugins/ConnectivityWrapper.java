@@ -17,6 +17,8 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
+import javax.annotation.Nullable;
+
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
@@ -24,7 +26,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 /**
  * A wrapper UI class for the Connectivity Ops
  *
- * @author Richard Domander 
+ * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity", headless = true)
 public class ConnectivityWrapper extends ContextCommand {
@@ -41,38 +43,93 @@ public class ConnectivityWrapper extends ContextCommand {
     @Parameter
     private UIService uiService;
 
+    private boolean negativityWarned = false;
+    private boolean calibrationWarned = false;
+
     @Override
     public void run() {
         final Img<BitType> bitImg = opService.convert().bit(inputImage);
         final int dimensions = inputImage.numDimensions();
         final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
+        // Copy ImgPlus metadata from original
+        bitImgPlus.setName(inputImage.getName());
         for (int d = 0; d < dimensions; d++) {
-            // Copy metadata
             final CalibratedAxis axis = inputImage.axis(d);
             bitImgPlus.setAxis(axis, d);
         }
 
-        final double eulerCharacteristic = (Double) opService.run(EulerCharacteristic.class, bitImgPlus);
-        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, bitImgPlus);
+        final int tDim = AxisUtils.getTimeIndex(bitImgPlus);
+        final int cDim = AxisUtils.getChannelIndex(bitImgPlus);
+
+        if (tDim == -1 && cDim == -1) {
+            processSubStack(bitImgPlus, null, "");
+            return;
+        }
+
+        final long channels = cDim >= 0 ? bitImgPlus.dimension(cDim) : 0;
+        final long frames = tDim >= 0 ? bitImgPlus.dimension(tDim) : 0;
+        long frame = 0;
+
+        // Call connectivity for each 3D subspace in the colour/time hyperstack
+        do {
+            long channel = 0;
+            String frameSuffix = "";
+            final long[] position = new long[dimensions];
+            if (tDim >= 0) {
+                position[tDim] = frame;
+                if (frames > 1) {
+                    // No need to add clarifying suffix is there's only one frame
+                    frameSuffix = "_F" + (frame + 1);
+                }
+            }
+            do {
+                String channelSuffix = "";
+                if (cDim >= 0) {
+                    position[cDim] = channel;
+                    if (channels > 1) {
+                        // No need to add clarifying suffix is there's only one channel
+                        channelSuffix = "_C" + (channel + 1);
+                    }
+                }
+
+                processSubStack(bitImgPlus, position, frameSuffix + channelSuffix);
+
+                channel++;
+            } while (channel < channels);
+            frame++;
+        } while ( frame < frames);
+    }
+
+    /**
+     * Process connectivity for one 3D stack in the hyperstack, and show the results
+     *
+     * @param hyperPosition Position of the stack in the hyperstack (channel/frame)
+     * @param suffix        Suffix that identifies the stack in the results table
+     */
+    private void processSubStack(ImgPlus<BitType> imgPlus, @Nullable final long[] hyperPosition, final String suffix) {
+        final double eulerCharacteristic = (Double) opService.run(EulerCharacteristic.class, imgPlus, hyperPosition);
+        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, imgPlus);
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
+        final String label = imgPlus.getName() + suffix;
 
-        showResults(eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
+        showResults(label, eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
     }
 
     //region -- Helper methods --
-    private void showResults(final double eulerCharacteristic, final double deltaEuler, final double connectivity,
-            final double connectivityDensity) {
-        final String label = inputImage.getName();
+    private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
+                             final double connectivity, final double connectivityDensity) {
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
 
-        if (connectivity < 0) {
+        if (connectivity < 0 && !negativityWarned) {
             uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
+            negativityWarned = true;
         }
 
-        if (unitHeader.isEmpty()) {
+        if (unitHeader.isEmpty() && !calibrationWarned) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+            calibrationWarned = true;
         }
 
         final ResultsInserter inserter = ResultsInserter.getInstance();

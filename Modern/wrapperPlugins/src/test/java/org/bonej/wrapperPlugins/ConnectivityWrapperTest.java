@@ -44,7 +44,8 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 /**
  * Integration / Regression tests for the {@link ConnectivityWrapper ConnectivityWrapper} plugin
  *
- * @author Richard Domander 
+ * @author Richard Domander
+ * TODO: Tests to verify that warnings for negative connectivity / bad calibration only open once
  */
 public class ConnectivityWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
