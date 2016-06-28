@@ -89,7 +89,9 @@ import ij.plugin.PlugIn;
  *      >Skeletonize3D homepage</a>
  *      </p>
  *
+ * @deprecated Replaced by ConnectivityWrapper in Modern
  */
+@Deprecated
 public class Connectivity implements PlugIn {
 
 	/** working image width */
