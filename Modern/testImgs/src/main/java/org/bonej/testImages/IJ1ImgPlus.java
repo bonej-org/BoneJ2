@@ -34,14 +34,13 @@ public class IJ1ImgPlus {
 
     private IJ1ImgPlus() {}
 
-
     /**
      * Creates a 5-dimensional ImgPlus with no calibration or padding
      * @see IJ1ImgPlus#createIJ1ImgPlus(OpEnvironment, String, long, long, long, long, long, long, double, String) createIJ1ImgPlus
      */
     public static ImgPlus<BitType> createIJ1ImgPlus(final OpEnvironment ops, String title, final long width,
-                                                    final long height, final long depth, final long channels,
-                                                    final long frames) {
+            final long height, final long depth, final long channels,
+            final long frames) {
         return createIJ1ImgPlus(ops, title, width, height, depth, channels, frames, 0, 1.0, "");
     }
 

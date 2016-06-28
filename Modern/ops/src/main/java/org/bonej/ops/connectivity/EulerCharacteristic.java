@@ -47,8 +47,10 @@ public class EulerCharacteristic<B extends BooleanType<B>> extends AbstractUnary
 
     @Parameter(persist = false, required = false)
     /**
-     * Position of the 3D image in the hyperstack
-     * @implNote Use List to avoid confusion with varargs when calling / matching Op
+     * Position of the 3D image you want to process in the hyperstack.
+     * <p>
+     * For example, if you have {x, y, channel, z, frame} then hyperPosition = {0, 0, 1, 0, 1}
+     * @implNote Using List to avoid confusion with varargs when calling / matching Op
      */
     private List<Long> hyperPosition = null;
 

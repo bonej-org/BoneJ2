@@ -58,46 +58,45 @@ public class ConnectivityWrapper extends ContextCommand {
             bitImgPlus.setAxis(axis, d);
         }
 
-        final int tDim = AxisUtils.getTimeIndex(bitImgPlus);
-        final int cDim = AxisUtils.getChannelIndex(bitImgPlus);
+        final int timeIndex = AxisUtils.getTimeIndex(bitImgPlus);
+        final int channelIndex = AxisUtils.getChannelIndex(bitImgPlus);
 
-        if (tDim == -1 && cDim == -1) {
+        if (timeIndex == -1 && channelIndex == -1) {
+            // Not a hyperstack, just process the 3D image and exit
             processSubStack(bitImgPlus, null, "");
             return;
         }
 
-        final long channels = cDim >= 0 ? bitImgPlus.dimension(cDim) : 0;
-        final long frames = tDim >= 0 ? bitImgPlus.dimension(tDim) : 0;
+        final long channels = channelIndex >= 0 ? bitImgPlus.dimension(channelIndex) : 0;
+        final long frames = timeIndex >= 0 ? bitImgPlus.dimension(timeIndex) : 0;
         long frame = 0;
 
         // Call connectivity for each 3D subspace in the colour/time hyperstack
         do {
             long channel = 0;
-            String frameSuffix = "";
+            // No need to add clarifying suffix is there's only one frame
+            final String frameSuffix = frames > 1 ? "_F" + (frame + 1) : "";
             final long[] position = new long[dimensions];
-            if (tDim >= 0) {
-                position[tDim] = frame;
-                if (frames > 1) {
-                    // No need to add clarifying suffix is there's only one frame
-                    frameSuffix = "_F" + (frame + 1);
-                }
-            }
+
+            setDimensionSafely(position, timeIndex, frame);
             do {
-                String channelSuffix = "";
-                if (cDim >= 0) {
-                    position[cDim] = channel;
-                    if (channels > 1) {
-                        // No need to add clarifying suffix is there's only one channel
-                        channelSuffix = "_C" + (channel + 1);
-                    }
-                }
+                // No need to add clarifying suffix is there's only one channel
+                final String channelSuffix = channels > 1 ? "_C" + (channel + 1) : "";
 
+                setDimensionSafely(position, channelIndex, channel);
                 processSubStack(bitImgPlus, position, frameSuffix + channelSuffix);
-
                 channel++;
             } while (channel < channels);
             frame++;
-        } while ( frame < frames);
+        } while (frame < frames);
+    }
+
+    private static void setDimensionSafely(final long[] hyperPosition, final int dimension, final long position) {
+        if (dimension < 0) {
+            return;
+        }
+
+        hyperPosition[dimension] = position;
     }
 
     /**
@@ -119,7 +118,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
     //region -- Helper methods --
     private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
-                             final double connectivity, final double connectivityDensity) {
+            final double connectivity, final double connectivityDensity) {
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
 
         if (connectivity < 0 && !negativityWarned) {

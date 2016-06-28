@@ -16,7 +16,6 @@ import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static org.bonej.testImages.IJ1ImgPlus.*;
 import static org.junit.Assert.assertEquals;
@@ -134,7 +133,8 @@ public class EulerCharacteristicTest {
         access.get().setOne();
 
         // Tests channel 0, frame 0
-        Double result = (Double) IMAGE_J.op().run(EulerCharacteristic.class, imgPlus, Arrays.asList(0L, 0L, 0L, 0L, 0L));
+        Double result =
+                (Double) IMAGE_J.op().run(EulerCharacteristic.class, imgPlus, Arrays.asList(0L, 0L, 0L, 0L, 0L));
         assertEquals("Euler characteristic is incorrect", 0, result.intValue());
 
         // Tests channel 1, frame 0

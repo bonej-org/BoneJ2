@@ -9,10 +9,7 @@ import net.imagej.space.AnnotatedSpace;
 import net.imglib2.Dimensions;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 import static org.bonej.utilities.Streamers.axisStream;
