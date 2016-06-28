@@ -93,11 +93,12 @@ public class ConnectivityWrapperTest {
         when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
-        // Create a 2D image
+        // Create an image with only two spatial dimensions
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10, 3});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis);
 
         final Future<CommandModule> future =
                 IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
