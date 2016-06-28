@@ -187,6 +187,7 @@ public class RoiMan {
 		return limits;
 	}
 
+	@Deprecated
 	public static boolean isActiveOnAllSlices(final RoiManager roiManager, final Roi roi) {
 		if (roi.getName() == null) {
 			return false;

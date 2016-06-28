@@ -51,6 +51,7 @@ public class FitCircle {
 	 * @return double[] containing (<i>x</i>, <i>y</i>) centre and radius
 	 *
 	 */
+	@Deprecated
 	public static double[] kasaFit(final double[][] points) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -87,6 +88,7 @@ public class FitCircle {
 	 * @return double[] containing (<i>x</i>, <i>y</i>) centre and radius
 	 *
 	 */
+	@Deprecated
 	public static double[] prattNewton(final double[][] points) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -166,6 +168,7 @@ public class FitCircle {
 	 *            containing n (<i>x</i>, <i>y</i>) coordinates
 	 * @return double[] containing (<i>x</i>, <i>y</i>) centre and radius
 	 */
+	@Deprecated
 	public static double[] prattSVD(final double[][] points) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -222,6 +225,7 @@ public class FitCircle {
 	 *            containing n (<i>x</i>, <i>y</i>) coordinates
 	 * @return double[] containing (<i>x</i>, <i>y</i>) centre and radius
 	 */
+	@Deprecated
 	public static double[] taubinNewton(final double[][] points) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -302,6 +306,7 @@ public class FitCircle {
 	 *            containing n (<i>x</i>, <i>y</i>) coordinates
 	 * @return double[] containing (<i>x</i>, <i>y</i>) centre and radius
 	 */
+	@Deprecated
 	public static double[] taubinSVD(final double[][] points) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -359,6 +364,7 @@ public class FitCircle {
 	 * @return 3-element double[] containing (<i>x</i>, <i>y</i>) centre and
 	 *         circle radius
 	 */
+	@Deprecated
 	public static double[] hyperSimple(final double[][] points) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -498,6 +504,7 @@ public class FitCircle {
 	 * @return 3-element double[] containing (<i>x</i>, <i>y</i>) centre and
 	 *         circle radius
 	 */
+	@Deprecated
 	public static double[] levenMarqFull(final double[][] points, final double lambdaIni) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -590,6 +597,7 @@ public class FitCircle {
 	 * @param points
 	 * @return
 	 */
+	@Deprecated
 	public static double[] levenMarqFull(final double[][] points) {
 		return levenMarqFull(points, 1);
 	}
@@ -602,6 +610,7 @@ public class FitCircle {
 	 * @return 3-element double[] containing (<i>x</i>, <i>y</i>) centre and
 	 *         circle radius
 	 */
+	@Deprecated
 	public static double[] levenMarqRed(final double[][] points, final double lambdaIni) {
 		final int nPoints = points.length;
 		if (nPoints < 3)
@@ -725,6 +734,7 @@ public class FitCircle {
 	 * @param points
 	 * @return
 	 */
+	@Deprecated
 	public static double[] levenMarqRed(final double[][] points) {
 		return levenMarqRed(points, 1);
 	}
@@ -792,6 +802,7 @@ public class FitCircle {
 	 * @return double[] containing mean squared errors in x, y, R and sum of (x,
 	 *         y, R)
 	 */
+	@Deprecated
 	public static double[] getErrors(final double[][] points, final double[] abR) {
 		final int nPoints = points.length;
 

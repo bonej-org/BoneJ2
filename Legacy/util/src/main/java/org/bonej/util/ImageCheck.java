@@ -130,6 +130,7 @@ public class ImageCheck {
 	 *            input image
 	 * @return false if voxel dimensions are not equal
 	 */
+	@Deprecated
 	public static boolean isVoxelIsotropic(final ImagePlus imp) {
 		return isVoxelIsotropic(imp, 0.0);
 	}
@@ -271,6 +272,7 @@ public class ImageCheck {
 	 *         False if the user wants to continue despite a risk of
 	 *         insufficient memory
 	 */
+	@Deprecated
 	public static boolean checkMemory(final long memoryRequirement) {
 		if (memoryRequirement > IJ.maxMemory()) {
 			final String message = "You might not have enough memory to run this job.\n" + "Do you want to continue?";
@@ -282,6 +284,7 @@ public class ImageCheck {
 		return true;
 	}
 
+	@Deprecated
 	public static boolean checkMemory(final ImagePlus imp, final double ratio) {
 		double size = ((double) imp.getWidth() * imp.getHeight() * imp.getStackSize());
 		switch (imp.getType()) {

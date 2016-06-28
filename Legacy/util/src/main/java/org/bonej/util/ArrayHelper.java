@@ -27,6 +27,7 @@ package org.bonej.util;
  * @author Michael Doube
  *
  */
+@Deprecated
 public class ArrayHelper {
 
 	/**

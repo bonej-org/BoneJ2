@@ -151,6 +151,7 @@ public class Centroid {
 	 * @param points
 	 * @return the mean value of the points
 	 */
+	@Deprecated
 	public static double getCentroid(final double[] points) {
 		final int nPoints = points.length;
 		double sum = 0;
@@ -166,6 +167,7 @@ public class Centroid {
 	 * @param points
 	 * @return
 	 */
+	@Deprecated
 	public static double[] getCentroid(final ArrayList<Point> points) {
 		double xsum = 0;
 		double ysum = 0;
@@ -190,6 +192,7 @@ public class Centroid {
 	 * @return The centroid Point Returns null if the given list is null or
 	 *         empty
 	 */
+	@Deprecated
 	public static Point getCentroidPoint(final ArrayList<Point> points) {
 		if (points == null || points.isEmpty()) {
 			return null;

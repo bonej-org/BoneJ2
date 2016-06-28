@@ -24,6 +24,7 @@ package org.bonej.geometry;
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 
+@Deprecated
 public class EigenCalculator {
 
 	/**

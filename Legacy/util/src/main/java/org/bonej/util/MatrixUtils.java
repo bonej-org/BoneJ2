@@ -49,6 +49,7 @@ public class MatrixUtils {
 	/**
 	 * Print Matrix to ImageJ log window
 	 */
+	@Deprecated
 	public static void printToIJLog(final Matrix matrix) {
 		printToIJLog(matrix, "");
 		return;
@@ -139,6 +140,7 @@ public class MatrixUtils {
 	 *            square matrix dimension
 	 * @return n * n identity matrix
 	 */
+	@Deprecated
 	public static Matrix eye(final int n) {
 		return eye(n, n);
 	}
@@ -150,6 +152,7 @@ public class MatrixUtils {
 	 * @param n
 	 * @return
 	 */
+	@Deprecated
 	public static Matrix eye(final int m, final int n) {
 		final double[][] eye = new double[m][n];
 		final int min = Math.min(m, n);
