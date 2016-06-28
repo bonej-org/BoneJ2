@@ -408,4 +408,48 @@ public class AxisUtilsTest {
 
         assertTrue("Calibration should be isotropic when anisotropy is within tolerance", result);
     }
+
+    @Test
+    public void testGetTimeIndexReturnMinusOneIfSpaceNull() throws AssertionError {
+        final int timeIndex = AxisUtils.getTimeIndex(null);
+
+        assertEquals("Index of time dimension is incorrect", -1, timeIndex);
+    }
+
+    @Test
+    public void testGetTimeIndex() throws AssertionError {
+        // Create a test image
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.TIME);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final int[] dimensions = {10, 3, 10};
+        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, channelAxis, yAxis);
+
+        final int timeIndex = AxisUtils.getTimeIndex(imgPlus);
+
+        assertEquals("Index of time dimension is incorrect", 1, timeIndex);
+    }
+
+    @Test
+    public void testGetChannelIndexReturnMinusOneIfSpaceNull() throws AssertionError {
+        final int channelIndex = AxisUtils.getChannelIndex(null);
+
+        assertEquals("Index of channel dimension is incorrect", -1, channelIndex);
+    }
+
+    @Test
+    public void testGetChannelIndex() throws AssertionError {
+        // Create a test image
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final int[] dimensions = {10, 3, 10};
+        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, channelAxis, yAxis);
+
+        final int channelIndex = AxisUtils.getChannelIndex(imgPlus);
+
+        assertEquals("Index of channel dimension is incorrect", 1, channelIndex);
+    }
 }

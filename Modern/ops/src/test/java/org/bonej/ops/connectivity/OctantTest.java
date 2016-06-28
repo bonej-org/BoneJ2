@@ -46,7 +46,7 @@ public class OctantTest {
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final Img<BitType> img = imgCreator.compute1(new FinalDimensions(2, 2, 2));
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, zAxis);
-        Octant<BitType> octant = new Octant<>(imgPlus, 0, 1, 2);
+        Octant<BitType> octant = new Octant<>(imgPlus, null, 0, 1, 2);
 
         octant.setNeighborhood(1, 1, 1);
 
@@ -65,7 +65,7 @@ public class OctantTest {
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final Img<BitType> img = imgCreator.compute1(new FinalDimensions(3, 3, 3));
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, zAxis);
-        Octant<BitType> octant = new Octant<>(imgPlus, 0, 1, 2);
+        Octant<BitType> octant = new Octant<>(imgPlus, null, 0, 1, 2);
         final Cursor<BitType> cursor = imgPlus.localizingCursor();
         final long[] location = new long[3];
 
