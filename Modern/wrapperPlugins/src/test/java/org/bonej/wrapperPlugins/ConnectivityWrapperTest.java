@@ -45,7 +45,6 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  * Integration / Regression tests for the {@link ConnectivityWrapper ConnectivityWrapper} plugin
  *
  * @author Richard Domander
- * TODO: Tests to verify that warnings for negative connectivity / bad calibration only open once
  */
 public class ConnectivityWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
@@ -152,23 +151,31 @@ public class ConnectivityWrapperTest {
                 .thenReturn(mockPrompt);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
-        // Create an image with two particles
+        // Create a 3D hyperstack with two channels. Each channel has two particles
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
-        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(5, 5, 5), new BitType());
-        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(5, 5, 5, 2), new BitType());
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis);
         final RandomAccess<BitType> access = imgPlus.randomAccess();
-        access.setPosition(new long[]{1, 1, 1});
+        // Channel 0
+        access.setPosition(new long[]{1, 1, 1, 0});
         access.get().setOne();
-        access.setPosition(new long[]{3, 3, 3});
+        access.setPosition(new long[]{3, 3, 3, 0});
+        access.get().setOne();
+        // Channel 1
+        access.setPosition(new long[]{1, 1, 1, 1});
+        access.get().setOne();
+        access.setPosition(new long[]{3, 3, 3, 1});
         access.get().setOne();
 
         final Future<CommandModule> future =
                 IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
         try {
             future.get();
-            verify(mockUI, after(100))
+            // Dialog should only be shown once
+            verify(mockUI, after(100).times(1))
                     .dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -183,19 +190,22 @@ public class ConnectivityWrapperTest {
         when(mockUI.dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
-        // Create an image with bad calibration (units don't match)
+        // Create an hyperstack with bad calibration (units don't match)
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "µm");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5, 2});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
 
         final Future<CommandModule> future =
                 IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
 
         try {
             future.get();
-            verify(mockUI, after(100)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
+            // Warning should be shown only once
+            verify(mockUI, after(100).times(1))
+                    .dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
