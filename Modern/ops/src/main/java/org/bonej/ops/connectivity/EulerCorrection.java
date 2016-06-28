@@ -1,5 +1,6 @@
 package org.bonej.ops.connectivity;
 
+import com.sun.istack.internal.Nullable;
 import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
@@ -8,8 +9,10 @@ import net.imglib2.RandomAccess;
 import net.imglib2.type.BooleanType;
 import net.imglib2.view.Views;
 import org.bonej.utilities.AxisUtils;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.LongStream;
 
@@ -38,6 +41,15 @@ import java.util.stream.LongStream;
 @Plugin(type = Op.class, name = "eulerContribution")
 public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<ImgPlus<B>, Double> implements
         Contingent {
+    @Parameter(persist = false, required = false)
+    /**
+     * Position of the 3D image you want to process in the hyperstack.
+     * <p>
+     * For example, if you have {x, y, channel, z, frame} then hyperPosition = {0, 0, 1, 0, 1}
+     * @implNote Using List to avoid confusion with varargs when calling / matching Op
+     */
+    public List<Long> hyperPosition = null;
+
     /** The algorithm is only defined for 3D images  */
     @Override
     public boolean conforms() {
@@ -46,7 +58,7 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
 
     @Override
     public Double compute1(final ImgPlus<B> imgPlus) {
-        final Traverser<B> traverser = new Traverser<>(imgPlus);
+        final Traverser<B> traverser = new Traverser<>(imgPlus, hyperPosition);
         final long chiZero = stackCorners(traverser);
         final long e = stackEdges(traverser) + 3 * chiZero;
         final long d = voxelEdgeIntersections(traverser) + chiZero;
@@ -356,6 +368,10 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
         public final RandomAccess<B> access;
 
         public Traverser(ImgPlus<B> imgPlus) {
+            this(imgPlus, null);
+        }
+
+        public Traverser(ImgPlus<B> imgPlus, @Nullable List<Long> hyperPosition) {
             final Optional<int[]> optional = AxisUtils.getXYZIndices(imgPlus);
             final int[] indices = optional.get();
 
@@ -369,6 +385,11 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
             y1 = ySize - 1;
             z1 = zSize - 1;
             access = Views.extendZero(imgPlus).randomAccess();
+
+            if (hyperPosition != null) {
+                final long[] position = hyperPosition.stream().mapToLong(Long::longValue).toArray();
+                access.setPosition(position);
+            }
         }
     }
 }

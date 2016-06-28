@@ -107,7 +107,7 @@ public class ConnectivityWrapper extends ContextCommand {
      */
     private void processSubStack(ImgPlus<BitType> imgPlus, @Nullable final long[] hyperPosition, final String suffix) {
         final double eulerCharacteristic = (Double) opService.run(EulerCharacteristic.class, imgPlus, hyperPosition);
-        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, imgPlus);
+        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, imgPlus, hyperPosition);
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
