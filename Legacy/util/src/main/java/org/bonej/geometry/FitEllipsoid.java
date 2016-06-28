@@ -222,6 +222,7 @@ public class FitEllipsoid {
 	 * @param points
 	 * @return
 	 */
+	@Deprecated
 	public static Ellipsoid inertia(final double[][] points) {
 
 		final int nPoints = points.length;
@@ -413,6 +414,7 @@ public class FitEllipsoid {
 	 * @param nPoints
 	 * @return
 	 */
+	@Deprecated
 	public static double[][] testEllipsoid(final double a, final double b, final double c, final int nPoints) {
 		return testEllipsoid(a, b, c, 0, 0, 0, 0, 0, nPoints, false);
 	}
@@ -432,6 +434,7 @@ public class FitEllipsoid {
 	 *            points on the ellipsoid, e.g. result of testElipsoid()
 	 * @return array of (x,y,z) unit vectors
 	 */
+	@Deprecated
 	public static double[][] testNormals(final double a, final double b, final double c, final double[][] points) {
 		final int nPoints = points.length;
 		final double[][] ellipsoidNormals = new double[nPoints][3];
