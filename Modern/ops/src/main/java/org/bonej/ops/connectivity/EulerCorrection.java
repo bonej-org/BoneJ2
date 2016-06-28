@@ -1,6 +1,5 @@
 package org.bonej.ops.connectivity;
 
-import com.sun.istack.internal.Nullable;
 import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
@@ -12,6 +11,7 @@ import org.bonej.utilities.AxisUtils;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.LongStream;
