@@ -20,7 +20,7 @@ public class ThresholdElementFraction<S, T extends Comparable<S>> extends
     @Override
     public Results compute2(final IterableInterval<T> interval, final Settings<S> settings) {
         final long elements = interval.size();
-        final Stream<T> elementStream = StreamSupport.stream(interval.spliterator(), true);
+        final Stream<T> elementStream = StreamSupport.stream(interval.spliterator(), false);
         final long thresholdElements = elementStream
                 .filter(e -> e.compareTo(settings.minThreshold) >= 0 && e.compareTo(settings.maxThreshold) <= 0)
                 .count();
