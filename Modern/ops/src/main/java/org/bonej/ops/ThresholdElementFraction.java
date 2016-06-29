@@ -12,8 +12,6 @@ import java.util.stream.StreamSupport;
  * Counts the total number of elements in the interval, elements within thresholds, and their fraction
  *
  * @author Richard Domander
- * @apiNote The plugin assumes that foregroundCutOff.compareTo(minThreshold) <= 0,
- *          and minThreshold.compareTo(maxThreshold) <= 0
  */
 @Plugin(type = Op.class, name = "thresholdElementFraction")
 public class ThresholdElementFraction<S, T extends Comparable<S>> extends
@@ -30,9 +28,11 @@ public class ThresholdElementFraction<S, T extends Comparable<S>> extends
         return new Results(thresholdElements, elements);
     }
 
-    /** A helper class to make the Op binary */
+    /** A helper class to pass inputs while keeping the Op binary */
     public static final class Settings<S> {
+        /** Minimum value for elements within threshold */
         public final S minThreshold;
+        /** Maximum value for elements within threshold */
         public final S maxThreshold;
 
         public Settings(final S minThreshold, final S maxThreshold) {
@@ -41,9 +41,13 @@ public class ThresholdElementFraction<S, T extends Comparable<S>> extends
         }
     }
 
+    /** A helper class for passing outputs */
     public static final class Results {
+        /** Number of elements within thresholds */
         public final long thresholdElements;
+        /** Total number of elements in the interval */
         public final long elements;
+        /** Ratio of thresholdElements / elements */
         public final double ratio;
 
         public Results(final long thresholdElements, final long elements) {
