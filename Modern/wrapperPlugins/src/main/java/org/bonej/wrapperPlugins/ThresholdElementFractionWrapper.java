@@ -6,6 +6,7 @@ import net.imglib2.type.numeric.RealType;
 import org.bonej.ops.ThresholdElementFraction;
 import org.bonej.ops.ThresholdElementFraction.Results;
 import org.bonej.ops.ThresholdElementFraction.Settings;
+import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.scijava.command.Command;
@@ -49,20 +50,40 @@ public class ThresholdElementFractionWrapper<T extends RealType<T>> extends Cont
 
     private void showResults(final Results results) {
         final String label = inputImage.getName();
-        //TODO: Determine exponent
-        final String unitHeader = WrapperUtils.getUnitHeader(inputImage);
+
+        final long dimensions = AxisUtils.countSpatialDimensions(inputImage);
+        final String sizeDescription;
+        if (dimensions == 2) {
+            sizeDescription = "Area ";
+        } else if (dimensions == 3) {
+            sizeDescription = "Volume ";
+        } else {
+            sizeDescription = "Size ";
+        }
+
+        final String exponent;
+        if (dimensions == 2) {
+            exponent = "²";
+        } else if (dimensions == 3) {
+            exponent = "³";
+        } else {
+            exponent = "";
+        }
+
+        final String unitHeader = WrapperUtils.getUnitHeader(inputImage, exponent);
 
         if (unitHeader.isEmpty()) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
         }
 
-        //TODO: adjust results to calibration
+        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
+        final double thresholdSize = results.thresholdElements * elementSize;
+        final double totalSize = results.elements * elementSize;
 
-        //TODO: In headers, show area or volume based on image dimensionality
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone volume " + unitHeader, results.thresholdElements);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Total volume " + unitHeader, results.elements);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Ratio", results.ratio);
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone " + sizeDescription + unitHeader, thresholdSize);
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Total " + sizeDescription + unitHeader, totalSize);
+        resultsInserter.setMeasurementInFirstFreeRow(label, sizeDescription + " Ratio", results.ratio);
         resultsInserter.updateResults();
     }
 
