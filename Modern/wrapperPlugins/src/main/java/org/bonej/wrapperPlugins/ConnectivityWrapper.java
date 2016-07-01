@@ -119,7 +119,7 @@ public class ConnectivityWrapper extends ContextCommand {
     //region -- Helper methods --
     private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
             final double connectivity, final double connectivityDensity) {
-        final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
+        final String unitHeader = WrapperUtils.getUnitHeader(inputImage, '³');
 
         if (connectivity < 0 && !negativityWarned) {
             uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
