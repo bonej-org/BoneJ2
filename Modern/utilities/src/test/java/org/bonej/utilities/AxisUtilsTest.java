@@ -74,11 +74,22 @@ public class AxisUtilsTest {
     }
 
     @Test
+    public void testSpatialSpaceSizeWhenNoSpatialAxes() throws Exception {
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{3});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
+
+        final double size = AxisUtils.spatialSpaceSize(imgPlus);
+
+        assertEquals("Size should be 0 when there are no spatial axes", 0, size, 1e-12);
+    }
+
+    @Test
     public void testSpatialSpaceSize() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final int[] dimSizes = {123, 12};
-        final int expectedSize = Arrays.stream(dimSizes).reduce(1, (i, j) -> i * j);
+        final int expectedSize = Arrays.stream(dimSizes).reduce((i, j) -> i * j).orElse(0);
         final Img<DoubleType> img = IMAGE_J.op().create().img(dimSizes);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 

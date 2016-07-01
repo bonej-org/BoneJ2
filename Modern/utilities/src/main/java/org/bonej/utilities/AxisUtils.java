@@ -42,6 +42,7 @@ public class AxisUtils {
      * Counts the number of spatial elements in the given space
      *
      * @return Space size or Double.NaN if space == null
+     * TODO: move to ElementUtil
      */
     public static <T extends AnnotatedSpace<A> & Dimensions, A extends TypedAxis> double spatialSpaceSize(
             @Nullable final T space) {
@@ -51,6 +52,7 @@ public class AxisUtils {
 
         final int numDimensions = space.numDimensions();
         double spaceSize = 1.0;
+        int spatialDimensions = 0;
 
         for (int d = 0; d < numDimensions; d++) {
             if (!space.axis(d).type().isSpatial()) {
@@ -59,9 +61,10 @@ public class AxisUtils {
 
             final long dimensionSize = space.dimension(d);
             spaceSize = spaceSize * dimensionSize;
+            spatialDimensions++;
         }
 
-        return spaceSize;
+        return spatialDimensions > 0 ? spaceSize : 0;
     }
 
     /**
@@ -70,6 +73,7 @@ public class AxisUtils {
      *
      * @return Calibrated size of a spatial element, or Double.NaN if space == null,
      *         has nonlinear axes, or calibration units don't match
+     * TODO Move to ElementUtil
      */
     public static <T extends AnnotatedSpace<CalibratedAxis>> double calibratedSpatialElementSize(
             @Nullable final T space) {
