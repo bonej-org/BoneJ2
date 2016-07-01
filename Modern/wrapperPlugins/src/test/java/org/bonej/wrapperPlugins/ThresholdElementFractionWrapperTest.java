@@ -11,6 +11,7 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.testImages.Cuboid;
 import org.bonej.utilities.ResultsInserter;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
@@ -45,6 +46,11 @@ public class ThresholdElementFractionWrapperTest {
     @BeforeClass
     public static void oneTimeSetup() {
         ResultsInserter.getInstance().setHeadless(true);
+    }
+
+    @Before
+    public void setup() {
+        ResultsInserter.getInstance().getResultsTable().reset();
     }
 
     @AfterClass
