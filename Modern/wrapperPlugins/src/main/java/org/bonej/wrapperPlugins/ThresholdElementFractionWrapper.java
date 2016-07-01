@@ -61,15 +61,7 @@ public class ThresholdElementFractionWrapper<T extends RealType<T>> extends Cont
             sizeDescription = "Size ";
         }
 
-        final String exponent;
-        if (dimensions == 2) {
-            exponent = "²";
-        } else if (dimensions == 3) {
-            exponent = "³";
-        } else {
-            exponent = "";
-        }
-
+        final char exponent = WrapperUtils.getExponent(inputImage);
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, exponent);
 
         if (unitHeader.isEmpty()) {
