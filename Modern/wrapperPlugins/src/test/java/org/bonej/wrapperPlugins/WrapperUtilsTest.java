@@ -30,6 +30,24 @@ public class WrapperUtilsTest {
     }
 
     @Test
+    public void testGetSizeDescription() throws Exception {
+        final String[] expected = {"Size", "Area", "Volume", "Size"};
+        final AxisType spatialAxis = Axes.get("Spatial", true);
+        final DefaultLinearAxis axis = new DefaultLinearAxis(spatialAxis);
+        final ImgPlus mockImage = mock(ImgPlus.class);
+        when(mockImage.axis(anyInt())).thenReturn(axis);
+
+        for (int i = 0; i < expected.length; i++) {
+            final int dimensions = i + 1;
+            when(mockImage.numDimensions()).thenReturn(dimensions);
+
+            final String description = WrapperUtils.getSizeDescription(mockImage);
+
+            assertTrue("Size description is incorrect", expected[i].equals(description));
+        }
+    }
+
+    @Test
     public void testGetExponent() throws Exception {
         final char[] expected =
                 {'\u0000', '\u00B2', '\u00B3', '\u2074', '\u2075', '\u2076', '\u2077', '\u2078', '\u2079', '\u0000'};
@@ -38,8 +56,9 @@ public class WrapperUtilsTest {
         final ImgPlus mockImage = mock(ImgPlus.class);
         when(mockImage.axis(anyInt())).thenReturn(axis);
 
-        for (int i = 0; i < 10; i++) {
-            when(mockImage.numDimensions()).thenReturn(i + 1);
+        for (int i = 0; i < expected.length; i++) {
+            final int dimensions = i + 1;
+            when(mockImage.numDimensions()).thenReturn(dimensions);
 
             final char exponent = WrapperUtils.getExponent(mockImage);
 

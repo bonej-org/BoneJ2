@@ -50,27 +50,16 @@ public class ThresholdElementFractionWrapper<T extends RealType<T>> extends Cont
 
     private void showResults(final Results results) {
         final String label = inputImage.getName();
-
-        final long dimensions = AxisUtils.countSpatialDimensions(inputImage);
-        final String sizeDescription;
-        if (dimensions == 2) {
-            sizeDescription = "Area ";
-        } else if (dimensions == 3) {
-            sizeDescription = "Volume ";
-        } else {
-            sizeDescription = "Size ";
-        }
-
+        final String sizeDescription = WrapperUtils.getSizeDescription(inputImage);
         final char exponent = WrapperUtils.getExponent(inputImage);
+        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
+        final double thresholdSize = results.thresholdElements * elementSize;
+        final double totalSize = results.elements * elementSize;
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, exponent);
 
         if (unitHeader.isEmpty()) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
         }
-
-        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
-        final double thresholdSize = results.thresholdElements * elementSize;
-        final double totalSize = results.elements * elementSize;
 
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
         resultsInserter.setMeasurementInFirstFreeRow(label, "Bone " + sizeDescription + unitHeader, thresholdSize);

@@ -1,10 +1,8 @@
 package org.bonej.wrapperPlugins;
 
-import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
-import net.imglib2.type.numeric.RealType;
 import org.bonej.utilities.AxisUtils;
 
 import javax.annotation.Nullable;
@@ -17,6 +15,19 @@ import java.util.Optional;
  */
 public class WrapperUtils {
     private WrapperUtils() {}
+
+    /** Returns a verbal description of the size of the elements in the given space, e.g. "Area" for 2D images */
+    public static <T extends AnnotatedSpace<A>, A extends TypedAxis> String getSizeDescription(@Nullable T space) {
+        final long dimensions = AxisUtils.countSpatialDimensions(space);
+
+        if (dimensions == 2) {
+            return "Area";
+        } else if (dimensions == 3) {
+            return "Volume";
+        }
+
+        return "Size";
+    }
 
     /** Returns the exponent character of the elements in this space, e.g. '³' for a spatial 3D space */
     public static <T extends AnnotatedSpace<A>, A extends TypedAxis> char getExponent(@Nullable final T space) {
