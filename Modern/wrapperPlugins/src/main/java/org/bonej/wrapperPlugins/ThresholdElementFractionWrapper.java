@@ -62,8 +62,8 @@ public class ThresholdElementFractionWrapper<T extends RealType<T>> extends Cont
         }
 
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone " + sizeDescription + unitHeader, thresholdSize);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Total " + sizeDescription + unitHeader, totalSize);
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone " + sizeDescription + " " + unitHeader, thresholdSize);
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Total " + sizeDescription + " " + unitHeader, totalSize);
         resultsInserter.setMeasurementInFirstFreeRow(label, sizeDescription + " Ratio", results.ratio);
         resultsInserter.updateResults();
     }

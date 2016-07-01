@@ -1,11 +1,14 @@
 package org.bonej.wrapperPlugins;
 
+import ij.measure.ResultsTable;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.Img;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
+import org.bonej.testImages.Cuboid;
 import org.bonej.utilities.ResultsInserter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -119,6 +122,44 @@ public class ThresholdElementFractionWrapperTest {
         try {
             future.get();
             verify(mockUI, after(100)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testResults() {
+        // Create an test image of a cuboid
+        final String unit = "mm";
+        final double scale = 0.9;
+        final int cubeSide = 5;
+        final int padding = 1;
+        final int stackSide = cubeSide + padding * 2;
+        final int cubeVolume = cubeSide * cubeSide * cubeSide;
+        final int spaceSize = stackSide * stackSide * stackSide;
+        final double elementSize = scale * scale * scale;
+        final ImgPlus<BitType> imgPlus =
+                (ImgPlus<BitType>) IMAGE_J.op()
+                        .run(Cuboid.class, null, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
+
+        final Future<CommandModule> future =
+                IMAGE_J.command().run(ThresholdElementFractionWrapper.class, true, "inputImage", imgPlus);
+
+        try {
+            future.get();
+            final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
+            final String[] headings = resultsTable.getHeadings();
+            final double boneVolume = resultsTable.getValue(headings[1], 0);
+            final double totalVolume = resultsTable.getValue(headings[2], 0);
+            final double ratio = resultsTable.getValue(headings[3], 0);
+
+            assertEquals("Wrong number of results", 1, resultsTable.size());
+            assertEquals("Column header is incorrect", "Bone Volume (" + unit + "³)", headings[1]);
+            assertEquals("Column header is incorrect", "Total Volume (" + unit + "³)", headings[2]);
+            assertEquals("Column header is incorrect", "Volume Ratio", headings[3]);
+            assertEquals("Bone volume is incorrect", cubeVolume * elementSize, boneVolume, 1e-12);
+            assertEquals("Total volume is incorrect", spaceSize * elementSize, totalVolume, 1e-12);
+            assertEquals("Ratio is incorrect",(cubeVolume * elementSize) / (spaceSize * elementSize), ratio, 1e-12);
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
