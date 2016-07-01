@@ -113,6 +113,7 @@ public class Trig {
 	 *            z-coordinate of the mutual tail point
 	 * @return angle formed by 0-V-1
 	 */
+	@Deprecated
 	public static double angle3D(double x0, double y0, double z0, double x1, double y1, double z1, final double xv,
 			final double yv, final double zv) {
 

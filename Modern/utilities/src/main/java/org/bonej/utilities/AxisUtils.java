@@ -38,6 +38,28 @@ public class AxisUtils {
         return indices.length == 3 ? Optional.of(indices) : Optional.empty();
     }
 
+    /** Gets the index of the first time dimension in the space, or -1 if there are no such dimensions */
+    public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int getTimeIndex(
+            @Nullable final T space) {
+        if (space == null) {
+            return -1;
+        }
+
+        final int dimensions = space.numDimensions();
+        return IntStream.range(0, dimensions).filter(d -> space.axis(d).type() == Axes.TIME).findFirst().orElse(-1);
+    }
+
+    /** Gets the index of the first channel dimension in the space, or -1 if there are no such dimensions */
+    public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int getChannelIndex(
+            @Nullable final T space) {
+        if (space == null) {
+            return -1;
+        }
+
+        final int dimensions = space.numDimensions();
+        return IntStream.range(0, dimensions).filter(d -> space.axis(d).type() == Axes.CHANNEL).findFirst().orElse(-1);
+    }
+
     /**
      * Counts the number of spatial elements in the given space
      *

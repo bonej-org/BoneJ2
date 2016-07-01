@@ -40,6 +40,7 @@ public class StackStats {
 	 *         0th and 1st and 2nd elements respectively
 	 *
 	 */
+	@Deprecated
 	public static double[] meanStdDev(final ImagePlus imp) {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();

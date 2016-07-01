@@ -65,6 +65,7 @@ public class Vectors {
 	 *
 	 * @return cross product vector
 	 */
+	@Deprecated
 	public static double[] crossProduct(final double[] point0, final double[] point1, final double[] point2) {
 		final double x1 = point1[0] - point0[0];
 		final double y1 = point1[1] - point0[1];

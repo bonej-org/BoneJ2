@@ -37,6 +37,7 @@ import ij.Prefs;
  *      MultiThreading.java;hb=HEAD</a>
  */
 public class Multithreader {
+	@Deprecated
 	public static void startTask(final Runnable run) {
 		final Thread[] threads = newThreads();
 
@@ -45,6 +46,7 @@ public class Multithreader {
 		startAndJoin(threads);
 	}
 
+	@Deprecated
 	public static void startTask(final Runnable run, final int numThreads) {
 		final Thread[] threads = newThreads(numThreads);
 
@@ -58,6 +60,7 @@ public class Multithreader {
 		return new Thread[nthread];
 	}
 
+	@Deprecated
 	public static Thread[] newThreads(final int numThreads) {
 		return new Thread[numThreads];
 	}

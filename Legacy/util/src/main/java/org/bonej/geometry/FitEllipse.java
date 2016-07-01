@@ -32,6 +32,7 @@ import Jama.Matrix;
  * @author Michael Doube
  *
  */
+@Deprecated
 public class FitEllipse {
 
 	/**
@@ -159,9 +160,8 @@ public class FitEllipse {
 	 *      "http://www.mathworks.co.uk/matlabcentral/fileexchange/22683-ellipse-fit-taubin-method"
 	 *      >MATLAB script</a>
 	 *      </p>
-	 * @deprecated until eig(a,b) is implemented
+	 *  until eig(a,b) is implemented
 	 */
-	@Deprecated
 	public static double[] taubin(final double[][] points) {
 
 		final int nPoints = points.length;
@@ -300,7 +300,6 @@ public class FitEllipse {
 		// end % Taubin
 		return AA.getColumnPackedCopy();
 	}
-
 	/**
 	 * Create an array of (x,y) coordinates on an ellipse of radii (a,b) and
 	 * rotated r radians. Random noise is added if noise > 0.
@@ -341,7 +340,6 @@ public class FitEllipse {
 		}
 		return points;
 	}
-
 	/**
 	 * <p>
 	 * Convert variables a, b, c, d, f, g from the general ellipse equation ax²

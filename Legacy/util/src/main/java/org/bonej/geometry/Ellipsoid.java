@@ -294,6 +294,7 @@ public class Ellipsoid {
 	 * @param cb
 	 * @param cd
 	 */
+	@Deprecated
 	public void contract(final double ca, final double cb, final double cd) {
 		dilate(-ca, -cb, -cd);
 	}
@@ -319,6 +320,7 @@ public class Ellipsoid {
 	 * @param dz
 	 *            shift in z
 	 */
+	@Deprecated
 	public void translate(final double dx, final double dy, final double dz) {
 		this.cx += dx;
 		this.cy += dy;
@@ -485,6 +487,7 @@ public class Ellipsoid {
 	 * @see http://en.wikipedia.org/wiki/Matrix_multiplication#Row_vector.2
 	 *      C_square_matrix.2C_and_column_vector
 	 */
+	@Deprecated
 	public double[] getEquation() {
 		final double h2112 = eh[1][0] + eh[0][1];
 		final double h3113 = eh[2][0] + eh[0][2];
@@ -630,6 +633,7 @@ public class Ellipsoid {
 	/**
 	 * Generate a string of useful information about this Ellipsoid
 	 */
+	@Deprecated
 	public String debugOutput() {
 		String string = "Ellipsoid variables:\n";
 
