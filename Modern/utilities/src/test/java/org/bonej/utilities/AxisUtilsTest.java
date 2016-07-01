@@ -130,6 +130,17 @@ public class AxisUtilsTest {
     }
 
     @Test
+    public void testCalibratedSpatialElementSizeWhenNoSpatialAxes() throws Exception {
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{3});
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
+
+        final double elementSize = AxisUtils.calibratedSpatialElementSize(imgPlus);
+
+        assertEquals("Element size should be zero when there are no spatial axes", 0.0, elementSize, 1e-12);
+    }
+
+    @Test
     public void testCalibratedSpatialElementSize() throws Exception {
         final double xScale = 1.5;
         final double yScale = 2.25;

@@ -81,7 +81,7 @@ public class AxisUtils {
             return Double.NaN;
         }
 
-        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce(1.0, (x, y) -> x * y);
+        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x, y) -> x * y).orElse(0.0);
     }
 
     /**
