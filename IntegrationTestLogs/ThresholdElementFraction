@@ -17,11 +17,12 @@ Results match BoneJ1
 Prerequisites
 -----------------------------------------------------------------------
  I Repeat steps 1-4 for "bat-cochlea-volume.tif" in ImageJ1.
-II Run "Volume Fraction" plugin from BoneJ1 with the "voxel" option selected
+II Run "Volume Fraction" plugin from BoneJ1 with the "voxel" option selected,
+   and "Use ROI Manager" deselected
 
 Expected result
 -----------------------------------------------------------------------
 Results match BoneJ1
 
-Completed - - ---- Richard Domander
+Completed July 4 2016 Richard Domander
 -----------------------------------------------------------------------
