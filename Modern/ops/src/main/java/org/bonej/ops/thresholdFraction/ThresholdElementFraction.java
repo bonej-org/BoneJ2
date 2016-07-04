@@ -1,4 +1,4 @@
-package org.bonej.ops;
+package org.bonej.ops.thresholdFraction;
 
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;

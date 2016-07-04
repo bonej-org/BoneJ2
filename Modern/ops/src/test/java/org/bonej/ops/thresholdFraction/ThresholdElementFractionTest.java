@@ -1,12 +1,13 @@
-package org.bonej.ops;
+package org.bonej.ops.thresholdFraction;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imglib2.FinalDimensions;
 import net.imglib2.img.Img;
 import net.imglib2.type.numeric.integer.LongType;
-import org.bonej.ops.ThresholdElementFraction.Results;
-import org.bonej.ops.ThresholdElementFraction.Settings;
+import org.bonej.ops.thresholdFraction.ThresholdElementFraction;
+import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Results;
+import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Settings;
 import org.junit.AfterClass;
 import org.junit.Test;
 
