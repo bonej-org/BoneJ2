@@ -3,15 +3,10 @@ package org.bonej.ops.thresholdFraction;
 import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
-import net.imagej.ops.OpEnvironment;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
-import net.imglib2.Dimensions;
-import net.imglib2.FinalDimensions;
-import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import org.bonej.utilities.AxisUtils;
 import org.scijava.plugin.Plugin;
@@ -24,7 +19,7 @@ import org.scijava.plugin.Plugin;
  */
 @Plugin(type = Op.class, name = "thresholdSurfaceFraction")
 public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
-        AbstractBinaryFunctionOp<ImgPlus<T>, SurfaceFraction.Settings, SurfaceFraction.Results> implements Contingent {
+        AbstractBinaryFunctionOp<ImgPlus<T>, Thresholds<T>, SurfaceFraction.Results> implements Contingent {
 
     /** 3D surfaces are only defined for images with three spatial dimensions  */
     @Override
@@ -34,76 +29,21 @@ public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
 
     /** TODO Channel & time dimensions */
     @Override
-    public Results compute2(final ImgPlus<T> imgPlus, final Settings settings) {
-        final int[] indices = AxisUtils.getXYZIndices(imgPlus).get();
-        final int xIndex = indices[0];
-        final int yIndex = indices[1];
-        final int zIndex = indices[2];
-
-        final Img<BitType> thresholdMask =
-                createSurfaceMask(ops(), imgPlus, xIndex, yIndex, zIndex, settings.minThreshold, settings.maxThreshold);
+    public Results compute2(final ImgPlus<T> imgPlus, final Thresholds<T> thresholds) {
+        final Img thresholdMask = (Img) ops().run(SurfaceMask.class, imgPlus, thresholds);
         final Mesh thresholdSurface = ops().geom().marchingCubes(thresholdMask);
         final double thresholdSurfaceVolume = ops().geom().size(thresholdSurface).get();
 
-        final double min = Double.NEGATIVE_INFINITY;
-        final double max = Double.POSITIVE_INFINITY;
-        final Img<BitType> totalMask = createSurfaceMask(ops(), imgPlus, xIndex, yIndex, zIndex, min, max);
+        final Thresholds<T> totalThresholds =
+                new Thresholds<>(imgPlus, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+        final Img totalMask = (Img) ops().run(SurfaceMask.class, imgPlus, totalThresholds);
         final Mesh totalSurface = ops().geom().marchingCubes(totalMask);
         final double totalSurfaceVolume = ops().geom().size(totalSurface).get();
 
         return new Results(thresholdSurface, totalSurface, thresholdSurfaceVolume, totalSurfaceVolume);
     }
 
-    //TODO Make an independent Op?
-    public static <T extends NativeType<T> & RealType<T>> Img<BitType> createSurfaceMask(final OpEnvironment ops,
-            final ImgPlus<T> imgPlus, final int xIndex, final int yIndex, final int zIndex, final double minThreshold,
-            final double maxThreshold) {
-        final long width = imgPlus.dimension(xIndex);
-        final long height = imgPlus.dimension(yIndex);
-        final long depth = imgPlus.dimension(zIndex);
-        final Dimensions dimensions = new FinalDimensions(width, height, depth);
-        final Img<BitType> mask = ops.create().img(dimensions, new BitType());
-        final RandomAccess<BitType> maskAccess = mask.randomAccess();
-        final RandomAccess<T> imgAccess = imgPlus.randomAccess();
-        final T min = imgPlus.firstElement().createVariable();
-        min.setReal(minThreshold);
-        final T max = imgPlus.firstElement().createVariable();
-        max.setReal(maxThreshold);
-
-        for (long z = 0; z < depth; z++) {
-            imgAccess.setPosition(z, zIndex);
-            maskAccess.setPosition(z, 2);
-            for (long y = 0; y < height; y++) {
-                imgAccess.setPosition(y, yIndex);
-                maskAccess.setPosition(y, 1);
-                for (int x = 0; x < width; x++) {
-                    imgAccess.setPosition(x, xIndex);
-                    maskAccess.setPosition(x, 0);
-                    final T element = imgAccess.get();
-                    if (element.compareTo(min) >= 0 && element.compareTo(max) <= 0) {
-                        maskAccess.get().setOne();
-                    }
-                }
-            }
-        }
-
-        return mask;
-    }
-
     //region -- Helper classes --
-
-    /** A helper class to pass inputs while keeping the Op binary */
-    public static final class Settings {
-        /** Minimum value for elements within threshold */
-        public final double minThreshold;
-        /** Maximum value for elements within threshold */
-        public final double maxThreshold;
-
-        public Settings(final double minThreshold, final double maxThreshold) {
-            this.minThreshold = minThreshold;
-            this.maxThreshold = maxThreshold;
-        }
-    }
 
     /** A helper class for passing outputs */
     public static final class Results {
