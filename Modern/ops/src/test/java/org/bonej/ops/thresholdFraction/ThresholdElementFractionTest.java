@@ -5,7 +5,6 @@ import net.imagej.ImgPlus;
 import net.imglib2.FinalDimensions;
 import net.imglib2.img.Img;
 import net.imglib2.type.numeric.integer.LongType;
-import org.bonej.ops.thresholdFraction.ThresholdElementFraction;
 import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Results;
 import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Settings;
 import org.junit.AfterClass;
@@ -31,7 +30,7 @@ public class ThresholdElementFractionTest {
 
     @Test
     public void testCompute2() {
-        // Create a test image with values from 0 to 7
+        // Create a 2x2x2x2x2 test image with values from 0 to 7
         final Img<LongType> img = IMAGE_J.op().create().img(new FinalDimensions(2, 2, 2, 2, 2), new LongType());
         final ImgPlus<LongType> imgPlus = new ImgPlus<>(img);
         final Settings<LongType> settings = new Settings<>(new LongType(2L), new LongType(5L));
@@ -44,6 +43,4 @@ public class ThresholdElementFractionTest {
         assertEquals("Total number of elements is incorrect", 32, result.elements);
         assertEquals("Ratio of elements is incorrect", 0.5, result.ratio, 1e-12);
     }
-
-
 }

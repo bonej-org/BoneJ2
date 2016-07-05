@@ -15,9 +15,11 @@ import java.util.Iterator;
 import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
+ * Tests for the {@link SurfaceMask SurfaceMask} class
+ *
  * @author Richard Domander 
  */
 public class SurfaceMaskTest {
