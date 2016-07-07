@@ -27,7 +27,7 @@ public class EulerCorrectionTest {
         IMAGE_J.context().dispose();
     }
 
-    /** Regression test EulerCharacteristic with a solid cuboid that never touches the edges of the stack */
+    /** Regression test EulerCharacteristicFloating with a solid cuboid that never touches the edges of the stack */
     @Test
     public void testCompute1CuboidFreeFloat() throws Exception {
         final ImgPlus<BitType> cuboid =
@@ -57,7 +57,7 @@ public class EulerCorrectionTest {
     }
 
     /**
-     * Regression test EulerCharacteristic with a solid cuboid that's the same size as the image,
+     * Regression test EulerCharacteristicFloating with a solid cuboid that's the same size as the image,
      * i.e. all faces touch the edges
      */
     @Test

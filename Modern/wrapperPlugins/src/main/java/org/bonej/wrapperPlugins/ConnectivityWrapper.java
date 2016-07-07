@@ -6,8 +6,6 @@ import net.imagej.ops.OpService;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import org.bonej.ops.connectivity.EulerCharacteristic;
-import org.bonej.ops.connectivity.EulerCorrection;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -16,8 +14,6 @@ import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-
-import javax.annotation.Nullable;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;

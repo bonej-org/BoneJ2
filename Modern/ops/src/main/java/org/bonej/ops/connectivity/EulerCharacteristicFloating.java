@@ -1,19 +1,14 @@
 package org.bonej.ops.connectivity;
 
-import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
-import org.bonej.utilities.AxisUtils;
-import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
-import java.util.List;
-import java.util.Optional;
-
 /**
- * An Op which calculates the euler characteristic (χ) of the given image. The object(s) in the image
+ * An Op which calculates the euler characteristic (χ) of the given binary image. The object(s) in the image
  * are handled as if they were floating freely in space (no border conditions).
  * Here Euler characteristic is defined as χ = β_0 - β_1 + β_2, where β_i are so called Betti numbers.
  * β_0 = number of separate particles
@@ -39,20 +34,11 @@ import java.util.Optional;
  * @author Richard Domander
  * @author Michael Doube
  */
-@Plugin(type = Op.class, name = "eulerCharacteristic")
-public class EulerCharacteristic<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<ImgPlus<B>, Double>
+@Plugin(type = Op.class, name = "eulerCharacteristicFloating")
+public class EulerCharacteristicFloating<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<RandomAccessibleInterval<B>, Double>
         implements Contingent {
     /**Δχ(v) for all configurations of a 2x2x2 voxel neighborhood  */
     private static final int[] EULER_LUT = new int[256];
-
-    @Parameter(persist = false, required = false)
-    /**
-     * Position of the 3D image you want to process in the hyperstack.
-     * <p>
-     * For example, if you have {x, y, channel, z, frame} then hyperPosition = {0, 0, 1, 0, 1}
-     * @implNote Using List to avoid confusion with varargs when calling / matching Op
-     */
-    private List<Long> hyperPosition = null;
 
     //region fill EULER_LUT
     static {
@@ -191,33 +177,20 @@ public class EulerCharacteristic<B extends BooleanType<B>> extends AbstractUnary
     }
     //endregion
 
-
-    /** The algorithm is only defined for 3D images  */
+    /** The algorithm is defined for 3D spatial images, ignores rest of the dimensions  */
     @Override
     public boolean conforms() {
-        return AxisUtils.countSpatialDimensions(in()) == 3;
+        return in().numDimensions() >= 3;
     }
 
     @Override
-    public Double compute1(final ImgPlus<B> imgPlus) {
-        final Optional<int[]> optional = AxisUtils.getXYZIndices(imgPlus);
-        final int[] indices = optional.get();
-        final int xIndex = indices[0];
-        final int yIndex = indices[1];
-        final int zIndex = indices[2];
-        final Octant<B> octant;
+    public Double compute1(final RandomAccessibleInterval<B> interval) {
+        final Octant<B> octant = new Octant<>(interval);
         final int[] sumDeltaEuler = {0};
 
-        if (hyperPosition == null) {
-            octant = new Octant<>(imgPlus, null, xIndex, yIndex, zIndex);
-        } else {
-            final long[] position = hyperPosition.stream().mapToLong(Long::longValue).toArray();
-            octant = new Octant<>(imgPlus, position, xIndex, yIndex, zIndex);
-        }
-
-        for (int z = 0; z <= imgPlus.dimension(zIndex); z++) {
-            for (int y = 0; y <= imgPlus.dimension(yIndex); y++) {
-                for (int x = 0; x <= imgPlus.dimension(xIndex); x++) {
+        for (int z = 0; z <= interval.dimension(2); z++) {
+            for (int y = 0; y <= interval.dimension(1); y++) {
+                for (int x = 0; x <= interval.dimension(0); x++) {
                     octant.setNeighborhood(x, y, z);
                     sumDeltaEuler[0] += getDeltaEuler(octant);
                 }
