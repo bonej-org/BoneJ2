@@ -58,62 +58,13 @@ public class ConnectivityWrapper extends ContextCommand {
             bitImgPlus.setAxis(axis, d);
         }
 
-        final int timeIndex = AxisUtils.getTimeIndex(bitImgPlus);
-        final int channelIndex = AxisUtils.getChannelIndex(bitImgPlus);
-
-        if (timeIndex == -1 && channelIndex == -1) {
-            // Not a hyperstack, just process the 3D image and exit
-            processSubStack(bitImgPlus, null, "");
-            return;
-        }
-
-        final long channels = channelIndex >= 0 ? bitImgPlus.dimension(channelIndex) : 0;
-        final long frames = timeIndex >= 0 ? bitImgPlus.dimension(timeIndex) : 0;
-        long frame = 0;
-
-        // Call connectivity for each 3D subspace in the colour/time hyperstack
-        do {
-            long channel = 0;
-            // No need to add clarifying suffix is there's only one frame
-            final String frameSuffix = frames > 1 ? "_F" + (frame + 1) : "";
-            final long[] position = new long[dimensions];
-
-            setDimensionSafely(position, timeIndex, frame);
-            do {
-                // No need to add clarifying suffix is there's only one channel
-                final String channelSuffix = channels > 1 ? "_C" + (channel + 1) : "";
-
-                setDimensionSafely(position, channelIndex, channel);
-                processSubStack(bitImgPlus, position, frameSuffix + channelSuffix);
-                channel++;
-            } while (channel < channels);
-            frame++;
-        } while (frame < frames);
-    }
-
-    private static void setDimensionSafely(final long[] hyperPosition, final int dimension, final long position) {
-        if (dimension < 0) {
-            return;
-        }
-
-        hyperPosition[dimension] = position;
-    }
-
-    /**
-     * Process connectivity for one 3D stack in the hyperstack, and show the results
-     *
-     * @param hyperPosition Position of the stack in the hyperstack (channel/frame)
-     * @param suffix        Suffix that identifies the stack in the results table
-     */
-    private void processSubStack(ImgPlus<BitType> imgPlus, @Nullable final long[] hyperPosition, final String suffix) {
-        final double eulerCharacteristic = (Double) opService.run(EulerCharacteristic.class, imgPlus, hyperPosition);
-        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, imgPlus, hyperPosition);
+        final double eulerCharacteristic = 0;
+        final double edgeCorrection = 0;
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
-        final String label = imgPlus.getName() + suffix;
 
-        showResults(label, eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
+        showResults(inputImage.getName(), eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
     }
 
     //region -- Helper methods --
