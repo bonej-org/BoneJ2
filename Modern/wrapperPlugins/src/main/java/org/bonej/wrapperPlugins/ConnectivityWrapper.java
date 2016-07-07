@@ -3,9 +3,14 @@ package org.bonej.wrapperPlugins;
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.view.IntervalView;
+import net.imglib2.view.Views;
+import org.bonej.ops.connectivity.EulerCharacteristicFloating;
+import org.bonej.ops.connectivity.EulerCorrection;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -42,30 +47,81 @@ public class ConnectivityWrapper extends ContextCommand {
     private boolean negativityWarned = false;
     private boolean calibrationWarned = false;
 
+
     @Override
     public void run() {
+        final String name = inputImage.getName();
         final Img<BitType> bitImg = opService.convert().bit(inputImage);
         final int dimensions = inputImage.numDimensions();
         final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
+
         // Copy ImgPlus metadata from original
-        bitImgPlus.setName(inputImage.getName());
+        //TODO create testable util method
+        bitImgPlus.setName(name);
         for (int d = 0; d < dimensions; d++) {
             final CalibratedAxis axis = inputImage.axis(d);
             bitImgPlus.setAxis(axis, d);
         }
 
-        final double eulerCharacteristic = 0;
-        final double edgeCorrection = 0;
-        final double correctedEuler = eulerCharacteristic - edgeCorrection;
-        final double connectivity = 1 - correctedEuler;
-        final double connectivityDensity = calculateConnectivityDensity(connectivity);
+        final int timeIndex = AxisUtils.getTimeIndex(bitImgPlus);
+        final int channelIndex = AxisUtils.getChannelIndex(bitImgPlus);
 
-        showResults(inputImage.getName(), eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
+        if (timeIndex == -1 && channelIndex == -1) {
+            // Not a hyperstack, just process the 3D image and exit
+            processSubStack(name, bitImgPlus, "");
+            return;
+        }
+
+        // Permute a view where x,y,z are the first three dimensions
+        //TODO create testable util method
+        final int[] indices = AxisUtils.getXYZIndices(bitImgPlus).get();
+        IntervalView<BitType> view = Views.permute(Views.permute(Views.permute(bitImgPlus, indices[0], 0), indices[1], 1), indices[2], 2);
+
+        final long channels = channelIndex >= 0 ? bitImgPlus.dimension(channelIndex) : 0;
+        final long frames = timeIndex >= 0 ? bitImgPlus.dimension(timeIndex) : 0;
+        long frame = 0;
+
+        // Call connectivity for each 3D subspace in the colour/time hyperstack
+        do {
+            long channel = 0;
+            // No need to add clarifying suffix is there's only one frame
+            final String frameSuffix = frames > 1 ? "_F" + (frame + 1) : "";
+
+            RandomAccessibleInterval timeView = safeHyperSlice(view, timeIndex, frame);
+            do {
+                // No need to add clarifying suffix is there's only one channel
+                final String channelSuffix = channels > 1 ? "_C" + (channel + 1) : "";
+
+                RandomAccessibleInterval channelView = safeHyperSlice(timeView, channelIndex, channel);
+                processSubStack(name, channelView, frameSuffix + channelSuffix);
+                channel++;
+            } while (channel < channels);
+            frame++;
+        } while (frame < frames);
+    }
+
+    private RandomAccessibleInterval safeHyperSlice(RandomAccessibleInterval view, int dimension, long position) {
+        if (dimension < 0) {
+            return view;
+        }
+
+        return Views.hyperSlice(view, dimension, position);
     }
 
     //region -- Helper methods --
+    private void processSubStack(final String name, final RandomAccessibleInterval view, final String suffix) {
+        final double eulerCharacteristic = (Double) opService.run(EulerCharacteristicFloating.class, view);
+        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, view);
+        final double correctedEuler = eulerCharacteristic - edgeCorrection;
+        final double connectivity = 1 - correctedEuler;
+        final double connectivityDensity = calculateConnectivityDensity(connectivity);
+        final String label = name + suffix;
+
+        showResults(label, eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
+    }
+
     private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
-            final double connectivity, final double connectivityDensity) {
+                             final double connectivity, final double connectivityDensity) {
         final String unitHeader = WrapperUtils.getUnitHeader(inputImage, "³");
 
         if (connectivity < 0 && !negativityWarned) {
