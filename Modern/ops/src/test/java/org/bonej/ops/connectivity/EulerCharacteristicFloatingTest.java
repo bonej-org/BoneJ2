@@ -2,8 +2,6 @@ package org.bonej.ops.connectivity;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
-import net.imagej.axis.Axes;
-import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
