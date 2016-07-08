@@ -9,6 +9,7 @@ import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Settings;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -50,12 +51,12 @@ public class ThresholdElementFractionWrapper<T extends RealType<T>> extends Cont
 
     private void showResults(final Results results) {
         final String label = inputImage.getName();
-        final String sizeDescription = WrapperUtils.getSizeDescription(inputImage);
-        final char exponent = WrapperUtils.getExponent(inputImage);
+        final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
+        final char exponent = ResultUtils.getExponent(inputImage);
         final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
         final double thresholdSize = results.thresholdElements * elementSize;
         final double totalSize = results.elements * elementSize;
-        final String unitHeader = WrapperUtils.getUnitHeader(inputImage, exponent);
+        final String unitHeader = ResultUtils.getUnitHeader(inputImage, exponent);
 
         if (unitHeader.isEmpty()) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);

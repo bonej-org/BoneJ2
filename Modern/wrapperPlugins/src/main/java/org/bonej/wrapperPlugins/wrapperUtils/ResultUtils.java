@@ -1,4 +1,4 @@
-package org.bonej.wrapperPlugins;
+package org.bonej.wrapperPlugins.wrapperUtils;
 
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
@@ -9,12 +9,12 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 
 /**
- * Static utility methods for the wrapper plugins
+ * Static utility methods for displaying results to the user
  *
  * @author Richard Domander 
  */
-public class WrapperUtils {
-    private WrapperUtils() {}
+public class ResultUtils {
+    private ResultUtils() {}
 
     /** Returns a verbal description of the size of the elements in the given space, e.g. "Area" for 2D images */
     public static <T extends AnnotatedSpace<A>, A extends TypedAxis> String getSizeDescription(@Nullable T space) {
@@ -55,7 +55,7 @@ public class WrapperUtils {
         return '\u0000';
     }
 
-    /** @see WrapperUtils#getUnitHeader(AnnotatedSpace, char) getUnitHeader(AnnotatedSpace, String) */
+    /** @see ResultUtils#getUnitHeader(AnnotatedSpace, char) getUnitHeader(AnnotatedSpace, String) */
     public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(@Nullable final T space) {
         return getUnitHeader(space, '\u0000');
     }
