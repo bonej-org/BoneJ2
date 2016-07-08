@@ -14,11 +14,15 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils.SpatialView;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
+
+import java.util.List;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
@@ -63,57 +67,21 @@ public class ConnectivityWrapper extends ContextCommand {
             bitImgPlus.setAxis(axis, d);
         }
 
-        final int timeIndex = AxisUtils.getTimeIndex(bitImgPlus);
-        int channelIndex = AxisUtils.getChannelIndex(bitImgPlus);
-
-        if (timeIndex == -1 && channelIndex == -1) {
-            // Not a hyperstack, just process the 3D image and exit
-            processSubStack(name, bitImgPlus, "");
-            return;
+        final List<SpatialView> views = ViewUtils.createSpatialViews(bitImgPlus);
+        for (SpatialView view : views) {
+            final String label = name + view.hyperPosition;
+            viewConnectivity(label, view.view);
         }
-
-        final long channels = channelIndex >= 0 ? bitImgPlus.dimension(channelIndex) : 0;
-        final long frames = timeIndex >= 0 ? bitImgPlus.dimension(timeIndex) : 0;
-        long frame = 0;
-
-        if (channelIndex > timeIndex && timeIndex != -1) {
-            // Channel index is one smaller once time dimension has been cut
-            channelIndex--;
-        }
-
-        // Call connectivity for each 3D subspace in the colour/time hyperstack
-        do {
-            long channel = 0;
-            // No need to add clarifying suffix is there's only one frame
-            final String frameSuffix = frames > 1 ? "_F" + (frame + 1) : "";
-            RandomAccessibleInterval timeView = safeHyperSlice(bitImgPlus, timeIndex, frame);
-            do {
-                // No need to add clarifying suffix is there's only one channel
-                final String channelSuffix = channels > 1 ? "_C" + (channel + 1) : "";
-                RandomAccessibleInterval channelView = safeHyperSlice(timeView, channelIndex, channel);
-                processSubStack(name, channelView, frameSuffix + channelSuffix);
-                channel++;
-            } while (channel < channels);
-            frame++;
-        } while (frame < frames);
-    }
-
-    private RandomAccessibleInterval safeHyperSlice(RandomAccessibleInterval view, int dimension, long position) {
-        if (dimension < 0) {
-            return view;
-        }
-
-        return Views.hyperSlice(view, dimension, position);
     }
 
     //region -- Helper methods --
-    private void processSubStack(final String name, final RandomAccessibleInterval view, final String suffix) {
+    /** Process connectivity for one spatial view */
+    private void viewConnectivity(final String label, final RandomAccessibleInterval view) {
         final double eulerCharacteristic = (Double) opService.run(EulerCharacteristicFloating.class, view);
         final double edgeCorrection = (Double) opService.run(EulerCorrection.class, view);
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
         final double connectivityDensity = calculateConnectivityDensity(connectivity);
-        final String label = name + suffix;
 
         showResults(label, eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
     }
