@@ -36,11 +36,11 @@ import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
- * Regression tests for the {@link ThresholdElementFractionWrapper ThresholdElementFractionWrapper} plugin
+ * Regression tests for the {@link ElementFractionWrapper ElementFractionWrapper} plugin
  *
  * @author Richard Domander 
  */
-public class ThresholdElementFractionWrapperTest {
+public class ElementFractionWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
     @BeforeClass
@@ -67,7 +67,7 @@ public class ThresholdElementFractionWrapperTest {
         IMAGE_J.ui().setDefaultUI(mockUI);
 
         final Future<CommandModule> future =
-                IMAGE_J.command().run(ThresholdElementFractionWrapper.class, true, "inputImage", null);
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", null);
 
         try {
             final CommandModule module = future.get();
@@ -96,7 +96,7 @@ public class ThresholdElementFractionWrapperTest {
         imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
         final Future<CommandModule> future =
-                IMAGE_J.command().run(ThresholdElementFractionWrapper.class, true, "inputImage", imgPlus);
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus);
 
         try {
             final CommandModule module = future.get();
@@ -123,7 +123,7 @@ public class ThresholdElementFractionWrapperTest {
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final Future<CommandModule> future =
-                IMAGE_J.command().run(ThresholdElementFractionWrapper.class, true, "inputImage", imgPlus);
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus);
 
         try {
             future.get();
@@ -149,7 +149,7 @@ public class ThresholdElementFractionWrapperTest {
                         .run(Cuboid.class, null, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
 
         final Future<CommandModule> future =
-                IMAGE_J.command().run(ThresholdElementFractionWrapper.class, true, "inputImage", imgPlus);
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus);
 
         try {
             future.get();

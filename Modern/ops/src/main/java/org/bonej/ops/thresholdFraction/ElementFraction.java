@@ -13,9 +13,9 @@ import java.util.stream.StreamSupport;
  *
  * @author Richard Domander
  */
-@Plugin(type = Op.class, name = "thresholdElementFraction")
-public class ThresholdElementFraction<S, T extends Comparable<S>> extends
-        AbstractBinaryFunctionOp<IterableInterval<T>, ThresholdElementFraction.Settings<S>, ThresholdElementFraction.Results> {
+@Plugin(type = Op.class, name = "elementFraction")
+public class ElementFraction<S, T extends Comparable<S>> extends
+        AbstractBinaryFunctionOp<IterableInterval<T>, ElementFraction.Settings<S>, ElementFraction.Results> {
 
     @Override
     public Results compute2(final IterableInterval<T> interval, final Settings<S> settings) {

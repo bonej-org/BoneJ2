@@ -1,6 +1,5 @@
 package org.bonej.ops.thresholdFraction;
 
-import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
@@ -9,7 +8,6 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import org.bonej.utilities.AxisUtils;
 import org.scijava.plugin.Plugin;
 
 /**
@@ -18,7 +16,7 @@ import org.scijava.plugin.Plugin;
  *
  * @author Richard Domander
  */
-@Plugin(type = Op.class, name = "thresholdSurfaceFraction")
+@Plugin(type = Op.class, name = "surfaceFraction")
 public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
         AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, SurfaceFraction.Results> implements Contingent {
 

@@ -2,10 +2,6 @@ package org.bonej.ops.thresholdFraction;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
-import net.imagej.axis.Axes;
-import net.imagej.axis.DefaultLinearAxis;
-import net.imglib2.FinalDimensions;
-import net.imglib2.IterableInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;

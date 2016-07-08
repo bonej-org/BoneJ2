@@ -3,9 +3,9 @@ package org.bonej.wrapperPlugins;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imglib2.type.numeric.RealType;
-import org.bonej.ops.thresholdFraction.ThresholdElementFraction;
-import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Results;
-import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Settings;
+import org.bonej.ops.thresholdFraction.ElementFraction;
+import org.bonej.ops.thresholdFraction.ElementFraction.Results;
+import org.bonej.ops.thresholdFraction.ElementFraction.Settings;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -20,12 +20,12 @@ import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
- * A wrapper UI class for the ThresholdElementFraction Op
+ * A wrapper UI class for the ElementFraction Op
  *
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction", headless = true)
-public class ThresholdElementFractionWrapper<T extends RealType<T>> extends ContextCommand {
+public class ElementFractionWrapper<T extends RealType<T>> extends ContextCommand {
     @Parameter(initializer = "initializeImage")
     private ImgPlus<T> inputImage;
 
@@ -44,7 +44,7 @@ public class ThresholdElementFractionWrapper<T extends RealType<T>> extends Cont
         maxThreshold.setReal(255);
         final Settings<T> settings = new Settings<>(minThreshold, maxThreshold);
 
-        final Results results = (Results) opService.run(ThresholdElementFraction.class, inputImage, settings);
+        final Results results = (Results) opService.run(ElementFraction.class, inputImage, settings);
 
         showResults(results);
     }

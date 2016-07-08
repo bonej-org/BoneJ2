@@ -5,8 +5,8 @@ import net.imagej.ImgPlus;
 import net.imglib2.FinalDimensions;
 import net.imglib2.img.Img;
 import net.imglib2.type.numeric.integer.LongType;
-import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Results;
-import org.bonej.ops.thresholdFraction.ThresholdElementFraction.Settings;
+import org.bonej.ops.thresholdFraction.ElementFraction.Results;
+import org.bonej.ops.thresholdFraction.ElementFraction.Settings;
 import org.junit.AfterClass;
 import org.junit.Test;
 
@@ -16,11 +16,11 @@ import java.util.stream.LongStream;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Unit tests for the {@link ThresholdElementFraction ThresholdElementFraction} class
+ * Unit tests for the {@link ElementFraction ElementFraction} class
  *
  * @author Richard Domander
  */
-public class ThresholdElementFractionTest {
+public class ElementFractionTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
     @AfterClass
@@ -37,7 +37,7 @@ public class ThresholdElementFractionTest {
         final Iterator<Long> longIterator = LongStream.iterate(0, i -> (i + 1) % 8).iterator();
         imgPlus.cursor().forEachRemaining(e -> e.set(longIterator.next()));
 
-        final Results result = (Results) IMAGE_J.op().run(ThresholdElementFraction.class, imgPlus, settings);
+        final Results result = (Results) IMAGE_J.op().run(ElementFraction.class, imgPlus, settings);
 
         assertEquals("Number of elements within thresholds is incorrect", 16, result.thresholdElements);
         assertEquals("Total number of elements is incorrect", 32, result.elements);
