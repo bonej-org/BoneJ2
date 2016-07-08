@@ -1,6 +1,9 @@
 package org.bonej.ops.thresholdFraction;
 
 import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccessible;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.Sampler;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 
@@ -20,8 +23,9 @@ public final class Thresholds<T extends NativeType<T> & RealType<T>> {
      * @param min       Minimum value for elements within threshold
      * @param max       Maximum value for elements within threshold
      */
-    public Thresholds(final IterableInterval<T> interval, final double min, final double max) {
-        final T element = interval.firstElement();
+    public Thresholds(final RandomAccessible<T> interval, final double min, final double max) {
+
+        final T element = interval.randomAccess().get();
         this.min = element.createVariable();
         this.min.setReal(min);
         this.max = element.createVariable();

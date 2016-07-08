@@ -5,6 +5,7 @@ import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -19,24 +20,22 @@ import org.scijava.plugin.Plugin;
  */
 @Plugin(type = Op.class, name = "thresholdSurfaceFraction")
 public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
-        AbstractBinaryFunctionOp<ImgPlus<T>, Thresholds<T>, SurfaceFraction.Results> implements Contingent {
+        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, SurfaceFraction.Results> implements Contingent {
 
-    /** 3D surfaces are only defined for images with three spatial dimensions  */
+    /** (Default) marching cubes only supports RAIs with three dimensions  */
     @Override
-    public boolean conforms() {
-        return AxisUtils.countSpatialDimensions(in1()) == 3;
-    }
+    public boolean conforms() { return in1().numDimensions() == 3; }
 
     /** TODO Channel & time dimensions */
     @Override
-    public Results compute2(final ImgPlus<T> imgPlus, final Thresholds<T> thresholds) {
-        final Img thresholdMask = (Img) ops().run(SurfaceMask.class, imgPlus, thresholds);
+    public Results compute2(final RandomAccessibleInterval<T> interval, final Thresholds<T> thresholds) {
+        final Img thresholdMask = (Img) ops().run(SurfaceMask.class, interval, thresholds);
         final Mesh thresholdSurface = ops().geom().marchingCubes(thresholdMask);
         final double thresholdSurfaceVolume = ops().geom().size(thresholdSurface).get();
 
         final Thresholds<T> totalThresholds =
-                new Thresholds<>(imgPlus, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-        final Img totalMask = (Img) ops().run(SurfaceMask.class, imgPlus, totalThresholds);
+                new Thresholds<>(interval, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+        final Img totalMask = (Img) ops().run(SurfaceMask.class, interval, totalThresholds);
         final Mesh totalSurface = ops().geom().marchingCubes(totalMask);
         final double totalSurfaceVolume = ops().geom().size(totalSurface).get();
 
