@@ -1,18 +1,17 @@
 package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.view.Views;
 import org.bonej.ops.connectivity.EulerCharacteristicFloating;
 import org.bonej.ops.connectivity.EulerCorrection;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils.SpatialView;
@@ -56,16 +55,8 @@ public class ConnectivityWrapper extends ContextCommand {
     public void run() {
         final String name = inputImage.getName();
         final Img<BitType> bitImg = opService.convert().bit(inputImage);
-        final int dimensions = inputImage.numDimensions();
         final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
-
-        // Copy ImgPlus metadata from original
-        //TODO create testable util method
-        bitImgPlus.setName(name);
-        for (int d = 0; d < dimensions; d++) {
-            final CalibratedAxis axis = inputImage.axis(d);
-            bitImgPlus.setAxis(axis, d);
-        }
+        Common.copyMetadata(inputImage, bitImgPlus);
 
         final List<SpatialView> views = ViewUtils.createSpatialViews(bitImgPlus);
         for (SpatialView view : views) {

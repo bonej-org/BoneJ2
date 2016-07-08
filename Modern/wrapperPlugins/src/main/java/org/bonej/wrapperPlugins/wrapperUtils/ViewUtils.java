@@ -2,7 +2,6 @@ package org.bonej.wrapperPlugins.wrapperUtils;
 
 import net.imagej.ImgPlus;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 import org.bonej.utilities.AxisUtils;
 
