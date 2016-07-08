@@ -41,6 +41,8 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
     @Parameter
     private UIService uiService;
 
+    private boolean calibrationWarned = false;
+
     @Override
     public void run() {
         final String name = inputImage.getName();
@@ -64,8 +66,9 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         final double totalVolume = results.totalSurfaceVolume * elementSize;
         final String unitHeader = ResultUtils.getUnitHeader(inputImage, exponent);
 
-        if (unitHeader.isEmpty()) {
+        if (unitHeader.isEmpty() && !calibrationWarned) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+            calibrationWarned = true;
         }
 
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
