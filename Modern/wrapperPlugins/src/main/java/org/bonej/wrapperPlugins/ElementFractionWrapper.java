@@ -2,6 +2,7 @@ package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import org.bonej.ops.thresholdFraction.ElementFraction;
 import org.bonej.ops.thresholdFraction.ElementFraction.Results;
@@ -25,7 +26,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction", headless = true)
-public class ElementFractionWrapper<T extends RealType<T>> extends ContextCommand {
+public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
     @Parameter(initializer = "initializeImage")
     private ImgPlus<T> inputImage;
 
