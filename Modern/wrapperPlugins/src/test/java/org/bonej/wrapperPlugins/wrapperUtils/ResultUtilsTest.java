@@ -1,4 +1,4 @@
-package org.bonej.wrapperPlugins;
+package org.bonej.wrapperPlugins.wrapperUtils;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
@@ -17,11 +17,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for the {@link WrapperUtils WrapperUtils} class.
+ * Unit tests for the {@link ResultUtils ResultUtils} class.
  *
  * @author Richard Domander 
  */
-public class WrapperUtilsTest {
+public class ResultUtilsTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
     @AfterClass
@@ -41,7 +41,7 @@ public class WrapperUtilsTest {
             final int dimensions = i + 1;
             when(mockImage.numDimensions()).thenReturn(dimensions);
 
-            final String description = WrapperUtils.getSizeDescription(mockImage);
+            final String description = ResultUtils.getSizeDescription(mockImage);
 
             assertTrue("Size description is incorrect", expected[i].equals(description));
         }
@@ -60,7 +60,7 @@ public class WrapperUtilsTest {
             final int dimensions = i + 1;
             when(mockImage.numDimensions()).thenReturn(dimensions);
 
-            final char exponent = WrapperUtils.getExponent(mockImage);
+            final char exponent = ResultUtils.getExponent(mockImage);
 
             assertEquals("Wrong exponent character", expected[i], exponent);
         }
@@ -68,7 +68,7 @@ public class WrapperUtilsTest {
 
     @Test
     public void testGetUnitHeaderReturnEmptyIfImageNull() throws Exception {
-        final String result = WrapperUtils.getUnitHeader(null);
+        final String result = ResultUtils.getUnitHeader(null);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -79,7 +79,7 @@ public class WrapperUtilsTest {
         final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = WrapperUtils.getUnitHeader(imgPlus);
+        final String result = ResultUtils.getUnitHeader(imgPlus);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -90,7 +90,7 @@ public class WrapperUtilsTest {
         final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = WrapperUtils.getUnitHeader(imgPlus);
+        final String result = ResultUtils.getUnitHeader(imgPlus);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -101,7 +101,7 @@ public class WrapperUtilsTest {
         final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = WrapperUtils.getUnitHeader(imgPlus);
+        final String result = ResultUtils.getUnitHeader(imgPlus);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -114,7 +114,7 @@ public class WrapperUtilsTest {
         final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = WrapperUtils.getUnitHeader(imgPlus, exponent);
+        final String result = ResultUtils.getUnitHeader(imgPlus, exponent);
 
         assertEquals("Unexpected unit header", "(" + unit + exponent + ")", result);
     }

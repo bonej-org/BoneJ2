@@ -13,6 +13,7 @@ import org.bonej.ops.connectivity.EulerCorrection;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -119,7 +120,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
     private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
                              final double connectivity, final double connectivityDensity) {
-        final String unitHeader = WrapperUtils.getUnitHeader(inputImage, '³');
+        final String unitHeader = ResultUtils.getUnitHeader(inputImage, '³');
 
         if (connectivity < 0 && !negativityWarned) {
             uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
