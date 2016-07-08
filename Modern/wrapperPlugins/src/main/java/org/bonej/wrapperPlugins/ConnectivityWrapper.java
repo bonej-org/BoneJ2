@@ -7,7 +7,6 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.bonej.ops.connectivity.EulerCharacteristicFloating;
 import org.bonej.ops.connectivity.EulerCorrection;
@@ -64,7 +63,7 @@ public class ConnectivityWrapper extends ContextCommand {
         }
 
         final int timeIndex = AxisUtils.getTimeIndex(bitImgPlus);
-        final int channelIndex = AxisUtils.getChannelIndex(bitImgPlus);
+        int channelIndex = AxisUtils.getChannelIndex(bitImgPlus);
 
         if (timeIndex == -1 && channelIndex == -1) {
             // Not a hyperstack, just process the 3D image and exit
@@ -72,26 +71,24 @@ public class ConnectivityWrapper extends ContextCommand {
             return;
         }
 
-        // Permute a view where x,y,z are the first three dimensions
-        //TODO create testable util method
-        final int[] indices = AxisUtils.getXYZIndices(bitImgPlus).get();
-        IntervalView<BitType> view = Views.permute(Views.permute(Views.permute(bitImgPlus, indices[0], 0), indices[1], 1), indices[2], 2);
-
         final long channels = channelIndex >= 0 ? bitImgPlus.dimension(channelIndex) : 0;
         final long frames = timeIndex >= 0 ? bitImgPlus.dimension(timeIndex) : 0;
         long frame = 0;
+
+        if (channelIndex > timeIndex && timeIndex != -1) {
+            // Channel index is one smaller once time dimension has been cut
+            channelIndex--;
+        }
 
         // Call connectivity for each 3D subspace in the colour/time hyperstack
         do {
             long channel = 0;
             // No need to add clarifying suffix is there's only one frame
             final String frameSuffix = frames > 1 ? "_F" + (frame + 1) : "";
-
-            RandomAccessibleInterval timeView = safeHyperSlice(view, timeIndex, frame);
+            RandomAccessibleInterval timeView = safeHyperSlice(bitImgPlus, timeIndex, frame);
             do {
                 // No need to add clarifying suffix is there's only one channel
                 final String channelSuffix = channels > 1 ? "_C" + (channel + 1) : "";
-
                 RandomAccessibleInterval channelView = safeHyperSlice(timeView, channelIndex, channel);
                 processSubStack(name, channelView, frameSuffix + channelSuffix);
                 channel++;

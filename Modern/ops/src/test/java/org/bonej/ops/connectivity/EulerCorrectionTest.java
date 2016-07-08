@@ -2,17 +2,13 @@ package org.bonej.ops.connectivity;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
-import net.imglib2.RandomAccess;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.bonej.ops.connectivity.EulerCorrection.Traverser;
 import org.bonej.testImages.Cuboid;
-import org.bonej.testImages.IJ1ImgPlus;
 import org.junit.AfterClass;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 

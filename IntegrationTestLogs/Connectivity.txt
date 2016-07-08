@@ -13,7 +13,7 @@ Expected result
 -----------------------------------------------------------------------
 Results match BoneJ1
 
-Completed June 24 2016 Richard Domander
+Completed July 08 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -37,9 +37,7 @@ Steps
 
 Expected result
 -----------------------------------------------------------------------
-Results match BoneJ1
+Results table har correct labels and correct number of results
 
-Completed June 27 2016 Richard Domander
+Completed July 8 2016 Richard Domander
 -----------------------------------------------------------------------
-
-

@@ -1,12 +1,10 @@
 package org.bonej.ops.connectivity;
 
-import net.imagej.ImgPlus;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.view.Views;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 
 /**
