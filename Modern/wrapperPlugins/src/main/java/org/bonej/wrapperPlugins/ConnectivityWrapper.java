@@ -85,12 +85,10 @@ public class ConnectivityWrapper extends ContextCommand {
             long channel = 0;
             // No need to add clarifying suffix is there's only one frame
             final String frameSuffix = frames > 1 ? "_F" + (frame + 1) : "";
-
             RandomAccessibleInterval timeView = safeHyperSlice(bitImgPlus, timeIndex, frame);
             do {
                 // No need to add clarifying suffix is there's only one channel
                 final String channelSuffix = channels > 1 ? "_C" + (channel + 1) : "";
-
                 RandomAccessibleInterval channelView = safeHyperSlice(timeView, channelIndex, channel);
                 processSubStack(name, channelView, frameSuffix + channelSuffix);
                 channel++;
