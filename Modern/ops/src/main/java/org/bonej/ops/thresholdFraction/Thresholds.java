@@ -12,7 +12,7 @@ import net.imglib2.type.numeric.RealType;
  *
  * @author Richard Domander 
  */
-public final class Thresholds<T extends NativeType<T> & RealType<T>> {
+public final class Thresholds<T extends RealType<T> & NativeType<T>> {
     public final T min;
     public final T max;
 
