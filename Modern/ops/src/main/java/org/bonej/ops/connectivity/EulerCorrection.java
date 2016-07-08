@@ -1,19 +1,14 @@
 package org.bonej.ops.connectivity;
 
-import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.view.Views;
-import org.bonej.utilities.AxisUtils;
-import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Optional;
 import java.util.stream.LongStream;
 
 /**
@@ -39,26 +34,19 @@ import java.util.stream.LongStream;
  * @implNote Methods are public and static to help testing
  */
 @Plugin(type = Op.class, name = "eulerContribution")
-public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<ImgPlus<B>, Double> implements
+public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunctionOp<RandomAccessibleInterval<B>, Double> implements
         Contingent {
-    @Parameter(persist = false, required = false)
-    /**
-     * Position of the 3D image you want to process in the hyperstack.
-     * <p>
-     * For example, if you have {x, y, channel, z, frame} then hyperPosition = {0, 0, 1, 0, 1}
-     * @implNote Using List to avoid confusion with varargs when calling / matching Op
-     */
-    public List<Long> hyperPosition = null;
 
-    /** The algorithm is only defined for 3D images  */
+
+    /** The algorithm is defined for 3D spatial images, ignores rest of the dimensions  */
     @Override
     public boolean conforms() {
-        return AxisUtils.countSpatialDimensions(in()) == 3;
+        return in().numDimensions() >= 3;
     }
 
     @Override
-    public Double compute1(final ImgPlus<B> imgPlus) {
-        final Traverser<B> traverser = new Traverser<>(imgPlus, hyperPosition);
+    public Double compute1(final RandomAccessibleInterval<B> interval) {
+        final Traverser<B> traverser = new Traverser<>(interval);
         final long chiZero = stackCorners(traverser);
         final long e = stackEdges(traverser) + 3 * chiZero;
         final long d = voxelEdgeIntersections(traverser) + chiZero;
@@ -171,9 +159,9 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
         final int[] voxelVertices = {0};
 
         LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
-            traverser.access.setPosition(z, traverser.zIndex);
+            traverser.access.setPosition(z, 2);
             LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
-                traverser.access.setPosition(y, traverser.yIndex);
+                traverser.access.setPosition(y, 1);
                 for (long x = 1; x < traverser.xSize; x++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
                     final int voxelB = getAtLocation(traverser, x - 1, y, z);
@@ -183,9 +171,9 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
         });
 
         LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
-            traverser.access.setPosition(z, traverser.zIndex);
+            traverser.access.setPosition(z, 2);
             LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
-                traverser.access.setPosition(x, traverser.xIndex);
+                traverser.access.setPosition(x, 0);
                 for (long y = 1; y < traverser.ySize; y++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
                     final int voxelB = getAtLocation(traverser, x, y - 1, z);
@@ -195,9 +183,9 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
         });
 
         LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
-            traverser.access.setPosition(y, traverser.yIndex);
+            traverser.access.setPosition(y, 1);
             LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
-                traverser.access.setPosition(x, traverser.xIndex);
+                traverser.access.setPosition(x, 0);
                 for (long z = 1; z < traverser.zSize; z++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
                     final int voxelB = getAtLocation(traverser, x, y, z - 1);
@@ -249,9 +237,9 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
 
         // Top and bottom faces (vertical edges)
         LongStream.of(traverser.y0, traverser.y1).forEach(y -> {
-            traverser.access.setPosition(y, traverser.yIndex);
+            traverser.access.setPosition(y, 1);
             for (int z = 0; z < traverser.zSize; z++) {
-                traverser.access.setPosition(z, traverser.zIndex);
+                traverser.access.setPosition(z, 2);
                 for (int x = 0; x <= traverser.xSize; x++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
                     final int voxelB = getAtLocation(traverser, x - 1, y, z);
@@ -262,9 +250,9 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
 
         // Left and right faces (horizontal edges)
         LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
-            traverser.access.setPosition(x, traverser.xIndex);
+            traverser.access.setPosition(x, 0);
             for (int y = 0; y < traverser.ySize; y++) {
-                traverser.access.setPosition(y, traverser.yIndex);
+                traverser.access.setPosition(y, 1);
                 for (int z = 1; z < traverser.zSize; z++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
                     final int voxelB = getAtLocation(traverser, x, y, z - 1);
@@ -275,9 +263,9 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
 
         // Left and right faces (vertical edges)
         LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
-            traverser.access.setPosition(x, traverser.xIndex);
+            traverser.access.setPosition(x, 0);
             for (int z = 0; z < traverser.zSize; z++) {
-                traverser.access.setPosition(z, traverser.zIndex);
+                traverser.access.setPosition(z, 2);
                 for (int y = 1; y < traverser.ySize; y++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
                     final int voxelB = getAtLocation(traverser, x, y - 1, z);
@@ -299,7 +287,7 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
         final long[] voxelFaces = {0};
 
         LongStream.of(traverser.z0, traverser.z1).forEach(z -> {
-            traverser.access.setPosition(z, traverser.zIndex);
+            traverser.access.setPosition(z, 2);
             for (int y = 0; y <= traverser.ySize; y++) {
                 for (int x = 0; x <= traverser.xSize; x++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
@@ -312,7 +300,7 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
         });
 
         LongStream.of(traverser.x0, traverser.x1).forEach(x -> {
-            traverser.access.setPosition(x, traverser.xIndex);
+            traverser.access.setPosition(x, 0);
             for (int y = 0; y <= traverser.ySize; y++) {
                 for (int z = 1; z < traverser.zSize; z++) {
                     final int voxelA = getAtLocation(traverser, x, y, z);
@@ -342,9 +330,9 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
     //region -- Helper methods --
     private static <B extends BooleanType<B>> int getAtLocation(final Traverser<B> traverser, final long x,
             final long y, final long z) {
-        traverser.access.setPosition(x, traverser.xIndex);
-        traverser.access.setPosition(y, traverser.yIndex);
-        traverser.access.setPosition(z, traverser.zIndex);
+        traverser.access.setPosition(x, 0);
+        traverser.access.setPosition(y, 1);
+        traverser.access.setPosition(z, 2);
         final double realDouble = traverser.access.get().getRealDouble();
 
         return (int) realDouble;
@@ -359,37 +347,19 @@ public class EulerCorrection<B extends BooleanType<B>> extends AbstractUnaryFunc
         public final long x1;
         public final long y1;
         public final long z1;
-        public final int xIndex;
-        public final int yIndex;
-        public final int zIndex;
         public final long xSize;
         public final long ySize;
         public final long zSize;
         public final RandomAccess<B> access;
 
-        public Traverser(ImgPlus<B> imgPlus) {
-            this(imgPlus, null);
-        }
-
-        public Traverser(ImgPlus<B> imgPlus, @Nullable List<Long> hyperPosition) {
-            final Optional<int[]> optional = AxisUtils.getXYZIndices(imgPlus);
-            final int[] indices = optional.get();
-
-            xIndex = indices[0];
-            yIndex = indices[1];
-            zIndex = indices[2];
-            xSize = imgPlus.dimension(xIndex);
-            ySize = imgPlus.dimension(yIndex);
-            zSize = imgPlus.dimension(zIndex);
+        public Traverser(RandomAccessibleInterval<B> interval) {
+            xSize = interval.dimension(0);
+            ySize = interval.dimension(1);
+            zSize = interval.dimension(2);
             x1 = xSize - 1;
             y1 = ySize - 1;
             z1 = zSize - 1;
-            access = Views.extendZero(imgPlus).randomAccess();
-
-            if (hyperPosition != null) {
-                final long[] position = hyperPosition.stream().mapToLong(Long::longValue).toArray();
-                access.setPosition(position);
-            }
+            access = Views.extendZero(interval).randomAccess();
         }
     }
 }

@@ -2,14 +2,13 @@ package org.bonej.ops.connectivity;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
-import net.imglib2.RandomAccess;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.view.IntervalView;
+import net.imglib2.view.Views;
+import org.bonej.ops.connectivity.EulerCorrection.Traverser;
 import org.bonej.testImages.Cuboid;
-import org.bonej.testImages.IJ1ImgPlus;
 import org.junit.AfterClass;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,12 +26,13 @@ public class EulerCorrectionTest {
         IMAGE_J.context().dispose();
     }
 
-    /** Regression test EulerCharacteristic with a solid cuboid that never touches the edges of the stack */
+    /** Regression test EulerCharacteristicFloating with a solid cuboid that never touches the edges of the stack */
     @Test
     public void testCompute1CuboidFreeFloat() throws Exception {
         final ImgPlus<BitType> cuboid =
                 (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, 10, 10, 10, 1, 1, 5);
-        final EulerCorrection.Traverser<BitType> traverser = new EulerCorrection.Traverser<>(cuboid);
+        final IntervalView<BitType> view = Views.permute(cuboid, 2, 3);
+        final Traverser<BitType> traverser = new Traverser<>(view);
 
         final int vertices = EulerCorrection.stackCorners(traverser);
         assertEquals("Number of stack vertices is incorrect", 0, vertices);
@@ -57,7 +57,7 @@ public class EulerCorrectionTest {
     }
 
     /**
-     * Regression test EulerCharacteristic with a solid cuboid that's the same size as the image,
+     * Regression test EulerCharacteristicFloating with a solid cuboid that's the same size as the image,
      * i.e. all faces touch the edges
      */
     @Test
@@ -67,7 +67,8 @@ public class EulerCorrectionTest {
         final int edgeSize = cubeSize - 2;
         final ImgPlus<BitType> cuboid =
                 (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, cubeSize, cubeSize, cubeSize, 1, 1, 0);
-        final EulerCorrection.Traverser<BitType> traverser = new EulerCorrection.Traverser<>(cuboid);
+        final IntervalView<BitType> view = Views.permute(cuboid, 2, 3);
+        final Traverser<BitType> traverser = new Traverser<>(view);
 
         final int vertices = EulerCorrection.stackCorners(traverser);
         assertEquals("Number of stack vertices is incorrect", 8, vertices);
@@ -93,37 +94,7 @@ public class EulerCorrectionTest {
         final long voxelEdgeFaceIntersections = EulerCorrection.voxelEdgeFaceIntersections(traverser);
         assertEquals("Number intersections is incorrect", 108, voxelEdgeFaceIntersections);
 
-        final Double result = (Double) IMAGE_J.op().run(EulerCorrection.class, cuboid);
+        final Double result = (Double) IMAGE_J.op().run(EulerCorrection.class, view);
         assertEquals("Euler contribution is incorrect", 1, result.intValue());
-    }
-
-    @Test
-    public void testHyperStack() throws Exception {
-        // Create a hyperstack with two channels and frames
-        final ImgPlus<BitType> imgPlus = IJ1ImgPlus.createIJ1ImgPlus(IMAGE_J.op(), "", 5, 5, 5, 2, 2);
-        final RandomAccess<BitType> access = imgPlus.randomAccess();
-        // Add a particle to the middle of a face in channel 1, frame 0
-        access.setPosition(new long[]{3, 3, 1, 0, 0});
-        access.get().setOne();
-        // Add a particle to the middle of a face in channel 0, frame 1
-        access.setPosition(new long[]{3, 3, 0, 0, 1});
-        access.get().setOne();
-
-
-        // Tests channel 0, frame 0
-        Double result = (Double) IMAGE_J.op().run(EulerCorrection.class, imgPlus, Arrays.asList(0L, 0L, 0L, 0L, 0L));
-        assertEquals("Euler correction is incorrect", 0.0, result, 1e-12);
-
-        // Tests channel 1, frame 0
-        result = (Double) IMAGE_J.op().run(EulerCorrection.class, imgPlus, Arrays.asList(0L, 0L, 1L, 0L, 0L));
-        assertEquals("Euler correction is incorrect", 0.5, result, 1e-12);
-
-        // Tests channel 0, frame 1
-        result = (Double) IMAGE_J.op().run(EulerCorrection.class, imgPlus, Arrays.asList(0L, 0L, 0L, 0L, 1L));
-        assertEquals("Euler correction is incorrect", 0.5, result, 1e-12);
-
-        // Tests channel 1, frame 1
-        result = (Double) IMAGE_J.op().run(EulerCorrection.class, imgPlus, Arrays.asList(0L, 0L, 1L, 0L, 1L));
-        assertEquals("Euler correction is incorrect", 0.0, result, 1e-12);
     }
 }

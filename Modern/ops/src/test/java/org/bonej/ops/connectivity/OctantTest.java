@@ -2,8 +2,6 @@ package org.bonej.ops.connectivity;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
-import net.imagej.axis.Axes;
-import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.ops.Ops;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
@@ -15,9 +13,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for the {@link Octant Octant} convenience class
@@ -41,12 +37,9 @@ public class OctantTest {
 
     @Test
     public void testIsNeighborhoodEmpty() throws Exception {
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final Img<BitType> img = imgCreator.compute1(new FinalDimensions(2, 2, 2));
-        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, zAxis);
-        Octant<BitType> octant = new Octant<>(imgPlus, null, 0, 1, 2);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img);
+        Octant<BitType> octant = new Octant<>(imgPlus);
 
         octant.setNeighborhood(1, 1, 1);
 
@@ -60,12 +53,9 @@ public class OctantTest {
 
     @Test
     public void testSetNeighborhood() throws Exception {
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final Img<BitType> img = imgCreator.compute1(new FinalDimensions(3, 3, 3));
-        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, zAxis);
-        Octant<BitType> octant = new Octant<>(imgPlus, null, 0, 1, 2);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img);
+        Octant<BitType> octant = new Octant<>(imgPlus);
         final Cursor<BitType> cursor = imgPlus.localizingCursor();
         final long[] location = new long[3];
 

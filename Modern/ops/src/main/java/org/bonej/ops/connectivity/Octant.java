@@ -1,11 +1,10 @@
 package org.bonej.ops.connectivity;
 
-import net.imagej.ImgPlus;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.view.Views;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 
 /**
@@ -16,33 +15,17 @@ import java.util.Arrays;
  */
 public class Octant<B extends BooleanType<B>> {
     private final boolean[] neighborhood = new boolean[8];
+    private final RandomAccess<B> access;
     private int foregroundNeighbors;
-    private RandomAccess<B> access;
-    private int xIndex;
-    private int yIndex;
-    private int zIndex;
 
     /**
      * Constructs a new 2x2x2 neighborhood
      *
-     * @param imgPlus       Image space where the neighborhood is located
-     * @param hyperPosition Position of the 3D space in the hyper stack, e.g. if you have x, y, channel, z,frame
-     *                      then hyperPosition = {0, 0, 1, 0, 1}
-     * @param xIndex        Index of the 1st spatial axis in the imgPlus
-     * @param yIndex        Index of the 2nd spatial axis in the imgPlus
-     * @param zIndex        Index of the 3rd spatial axis in the imgPlus
+     * @param interval       Image space where the neighborhood is located
      * @implNote Copies reference
      */
-    public Octant(final ImgPlus<B> imgPlus, @Nullable long[] hyperPosition, final int xIndex, final int yIndex,
-            final int zIndex) {
-        this.xIndex = xIndex;
-        this.yIndex = yIndex;
-        this.zIndex = zIndex;
-        access = Views.extendZero(imgPlus).randomAccess();
-
-        if (hyperPosition != null) {
-            access.setPosition(hyperPosition);
-        }
+    public Octant(final RandomAccessibleInterval<B> interval) {
+        access = Views.extendZero(interval).randomAccess();
     }
 
     /** Returns the number of foreground voxels in the neighborhood */
@@ -93,9 +76,9 @@ public class Octant<B extends BooleanType<B>> {
     }
 
     private boolean getAtLocation(final RandomAccess<B> access, final long x, final long y, final long z) {
-        access.setPosition(x, xIndex);
-        access.setPosition(y, yIndex);
-        access.setPosition(z, zIndex);
+        access.setPosition(x, 0);
+        access.setPosition(y, 1);
+        access.setPosition(z, 2);
         return access.get().get();
     }
 }
