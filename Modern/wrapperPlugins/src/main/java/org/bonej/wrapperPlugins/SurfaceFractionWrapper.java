@@ -4,6 +4,7 @@ import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import org.bonej.ops.thresholdFraction.SurfaceFraction;
 import org.bonej.ops.thresholdFraction.SurfaceFraction.Results;
@@ -31,9 +32,9 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fraction>Surface fraction", headless = true)
-public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
+public class SurfaceFractionWrapper extends ContextCommand {
     @Parameter(initializer = "initializeImage")
-    private ImgPlus<T> inputImage;
+    private ImgPlus<BitType> inputImage;
 
     @Parameter
     private OpService opService;
@@ -47,7 +48,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
     public void run() {
         final String name = inputImage.getName();
         final List<SpatialView> views = ViewUtils.createSpatialViews(inputImage);
-        final Thresholds thresholds = new Thresholds<>(inputImage, 127, 255);
+        final Thresholds thresholds = new Thresholds<>(inputImage, 1, 1);
 
         for (SpatialView view : views) {
             final String label = name + view.hyperPosition;
@@ -73,8 +74,8 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
         resultsInserter.setMeasurementInFirstFreeRow(label, "Bone volume "  + unitHeader, thresholdVolume);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Total volume  " + unitHeader, totalVolume);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Volume ratio ", results.ratio);
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Total volume " + unitHeader, totalVolume);
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Volume ratio", results.ratio);
         resultsInserter.updateResults();
     }
 

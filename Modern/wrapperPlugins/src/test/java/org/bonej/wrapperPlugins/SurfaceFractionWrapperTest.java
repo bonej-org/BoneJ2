@@ -1,10 +1,14 @@
 package org.bonej.wrapperPlugins;
 
+import ij.measure.ResultsTable;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imglib2.FinalDimensions;
+import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.utilities.ResultsInserter;
 import org.junit.After;
@@ -154,6 +158,67 @@ public class SurfaceFractionWrapperTest {
             // Warning should be shown only once
             verify(mockUI, after(100).times(1))
                     .dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Test that SurfaceFractionWrapper processes hyperstacks and presents results correctly */
+    @Test
+    public void testResults() {
+        // Marching cubes creates an octahedral surface out of a single voxel
+        final double expectedVolume = Math.sqrt(0.5) * Math.sqrt(0.5) * 0.5 / 3.0 * 2.0;
+        final String unit = "mm";
+        final double[][] expectedValues = {
+                {0.0, 0.0, expectedVolume, 0.0},
+                {0.0, expectedVolume, expectedVolume, 1.0},
+                {0.0, expectedVolume, expectedVolume, 1.0},
+                {0.0, 0.0, expectedVolume, 0.0}
+        };
+
+        /*
+         * Create a hyperstack with two channels and two frames.
+         * Two of the 3D subspaces are empty, and two of them contain a single voxel
+         */
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(1, 1, 1, 2, 2), new BitType());
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis, tAxis);
+        final RandomAccess<BitType> access = imgPlus.randomAccess();
+        // Add a voxel to Channel 1, Frame 0
+        access.setPosition(new long[]{0, 0, 0, 1, 0});
+        access.get().setOne();
+        // Add a voxel to Channel 0, Frame 1
+        access.setPosition(new long[]{0, 0, 0, 0, 1});
+        access.get().setOne();
+
+        final Future<CommandModule> future =
+                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus);
+
+        try {
+            future.get();
+            final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
+            final String[] headings = resultsTable.getHeadings();
+
+            // Assert table size
+            assertEquals("Wrong number of columns", 4, headings.length);
+            assertEquals("Wrong number of rows", expectedValues.length, resultsTable.size());
+
+            // Assert column headers
+            assertEquals("Column header is incorrect", "Bone volume (" + unit + "³)", headings[1]);
+            assertEquals("Column header is incorrect", "Total volume (" + unit + "³)", headings[2]);
+            assertEquals("Column header is incorrect", "Volume ratio", headings[3]);
+
+            // Assert results
+            for (int row = 0; row < expectedValues.length; row++) {
+                for (int column = 1; column < headings.length; column++) {
+                    final double value = resultsTable.getValue(headings[column], row);
+                    assertEquals("Incorrect result", expectedValues[row][column], value, 1e-12);
+                }
+            }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
