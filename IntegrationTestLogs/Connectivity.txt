@@ -15,29 +15,3 @@ Results match BoneJ1
 
 Completed July 08 2016 Richard Domander
 -----------------------------------------------------------------------
-
-
-Case 2
-=======================================================================
-Hyperstack is processed correctly
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Generate a hollow cuboid with 3 channels, 5 frames and 5 padding
-   (Plugins>Test Images>Hollow cuboid) 
-2. Run Connectivity (Plugins>BoneJ>Connectivity)
-3. Verify that results table has 15 results (5 * 3)
-4. Verify that each row has an unique identifier 
-   (F1_C1, F1_C2, F1_C3, F2_C1...)
-5. Repeat 1-4 for an image with 3 channels, 1 frame 
-   (rows should only have _C*)
-6. Repeat 1-4 for an image with 1 channel, 5 frames 
-   (rows should only have _F*)
-
-
-Expected result
------------------------------------------------------------------------
-Results table har correct labels and correct number of results
-
-Completed July 8 2016 Richard Domander
------------------------------------------------------------------------

@@ -255,34 +255,6 @@ public class ConnectivityWrapperTest {
         }
     }
 
-    @Test
-    public void testResultsTableHasNoUnitsWhenImageUncalibrated() {
-        // Mock UI
-        final UserInterface mockUI = mock(UserInterface.class);
-        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-        when(mockUI.dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-        when(mockPrompt.prompt()).thenReturn(DialogPrompt.Result.YES_OPTION);
-        IMAGE_J.ui().setDefaultUI(mockUI);
-
-        // Create an uncalibrated test image
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
-
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
-
-        try {
-            future.get();
-            final String[] headings = ResultsInserter.getInstance().getResultsTable().getHeadings();
-            assertEquals("Results table has incorrect heading", "Conn. density ", headings[4]);
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-    }
-
     private boolean hasEmptyCells(final ResultsTable resultsTable) {
         final int columns = resultsTable.getLastColumn();
         final int rows = resultsTable.size();
