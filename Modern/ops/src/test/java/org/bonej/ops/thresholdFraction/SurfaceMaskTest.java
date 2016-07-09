@@ -30,18 +30,6 @@ public class SurfaceMaskTest {
         IMAGE_J.context().dispose();
     }
 
-    /** Test that conforms fails when there aren't 3 spatial dimensions in the image */
-    @Test(expected = IllegalArgumentException.class)
-    public void testConforms() throws Exception {
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(10, 10, 3), new BitType());
-        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis, cAxis);
-
-        IMAGE_J.op().op(SurfaceMask.class, imgPlus);
-    }
-
     @Test
     public void testCompute2() throws Exception {
         // Create a 2x2x2 (x, y, z) ImgPlus with values from 0 to 7

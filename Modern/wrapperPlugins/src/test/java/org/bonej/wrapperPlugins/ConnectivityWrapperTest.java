@@ -152,6 +152,7 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
         final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(5, 5, 5, 2), new BitType());
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis);
         final RandomAccess<BitType> access = imgPlus.randomAccess();

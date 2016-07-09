@@ -1,14 +1,19 @@
 package org.bonej.ops.thresholdFraction;
 
-import net.imagej.ImgPlus;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
+import net.imagej.ops.Ops;
+import net.imagej.ops.geom.geom3d.mesh.DefaultMesh;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
+import net.imagej.ops.special.function.BinaryFunctionOp;
+import net.imagej.ops.special.function.Functions;
+import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import org.bonej.utilities.AxisUtils;
+import net.imglib2.type.numeric.real.DoubleType;
 import org.scijava.plugin.Plugin;
 
 /**
@@ -16,29 +21,38 @@ import org.scijava.plugin.Plugin;
  * It calculates the volumes by creating surfaces from the elements with a marching cubes Op.
  *
  * @author Richard Domander
+ * TODO: Add surface smoothing / resampling in marching cubes when it becomes available
  */
-@Plugin(type = Op.class, name = "thresholdSurfaceFraction")
+@Plugin(type = Op.class, name = "surfaceFraction")
 public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
-        AbstractBinaryFunctionOp<ImgPlus<T>, Thresholds<T>, SurfaceFraction.Results> implements Contingent {
+        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, SurfaceFraction.Results> implements Contingent {
+    private BinaryFunctionOp<RandomAccessibleInterval, Thresholds, Img> maskOp;
+    private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
+    private UnaryFunctionOp<Mesh, DoubleType> volumeOp;
 
-    /** 3D surfaces are only defined for images with three spatial dimensions  */
+    /** Match the ops that this op uses */
     @Override
-    public boolean conforms() {
-        return AxisUtils.countSpatialDimensions(in1()) == 3;
+    public void initialize() {
+        maskOp = Functions.binary(ops(), SurfaceMask.class, Img.class, RandomAccessibleInterval.class, Thresholds.class);
+        marchingCubesOp = Functions.unary(ops(), Ops.Geometric.MarchingCubes.class, Mesh.class, in1());
+        volumeOp = Functions.unary(ops(), Ops.Geometric.Size.class, DoubleType.class, new DefaultMesh());
     }
 
-    /** TODO Channel & time dimensions */
+    /** (Default) marching cubes only supports RAIs with three dimensions  */
     @Override
-    public Results compute2(final ImgPlus<T> imgPlus, final Thresholds<T> thresholds) {
-        final Img thresholdMask = (Img) ops().run(SurfaceMask.class, imgPlus, thresholds);
-        final Mesh thresholdSurface = ops().geom().marchingCubes(thresholdMask);
-        final double thresholdSurfaceVolume = ops().geom().size(thresholdSurface).get();
+    public boolean conforms() { return in1().numDimensions() == 3; }
+
+    @Override
+    public Results compute2(final RandomAccessibleInterval<T> interval, final Thresholds<T> thresholds) {
+        final Img thresholdMask = maskOp.compute2(interval, thresholds);
+        final Mesh thresholdSurface = marchingCubesOp.compute1(thresholdMask);
+        final double thresholdSurfaceVolume = volumeOp.compute1(thresholdSurface).get();
 
         final Thresholds<T> totalThresholds =
-                new Thresholds<>(imgPlus, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-        final Img totalMask = (Img) ops().run(SurfaceMask.class, imgPlus, totalThresholds);
-        final Mesh totalSurface = ops().geom().marchingCubes(totalMask);
-        final double totalSurfaceVolume = ops().geom().size(totalSurface).get();
+                new Thresholds<>(interval, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+        final Img totalMask =  maskOp.compute2(interval, totalThresholds);
+        final Mesh totalSurface = marchingCubesOp.compute1(totalMask);
+        final double totalSurfaceVolume = volumeOp.compute1(totalSurface).get();
 
         return new Results(thresholdSurface, totalSurface, thresholdSurfaceVolume, totalSurfaceVolume);
     }
