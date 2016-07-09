@@ -1,5 +1,6 @@
 package org.bonej.ops.thresholdFraction;
 
+import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.*;
@@ -17,7 +18,11 @@ import org.scijava.plugin.Plugin;
  */
 @Plugin(type = Op.class, name = "surfaceMask")
 public class SurfaceMask<T extends NativeType<T> & RealType<T>> extends
-        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, Img<BitType>> {
+        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, Img<BitType>> implements Contingent {
+    @Override
+    public boolean conforms() {
+        return in1().numDimensions() >= 3;
+    }
 
     /**
      * Creates a surface mask

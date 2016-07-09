@@ -33,7 +33,7 @@ public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
     /** Match the ops that this op uses */
     @Override
     public void initialize() {
-        maskOp = Functions.binary(ops(), SurfaceMask.class, Img.class, RandomAccessibleInterval.class, Thresholds.class);
+        maskOp = Functions.binary(ops(), SurfaceMask.class, Img.class, in1(), in2());
         marchingCubesOp = Functions.unary(ops(), Ops.Geometric.MarchingCubes.class, Mesh.class, in1());
         volumeOp = Functions.unary(ops(), Ops.Geometric.Size.class, DoubleType.class, new DefaultMesh());
     }

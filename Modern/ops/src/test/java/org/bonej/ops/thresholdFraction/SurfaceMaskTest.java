@@ -30,6 +30,15 @@ public class SurfaceMaskTest {
         IMAGE_J.context().dispose();
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testConforms() throws Exception {
+        final Img<LongType> img = IMAGE_J.op().create().img(new FinalDimensions(2, 2), new LongType());
+        final ImgPlus<LongType> imgPlus = new ImgPlus<>(img);
+        final Thresholds<LongType> thresholds = new Thresholds<>(imgPlus, 0.0, 1.0);
+
+        IMAGE_J.op().run(SurfaceMask.class, imgPlus, thresholds);
+    }
+
     @Test
     public void testCompute2() throws Exception {
         // Create a 2x2x2 (x, y, z) ImgPlus with values from 0 to 7
