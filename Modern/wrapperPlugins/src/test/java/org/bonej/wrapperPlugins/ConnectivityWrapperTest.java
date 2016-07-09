@@ -10,14 +10,12 @@ import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
-import org.bonej.testImages.Cuboid;
 import org.bonej.utilities.ResultsInserter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
@@ -28,7 +26,8 @@ import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.ConnectivityWrapper.NEGATIVE_CONNECTIVITY;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -152,7 +151,6 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
         final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(5, 5, 5, 2), new BitType());
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis);
         final RandomAccess<BitType> access = imgPlus.randomAccess();
@@ -212,13 +210,36 @@ public class ConnectivityWrapperTest {
     public void testResults() {
         // Create an test image of a cuboid
         final String unit = "mm";
+        final long size = 3;
         final double scale = 0.9;
-        final int elements = 5;
-        final int spaceSize = elements * elements * elements;
+        final long spaceSize = size * size * size;
         final double elementSize = scale * scale * scale;
-        final ImgPlus<BitType> imgPlus =
-                (ImgPlus<BitType>) IMAGE_J.op()
-                        .run(Cuboid.class, null, elements, elements, elements, 1, 1, 0, scale, unit);
+        final double expectedDensity = 1.0 / (spaceSize * elementSize);
+        final double[][] expectedValues = {
+                {0.0, 0.0, 1.0, expectedDensity},
+                {1.0, 1.0, 0.0, 0.0},
+                {1.0, 1.0, 0.0, 0.0},
+                {0.0, 0.0, 1.0, expectedDensity}
+        };
+
+        /*
+         * Create a hyperstack with two channels and two frames.
+         * Two of the 3D subspaces are empty, and two of them contain a single voxel
+         */
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit, scale);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(size, size, size, 2, 2), new BitType());
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis, tAxis);
+        final RandomAccess<BitType> access = imgPlus.randomAccess();
+        // Add a voxel to Channel 1, Frame 0
+        access.setPosition(new long[]{1, 1, 1, 1, 0});
+        access.get().setOne();
+        // Add a voxel to Channel 0, Frame 1
+        access.setPosition(new long[]{1, 1, 1, 0, 1});
+        access.get().setOne();
 
         final Future<CommandModule> future =
                 IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
@@ -227,48 +248,30 @@ public class ConnectivityWrapperTest {
             future.get();
             final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
             final String[] headings = resultsTable.getHeadings();
-            assertEquals("Results table has wrong number of rows", 1, resultsTable.size());
-
-            final double eulerCharacteristic = resultsTable.getValue(headings[1], 0);
-            assertEquals("Results table has incorrect heading", "Euler char. (χ)", headings[1]);
-            assertEquals("The reported χ is incorrect", 1.0, eulerCharacteristic, 1e-12);
-
-            final double correctedEuler = resultsTable.getValue(headings[2], 0);
-            assertEquals("Results table has incorrect heading", "Corrected Euler (Δχ)", headings[2]);
-            assertEquals("The reported Δχ is incorrect", 0.0, correctedEuler, 1e-12);
-
-            final double connectivity = resultsTable.getValue(headings[3], 0);
-            assertEquals("Results table has incorrect heading", "Connectivity", headings[3]);
-            assertEquals("The reported connectivity is incorrect", 1.0, connectivity, 1e-12);
-
-            final double expectedConnDensity = connectivity / (spaceSize * elementSize);
-            final double connDensity = resultsTable.getValue(headings[4], 0);
-            assertEquals(
-                    "Results table has incorrect heading",
-                    String.format("Conn. density (%s³)", unit),
-                    headings[4]);
-            assertEquals("The reported connectivity density is incorrect", expectedConnDensity, connDensity, 1e-12);
-
-            assertFalse("Results table should not have empty cells", hasEmptyCells(resultsTable));
+            
+            // Assert results table size
+            assertEquals("Results table has wrong number of rows", expectedValues.length, resultsTable.size());
+            assertEquals("Results table has wrong number of headings", 5, headings.length);
+            
+            // Assert column headings
+            assertEquals("Incorrect heading in results table", "Euler char. (χ)", headings[1]);
+            assertEquals("Incorrect heading in results table", "Corrected Euler (Δχ)", headings[2]);
+            assertEquals("Incorrect heading in results table", "Connectivity", headings[3]);
+            assertEquals("Incorrect heading in results table", String.format("Conn. density (%s³)", unit), headings[4]);
+            
+            // Assert values
+            for (int row = 0; row < resultsTable.size(); row++) {
+                final double eulerCharacteristic = resultsTable.getValue(headings[1], row);
+                assertEquals("χ is incorrect", expectedValues[row][0], eulerCharacteristic, 1e-12);
+                final double correctedEuler = resultsTable.getValue(headings[2], row);
+                assertEquals("Corrected χ is incorrect", expectedValues[row][1], correctedEuler, 1e-12);
+                final double connectivity = resultsTable.getValue(headings[3], row);
+                assertEquals("Connectivity is incorrect", expectedValues[row][2], connectivity, 1e-12);
+                final double connDensity = resultsTable.getValue(headings[4], row);
+                assertEquals("Connectivity density is incorrect", expectedValues[row][3], connDensity, 1e-12);
+            }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
-    }
-
-    private boolean hasEmptyCells(final ResultsTable resultsTable) {
-        final int columns = resultsTable.getLastColumn();
-        final int rows = resultsTable.size();
-
-        for (int row = 0; row < rows; row++) {
-            for (int column = 0; column < columns; column++) {
-                final double valueAsDouble = resultsTable.getValueAsDouble(column, row);
-                final String stringValue = resultsTable.getStringValue(column, row);
-                if (Double.isNaN(valueAsDouble) && !ResultsInserter.NAN_VALUE.equals(stringValue)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 }
