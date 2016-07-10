@@ -2,8 +2,8 @@ package org.bonej.ops.thresholdFraction;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
-import net.imglib2.FinalDimensions;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.integer.LongType;
 import org.bonej.ops.thresholdFraction.ElementFraction.Results;
 import org.bonej.ops.thresholdFraction.ElementFraction.Settings;
@@ -31,7 +31,7 @@ public class ElementFractionTest {
     @Test
     public void testCompute2() {
         // Create a 2x2x2x2x2 test image with values from 0 to 7
-        final Img<LongType> img = IMAGE_J.op().create().img(new FinalDimensions(2, 2, 2, 2, 2), new LongType());
+        final Img<LongType> img = ArrayImgs.longs(2, 2, 2, 2, 2);
         final ImgPlus<LongType> imgPlus = new ImgPlus<>(img);
         final Settings<LongType> settings = new Settings<>(new LongType(2L), new LongType(5L));
         final Iterator<Long> longIterator = LongStream.iterate(0, i -> (i + 1) % 8).iterator();

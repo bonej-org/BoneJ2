@@ -1,14 +1,13 @@
 package org.bonej.utilities;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
-import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -17,20 +16,14 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
+ * Unit tests for {@link Streamers}
+ *
  * @author Richard Domander 
  */
 public class StreamersTest {
-    private static final ImageJ IMAGE_J = new ImageJ();
-
-    @AfterClass
-    public static void oneTimeTearDown() {
-        IMAGE_J.context().dispose();
-    }
 
     @Test
     public void testRealDoubleStreamReturnsEmptyIfSpaceNull() throws Exception {
@@ -66,8 +59,8 @@ public class StreamersTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final int[] dimensions = {10, 3, 10};
-        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final long[] dimensions = {10, 3, 10};
+        final Img<DoubleType> img =  ArrayImgs.doubles(dimensions);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, tAxis, yAxis);
 
         final List<AxisType> result =

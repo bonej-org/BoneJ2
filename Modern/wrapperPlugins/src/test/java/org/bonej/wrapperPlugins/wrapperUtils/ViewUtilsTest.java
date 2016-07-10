@@ -1,11 +1,10 @@
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.Img;
-import org.junit.AfterClass;
+import net.imglib2.img.array.ArrayImgs;
 import org.junit.Test;
 
 import java.util.List;
@@ -19,13 +18,6 @@ import static org.junit.Assert.assertTrue;
  * @author Richard Domander
  */
 public class ViewUtilsTest {
-    private static final ImageJ IMAGE_J = new ImageJ();
-
-    @AfterClass
-    public static void oneTimeTearDown() {
-        IMAGE_J.context().dispose();
-    }
-
     /** Test createSpatialViews with a 3D image (no extra dimensions) */
     @Test
     public void testCreateSpatialViews3D() throws Exception {
@@ -34,7 +26,7 @@ public class ViewUtilsTest {
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<?> img = IMAGE_J.op().create().img(new int[]{3, 3, 3, 1, 1});
+        final Img<?> img = ArrayImgs.bytes(3, 3, 3, 1, 1);
         final ImgPlus<?> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis, tAxis);
 
         final List<ViewUtils.SpatialView> views = ViewUtils.createSpatialViews(imgPlus);
@@ -51,7 +43,7 @@ public class ViewUtilsTest {
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
         final int channels = 3;
-        final Img<?> img = IMAGE_J.op().create().img(new int[]{3, 3, 3, channels});
+        final Img<?> img = ArrayImgs.bytes(3, 3, 3, channels);
         final ImgPlus<?> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis);
 
         final List<ViewUtils.SpatialView> views = ViewUtils.createSpatialViews(imgPlus);
@@ -74,7 +66,7 @@ public class ViewUtilsTest {
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
         final int frames = 5;
-        final Img<?> img = IMAGE_J.op().create().img(new int[]{3, 3, 3, frames});
+        final Img<?> img = ArrayImgs.bytes(3, 3, 3, frames);
         final ImgPlus<?> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
 
         final List<ViewUtils.SpatialView> views = ViewUtils.createSpatialViews(imgPlus);
@@ -100,7 +92,7 @@ public class ViewUtilsTest {
         final int channels = 3;
         final int frames = 5;
         // Note the inverted order of time & channel dimensions from the usual
-        final Img<?> img = IMAGE_J.op().create().img(new int[]{3, 3, 3, frames, channels});
+        final Img<?> img = ArrayImgs.bytes(3, 3, 3, frames, channels);
         final ImgPlus<?> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis, cAxis);
 
         final List<ViewUtils.SpatialView> views = ViewUtils.createSpatialViews(imgPlus);

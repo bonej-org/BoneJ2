@@ -1,12 +1,11 @@
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
-import org.junit.AfterClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -17,20 +16,13 @@ import static org.junit.Assert.assertEquals;
  * @author Richard Domander
  */
 public class CommonTest {
-    private static final ImageJ IMAGE_J = new ImageJ();
-
-    @AfterClass
-    public static void oneTimeTearDown() {
-        IMAGE_J.context().dispose();
-    }
-
     @Test
     public void testCopyMetadata() throws AssertionError {
         final String unit = "mm";
         final String name = "Test image";
         final double scale = 0.5;
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{3});
+        final Img<DoubleType> img = ArrayImgs.doubles(3);
         final ImgPlus<DoubleType> source = new ImgPlus<>(img, name, xAxis);
         final ImgPlus<DoubleType> target = new ImgPlus<>(img);
 

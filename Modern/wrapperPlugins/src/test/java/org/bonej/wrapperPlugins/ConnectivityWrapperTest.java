@@ -5,9 +5,9 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
-import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.utilities.ResultsInserter;
@@ -91,7 +91,7 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10, 3});
+        final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 3);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis);
 
         final Future<CommandModule> future =
@@ -119,7 +119,7 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
+        final Img<DoubleType> img = ArrayImgs.doubles(5, 5, 5);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
         final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1).iterator();
         imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
@@ -151,7 +151,7 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(5, 5, 5, 2), new BitType());
+        final Img<BitType> img =  ArrayImgs.bits(5, 5, 5, 2);
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis);
         final RandomAccess<BitType> access = imgPlus.randomAccess();
         // Channel 0
@@ -190,7 +190,7 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "µm");
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5, 2});
+        final Img<DoubleType> img =  ArrayImgs.doubles(5, 5, 5, 2);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
 
         final Future<CommandModule> future =
@@ -231,7 +231,7 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit, scale);
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<BitType> img = IMAGE_J.op().create().img(new FinalDimensions(size, size, size, 2, 2), new BitType());
+        final Img<BitType> img = ArrayImgs.bits(size, size, size, 2, 2);
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis, tAxis);
         final RandomAccess<BitType> access = imgPlus.randomAccess();
         // Add a voxel to Channel 1, Frame 0

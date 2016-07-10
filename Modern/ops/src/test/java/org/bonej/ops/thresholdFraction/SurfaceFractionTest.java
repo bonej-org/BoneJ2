@@ -3,6 +3,7 @@ package org.bonej.ops.thresholdFraction;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
@@ -25,7 +26,7 @@ public class SurfaceFractionTest {
     /** Test that conforms fails when there aren't 3 dimensions in the image */
     @Test(expected = IllegalArgumentException.class)
     public void testConforms() throws Exception {
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new long[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img);
 
         IMAGE_J.op().op(SurfaceFraction.class, imgPlus);
