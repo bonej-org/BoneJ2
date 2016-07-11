@@ -1,13 +1,12 @@
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
-import org.junit.AfterClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -22,13 +21,6 @@ import static org.mockito.Mockito.when;
  * @author Richard Domander 
  */
 public class ResultUtilsTest {
-    private static final ImageJ IMAGE_J = new ImageJ();
-
-    @AfterClass
-    public static void oneTimeTearDown() {
-        IMAGE_J.context().dispose();
-    }
-
     @Test
     public void testGetSizeDescription() throws Exception {
         final String[] expected = {"Size", "Area", "Volume", "Size"};
@@ -76,7 +68,7 @@ public class ResultUtilsTest {
     @Test
     public void testGetUnitHeaderEmptyIfNoUnit() throws Exception {
         final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
         final String result = ResultUtils.getUnitHeader(imgPlus);
@@ -87,7 +79,7 @@ public class ResultUtilsTest {
     @Test
     public void testGetUnitHeaderReturnEmptyIfDefaultUnitPixel() throws Exception {
         final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "pixel");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
         final String result = ResultUtils.getUnitHeader(imgPlus);
@@ -98,7 +90,7 @@ public class ResultUtilsTest {
     @Test
     public void testGetUnitHeaderReturnEmptyIfDefaultUnitUnit() throws Exception {
         final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "unit");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
         final String result = ResultUtils.getUnitHeader(imgPlus);
@@ -111,7 +103,7 @@ public class ResultUtilsTest {
         final String unit = "mm";
         final char exponent = '³';
         final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, unit);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
         final String result = ResultUtils.getUnitHeader(imgPlus, exponent);

@@ -6,6 +6,7 @@ import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.FinalDimensions;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.LongType;
 import org.junit.AfterClass;
@@ -32,11 +33,10 @@ public class SurfaceMaskTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConforms() throws Exception {
-        final Img<LongType> img = IMAGE_J.op().create().img(new FinalDimensions(2, 2), new LongType());
-        final ImgPlus<LongType> imgPlus = new ImgPlus<>(img);
-        final Thresholds<LongType> thresholds = new Thresholds<>(imgPlus, 0.0, 1.0);
+        final Img<LongType> img = ArrayImgs.longs(1, 1);
+        final Thresholds<LongType> thresholds = new Thresholds<>(img, 0.0, 1.0);
 
-        IMAGE_J.op().run(SurfaceMask.class, imgPlus, thresholds);
+        IMAGE_J.op().run(SurfaceMask.class, img, thresholds);
     }
 
     @Test

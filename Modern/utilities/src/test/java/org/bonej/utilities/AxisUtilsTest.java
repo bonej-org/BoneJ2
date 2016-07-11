@@ -1,22 +1,18 @@
 package org.bonej.utilities;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.axis.PowerAxis;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
-import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for the AxisUtil class
@@ -24,13 +20,6 @@ import static org.junit.Assert.assertTrue;
  * @author Richard Domander 
  */
 public class AxisUtilsTest {
-    private static final ImageJ IMAGE_J = new ImageJ();
-
-    @AfterClass
-    public static void oneTimeTearDown() {
-        IMAGE_J.context().dispose();
-    }
-
     @Test
     public void testGetXYZIndicesEmptyIfSpaceNull() throws Exception {
         final Optional<int[]> result = AxisUtils.getXYZIndices(null);
@@ -42,7 +31,7 @@ public class AxisUtilsTest {
     public void testGetXYZIndicesEmptyIfSpaceNot3D() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final Optional<int[]> result = AxisUtils.getXYZIndices(imgPlus);
@@ -57,7 +46,7 @@ public class AxisUtilsTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10, 3, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1, 1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis, zAxis);
 
         final Optional<int[]> result = AxisUtils.getXYZIndices(imgPlus);
@@ -76,7 +65,7 @@ public class AxisUtilsTest {
     @Test
     public void testSpatialSpaceSizeWhenNoSpatialAxes() throws Exception {
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{3});
+        final Img<DoubleType> img = ArrayImgs.doubles(1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
 
         final double size = AxisUtils.spatialSpaceSize(imgPlus);
@@ -88,9 +77,9 @@ public class AxisUtilsTest {
     public void testSpatialSpaceSize() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final int[] dimSizes = {123, 12};
-        final int expectedSize = Arrays.stream(dimSizes).reduce((i, j) -> i * j).orElse(0);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(dimSizes);
+        final long[] dimSizes = {123, 12};
+        final long expectedSize = Arrays.stream(dimSizes).reduce((i, j) -> i * j).orElse(0);
+        final Img<DoubleType> img = ArrayImgs.doubles(dimSizes);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final double result = AxisUtils.spatialSpaceSize(imgPlus);
@@ -109,7 +98,7 @@ public class AxisUtilsTest {
     public void testCalibratedSpatialElementSizeNaNIfNonLinear() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
@@ -121,7 +110,7 @@ public class AxisUtilsTest {
     public void testCalibratedSpatialElementSizeNaNIfUnitsMismatch() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm");
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
@@ -132,7 +121,7 @@ public class AxisUtilsTest {
     @Test
     public void testCalibratedSpatialElementSizeWhenNoSpatialAxes() throws Exception {
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{3});
+        final Img<DoubleType> img = ArrayImgs.doubles(1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
 
         final double elementSize = AxisUtils.calibratedSpatialElementSize(imgPlus);
@@ -146,7 +135,7 @@ public class AxisUtilsTest {
         final double yScale = 2.25;
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, xScale);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, yScale);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
@@ -165,7 +154,7 @@ public class AxisUtilsTest {
     public void testHasSpatialDimensions() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, tAxis);
 
         final boolean result = AxisUtils.hasTimeDimensions(imgPlus);
@@ -185,7 +174,7 @@ public class AxisUtilsTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, tAxis);
 
         final boolean result = AxisUtils.hasTimeDimensions(imgPlus);
@@ -205,7 +194,7 @@ public class AxisUtilsTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5, 5});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis);
 
         final boolean result = AxisUtils.hasChannelDimensions(imgPlus);
@@ -217,7 +206,7 @@ public class AxisUtilsTest {
     public void testGetSpatialCalibrationAnisotropy() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 2);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final double result = AxisUtils.getSpatialCalibrationAnisotropy(imgPlus);
@@ -235,7 +224,7 @@ public class AxisUtilsTest {
     @Test
     public void testGetSpatialCalibrationAnisotropyReturnNaNWhenNoSpatialAxes() throws Exception {
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", tAxis);
 
         final double result = AxisUtils.getSpatialCalibrationAnisotropy(imgPlus);
@@ -247,7 +236,7 @@ public class AxisUtilsTest {
     public void testGetSpatialCalibrationAnisotropyReturnNaNWhenUnitsMismatch() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "cm");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final double result = AxisUtils.getSpatialCalibrationAnisotropy(imgPlus);
@@ -259,7 +248,7 @@ public class AxisUtilsTest {
     public void testGetSpatialCalibrationAnisotropyReturnNaNWithNonlinearAxes() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final double result = AxisUtils.getSpatialCalibrationAnisotropy(imgPlus);
@@ -272,7 +261,7 @@ public class AxisUtilsTest {
         final String unit = "mm";
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit);
         final PowerAxis yAxis = new PowerAxis(Axes.Y, unit, 0, 1, 2);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final Optional<String> result = AxisUtils.getSpatialUnit(imgPlus);
@@ -285,7 +274,7 @@ public class AxisUtilsTest {
     public void testGetSpatialUnitReturnEmptyIfAxesHaveDifferentUnits() throws Exception {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "cm");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final Optional<String> result = AxisUtils.getSpatialUnit(imgPlus);
@@ -298,7 +287,7 @@ public class AxisUtilsTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null);
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis);
 
         final Optional<String> result = AxisUtils.getSpatialUnit(imgPlus);
@@ -317,7 +306,7 @@ public class AxisUtilsTest {
     public void testGetSpatialUnitReturnEmptyStringIfAllAxesUncalibrated() {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, null);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final Optional<String> result = AxisUtils.getSpatialUnit(imgPlus);
@@ -329,7 +318,7 @@ public class AxisUtilsTest {
     @Test
     public void testGetSpatialUnitReturnEmptyIfNoSpatialAxes() throws Exception {
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", tAxis);
 
         final Optional<String> result = AxisUtils.getSpatialUnit(imgPlus);
@@ -350,8 +339,8 @@ public class AxisUtilsTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
         final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final int[] dimensions = {10, 10, 3};
-        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final long[] dimensions = {10, 10, 3};
+        final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, channelAxis);
 
         final long result = AxisUtils.countSpatialDimensions(imgPlus);
@@ -371,7 +360,7 @@ public class AxisUtilsTest {
         // Create a test image with a nonlinear spatial axis
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final boolean result = AxisUtils.isSpatialCalibrationIsotropic(imgPlus);
@@ -384,7 +373,7 @@ public class AxisUtilsTest {
         // Create a test image with no spatial axes
         final DefaultLinearAxis timeAxis = new DefaultLinearAxis(Axes.TIME);
         final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 3});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", timeAxis, channelAxis);
 
         final boolean result = AxisUtils.isSpatialCalibrationIsotropic(imgPlus);
@@ -397,7 +386,7 @@ public class AxisUtilsTest {
         // Create a test image with no spatial axes
         final DefaultLinearAxis timeAxis = new DefaultLinearAxis(Axes.X, "cm");
         final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.Y, "mm");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 3});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", timeAxis, channelAxis);
 
         final boolean result = AxisUtils.isSpatialCalibrationIsotropic(imgPlus);
@@ -410,7 +399,7 @@ public class AxisUtilsTest {
         // Create a test image with anisotropic calibration
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1000.0);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final boolean result = AxisUtils.isSpatialCalibrationIsotropic(imgPlus, 1.0);
@@ -423,7 +412,7 @@ public class AxisUtilsTest {
         // Create a test image with anisotropic calibration (within tolerance)
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 1.1);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{10, 10});
+        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final boolean result = AxisUtils.isSpatialCalibrationIsotropic(imgPlus, 0.1);
@@ -444,8 +433,8 @@ public class AxisUtilsTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.TIME);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final int[] dimensions = {10, 3, 10};
-        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final long[] dimensions = {10, 3, 10};
+        final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, channelAxis, yAxis);
 
         final int timeIndex = AxisUtils.getTimeIndex(imgPlus);
@@ -466,8 +455,8 @@ public class AxisUtilsTest {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final int[] dimensions = {10, 3, 10};
-        final Img<DoubleType> img = IMAGE_J.op().create().img(dimensions);
+        final long[] dimensions = {10, 3, 10};
+        final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, channelAxis, yAxis);
 
         final int channelIndex = AxisUtils.getChannelIndex(imgPlus);

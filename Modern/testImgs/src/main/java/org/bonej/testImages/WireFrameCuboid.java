@@ -46,17 +46,7 @@ public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
 
     @Override
     public ImgPlus<BitType> createOutput() {
-        return createIJ1ImgPlus(
-                ops(),
-                "Wire-frame cuboid",
-                xSize,
-                ySize,
-                zSize,
-                channels,
-                frames,
-                padding,
-                scale,
-                unit);
+        return createIJ1ImgPlus("Wire-frame cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
     }
 
     @Override

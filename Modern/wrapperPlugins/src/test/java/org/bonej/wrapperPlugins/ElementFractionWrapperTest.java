@@ -6,6 +6,7 @@ import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.testImages.Cuboid;
@@ -23,16 +24,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
@@ -90,7 +88,7 @@ public class ElementFractionWrapperTest {
         // Create a test image with more than two colors
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{3, 3});
+        final Img<DoubleType> img = ArrayImgs.doubles(3, 3);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
         final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1).iterator();
         imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
@@ -119,7 +117,7 @@ public class ElementFractionWrapperTest {
         // Create an image with bad calibration (units don't match)
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "µm");
-        final Img<DoubleType> img = IMAGE_J.op().create().img(new int[]{5, 5});
+        final Img<DoubleType> img = ArrayImgs.doubles(5, 5);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         final Future<CommandModule> future =
