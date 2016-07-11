@@ -4,8 +4,8 @@ import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.ops.OpEnvironment;
-import net.imglib2.FinalDimensions;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
 /**
@@ -36,32 +36,32 @@ public class IJ1ImgPlus {
 
     /**
      * Creates a 5-dimensional ImgPlus with no calibration or padding
-     * @see IJ1ImgPlus#createIJ1ImgPlus(OpEnvironment, String, long, long, long, long, long, long, double, String) createIJ1ImgPlus
+     *
+     * @see IJ1ImgPlus#createIJ1ImgPlus(String, long, long, long, long, long, long, double, String) createIJ1ImgPlus
      */
-    public static ImgPlus<BitType> createIJ1ImgPlus(final OpEnvironment ops, String title, final long width,
+    public static ImgPlus<BitType> createIJ1ImgPlus(String title, final long width,
             final long height, final long depth, final long channels,
             final long frames) {
-        return createIJ1ImgPlus(ops, title, width, height, depth, channels, frames, 0, 1.0, "");
+        return createIJ1ImgPlus(title, width, height, depth, channels, frames, 0, 1.0, "");
     }
 
     /**
      * Creates a 5-dimensional ImgPlus
      *
-     * @param title     Name of the image
-     * @param channels  Number of colour channels
-     * @param frames    Number of frames
-     * @param padding   Padding added to width, height & depth (final width = width + 2 * padding)
-     * @param scale     Scale of calibration in x, y & z
-     * @param unit      Unit of calibration in x, y & z
+     * @param title    Name of the image
+     * @param channels Number of colour channels
+     * @param frames   Number of frames
+     * @param padding  Padding added to width, height & depth (final width = width + 2 * padding)
+     * @param scale    Scale of calibration in x, y & z
+     * @param unit     Unit of calibration in x, y & z
      * @return An empty ImgPlus
      */
-    public static ImgPlus<BitType> createIJ1ImgPlus(final OpEnvironment ops, String title, final long width,
+    public static ImgPlus<BitType> createIJ1ImgPlus(String title, final long width,
             final long height, final long depth, final long channels, final long frames, final long padding,
             final double scale, final String unit) {
         final long totalPadding = 2 * padding;
-        final Img<BitType> img = ops.create().img(
-                new FinalDimensions(width + totalPadding, height + totalPadding,
-                                    channels, depth + totalPadding, frames), new BitType());
+        final Img<BitType> img =
+                ArrayImgs.bits(width + totalPadding, height + totalPadding, channels, depth + totalPadding, frames);
         double[] calibration = new double[]{scale, scale, 1.0, scale, 1.0};
         String[] units = new String[]{unit, unit, "", unit, ""};
         return new ImgPlus<>(img, title, IJ1_AXES, calibration, units);
