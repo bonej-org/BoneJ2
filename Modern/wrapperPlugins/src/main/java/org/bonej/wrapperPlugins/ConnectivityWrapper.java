@@ -1,7 +1,10 @@
 package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
+import net.imagej.space.AnnotatedSpace;
+import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
@@ -22,6 +25,7 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
@@ -72,7 +76,7 @@ public class ConnectivityWrapper extends ContextCommand {
         final double edgeCorrection = (Double) opService.run(EulerCorrection.class, view);
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
-        final double connectivityDensity = calculateConnectivityDensity(connectivity);
+        final double connectivityDensity = calculateConnectivityDensity(view, connectivity);
 
         showResults(label, eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
     }
@@ -99,9 +103,9 @@ public class ConnectivityWrapper extends ContextCommand {
         inserter.updateResults();
     }
 
-    private double calculateConnectivityDensity(final double connectivity) {
-        final double elements = AxisUtils.spatialSpaceSize(inputImage);
-        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
+    private double calculateConnectivityDensity(final RandomAccessibleInterval view, final double connectivity) {
+        final double elements = ((IterableInterval) view).size();
+        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage);
         return connectivity / (elements * elementSize);
     }
 

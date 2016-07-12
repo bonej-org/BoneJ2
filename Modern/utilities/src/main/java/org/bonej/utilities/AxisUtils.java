@@ -61,52 +61,6 @@ public class AxisUtils {
     }
 
     /**
-     * Counts the number of spatial elements in the given space
-     *
-     * @return Space size or Double.NaN if space == null
-     * TODO: move to ElementUtil
-     */
-    public static <T extends AnnotatedSpace<A> & Dimensions, A extends TypedAxis> double spatialSpaceSize(
-            @Nullable final T space) {
-        if (space == null) {
-            return Double.NaN;
-        }
-
-        final int numDimensions = space.numDimensions();
-        double spaceSize = 1.0;
-        int spatialDimensions = 0;
-
-        for (int d = 0; d < numDimensions; d++) {
-            if (!space.axis(d).type().isSpatial()) {
-                continue;
-            }
-
-            final long dimensionSize = space.dimension(d);
-            spaceSize = spaceSize * dimensionSize;
-            spatialDimensions++;
-        }
-
-        return spatialDimensions > 0 ? spaceSize : 0;
-    }
-
-    /**
-     * Returns the calibrated size of a single spatial element in the given space,
-     * e.g. the volume of an element in a 3D space
-     *
-     * @return Calibrated size of a spatial element, or Double.NaN if space == null,
-     *         has nonlinear axes, or calibration units don't match
-     * TODO Move to ElementUtil
-     */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> double calibratedSpatialElementSize(
-            @Nullable final T space) {
-        if (space == null || hasNonLinearSpatialAxes(space) || !spatialUnitsMatch(space)) {
-            return Double.NaN;
-        }
-
-        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x, y) -> x * y).orElse(0.0);
-    }
-
-    /**
      * Counts the number of spatial dimensions in the given space
      *
      * @return Number of spatial dimensions in the space, or 0 if space == null
@@ -232,12 +186,12 @@ public class AxisUtils {
     }
 
     //region -- Helper methods --
-    private static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(
+    public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(
             @Nullable final T space) {
         return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
     }
 
-    private static <T extends AnnotatedSpace<CalibratedAxis>> boolean spatialUnitsMatch(final T space) {
+    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean spatialUnitsMatch(final T space) {
         final boolean allUncalibrated =
                 spatialAxisStream(space).map(CalibratedAxis::unit).allMatch(Strings::isNullOrEmpty);
         final long units = spatialAxisStream(space).map(CalibratedAxis::unit).distinct().count();

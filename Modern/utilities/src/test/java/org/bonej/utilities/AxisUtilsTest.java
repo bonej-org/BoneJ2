@@ -9,7 +9,6 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
@@ -17,7 +16,7 @@ import static org.junit.Assert.*;
 /**
  * Unit tests for the AxisUtil class
  *
- * @author Richard Domander 
+ * @author Richard Domander
  */
 public class AxisUtilsTest {
     @Test
@@ -53,94 +52,6 @@ public class AxisUtilsTest {
 
         assertTrue("Optional should be present", result.isPresent());
         assertArrayEquals("Indices are incorrect", expectedIndices, result.get());
-    }
-
-    @Test
-    public void testSpatialSpaceSizeNaNIfSpaceNull() throws Exception {
-        final double result = AxisUtils.spatialSpaceSize(null);
-
-        assertTrue("Size should be NaN when space is null", Double.isNaN(result));
-    }
-
-    @Test
-    public void testSpatialSpaceSizeWhenNoSpatialAxes() throws Exception {
-        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<DoubleType> img = ArrayImgs.doubles(1);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
-
-        final double size = AxisUtils.spatialSpaceSize(imgPlus);
-
-        assertEquals("Size should be 0 when there are no spatial axes", 0, size, 1e-12);
-    }
-
-    @Test
-    public void testSpatialSpaceSize() throws Exception {
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final long[] dimSizes = {123, 12};
-        final long expectedSize = Arrays.stream(dimSizes).reduce((i, j) -> i * j).orElse(0);
-        final Img<DoubleType> img = ArrayImgs.doubles(dimSizes);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
-
-        final double result = AxisUtils.spatialSpaceSize(imgPlus);
-
-        assertEquals("Space size is incorrect", expectedSize, result, 1e-12);
-    }
-
-    @Test
-    public void testCalibratedSpatialElementSizeNaNIfSpaceNull() throws Exception {
-        final double result = AxisUtils.calibratedSpatialElementSize(null);
-
-        assertTrue("Size should be NaN when space is null", Double.isNaN(result));
-    }
-
-    @Test
-    public void testCalibratedSpatialElementSizeNaNIfNonLinear() throws Exception {
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
-        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
-
-        final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
-
-        assertTrue("Size should be NaN when space has nonlinear axes", Double.isNaN(result));
-    }
-
-    @Test
-    public void testCalibratedSpatialElementSizeNaNIfUnitsMismatch() throws Exception {
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm");
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
-        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
-
-        final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
-
-        assertTrue("Size should be NaN when the units of axes mismatch", Double.isNaN(result));
-    }
-
-    @Test
-    public void testCalibratedSpatialElementSizeWhenNoSpatialAxes() throws Exception {
-        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<DoubleType> img = ArrayImgs.doubles(1);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
-
-        final double elementSize = AxisUtils.calibratedSpatialElementSize(imgPlus);
-
-        assertEquals("Element size should be zero when there are no spatial axes", 0.0, elementSize, 1e-12);
-    }
-
-    @Test
-    public void testCalibratedSpatialElementSize() throws Exception {
-        final double xScale = 1.5;
-        final double yScale = 2.25;
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, xScale);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, yScale);
-        final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
-
-        final double result = AxisUtils.calibratedSpatialElementSize(imgPlus);
-
-        assertEquals("Element size is wrong", xScale * yScale, result, 1e-12);
     }
 
     @Test

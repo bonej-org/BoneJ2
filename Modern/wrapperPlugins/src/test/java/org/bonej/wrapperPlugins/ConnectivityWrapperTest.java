@@ -36,7 +36,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
- * Integration / Regression tests for the {@link ConnectivityWrapper ConnectivityWrapper} plugin
+ * Integration / Regression tests for the {@link ConnectivityWrapper} plugin
  *
  * @author Richard Domander
  */

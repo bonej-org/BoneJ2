@@ -67,7 +67,7 @@ public class SurfaceFractionWrapper <T extends RealType<T> & NativeType<T>> exte
         final Results results = (Results) opService.run(SurfaceFraction.class, subSpace, thresholds);
 
         final char exponent = ResultUtils.getExponent(inputImage);
-        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
+        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage);
         final double thresholdVolume = results.thresholdSurfaceVolume * elementSize;
         final double totalVolume = results.totalSurfaceVolume * elementSize;
         final String unitHeader = ResultUtils.getUnitHeader(inputImage, exponent);
