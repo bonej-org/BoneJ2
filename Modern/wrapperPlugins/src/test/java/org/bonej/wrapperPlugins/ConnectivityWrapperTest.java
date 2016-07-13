@@ -20,8 +20,6 @@ import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
@@ -59,28 +57,23 @@ public class ConnectivityWrapperTest {
     }
 
     @Test
-    public void testNullImageCancelsPlugin() {
+    public void testNullImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
         when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", null);
+        // Run command
+        final CommandModule module = IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", null).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("Null image should have canceled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("Null image should have canceled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void test2DImageCancelsPlugin() {
+    public void test2DImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -94,21 +87,17 @@ public class ConnectivityWrapperTest {
         final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 3);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("2D image should have cancelled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("2D image should have cancelled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void testNonBinaryImageCancelsPlugin() {
+    public void testNonBinaryImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -124,21 +113,17 @@ public class ConnectivityWrapperTest {
         final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1).iterator();
         imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void testNegativeConnectivityShowsInfoDialog() {
+    public void testNegativeConnectivityShowsInfoDialog() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -151,7 +136,7 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-        final Img<BitType> img =  ArrayImgs.bits(5, 5, 5, 2);
+        final Img<BitType> img = ArrayImgs.bits(5, 5, 5, 2);
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, cAxis);
         final RandomAccess<BitType> access = imgPlus.randomAccess();
         // Channel 0
@@ -165,20 +150,16 @@ public class ConnectivityWrapperTest {
         access.setPosition(new long[]{3, 3, 3, 1});
         access.get().setOne();
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
-        try {
-            future.get();
-            // Dialog should only be shown once
-            verify(mockUI, after(100).times(1))
-                    .dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        // Run command
+        IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
+
+        // Dialog should only be shown once
+        verify(mockUI, after(100).times(1))
+                .dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any());
     }
 
     @Test
-    public void testBadCalibrationShowsWarning() {
+    public void testBadCalibrationShowsWarning() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -190,24 +171,18 @@ public class ConnectivityWrapperTest {
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "µm");
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-        final Img<DoubleType> img =  ArrayImgs.doubles(5, 5, 5, 2);
+        final Img<DoubleType> img = ArrayImgs.doubles(5, 5, 5, 2);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            future.get();
-            // Warning should be shown only once
-            verify(mockUI, after(100).times(1))
-                    .dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        // Warning should be shown only once
+        verify(mockUI, after(100).times(1)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
     }
 
     @Test
-    public void testResults() {
+    public void testResults() throws Exception {
         // Create an test image of a cuboid
         final String unit = "mm";
         final long size = 3;
@@ -241,37 +216,31 @@ public class ConnectivityWrapperTest {
         access.setPosition(new long[]{1, 1, 1, 0, 1});
         access.get().setOne();
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus);
+        // Run command and get results
+        IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
+        final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
+        final String[] headings = resultsTable.getHeadings();
 
-        try {
-            future.get();
-            final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
-            final String[] headings = resultsTable.getHeadings();
-            
-            // Assert results table size
-            assertEquals("Results table has wrong number of rows", expectedValues.length, resultsTable.size());
-            assertEquals("Results table has wrong number of headings", 5, headings.length);
-            
-            // Assert column headings
-            assertEquals("Incorrect heading in results table", "Euler char. (χ)", headings[1]);
-            assertEquals("Incorrect heading in results table", "Corrected Euler (Δχ)", headings[2]);
-            assertEquals("Incorrect heading in results table", "Connectivity", headings[3]);
-            assertEquals("Incorrect heading in results table", String.format("Conn. density (%s³)", unit), headings[4]);
-            
-            // Assert values
-            for (int row = 0; row < resultsTable.size(); row++) {
-                final double eulerCharacteristic = resultsTable.getValue(headings[1], row);
-                assertEquals("χ is incorrect", expectedValues[row][0], eulerCharacteristic, 1e-12);
-                final double correctedEuler = resultsTable.getValue(headings[2], row);
-                assertEquals("Corrected χ is incorrect", expectedValues[row][1], correctedEuler, 1e-12);
-                final double connectivity = resultsTable.getValue(headings[3], row);
-                assertEquals("Connectivity is incorrect", expectedValues[row][2], connectivity, 1e-12);
-                final double connDensity = resultsTable.getValue(headings[4], row);
-                assertEquals("Connectivity density is incorrect", expectedValues[row][3], connDensity, 1e-12);
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        // Assert results table size
+        assertEquals("Results table has wrong number of rows", expectedValues.length, resultsTable.size());
+        assertEquals("Results table has wrong number of headings", 5, headings.length);
+
+        // Assert column headings
+        assertEquals("Incorrect heading in results table", "Euler char. (χ)", headings[1]);
+        assertEquals("Incorrect heading in results table", "Corrected Euler (Δχ)", headings[2]);
+        assertEquals("Incorrect heading in results table", "Connectivity", headings[3]);
+        assertEquals("Incorrect heading in results table", String.format("Conn. density (%s³)", unit), headings[4]);
+
+        // Assert values
+        for (int row = 0; row < resultsTable.size(); row++) {
+            final double eulerCharacteristic = resultsTable.getValue(headings[1], row);
+            assertEquals("χ is incorrect", expectedValues[row][0], eulerCharacteristic, 1e-12);
+            final double correctedEuler = resultsTable.getValue(headings[2], row);
+            assertEquals("Corrected χ is incorrect", expectedValues[row][1], correctedEuler, 1e-12);
+            final double connectivity = resultsTable.getValue(headings[3], row);
+            assertEquals("Connectivity is incorrect", expectedValues[row][2], connectivity, 1e-12);
+            final double connDensity = resultsTable.getValue(headings[4], row);
+            assertEquals("Connectivity density is incorrect", expectedValues[row][3], connDensity, 1e-12);
         }
     }
 }

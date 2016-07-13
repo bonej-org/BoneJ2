@@ -20,8 +20,6 @@ import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
@@ -36,7 +34,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 /**
  * Regression tests for the {@link ElementFractionWrapper ElementFractionWrapper} plugin
  *
- * @author Richard Domander 
+ * @author Richard Domander
  */
 public class ElementFractionWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
@@ -57,28 +55,24 @@ public class ElementFractionWrapperTest {
     }
 
     @Test
-    public void testNullImageCancelsPlugin() {
+    public void testNullImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
         when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", null);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", null).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("Null image should have canceled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("Null image should have canceled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void testNonBinaryImageCancelsPlugin() {
+    public void testNonBinaryImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -93,21 +87,17 @@ public class ElementFractionWrapperTest {
         final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1).iterator();
         imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void testBadCalibrationShowsWarning() {
+    public void testBadCalibrationShowsWarning() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -120,19 +110,15 @@ public class ElementFractionWrapperTest {
         final Img<DoubleType> img = ArrayImgs.doubles(5, 5);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            future.get();
-            verify(mockUI, after(100)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        verify(mockUI, after(100)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
     }
 
     @Test
-    public void testResults() {
+    public void testResults() throws Exception {
         // Create an test image of a cuboid
         final String unit = "mm";
         final double scale = 0.9;
@@ -146,26 +132,21 @@ public class ElementFractionWrapperTest {
                 (ImgPlus<BitType>) IMAGE_J.op()
                         .run(Cuboid.class, null, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus);
+        // Run command and get results
+        final CommandModule module =
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+        final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
+        final String[] headings = resultsTable.getHeadings();
+        final double boneVolume = resultsTable.getValue(headings[1], 0);
+        final double totalVolume = resultsTable.getValue(headings[2], 0);
+        final double ratio = resultsTable.getValue(headings[3], 0);
 
-        try {
-            future.get();
-            final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
-            final String[] headings = resultsTable.getHeadings();
-            final double boneVolume = resultsTable.getValue(headings[1], 0);
-            final double totalVolume = resultsTable.getValue(headings[2], 0);
-            final double ratio = resultsTable.getValue(headings[3], 0);
-
-            assertEquals("Wrong number of results", 1, resultsTable.size());
-            assertEquals("Column header is incorrect", "Bone Volume (" + unit + "³)", headings[1]);
-            assertEquals("Column header is incorrect", "Total Volume (" + unit + "³)", headings[2]);
-            assertEquals("Column header is incorrect", "Volume Ratio", headings[3]);
-            assertEquals("Bone volume is incorrect", cubeVolume * elementSize, boneVolume, 1e-12);
-            assertEquals("Total volume is incorrect", spaceSize * elementSize, totalVolume, 1e-12);
-            assertEquals("Ratio is incorrect",(cubeVolume * elementSize) / (spaceSize * elementSize), ratio, 1e-12);
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertEquals("Wrong number of results", 1, resultsTable.size());
+        assertEquals("Column header is incorrect", "Bone Volume (" + unit + "³)", headings[1]);
+        assertEquals("Column header is incorrect", "Total Volume (" + unit + "³)", headings[2]);
+        assertEquals("Column header is incorrect", "Volume Ratio", headings[3]);
+        assertEquals("Bone volume is incorrect", cubeVolume * elementSize, boneVolume, 1e-12);
+        assertEquals("Total volume is incorrect", spaceSize * elementSize, totalVolume, 1e-12);
+        assertEquals("Ratio is incorrect", (cubeVolume * elementSize) / (spaceSize * elementSize), ratio, 1e-12);
     }
 }

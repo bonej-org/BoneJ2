@@ -5,7 +5,6 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
-import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -21,8 +20,6 @@ import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
@@ -57,28 +54,24 @@ public class SurfaceFractionWrapperTest {
     }
 
     @Test
-    public void testNullImageCancelsPlugin() {
+    public void testNullImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
         when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", null);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", null).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("Null image should have canceled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("Null image should have canceled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void test2DImageCancelsPlugin() {
+    public void test2DImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -92,21 +85,17 @@ public class SurfaceFractionWrapperTest {
         final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 3);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, cAxis);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("2D image should have cancelled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("2D image should have cancelled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void testNonBinaryImageCancelsPlugin() {
+    public void testNonBinaryImageCancelsPlugin() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -122,21 +111,17 @@ public class SurfaceFractionWrapperTest {
         final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1).iterator();
         imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            final CommandModule module = future.get();
-            assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
-            assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
-            verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void testBadCalibrationShowsWarning() {
+    public void testBadCalibrationShowsWarning() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -151,22 +136,16 @@ public class SurfaceFractionWrapperTest {
         final Img<DoubleType> img = ArrayImgs.doubles(5, 5, 5, 2);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus);
+        // Run command
+        IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
 
-        try {
-            future.get();
-            // Warning should be shown only once
-            verify(mockUI, after(100).times(1))
-                    .dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        // Warning should be shown only once
+        verify(mockUI, after(100).times(1)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
     }
 
     /** Test that SurfaceFractionWrapper processes hyperstacks and presents results correctly */
     @Test
-    public void testResults() {
+    public void testResults() throws Exception {
         // Marching cubes creates an octahedral surface out of a single voxel
         final double expectedVolume = Math.sqrt(0.5) * Math.sqrt(0.5) * 0.5 / 3.0 * 2.0;
         final String unit = "mm";
@@ -196,32 +175,26 @@ public class SurfaceFractionWrapperTest {
         access.setPosition(new long[]{0, 0, 0, 0, 1});
         access.get().setOne();
 
-        final Future<CommandModule> future =
-                IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus);
+        // Run command and get results
+        IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
+        final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
+        final String[] headings = resultsTable.getHeadings();
 
-        try {
-            future.get();
-            final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
-            final String[] headings = resultsTable.getHeadings();
+        // Assert table size
+        assertEquals("Wrong number of columns", 4, headings.length);
+        assertEquals("Wrong number of rows", expectedValues.length, resultsTable.size());
 
-            // Assert table size
-            assertEquals("Wrong number of columns", 4, headings.length);
-            assertEquals("Wrong number of rows", expectedValues.length, resultsTable.size());
+        // Assert column headers
+        assertEquals("Column header is incorrect", "Bone volume (" + unit + "³)", headings[1]);
+        assertEquals("Column header is incorrect", "Total volume (" + unit + "³)", headings[2]);
+        assertEquals("Column header is incorrect", "Volume ratio", headings[3]);
 
-            // Assert column headers
-            assertEquals("Column header is incorrect", "Bone volume (" + unit + "³)", headings[1]);
-            assertEquals("Column header is incorrect", "Total volume (" + unit + "³)", headings[2]);
-            assertEquals("Column header is incorrect", "Volume ratio", headings[3]);
-
-            // Assert results
-            for (int row = 0; row < expectedValues.length; row++) {
-                for (int column = 1; column < headings.length; column++) {
-                    final double value = resultsTable.getValue(headings[column], row);
-                    assertEquals("Incorrect result", expectedValues[row][column], value, 1e-12);
-                }
+        // Assert results
+        for (int row = 0; row < expectedValues.length; row++) {
+            for (int column = 1; column < headings.length; column++) {
+                final double value = resultsTable.getValue(headings[column], row);
+                assertEquals("Incorrect result", expectedValues[row][column], value, 1e-12);
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
         }
     }
 }
