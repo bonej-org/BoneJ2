@@ -25,11 +25,8 @@
             <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
                 <role>lead</role>
-                <role>developer</role>
-                <role>debugger</role>
                 <role>reviewer</role>
                 <role>support</role>
-                <role>maintainer</role>
             </roles>
             <timezone>+0</timezone>
         </developer>
@@ -60,18 +57,6 @@
             </roles>
             <timezone>-6</timezone>
         </developer>
-        <developer>
-            <id>hinerm</id>
-            <name>Mark Hiner</name>
-            <email>hiner@wisc.edu</email>
-            <url>http://loci.wisc.edu/people/mark-hiner</url>
-            <organization>UW-Madison LOCI</organization>
-            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
-            <roles>
-                <role>maintainer</role>
-            </roles>
-            <timezone>-6</timezone>
-        </developer>
     </developers>
 
     <scm>
@@ -92,11 +77,8 @@
         <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
-            <artifactId>imagej</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
             <artifactId>imagej-common</artifactId>
+            <version>${imagej-common.version}</version>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
