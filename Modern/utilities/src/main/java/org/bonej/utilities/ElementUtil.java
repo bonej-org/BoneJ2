@@ -1,16 +1,16 @@
 package org.bonej.utilities;
 
 import net.imagej.axis.CalibratedAxis;
-import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
-import net.imglib2.Dimensions;
+import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.BooleanType;
-import net.imglib2.type.NativeType;
-import net.imglib2.type.numeric.RealType;
 import org.jetbrains.annotations.Contract;
 
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
@@ -52,11 +52,29 @@ public class ElementUtil {
      *         has nonlinear axes, or calibration units don't match
      */
     public static <T extends AnnotatedSpace<CalibratedAxis>> double calibratedSpatialElementSize(
-            @Nullable final T space) {
-        if (space == null || AxisUtils.hasNonLinearSpatialAxes(space) || !AxisUtils.spatialUnitsMatch(space)) {
+            @Nullable final T space, final UnitService unitService) {
+        if (AxisUtils.hasNonLinearSpatialAxes(space)) {
             return Double.NaN;
         }
 
-        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x, y) -> x * y).orElse(0.0);
+        try {
+            final String unit = AxisUtils.getSpatialUnit(space, unitService).get().replaceFirst("^µ[mM]$", "um");
+            if (unit.isEmpty()) {
+                return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x, y) -> x * y).orElse(0.0);
+            }
+
+            final List<CalibratedAxis> axes = spatialAxisStream(space).collect(Collectors.toList());
+            double elementSize = axes.get(0).averageScale(0.0, 1.0);
+            for (int i = 1; i < axes.size(); i++) {
+                double scale = axes.get(i).averageScale(0.0, 1.0);
+                final String axisUnit = axes.get(i).unit().replaceFirst("^µ[mM]$", "um");
+                final double axisSize = unitService.value(scale, axisUnit, unit);
+                elementSize *= axisSize;
+            }
+
+            return elementSize;
+        } catch (NoSuchElementException e) {
+            return Double.NaN;
+        }
     }
 }

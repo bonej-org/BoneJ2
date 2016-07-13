@@ -1,12 +1,15 @@
 package org.bonej.wrapperPlugins.wrapperUtils;
 
+import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.units.UnitService;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -21,6 +24,14 @@ import static org.mockito.Mockito.when;
  * @author Richard Domander 
  */
 public class ResultUtilsTest {
+    public static final ImageJ IMAGE_J = new ImageJ();
+    public static final UnitService unitService = IMAGE_J.context().getService(UnitService.class);
+
+    @AfterClass
+    public static void oneTimeTearDown() {
+        IMAGE_J.context().dispose();
+    }
+
     @Test
     public void testGetSizeDescription() throws Exception {
         final String[] expected = {"Size", "Area", "Volume", "Size"};
@@ -60,7 +71,7 @@ public class ResultUtilsTest {
 
     @Test
     public void testGetUnitHeaderReturnEmptyIfImageNull() throws Exception {
-        final String result = ResultUtils.getUnitHeader(null);
+        final String result = ResultUtils.getUnitHeader(null, unitService);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -71,7 +82,7 @@ public class ResultUtilsTest {
         final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = ResultUtils.getUnitHeader(imgPlus);
+        final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -82,7 +93,7 @@ public class ResultUtilsTest {
         final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = ResultUtils.getUnitHeader(imgPlus);
+        final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -93,7 +104,7 @@ public class ResultUtilsTest {
         final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = ResultUtils.getUnitHeader(imgPlus);
+        final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
 
         assertTrue("Unit header should be empty", result.isEmpty());
     }
@@ -106,7 +117,7 @@ public class ResultUtilsTest {
         final Img<DoubleType> img = ArrayImgs.doubles(10);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-        final String result = ResultUtils.getUnitHeader(imgPlus, exponent);
+        final String result = ResultUtils.getUnitHeader(imgPlus, unitService, exponent);
 
         assertEquals("Unexpected unit header", "(" + unit + exponent + ")", result);
     }

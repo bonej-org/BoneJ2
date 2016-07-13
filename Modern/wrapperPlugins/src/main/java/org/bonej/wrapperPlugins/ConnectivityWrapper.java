@@ -2,6 +2,7 @@ package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
@@ -46,9 +47,11 @@ public class ConnectivityWrapper extends ContextCommand {
     @Parameter
     private UIService uiService;
 
+    @Parameter
+    private UnitService unitService;
+
     private boolean negativityWarned = false;
     private boolean calibrationWarned = false;
-
 
     @Override
     public void run() {
@@ -65,6 +68,7 @@ public class ConnectivityWrapper extends ContextCommand {
     }
 
     //region -- Helper methods --
+
     /** Process connectivity for one spatial view */
     private void viewConnectivity(final String label, final RandomAccessibleInterval view) {
         final double eulerCharacteristic = opService.topology().eulerCharacteristic26NFloating(view).get();
@@ -78,7 +82,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
     private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
             final double connectivity, final double connectivityDensity) {
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, '³');
+        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
 
         if (connectivity < 0 && !negativityWarned) {
             uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
@@ -100,7 +104,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
     private double calculateConnectivityDensity(final RandomAccessibleInterval view, final double connectivity) {
         final double elements = ((IterableInterval) view).size();
-        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage);
+        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
         return connectivity / (elements * elementSize);
     }
 

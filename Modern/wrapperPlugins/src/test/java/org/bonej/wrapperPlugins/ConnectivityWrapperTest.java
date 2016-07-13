@@ -22,14 +22,17 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 import java.util.Iterator;
 import java.util.stream.IntStream;
 
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.bonej.wrapperPlugins.ConnectivityWrapper.NEGATIVE_CONNECTIVITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
@@ -159,17 +162,17 @@ public class ConnectivityWrapperTest {
     }
 
     @Test
-    public void testBadCalibrationShowsWarning() throws Exception {
+    public void testNoCalibrationShowsWarning() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
         when(mockUI.dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
         IMAGE_J.ui().setDefaultUI(mockUI);
 
-        // Create an hyperstack with bad calibration (units don't match)
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
-        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "µm");
+        // Create an hyperstack with no calibration
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
         final Img<DoubleType> img = ArrayImgs.doubles(5, 5, 5, 2);
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
