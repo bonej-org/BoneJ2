@@ -1,16 +1,12 @@
 package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
-import net.imagej.space.AnnotatedSpace;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import org.bonej.ops.connectivity.EulerCharacteristicFloating;
-import org.bonej.ops.connectivity.EulerCorrection;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -25,7 +21,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
@@ -72,8 +67,8 @@ public class ConnectivityWrapper extends ContextCommand {
     //region -- Helper methods --
     /** Process connectivity for one spatial view */
     private void viewConnectivity(final String label, final RandomAccessibleInterval view) {
-        final double eulerCharacteristic = (Double) opService.run(EulerCharacteristicFloating.class, view);
-        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, view);
+        final double eulerCharacteristic = opService.topology().eulerCharacteristic26NFloating(view).get();
+        final double edgeCorrection = opService.topology().eulerCorrection(view).get();
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
         final double connectivityDensity = calculateConnectivityDensity(view, connectivity);
@@ -82,7 +77,7 @@ public class ConnectivityWrapper extends ContextCommand {
     }
 
     private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
-                             final double connectivity, final double connectivityDensity) {
+            final double connectivity, final double connectivityDensity) {
         final String unitHeader = ResultUtils.getUnitHeader(inputImage, '³');
 
         if (connectivity < 0 && !negativityWarned) {
