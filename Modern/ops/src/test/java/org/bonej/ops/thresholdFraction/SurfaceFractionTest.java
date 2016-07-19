@@ -52,7 +52,7 @@ public class SurfaceFractionTest {
         final double thresholdVolume = pyramidVolume * 2.0;
         // Unit cube with 1 padding on each side, so 3x3x3 stack
         final ImgPlus<BitType> unitCube =
-                (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, null, 1, 1, 1, 1, 1, 1);
+                (ImgPlus<BitType>) IMAGE_J.op().run(Cuboid.class, 1, 1, 1, 1, 1, 1);
         final IntervalView<BitType> hyperSlice = Views.hyperSlice(Views.hyperSlice(unitCube, 4, 0), 2, 0);
         final Thresholds thresholds = new Thresholds<>(unitCube, 1.0, 1.0);
         /*

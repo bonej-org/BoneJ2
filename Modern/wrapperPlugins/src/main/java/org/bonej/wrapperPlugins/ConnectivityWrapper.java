@@ -2,12 +2,12 @@ package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.units.UnitService;
+import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import org.bonej.ops.connectivity.EulerCharacteristicFloating;
-import org.bonej.ops.connectivity.EulerCorrection;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -47,9 +47,11 @@ public class ConnectivityWrapper extends ContextCommand {
     @Parameter
     private UIService uiService;
 
+    @Parameter
+    private UnitService unitService;
+
     private boolean negativityWarned = false;
     private boolean calibrationWarned = false;
-
 
     @Override
     public void run() {
@@ -66,20 +68,21 @@ public class ConnectivityWrapper extends ContextCommand {
     }
 
     //region -- Helper methods --
+
     /** Process connectivity for one spatial view */
     private void viewConnectivity(final String label, final RandomAccessibleInterval view) {
-        final double eulerCharacteristic = (Double) opService.run(EulerCharacteristicFloating.class, view);
-        final double edgeCorrection = (Double) opService.run(EulerCorrection.class, view);
+        final double eulerCharacteristic = opService.topology().eulerCharacteristic26NFloating(view).get();
+        final double edgeCorrection = opService.topology().eulerCorrection(view).get();
         final double correctedEuler = eulerCharacteristic - edgeCorrection;
         final double connectivity = 1 - correctedEuler;
-        final double connectivityDensity = calculateConnectivityDensity(connectivity);
+        final double connectivityDensity = calculateConnectivityDensity(view, connectivity);
 
         showResults(label, eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
     }
 
     private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
-                             final double connectivity, final double connectivityDensity) {
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, '³');
+            final double connectivity, final double connectivityDensity) {
+        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
 
         if (connectivity < 0 && !negativityWarned) {
             uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
@@ -99,9 +102,9 @@ public class ConnectivityWrapper extends ContextCommand {
         inserter.updateResults();
     }
 
-    private double calculateConnectivityDensity(final double connectivity) {
-        final double elements = AxisUtils.spatialSpaceSize(inputImage);
-        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
+    private double calculateConnectivityDensity(final RandomAccessibleInterval view, final double connectivity) {
+        final double elements = ((IterableInterval) view).size();
+        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
         return connectivity / (elements * elementSize);
     }
 

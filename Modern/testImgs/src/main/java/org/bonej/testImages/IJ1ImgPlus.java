@@ -3,7 +3,6 @@ package org.bonej.testImages;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
-import net.imagej.ops.OpEnvironment;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
@@ -33,17 +32,6 @@ public class IJ1ImgPlus {
     }
 
     private IJ1ImgPlus() {}
-
-    /**
-     * Creates a 5-dimensional ImgPlus with no calibration or padding
-     *
-     * @see IJ1ImgPlus#createIJ1ImgPlus(String, long, long, long, long, long, long, double, String) createIJ1ImgPlus
-     */
-    public static ImgPlus<BitType> createIJ1ImgPlus(String title, final long width,
-            final long height, final long depth, final long channels,
-            final long frames) {
-        return createIJ1ImgPlus(title, width, height, depth, channels, frames, 0, 1.0, "");
-    }
 
     /**
      * Creates a 5-dimensional ImgPlus

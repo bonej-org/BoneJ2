@@ -2,12 +2,12 @@ package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.units.UnitService;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import org.bonej.ops.thresholdFraction.ElementFraction;
 import org.bonej.ops.thresholdFraction.ElementFraction.Results;
 import org.bonej.ops.thresholdFraction.ElementFraction.Settings;
-import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
@@ -36,6 +36,9 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
     @Parameter
     private UIService uiService;
 
+    @Parameter
+    private UnitService unitService;
+
     @Override
     public void run() {
         final T element = inputImage.cursor().get();
@@ -54,17 +57,18 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         final String label = inputImage.getName();
         final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
         final char exponent = ResultUtils.getExponent(inputImage);
-        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
+        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
         final double thresholdSize = results.thresholdElements * elementSize;
         final double totalSize = results.elements * elementSize;
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, exponent);
+        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, exponent);
 
         if (unitHeader.isEmpty()) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
         }
 
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone " + sizeDescription + " " + unitHeader, thresholdSize);
+        resultsInserter
+                .setMeasurementInFirstFreeRow(label, "Bone " + sizeDescription + " " + unitHeader, thresholdSize);
         resultsInserter.setMeasurementInFirstFreeRow(label, "Total " + sizeDescription + " " + unitHeader, totalSize);
         resultsInserter.setMeasurementInFirstFreeRow(label, sizeDescription + " Ratio", results.ratio);
         resultsInserter.updateResults();

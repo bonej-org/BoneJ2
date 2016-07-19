@@ -3,6 +3,7 @@ package org.bonej.wrapperPlugins.wrapperUtils;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
+import net.imagej.units.UnitService;
 import org.bonej.utilities.AxisUtils;
 
 import javax.annotation.Nullable;
@@ -55,9 +56,10 @@ public class ResultUtils {
         return '\u0000';
     }
 
-    /** @see ResultUtils#getUnitHeader(AnnotatedSpace, char) getUnitHeader(AnnotatedSpace, String) */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(@Nullable final T space) {
-        return getUnitHeader(space, '\u0000');
+    /** @see ResultUtils#getUnitHeader(AnnotatedSpace, UnitService, char) */
+    public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(@Nullable final T space,
+            final UnitService unitService) {
+        return getUnitHeader(space, unitService, '\u0000');
     }
 
     /**
@@ -69,8 +71,8 @@ public class ResultUtils {
      * @return Unit for column headers or empty if there's no unit
      */
     public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(@Nullable final T space,
-            final char exponent) {
-        final Optional<String> unit = AxisUtils.getSpatialUnit(space);
+            final UnitService unitService, final char exponent) {
+        final Optional<String> unit = AxisUtils.getSpatialUnit(space, unitService);
         if (!unit.isPresent()) {
             return "";
         }

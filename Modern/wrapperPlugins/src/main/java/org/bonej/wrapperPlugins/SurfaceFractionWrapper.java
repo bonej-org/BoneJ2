@@ -2,6 +2,7 @@ package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
@@ -34,7 +35,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fraction>Surface fraction", headless = true)
-public class SurfaceFractionWrapper <T extends RealType<T> & NativeType<T>> extends ContextCommand {
+public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
     @Parameter(initializer = "initializeImage")
     private ImgPlus<T> inputImage;
 
@@ -43,6 +44,9 @@ public class SurfaceFractionWrapper <T extends RealType<T> & NativeType<T>> exte
 
     @Parameter
     private UIService uiService;
+
+    @Parameter
+    private UnitService unitService;
 
     private boolean calibrationWarned = false;
 
@@ -62,15 +66,15 @@ public class SurfaceFractionWrapper <T extends RealType<T> & NativeType<T>> exte
     }
 
     //region -- Helper methods --
+
     /** Process surface fraction for one 3D subspace in the n-dimensional image */
     private void viewFraction(String label, RandomAccessibleInterval subSpace, Thresholds thresholds) {
         final Results results = (Results) opService.run(SurfaceFraction.class, subSpace, thresholds);
-
         final char exponent = ResultUtils.getExponent(inputImage);
-        final double elementSize = AxisUtils.calibratedSpatialElementSize(inputImage);
+        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
         final double thresholdVolume = results.thresholdSurfaceVolume * elementSize;
         final double totalVolume = results.totalSurfaceVolume * elementSize;
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, exponent);
+        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, exponent);
 
         if (unitHeader.isEmpty() && !calibrationWarned) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
@@ -78,7 +82,7 @@ public class SurfaceFractionWrapper <T extends RealType<T> & NativeType<T>> exte
         }
 
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone volume "  + unitHeader, thresholdVolume);
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone volume " + unitHeader, thresholdVolume);
         resultsInserter.setMeasurementInFirstFreeRow(label, "Total volume " + unitHeader, totalVolume);
         resultsInserter.setMeasurementInFirstFreeRow(label, "Volume ratio", results.ratio);
         resultsInserter.updateResults();

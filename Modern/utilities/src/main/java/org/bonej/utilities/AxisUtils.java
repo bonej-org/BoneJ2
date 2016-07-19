@@ -6,19 +6,21 @@ import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
-import net.imglib2.Dimensions;
+import net.imagej.units.UnitService;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toList;
 import static org.bonej.utilities.Streamers.axisStream;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 /**
  * Various utils for inspecting image axis properties
  *
- * @author Richard Domander 
+ * @author Richard Domander
  */
 public class AxisUtils {
     /**
@@ -61,52 +63,6 @@ public class AxisUtils {
     }
 
     /**
-     * Counts the number of spatial elements in the given space
-     *
-     * @return Space size or Double.NaN if space == null
-     * TODO: move to ElementUtil
-     */
-    public static <T extends AnnotatedSpace<A> & Dimensions, A extends TypedAxis> double spatialSpaceSize(
-            @Nullable final T space) {
-        if (space == null) {
-            return Double.NaN;
-        }
-
-        final int numDimensions = space.numDimensions();
-        double spaceSize = 1.0;
-        int spatialDimensions = 0;
-
-        for (int d = 0; d < numDimensions; d++) {
-            if (!space.axis(d).type().isSpatial()) {
-                continue;
-            }
-
-            final long dimensionSize = space.dimension(d);
-            spaceSize = spaceSize * dimensionSize;
-            spatialDimensions++;
-        }
-
-        return spatialDimensions > 0 ? spaceSize : 0;
-    }
-
-    /**
-     * Returns the calibrated size of a single spatial element in the given space,
-     * e.g. the volume of an element in a 3D space
-     *
-     * @return Calibrated size of a spatial element, or Double.NaN if space == null,
-     *         has nonlinear axes, or calibration units don't match
-     * TODO Move to ElementUtil
-     */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> double calibratedSpatialElementSize(
-            @Nullable final T space) {
-        if (space == null || hasNonLinearSpatialAxes(space) || !spatialUnitsMatch(space)) {
-            return Double.NaN;
-        }
-
-        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x, y) -> x * y).orElse(0.0);
-    }
-
-    /**
      * Counts the number of spatial dimensions in the given space
      *
      * @return Number of spatial dimensions in the space, or 0 if space == null
@@ -117,45 +73,51 @@ public class AxisUtils {
     }
 
     /**
-     * Returns the maximum difference between the scales of the calibrated axes in the given space
+     * Determines the maximum difference between the spatial axes calibrations
      *
-     * @return The difference in scaling. Returns Double.NaN if space == null, or it has non-linear spatial axes,
-     *         or calibration units don't match, or if there are no spatial axes
+     * @param scale         Scale of the first spatial axis
+     * @param unit          Unit of the first spatial axis
+     * @param space         A space containing calibrated axes
+     * @param unitService   An unit service to convert axis calibrations
+     * @return Greatest conversion coefficient between two axes found.
+     *         Coefficient == 0.0 if space == null, or there are no spatial axes
+     * @implNote Coefficient is always from the smaller unit to the larger, i.e. >= 1.0
      */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> double getSpatialCalibrationAnisotropy(
-            @Nullable final T space) {
-        if (!getSpatialUnit(space).isPresent() || hasNonLinearSpatialAxes(space)) {
-            return Double.NaN;
-        }
+    public static <T extends AnnotatedSpace<CalibratedAxis>> double getMaxConversion(final double scale,
+            final String unit, @Nullable final T space, final UnitService unitService) {
+        final List<CalibratedAxis> axes = spatialAxisStream(space).collect(toList());
+        double maxConversion = 0.0;
 
-        final double[] scales = spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
+        for (CalibratedAxis axis : axes) {
+            final double axisScale = axis.averageScale(0.0, 1.0);
+            final String axisUnit = axis.unit().replaceFirst("^µ[mM]$", "um");
+            final double toConversion = scale * unitService.value(1.0, unit, axisUnit) / axisScale;
+            final double fromConversion = axisScale * unitService.value(1.0, axisUnit, unit) / scale;
 
-        double maxDifference = Double.NEGATIVE_INFINITY;
-        for (int i = 0; i < scales.length - 1; i++) {
-            for (int j = i + 1; j < scales.length; j++) {
-                final double difference = Math.abs(scales[i] - scales[j]);
-                if (difference > maxDifference) {
-                    maxDifference = difference;
-                }
+            double conversion = toConversion >= fromConversion ? toConversion : fromConversion;
+
+            if (conversion >= maxConversion) {
+                maxConversion = conversion;
             }
         }
 
-        return maxDifference;
+        return maxConversion;
     }
 
     /**
      * Returns the unit of the spatial calibration of the given space
      *
-     * @return The Optional is empty if the space == null, or units don't match, or there are no spatial axes
+     * @return The Optional is empty if the space == null, or there are no spatial axes,
+     *         or there's no conversion between the units.
      *         The Optional contains an empty string if all the axes are uncalibrated
      */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> Optional<String> getSpatialUnit(@Nullable final T space) {
-        if (space == null || !hasSpatialDimensions(space) || !spatialUnitsMatch(space)) {
+    public static <T extends AnnotatedSpace<CalibratedAxis>> Optional<String> getSpatialUnit(@Nullable final T space,
+            final UnitService unitService) {
+        if (space == null || !hasSpatialDimensions(space) || !isUnitsConvertible(space, unitService)) {
             return Optional.empty();
         }
 
-        String unit = space.axis(0).unit();
-        return unit == null ? Optional.of("") : Optional.of(space.axis(0).unit());
+        return space.axis(0).unit() == null ? Optional.of("") : Optional.of(space.axis(0).unit());
     }
 
     /**
@@ -185,77 +147,41 @@ public class AxisUtils {
         return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
     }
 
-    /**
-     * Calls isSpatialCalibrationIsotropic(AnnotatedSpace, 0.0)
-     *
-     * @see #isSpatialCalibrationIsotropic(AnnotatedSpace, double)
-     */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(
-            @Nullable final T space) {
-        return isSpatialCalibrationIsotropic(space, 0.0);
-    }
-
-    /**
-     * Checks if the linear, spatial dimensions in the given space are isotropic. Isotropic means that the calibration
-     * of the different axes vary only within tolerance.
-     *
-     * @param tolerance How many percent the calibration may vary ([0.0, 1.0]) for the space to still be isotropic
-     * @implNote tolerance is clamped to [0.0, 1.0]
-     * @return true if the scales of all linear spatial axes in the space are within tolerance of each other.
-     *         false if space is null, there are no linear spatial axes, or axes are not within tolerance,
-     *         or their units don't match
-     */
-    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isSpatialCalibrationIsotropic(
-            @Nullable final T space, double tolerance) {
-        if (!getSpatialUnit(space).isPresent() || hasNonLinearSpatialAxes(space)) {
-            return false;
-        }
-
-        if (tolerance < 0.0) {
-            tolerance = 0.0;
-        } else if (tolerance > 1.0) {
-            tolerance = 1.0;
-        }
-
-        final double[] scales =
-                spatialAxisStream(space).mapToDouble(a -> a.averageScale(0, 1)).distinct().toArray();
-
-        for (int i = 0; i < scales.length - 1; i++) {
-            for (int j = i + 1; j < scales.length; j++) {
-                if (!withinTolerance(scales[i], scales[j], tolerance)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    //region -- Helper methods --
-    private static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(
+    public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean hasNonLinearSpatialAxes(
             @Nullable final T space) {
         return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a.type().isSpatial());
     }
 
-    private static <T extends AnnotatedSpace<CalibratedAxis>> boolean spatialUnitsMatch(final T space) {
-        final boolean allUncalibrated =
-                spatialAxisStream(space).map(CalibratedAxis::unit).allMatch(Strings::isNullOrEmpty);
-        final long units = spatialAxisStream(space).map(CalibratedAxis::unit).distinct().count();
+    //region -- Helper methods --
 
-        return allUncalibrated || units == 1;
-    }
+    /**
+     * Returns true if the scales of the all the axes can be converted to each other
+     * <p>
+     * NB Returns true also when all axes are uncalibrated (no units)
+     * </p>
+     */
+    private static <T extends AnnotatedSpace<CalibratedAxis>> boolean isUnitsConvertible(T space,
+            final UnitService unitService) {
+        final long spatialDimensions = countSpatialDimensions(space);
+        final long uncalibrated =
+                spatialAxisStream(space).map(CalibratedAxis::unit).filter(Strings::isNullOrEmpty).count();
 
-    private static boolean withinTolerance(double a, double b, final double tolerance) {
-        if (b > a) {
-            double tmp = a;
-            a = b;
-            b = tmp;
+        if (uncalibrated == spatialDimensions) {
+            return true;
+        } else if (uncalibrated > 0) {
+            return false;
         }
 
-        if (Double.compare(a, b * (1.0 - tolerance)) < 0) {
-            return false;
-        } else if (Double.compare(a, b * (1.0 + tolerance)) > 0) {
-            return false;
+        final List<String> units = spatialAxisStream(space).map(CalibratedAxis::unit).distinct().
+                map(s -> s.replaceFirst("^µ[mM]$", "um")).collect(toList());
+        for (int i = 0; i < units.size() - 1; i++) {
+            for (int j = 1; j < units.size(); j++) {
+                try {
+                    unitService.value(1.0, units.get(i), units.get(j));
+                } catch (IllegalArgumentException e) {
+                    return false;
+                }
+            }
         }
 
         return true;
