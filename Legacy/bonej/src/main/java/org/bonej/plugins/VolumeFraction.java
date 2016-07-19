@@ -54,6 +54,8 @@ import ij.process.ImageProcessor;
 import ij3d.Image3DUniverse;
 import marchingcubes.MCTriangulator;
 
+/** @deprecated Replaced by ElementFractionWrapper and SurfaceFractionWrapper in Modern */
+@Deprecated
 public class VolumeFraction implements PlugIn, DialogListener {
 
 	@Override
