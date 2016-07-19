@@ -131,13 +131,11 @@ public class ElementFractionWrapperTest {
         final int cubeVolume = cubeSide * cubeSide * cubeSide;
         final int spaceSize = stackSide * stackSide * stackSide;
         final double elementSize = scale * scale * scale;
-        final ImgPlus<BitType> imgPlus =
-                (ImgPlus<BitType>) IMAGE_J.op()
-                        .run(Cuboid.class, null, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
+        final ImgPlus<BitType> imgPlus = (ImgPlus<BitType>) IMAGE_J.op()
+                .run(Cuboid.class, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
 
         // Run command and get results
-        final CommandModule module =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+        IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
         final ResultsTable resultsTable = ResultsInserter.getInstance().getResultsTable();
         final String[] headings = resultsTable.getHeadings();
         final double boneVolume = resultsTable.getValue(headings[1], 0);

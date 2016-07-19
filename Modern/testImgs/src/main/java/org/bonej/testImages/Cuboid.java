@@ -3,7 +3,7 @@ package org.bonej.testImages;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.ops.Op;
-import net.imagej.ops.special.hybrid.AbstractNullaryHybridCF;
+import net.imagej.ops.special.function.AbstractNullaryFunctionOp;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.logic.BitType;
 import org.scijava.plugin.Parameter;
@@ -17,7 +17,7 @@ import static org.bonej.testImages.IJ1ImgPlus.*;
  * @author Richard Domander
  */
 @Plugin(type = Op.class, name = "cuboid", menuPath = "Plugins>Test Images>Cuboid")
-public class Cuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
+public class Cuboid extends AbstractNullaryFunctionOp<ImgPlus<BitType>> {
     @Parameter(label = "X-size", description = "Cuboid width", min = "1")
     private long xSize = 50;
 
@@ -43,12 +43,10 @@ public class Cuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     private String unit = "";
 
     @Override
-    public ImgPlus<BitType> createOutput() {
-        return createIJ1ImgPlus("Cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
-    }
+    public ImgPlus<BitType> compute0() {
+        final ImgPlus<BitType> image =
+                createIJ1ImgPlus("Cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
 
-    @Override
-    public void compute0(ImgPlus<BitType> image) {
         final long x0 = padding;
         final long x1 = padding + xSize;
         final long y0 = padding;
@@ -73,12 +71,13 @@ public class Cuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
                 }
             }
         }
+
+        return image;
     }
 
     public static void main(String... args) {
         final ImageJ ij = net.imagej.Main.launch(args);
-        // Call the hybrid op without a ready buffer (null)
-        Object cuboid = ij.op().run(Cuboid.class, null, 100L, 100L, 10L, 1L, 1L, 5L);
+        Object cuboid = ij.op().run(Cuboid.class, 100L, 100L, 10L, 3L, 1L, 5L);
         ij.ui().show(cuboid);
     }
 }

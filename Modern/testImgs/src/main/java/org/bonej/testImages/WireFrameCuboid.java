@@ -3,7 +3,7 @@ package org.bonej.testImages;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.ops.Op;
-import net.imagej.ops.special.hybrid.AbstractNullaryHybridCF;
+import net.imagej.ops.special.function.AbstractNullaryFunctionOp;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.logic.BitType;
 import org.scijava.plugin.Parameter;
@@ -17,7 +17,7 @@ import static org.bonej.testImages.IJ1ImgPlus.*;
  * @author Richard Domander
  */
 @Plugin(type = Op.class, name = "wireFrameCuboid", menuPath = "Plugins>Test Images>Wire-frame cuboid")
-public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
+public class WireFrameCuboid extends AbstractNullaryFunctionOp<ImgPlus<BitType>> {
     private final long[] cuboidLocation = new long[DIMENSIONS];
 
     @Parameter(label = "X-size", description = "Cuboid width", min = "1")
@@ -45,17 +45,17 @@ public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     private String unit = "";
 
     @Override
-    public ImgPlus<BitType> createOutput() {
-        return createIJ1ImgPlus("Wire-frame cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
-    }
+    public ImgPlus<BitType> compute0() {
+        final ImgPlus<BitType> output =
+                createIJ1ImgPlus("Wire-frame cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
 
-    @Override
-    public void compute0(final ImgPlus<BitType> output) {
         for (int f = 0; f < frames; f++) {
             for (int c = 0; c < channels; c++) {
                 drawCuboidEdges(output, c, f);
             }
         }
+
+        return output;
     }
 
     //region -- Helper methods --
@@ -115,7 +115,7 @@ public class WireFrameCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     public static void main(String... args) {
         final ImageJ ij = net.imagej.Main.launch(args);
         // Call the hybrid op without a ready buffer (null)
-        Object cuboid = ij.op().run(WireFrameCuboid.class, null, 50L, 50L, 5L, 1L, 1L, 1L);
+        Object cuboid = ij.op().run(WireFrameCuboid.class, 50L, 50L, 5L, 1L, 1L, 1L);
         ij.ui().show(cuboid);
     }
 }

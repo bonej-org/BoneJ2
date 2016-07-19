@@ -3,7 +3,7 @@ package org.bonej.testImages;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.ops.Op;
-import net.imagej.ops.special.hybrid.AbstractNullaryHybridCF;
+import net.imagej.ops.special.function.AbstractNullaryFunctionOp;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.logic.BitType;
 import org.scijava.plugin.Parameter;
@@ -19,7 +19,7 @@ import static org.bonej.testImages.IJ1ImgPlus.*;
  * @author Richard Domander
  */
 @Plugin(type = Op.class, name = "hollowCuboid", menuPath = "Plugins>Test Images>Hollow cuboid")
-public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
+public class HollowCuboid extends AbstractNullaryFunctionOp<ImgPlus<BitType>> {
     @Parameter(label = "X-size", description = "Cuboid width", min = "1")
     private long xSize = 50;
 
@@ -45,12 +45,9 @@ public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
     private String unit = "";
 
     @Override
-    public ImgPlus<BitType> createOutput() {
-        return createIJ1ImgPlus("Hollow cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
-    }
-
-    @Override
-    public void compute0(final ImgPlus<BitType> cuboid) {
+    public ImgPlus<BitType> compute0() {
+        final ImgPlus<BitType> cuboid =
+                createIJ1ImgPlus("Hollow cuboid", xSize, ySize, zSize, channels, frames, padding, scale, unit);
         final RandomAccess<BitType> access = cuboid.randomAccess();
 
         for (int t = 0; t < frames; t++) {
@@ -62,6 +59,8 @@ public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
                 drawFaces(access, Y_DIM, Z_DIM, X_DIM, ySize, zSize, xSize);
             }
         }
+
+        return cuboid;
     }
 
     /**
@@ -95,8 +94,7 @@ public class HollowCuboid extends AbstractNullaryHybridCF<ImgPlus<BitType>> {
 
     public static void main(String... args) {
         final ImageJ ij = net.imagej.Main.launch(args);
-        // Call the hybrid op without a ready buffer (null)
-        Object cuboid = ij.op().run(HollowCuboid.class, null, 100L, 100L, 10L, 3L, 5L, 5L);
+        Object cuboid = ij.op().run(HollowCuboid.class, 100L, 100L, 10L, 3L, 5L, 5L);
         ij.ui().show(cuboid);
     }
 }
