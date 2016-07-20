@@ -95,7 +95,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
             return;
         }
 
-        // TODO allow higher dimensionality, and then cut extra spatial dims?
         if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
             cancel(NOT_3D_IMAGE);
         }

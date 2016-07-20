@@ -8,6 +8,7 @@ import net.imglib2.type.numeric.RealType;
 import org.bonej.ops.thresholdFraction.ElementFraction;
 import org.bonej.ops.thresholdFraction.ElementFraction.Results;
 import org.bonej.ops.thresholdFraction.ElementFraction.Settings;
+import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
@@ -83,6 +84,11 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
         if (!ElementUtil.isColorsBinary(inputImage)) {
             cancel(NOT_BINARY);
+        }
+
+        final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
+        if (spatialDimensions < 2 || spatialDimensions > 3) {
+            cancel(WEIRD_SPATIAL);
         }
     }
 }

@@ -6,6 +6,7 @@ package org.bonej.wrapperPlugins;
  * @author Richard Domander 
  */
 public class CommonMessages {
+    public static final String WEIRD_SPATIAL = "Need a 2D or 3D image";
     public static final String NOT_3D_IMAGE = "Need a 3D image";
     public static final String HAS_TIME_DIMENSIONS = "Image cannot have time axis";
     public static final String HAS_CHANNEL_DIMENSIONS = "Image cannot be composite";

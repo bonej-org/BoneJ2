@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
- * Tests for the {@link SurfaceFractionWrapper SurfaceFractionWrapper} class
+ * Tests for the {@link SurfaceFractionWrapper} class
  *
  * @author Richard Domander
  */

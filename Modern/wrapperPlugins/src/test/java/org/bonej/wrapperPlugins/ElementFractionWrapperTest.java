@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
- * Regression tests for the {@link ElementFractionWrapper ElementFractionWrapper} plugin
+ * Regression tests for the {@link ElementFractionWrapper} plugin
  *
  * @author Richard Domander
  */
@@ -100,6 +100,29 @@ public class ElementFractionWrapperTest {
     }
 
     @Test
+    public void testWeirdSpatialImageCancelsPlugin() throws Exception {
+        // Mock UI
+        final UserInterface mockUI = mock(UserInterface.class);
+        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+        when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
+        IMAGE_J.ui().setDefaultUI(mockUI);
+
+        // Create an hyperstack with no calibration
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+        final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+        final Img<DoubleType> img = ArrayImgs.doubles(5, 5);
+        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, cAxis);
+
+        // Run command
+        final CommandModule module =
+                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+
+        assertTrue("A non 2D and 3D image should have cancelled the plugin", module.isCanceled());
+        assertEquals("Cancel reason is incorrect", CommonMessages.WEIRD_SPATIAL, module.getCancelReason());
+        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
+    }
+
+    @Test
     public void testNoCalibrationShowsWarning() throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
@@ -114,8 +137,7 @@ public class ElementFractionWrapperTest {
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
 
         // Run command
-        final CommandModule module =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+        IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
         verify(mockUI, after(100)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
     }
