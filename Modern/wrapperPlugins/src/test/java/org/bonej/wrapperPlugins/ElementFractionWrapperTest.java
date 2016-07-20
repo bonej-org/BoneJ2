@@ -19,20 +19,14 @@ import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
-import java.util.Iterator;
-import java.util.stream.IntStream;
-
-import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
  * Regression tests for the {@link ElementFractionWrapper} plugin
@@ -58,45 +52,18 @@ public class ElementFractionWrapperTest {
     }
 
     @Test
-    public void testNullImageCancelsPlugin() throws Exception {
-        // Mock UI
-        final UserInterface mockUI = mock(UserInterface.class);
-        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-        when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
-        IMAGE_J.ui().setDefaultUI(mockUI);
-
-        // Run command
-        final CommandModule module =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", null).get();
-
-        assertTrue("Null image should have canceled the plugin", module.isCanceled());
-        assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN, module.getCancelReason());
-        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
+    public void testNullImageCancelsElementFraction() throws Exception {
+        CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J, ElementFractionWrapper.class);
     }
 
     @Test
-    public void testNonBinaryImageCancelsPlugin() throws Exception {
-        // Mock UI
-        final UserInterface mockUI = mock(UserInterface.class);
-        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-        when(mockUI.dialogPrompt(anyString(), anyString(), any(), any())).thenReturn(mockPrompt);
-        IMAGE_J.ui().setDefaultUI(mockUI);
+    public void testNonBinaryImageCancelsElementFraction() throws Exception {
+        CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J, ElementFractionWrapper.class);
+    }
 
-        // Create a test image with more than two colors
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final Img<DoubleType> img = ArrayImgs.doubles(3, 3);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
-        final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1).iterator();
-        imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
-
-        // Run command
-        final CommandModule module =
-                IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
-
-        assertTrue("An image with more than two colours should have cancelled the plugin", module.isCanceled());
-        assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module.getCancelReason());
-        verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
+    @Test
+    public void testNoCalibrationShowsWarning() throws Exception {
+        CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J, ElementFractionWrapper.class);
     }
 
     @Test
@@ -120,26 +87,6 @@ public class ElementFractionWrapperTest {
         assertTrue("A non 2D and 3D image should have cancelled the plugin", module.isCanceled());
         assertEquals("Cancel reason is incorrect", CommonMessages.WEIRD_SPATIAL, module.getCancelReason());
         verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(), any());
-    }
-
-    @Test
-    public void testNoCalibrationShowsWarning() throws Exception {
-        // Mock UI
-        final UserInterface mockUI = mock(UserInterface.class);
-        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-        when(mockUI.dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-        IMAGE_J.ui().setDefaultUI(mockUI);
-
-        // Create an hyperstack with no calibration
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-        final Img<DoubleType> img = ArrayImgs.doubles(5, 5);
-        final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
-
-        // Run command
-        IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
-
-        verify(mockUI, after(100)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
     }
 
     @Test
