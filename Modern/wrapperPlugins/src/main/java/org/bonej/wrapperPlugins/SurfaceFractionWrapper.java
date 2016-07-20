@@ -56,7 +56,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         final Img<BitType> bitImg = opService.convert().bit(inputImage);
         final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
         Common.copyMetadata(inputImage, bitImgPlus);
-        final List<SpatialView> views = ViewUtils.createSpatialViews(bitImgPlus);
+        final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
         final Thresholds thresholds = new Thresholds<>(bitImgPlus, 1, 1);
 
         for (SpatialView view : views) {

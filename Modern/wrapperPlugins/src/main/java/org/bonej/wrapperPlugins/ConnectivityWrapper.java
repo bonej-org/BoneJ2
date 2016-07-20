@@ -60,7 +60,7 @@ public class ConnectivityWrapper extends ContextCommand {
         final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
         Common.copyMetadata(inputImage, bitImgPlus);
 
-        final List<SpatialView> views = ViewUtils.createSpatialViews(bitImgPlus);
+        final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
         for (SpatialView view : views) {
             final String label = name + view.hyperPosition;
             viewConnectivity(label, view.view);

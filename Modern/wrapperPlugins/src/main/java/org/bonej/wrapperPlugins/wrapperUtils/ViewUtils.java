@@ -2,6 +2,8 @@ package org.bonej.wrapperPlugins.wrapperUtils;
 
 import net.imagej.ImgPlus;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 import org.bonej.utilities.AxisUtils;
 
@@ -20,10 +22,9 @@ public class ViewUtils {
      * Creates views of all the spatial subspaces present in the given image
      * @implNote Assumes that there's at most one channel and time dimension
      * @implNote Does not affect the number of spatial dimensions
-     * TODO generalize
      */
-    public static List<SpatialView> createSpatialViews(ImgPlus<?> imgPlus) {
-        final List<SpatialView> views = new ArrayList<>();
+    public static <T extends RealType<T> & NativeType<T>> List<SpatialView<T>> createSpatialViews(ImgPlus<T> imgPlus) {
+        final List<SpatialView<T>> views = new ArrayList<>();
         final int timeIndex = AxisUtils.getTimeIndex(imgPlus);
         int channelIndex = AxisUtils.getChannelIndex(imgPlus);
 
@@ -40,12 +41,12 @@ public class ViewUtils {
             long channel = 0;
             // No need to add clarifying suffix is there's only one frame
             final String frameSuffix = frames > 1 ? "_F" + (frame + 1) : "";
-            RandomAccessibleInterval timeView = safeHyperSlice(imgPlus, timeIndex, frame);
+            RandomAccessibleInterval<T> timeView = safeHyperSlice(imgPlus, timeIndex, frame);
             do {
                 // No need to add clarifying suffix is there's only one channel
                 final String channelSuffix = channels > 1 ? "_C" + (channel + 1) : "";
-                RandomAccessibleInterval channelView = safeHyperSlice(timeView, channelIndex, channel);
-                final SpatialView view = new SpatialView(channelView, frameSuffix + channelSuffix);
+                RandomAccessibleInterval<T> channelView = safeHyperSlice(timeView, channelIndex, channel);
+                final SpatialView<T> view = new SpatialView<>(channelView, frameSuffix + channelSuffix);
                 views.add(view);
                 channel++;
             } while (channel < channels);
@@ -56,7 +57,9 @@ public class ViewUtils {
     }
 
     //region -- Helper methods --
-    private static RandomAccessibleInterval safeHyperSlice(RandomAccessibleInterval view, int dimension, long position) {
+    private static <T extends RealType<T> & NativeType<T>> RandomAccessibleInterval<T> safeHyperSlice(
+            RandomAccessibleInterval<T> view, int dimension,
+            long position) {
         if (dimension < 0 || dimension >= view.numDimensions()) {
             return view;
         }
@@ -71,8 +74,8 @@ public class ViewUtils {
      * A class which stores a view of a spatial subspace,
      * and a verbal description of its position in an n-dimensional hyper space
      */
-    public static final class SpatialView {
-        public final RandomAccessibleInterval view;
+    public static final class SpatialView<T extends RealType<T> & NativeType<T>> {
+        public final RandomAccessibleInterval<T> view;
         public final String hyperPosition;
 
         /**
@@ -81,7 +84,7 @@ public class ViewUtils {
          * @param view          A view of a spatial subspace in an n-dimensional space
          * @param hyperPosition A string describing the position of the subspace, e.g. "Channel 1"
          */
-        public SpatialView(final RandomAccessibleInterval view, String hyperPosition) {
+        public SpatialView(final RandomAccessibleInterval<T> view, String hyperPosition) {
             this.view = view;
             this.hyperPosition = hyperPosition;
         }
