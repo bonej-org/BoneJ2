@@ -10,7 +10,6 @@ import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.DoubleType;
@@ -25,15 +24,16 @@ import org.scijava.plugin.Plugin;
  */
 @Plugin(type = Op.class, name = "surfaceFraction")
 public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
-        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, SurfaceFraction.Results> implements Contingent {
-    private BinaryFunctionOp<RandomAccessibleInterval, Thresholds, Img> maskOp;
+        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, SurfaceFraction.Results>
+        implements Contingent {
+    private BinaryFunctionOp<RandomAccessibleInterval, Thresholds, RandomAccessibleInterval> maskOp;
     private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
     private UnaryFunctionOp<Mesh, DoubleType> volumeOp;
 
     /** Match the ops that this op uses */
     @Override
     public void initialize() {
-        maskOp = Functions.binary(ops(), SurfaceMask.class, Img.class, in1(), in2());
+        maskOp = Functions.binary(ops(), SurfaceMask.class, RandomAccessibleInterval.class, in1(), in2());
         marchingCubesOp = Functions.unary(ops(), Ops.Geometric.MarchingCubes.class, Mesh.class, in1());
         volumeOp = Functions.unary(ops(), Ops.Geometric.Size.class, DoubleType.class, new DefaultMesh());
     }
@@ -44,13 +44,13 @@ public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
 
     @Override
     public Results compute2(final RandomAccessibleInterval<T> interval, final Thresholds<T> thresholds) {
-        final Img thresholdMask = maskOp.compute2(interval, thresholds);
+        final RandomAccessibleInterval thresholdMask = maskOp.compute2(interval, thresholds);
         final Mesh thresholdSurface = marchingCubesOp.compute1(thresholdMask);
         final double thresholdSurfaceVolume = volumeOp.compute1(thresholdSurface).get();
 
         final Thresholds<T> totalThresholds =
                 new Thresholds<>(interval, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-        final Img totalMask =  maskOp.compute2(interval, totalThresholds);
+        final RandomAccessibleInterval totalMask = maskOp.compute2(interval, totalThresholds);
         final Mesh totalSurface = marchingCubesOp.compute1(totalMask);
         final double totalSurfaceVolume = volumeOp.compute1(totalSurface).get();
 

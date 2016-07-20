@@ -3,7 +3,11 @@ package org.bonej.ops.thresholdFraction;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
-import net.imglib2.*;
+import net.imglib2.Cursor;
+import net.imglib2.Dimensions;
+import net.imglib2.FinalDimensions;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -18,7 +22,8 @@ import org.scijava.plugin.Plugin;
  */
 @Plugin(type = Op.class, name = "surfaceMask")
 public class SurfaceMask<T extends NativeType<T> & RealType<T>> extends
-        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, Img<BitType>> implements Contingent {
+        AbstractBinaryFunctionOp<RandomAccessibleInterval<T>, Thresholds<T>, RandomAccessibleInterval<BitType>>
+        implements Contingent {
     @Override
     public boolean conforms() {
         return in1().numDimensions() >= 3;
@@ -29,10 +34,11 @@ public class SurfaceMask<T extends NativeType<T> & RealType<T>> extends
      *
      * @param interval      A RAI where the first three dimensions are spatial
      * @param thresholds    Thresholds whose type matches that of the elements in the interval
-     * @return              A three dimensional mask that can be given to a marching cubes op
+     * @return A three dimensional mask that can be given to a marching cubes op
      */
     @Override
-    public Img<BitType> compute2(final RandomAccessibleInterval<T> interval, final Thresholds<T> thresholds) {
+    public RandomAccessibleInterval<BitType> compute2(final RandomAccessibleInterval<T> interval,
+            final Thresholds<T> thresholds) {
         final long width = interval.dimension(0);
         final long height = interval.dimension(1);
         final long depth = interval.dimension(2);
