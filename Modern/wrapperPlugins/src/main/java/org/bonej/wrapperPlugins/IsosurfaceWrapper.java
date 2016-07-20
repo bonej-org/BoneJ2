@@ -17,6 +17,7 @@ import org.bonej.ops.thresholdFraction.SurfaceMask;
 import org.bonej.ops.thresholdFraction.Thresholds;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
+import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils;
@@ -52,27 +53,33 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
     private UnitService unitService;
 
     private boolean calibrationWarned = false;
+    private BinaryFunctionOp<RandomAccessibleInterval, Thresholds, RandomAccessibleInterval> maskOp;
+    private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
 
     @Override
     public void run() {
         //TODO create Common.toBitTypeWithMetaData(ImgPlus<T>)
-        final String name = inputImage.getName();
         final Img<BitType> bitImg = ops.convert().bit(inputImage);
         final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
         Common.copyMetadata(inputImage, bitImgPlus);
-        final Thresholds thresholds = new Thresholds<>(bitImgPlus, 1, 1);
 
-        // Get 3D subspaces from hyperstack
         final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
+        matchOps(views.get(0).view);
+        processViews(views);
+    }
 
-        // Match ops
-        final RandomAccessibleInterval<BitType> matchView = views.get(0).view;
-        BinaryFunctionOp<RandomAccessibleInterval, Thresholds, RandomAccessibleInterval> maskOp =
-                Functions.binary(ops, SurfaceMask.class, RandomAccessibleInterval.class, matchView, thresholds);
-        final UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp =
-                Functions.unary(ops, Ops.Geometric.MarchingCubes.class, Mesh.class, matchView);
+    // -- Helper methods --
+    private void matchOps(final RandomAccessibleInterval<BitType> matchingView) {
+        //TODO match with suitable mocked "NilTypes" (conforms == true)
+        final Thresholds<BitType> thresholds = new Thresholds<>(matchingView, 1, 1);
+        maskOp = Functions.binary(ops, SurfaceMask.class, RandomAccessibleInterval.class, matchingView, thresholds);
+        marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class, Mesh.class, matchingView);
+    }
 
-        for (SpatialView<BitType> view : views) {
+    private void processViews(List<SpatialView<BitType>> views) {
+        final String name = inputImage.getName();
+
+        for (SpatialView<?> view : views) {
             final String label = name + view.hyperPosition;
             final RandomAccessibleInterval mask = maskOp.compute1(view.view);
             final Mesh mesh = marchingCubesOp.compute1(mask);
@@ -81,14 +88,17 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
         }
     }
 
-    // -- Helper methods --
     private void showArea(final String label, final double area) {
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '2');
+        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
 
         if (unitHeader.isEmpty() && !calibrationWarned) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
             calibrationWarned = true;
         }
+
+        final ResultsInserter resultsInserter = ResultsInserter.getInstance();
+        resultsInserter.setMeasurementInFirstFreeRow(label, "Surface area " + unitHeader, area);
+        resultsInserter.updateResults();
     }
 
     @SuppressWarnings("unused")
