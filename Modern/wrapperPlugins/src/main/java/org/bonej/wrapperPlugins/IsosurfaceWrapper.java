@@ -9,7 +9,6 @@ import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -58,11 +57,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 
     @Override
     public void run() {
-        //TODO create Common.toBitTypeWithMetaData(ImgPlus<T>)
-        final Img<BitType> bitImg = ops.convert().bit(inputImage);
-        final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
-        Common.copyMetadata(inputImage, bitImgPlus);
-
+        final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops, inputImage);
         final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
         matchOps(views.get(0).view);
         processViews(views);

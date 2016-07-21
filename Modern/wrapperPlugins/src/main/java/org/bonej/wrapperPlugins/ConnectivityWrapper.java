@@ -5,7 +5,6 @@ import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import org.bonej.utilities.AxisUtils;
@@ -55,10 +54,8 @@ public class ConnectivityWrapper extends ContextCommand {
 
     @Override
     public void run() {
+        final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService, inputImage);
         final String name = inputImage.getName();
-        final Img<BitType> bitImg = opService.convert().bit(inputImage);
-        final ImgPlus<BitType> bitImgPlus = new ImgPlus<>(bitImg);
-        Common.copyMetadata(inputImage, bitImgPlus);
 
         final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
         for (SpatialView view : views) {
