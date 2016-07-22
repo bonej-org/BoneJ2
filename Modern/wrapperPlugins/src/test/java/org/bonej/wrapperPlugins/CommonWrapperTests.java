@@ -13,6 +13,9 @@ import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.bonej.wrapperPlugins.CommonMessages.*;
@@ -30,7 +33,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 /**
  * Common tests for wrapper plugins
  *
- * @author Richard Domander 
+ * @author Richard Domander
  */
 public class CommonWrapperTests {
     public static <C extends Command> void testNullImageCancelsPlugin(final ImageJ imageJ, final Class<C> commandClass)
@@ -98,7 +101,7 @@ public class CommonWrapperTests {
     }
 
     public static <C extends Command> void testNoCalibrationShowsWarning(final ImageJ imageJ,
-            final Class<C> commandClass) throws Exception {
+            final Class<C> commandClass, Object... additionalInputs) throws Exception {
         // Mock UI
         final UserInterface mockUI = mock(UserInterface.class);
         final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
@@ -114,7 +117,14 @@ public class CommonWrapperTests {
         final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
 
         // Run command
-        imageJ.command().run(commandClass, true, "inputImage", imgPlus).get();
+        int baseSize = additionalInputs != null ? additionalInputs.length : 0;
+        Object[] inputs = new Object[additionalInputs.length + 2];
+        inputs[0] = "inputImage";
+        inputs[1] = imgPlus;
+        if (baseSize > 0) {
+            System.arraycopy(additionalInputs, 0, inputs, 2, baseSize);
+        }
+        imageJ.command().run(commandClass, true, inputs).get();
 
         verify(mockUI, after(100).times(1)).dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(WARNING_MESSAGE), any());
     }
