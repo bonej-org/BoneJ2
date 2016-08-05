@@ -5,18 +5,40 @@ Plugin produces valid STL-files
 Steps
 -----------------------------------------------------------------------
 1. Create a cuboid (Test Images>Cuboid)
-   - Set options: w: 10, h: 10, d: 10, frames: 2, channels: 2, padding: 5
+   - Set options: w: 10, h: 10, d: 10, frames: 2, channels: 2, padding: 5,
+     unit: "mm"
 2. Run Isosurface (Plugins>BoneJ>Isosurface)
-3. Click browse, choose a directory, and set filename to "Cuboid.stl"
-4. Check "Save STL file", and click "OK"
-5. Click "OK" when calibration warning pops open
-6. Verify that plugin writes 4 .stl files to the specified folder
-7. Check that the files can be opened with http://www.viewstl.com/
+3. Check "Save STL file", and click "OK"
+4. Choose a directory and save file as "Mesh"
+5. Verify that plugin writes 4 .stl files to the specified folder
+6. Check that the files can be opened with http://www.viewstl.com/
    (Should see a similar cube in each)
 
 Expected result
 -----------------------------------------------------------------------
-Plugin writes correct number of valid STL files
+Plugin writes four files with the extension ".stl" to the chosen directory.
+All files can be opened with the stl renderer above.
 
-Completed -- -- ---- - -
+//TODO Redo when STL saving is an IOPlugin in SciJava
+Completed August 8 2016 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+Pressing cancel in the file dialog stops the plugin
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Create a cuboid (Test Images>Cuboid)
+   - Set unit to "mm"
+2. Run Isosurface (Plugins>BoneJ>Isosurface)
+3. Check "Save STL file", and click "OK"
+4. Click cancel on the file dialog
+
+Expected result
+-----------------------------------------------------------------------
+Plugin stops without exceptions and no files are created
+
+Completed 5 August 2016 Richard Domander
 -----------------------------------------------------------------------
