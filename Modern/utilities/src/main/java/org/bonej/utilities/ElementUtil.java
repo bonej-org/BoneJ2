@@ -51,6 +51,7 @@ public class ElementUtil {
      * @return Calibrated size of a spatial element, or Double.NaN if space == null,
      *         has nonlinear axes, or calibration units don't match
      */
+    //TODO: Add limit option
     public static <T extends AnnotatedSpace<CalibratedAxis>> double calibratedSpatialElementSize(
             @Nullable final T space, final UnitService unitService) {
         if (AxisUtils.hasNonLinearSpatialAxes(space)) {

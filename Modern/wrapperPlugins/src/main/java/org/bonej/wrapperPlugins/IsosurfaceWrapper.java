@@ -2,6 +2,7 @@ package org.bonej.wrapperPlugins;
 
 import com.google.common.base.Strings;
 import net.imagej.ImgPlus;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops;
 import net.imagej.ops.geom.geom3d.mesh.Facet;
@@ -10,6 +11,7 @@ import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -25,11 +27,15 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils.SpatialView;
+import org.jetbrains.annotations.Nullable;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
+import org.scijava.widget.Button;
 import org.scijava.widget.FileWidget;
 
 import java.io.File;
@@ -43,6 +49,7 @@ import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.bonej.utilities.Streamers.spatialAxisStream;
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
@@ -54,20 +61,28 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Isosurface", headless = true)
 public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
-    private static final String STL_EXTENSION = ".stl";
     public static final String STL_WRITE_ERROR = "Failed to write the following STL files:\n\n";
     public static final String STL_HEADER = Strings.padEnd("Binary STL created by BoneJ", 80, '.');
-    public static final String BAD_EXTENSION_WARNING =
-            "The file may not work correctly if extension is not " + STL_EXTENSION;
+    public static final String BAD_SCALING = "Cannot scale result because axis calibrations don't match";
 
     @Parameter(initializer = "initializeImage")
     private ImgPlus<T> inputImage;
 
-    @Parameter(label = "Export STL file", description = "Create a STL file from the surface mesh", required = false)
+    @Parameter(label = "Export STL file(s)", description = "Create a binary STL file from the surface mesh",
+            required = false)
     private boolean exportSTL;
+
+    @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
+    private Button helpButton;
+
+    @Parameter
+    private LogService logService;
 
     @Parameter
     private OpService ops;
+
+    @Parameter
+    private PlatformService platformService;
 
     @Parameter
     private UIService uiService;
@@ -76,6 +91,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
     private UnitService unitService;
 
     private boolean calibrationWarned = false;
+    private boolean scalingWarned = false;
     private BinaryFunctionOp<RandomAccessibleInterval, Thresholds, RandomAccessibleInterval> maskOp;
     private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
 
@@ -149,13 +165,13 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
         }
 
         if (failedMeshes.size() > 0) {
-            //TODO test when user can give filename (empty name)
             StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
             failedMeshes.forEach((k, v) -> msgBuilder.append(k).append(": ").append(v));
             uiService.showDialog(msgBuilder.toString(), ERROR_MESSAGE);
         }
     }
 
+    @Nullable
     private String choosePath() {
         String initialName = stripFileExtension(inputImage.getName());
 
@@ -176,12 +192,21 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
         return dot == -1 ? path : path.substring(0, dot);
     }
 
-    private void showArea(final String label, final double area) {
+    private void showArea(final String label, double area) {
         final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
 
         if (unitHeader.isEmpty() && !calibrationWarned) {
             uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
             calibrationWarned = true;
+        }
+
+        if (!isAxesMatchingSpatialCalibration(inputImage) && !scalingWarned) {
+            uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
+            scalingWarned = true;
+        } else {
+            final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
+            final double areaCalibration = scale * scale;
+            area *= areaCalibration;
         }
 
         final ResultsInserter resultsInserter = ResultsInserter.getInstance();
@@ -203,6 +228,11 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
         if (!ElementUtil.isColorsBinary(inputImage)) {
             cancel(NOT_BINARY);
         }
+    }
+
+    @SuppressWarnings("unused")
+    private void openHelpPage() {
+        Help.openHelpPage("http://bonej.org/isosurface", platformService, uiService, logService);
     }
 
     // -- Utility methods --
@@ -242,5 +272,20 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
                 buffer.clear();
             }
         }
+    }
+
+    /**
+     * Check if all the spatial axes have a matching calibration, e.g. same unit, same scaling
+     * <p>
+     * NB: Public and static for testing purposes
+     * </p>
+     */
+    // TODO make into a utility method or remove if mesh area considers calibration in the future
+    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isAxesMatchingSpatialCalibration(T space) {
+        final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit).allMatch(Strings::isNullOrEmpty);
+        final boolean matchingUnit = spatialAxisStream(space).map(CalibratedAxis::unit).distinct().count() == 1;
+        final boolean matchingScale = spatialAxisStream(space).map(a -> a.averageScale(0, 1)).distinct().count() == 1;
+
+        return (matchingUnit || noUnits) && matchingScale;
     }
 }

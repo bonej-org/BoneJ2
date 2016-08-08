@@ -32,13 +32,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.bonej.wrapperPlugins.IsosurfaceWrapper.STL_WRITE_ERROR;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.*;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
  * Tests for {@link IsosurfaceWrapper}
@@ -46,6 +47,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
  * @author Richard Domander
  */
 public class IsosurfaceWrapperTest {
+
     private static final ImageJ IMAGE_J = new ImageJ();
 
     @BeforeClass
@@ -85,22 +87,25 @@ public class IsosurfaceWrapperTest {
 
     @Test
     public void testResults() throws Exception {
+        final double scale = 0.1;
+        final String unit = "mm";
+        final double areaScaling = scale * scale;
         // Marching cubes creates an octahedron out of a unit cube
         // Calculate the length of the side of the octahedron with Pythagoras' theorem
         final double side = Math.sqrt(0.5 * 0.5 + 0.5 * 0.5);
         final double height = 0.5;
         final double pyramidFaces = 2 * side * Math.sqrt(side * side / 4.0 + height * height);
-        final double expectedArea = pyramidFaces * 2;
-        final String unit = "mm";
+        // Apply calibration to the area of the octahedron
+        final double expectedArea = pyramidFaces * 2 * areaScaling;
         final double[] expectedValues = {0, expectedArea, expectedArea, 0};
 
         /*
-         * Create a hyperstack with two channels and two frames.
+         * Create a calibrated hyperstack with two channels and two frames.
          * Two of the 3D subspaces are empty, and two of them contain a unit cube (single voxel)
          */
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit);
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit);
-        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit);
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit, scale);
         final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
         final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
         final Img<BitType> img = ArrayImgs.bits(1, 1, 1, 2, 2);
@@ -232,6 +237,89 @@ public class IsosurfaceWrapperTest {
         // Verify that write error dialog got shown
         verify(mockUI, after(100).times(1))
                 .dialogPrompt(startsWith(STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
+    }
+
+    @Test
+    public void testMismatchingCalibrationsShowsWarningDialog() throws Exception {
+        // Create a test image with different scales in spatial calibration
+        final String unit = "mm";
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit, 0.6);
+        final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+        final Img<BitType> img = ArrayImgs.bits(1, 1, 1, 1);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis, zAxis, tAxis);
+
+        // Mock UI
+        final UserInterface mockUI = mock(UserInterface.class);
+        final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+        when(mockUI.dialogPrompt(eq(IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any()))
+                .thenReturn(mockPrompt);
+        IMAGE_J.ui().setDefaultUI(mockUI);
+
+        // Run plugin
+        IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus).get();
+
+        // Verify that warning dialog about result scaling got shown once
+        verify(mockUI, after(100).times(1))
+                .dialogPrompt(eq(IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
+    }
+
+    @Test
+    public void testIsAxesMatchingSpatialCalibrationDifferentScales() throws Exception {
+        // Create a test image with different scales in calibration
+        final String unit = "mm";
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
+        final Img<BitType> img = ArrayImgs.bits(1, 1);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(imgPlus);
+
+        assertFalse("Different scales in axes should mean that calibration doesn't match", result);
+    }
+
+    @Test
+    public void testIsAxesMatchingSpatialCalibrationDifferentUnits() throws Exception {
+        // Create a test image with different units in calibration
+        final double scale = 0.75;
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm", scale);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", scale);
+        final Img<BitType> img = ArrayImgs.bits(1, 1);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(imgPlus);
+
+        assertFalse("Different units in axes should mean that calibration doesn't match", result);
+    }
+
+    @Test
+    public void testIsAxesMatchingSpatialCalibrationNoUnits() throws Exception {
+        // Create a test image with no calibration units
+        final double scale = 0.75;
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", scale);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null, scale);
+        final Img<BitType> img = ArrayImgs.bits(1, 1);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(imgPlus);
+
+        assertTrue("No units should mean matching calibration", result);
+    }
+
+    @Test
+    public void testIsAxesMatchingSpatialCalibration() throws Exception {
+        // Create a test image with uniform calibration
+        final String unit = "mm";
+        final double scale = 0.75;
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
+        final Img<BitType> img = ArrayImgs.bits(1, 1);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis, yAxis);
+
+        final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(imgPlus);
+
+        assertTrue("Axes should have matching calibration", result);
     }
 
     // -- Helper methods --
