@@ -258,7 +258,7 @@ public class IsosurfaceWrapperTest {
         IMAGE_J.ui().setDefaultUI(mockUI);
 
         // Run plugin
-        IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus).get();
+        IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus, "exportSTL", false).get();
 
         // Verify that warning dialog about result scaling got shown once
         verify(mockUI, after(100).times(1))
