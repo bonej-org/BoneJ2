@@ -108,12 +108,10 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
-            <version>0.31.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-common</artifactId>
-            <version>${imagej-common.version}</version>
         </dependency>
         <dependency>
             <!-- Needed for UI -->
@@ -131,8 +129,8 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
-            <version>3.1.1-SNAPSHOT</version>
-            <!-- TODO Use version 3.1.1 when released -->
+            <version>3.1.1</version>
+            <!-- TODO Remove when pom-fiji updates -->
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
@@ -141,8 +139,6 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
-            <!-- TODO Remove when pom-fiji updates -->
-            <version>2.1.0</version>
         </dependency>
 
         <!-- SciJava dependencies -->
@@ -187,6 +183,7 @@
     </dependencies>
 
     <build>
+        <finalName>BoneJ2DPL</finalName>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -197,13 +194,6 @@
                     </organizationName>
                     <projectName>BoneJ2: open source tools for trabecular geometry and whole bone shape analysis.
                     </projectName>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <finalName>BoneJ2DPL</finalName>
                 </configuration>
             </plugin>
         </plugins>

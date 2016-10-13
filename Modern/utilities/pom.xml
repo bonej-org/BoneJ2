@@ -82,7 +82,6 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-common</artifactId>
-            <version>${imagej-common.version}</version>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
@@ -125,6 +124,7 @@
     </dependencies>
 
     <build>
+        <finalName>BoneJ2Util</finalName>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -135,13 +135,6 @@
                     </organizationName>
                     <projectName>BoneJ2: open source tools for trabecular geometry and whole bone shape analysis.
                     </projectName>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <finalName>BoneJ2Util</finalName>
                 </configuration>
             </plugin>
         </plugins>

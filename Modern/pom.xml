@@ -7,7 +7,7 @@
     <parent>
         <groupId>sc.fiji</groupId>
         <artifactId>pom-fiji</artifactId>
-        <version>24.3.0</version>
+        <version>26.1.1</version>
     </parent>
 
     <groupId>org.bonej</groupId>
@@ -115,7 +115,6 @@
         <wrapperPlugins.version>0.2.0-SNAPSHOT</wrapperPlugins.version>
         <utilities.version>0.2.0-SNAPSHOT</utilities.version>
         <ops.version>0.2.0-SNAPSHOT</ops.version>
-        <imagej-common.version>LATEST</imagej-common.version>
         <enforcer.skip>true</enforcer.skip>
     </properties>
 
