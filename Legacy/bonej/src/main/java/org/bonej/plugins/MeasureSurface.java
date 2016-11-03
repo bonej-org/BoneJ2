@@ -52,8 +52,9 @@ import marchingcubes.MCTriangulator;
  * from it.
  *
  * @author Michael Doube
- *
+ * @deprecated Replaced by IsosurfaceWrapper
  */
+@Deprecated
 public class MeasureSurface implements PlugIn {
 
 	@Override
