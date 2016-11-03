@@ -1,8 +1,16 @@
+
 package org.bonej.wrapperPlugins;
 
-import ij.ImagePlus;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+
+import java.util.List;
+
 import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
+
 import org.bonej.ops.TriplePointAngles;
 import org.bonej.ops.TriplePointAngles.TriplePoint;
 import org.bonej.utilities.ImagePlusCheck;
@@ -17,16 +25,11 @@ import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 import org.scijava.widget.NumberWidget;
+
+import ij.ImagePlus;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Graph;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
-
-import java.util.List;
-
-import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
-import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
  * A wrapper UI class for the TriplePointAngles Op
@@ -35,121 +38,134 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Triple Point Angles")
 public class TriplePointAnglesWrapper extends ContextCommand {
-    static {
-        // NB: Needed if you mix-and-match IJ1 and IJ2 classes.
-        // And even then: do not use IJ1 classes in the API!
-        LegacyInjector.preinit();
-    }
 
-    /** @implNote Use ImagePlus because of conversion issues of composite images */
-    @Parameter(initializer = "initializeImage")
-    private ImagePlus inputImage;
+	static {
+		// NB: Needed if you mix-and-match IJ1 and IJ2 classes.
+		// And even then: do not use IJ1 classes in the API!
+		LegacyInjector.preinit();
+	}
 
-    @Parameter(label = "Measurement mode", description = "Where to measure the triple point angles",
-            style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
-            "Opposite vertex", "Edge point"})
-    private String measurementMode;
+	/**
+	 * @implNote Use ImagePlus because of conversion issues of composite images
+	 */
+	@Parameter(initializer = "initializeImage")
+	private ImagePlus inputImage;
 
-    @Parameter(label = "Edge point #", min = "0", max = "100", stepSize = "1",
-            description = "Ordinal of the edge point used for measuring", style = NumberWidget.SLIDER_STYLE,
-            persist = false)
-    private int edgePoint = 0;
+	@Parameter(label = "Measurement mode",
+		description = "Where to measure the triple point angles",
+		style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
+			"Opposite vertex", "Edge point" })
+	private String measurementMode;
 
-    @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
-    private Button helpButton;
+	@Parameter(label = "Edge point #", min = "0", max = "100", stepSize = "1",
+		description = "Ordinal of the edge point used for measuring",
+		style = NumberWidget.SLIDER_STYLE, persist = false)
+	private int edgePoint = 0;
 
-    @Parameter
-    private LogService logService;
+	@Parameter(label = "Help", description = "Open help web page",
+		callback = "openHelpPage")
+	private Button helpButton;
 
-    @Parameter
-    private OpService opService;
+	@Parameter
+	private LogService logService;
 
-    @Parameter
-    private PlatformService platformService;
+	@Parameter
+	private OpService opService;
 
-    @Parameter
-    private UIService uiService;
+	@Parameter
+	private PlatformService platformService;
 
-    @Override
-    public void run() {
-        //Skeletonise input image
-        final ImagePlus skeleton = inputImage.duplicate();
-        final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
-        skeletoniser.setup("", skeleton);
-        skeletoniser.run(null);
+	@Parameter
+	private UIService uiService;
 
-        final int iterations = skeletoniser.getThinningIterations();
-        if (iterations > 1) {
-            skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-            skeleton.show();
-            uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
-        }
+	@Override
+	public void run() {
+		// Skeletonise input image
+		final ImagePlus skeleton = inputImage.duplicate();
+		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+		skeletoniser.setup("", skeleton);
+		skeletoniser.run(null);
 
-        // Analyse skeleton
-        final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
-        analyser.setup("", skeleton);
-        analyser.run();
-        final Graph[] graphs = analyser.getGraphs();
+		final int iterations = skeletoniser.getThinningIterations();
+		if (iterations > 1) {
+			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
+			skeleton.show();
+			uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
+		}
 
-        if (graphs == null || graphs.length == 0) {
-            uiService.showDialog("Can't calculate triple point angles: " + NO_SKELETONS, ERROR_MESSAGE);
-            return;
-        }
+		// Analyse skeleton
+		final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
+		analyser.setup("", skeleton);
+		analyser.run();
+		final Graph[] graphs = analyser.getGraphs();
 
-        final List<List<TriplePoint>> results = callTPAOp(graphs);
+		if (graphs == null || graphs.length == 0) {
+			uiService.showDialog("Can't calculate triple point angles: " +
+				NO_SKELETONS, ERROR_MESSAGE);
+			return;
+		}
 
-        if (TriplePointAngles.hasCircularEdges(graphs)) {
-            uiService.showDialog(
-                    "The skeletons contained circular edges." +
-                            "Please try running the plugin with \"Measurement mode\" set to \"Edge point\".",
-                    WARNING_MESSAGE);
-        }
+		final List<List<TriplePoint>> results = callTPAOp(graphs);
 
-        showResults(results);
-    }
+		if (TriplePointAngles.hasCircularEdges(graphs)) {
+			uiService.showDialog("The skeletons contained circular edges." +
+				"Please try running the plugin with \"Measurement mode\" set to \"Edge point\".",
+				WARNING_MESSAGE);
+		}
 
-    //region -- Helper methods --
-    private List<List<TriplePoint>> callTPAOp(final Graph[] graphs) {
-        final int measurementPoint =
-                measurementMode.equals("Opposite vertex") ? TriplePointAngles.VERTEX_TO_VERTEX : edgePoint;
-        return (List<List<TriplePoint>>) opService.run(TriplePointAngles.class, graphs, measurementPoint);
-    }
+		showResults(results);
+	}
 
-    private void showResults(final List<List<TriplePoint>> graphList) {
-        ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        String label = inputImage.getTitle();
+	// region -- Helper methods --
+	private List<List<TriplePoint>> callTPAOp(final Graph[] graphs) {
+		final int measurementPoint = measurementMode.equals("Opposite vertex")
+			? TriplePointAngles.VERTEX_TO_VERTEX : edgePoint;
+		return (List<List<TriplePoint>>) opService.run(TriplePointAngles.class,
+			graphs, measurementPoint);
+	}
 
-        for (List<TriplePoint> triplePointList : graphList) {
-            for (TriplePoint triplePoint : triplePointList) {
-                resultsInserter.setMeasurementInFirstFreeRow(label, "Skeleton #", triplePoint.getGraphNumber());
-                resultsInserter
-                        .setMeasurementInFirstFreeRow(label, "Triple point #", triplePoint.getTriplePointNumber());
-                final List<Double> angles = triplePoint.getAngles();
-                resultsInserter.setMeasurementInFirstFreeRow(label, "α (rad)", angles.get(0));
-                resultsInserter.setMeasurementInFirstFreeRow(label, "β (rad)", angles.get(1));
-                resultsInserter.setMeasurementInFirstFreeRow(label, "γ (rad)", angles.get(2));
-            }
-        }
+	private void showResults(final List<List<TriplePoint>> graphList) {
+		ResultsInserter resultsInserter = ResultsInserter.getInstance();
+		String label = inputImage.getTitle();
 
-        resultsInserter.updateResults();
-    }
+		for (List<TriplePoint> triplePointList : graphList) {
+			for (TriplePoint triplePoint : triplePointList) {
+				resultsInserter.setMeasurementInFirstFreeRow(label, "Skeleton #",
+					triplePoint.getGraphNumber());
+				resultsInserter.setMeasurementInFirstFreeRow(label, "Triple point #",
+					triplePoint.getTriplePointNumber());
+				final List<Double> angles = triplePoint.getAngles();
+				resultsInserter.setMeasurementInFirstFreeRow(label, "α (rad)", angles
+					.get(0));
+				resultsInserter.setMeasurementInFirstFreeRow(label, "β (rad)", angles
+					.get(1));
+				resultsInserter.setMeasurementInFirstFreeRow(label, "γ (rad)", angles
+					.get(2));
+			}
+		}
 
-    @SuppressWarnings("unused")
-    private void initializeImage() {
-        if (inputImage == null) {
-            cancel(NO_IMAGE_OPEN);
-            return;
-        }
+		resultsInserter.updateResults();
+	}
 
-        if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(inputImage)) {
-            cancel(NOT_8_BIT_BINARY_IMAGE);
-            return;
-        }
-    }
+	@SuppressWarnings("unused")
+	private void initializeImage() {
+		if (inputImage == null) {
+			cancel(NO_IMAGE_OPEN);
+			return;
+		}
 
-    @SuppressWarnings("unused")
-    private void openHelpPage() {
-        Help.openHelpPage("http://bonej.org/triplepointangles", platformService, uiService, logService);
-    }
-    //endregion
+		if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(
+			inputImage))
+		{
+			cancel(NOT_8_BIT_BINARY_IMAGE);
+			return;
+		}
+	}
+
+	@SuppressWarnings("unused")
+	private void openHelpPage() {
+		Help.openHelpPage("http://bonej.org/triplepointangles", platformService,
+			uiService, logService);
+	}
+	// endregion
 }

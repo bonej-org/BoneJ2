@@ -1,4 +1,11 @@
+
 package org.bonej.wrapperPlugins;
+
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+
+import java.util.List;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
@@ -7,6 +14,7 @@ import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -20,106 +28,119 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
-import java.util.List;
-
-import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-
 /**
  * A wrapper UI class for the Connectivity Ops
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity", headless = true)
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity",
+	headless = true)
 public class ConnectivityWrapper extends ContextCommand {
-    public static final String NEGATIVE_CONNECTIVITY =
-            "Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
-                    "Try running Purify prior to Connectivity.\n";
 
-    @Parameter(initializer = "initializeImage")
-    private ImgPlus<UnsignedByteType> inputImage;
+	public static final String NEGATIVE_CONNECTIVITY =
+		"Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
+			"Try running Purify prior to Connectivity.\n";
 
-    @Parameter
-    private OpService opService;
+	@Parameter(initializer = "initializeImage")
+	private ImgPlus<UnsignedByteType> inputImage;
 
-    @Parameter
-    private UIService uiService;
+	@Parameter
+	private OpService opService;
 
-    @Parameter
-    private UnitService unitService;
+	@Parameter
+	private UIService uiService;
 
-    private boolean negativityWarned = false;
-    private boolean calibrationWarned = false;
+	@Parameter
+	private UnitService unitService;
 
-    @Override
-    public void run() {
-        final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService, inputImage);
-        final String name = inputImage.getName();
+	private boolean negativityWarned = false;
+	private boolean calibrationWarned = false;
 
-        final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
-        for (SpatialView view : views) {
-            final String label = name + view.hyperPosition;
-            viewConnectivity(label, view.view);
-        }
-    }
+	@Override
+	public void run() {
+		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
+			inputImage);
+		final String name = inputImage.getName();
 
-    //region -- Helper methods --
+		final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(
+			bitImgPlus);
+		for (SpatialView view : views) {
+			final String label = name + view.hyperPosition;
+			viewConnectivity(label, view.view);
+		}
+	}
 
-    /** Process connectivity for one spatial view */
-    private void viewConnectivity(final String label, final RandomAccessibleInterval view) {
-        final double eulerCharacteristic = opService.topology().eulerCharacteristic26NFloating(view).get();
-        final double edgeCorrection = opService.topology().eulerCorrection(view).get();
-        final double correctedEuler = eulerCharacteristic - edgeCorrection;
-        final double connectivity = 1 - correctedEuler;
-        final double connectivityDensity = calculateConnectivityDensity(view, connectivity);
+	// region -- Helper methods --
 
-        showResults(label, eulerCharacteristic, correctedEuler, connectivity, connectivityDensity);
-    }
+	/** Process connectivity for one spatial view */
+	private void viewConnectivity(final String label,
+		final RandomAccessibleInterval view)
+	{
+		final double eulerCharacteristic = opService.topology()
+			.eulerCharacteristic26NFloating(view).get();
+		final double edgeCorrection = opService.topology().eulerCorrection(view)
+			.get();
+		final double correctedEuler = eulerCharacteristic - edgeCorrection;
+		final double connectivity = 1 - correctedEuler;
+		final double connectivityDensity = calculateConnectivityDensity(view,
+			connectivity);
 
-    private void showResults(String label, final double eulerCharacteristic, final double deltaEuler,
-            final double connectivity, final double connectivityDensity) {
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
+		showResults(label, eulerCharacteristic, correctedEuler, connectivity,
+			connectivityDensity);
+	}
 
-        if (connectivity < 0 && !negativityWarned) {
-            uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
-            negativityWarned = true;
-        }
+	private void showResults(String label, final double eulerCharacteristic,
+		final double deltaEuler, final double connectivity,
+		final double connectivityDensity)
+	{
+		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
+			'³');
 
-        if (unitHeader.isEmpty() && !calibrationWarned) {
-            uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-            calibrationWarned = true;
-        }
+		if (connectivity < 0 && !negativityWarned) {
+			uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
+			negativityWarned = true;
+		}
 
-        final ResultsInserter inserter = ResultsInserter.getInstance();
-        inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)", eulerCharacteristic);
-        inserter.setMeasurementInFirstFreeRow(label, "Corrected Euler (Δχ)", deltaEuler);
-        inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
-        inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader, connectivityDensity);
-        inserter.updateResults();
-    }
+		if (unitHeader.isEmpty() && !calibrationWarned) {
+			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+			calibrationWarned = true;
+		}
 
-    private double calculateConnectivityDensity(final RandomAccessibleInterval view, final double connectivity) {
-        final double elements = ((IterableInterval) view).size();
-        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
-        return connectivity / (elements * elementSize);
-    }
+		final ResultsInserter inserter = ResultsInserter.getInstance();
+		inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)",
+			eulerCharacteristic);
+		inserter.setMeasurementInFirstFreeRow(label, "Corrected Euler (Δχ)",
+			deltaEuler);
+		inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
+		inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader,
+			connectivityDensity);
+		inserter.updateResults();
+	}
 
-    @SuppressWarnings("unused")
-    private void initializeImage() {
-        if (inputImage == null) {
-            cancel(NO_IMAGE_OPEN);
-            return;
-        }
+	private double calculateConnectivityDensity(
+		final RandomAccessibleInterval view, final double connectivity)
+	{
+		final double elements = ((IterableInterval) view).size();
+		final double elementSize = ElementUtil.calibratedSpatialElementSize(
+			inputImage, unitService);
+		return connectivity / (elements * elementSize);
+	}
 
-        if (AxisUtils.countSpatialDimensions(inputImage) < 3) {
-            cancel(NOT_3D_IMAGE);
-            return;
-        }
+	@SuppressWarnings("unused")
+	private void initializeImage() {
+		if (inputImage == null) {
+			cancel(NO_IMAGE_OPEN);
+			return;
+		}
 
-        if (!ElementUtil.isColorsBinary(inputImage)) {
-            cancel(NOT_BINARY);
-        }
-    }
-    //endregion
+		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+			cancel(NOT_3D_IMAGE);
+			return;
+		}
+
+		if (!ElementUtil.isColorsBinary(inputImage)) {
+			cancel(NOT_BINARY);
+		}
+	}
+	// endregion
 }

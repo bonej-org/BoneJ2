@@ -1,4 +1,10 @@
+
 package org.bonej.wrapperPlugins;
+
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+
+import java.util.List;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
@@ -7,6 +13,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+
 import org.bonej.ops.thresholdFraction.SurfaceFraction;
 import org.bonej.ops.thresholdFraction.SurfaceFraction.Results;
 import org.bonej.ops.thresholdFraction.Thresholds;
@@ -23,82 +30,91 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
-import java.util.List;
-
-import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-
 /**
  * A wrapper UI class for the SurfaceFraction Op
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fraction>Surface fraction", headless = true)
-public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
-    @Parameter(initializer = "initializeImage")
-    private ImgPlus<T> inputImage;
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BoneJ>Fraction>Surface fraction", headless = true)
+public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
+	extends ContextCommand
+{
 
-    @Parameter
-    private OpService opService;
+	@Parameter(initializer = "initializeImage")
+	private ImgPlus<T> inputImage;
 
-    @Parameter
-    private UIService uiService;
+	@Parameter
+	private OpService opService;
 
-    @Parameter
-    private UnitService unitService;
+	@Parameter
+	private UIService uiService;
 
-    private boolean calibrationWarned = false;
+	@Parameter
+	private UnitService unitService;
 
-    @Override
-    public void run() {
-        final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService, inputImage);
-        final String name = inputImage.getName();
-        final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
-        final Thresholds thresholds = new Thresholds<>(bitImgPlus, 1, 1);
+	private boolean calibrationWarned = false;
 
-        for (SpatialView view : views) {
-            final String label = name + view.hyperPosition;
-            viewFraction(label, view.view, thresholds);
-        }
-    }
+	@Override
+	public void run() {
+		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
+			inputImage);
+		final String name = inputImage.getName();
+		final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(
+			bitImgPlus);
+		final Thresholds thresholds = new Thresholds<>(bitImgPlus, 1, 1);
 
-    //region -- Helper methods --
+		for (SpatialView view : views) {
+			final String label = name + view.hyperPosition;
+			viewFraction(label, view.view, thresholds);
+		}
+	}
 
-    /** Process surface fraction for one 3D subspace in the n-dimensional image */
-    private void viewFraction(String label, RandomAccessibleInterval subSpace, Thresholds thresholds) {
-        final Results results = (Results) opService.run(SurfaceFraction.class, subSpace, thresholds);
-        final char exponent = ResultUtils.getExponent(inputImage);
-        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
-        final double thresholdVolume = results.thresholdSurfaceVolume * elementSize;
-        final double totalVolume = results.totalSurfaceVolume * elementSize;
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, exponent);
+	// region -- Helper methods --
 
-        if (unitHeader.isEmpty() && !calibrationWarned) {
-            uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-            calibrationWarned = true;
-        }
+	/** Process surface fraction for one 3D subspace in the n-dimensional image */
+	private void viewFraction(String label, RandomAccessibleInterval subSpace,
+		Thresholds thresholds)
+	{
+		final Results results = (Results) opService.run(SurfaceFraction.class,
+			subSpace, thresholds);
+		final char exponent = ResultUtils.getExponent(inputImage);
+		final double elementSize = ElementUtil.calibratedSpatialElementSize(
+			inputImage, unitService);
+		final double thresholdVolume = results.thresholdSurfaceVolume * elementSize;
+		final double totalVolume = results.totalSurfaceVolume * elementSize;
+		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
+			exponent);
 
-        final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Bone volume " + unitHeader, thresholdVolume);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Total volume " + unitHeader, totalVolume);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Volume ratio", results.ratio);
-        resultsInserter.updateResults();
-    }
+		if (unitHeader.isEmpty() && !calibrationWarned) {
+			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+			calibrationWarned = true;
+		}
 
-    @SuppressWarnings("unused")
-    private void initializeImage() {
-        if (inputImage == null) {
-            cancel(NO_IMAGE_OPEN);
-            return;
-        }
+		final ResultsInserter resultsInserter = ResultsInserter.getInstance();
+		resultsInserter.setMeasurementInFirstFreeRow(label, "Bone volume " +
+			unitHeader, thresholdVolume);
+		resultsInserter.setMeasurementInFirstFreeRow(label, "Total volume " +
+			unitHeader, totalVolume);
+		resultsInserter.setMeasurementInFirstFreeRow(label, "Volume ratio",
+			results.ratio);
+		resultsInserter.updateResults();
+	}
 
-        if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
-            cancel(NOT_3D_IMAGE);
-        }
+	@SuppressWarnings("unused")
+	private void initializeImage() {
+		if (inputImage == null) {
+			cancel(NO_IMAGE_OPEN);
+			return;
+		}
 
-        if (!ElementUtil.isColorsBinary(inputImage)) {
-            cancel(NOT_BINARY);
-        }
-    }
-    //endregion
+		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+			cancel(NOT_3D_IMAGE);
+		}
+
+		if (!ElementUtil.isColorsBinary(inputImage)) {
+			cancel(NOT_BINARY);
+		}
+	}
+	// endregion
 }

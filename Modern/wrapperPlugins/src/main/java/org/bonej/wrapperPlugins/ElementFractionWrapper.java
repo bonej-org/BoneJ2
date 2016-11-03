@@ -1,10 +1,15 @@
+
 package org.bonej.wrapperPlugins;
+
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+
 import org.bonej.ops.thresholdFraction.ElementFraction;
 import org.bonej.ops.thresholdFraction.ElementFraction.Results;
 import org.bonej.ops.thresholdFraction.ElementFraction.Settings;
@@ -18,77 +23,83 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-
 /**
  * A wrapper UI class for the ElementFraction Op
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction", headless = true)
-public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
-    @Parameter(initializer = "initializeImage")
-    private ImgPlus<T> inputImage;
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction", headless = true)
+public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
+	extends ContextCommand
+{
 
-    @Parameter
-    private OpService opService;
+	@Parameter(initializer = "initializeImage")
+	private ImgPlus<T> inputImage;
 
-    @Parameter
-    private UIService uiService;
+	@Parameter
+	private OpService opService;
 
-    @Parameter
-    private UnitService unitService;
+	@Parameter
+	private UIService uiService;
 
-    @Override
-    public void run() {
-        final T element = inputImage.cursor().get();
-        final T minThreshold = element.createVariable();
-        final T maxThreshold = element.createVariable();
-        minThreshold.setReal(127);
-        maxThreshold.setReal(255);
-        final Settings<T> settings = new Settings<>(minThreshold, maxThreshold);
+	@Parameter
+	private UnitService unitService;
 
-        final Results results = (Results) opService.run(ElementFraction.class, inputImage, settings);
+	@Override
+	public void run() {
+		final T element = inputImage.cursor().get();
+		final T minThreshold = element.createVariable();
+		final T maxThreshold = element.createVariable();
+		minThreshold.setReal(127);
+		maxThreshold.setReal(255);
+		final Settings<T> settings = new Settings<>(minThreshold, maxThreshold);
 
-        showResults(results);
-    }
+		final Results results = (Results) opService.run(ElementFraction.class,
+			inputImage, settings);
 
-    private void showResults(final Results results) {
-        final String label = inputImage.getName();
-        final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
-        final char exponent = ResultUtils.getExponent(inputImage);
-        final double elementSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
-        final double thresholdSize = results.thresholdElements * elementSize;
-        final double totalSize = results.elements * elementSize;
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, exponent);
+		showResults(results);
+	}
 
-        if (unitHeader.isEmpty()) {
-            uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-        }
+	private void showResults(final Results results) {
+		final String label = inputImage.getName();
+		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
+		final char exponent = ResultUtils.getExponent(inputImage);
+		final double elementSize = ElementUtil.calibratedSpatialElementSize(
+			inputImage, unitService);
+		final double thresholdSize = results.thresholdElements * elementSize;
+		final double totalSize = results.elements * elementSize;
+		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
+			exponent);
 
-        final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        resultsInserter
-                .setMeasurementInFirstFreeRow(label, "Bone " + sizeDescription + " " + unitHeader, thresholdSize);
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Total " + sizeDescription + " " + unitHeader, totalSize);
-        resultsInserter.setMeasurementInFirstFreeRow(label, sizeDescription + " Ratio", results.ratio);
-        resultsInserter.updateResults();
-    }
+		if (unitHeader.isEmpty()) {
+			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+		}
 
-    @SuppressWarnings("unused")
-    private void initializeImage() {
-        if (inputImage == null) {
-            cancel(NO_IMAGE_OPEN);
-            return;
-        }
+		final ResultsInserter resultsInserter = ResultsInserter.getInstance();
+		resultsInserter.setMeasurementInFirstFreeRow(label, "Bone " +
+			sizeDescription + " " + unitHeader, thresholdSize);
+		resultsInserter.setMeasurementInFirstFreeRow(label, "Total " +
+			sizeDescription + " " + unitHeader, totalSize);
+		resultsInserter.setMeasurementInFirstFreeRow(label, sizeDescription +
+			" Ratio", results.ratio);
+		resultsInserter.updateResults();
+	}
 
-        if (!ElementUtil.isColorsBinary(inputImage)) {
-            cancel(NOT_BINARY);
-        }
+	@SuppressWarnings("unused")
+	private void initializeImage() {
+		if (inputImage == null) {
+			cancel(NO_IMAGE_OPEN);
+			return;
+		}
 
-        final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
-        if (spatialDimensions < 2 || spatialDimensions > 3) {
-            cancel(WEIRD_SPATIAL);
-        }
-    }
+		if (!ElementUtil.isColorsBinary(inputImage)) {
+			cancel(NOT_BINARY);
+		}
+
+		final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
+		if (spatialDimensions < 2 || spatialDimensions > 3) {
+			cancel(WEIRD_SPATIAL);
+		}
+	}
 }

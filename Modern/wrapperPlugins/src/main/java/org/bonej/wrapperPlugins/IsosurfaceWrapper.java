@@ -1,6 +1,23 @@
 package org.bonej.wrapperPlugins;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.bonej.utilities.Streamers.spatialAxisStream;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+
 import com.google.common.base.Strings;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
@@ -17,6 +34,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.bonej.ops.thresholdFraction.SurfaceMask;
 import org.bonej.ops.thresholdFraction.Thresholds;
@@ -37,22 +55,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.FileWidget;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 /**
  * A wrapper command to calculate mesh surface area
@@ -238,14 +240,16 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
     // -- Utility methods --
 
     /**
-     * Writes the surface mesh as a binary, little endian STL file
-     * <p>
-     * <p>NB: Public and static for testing purposes</p>
-     *
-     * @param path The absolute path to the save location of the STL file
-     * @param mesh A mesh consisting of triangular facets
-     */
-    // TODO: Create an IOPlugin to save STL files from Meshes
+	 * Writes the surface mesh as a binary, little endian STL file
+	 * <p>
+	 * <p>
+	 * NB: Public and static for testing purposes
+	 * </p>
+	 *
+	 * @param path The absolute path to the save location of the STL file
+	 * @param mesh A mesh consisting of triangular facets
+	 */
+    // TODO: Remove when SciJava PR goes through
     public static void writeBinarySTLFile(final String path, final Mesh mesh)
             throws IllegalArgumentException, IOException, NullPointerException {
         checkNotNull(mesh, "Mesh cannot be null");
