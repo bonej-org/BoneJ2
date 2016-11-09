@@ -45,6 +45,7 @@ import ij.process.ByteProcessor;
  *
  * @author Michael Doube, RVC, London, UK.
  */
+// TODO deprecate and remove when/if SCIFIO PR goes through (also from plugins.config)
 public class KontronIMGReader implements PlugIn {
 
 	/** All IMG start with 01 00 47 12 6D B0 (hex view) */

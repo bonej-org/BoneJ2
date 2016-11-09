@@ -92,6 +92,12 @@
                 <artifactId>ops</artifactId>
                 <version>${ops.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.scif</groupId>
+                <artifactId>scifio</artifactId>
+                <!-- TODO Remove when bom/parent pom updates -->
+                <version>0.28.3-SNAPSHOT</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
