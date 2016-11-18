@@ -166,7 +166,7 @@ public class ConnectivityWrapperTest {
 		// Assert column headings
 		assertEquals("Incorrect heading in results table", "Euler char. (χ)",
 			headings[1]);
-		assertEquals("Incorrect heading in results table", "Corrected Euler (Δχ)",
+		assertEquals("Incorrect heading in results table", "Corrected Euler (χ + Δχ)",
 			headings[2]);
 		assertEquals("Incorrect heading in results table", "Connectivity",
 			headings[3]);
