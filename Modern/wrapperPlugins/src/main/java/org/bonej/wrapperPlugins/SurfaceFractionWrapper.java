@@ -41,7 +41,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	extends ContextCommand
 {
 
-	@Parameter(initializer = "initializeImage")
+	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
 
 	@Parameter
@@ -102,7 +102,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	}
 
 	@SuppressWarnings("unused")
-	private void initializeImage() {
+	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
 			return;

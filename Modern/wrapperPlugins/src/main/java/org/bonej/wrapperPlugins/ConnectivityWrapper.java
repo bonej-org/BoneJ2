@@ -41,7 +41,7 @@ public class ConnectivityWrapper extends ContextCommand {
 		"Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
 			"Try running Purify prior to Connectivity.\n";
 
-	@Parameter(initializer = "initializeImage")
+	@Parameter(validater = "validateImage")
 	private ImgPlus<UnsignedByteType> inputImage;
 
 	@Parameter
@@ -127,7 +127,7 @@ public class ConnectivityWrapper extends ContextCommand {
 	}
 
 	@SuppressWarnings("unused")
-	private void initializeImage() {
+	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
 			return;

@@ -67,7 +67,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
     public static final String STL_HEADER = Strings.padEnd("Binary STL created by BoneJ", 80, '.');
     public static final String BAD_SCALING = "Cannot scale result because axis calibrations don't match";
 
-    @Parameter(initializer = "initializeImage")
+    @Parameter(validater = "validateImage")
     private ImgPlus<T> inputImage;
 
     @Parameter(label = "Export STL file(s)", description = "Create a binary STL file from the surface mesh",
@@ -217,7 +217,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
     }
 
     @SuppressWarnings("unused")
-    private void initializeImage() {
+    private void validateImage() {
         if (inputImage == null) {
             cancel(NO_IMAGE_OPEN);
             return;

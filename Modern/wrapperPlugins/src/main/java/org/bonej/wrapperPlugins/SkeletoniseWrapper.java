@@ -31,7 +31,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 	/**
 	 * @implNote Use ImagePlus because of conversion issues of composite images
 	 */
-	@Parameter(initializer = "initializeImage")
+	@Parameter(validater = "validateImage")
 	private ImagePlus inputImage;
 
 	/**
@@ -59,7 +59,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 	}
 
 	@SuppressWarnings("unused")
-	private void initializeImage() {
+	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
 			return;
