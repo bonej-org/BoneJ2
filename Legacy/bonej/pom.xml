@@ -59,19 +59,14 @@
             </roles>
             <timezone>-6</timezone>
         </developer>
-        <developer>
-            <id>hinerm</id>
-            <name>Mark Hiner</name>
-            <email>hiner@wisc.edu</email>
-            <url>http://loci.wisc.edu/people/mark-hiner</url>
-            <organization>UW-Madison LOCI</organization>
-            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
-            <roles>
-                <role>maintainer</role>
-            </roles>
-            <timezone>-6</timezone>
-        </developer>
     </developers>
+    <contributors>
+        <contributor>
+            <name>Mark Hiner</name>
+            <url>http://imagej.net/User:Hinerm</url>
+            <properties><id>hinerm</id></properties>
+        </contributor>
+    </contributors>
 
     <scm>
         <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
@@ -111,15 +106,7 @@
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
-            <artifactId>AnalyzeSkeleton_</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>sc.fiji</groupId>
             <artifactId>LocalThickness_</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>Skeletonize3D_</artifactId>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
@@ -173,6 +160,7 @@
     </dependencies>
 
     <build>
+        <finalName>bonejLegacyPlugins_</finalName>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -183,13 +171,6 @@
                     </organizationName>
                     <projectName>BoneJ: open source tools for trabecular geometry and whole bone shape analysis
                     </projectName>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <finalName>bonejLegacyPlugins_</finalName>
                 </configuration>
             </plugin>
         </plugins>

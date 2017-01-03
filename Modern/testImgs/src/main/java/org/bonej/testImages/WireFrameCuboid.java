@@ -56,7 +56,7 @@ public class WireFrameCuboid extends
 	private String unit = "";
 
 	@Override
-	public ImgPlus<BitType> compute0() {
+	public ImgPlus<BitType> calculate() {
 		final ImgPlus<BitType> output = createIJ1ImgPlus("Wire-frame cuboid", xSize,
 			ySize, zSize, channels, frames, padding, scale, unit);
 

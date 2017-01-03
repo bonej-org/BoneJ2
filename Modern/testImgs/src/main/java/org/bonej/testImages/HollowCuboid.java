@@ -54,7 +54,7 @@ public class HollowCuboid extends AbstractNullaryFunctionOp<ImgPlus<BitType>> {
 	private String unit = "";
 
 	@Override
-	public ImgPlus<BitType> compute0() {
+	public ImgPlus<BitType> calculate() {
 		final ImgPlus<BitType> cuboid = createIJ1ImgPlus("Hollow cuboid", xSize,
 			ySize, zSize, channels, frames, padding, scale, unit);
 		final RandomAccess<BitType> access = cuboid.randomAccess();

@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>sc.fiji</groupId>
-        <artifactId>pom-fiji</artifactId>
-        <version>26.1.1</version>
+        <groupId>org.scijava</groupId>
+        <artifactId>pom-scijava</artifactId>
+        <version>14.0.0</version>
     </parent>
 
     <groupId>org.bonej</groupId>
@@ -92,12 +92,6 @@
                 <artifactId>ops</artifactId>
                 <version>${ops.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.scif</groupId>
-                <artifactId>scifio</artifactId>
-                <!-- TODO Remove when bom/parent pom updates -->
-                <version>0.28.3-SNAPSHOT</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -121,6 +115,7 @@
         <wrapperPlugins.version>0.2.0-SNAPSHOT</wrapperPlugins.version>
         <utilities.version>0.2.0-SNAPSHOT</utilities.version>
         <ops.version>0.2.0-SNAPSHOT</ops.version>
+        <!-- Add missing elements, when using enforcer again -->
         <enforcer.skip>true</enforcer.skip>
     </properties>
 
@@ -147,7 +142,7 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
-                    <licenseName>gpl_v3</licenseName>
+                    <licenseName>BSD-2</licenseName>
                     <organizationName>Michael Doube, BoneJ developers. See also individual class @authors.
                     </organizationName>
                     <projectName>BoneJ2: open source tools for trabecular geometry and whole bone shape analysis.

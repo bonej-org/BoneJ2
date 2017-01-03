@@ -152,8 +152,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 
         for (SpatialView<?> view : views) {
             final String label = name + view.hyperPosition;
-            final RandomAccessibleInterval mask = maskOp.compute1(view.view);
-            final Mesh mesh = marchingCubesOp.compute1(mask);
+            final RandomAccessibleInterval mask = maskOp.calculate(view.view);
+            final Mesh mesh = marchingCubesOp.calculate(mask);
             final double area = mesh.getSurfaceArea();
             showArea(label, area);
 

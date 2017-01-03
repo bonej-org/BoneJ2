@@ -72,13 +72,6 @@
             <artifactId>imagej-ops</artifactId>
         </dependency>
         <dependency>
-            <!-- Needed for UI -->
-            <groupId>net.imagej</groupId>
-            <artifactId>imagej-legacy</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>net.imglib2</groupId>
             <artifactId>imglib2</artifactId>
         </dependency>

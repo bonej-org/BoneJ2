@@ -53,21 +53,21 @@ public class SurfaceFraction<T extends NativeType<T> & RealType<T>> extends
 	}
 
 	@Override
-	public Results compute2(final RandomAccessibleInterval<T> interval,
+	public Results calculate(final RandomAccessibleInterval<T> interval,
 		final Thresholds<T> thresholds)
 	{
-		final RandomAccessibleInterval thresholdMask = maskOp.compute2(interval,
+		final RandomAccessibleInterval thresholdMask = maskOp.calculate(interval,
 			thresholds);
-		final Mesh thresholdSurface = marchingCubesOp.compute1(thresholdMask);
-		final double thresholdSurfaceVolume = volumeOp.compute1(thresholdSurface)
+		final Mesh thresholdSurface = ops().geom().marchingCubes(thresholdMask);
+		final double thresholdSurfaceVolume = volumeOp.calculate(thresholdSurface)
 			.get();
 
 		final Thresholds<T> totalThresholds = new Thresholds<>(interval,
 			Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-		final RandomAccessibleInterval totalMask = maskOp.compute2(interval,
+		final RandomAccessibleInterval totalMask = maskOp.calculate(interval,
 			totalThresholds);
-		final Mesh totalSurface = marchingCubesOp.compute1(totalMask);
-		final double totalSurfaceVolume = volumeOp.compute1(totalSurface).get();
+		final Mesh totalSurface = ops().geom().marchingCubes(totalMask);
+		final double totalSurfaceVolume = volumeOp.calculate(totalSurface).get();
 
 		return new Results(thresholdSurface, totalSurface, thresholdSurfaceVolume,
 			totalSurfaceVolume);

@@ -42,7 +42,7 @@ public class SurfaceMask<T extends NativeType<T> & RealType<T>> extends
 	 * @return A three dimensional mask that can be given to a marching cubes op
 	 */
 	@Override
-	public RandomAccessibleInterval<BitType> compute2(
+	public RandomAccessibleInterval<BitType> calculate(
 		final RandomAccessibleInterval<T> interval,
 		final Thresholds<T> thresholds)
 	{

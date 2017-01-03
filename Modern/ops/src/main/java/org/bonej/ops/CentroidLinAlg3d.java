@@ -30,7 +30,7 @@ public class CentroidLinAlg3d<T extends Tuple3d> extends
 	 *         collection is empty
 	 */
 	@Override
-	public Vector3d compute1(final Collection<T> vectors) {
+	public Vector3d calculate(final Collection<T> vectors) {
 		checkNotNull(vectors, "Cannot calculate the centroid of a null collection");
 
 		final Vector3d sum = new Vector3d(0.0, 0.0, 0.0);

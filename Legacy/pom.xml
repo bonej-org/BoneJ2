@@ -4,9 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>sc.fiji</groupId>
-        <artifactId>pom-fiji</artifactId>
-        <version>24.3.0</version>
+        <groupId>org.scijava</groupId>
+        <artifactId>pom-scijava</artifactId>
+        <version>14.0.0</version>
     </parent>
 
     <groupId>org.bonej</groupId>
@@ -61,19 +61,14 @@
             </roles>
             <timezone>-6</timezone>
         </developer>
-        <developer>
-            <id>hinerm</id>
-            <name>Mark Hiner</name>
-            <email>hiner@wisc.edu</email>
-            <url>http://loci.wisc.edu/people/mark-hiner</url>
-            <organization>UW-Madison LOCI</organization>
-            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
-            <roles>
-                <role>maintainer</role>
-            </roles>
-            <timezone>-6</timezone>
-        </developer>
     </developers>
+    <contributors>
+        <contributor>
+            <name>Mark Hiner</name>
+            <url>http://imagej.net/User:Hinerm</url>
+            <properties><id>hinerm</id></properties>
+        </contributor>
+    </contributors>
 
     <dependencyManagement>
         <dependencies>
@@ -116,6 +111,8 @@
         <legacy-util.version>2.0.1-SNAPSHOT</legacy-util.version>
         <legacy-plugins.version>2.0.0-SNAPSHOT</legacy-plugins.version>
         <legacy-pqct.version>1.0.1-SNAPSHOT</legacy-pqct.version>
+        <!-- Add missing elements, when using enforcer again -->
+        <enforcer.skip>true</enforcer.skip>
     </properties>
 
     <modules>
@@ -133,7 +130,6 @@
 
     <build>
         <plugins>
-            <!-- Set a compiler level -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -142,19 +138,12 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
-            <!-- Add enforcer -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-            <!-- Set license plugin -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
-                    <licenseName>gpl_v3</licenseName>
-                    <organizationName>Michael Doube, BoneJ developers.
-                    </organizationName>
+                    <licenseName>BSD-2</licenseName>
+                    <organizationName>Michael Doube, BoneJ developers.</organizationName>
                     <projectName>BoneJ: open source tools for trabecular geometry and whole bone shape analysis
                     </projectName>
                 </configuration>

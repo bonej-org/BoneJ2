@@ -78,7 +78,7 @@ public class TriplePointAngles extends
 	 * @see TriplePoint
 	 */
 	@Override
-	public List<List<TriplePoint>> compute2(final Graph[] graphs,
+	public List<List<TriplePoint>> calculate(final Graph[] graphs,
 		final Integer measurementPoint)
 	{
 		final List<List<TriplePoint>> skeletons = new ArrayList<>();
@@ -180,7 +180,7 @@ public class TriplePointAngles extends
 	private double measureAngle(final Vertex vertex, final Edge edge0,
 		final Edge edge1, final int measurementPoint)
 	{
-		final Vector3d anglePoint = (Vector3d) centroidOp.compute1(toVector3d(vertex
+		final Vector3d anglePoint = (Vector3d) centroidOp.calculate(toVector3d(vertex
 			.getPoints()));
 		final Vector3d oppositePoint0 = getMeasurementPoint(vertex, edge0,
 			measurementPoint);
@@ -272,7 +272,7 @@ public class TriplePointAngles extends
 		final Vertex oppositeVertex = edge.getOppositeVertex(vertex);
 		final List<Vector3d> oppositeVertexVectors = toVector3d(oppositeVertex
 			.getPoints());
-		return (Vector3d) centroidOp.compute1(oppositeVertexVectors);
+		return (Vector3d) centroidOp.calculate(oppositeVertexVectors);
 	}
 
 	/** Calculates the angle between u and v at the given point p */
