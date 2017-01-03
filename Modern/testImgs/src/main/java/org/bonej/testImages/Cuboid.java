@@ -52,7 +52,7 @@ public class Cuboid extends AbstractNullaryFunctionOp<ImgPlus<BitType>> {
 	private String unit = "";
 
 	@Override
-	public ImgPlus<BitType> compute0() {
+	public ImgPlus<BitType> calculate() {
 		final ImgPlus<BitType> image = createIJ1ImgPlus("Cuboid", xSize, ySize,
 			zSize, channels, frames, padding, scale, unit);
 

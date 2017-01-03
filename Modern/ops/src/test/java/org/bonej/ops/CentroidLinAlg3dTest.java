@@ -45,14 +45,14 @@ public class CentroidLinAlg3dTest {
 	public void
 		testCentroidLinAlg3dThrowsNullPointerExceptionIfCollectionIsNull()
 	{
-		centroidOp.compute1(null);
+		centroidOp.calculate(null);
 	}
 
 	@Test
 	public void testCentroidLinAlg3dWithEmptyCollection() {
 		final List<Vector3d> emptyVectors = new ArrayList<>();
 
-		final Tuple3d result = centroidOp.compute1(emptyVectors);
+		final Tuple3d result = centroidOp.calculate(emptyVectors);
 
 		assertTrue("Result should be (NaN, NaN, NaN) - x is not", Double.isNaN(
 			result.x));
@@ -67,7 +67,7 @@ public class CentroidLinAlg3dTest {
 		final Vector3d expected = new Vector3d(1.0, 2.0, 3.0);
 		final List<Vector3d> vectors = Collections.singletonList(expected);
 
-		final Tuple3d result = centroidOp.compute1(vectors);
+		final Tuple3d result = centroidOp.calculate(vectors);
 
 		assertEquals("Result should equal the single input vector", expected,
 			result);
@@ -81,7 +81,7 @@ public class CentroidLinAlg3dTest {
 				0.0, 1.0, 0.0), new Vector3d(0.0, 0.0, 1.0), new Vector3d(1.0, 0.0,
 					1.0), new Vector3d(1.0, 1.0, 1.0), new Vector3d(0.0, 1.0, 1.0));
 
-		final Tuple3d result = centroidOp.compute1(cubeVectors);
+		final Tuple3d result = centroidOp.calculate(cubeVectors);
 
 		assertEquals("Incorrect centroid vector", expected, result);
 	}

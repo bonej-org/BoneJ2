@@ -101,37 +101,42 @@ public class IsosurfaceWrapperTest {
 	public void testResults() throws Exception {
 		final double scale = 0.1;
 		final String unit = "mm";
-		final double areaScaling = scale * scale;
-		// Marching cubes creates an octahedron out of a unit cube
-		// Calculate the length of the side of the octahedron with Pythagoras'
-		// theorem
-		final double side = Math.sqrt(0.5 * 0.5 + 0.5 * 0.5);
-		final double height = 0.5;
-		final double pyramidFaces = 2 * side * Math.sqrt(side * side / 4.0 +
-			height * height);
-		// Apply calibration to the area of the octahedron
-		final double expectedArea = pyramidFaces * 2 * areaScaling;
+		final int width = 3;
+		final int height = 3;
+		final int depth = 3;
+		// The mesh resulting from marching cubes is effectively one voxel smaller
+		// in each dimension
+		final double expectedArea = ((width - 1) * (height - 1) * 2 + (width - 1) *
+			(depth - 1) * 2 + (height - 1) * (depth - 1) * 2) * (scale * scale);
 		final double[] expectedValues = { 0, expectedArea, expectedArea, 0 };
 
 		/*
 		 * Create a calibrated hyperstack with two channels and two frames.
-		 * Two of the 3D subspaces are empty, and two of them contain a unit cube (single voxel)
+		 * Two of the 3D subspaces are empty, and two of them contain a 3x3 cuboids
+		 * The cuboids have one voxel of empty space around them
 		 */
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
 		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit, scale);
 		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
 		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-		final Img<BitType> img = ArrayImgs.bits(1, 1, 1, 2, 2);
+		final Img<BitType> img = ArrayImgs.bits(width + 2, height + 2, depth + 2, 2,
+			2);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, zAxis, cAxis, tAxis);
 		final RandomAccess<BitType> access = imgPlus.randomAccess();
-		// Add a voxel to Channel 1, Frame 0
-		access.setPosition(new long[] { 0, 0, 0, 1, 0 });
-		access.get().setOne();
-		// Add a voxel to Channel 0, Frame 1
-		access.setPosition(new long[] { 0, 0, 0, 0, 1 });
-		access.get().setOne();
+		for (int z = 1; z <= depth; z++) {
+			for (int y = 1; y <= height; y++) {
+				for (int x = 1; x <= width; x++) {
+					// Add a voxel to Channel 1, Frame 0
+					access.setPosition(new long[] { x, y, z, 1, 0 });
+					access.get().setOne();
+					// Add a voxel to Channel 0, Frame 1
+					access.setPosition(new long[] { x, y, z, 0, 1 });
+					access.get().setOne();
+				}
+			}
+		}
 
 		// Run command and get results
 		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,

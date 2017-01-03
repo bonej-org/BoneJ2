@@ -78,7 +78,7 @@ public class TriplePointAnglesTest {
 	public void testTriplePointAnglesNthPoint() throws AssertionError {
 		final int nthPoint = 4;
 
-		final List<List<TriplePoint>> graphs = triplePointAnglesOp.compute2(
+		final List<List<TriplePoint>> graphs = triplePointAnglesOp.calculate(
 			cuboidGraphs, nthPoint);
 
 		assertEquals("Wrong number of skeletons (graphs)", 1, graphs.size());
@@ -102,7 +102,7 @@ public class TriplePointAnglesTest {
 	/** Regression test to check that results don't change */
 	@Test
 	public void testTriplePointAnglesVertexToVertex() throws AssertionError {
-		final List<List<TriplePoint>> graphs = triplePointAnglesOp.compute2(
+		final List<List<TriplePoint>> graphs = triplePointAnglesOp.calculate(
 			cuboidGraphs, TriplePointAngles.VERTEX_TO_VERTEX);
 
 		assertEquals("Wrong number of skeletons (graphs)", 1, graphs.size());

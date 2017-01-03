@@ -22,7 +22,7 @@ public class ElementFraction<S, T extends Comparable<S>> extends
 {
 
 	@Override
-	public Results compute2(final IterableInterval<T> interval,
+	public Results calculate(final IterableInterval<T> interval,
 		final Settings<S> settings)
 	{
 		final long elements = interval.size();
