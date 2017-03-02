@@ -166,7 +166,7 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
-                    <licenseName>gpl_v3</licenseName>
+                    <licenseName>BSD-2</licenseName>
                     <organizationName>Michael Doube, BoneJ developers
                     </organizationName>
                     <projectName>BoneJ: open source tools for trabecular geometry and whole bone shape analysis
