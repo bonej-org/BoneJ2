@@ -41,13 +41,6 @@ public class CentroidLinAlg3dTest {
 		IMAGE_J.context().dispose();
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void
-		testCentroidLinAlg3dThrowsNullPointerExceptionIfCollectionIsNull()
-	{
-		centroidOp.calculate(null);
-	}
-
 	@Test
 	public void testCentroidLinAlg3dWithEmptyCollection() {
 		final List<Vector3d> emptyVectors = new ArrayList<>();
