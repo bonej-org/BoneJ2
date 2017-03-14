@@ -117,6 +117,12 @@
             <groupId>net.imagej</groupId>
             <artifactId>ij1-patcher</artifactId>
         </dependency>
+        <dependency>
+            <!-- Needed for UI. Do not remove until issues with SciJava Swing UI are solved -->
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-legacy</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Fiji dependencies -->
         <dependency>
