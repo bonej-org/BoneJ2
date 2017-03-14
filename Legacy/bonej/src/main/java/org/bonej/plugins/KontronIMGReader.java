@@ -44,8 +44,9 @@ import ij.process.ByteProcessor;
  * height and a magic number.
  *
  * @author Michael Doube, RVC, London, UK.
+ * @deprecated File format now in SCIFIO
  */
-// TODO deprecate and remove when/if SCIFIO PR goes through (also from plugins.config)
+@Deprecated
 public class KontronIMGReader implements PlugIn {
 
 	/** All IMG start with 01 00 47 12 6D B0 (hex view) */

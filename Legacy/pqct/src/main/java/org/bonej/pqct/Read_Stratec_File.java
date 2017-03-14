@@ -41,7 +41,8 @@ import ij.plugin.PlugIn;
 
 //UnsupportedDataTypeException
 //Calibration
-
+/** @deprecated File format now in SCIFIO  */
+@Deprecated
 public class Read_Stratec_File extends ImagePlus implements PlugIn {
 	// Global variables
 	// Stratec header stuff
