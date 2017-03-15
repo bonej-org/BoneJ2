@@ -13,7 +13,28 @@
     <artifactId>bonej-legacy-util</artifactId>
     <version>2.0.1-SNAPSHOT</version>
 
-    <description>The utility classes for BoneJ1 plugins</description>
+
+    <name>BoneJ legacy utilities</name>
+    <description>Utility classes for BoneJ1 plugins</description>
+    <url>http://http://bonej.org/</url>
+    <inceptionYear>2015</inceptionYear>
+    <organization>
+        <name>Royal Veterinary College</name>
+        <url>http://http://www.rvc.ac.uk/</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>Simplified BSD License</name>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <mailingLists>
+        <mailingList>
+            <name>ImageJ forum</name>
+            <subscribe>http://forum.imagej.net/</subscribe>
+            <post>http://forum.imagej.net/tags/bonej</post>
+        </mailingList>
+    </mailingLists>
 
     <developers>
         <developer>
@@ -24,12 +45,9 @@
             <organization>Royal Veterinary College</organization>
             <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
+                <role>founder</role>
                 <role>lead</role>
-                <role>developer</role>
-                <role>debugger</role>
-                <role>reviewer</role>
                 <role>support</role>
-                <role>maintainer</role>
             </roles>
             <timezone>+0</timezone>
         </developer>
@@ -124,30 +142,16 @@
     </issueManagement>
     <ciManagement>
         <system>Jenkins</system>
+        <url>http://jenkins.imagej.net/view/BoneJ/</url>
     </ciManagement>
 
+    <properties>
+        <license.licenseName>BSD-2-Clause</license.licenseName>
+        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
+    </properties>
+
     <build>
+        <!-- ImageJ1 doesn't recognize packages without underscores as plugins -->
         <finalName>bonejLegacyUtil_</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <licenseName>BSD-2</licenseName>
-                    <organizationName>Michael Doube, BoneJ developers.
-                    </organizationName>
-                    <projectName>BoneJ: open source tools for trabecular geometry and whole bone shape analysis
-                    </projectName>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 </project>

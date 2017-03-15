@@ -13,7 +13,27 @@
     <artifactId>utilities</artifactId>
     <version>0.2.0-SNAPSHOT</version>
 
-    <description>Utility classes for BoneJ2</description>
+    <name>BoneJ2 utilities</name>
+    <description>Utility methods for BoneJ2</description>
+    <url>http://http://bonej.org/</url>
+    <inceptionYear>2015</inceptionYear>
+    <organization>
+        <name>Royal Veterinary College</name>
+        <url>http://http://www.rvc.ac.uk/</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>Simplified BSD License</name>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <mailingLists>
+        <mailingList>
+            <name>ImageJ forum</name>
+            <subscribe>http://forum.imagej.net/</subscribe>
+            <post>http://forum.imagej.net/tags/bonej</post>
+        </mailingList>
+    </mailingLists>
 
     <developers>
         <developer>
@@ -24,8 +44,8 @@
             <organization>Royal Veterinary College</organization>
             <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
+                <role>founder</role>
                 <role>lead</role>
-                <role>reviewer</role>
                 <role>support</role>
             </roles>
             <timezone>+0</timezone>
@@ -58,6 +78,12 @@
             <timezone>-6</timezone>
         </developer>
     </developers>
+    <!-- NB: Added to make the enforcer happy -->
+    <contributors>
+        <contributor>
+            <name>N/A</name>
+        </contributor>
+    </contributors>
 
     <scm>
         <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
@@ -71,6 +97,7 @@
     </issueManagement>
     <ciManagement>
         <system>Jenkins</system>
+        <url>http://jenkins.imagej.net/view/BoneJ/</url>
     </ciManagement>
 
     <dependencies>
@@ -133,20 +160,12 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <license.licenseName>BSD-2-Clause</license.licenseName>
+        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
+    </properties>
+
     <build>
         <finalName>BoneJ2Util</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <licenseName>BSD-2</licenseName>
-                    <organizationName>Michael Doube, BoneJ developers. See also individual class @authors.
-                    </organizationName>
-                    <projectName>BoneJ2: open source tools for trabecular geometry and whole bone shape analysis.
-                    </projectName>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 </project>

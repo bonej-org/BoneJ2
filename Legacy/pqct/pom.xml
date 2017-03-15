@@ -12,7 +12,27 @@
     <artifactId>bonej-legacy-pqct</artifactId>
     <version>1.0.1-SNAPSHOT</version>
 
-    <description>BoneJ1 distribution of PQCT plugin</description>
+    <name>BoneJ pQCT tools</name>
+    <description>Tools for Stratec pQCT images</description>
+    <url>http://http://bonej.org/</url>
+    <inceptionYear>2015</inceptionYear>
+    <organization>
+        <name>Royal Veterinary College</name>
+        <url>http://http://www.rvc.ac.uk/</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>Simplified BSD License</name>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <mailingLists>
+        <mailingList>
+            <name>ImageJ forum</name>
+            <subscribe>http://forum.imagej.net/</subscribe>
+            <post>http://forum.imagej.net/tags/bonej</post>
+        </mailingList>
+    </mailingLists>
 
     <developers>
         <developer>
@@ -23,27 +43,11 @@
             <organization>Royal Veterinary College</organization>
             <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
+                <role>founder</role>
                 <role>lead</role>
-                <role>developer</role>
-                <role>debugger</role>
-                <role>reviewer</role>
                 <role>support</role>
-                <role>maintainer</role>
             </roles>
             <timezone>+0</timezone>
-        </developer>
-        <developer>
-            <id>tjrantal</id>
-            <name>Timo Rantalainen</name>
-            <email>t.rantalainen@deakin.edu.au</email>
-            <organization>Deakin University IPAN</organization>
-            <organizationUrl>www.deakin.edu.au</organizationUrl>
-            <roles>
-                <role>developer</role>
-                <role>debugger</role>
-                <role>maintainer</role>
-            </roles>
-            <timezone>+10</timezone>
         </developer>
         <developer>
             <id>rimadoma</id>
@@ -79,6 +83,14 @@
             <url>http://imagej.net/User:Hinerm</url>
             <properties><id>hinerm</id></properties>
         </contributor>
+        <contributor>
+            <name>Timo Rantalainen</name>
+            <email>t.rantalainen@deakin.edu.au</email>
+            <organization>Deakin University IPAN</organization>
+            <organizationUrl>www.deakin.edu.au</organizationUrl>
+            <timezone>+10</timezone>
+            <properties><id>tjrantal</id></properties>
+        </contributor>
     </contributors>
 
     <scm>
@@ -93,6 +105,7 @@
     </issueManagement>
     <ciManagement>
         <system>Jenkins</system>
+        <url>http://jenkins.imagej.net/view/BoneJ/</url>
     </ciManagement>
 
     <dependencies>
@@ -109,18 +122,13 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <license.licenseName>BSD-2-Clause</license.licenseName>
+        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
+    </properties>
+
     <build>
+        <!-- ImageJ1 doesn't recognize packages without underscores as plugins -->
         <finalName>bonejLegacyPQCT_</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <licenseName>BSD-2</licenseName>
-                    <organizationName>Michael Doube, BoneJ developers</organizationName>
-                    <projectName>PQCT: ImageJ density distribution analysis plugin</projectName>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 </project>
