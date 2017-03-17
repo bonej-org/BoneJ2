@@ -22,8 +22,6 @@ public class Common {
 	public static <C extends ComplexType<C>> ImgPlus<BitType> toBitTypeImgPlus(
 		OpService ops, final ImgPlus<C> imgPlus)
 	{
-		final long[] dimensions = new long[imgPlus.numDimensions()];
-		imgPlus.dimensions(dimensions);
 		final Img<BitType> convertedImg = ops.convert().bit(imgPlus.getImg());
 		final ImgPlus<BitType> convertedImgPlus = new ImgPlus<>(convertedImg);
 		copyMetadata(imgPlus, convertedImgPlus);

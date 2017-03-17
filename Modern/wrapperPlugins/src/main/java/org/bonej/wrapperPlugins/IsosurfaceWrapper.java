@@ -25,7 +25,6 @@ import net.imagej.ops.Ops;
 import net.imagej.ops.geom.geom3d.mesh.Facet;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
-import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.space.AnnotatedSpace;
@@ -36,8 +35,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.bonej.ops.thresholdFraction.SurfaceMask;
-import org.bonej.ops.thresholdFraction.Thresholds;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
@@ -94,7 +91,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 
     private boolean calibrationWarned = false;
     private boolean scalingWarned = false;
-    private BinaryFunctionOp<RandomAccessibleInterval, Thresholds, RandomAccessibleInterval> maskOp;
     private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
 
     @Override
@@ -122,8 +118,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 
     private void matchOps(final RandomAccessibleInterval<BitType> matchingView) {
         //TODO match with suitable mocked "NilTypes" (conforms == true)
-        final Thresholds<BitType> thresholds = new Thresholds<>(matchingView, 1, 1);
-        maskOp = Functions.binary(ops, SurfaceMask.class, RandomAccessibleInterval.class, matchingView, thresholds);
         marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class, Mesh.class, matchingView);
     }
 
@@ -152,8 +146,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 
         for (SpatialView<?> view : views) {
             final String label = name + view.hyperPosition;
-            final RandomAccessibleInterval mask = maskOp.calculate(view.view);
-            final Mesh mesh = marchingCubesOp.calculate(mask);
+            final Mesh mesh = marchingCubesOp.calculate(view.view);
             final double area = mesh.getSurfaceArea();
             showArea(label, area);
 

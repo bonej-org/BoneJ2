@@ -8,14 +8,13 @@ import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
-import org.bonej.ops.thresholdFraction.ElementFraction;
-import org.bonej.ops.thresholdFraction.ElementFraction.Results;
-import org.bonej.ops.thresholdFraction.ElementFraction.Settings;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -24,7 +23,11 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
 /**
- * A wrapper UI class for the ElementFraction Op
+ * This command estimates the size of the given sample by counting its
+ * foreground elements, and the whole stack by counting all the elements (bone)
+ * and the whole image stack. In the case of a 2D image "size" refers to areas,
+ * and in 3D volumes. The plugin displays the sizes and their ratio in the
+ * results table. Results are shown in calibrated units, if possible.
  *
  * @author Richard Domander
  */
@@ -46,43 +49,59 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter
 	private UnitService unitService;
 
+	/** Header of the foreground (bone) volume column in the results table */
+	private String boneSizeHeader;
+	/** Header of the total volume column in the results table */
+	private String totalSizeHeader;
+	/** Header of the size ratio column in the results table */
+	private String ratioHeader;
+	/** The calibrated size of an element in the image */
+	private double elementSize;
+	private static ResultsInserter resultsInserter = ResultsInserter
+		.getInstance();
+
 	@Override
 	public void run() {
-		final T element = inputImage.cursor().get();
-		final T minThreshold = element.createVariable();
-		final T maxThreshold = element.createVariable();
-		minThreshold.setReal(127);
-		maxThreshold.setReal(255);
-		final Settings<T> settings = new Settings<>(minThreshold, maxThreshold);
-
-		final Results results = (Results) opService.run(ElementFraction.class,
-			inputImage, settings);
-
-		showResults(results);
+		// Our image has binary values, but convert to actual binary type
+		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
+			inputImage);
+		prepareResultDisplay();
+		// The value of each foreground element in a bit type image is 1, so we can
+		// count their number just by summing
+		final double foregroundSize = opService.stats().sum(bitImgPlus)
+			.getRealDouble() * elementSize;
+		final double totalSize = bitImgPlus.size() * elementSize;
+		final double ratio = foregroundSize / totalSize;
+		showResults(foregroundSize, totalSize, ratio);
 	}
 
-	private void showResults(final Results results) {
-		final String label = inputImage.getName();
-		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
+	// region -- Helper methods --
+	private void prepareResultDisplay() {
 		final char exponent = ResultUtils.getExponent(inputImage);
-		final double elementSize = ElementUtil.calibratedSpatialElementSize(
-			inputImage, unitService);
-		final double thresholdSize = results.thresholdElements * elementSize;
-		final double totalSize = results.elements * elementSize;
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
 			exponent);
-
 		if (unitHeader.isEmpty()) {
 			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
 		}
+		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
-		final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-		resultsInserter.setMeasurementInFirstFreeRow(label, "Bone " +
-			sizeDescription + " " + unitHeader, thresholdSize);
-		resultsInserter.setMeasurementInFirstFreeRow(label, "Total " +
-			sizeDescription + " " + unitHeader, totalSize);
-		resultsInserter.setMeasurementInFirstFreeRow(label, sizeDescription +
-			" Ratio", results.ratio);
+		boneSizeHeader = "Bone " + sizeDescription + " " + unitHeader;
+		totalSizeHeader = "Total " + sizeDescription + " " + unitHeader;
+		ratioHeader = sizeDescription + " Ratio";
+		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
+			unitService);
+
+	}
+
+	private void showResults(final double foregroundSize, final double totalSize,
+		final double ratio)
+	{
+		final String label = inputImage.getName();
+		resultsInserter.setMeasurementInFirstFreeRow(label, boneSizeHeader,
+			foregroundSize);
+		resultsInserter.setMeasurementInFirstFreeRow(label, totalSizeHeader,
+			totalSize);
+		resultsInserter.setMeasurementInFirstFreeRow(label, ratioHeader, ratio);
 		resultsInserter.updateResults();
 	}
 
@@ -102,4 +121,5 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 			cancel(WEIRD_SPATIAL);
 		}
 	}
+	// endregion
 }
