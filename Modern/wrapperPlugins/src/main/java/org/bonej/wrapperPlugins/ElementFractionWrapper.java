@@ -60,6 +60,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private static ResultsInserter resultsInserter = ResultsInserter
 		.getInstance();
 
+	//TODO Split hyperstacks to 2D/3D?
 	@Override
 	public void run() {
 		// Our image has binary values, but convert to actual binary type

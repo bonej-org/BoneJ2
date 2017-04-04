@@ -5,6 +5,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
@@ -26,8 +27,8 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils.SpatialView;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -79,14 +80,14 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	public void run() {
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
-		final List<SpatialView<BitType>> subspaces = ViewUtils.createSpatialViews(
-			bitImgPlus);
-		matchOps(subspaces.get(0).view);
+		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
+			bitImgPlus).collect(Collectors.toList());
+		matchOps(subspaces.get(0).interval);
 		prepareResultDisplay();
 		final String name = inputImage.getName();
 		subspaces.forEach(subspace -> {
-			final double[] results = subSpaceFraction(subspace.view);
-			final String label = name + subspace.hyperPosition;
+			final double[] results = subSpaceFraction(subspace.interval);
+			final String label = name+ " " + subspace.toString();
 			addResults(label, results);
 		});
 		resultsInserter.updateResults();
@@ -94,11 +95,11 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 	// region -- Helper methods --
 
-	private void matchOps(final RandomAccessibleInterval<BitType> view) {
+	private void matchOps(final RandomAccessibleInterval<BitType> subspace) {
 		raiCopy = Functions.unary(opService, Ops.Copy.RAI.class,
-			RandomAccessibleInterval.class, view);
+			RandomAccessibleInterval.class, subspace);
 		marchingCubes = Functions.unary(opService,
-			Ops.Geometric.MarchingCubes.class, Mesh.class, view);
+			Ops.Geometric.MarchingCubes.class, Mesh.class, subspace);
 		// Create a dummy object to make op matching happy
 		meshVolume = Functions.unary(opService, Ops.Geometric.Size.class,
 			DoubleType.class, new DefaultMesh());

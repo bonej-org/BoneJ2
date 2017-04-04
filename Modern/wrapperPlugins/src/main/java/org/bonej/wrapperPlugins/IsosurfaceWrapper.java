@@ -17,6 +17,7 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
@@ -40,8 +41,8 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils.SpatialView;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.jetbrains.annotations.Nullable;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -96,9 +97,10 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
     @Override
     public void run() {
         final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops, inputImage);
-        final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(bitImgPlus);
-        matchOps(views.get(0).view);
-        processViews(views);
+		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
+			bitImgPlus).collect(Collectors.toList());
+        matchOps(subspaces.get(0).interval);
+        processViews(subspaces);
     }
 
     // -- Helper methods --
@@ -121,7 +123,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
         marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class, Mesh.class, matchingView);
     }
 
-    private void processViews(List<SpatialView<BitType>> views) {
+    private void processViews(List<Subspace<BitType>> subspaces) {
         final String name = inputImage.getName();
         final Map<String, String> failedMeshes = new HashMap<>();
 
@@ -144,15 +146,15 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
             }
         }
 
-        for (SpatialView<?> view : views) {
-            final String label = name + view.hyperPosition;
-            final Mesh mesh = marchingCubesOp.calculate(view.view);
+        for (Subspace<?> subspace : subspaces) {
+            final String label = name + " " + subspace.toString();
+            final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
             final double area = mesh.getSurfaceArea();
             showArea(label, area);
 
             if (exportSTL) {
                 try {
-                    writeBinarySTLFile(path + view.hyperPosition + extension, mesh);
+                    writeBinarySTLFile(path + subspace.toString() + extension, mesh);
                 } catch (Exception e) {
                     failedMeshes.put(label, e.getMessage());
                 }
