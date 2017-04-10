@@ -6,6 +6,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
@@ -20,8 +21,8 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.ViewUtils.SpatialView;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -62,27 +63,28 @@ public class ConnectivityWrapper extends ContextCommand {
 			inputImage);
 		final String name = inputImage.getName();
 
-		final List<SpatialView<BitType>> views = ViewUtils.createSpatialViews(
-			bitImgPlus);
-		for (SpatialView view : views) {
-			final String label = name + view.hyperPosition;
-			viewConnectivity(label, view.view);
+		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
+			bitImgPlus).collect(Collectors.toList());
+		for (Subspace subspace : subspaces) {
+			final String label = name + " " + subspace.toString();
+			subspaceConnectivity(label, subspace.interval);
 		}
 	}
 
 	// region -- Helper methods --
 
-	/** Process connectivity for one spatial view */
-	private void viewConnectivity(final String label,
-		final RandomAccessibleInterval view)
+	/** Process connectivity for one 3D subspace */
+	private void subspaceConnectivity(final String label,
+		final RandomAccessibleInterval subspace)
 	{
+	    //TODO match ops
 		final double eulerCharacteristic = opService.topology()
-			.eulerCharacteristic26NFloating(view).get();
-		final double edgeCorrection = opService.topology().eulerCorrection(view)
+			.eulerCharacteristic26NFloating(subspace).get();
+		final double edgeCorrection = opService.topology().eulerCorrection(subspace)
 			.get();
 		final double correctedEuler = eulerCharacteristic - edgeCorrection;
 		final double connectivity = 1 - correctedEuler;
-		final double connectivityDensity = calculateConnectivityDensity(view,
+		final double connectivityDensity = calculateConnectivityDensity(subspace,
 			connectivity);
 
 		showResults(label, eulerCharacteristic, correctedEuler, connectivity,
@@ -118,9 +120,9 @@ public class ConnectivityWrapper extends ContextCommand {
 	}
 
 	private double calculateConnectivityDensity(
-		final RandomAccessibleInterval view, final double connectivity)
+		final RandomAccessibleInterval subspace, final double connectivity)
 	{
-		final double elements = ((IterableInterval) view).size();
+		final double elements = ((IterableInterval) subspace).size();
 		final double elementSize = ElementUtil.calibratedSpatialElementSize(
 			inputImage, unitService);
 		return connectivity / (elements * elementSize);
