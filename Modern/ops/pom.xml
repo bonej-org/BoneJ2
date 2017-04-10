@@ -107,10 +107,6 @@
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
         </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>imagej-common</artifactId>
-        </dependency>
 
         <!-- Fiji dependencies -->
         <dependency>
@@ -129,10 +125,6 @@
         </dependency>
 
         <!-- Other dependencies -->
-        <dependency>
-            <groupId>net.imglib2</groupId>
-            <artifactId>imglib2</artifactId>
-        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
