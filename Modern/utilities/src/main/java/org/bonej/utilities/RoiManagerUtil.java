@@ -6,10 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-
-import org.jetbrains.annotations.Contract;
-
 import ij.ImageStack;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
@@ -41,8 +37,8 @@ public class RoiManagerUtil {
 	 *         list if sliceNumber is out of bounds, or roiMan == null, or stack
 	 *         == null
 	 */
-	public static List<Roi> getSliceRoi(@Nullable final RoiManager roiMan,
-		@Nullable final ImageStack stack, final int sliceNumber)
+	public static List<Roi> getSliceRoi(final RoiManager roiMan,
+		final ImageStack stack, final int sliceNumber)
 	{
 		final List<Roi> roiList = new ArrayList<>();
 
@@ -78,8 +74,8 @@ public class RoiManagerUtil {
 	 * @implNote If for any ROI isActiveOnAllSlices == true, then z0 == 1 and z1
 	 *           == stack.getSize().
 	 */
-	public static Optional<int[]> getLimits(@Nullable final RoiManager roiMan,
-		@Nullable final ImageStack stack)
+	public static Optional<int[]> getLimits(final RoiManager roiMan,
+		final ImageStack stack)
 	{
 		if (roiMan == null || roiMan.getCount() == 0 || stack == null) {
 			return Optional.empty();
@@ -164,7 +160,7 @@ public class RoiManagerUtil {
 
 	/** Same as @see RoiUtil.cropToRois, but with default padding of 0. */
 	public static Optional<ImageStack> cropToRois(
-		@Nullable final RoiManager roiMan, @Nullable final ImageStack sourceStack,
+		final RoiManager roiMan, final ImageStack sourceStack,
 		final boolean fillBackground, final int fillColor)
 	{
 		return cropToRois(roiMan, sourceStack, fillBackground, fillColor, 0);
@@ -185,7 +181,7 @@ public class RoiManagerUtil {
 	 *         empty
 	 */
 	public static Optional<ImageStack> cropToRois(
-		@Nullable final RoiManager roiMan, @Nullable final ImageStack sourceStack,
+		final RoiManager roiMan, final ImageStack sourceStack,
 		final boolean fillBackground, final int fillColor, final int padding)
 	{
 		if (roiMan == null || sourceStack == null) {
@@ -340,8 +336,7 @@ public class RoiManagerUtil {
 		}
 	}
 
-	@Contract(pure = true)
-	private static boolean isActiveOnAllSlices(final int sliceNumber) {
+    private static boolean isActiveOnAllSlices(final int sliceNumber) {
 		return sliceNumber == NO_SLICE_NUMBER;
 	}
 

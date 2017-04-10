@@ -46,45 +46,50 @@ public class ResultsInserterTest {
 		afterCount = 0;
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void
-		testSetResultsTableThrowsNullPointerExceptionWhenResultsTableIsNull()
-			throws Exception
-	{
+	@Test
+	public void testSetResultsTableIgnoresNull() throws Exception {
+		final ResultsTable oldTable = resultsInserter.getResultsTable();
 		resultsInserter.setResultsTable(null);
+		assertEquals(oldTable, resultsInserter.getResultsTable());
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void
-		testSetImageMeasurementInFirstFreeRowThrowsExceptionIfRowLabelIsNull()
-			throws Exception
+	@Test
+	public void testSetImageMeasurementInFirstFreeRowIgnoresNullLabel()
+		throws Exception
 	{
+		final int oldCount = resultsInserter.getResultsTable().getCounter();
 		resultsInserter.setMeasurementInFirstFreeRow(null, "measurementTitle", 1.0);
+		assertEquals(oldCount, resultsInserter.getResultsTable().getCounter());
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void
-		testSetImageMeasurementInFirstFreeRowThrowsExceptionIfRowLabelIsEmpty()
-			throws Exception
+	@Test
+	public void testSetImageMeasurementInFirstFreeRowIgnoresEmptyLabel()
+		throws Exception
 	{
+		final int oldCount = resultsInserter.getResultsTable().getCounter();
 		resultsInserter.setMeasurementInFirstFreeRow(emptyString,
 			"measurementTitle", 1.0);
+		assertEquals(oldCount, resultsInserter.getResultsTable().getCounter());
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void
-		testSetImageMeasurementInFirstFreeRowThrowsExceptionIfMeasurementTitleIsNull()
+		testSetImageMeasurementInFirstFreeRowIgnoresNullMeasurementTitle()
 			throws Exception
 	{
+        final int oldCount = resultsInserter.getResultsTable().getCounter();
 		resultsInserter.setMeasurementInFirstFreeRow("Label", null, 1.0);
+        assertEquals(oldCount, resultsInserter.getResultsTable().getCounter());
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void
-		testSetImageMeasurementInFirstFreeRowThrowsExceptionIfMeasurementTitleIsEmpty()
+		testSetImageMeasurementInFirstFreeRowIgnoresEmptyMeasurementTitle()
 			throws Exception
 	{
+        final int oldCount = resultsInserter.getResultsTable().getCounter();
 		resultsInserter.setMeasurementInFirstFreeRow("Label", emptyString, 1.0);
+        assertEquals(oldCount, resultsInserter.getResultsTable().getCounter());
 	}
 
 	@Test

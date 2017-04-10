@@ -3,8 +3,6 @@ package org.bonej.wrapperPlugins.wrapperUtils;
 
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
@@ -26,7 +24,7 @@ public class ResultUtils {
 	 * space, e.g. "Area" for 2D images
 	 */
 	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> String
-		getSizeDescription(@Nullable T space)
+		getSizeDescription(T space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
 
@@ -45,7 +43,7 @@ public class ResultUtils {
 	 * a spatial 3D space
 	 */
 	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> char
-		getExponent(@Nullable final T space)
+		getExponent(final T space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
 
@@ -80,7 +78,7 @@ public class ResultUtils {
 
 	/** @see ResultUtils#getUnitHeader(AnnotatedSpace, UnitService, char) */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
-		@Nullable final T space, final UnitService unitService)
+		final T space, final UnitService unitService)
 	{
 		return getUnitHeader(space, unitService, '\u0000');
 	}
@@ -95,7 +93,7 @@ public class ResultUtils {
 	 * @return Unit for column headers or empty if there's no unit
 	 */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
-		@Nullable final T space, final UnitService unitService,
+		final T space, final UnitService unitService,
 		final char exponent)
 	{
 		final Optional<String> unit = AxisUtils.getSpatialUnit(space, unitService);

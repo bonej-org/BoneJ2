@@ -4,18 +4,16 @@ package org.bonej.utilities;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
 
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.BooleanType;
-
-import org.jetbrains.annotations.Contract;
+import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
 
 /**
  * Various utility methods for inspecting image element properties
@@ -33,9 +31,8 @@ public class ElementUtil {
 	 * @return True if only two distinct values, false if interval is null, empty
 	 *         or has more colors
 	 */
-	@Contract("null -> false")
-	public static boolean isColorsBinary(
-		@Nullable final IterableInterval interval)
+	public static <T extends RealType<T> & NativeType<T>> boolean isColorsBinary(
+		final IterableInterval<T> interval)
 	{
 		if (interval == null || interval.size() == 0) {
 			return false;
@@ -48,7 +45,7 @@ public class ElementUtil {
 			return true;
 		}
 
-		final long colours = Streamers.realDoubleStream(interval).distinct()
+        final long colours = Streamers.realDoubleStream(interval).distinct()
 			.count();
 
 		return colours <= 2;
@@ -61,38 +58,34 @@ public class ElementUtil {
 	 * @return Calibrated size of a spatial element, or Double.NaN if space ==
 	 *         null, has nonlinear axes, or calibration units don't match
 	 */
-	// TODO: Add limit option
 	public static <T extends AnnotatedSpace<CalibratedAxis>> double
-		calibratedSpatialElementSize(@Nullable final T space,
-			final UnitService unitService)
+		calibratedSpatialElementSize(final T space, final UnitService unitService)
 	{
 		if (AxisUtils.hasNonLinearSpatialAxes(space)) {
 			return Double.NaN;
 		}
 
-		try {
-			final String unit = AxisUtils.getSpatialUnit(space, unitService).get()
-				.replaceFirst("^µ[mM]$", "um");
-			if (unit.isEmpty()) {
-				return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((
-					x, y) -> x * y).orElse(0.0);
-			}
-
-			final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
-				Collectors.toList());
-			double elementSize = axes.get(0).averageScale(0.0, 1.0);
-			for (int i = 1; i < axes.size(); i++) {
-				double scale = axes.get(i).averageScale(0.0, 1.0);
-				final String axisUnit = axes.get(i).unit().replaceFirst("^µ[mM]$",
-					"um");
-				final double axisSize = unitService.value(scale, axisUnit, unit);
-				elementSize *= axisSize;
-			}
-
-			return elementSize;
-		}
-		catch (NoSuchElementException e) {
+		final Optional<String> optional = AxisUtils.getSpatialUnit(space,
+			unitService);
+		if (!optional.isPresent()) {
 			return Double.NaN;
 		}
+		final String unit = optional.get().replaceFirst("^µ[mM]$", "um");
+		if (unit.isEmpty()) {
+			return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x,
+				y) -> x * y).orElse(0.0);
+		}
+
+		final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
+			Collectors.toList());
+		double elementSize = axes.get(0).averageScale(0.0, 1.0);
+		for (int i = 1; i < axes.size(); i++) {
+			double scale = axes.get(i).averageScale(0.0, 1.0);
+			final String axisUnit = axes.get(i).unit().replaceFirst("^µ[mM]$", "um");
+			final double axisSize = unitService.value(scale, axisUnit, unit);
+			elementSize *= axisSize;
+		}
+
+		return elementSize;
 	}
 }
