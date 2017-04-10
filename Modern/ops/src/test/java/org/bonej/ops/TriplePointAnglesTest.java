@@ -175,21 +175,4 @@ public class TriplePointAnglesTest {
 
 		assertTrue("The graphs should have circular edges", result);
 	}
-
-	@Test(expected = NullPointerException.class)
-	public void testTriplePointConstructorThrowsNPEIfAnglesNull() {
-		new TriplePoint(1, 1, null);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testTriplePointConstructorThrowsIAEIfNotThreeAngles() {
-		final List<Double> angles = asList(0.0, 1.0);
-		new TriplePoint(1, 1, angles);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testTriplePointConstructorThrowsIAEIfAngleNull() {
-		final List<Double> angles = asList(0.0, 1.0, null);
-		new TriplePoint(1, 1, angles);
-	}
 }

@@ -1,12 +1,14 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
+import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.scijava.ui.DialogPrompt.MessageType;
 import static org.scijava.ui.DialogPrompt.OptionType;
 import static org.scijava.ui.DialogPrompt.Result;
-
-import com.google.common.base.Strings;
 
 import java.util.Optional;
 
@@ -190,8 +192,9 @@ public class ThicknessWrapper extends ContextCommand {
 
 	private static String getUnitHeader(final ImagePlus map) {
 		final String unit = map.getCalibration().getUnit();
-		if (Strings.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) || "unit"
-			.equalsIgnoreCase(unit))
+		// TODO replace with StringUtils.nullOrEmtpy
+		if (unit == null || unit.isEmpty() || "pixel".equalsIgnoreCase(unit) ||
+			"unit".equalsIgnoreCase(unit))
 		{
 			return "";
 		}

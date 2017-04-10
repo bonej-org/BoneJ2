@@ -1,12 +1,8 @@
 
 package org.bonej.utilities;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.google.common.base.Strings;
-
 import ij.measure.ResultsTable;
+import org.scijava.util.StringUtils;
 
 /**
  * A wrapper class for ResultsTable used to insert measurements according to the
@@ -67,15 +63,13 @@ public class ResultsInserter {
 	 * Sets the ResultsTable the ResultsInserter uses
 	 *
 	 * @param resultsTable The table where the values are inserted
-	 * @throws NullPointerException if resultsTable == null
 	 */
 	public void setResultsTable(final ResultsTable resultsTable)
-		throws NullPointerException
 	{
-		checkNotNull(resultsTable,
-			"The ResultsTable in ResultsInserter must not be set null");
-
-		this.resultsTable = resultsTable;
+	    if (resultsTable == null) {
+	        return;
+        }
+	    this.resultsTable = resultsTable;
 		this.resultsTable.setNaNEmptyCells(true);
 	}
 
@@ -86,16 +80,17 @@ public class ResultsInserter {
 	 * @param rowLabel The row label of the new data
 	 * @param measurementHeading The column heading of the new data
 	 * @param measurementValue The value of the new data
-	 * @throws IllegalArgumentException if either String argument is null or empty
 	 */
 	public void setMeasurementInFirstFreeRow(final String rowLabel,
 		final String measurementHeading, double measurementValue)
-		throws IllegalArgumentException
 	{
-		checkArgument(!Strings.isNullOrEmpty(rowLabel),
-			"Row label must not be null or empty");
-		checkArgument(!Strings.isNullOrEmpty(measurementHeading),
-			"Measurement heading must not be null or empty");
+	    //TODO Replace with StringUtils.isNullOrEmpty
+	    if (rowLabel == null || rowLabel.isEmpty()) {
+            return;
+        }
+        if (measurementHeading == null || measurementHeading.isEmpty()) {
+            return;
+        }
 
 		int rowNumber = rowOfLabel(rowLabel);
 		if (rowNumber < 0) {

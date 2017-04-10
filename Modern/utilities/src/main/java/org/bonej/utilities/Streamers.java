@@ -5,13 +5,9 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import javax.annotation.Nullable;
-
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imglib2.type.numeric.RealType;
-
-import org.jetbrains.annotations.Contract;
 
 /**
  * Utility functions to generate streams from various ImageJ2 collections
@@ -28,9 +24,8 @@ public class Streamers {
 	 * @return A Stream<S> of the axes. An empty stream if space == null or space
 	 *         has no axes
 	 */
-	@Contract("null -> !null")
 	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> Stream<S>
-		axisStream(@Nullable final T space)
+		axisStream(final T space)
 	{
 		if (space == null) {
 			return Stream.empty();
@@ -52,9 +47,8 @@ public class Streamers {
 	 * @return A DoubleStream of the realDouble values, or empty stream if
 	 *         iterable == null
 	 */
-	@Contract("null -> !null")
 	public static <T extends RealType<T>> DoubleStream realDoubleStream(
-		@Nullable Iterable<T> iterable)
+		Iterable<T> iterable)
 	{
 		if (iterable == null) {
 			return DoubleStream.empty();
@@ -70,7 +64,7 @@ public class Streamers {
 	 * @return A Stream<S> of spatial axes. An empty stream if space == null
 	 */
 	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> Stream<S>
-		spatialAxisStream(@Nullable final T space)
+		spatialAxisStream(final T space)
 	{
 		return axisStream(space).filter(a -> a.type().isSpatial());
 	}

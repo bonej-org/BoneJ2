@@ -3,10 +3,6 @@ package org.bonej.utilities;
 
 import java.util.Arrays;
 
-import javax.annotation.Nullable;
-
-import org.jetbrains.annotations.Contract;
-
 import ij.ImagePlus;
 import ij.measure.Calibration;
 
@@ -23,8 +19,7 @@ public class ImagePlusCheck {
 	 * @return true if the image has more than one slice, false if not, or image
 	 *         is null
 	 */
-	@Contract("null -> false")
-	public static boolean is3D(@Nullable final ImagePlus image) {
+	public static boolean is3D(final ImagePlus image) {
 		return image != null && image.getNSlices() > 1;
 	}
 
@@ -34,8 +29,7 @@ public class ImagePlusCheck {
 	 * @return true if there are only two distinct pixel values present in the
 	 *         image, false if more, or the image is null
 	 */
-	@Contract("null -> false")
-	public static boolean isBinaryColour(@Nullable final ImagePlus image) {
+	public static boolean isBinaryColour(final ImagePlus image) {
 		return image != null && Arrays.stream(image.getStatistics().histogram)
 			.filter(p -> p > 0).count() <= 2;
 	}
@@ -47,7 +41,7 @@ public class ImagePlusCheck {
 	 * @return Anisotropy fraction [0.0, Double.MAX_VALUE], an isotropic image
 	 *         returns 0.0 Returns Double.NaN if image == null
 	 */
-	public static double anisotropy(@Nullable final ImagePlus image) {
+	public static double anisotropy(final ImagePlus image) {
 		if (image == null) {
 			return Double.NaN;
 		}

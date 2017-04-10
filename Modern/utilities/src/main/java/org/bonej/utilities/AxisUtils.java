@@ -5,13 +5,9 @@ import static java.util.stream.Collectors.toList;
 import static org.bonej.utilities.Streamers.axisStream;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
-import com.google.common.base.Strings;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
-
-import javax.annotation.Nullable;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
@@ -35,7 +31,7 @@ public class AxisUtils {
 	 *         three spatial dimensions
 	 */
 	public static <T extends AnnotatedSpace<A>, A extends TypedAxis>
-		Optional<int[]> getXYZIndices(@Nullable final T space)
+		Optional<int[]> getXYZIndices(final T space)
 	{
 		if (space == null) {
 			return Optional.empty();
@@ -53,7 +49,7 @@ public class AxisUtils {
 	 * no such dimensions
 	 */
 	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int
-		getTimeIndex(@Nullable final T space)
+		getTimeIndex(final T space)
 	{
 		if (space == null) {
 			return -1;
@@ -69,7 +65,7 @@ public class AxisUtils {
 	 * are no such dimensions
 	 */
 	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int
-		getChannelIndex(@Nullable final T space)
+		getChannelIndex(final T space)
 	{
 		if (space == null) {
 			return -1;
@@ -86,7 +82,7 @@ public class AxisUtils {
 	 * @return Number of spatial dimensions in the space, or 0 if space == null
 	 */
 	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> long
-		countSpatialDimensions(@Nullable final T space)
+		countSpatialDimensions(final T space)
 	{
 		return spatialAxisStream(space).count();
 	}
@@ -105,7 +101,7 @@ public class AxisUtils {
 	 */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> double
 		getMaxConversion(final double scale, final String unit,
-			@Nullable final T space, final UnitService unitService)
+			final T space, final UnitService unitService)
 	{
 		final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
 			toList());
@@ -138,7 +134,7 @@ public class AxisUtils {
 	 *         contains an empty string if all the axes are uncalibrated
 	 */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> Optional<String>
-		getSpatialUnit(@Nullable final T space, final UnitService unitService)
+		getSpatialUnit(final T space, final UnitService unitService)
 	{
 		if (space == null || !hasSpatialDimensions(space) || !isUnitsConvertible(
 			space, unitService))
@@ -157,13 +153,13 @@ public class AxisUtils {
 	 *         if not, or space == null
 	 */
 	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasChannelDimensions(@Nullable final T space)
+		hasChannelDimensions(final T space)
 	{
 		return axisStream(space).anyMatch(a -> a.type() == Axes.CHANNEL);
 	}
 
 	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasSpatialDimensions(@Nullable final T space)
+		hasSpatialDimensions(final T space)
 	{
 		return axisStream(space).anyMatch(a -> a.type().isSpatial());
 	}
@@ -175,13 +171,13 @@ public class AxisUtils {
 	 *         not, or space == null
 	 */
 	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasTimeDimensions(@Nullable final T space)
+		hasTimeDimensions(final T space)
 	{
 		return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
 	}
 
 	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasNonLinearSpatialAxes(@Nullable final T space)
+		hasNonLinearSpatialAxes(final T space)
 	{
 		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
 			.type().isSpatial());
@@ -200,8 +196,9 @@ public class AxisUtils {
 		isUnitsConvertible(T space, final UnitService unitService)
 	{
 		final long spatialDimensions = countSpatialDimensions(space);
+        //TODO Replace with StringUtils.isNullOrEmpty
 		final long uncalibrated = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.filter(Strings::isNullOrEmpty).count();
+			.filter(s -> s == null || s.isEmpty()).count();
 
 		if (uncalibrated == spatialDimensions) {
 			return true;

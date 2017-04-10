@@ -124,22 +124,6 @@
             <artifactId>vecmath</artifactId>
         </dependency>
 
-        <!-- Other dependencies -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.sourceforge.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>1.3.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>15.0</version>
-        </dependency>
-
         <!-- Testing dependencies -->
         <dependency>
             <groupId>junit</groupId>

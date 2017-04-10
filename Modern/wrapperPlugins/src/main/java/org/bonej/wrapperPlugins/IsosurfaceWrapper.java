@@ -1,13 +1,12 @@
 package org.bonej.wrapperPlugins;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-
-import com.google.common.base.Strings;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,10 +39,9 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.ResultsInserter;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
-import org.jetbrains.annotations.Nullable;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
@@ -61,8 +59,18 @@ import org.scijava.widget.FileWidget;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Isosurface", headless = true)
 public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
+    static {
+        // TODO Replace with StringUtils.padRight
+        final String boneJHeader = "Binary STL created by BoneJ";
+        StringBuilder builder = new StringBuilder(boneJHeader);
+        for (int i = 0; i < 80 - boneJHeader.length(); i++) {
+            builder.append('.');
+        }
+        STL_HEADER = builder.toString();
+    }
+
     public static final String STL_WRITE_ERROR = "Failed to write the following STL files:\n\n";
-    public static final String STL_HEADER = Strings.padEnd("Binary STL created by BoneJ", 80, '.');
+    public static final String STL_HEADER;
     public static final String BAD_SCALING = "Cannot scale result because axis calibrations don't match";
 
     @Parameter(validater = "validateImage")
@@ -168,7 +176,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
         }
     }
 
-    @Nullable
     private String choosePath() {
         String initialName = stripFileExtension(inputImage.getName());
 
@@ -234,7 +241,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 
     // -- Utility methods --
 
-    /**
+	/**
 	 * Writes the surface mesh as a binary, little endian STL file
 	 * <p>
 	 * <p>
@@ -244,34 +251,40 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 	 * @param path The absolute path to the save location of the STL file
 	 * @param mesh A mesh consisting of triangular facets
 	 */
-    // TODO: Remove when SciJava PR goes through
-    public static void writeBinarySTLFile(final String path, final Mesh mesh)
-            throws IllegalArgumentException, IOException, NullPointerException {
-        checkNotNull(mesh, "Mesh cannot be null");
-        checkArgument(!Strings.isNullOrEmpty(path), "Filename cannot be null or empty");
+	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
+	public static void writeBinarySTLFile(final String path, final Mesh mesh)
+		throws IllegalArgumentException, IOException, NullPointerException
+	{
+		if (mesh == null) {
+			throw new NullPointerException("Mesh cannot be null");
+		}
+		// TODO Replace with StringUtils.isNullOrEmpty
+		if (path == null || path.isEmpty()) {
+			throw new IllegalArgumentException("Filename cannot be null or empty");
+		}
+		if (!mesh.triangularFacets()) {
+			throw new IllegalArgumentException(
+				"Cannot write STL file: invalid surface mesh");
+		}
 
-        final List<Facet> facets = mesh.getFacets();
-        final int numFacets = facets.size();
-
-        checkArgument(mesh.triangularFacets(), "Cannot write STL file: invalid surface mesh");
-
-        try (FileOutputStream writer = new FileOutputStream(path)) {
-            final byte[] header = STL_HEADER.getBytes();
-            writer.write(header);
-
-            byte[] facetBytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(numFacets).array();
-            writer.write(facetBytes);
-
-            final ByteBuffer buffer = ByteBuffer.allocate(50);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-            for (Facet facet : facets) {
-                final TriangularFacet triangularFacet = (TriangularFacet) facet;
-                writeSTLFacet(buffer, triangularFacet);
-                writer.write(buffer.array());
-                buffer.clear();
-            }
-        }
-    }
+		final List<Facet> facets = mesh.getFacets();
+		final int numFacets = facets.size();
+		try (FileOutputStream writer = new FileOutputStream(path)) {
+			final byte[] header = STL_HEADER.getBytes();
+			writer.write(header);
+			final byte[] facetBytes = ByteBuffer.allocate(4).order(
+				ByteOrder.LITTLE_ENDIAN).putInt(numFacets).array();
+			writer.write(facetBytes);
+			final ByteBuffer buffer = ByteBuffer.allocate(50);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
+			for (Facet facet : facets) {
+				final TriangularFacet triangularFacet = (TriangularFacet) facet;
+				writeSTLFacet(buffer, triangularFacet);
+				writer.write(buffer.array());
+				buffer.clear();
+			}
+		}
+	}
 
     /**
      * Check if all the spatial axes have a matching calibration, e.g. same unit, same scaling
@@ -280,11 +293,17 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
      * </p>
      */
     // TODO make into a utility method or remove if mesh area considers calibration in the future
-    public static <T extends AnnotatedSpace<CalibratedAxis>> boolean isAxesMatchingSpatialCalibration(T space) {
-        final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit).allMatch(Strings::isNullOrEmpty);
-        final boolean matchingUnit = spatialAxisStream(space).map(CalibratedAxis::unit).distinct().count() == 1;
-        final boolean matchingScale = spatialAxisStream(space).map(a -> a.averageScale(0, 1)).distinct().count() == 1;
+	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
+		isAxesMatchingSpatialCalibration(T space)
+	{
+	    //TODO replace with StringUtils.isNullOrEmpty
+		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
+			.allMatch(s -> s == null || s.isEmpty());
+		final boolean matchingUnit = spatialAxisStream(space).map(
+			CalibratedAxis::unit).distinct().count() == 1;
+		final boolean matchingScale = spatialAxisStream(space).map(a -> a
+			.averageScale(0, 1)).distinct().count() == 1;
 
-        return (matchingUnit || noUnits) && matchingScale;
-    }
+		return (matchingUnit || noUnits) && matchingScale;
+	}
 }

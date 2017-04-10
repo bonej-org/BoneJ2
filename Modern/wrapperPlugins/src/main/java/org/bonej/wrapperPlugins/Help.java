@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import javax.annotation.Nullable;
-
 import net.imagej.ImageJ;
 
 import org.scijava.command.Command;
@@ -56,9 +54,9 @@ public class Help implements Command {
 	 *          MalformedURLException
 	 */
 	public static void openHelpPage(final String url,
-		@Nullable final PlatformService platformService,
-		@Nullable final UIService uiService,
-		@Nullable final LogService logService)
+		final PlatformService platformService,
+		final UIService uiService,
+		final LogService logService)
 	{
 		if (platformService == null) {
 			showErrorSafely(uiService,
@@ -89,8 +87,8 @@ public class Help implements Command {
 		}
 	}
 
-	private static void showErrorSafely(@Nullable final UIService uiService,
-		@Nullable final String message)
+	private static void showErrorSafely(final UIService uiService,
+		final String message)
 	{
 		if (uiService == null) {
 			return;

@@ -28,7 +28,6 @@ import net.imglib2.util.ValuePair;
 import net.imglib2.view.Views;
 
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace.HyperAxisMeta;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A static class containing utilities for splitting an n-dimensional hyperstack
@@ -83,8 +82,7 @@ public class HyperstackUtils {
 	 * @return A stream of all the subspaces found
 	 */
 	public static <T extends RealType<T> & NativeType<T>> Stream<Subspace<T>>
-		splitSubspaces(final ImgPlus<T> hyperStack,
-			@Nullable List<AxisType> subspaceTypes)
+		splitSubspaces(final ImgPlus<T> hyperStack, List<AxisType> subspaceTypes)
 	{
 		if (subspaceTypes == null || subspaceTypes.isEmpty()) {
 			return Stream.empty();

@@ -1,15 +1,11 @@
 
 package org.bonej.ops;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
@@ -17,7 +13,6 @@ import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 
-import org.jetbrains.annotations.Contract;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
@@ -108,8 +103,7 @@ public class TriplePointAngles extends
 	 * @see TriplePointAngles#hasCircularEdges(Vertex) hasCircularEdges
 	 * @see TriplePointAngles#isTriplePoint(Vertex) isTriplePoint
 	 */
-	@Contract("null -> false")
-	public static boolean hasCircularEdges(@Nullable final Graph[] graphs) {
+	public static boolean hasCircularEdges(final Graph[] graphs) {
 		if (graphs == null) {
 			return false;
 		}
@@ -295,22 +289,9 @@ public class TriplePointAngles extends
 		private final int triplePointNumber;
 		private final List<Double> angles;
 
-		/**
-		 * Constructs and validates a new Triple Point result
-		 *
-		 * @throws NullPointerException if angles == null
-		 * @throws IllegalArgumentException if angles.size() != 3 || angles.get(i)
-		 *           == null
-		 */
-		public TriplePoint(final int graphNumber, final int triplePointNumber,
-			final List<Double> angles) throws NullPointerException,
-			IllegalArgumentException
+        public TriplePoint(final int graphNumber, final int triplePointNumber,
+			final List<Double> angles)
 		{
-			checkNotNull(angles, "Angles list cannot be null");
-			checkArgument(angles.size() == 3, "There must be three angles");
-			checkArgument(angles.stream().allMatch(a -> a != null),
-				"An angle must not be null");
-
 			this.graphNumber = graphNumber;
 			this.triplePointNumber = triplePointNumber;
 			this.angles = angles;
