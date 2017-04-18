@@ -370,12 +370,7 @@ public class HyperstackUtils {
 			private final long subscript;
 			/**
 			 * A number added to the position when it's printed in
-			 * {@link #toString()}}
-			 * <p>
-			 * Used to follow the ImageJ convention of Z-, Time- and
-			 * Channel-dimensions starting from 1, and X- & Y-dimensions from 0. This
-			 * is an old convention, and will probably change in the future.
-			 * </p>
+			 * {@link #toString()}
 			 */
 			private final long stringOffset;
 
@@ -385,14 +380,7 @@ public class HyperstackUtils {
 				this.type = type;
 				this.position = position;
 				this.subscript = subscript;
-				if (this.type == Axes.Z || this.type == Axes.TIME ||
-					this.type == Axes.CHANNEL)
-				{
-					stringOffset = 1;
-				}
-				else {
-					stringOffset = 0;
-				}
+				stringOffset = ResultUtils.toConventionalIndex(type, 0);
 			}
 
 			private AxisType getType() {

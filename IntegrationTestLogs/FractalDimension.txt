@@ -1,0 +1,100 @@
+Case 1
+=======================================================================
+"Smallest box size" cannot be set greater than "Starting box size"
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open an image
+2. Run plugin BoneJ > Fractal dimension
+3. Select "Smallest box size" spin box 
+4. Enter a value greater than in "Starting box size"
+5. Select another spin box
+
+Expected result
+-----------------------------------------------------------------------
+"Smallest box size" is equal to "Starting box size"
+
+Completed 18/04/2017 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+"Automatic parameters" affects all parameters
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open samples > Bat Cochlea Volume
+2. Run plugin BoneJ > Fractal dimension
+3. Set the spin box values to "4", "3", "2.0" and "1"
+4. Check "Automatic parameters"
+
+
+Expected result
+-----------------------------------------------------------------------
+Spin box values are automatically set to "38", "6", "1.2" and "0"
+
+Completed 18/04/2017 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+Automatic values are calculated correctly
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > New > Image...
+2. Set "Width" and "Height" to "20", and click "OK"
+3. Run plugin BoneJ > Fractal dimension
+4. Check "Automatic parameters"
+
+Expected result
+-----------------------------------------------------------------------
+Spin box values are automatically set to "5", "5", "1.2" and "0"
+
+Completed 18/04/2017 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+Parameter values cannot be changed when "Automatic parameters"
+is checked
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open samples > Bat Cochlea Volume
+2. Run plugin BoneJ > Fractal dimension
+3. Check "Automatic parameters"
+4. Attempt to change the value in each spin box
+
+Expected result
+-----------------------------------------------------------------------
+Each value reverts back when its spin box is deselected
+
+Completed 18/04/2017 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 5
+=======================================================================
+Compare results to BoneJ1
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run ImageJ1
+2. Run File > Open samples > Bat Cochlea Volume
+3. Run plugin BoneJ > Fractal Dimension
+4. Run ImageJ2
+5. Run File > Open samples > Bat Cochlea Volume
+6. Run plugin BoneJ > Fractal dimension
+7. Check "Automatic parameters"
+8. Click "OK"
+
+Expected result
+-----------------------------------------------------------------------
+Results match BoneJ1 (considering rounding)
+
+Completed 18/04/2017 Richard Domander
+-----------------------------------------------------------------------
