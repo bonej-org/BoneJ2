@@ -14,7 +14,7 @@ Expected result
 -----------------------------------------------------------------------
 "Smallest box size" is equal to "Starting box size"
 
-Completed --/--/---- John Doe
+Completed 18/04/2017 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -34,7 +34,7 @@ Expected result
 -----------------------------------------------------------------------
 Spin box values are automatically set to "38", "6", "1.2" and "0"
 
-Completed --/--/---- John Doe
+Completed 18/04/2017 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -53,7 +53,7 @@ Expected result
 -----------------------------------------------------------------------
 Spin box values are automatically set to "5", "5", "1.2" and "0"
 
-Completed --/--/---- John Doe
+Completed 18/04/2017 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -73,7 +73,7 @@ Expected result
 -----------------------------------------------------------------------
 Each value reverts back when its spin box is deselected
 
-Completed --/--/---- John Doe
+Completed 18/04/2017 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -96,5 +96,5 @@ Expected result
 -----------------------------------------------------------------------
 Results match BoneJ1 (considering rounding)
 
-Completed --/--/---- John Doe
+Completed 18/04/2017 Richard Domander
 -----------------------------------------------------------------------
