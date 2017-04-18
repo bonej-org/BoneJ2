@@ -155,8 +155,9 @@ import ij.process.ShortProcessor;
  * @author B. Koller, SCANCO Medical AG, April 2005
  * @author K.-H. Kunzelmann, Operative Dentistry, LMU-München, Ger, April 2006
  * @author Michael Doube, RVC, London, UK. Refactoring for BoneJ 2012 2014
+ * @deprecated File format now in SCIFIO
  */
-//@TODO Deprecate when SCIFIO PR goes through
+@Deprecated
 public class ISQReader implements PlugIn {
 
 	private static final String MAGIC = "CTDATA-HEADER_V1";

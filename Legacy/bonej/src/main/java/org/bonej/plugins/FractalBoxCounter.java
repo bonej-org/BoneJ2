@@ -53,9 +53,10 @@ import ij.util.Tools;
  *      <a href="http://www.pvv.org/~perchrh/imagej/fractal.html">http://www.
  *      pvv. org/~perchrh/imagej/fractal.html</a>
  *      </p>
- *
+ * @deprecated Replaced in Modern
  */
 
+@Deprecated
 public class FractalBoxCounter implements PlugIn {
 
 	boolean noGo = false;
