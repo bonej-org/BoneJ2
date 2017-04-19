@@ -68,6 +68,13 @@ import ij.Prefs;
  */
 public class UsageReporter {
 	public static final UsageReporter INSTANCE = new UsageReporter();
+	/**
+	 * BoneJ version
+	 *
+	 * FIXME: it is fragile to have the version hard-coded here. Create a
+	 * BoneJApp instead.
+	 */
+	public static final String BONEJ_VERSION = "1.5.0";
 
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
@@ -188,7 +195,7 @@ public class UsageReporter {
 	 * @return The instance of UsageReporter ready to send() a report
 	 */
 	public static UsageReporter reportEvent(final Object o) {
-		return reportEvent("Plugin%20Usage", o.getClass().getName(), Help.bonejVersion, null);
+		return reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION, null);
 	}
 
 	/**
