@@ -14,14 +14,18 @@ import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.Column;
+import net.imagej.table.DefaultColumn;
 import net.imagej.table.DoubleColumn;
 import net.imagej.table.GenericTable;
+import net.imagej.table.Table;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
+import org.bonej.utilities.SharedTable;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
@@ -34,6 +38,11 @@ import org.scijava.command.CommandModule;
 public class FractalDimensionWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
+
+	@After
+    public void tearDown() {
+	    SharedTable.reset();
+    }
 
 	@AfterClass
 	public static void oneTimeTearDown() {
@@ -55,13 +64,18 @@ public class FractalDimensionWrapperTest {
 	@Test
 	public void testResults() throws Exception {
 		// SETUP
-		final Iterator<String> expectedHeaders = Stream.of("Label", "Channel",
-			"Time", "Fractal dimension", "R²").iterator();
-		final Iterator<Double> expectedDimensions = Stream.of(0.0,
-			1.4999999999999998, 1.4999999999999998, 0.0).iterator();
-		final Iterator<Double> expectedRSquares = Stream.of(Double.NaN,
-			0.7500000000000002, 0.7500000000000002, Double.NaN).iterator();
-		final String imageName = "Test image";
+		final Iterator<String> expectedHeaders = Stream.of(SharedTable.LABEL_HEADER,
+			"Fractal dimension", "R²").iterator();
+		final String imageName = "Image";
+		final Iterator<String> expectedLabels = Stream.of(" Channel: 1, Time: 1",
+			" Channel: 1, Time: 2", " Channel: 2, Time: 1", " Channel: 2, Time: 2")
+			.map(imageName::concat).iterator();
+		final Iterator<String> expectedDimensions = Stream.of(0.0,
+			1.4999999999999998, 1.4999999999999998, 0.0).map(String::valueOf)
+			.iterator();
+		final Iterator<String> expectedRSquares = Stream.of(Double.NaN,
+			0.7500000000000002, 0.7500000000000002, Double.NaN).map(String::valueOf)
+			.iterator();
 		final ImgPlus<BitType> imgPlus = createTestHyperStack(imageName);
 
 		// EXECUTE
@@ -71,21 +85,21 @@ public class FractalDimensionWrapperTest {
 			"translations", 0L).get();
 
 		// VERIFY
-		final GenericTable table = (GenericTable) module.getOutput("resultsTable");
-		assertEquals("Wrong number of columns", 5, table.size());
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		assertEquals("Wrong number of columns", 3, table.size());
 		table.forEach(column -> assertEquals(
 			"Column has an incorrect number of rows", 4, column.size()));
 		table.stream().map(Column::getHeader).forEach(header -> assertEquals(
 			"Column has an incorrect header", header, expectedHeaders.next()));
 		table.get("Label").stream().map(v -> (String) v).forEach(s -> assertEquals(
-			"Label column has a wrong value", imageName, s));
-		table.get("Fractal dimension").stream().mapToDouble(v -> (Double) v)
-			.forEach(dimension -> assertEquals(
-				"Fractal dimension column has a wrong value", expectedDimensions.next(),
-				dimension, 1e-12));
-		table.get("R²").stream().mapToDouble(v -> (Double) v).forEach(
-			dimension -> assertEquals("R² column has a wrong value", expectedRSquares
-				.next(), dimension, 1e-12));
+			"Label column has a wrong value", expectedLabels.next(), s));
+		table.get("Fractal dimension").forEach(dimension -> assertEquals(
+			"Fractal dimension column has a wrong value", expectedDimensions.next(),
+			dimension));
+		table.get("R²").forEach(dimension -> assertEquals(
+			"R² column has a wrong value", expectedRSquares.next(), dimension));
 	}
 
 	@Test
