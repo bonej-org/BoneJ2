@@ -10,13 +10,17 @@ import static org.scijava.ui.DialogPrompt.MessageType;
 import static org.scijava.ui.DialogPrompt.OptionType;
 import static org.scijava.ui.DialogPrompt.Result;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import net.imagej.patcher.LegacyInjector;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 
 import org.bonej.utilities.ImagePlusCheck;
-import org.bonej.utilities.ResultsInserter;
 import org.bonej.utilities.RoiManagerUtil;
+import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -53,12 +57,6 @@ public class ThicknessWrapper extends ContextCommand {
 	@Parameter(validater = "validateImage")
 	private ImagePlus inputImage;
 
-	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus thicknessMap;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus spacingMap;
-
 	@Parameter(label = "Calculate:",
 		description = "Which thickness measures to calculate",
 		style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
@@ -82,6 +80,21 @@ public class ThicknessWrapper extends ContextCommand {
 		callback = "openHelpPage")
 	private Button helpButton;
 
+	@Parameter(type = ItemIO.OUTPUT)
+	private ImagePlus thicknessMap;
+
+	@Parameter(type = ItemIO.OUTPUT)
+	private ImagePlus spacingMap;
+
+	/**
+	 * The calculated thickness statistics in a {@link Table}
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
+
 	@Parameter
 	private LogService logService;
 
@@ -93,32 +106,28 @@ public class ThicknessWrapper extends ContextCommand {
 
 	@Override
 	public void run() {
-		switch (maps) {
-			case "Trabecular thickness":
-				thicknessMap = createMap(true);
-				if (thicknessMap == null) {
-					return;
-				}
-				showMapStatistics(thicknessMap, true);
-				break;
-			case "Trabecular spacing":
-				spacingMap = createMap(false);
-				if (spacingMap == null) {
-					return;
-				}
-				showMapStatistics(spacingMap, false);
-				break;
-			case "Both":
-				thicknessMap = createMap(true);
-				if (thicknessMap == null) {
-					return;
-				}
-				showMapStatistics(thicknessMap, true);
-				spacingMap = createMap(false);
-				showMapStatistics(spacingMap, false);
-				break;
-			default:
-				throw new RuntimeException("Unexpected map choice");
+		final List<Boolean> mapOptions = new ArrayList<>();
+		if ("Trabecular thickness".equals(maps) || "Both".equals(maps)) {
+			mapOptions.add(true);
+		}
+		if ("Trabecular spacing".equals(maps) || "Both".equals(maps)) {
+			mapOptions.add(false);
+		}
+		mapOptions.forEach(foreground -> {
+			final ImagePlus map = createMap(foreground);
+			if (map == null) {
+				return;
+			}
+			addMapResults(map, foreground);
+			if (foreground) {
+				thicknessMap = map;
+			}
+			else {
+				spacingMap = map;
+			}
+		});
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
 		}
 	}
 
@@ -162,8 +171,7 @@ public class ThicknessWrapper extends ContextCommand {
 		return map;
 	}
 
-	private static void showMapStatistics(final ImagePlus map,
-		final boolean foreground)
+	private void addMapResults(final ImagePlus map, final boolean foreground)
 	{
 		final String unitHeader = getUnitHeader(map);
 		final String label = map.getTitle();
@@ -180,14 +188,9 @@ public class ThicknessWrapper extends ContextCommand {
 			max = Double.NaN;
 		}
 
-		ResultsInserter inserter = ResultsInserter.getInstance();
-		inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader,
-			mean);
-		inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" +
-			unitHeader, stdDev);
-		inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader,
-			max);
-		inserter.updateResults();
+		SharedTable.add(label, prefix + " Mean" + unitHeader, mean);
+		SharedTable.add(label, prefix + " Std Dev" + unitHeader, stdDev);
+		SharedTable.add(label, prefix + " Max" + unitHeader, max);
 	}
 
 	private static String getUnitHeader(final ImagePlus map) {
