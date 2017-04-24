@@ -12,24 +12,26 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
+import java.util.Arrays;
+import java.util.List;
+
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
-import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
-
-import ij.measure.ResultsTable;
 
 /**
  * Integration / Regression tests for the {@link ConnectivityWrapper} plugin
@@ -40,14 +42,9 @@ public class ConnectivityWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ResultsInserter.getInstance().setHeadless(true);
-	}
-
 	@After
 	public void tearDown() {
-		ResultsInserter.getInstance().getResultsTable().reset();
+		SharedTable.reset();
 	}
 
 	@AfterClass
@@ -119,19 +116,25 @@ public class ConnectivityWrapperTest {
 
 	@Test
 	public void testResults() throws Exception {
+		// SETUP
 		// Create an test image of a cuboid
 		final String unit = "mm";
+		final List<String> expectedHeaders = Arrays.asList("Euler char. (χ)",
+			"Corrected Euler (χ + Δχ)", "Connectivity", String.format(
+				"Conn. density (%s³)", unit));
 		final long size = 3;
 		final double scale = 0.9;
 		final long spaceSize = size * size * size;
 		final double elementSize = scale * scale * scale;
+		final double[] expectedChis = { 0.0, 1.0, 1.0, 0.0 };
+		final double[] expectedDeltaChis = { 0.0, 1.0, 1.0, 0.0 };
+		final double[] expectedConnectivities = { 1.0, 0.0, 0.0, 1.0 };
 		final double expectedDensity = 1.0 / (spaceSize * elementSize);
-		final double[][] expectedValues = { { 0.0, 0.0, 1.0, expectedDensity }, {
-			1.0, 1.0, 0.0, 0.0 }, { 1.0, 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0,
-				expectedDensity } };
-
-		/*
-		 * Create a hyperstack with two channels and two frames.
+		final double[] expectedDensities = { expectedDensity, 0.0, 0.0,
+			expectedDensity };
+		final double[][] expectedValues = { expectedChis, expectedDeltaChis,
+			expectedConnectivities, expectedDensities };
+		/* Create a hyperstack with two channels and two frames.
 		 * Two of the 3D subspaces are empty, and two of them contain a single voxel
 		 */
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
@@ -150,44 +153,23 @@ public class ConnectivityWrapperTest {
 		access.setPosition(new long[] { 1, 1, 1, 0, 1 });
 		access.get().setOne();
 
-		// Run command and get results
+		// EXECUTE
 		IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage",
 			imgPlus).get();
-		final ResultsTable resultsTable = ResultsInserter.getInstance()
-			.getResultsTable();
-		final String[] headings = resultsTable.getHeadings();
 
-		// Assert results table size
-		assertEquals("Results table has wrong number of rows",
-			expectedValues.length, resultsTable.size());
-		assertEquals("Results table has wrong number of headings", 5,
-			headings.length);
-
-		// Assert column headings
-		assertEquals("Incorrect heading in results table", "Euler char. (χ)",
-			headings[1]);
-		assertEquals("Incorrect heading in results table", "Corrected Euler (χ + Δχ)",
-			headings[2]);
-		assertEquals("Incorrect heading in results table", "Connectivity",
-			headings[3]);
-		assertEquals("Incorrect heading in results table", String.format(
-			"Conn. density (%s³)", unit), headings[4]);
-
-		// Assert values
-		for (int row = 0; row < resultsTable.size(); row++) {
-			final double eulerCharacteristic = resultsTable.getValue(headings[1],
-				row);
-			assertEquals("χ is incorrect", expectedValues[row][0],
-				eulerCharacteristic, 1e-12);
-			final double correctedEuler = resultsTable.getValue(headings[2], row);
-			assertEquals("Corrected χ is incorrect", expectedValues[row][1],
-				correctedEuler, 1e-12);
-			final double connectivity = resultsTable.getValue(headings[3], row);
-			assertEquals("Connectivity is incorrect", expectedValues[row][2],
-				connectivity, 1e-12);
-			final double connDensity = resultsTable.getValue(headings[4], row);
-			assertEquals("Connectivity density is incorrect", expectedValues[row][3],
-				connDensity, 1e-12);
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals("Results table has wrong number of columns", 5, table.size());
+		for (int i = 0; i < 4; i++) {
+			// Ignore column 0, the label column
+			final DefaultColumn<String> column = table.get(i + 1);
+			assertEquals("A column has wrong number of rows", 4, column.size());
+			final String header = column.getHeader();
+			assertEquals("A column has an incorrect header", expectedHeaders.get(i),
+				header);
+			for (int j = 0; j < column.size(); j++) {
+				assertEquals(String.valueOf(expectedValues[i][j]), column.get(j));
+			}
 		}
 	}
 }
