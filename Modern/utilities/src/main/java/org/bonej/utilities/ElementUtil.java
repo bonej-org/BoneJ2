@@ -61,19 +61,13 @@ public class ElementUtil {
 	public static <T extends AnnotatedSpace<CalibratedAxis>> double
 		calibratedSpatialElementSize(final T space, final UnitService unitService)
 	{
-		if (AxisUtils.hasNonLinearSpatialAxes(space)) {
-			return Double.NaN;
-		}
-
-		final Optional<String> optional = AxisUtils.getSpatialUnit(space,
-			unitService);
-		if (!optional.isPresent()) {
-			return Double.NaN;
-		}
-		final String unit = optional.get().replaceFirst("^µ[mM]$", "um");
-		if (unit.isEmpty()) {
-			return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x,
-				y) -> x * y).orElse(0.0);
+        final Optional<String> optional = AxisUtils.getSpatialUnit(space, unitService);
+        if (!optional.isPresent() || AxisUtils.hasNonLinearSpatialAxes(space)) {
+            return Double.NaN;
+        }
+        final String unit = optional.get().replaceFirst("^µ[mM]$", "um");
+        if (unit.isEmpty()) {
+            return uncalibratedSize(space);
 		}
 
 		final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
@@ -82,10 +76,19 @@ public class ElementUtil {
 		for (int i = 1; i < axes.size(); i++) {
 			double scale = axes.get(i).averageScale(0.0, 1.0);
 			final String axisUnit = axes.get(i).unit().replaceFirst("^µ[mM]$", "um");
-			final double axisSize = unitService.value(scale, axisUnit, unit);
-			elementSize *= axisSize;
+			try {
+                final double axisSize = unitService.value(scale, axisUnit, unit);
+                elementSize *= axisSize;
+            } catch (Exception e) {
+			    return uncalibratedSize(space);
+            }
 		}
 
 		return elementSize;
 	}
+
+    private static <T extends AnnotatedSpace<CalibratedAxis>> double uncalibratedSize(final T space) {
+        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x,
+                y) -> x * y).orElse(0.0);
+    }
 }

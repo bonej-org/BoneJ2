@@ -138,7 +138,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeUnitsUnconvertible()
+	public void testCalibratedSpatialElementSizeUnitsInconvertible()
 		throws Exception
 	{
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm");
@@ -150,8 +150,7 @@ public class ElementUtilTest {
 		final double result = ElementUtil.calibratedSpatialElementSize(imgPlus,
 			unitService);
 
-		assertTrue("Size should be NaN when the units of axes mismatch", Double
-			.isNaN(result));
+		assertEquals("Size should be 1.0 if unit inconvertible", 1.0, result, 1e-12);
 	}
 
 	@Test
