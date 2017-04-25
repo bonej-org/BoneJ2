@@ -7,18 +7,19 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import ij.measure.ResultsTable;
 
 /**
  * Tests for the {@link SurfaceFractionWrapper} class
@@ -41,7 +42,7 @@ public class SurfaceFractionWrapperTest {
 
 	@After
 	public void tearDown() {
-		ResultsInserter.getInstance().getResultsTable().reset();
+		SharedTable.reset();
 	}
 
 	@Test
@@ -90,9 +91,11 @@ public class SurfaceFractionWrapperTest {
 		final double totalVolume = ((imgWidth - 1) * (imgHeight - 1) * (imgDepth -
 			1)) * scaleCubed;
 		final double ratio = cubeVolume / totalVolume;
-		final double[][] expectedValues = { { 0.0, 0.0, totalVolume, 0.0 }, { 0.0,
-			cubeVolume, totalVolume, ratio }, { 0.0, cubeVolume, totalVolume, ratio },
-			{ 0.0, 0.0, totalVolume, 0.0 } };
+		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
+			"Total volume (" + unit + "³)", "Volume ratio" };
+		final double[][] expectedValues = { { 0.0, cubeVolume, cubeVolume, 0.0 }, {
+			totalVolume, totalVolume, totalVolume, totalVolume }, { 0.0, ratio, ratio,
+				0.0 } };
 		/*
 		 * Create a hyperstack with two channels and two frames.
 		 * Two of the 5x5x5 3D subspaces are empty, and two of them contain a 3x3x3 cube
@@ -126,25 +129,18 @@ public class SurfaceFractionWrapperTest {
 			imgPlus).get();
 
 		// VERIFY
-		final ResultsTable resultsTable = ResultsInserter.getInstance()
-			.getResultsTable();
-		final String[] headings = resultsTable.getHeadings();
-		// Assert table size
-		assertEquals("Wrong number of columns", 4, headings.length);
-		assertEquals("Wrong number of rows", expectedValues.length, resultsTable
-			.size());
-		// Assert column headers
-		assertEquals("Column header is incorrect", "Bone volume (" + unit + "³)",
-			headings[1]);
-		assertEquals("Column header is incorrect", "Total volume (" + unit + "³)",
-			headings[2]);
-		assertEquals("Column header is incorrect", "Volume ratio", headings[3]);
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals("Wrong number of columns", 4, table.size());
 		// Assert results
-		for (int row = 0; row < expectedValues.length; row++) {
-			for (int column = 1; column < headings.length; column++) {
-				final double value = resultsTable.getValue(headings[column], row);
-				assertEquals("Incorrect result", expectedValues[row][column], value,
-					1e-12);
+		for (int i = 0; i < 3; i++) {
+			// Skip Label column
+			final DefaultColumn<String> column = table.get(i + 1);
+			assertEquals("Wrong number of rows", 4, column.size());
+			assertEquals("Column has incorrect header", expectedHeaders[i], column
+				.getHeader());
+			for (int j = 0; j < expectedValues.length; j++) {
+				assertEquals("Incorrect value in table", expectedValues[i][j], Double
+					.parseDouble(column.get(j)), 1e-12);
 			}
 		}
 	}
