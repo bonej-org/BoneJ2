@@ -1,7 +1,10 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.GOT_SKELETONISED;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
@@ -10,11 +13,14 @@ import java.util.List;
 
 import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 
 import org.bonej.ops.TriplePointAngles;
 import org.bonej.ops.TriplePointAngles.TriplePoint;
 import org.bonej.utilities.ImagePlusCheck;
-import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
@@ -61,6 +67,15 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		description = "Ordinal of the edge point used for measuring",
 		style = NumberWidget.SLIDER_STYLE, persist = false)
 	private int edgePoint = 0;
+
+	/**
+	 * The triple point angle results in a {@link Table}
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
 
 	@Parameter(label = "Help", description = "Open help web page",
 		callback = "openHelpPage")
@@ -114,6 +129,9 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 		}
 
 		showResults(results);
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
 	}
 
 	// region -- Helper methods --
@@ -125,26 +143,19 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 	}
 
 	private void showResults(final List<List<TriplePoint>> graphList) {
-		ResultsInserter resultsInserter = ResultsInserter.getInstance();
 		String label = inputImage.getTitle();
 
 		for (List<TriplePoint> triplePointList : graphList) {
 			for (TriplePoint triplePoint : triplePointList) {
-				resultsInserter.setMeasurementInFirstFreeRow(label, "Skeleton #",
-					triplePoint.getGraphNumber());
-				resultsInserter.setMeasurementInFirstFreeRow(label, "Triple point #",
-					triplePoint.getTriplePointNumber());
+				SharedTable.add(label, "Skeleton #", triplePoint.getGraphNumber());
+				SharedTable.add(label, "Triple point #", triplePoint
+					.getTriplePointNumber());
 				final List<Double> angles = triplePoint.getAngles();
-				resultsInserter.setMeasurementInFirstFreeRow(label, "α (rad)", angles
-					.get(0));
-				resultsInserter.setMeasurementInFirstFreeRow(label, "β (rad)", angles
-					.get(1));
-				resultsInserter.setMeasurementInFirstFreeRow(label, "γ (rad)", angles
-					.get(2));
+				SharedTable.add(label, "α (rad)", angles.get(0));
+				SharedTable.add(label, "β (rad)", angles.get(1));
+				SharedTable.add(label, "γ (rad)", angles.get(2));
 			}
 		}
-
-		resultsInserter.updateResults();
 	}
 
 	@SuppressWarnings("unused")
