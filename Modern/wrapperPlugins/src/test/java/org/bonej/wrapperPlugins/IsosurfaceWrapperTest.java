@@ -4,6 +4,7 @@ package org.bonej.wrapperPlugins;
 import static org.bonej.wrapperPlugins.IsosurfaceWrapper.STL_WRITE_ERROR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -33,6 +34,8 @@ import net.imagej.ops.geom.geom3d.mesh.DefaultMesh;
 import net.imagej.ops.geom.geom3d.mesh.Facet;
 import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.geom.geom3d.mesh.Vertex;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -40,14 +43,14 @@ import net.imglib2.type.logic.BitType;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
-
-import ij.measure.ResultsTable;
 
 /**
  * Tests for {@link IsosurfaceWrapper}
@@ -58,11 +61,6 @@ public class IsosurfaceWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ResultsInserter.getInstance().setHeadless(true);
-	}
-
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
@@ -70,7 +68,7 @@ public class IsosurfaceWrapperTest {
 
 	@After
 	public void tearDown() {
-		ResultsInserter.getInstance().getResultsTable().reset();
+		SharedTable.reset();
 	}
 
 	@Test
@@ -99,6 +97,7 @@ public class IsosurfaceWrapperTest {
 
 	@Test
 	public void testResults() throws Exception {
+		// SETUP
 		final double scale = 0.1;
 		final String unit = "mm";
 		final int width = 3;
@@ -108,8 +107,8 @@ public class IsosurfaceWrapperTest {
 		// in each dimension
 		final double expectedArea = ((width - 1) * (height - 1) * 2 + (width - 1) *
 			(depth - 1) * 2 + (height - 1) * (depth - 1) * 2) * (scale * scale);
+		final String[] expectedHeaders = { ("Surface area (" + unit + "²)") };
 		final double[] expectedValues = { 0, expectedArea, expectedArea, 0 };
-
 		/*
 		 * Create a calibrated hyperstack with two channels and two frames.
 		 * Two of the 3D subspaces are empty, and two of them contain a 3x3 cuboids
@@ -138,28 +137,24 @@ public class IsosurfaceWrapperTest {
 			}
 		}
 
-		// Run command and get results
-		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,
-			"exportSTL", false).get();
-		final ResultsTable resultsTable = ResultsInserter.getInstance()
-			.getResultsTable();
-		final String[] headings = resultsTable.getHeadings();
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(IsosurfaceWrapper.class,
+			true, "inputImage", imgPlus, "exportSTL", false).get();
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
 
-		// Assert table size
-		assertEquals("Wrong number of columns", 2, headings.length);
-		assertEquals("Wrong number of rows", expectedValues.length, resultsTable
-			.size());
-
-		// Assert column headers
-		assertEquals("Column header is incorrect", "Surface area (" + unit + "²)",
-			headings[1]);
-
-		// Assert results
-		for (int row = 0; row < expectedValues.length; row++) {
-			for (int column = 1; column < headings.length; column++) {
-				final double value = resultsTable.getValue(headings[column], row);
-				assertEquals("Incorrect surface area", expectedValues[row], value,
-					1e-12);
+		// VERIFY
+		assertNotNull(table);
+		assertEquals("Wrong number of columns", 2, table.size());
+		for (int i = 0; i < 1; i++) {
+			final DefaultColumn<String> column = table.get(i + 1);
+			assertEquals("A column has wrong number of rows", 4, column.size());
+			assertEquals("A column has an incorrect header", expectedHeaders[i],
+				column.getHeader());
+			for (int j = 0; j < column.size(); j++) {
+				assertEquals("Column has an incorrect value", expectedValues[j], Double
+					.parseDouble(column.get(j)), 1e-12);
 			}
 		}
 	}
