@@ -2,6 +2,7 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -22,11 +23,9 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 
 import org.bonej.testImages.Cuboid;
-import org.bonej.utilities.ResultsInserter;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
@@ -40,11 +39,6 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 public class ElementFractionWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ResultsInserter.getInstance().setHeadless(true);
-	}
 
 	@After
 	public void tearDown() {
@@ -125,11 +119,14 @@ public class ElementFractionWrapperTest {
 			Cuboid.class, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
 
 		// EXECUTE
-		IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage",
-			imgPlus).get();
+		final CommandModule module = IMAGE_J.command().run(
+			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		for (int i = 0; i < 3; i++) {
 			final DefaultColumn<String> column = table.get(i + 1);

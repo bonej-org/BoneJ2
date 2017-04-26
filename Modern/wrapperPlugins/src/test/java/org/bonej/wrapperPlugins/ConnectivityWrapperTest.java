@@ -3,6 +3,7 @@ package org.bonej.wrapperPlugins;
 
 import static org.bonej.wrapperPlugins.ConnectivityWrapper.NEGATIVE_CONNECTIVITY;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -30,6 +31,7 @@ import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
@@ -154,11 +156,14 @@ public class ConnectivityWrapperTest {
 		access.get().setOne();
 
 		// EXECUTE
-		IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage",
-			imgPlus).get();
+		final CommandModule module = IMAGE_J.command().run(
+			ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns", 5, table.size());
 		for (int i = 0; i < 4; i++) {
 			// Ignore column 0, the label column
@@ -168,7 +173,8 @@ public class ConnectivityWrapperTest {
 			assertEquals("A column has an incorrect header", expectedHeaders.get(i),
 				header);
 			for (int j = 0; j < column.size(); j++) {
-				assertEquals(String.valueOf(expectedValues[i][j]), column.get(j));
+				assertEquals(expectedValues[i][j], Double.parseDouble(column.get(j)),
+					1e-12);
 			}
 		}
 	}

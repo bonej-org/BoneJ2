@@ -2,6 +2,7 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
@@ -14,12 +15,11 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
-import org.bonej.utilities.ResultsInserter;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.scijava.command.CommandModule;
 
 /**
  * Tests for the {@link SurfaceFractionWrapper} class
@@ -29,11 +29,6 @@ import org.junit.Test;
 public class SurfaceFractionWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ResultsInserter.getInstance().setHeadless(true);
-	}
 
 	@AfterClass
 	public static void oneTimeTearDown() {
@@ -125,11 +120,14 @@ public class SurfaceFractionWrapperTest {
 		}
 
 		// EXECUTE
-		IMAGE_J.command().run(SurfaceFractionWrapper.class, true, "inputImage",
-			imgPlus).get();
+		final CommandModule module = IMAGE_J.command().run(
+			SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		// Assert results
 		for (int i = 0; i < 3; i++) {

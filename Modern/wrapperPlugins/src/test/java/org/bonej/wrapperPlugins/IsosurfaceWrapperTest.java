@@ -42,11 +42,9 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.bonej.utilities.ResultsInserter;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
@@ -140,11 +138,11 @@ public class IsosurfaceWrapperTest {
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(IsosurfaceWrapper.class,
 			true, "inputImage", imgPlus, "exportSTL", false).get();
+
+		// VERIFY
 		@SuppressWarnings("unchecked")
 		final Table<DefaultColumn<String>, String> table =
 			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
-
-		// VERIFY
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 2, table.size());
 		for (int i = 0; i < 1; i++) {

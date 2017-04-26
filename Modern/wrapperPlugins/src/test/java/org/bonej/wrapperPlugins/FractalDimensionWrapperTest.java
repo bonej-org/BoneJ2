@@ -40,9 +40,9 @@ public class FractalDimensionWrapperTest {
 	private static final ImageJ IMAGE_J = new ImageJ();
 
 	@After
-    public void tearDown() {
-	    SharedTable.reset();
-    }
+	public void tearDown() {
+		SharedTable.reset();
+	}
 
 	@AfterClass
 	public static void oneTimeTearDown() {
@@ -70,12 +70,10 @@ public class FractalDimensionWrapperTest {
 		final Iterator<String> expectedLabels = Stream.of(" Channel: 1, Time: 1",
 			" Channel: 1, Time: 2", " Channel: 2, Time: 1", " Channel: 2, Time: 2")
 			.map(imageName::concat).iterator();
-		final Iterator<String> expectedDimensions = Stream.of(0.0,
-			1.4999999999999998, 1.4999999999999998, 0.0).map(String::valueOf)
-			.iterator();
-		final Iterator<String> expectedRSquares = Stream.of(Double.NaN,
-			0.7500000000000002, 0.7500000000000002, Double.NaN).map(String::valueOf)
-			.iterator();
+		final Iterator<Double> expectedDimensions = Stream.of(0.0,
+			1.4999999999999998, 1.4999999999999998, 0.0).iterator();
+		final Iterator<Double> expectedRSquares = Stream.of(Double.NaN,
+			0.7500000000000002, 0.7500000000000002, Double.NaN).iterator();
 		final ImgPlus<BitType> imgPlus = createTestHyperStack(imageName);
 
 		// EXECUTE
@@ -97,9 +95,9 @@ public class FractalDimensionWrapperTest {
 			"Label column has a wrong value", expectedLabels.next(), s));
 		table.get("Fractal dimension").forEach(dimension -> assertEquals(
 			"Fractal dimension column has a wrong value", expectedDimensions.next(),
-			dimension));
-		table.get("R²").forEach(dimension -> assertEquals(
-			"R² column has a wrong value", expectedRSquares.next(), dimension));
+			Double.parseDouble(dimension), 1e-12));
+		table.get("R²").forEach(r2 -> assertEquals("R² column has a wrong value",
+			expectedRSquares.next(), Double.parseDouble(r2), 1e-12));
 	}
 
 	@Test
