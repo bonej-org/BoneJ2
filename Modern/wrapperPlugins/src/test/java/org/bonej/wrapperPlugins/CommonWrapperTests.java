@@ -199,7 +199,7 @@ public class CommonWrapperTests {
 			any());
 	}
 
-	private static UserInterface mockUIService(final ImageJ imageJ) {
+	public static UserInterface mockUIService(final ImageJ imageJ) {
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(any(), anyString(), any(), any())).thenReturn(

@@ -41,7 +41,7 @@ import ij.process.StackStatistics;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
 /**
- * A GUI wrapper class for the LocalThickness plugin
+ * An ImageJ2 command that wraps the sc.fiji.localThickness plugin
  *
  * @author Richard Domander
  */
@@ -65,16 +65,18 @@ public class ThicknessWrapper extends ContextCommand {
 	private String mapChoice;
 
 	@Parameter(label = "Show thickness maps",
-		description = "Show resulting map images after calculations")
+		description = "Show resulting map images after calculations",
+		required = false)
 	private boolean showMaps = true;
 
 	@Parameter(label = "Mask thickness maps",
-		description = "Remove pixel artifacts from the thickness maps")
+		description = "Remove pixel artifacts from the thickness maps",
+		required = false)
 	private boolean maskArtefacts = true;
 
 	@Parameter(label = "Crop to ROI manager",
 		description = "Limit the maps to the ROIs in the ROI manager",
-		persist = false)
+		persist = false, required = false)
 	private boolean cropToRois = false;
 
 	@Parameter(label = "Help", description = "Open help web page",
@@ -209,7 +211,7 @@ public class ThicknessWrapper extends ContextCommand {
 
 	private static String getUnitHeader(final ImagePlus map) {
 		final String unit = map.getCalibration().getUnit();
-		// TODO replace with StringUtils.nullOrEmtpy
+		// TODO replace with StringUtils.nullOrEmpty
 		if (unit == null || unit.isEmpty() || "pixel".equalsIgnoreCase(unit) ||
 			"unit".equalsIgnoreCase(unit))
 		{
