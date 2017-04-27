@@ -11,7 +11,9 @@ import static org.scijava.ui.DialogPrompt.OptionType;
 import static org.scijava.ui.DialogPrompt.Result;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import net.imagej.patcher.LegacyInjector;
@@ -32,7 +34,6 @@ import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 
-import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.plugin.frame.RoiManager;
@@ -61,7 +62,7 @@ public class ThicknessWrapper extends ContextCommand {
 		description = "Which thickness measures to calculate",
 		style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
 			"Trabecular thickness", "Trabecular spacing", "Both" })
-	private String maps;
+	private String mapChoice;
 
 	@Parameter(label = "Show thickness maps",
 		description = "Show resulting map images after calculations")
@@ -80,10 +81,10 @@ public class ThicknessWrapper extends ContextCommand {
 		callback = "openHelpPage")
 	private Button helpButton;
 
-	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus thicknessMap;
+	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
+	private ImagePlus trabecularMap;
 
-	@Parameter(type = ItemIO.OUTPUT)
+	@Parameter(label = "Trabecular spacing", type = ItemIO.OUTPUT)
 	private ImagePlus spacingMap;
 
 	/**
@@ -104,47 +105,64 @@ public class ThicknessWrapper extends ContextCommand {
 	@Parameter
 	private UIService uiService;
 
+	private boolean foreground;
+	private LocalThicknessWrapper localThickness;
+
 	@Override
 	public void run() {
-		final List<Boolean> mapOptions = new ArrayList<>();
-		if ("Trabecular thickness".equals(maps) || "Both".equals(maps)) {
-			mapOptions.add(true);
-		}
-		if ("Trabecular spacing".equals(maps) || "Both".equals(maps)) {
-			mapOptions.add(false);
-		}
+		final List<Boolean> mapOptions = getMapOptions();
+		createLocalThickness();
+		final Map<Boolean, ImagePlus> thicknessMaps = new HashMap<>();
 		mapOptions.forEach(foreground -> {
-			final ImagePlus map = createMap(foreground);
-			if (map == null) {
-				return;
-			}
-			addMapResults(map, foreground);
-			if (foreground) {
-				thicknessMap = map;
-			}
-			else {
-				spacingMap = map;
-			}
+			prepareRun(foreground);
+			final ImagePlus map = createMap();
+			addMapResults(map);
+			thicknessMaps.put(foreground, map);
 		});
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (showMaps) {
+			trabecularMap = thicknessMaps.get(true);
+			spacingMap = thicknessMaps.get(false);
+		}
 	}
 
 	// region -- Helper methods --
-	private ImagePlus createMap(final boolean foreground) {
+	private List<Boolean> getMapOptions() {
+		final List<Boolean> mapOptions = new ArrayList<>();
+		if ("Trabecular thickness".equals(mapChoice)) {
+			mapOptions.add(true);
+		}
+		else if ("Trabecular spacing".equals(mapChoice)) {
+			mapOptions.add(false);
+		}
+		else if ("Both".equals(mapChoice)) {
+			mapOptions.add(true);
+			mapOptions.add(false);
+		}
+		else {
+			throw new IllegalArgumentException("Unexpected map choice");
+		}
+		return mapOptions;
+	}
+
+	private void prepareRun(final boolean foreground) {
+		this.foreground = foreground;
 		final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
-		ImagePlus image;
+		localThickness.setTitleSuffix(suffix);
+		localThickness.inverse = !foreground;
+	}
+
+	private ImagePlus createMap() {
+		final ImagePlus image;
 
 		if (cropToRois) {
 			final RoiManager roiManager = RoiManager.getInstance2();
-
-			Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(roiManager,
-				inputImage.getStack(), true, 0x00);
-
+			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
+				roiManager, inputImage.getStack(), true, 0x00);
 			if (!stackOptional.isPresent()) {
-				uiService.showDialog("There are no ROIs in the ROI Manager",
-					MessageType.ERROR_MESSAGE);
+				cancel("Can't crop without valid ROIs in the ROIManager");
 				return null;
 			}
 			image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
@@ -154,25 +172,21 @@ public class ThicknessWrapper extends ContextCommand {
 			image.setTitle(inputImage.getTitle());
 		}
 
-		final LocalThicknessWrapper localThickness = new LocalThicknessWrapper();
-		localThickness.setSilence(true);
-		localThickness.inverse = !foreground;
-		localThickness.setShowOptions(false);
-		localThickness.maskThicknessMap = maskArtefacts;
-		localThickness.setTitleSuffix(suffix);
-		localThickness.calibratePixels = true;
-		final ImagePlus map = localThickness.processImage(image);
-
-		if (showMaps) {
-			map.show();
-			IJ.run("Fire");
-		}
-
-		return map;
+		return localThickness.processImage(image);
 	}
 
-	private void addMapResults(final ImagePlus map, final boolean foreground)
-	{
+	private void createLocalThickness() {
+		localThickness = new LocalThicknessWrapper();
+		localThickness.setSilence(true);
+		localThickness.setShowOptions(false);
+		localThickness.maskThicknessMap = maskArtefacts;
+		localThickness.calibratePixels = true;
+	}
+
+	private void addMapResults(final ImagePlus map) {
+		if (map == null) {
+			return;
+		}
 		final String unitHeader = getUnitHeader(map);
 		final String label = map.getTitle();
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
