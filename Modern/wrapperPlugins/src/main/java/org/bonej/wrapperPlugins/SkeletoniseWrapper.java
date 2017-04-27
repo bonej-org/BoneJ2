@@ -1,7 +1,8 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
 import net.imagej.patcher.LegacyInjector;
 
@@ -13,7 +14,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ij.ImagePlus;
-import ij.plugin.LutLoader;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
@@ -49,13 +49,6 @@ public class SkeletoniseWrapper extends ContextCommand {
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-
-		skeleton.show();
-		if (inputImage.isInvertedLut() != skeleton.isInvertedLut()) {
-			// FIXME Does *not* work in headless mode!
-			LutLoader lutLoader = new LutLoader();
-			lutLoader.run("invert");
-		}
 	}
 
 	@SuppressWarnings("unused")
