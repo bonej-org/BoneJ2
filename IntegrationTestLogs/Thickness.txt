@@ -3,135 +3,6 @@ Integration tests for the Thickness plugin
 
 Case 1
 =======================================================================
-User should see an error dialog when no images are open
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Close all images
-2. Run Thickness (Plugins>BoneJ>Thickness)
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-
-Completed May 27 Richard Domander
------------------------------------------------------------------------
-
-
-Case 2
-=======================================================================
-User should see an error dialog if image is not 8-bit binary colour
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "mri-stack.tif" (File>Open Samples>MRI Stack)
-2. Run Thickness (Plugins>BoneJ>Thickness)
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-
-Completed May 27 Richard Domander
------------------------------------------------------------------------
-
-
-Case 3
-=======================================================================
-User should see an error dialog if image is not 3D
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "blobs.gif" (File>Open Samples>Blobs)
-2. Binarise image (Process>Binary>Make Binary)
-3. Run Thickness (Plugins>BoneJ>Thickness)
-
-Expected result
------------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
-
-Completed May 27 Richard Domander
------------------------------------------------------------------------
-
-
-Case 4
-=======================================================================
-User should see a warning dialog if image elements are not isotropic
-=======================================================================
-Steps
------------------------------------------------------------------------
- 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
- 2. Set scale (Analyze>Set Scale)
- 3. Set options
-    - "Distance in pixels" to "1"
-    - "Known distance" to "1.00"
-    - "Pixel aspect ratio" to "0.5"
-    - "Unit of length" to "mm"
- 4. Click "OK"
- 5. Run Thickness (Plugins>BoneJ>Thickness)
- 6. Verify that warning dialog opens and click "Cancel"
- 7. Run Thickness (Plugins>BoneJ>Thickness)
- 8. Verify that warning dialog opens and click "OK"
-
-Expected result
------------------------------------------------------------------------
-Warning dialog opens and shows the amount of anisotropy.
-Plugin should stop if user clicks "Cancel", and continue if they click "OK"
-
-Completed May 31 Richard Domander
------------------------------------------------------------------------
-
-
-Case 5
-=======================================================================
-User should not see units when image is uncalibrated
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Select "Trabecular thickness" and click "OK"
-4. Verify that column heading doesn't show units
-
-Expected result
------------------------------------------------------------------------
-Results should show without units
-
-Completed May 31 Richard Domander
------------------------------------------------------------------------
-
-
-Case 6
-=======================================================================
-User should see correct thickness maps
-=======================================================================
-Steps
------------------------------------------------------------------------
- 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
- 2. Run Thickness with:
-    - "Calculate" set to "Trabecular thickness"
-    - "Show thickness maps" checked
- 3. Verify that correct thickness maps open
- 4. Verify that input image is not overwritten
- 5. Verify that thickness maps show "NaN" instead of "0"
- 6. Verify that thickness maps have the correct title
-    - "bat-cochlea-volume_Tb.Th" for "Trabecular thickness"
-    - "bat-cochlea-volume_Tb.Sp" for "Trabecular spacing"
- 7. Repeat 2 - 6 with "Calculate" set to "Trabecular spacing"
- 8. Repeat 2 - 6 with "Calculate" set to "Both"
- 9. Rerun Thickness with "Show thickness maps" disabled
-10. Verify that no images open
-
-Expected result
------------------------------------------------------------------------
-Thickness maps should open according to the options
-(one, the other, both, none)
-
-Completed May 18 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 7
-=======================================================================
 Results should match BoneJ1
 =======================================================================
 Steps
@@ -158,96 +29,11 @@ Expected result
 -----------------------------------------------------------------------
 All results in the results table in all four cases match those from BoneJ1
 
-Completed May 18 2016 Richard Domander
+Completed April 27 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
-Case 8
-=======================================================================
-Thickness statistics show up correctly
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Set scale (Analyze>Set Scale)
-3. Set options
-   - "Distance in pixels" to "1"
-   - "Known distance" to "1.00"
-   - "Pixel aspect ratio" to "1.0"
-   - "Unit of length" to "mm"
-4. Run Thickness (Plugins>BoneJ>Thickness)
-5. Set options
-  - Calculate: "Both"
-6. Verify that Results table has headers "Mean", "Std Dev" and "Max"
-    for both "Tb.Th" and "Tb.Sp"
-7. Verify that headers have the unit mm
-
-Expected result
------------------------------------------------------------------------
-Statistics show up correctly in the Results table
-
-Completed May 31 Richard Domander
------------------------------------------------------------------------
-
-
-Case 9
-=======================================================================
-Shows an error message if the image is composite
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "organ-of-corti.tif" (File>Open Samples>Organ of Corti)
-2. Binarise image (Process>Binary>Make Binary)
-3. Run Thickness (Plugins>BoneJ>Thickness)
-
-Expected result
------------------------------------------------------------------------
-The plugin shows an error message and stops running
-
-Completed June 03 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 10
-=======================================================================
-Shows an error message if the image has a time axis
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "mitosis.tif" (File>Open Samples>Mitosis)
-2. Remove channels (Image>Color>Stack to RBG)
-3. Uncheck "Keep original" on click "OK"
-4. Binarise image (Process>Binary>Make Binary)
-5. Run Thickness (Plugins>BoneJ>Thickness)
-6. Click "OK" when the anisotropy warning pops up
-
-Expected result
------------------------------------------------------------------------
-The plugin shows an error message and stops running
-
-Completed June 03 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 11
-=======================================================================
-The user should see an error dialog if trying to crop without a manager
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Run Thickness (Plugins>BoneJ>Thickness)
-3. Select option "Crop to ROI manager", and click "OK"
-
-Expected result
------------------------------------------------------------------------
-User should see an error dialog about missing ROIs.
-
-Completed June 6 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 12
+Case 2
 ======================================================================
 The user should see an error dialog if trying to crop with a manager
 without any valid ROIs
@@ -266,11 +52,11 @@ Expected result
 -----------------------------------------------------------------------
 User should see an error dialog about missing ROIs.
 
-Completed June 6 2016 Richard Domander
+Completed April 27 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
-Case 13
+Case 3
 =========================================================================
 Local thickness map should confine to the limits of ROIs in ROIManager
 when cropping is selected.
@@ -294,10 +80,5 @@ Expected result
 The resulting thickness map should be the same size, and from the same 
 area as the ROI. 
 
-Completed June 6 2016 Richard Domander
+Completed April 27 2017 Richard Domander
 -------------------------------------------------------------------------
-
-
-Don't know how to test
-=======================================================================
-Show an error if the help page cannot be opened
