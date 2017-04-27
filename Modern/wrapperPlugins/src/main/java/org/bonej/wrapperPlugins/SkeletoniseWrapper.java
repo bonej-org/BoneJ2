@@ -1,6 +1,8 @@
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
+import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
@@ -57,11 +59,16 @@ public class SkeletoniseWrapper extends ContextCommand {
 			cancel(NO_IMAGE_OPEN);
 			return;
 		}
-
 		if (inputImage.getType() != ImagePlus.GRAY8 || !ImagePlusCheck
 			.isBinaryColour(inputImage))
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);
+		}
+		if (inputImage.isComposite()) {
+			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+		}
+		else if (inputImage.isHyperStack()) {
+			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 	}
 }
