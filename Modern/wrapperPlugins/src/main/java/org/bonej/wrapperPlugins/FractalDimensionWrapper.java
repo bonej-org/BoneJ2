@@ -103,6 +103,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private String translationInfo =
 		"NB: translations affect runtime significantly";
 
+	// TODO persist = true and parameter enforcement in preview?
 	@Parameter(label = "Automatic parameters",
 		description = "Let the computer decide values for the parameters",
 		required = false, callback = "enforceAutoParam", persist = false,

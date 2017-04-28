@@ -62,7 +62,7 @@ public class ThicknessWrapper extends ContextCommand {
 		description = "Which thickness measures to calculate",
 		style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
 			"Trabecular thickness", "Trabecular spacing", "Both" })
-	private String mapChoice;
+	private String mapChoice = "Trabecular thickness";
 
 	@Parameter(label = "Show thickness maps",
 		description = "Show resulting map images after calculations",
