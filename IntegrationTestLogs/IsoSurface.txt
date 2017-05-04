@@ -31,7 +31,6 @@ Pressing cancel in the file dialog stops the plugin
 Steps
 -----------------------------------------------------------------------
 1. Create a cuboid (Test Images>Cuboid)
-   - Set unit to "mm"
 2. Run Isosurface (Plugins>BoneJ>Isosurface)
 3. Check "Save STL file", and click "OK"
 4. Click cancel on the file dialog
