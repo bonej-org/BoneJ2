@@ -2,6 +2,7 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -14,22 +15,21 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 
 import org.bonej.testImages.Cuboid;
-import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
+import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
-
-import ij.measure.ResultsTable;
 
 /**
  * Regression tests for the {@link ElementFractionWrapper} plugin
@@ -40,14 +40,9 @@ public class ElementFractionWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ResultsInserter.getInstance().setHeadless(true);
-	}
-
-	@Before
-	public void setup() {
-		ResultsInserter.getInstance().getResultsTable().reset();
+	@After
+	public void tearDown() {
+		SharedTable.reset();
 	}
 
 	@AfterClass
@@ -103,39 +98,45 @@ public class ElementFractionWrapperTest {
 
 	@Test
 	public void testResults() throws Exception {
+		// SETUP
 		// Create an test image of a cuboid
 		final String unit = "mm";
 		final double scale = 0.9;
 		final int cubeSide = 5;
 		final int padding = 1;
 		final int stackSide = cubeSide + padding * 2;
-		final int cubeVolume = cubeSide * cubeSide * cubeSide;
-		final int spaceSize = stackSide * stackSide * stackSide;
+		final double cubeVolume = cubeSide * cubeSide * cubeSide;
+		final double spaceVolume = stackSide * stackSide * stackSide;
 		final double elementSize = scale * scale * scale;
+		final double[] expectedVolumes = { cubeVolume * elementSize };
+		final double[] expectedTotalVolumes = { spaceVolume * elementSize };
+		final double[] expectedRatios = { cubeVolume / spaceVolume };
+		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
+			expectedRatios };
+		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
+			"Total volume (" + unit + "³)", "Volume Ratio" };
 		final ImgPlus<BitType> imgPlus = (ImgPlus<BitType>) IMAGE_J.op().run(
 			Cuboid.class, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
 
-		// Run command and get results
-		IMAGE_J.command().run(ElementFractionWrapper.class, true, "inputImage",
-			imgPlus).get();
-		final ResultsTable resultsTable = ResultsInserter.getInstance()
-			.getResultsTable();
-		final String[] headings = resultsTable.getHeadings();
-		final double boneVolume = resultsTable.getValue(headings[1], 0);
-		final double totalVolume = resultsTable.getValue(headings[2], 0);
-		final double ratio = resultsTable.getValue(headings[3], 0);
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
-		assertEquals("Wrong number of results", 1, resultsTable.size());
-		assertEquals("Column header is incorrect", "Bone Volume (" + unit + "³)",
-			headings[1]);
-		assertEquals("Column header is incorrect", "Total Volume (" + unit + "³)",
-			headings[2]);
-		assertEquals("Column header is incorrect", "Volume Ratio", headings[3]);
-		assertEquals("Bone volume is incorrect", cubeVolume * elementSize,
-			boneVolume, 1e-12);
-		assertEquals("Total volume is incorrect", spaceSize * elementSize,
-			totalVolume, 1e-12);
-		assertEquals("Ratio is incorrect", (cubeVolume * elementSize) / (spaceSize *
-			elementSize), ratio, 1e-12);
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		assertNotNull(table);
+		assertEquals("Wrong number of columns", 4, table.size());
+		for (int i = 0; i < 3; i++) {
+			final DefaultColumn<String> column = table.get(i + 1);
+			assertEquals("Column has wrong number of rows", 1, column.size());
+			assertEquals("Column has incorrect header", expectedHeaders[i], column
+				.getHeader());
+			for (int j = 0; j < 1; j++) {
+				assertEquals("Column has an incorrect value", expectedValues[i][j],
+					Double.parseDouble(column.get(j)), 1e-12);
+			}
+		}
 	}
 }

@@ -16,11 +16,12 @@ import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.Hybrids;
 import net.imagej.ops.special.hybrid.UnaryHybridCF;
+import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.DoubleColumn;
 import net.imagej.table.GenericColumn;
 import net.imagej.table.GenericTable;
-import net.imagej.table.LongColumn;
+import net.imagej.table.Table;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -34,6 +35,7 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.bonej.ops.BoxCount;
 import org.bonej.ops.Hollow;
 import org.bonej.utilities.ElementUtil;
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
@@ -101,6 +103,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private String translationInfo =
 		"NB: translations affect runtime significantly";
 
+	// TODO persist = true and parameter enforcement in preview?
 	@Parameter(label = "Automatic parameters",
 		description = "Let the computer decide values for the parameters",
 		required = false, callback = "enforceAutoParam", persist = false,
@@ -115,9 +118,14 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		callback = "openHelpPage")
 	private Button helpButton;
 
-	/** The fractal dimension and R² values for each 3D subspace in a table */
-	@Parameter(type = ItemIO.OUTPUT, label = "Fractal dimension results")
-	private GenericTable resultsTable;
+	/**
+	 * The fractal dimension and R² values for each 3D subspace in a table
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
 
 	/**
 	 * Tables containing the (-log(size), log(count)) points for each 3D subspace
@@ -168,6 +176,9 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 			}
 		});
 		fillResultsTable(subspaces, dimensions, rSquared);
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
 		statusService.showStatus("Fractal dimension: finished");
 	}
 
@@ -194,19 +205,12 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		final List<Double> fractalDimensions, final List<Double> rSquared)
 	{
 		final String imageName = inputImage.getName();
-		final GenericColumn labelColumn = ResultUtils.createLabelColumn(imageName,
-			subspaces.size());
-		final List<LongColumn> coordinateColumns = ResultUtils
-			.createCoordinateColumns(subspaces);
-		final DoubleColumn dimensionColumn = new DoubleColumn("Fractal dimension");
-		dimensionColumn.addAll(fractalDimensions);
-		final DoubleColumn rColumn = new DoubleColumn("R²");
-		rColumn.addAll(rSquared);
-		resultsTable = new DefaultGenericTable();
-		resultsTable.add(labelColumn);
-		resultsTable.addAll(coordinateColumns);
-		resultsTable.add(dimensionColumn);
-		resultsTable.add(rColumn);
+		final int results = fractalDimensions.size();
+		for (int i = 0; i < results; i++) {
+			final String label = imageName + " " + subspaces.get(i).toString();
+			SharedTable.add(label, "Fractal dimension", fractalDimensions.get(i));
+			SharedTable.add(label, "R²", rSquared.get(i));
+		}
 	}
 
 	private double[] fitCurve(

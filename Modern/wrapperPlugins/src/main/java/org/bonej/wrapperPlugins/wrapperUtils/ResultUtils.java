@@ -22,7 +22,7 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 
 /**
- * Static utility methods for displaying results to the user
+ * Static utility methods that help display results to the user
  *
  * @author Richard Domander
  */

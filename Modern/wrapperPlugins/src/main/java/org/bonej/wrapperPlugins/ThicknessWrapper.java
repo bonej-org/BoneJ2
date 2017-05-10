@@ -6,17 +6,24 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
 import static org.scijava.ui.DialogPrompt.MessageType;
 import static org.scijava.ui.DialogPrompt.OptionType;
 import static org.scijava.ui.DialogPrompt.Result;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import net.imagej.patcher.LegacyInjector;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 
 import org.bonej.utilities.ImagePlusCheck;
-import org.bonej.utilities.ResultsInserter;
 import org.bonej.utilities.RoiManagerUtil;
+import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -28,7 +35,6 @@ import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 
-import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.plugin.frame.RoiManager;
@@ -36,7 +42,7 @@ import ij.process.StackStatistics;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
 /**
- * A GUI wrapper class for the LocalThickness plugin
+ * An ImageJ2 command that wraps the sc.fiji.localThickness plugin
  *
  * @author Richard Domander
  */
@@ -53,34 +59,45 @@ public class ThicknessWrapper extends ContextCommand {
 	@Parameter(validater = "validateImage")
 	private ImagePlus inputImage;
 
-	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus thicknessMap;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus spacingMap;
-
 	@Parameter(label = "Calculate:",
 		description = "Which thickness measures to calculate",
 		style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
 			"Trabecular thickness", "Trabecular spacing", "Both" })
-	private String maps;
+	private String mapChoice = "Trabecular thickness";
 
 	@Parameter(label = "Show thickness maps",
-		description = "Show resulting map images after calculations")
+		description = "Show resulting map images after calculations",
+		required = false)
 	private boolean showMaps = true;
 
 	@Parameter(label = "Mask thickness maps",
-		description = "Remove pixel artifacts from the thickness maps")
+		description = "Remove pixel artifacts from the thickness maps",
+		required = false)
 	private boolean maskArtefacts = true;
 
 	@Parameter(label = "Crop to ROI manager",
 		description = "Limit the maps to the ROIs in the ROI manager",
-		persist = false)
+		persist = false, required = false)
 	private boolean cropToRois = false;
 
 	@Parameter(label = "Help", description = "Open help web page",
 		callback = "openHelpPage")
 	private Button helpButton;
+
+	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
+	private ImagePlus trabecularMap;
+
+	@Parameter(label = "Trabecular spacing", type = ItemIO.OUTPUT)
+	private ImagePlus spacingMap;
+
+	/**
+	 * The calculated thickness statistics in a {@link Table}
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
 
 	@Parameter
 	private LogService logService;
@@ -91,80 +108,87 @@ public class ThicknessWrapper extends ContextCommand {
 	@Parameter
 	private UIService uiService;
 
+	private boolean foreground;
+	private LocalThicknessWrapper localThickness;
+
 	@Override
 	public void run() {
-		switch (maps) {
-			case "Trabecular thickness":
-				thicknessMap = createMap(true);
-				if (thicknessMap == null) {
-					return;
-				}
-				showMapStatistics(thicknessMap, true);
-				break;
-			case "Trabecular spacing":
-				spacingMap = createMap(false);
-				if (spacingMap == null) {
-					return;
-				}
-				showMapStatistics(spacingMap, false);
-				break;
-			case "Both":
-				thicknessMap = createMap(true);
-				if (thicknessMap == null) {
-					return;
-				}
-				showMapStatistics(thicknessMap, true);
-				spacingMap = createMap(false);
-				showMapStatistics(spacingMap, false);
-				break;
-			default:
-				throw new RuntimeException("Unexpected map choice");
+		final List<Boolean> mapOptions = getMapOptions();
+		createLocalThickness();
+		final Map<Boolean, ImagePlus> thicknessMaps = new HashMap<>();
+		mapOptions.forEach(foreground -> {
+			prepareRun(foreground);
+			final ImagePlus map = createMap();
+			addMapResults(map);
+			thicknessMaps.put(foreground, map);
+		});
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
+		if (showMaps) {
+			trabecularMap = thicknessMaps.get(true);
+			spacingMap = thicknessMaps.get(false);
 		}
 	}
 
 	// region -- Helper methods --
-	private ImagePlus createMap(final boolean foreground) {
+	private List<Boolean> getMapOptions() {
+		final List<Boolean> mapOptions = new ArrayList<>();
+		if ("Trabecular thickness".equals(mapChoice)) {
+			mapOptions.add(true);
+		}
+		else if ("Trabecular spacing".equals(mapChoice)) {
+			mapOptions.add(false);
+		}
+		else if ("Both".equals(mapChoice)) {
+			mapOptions.add(true);
+			mapOptions.add(false);
+		}
+		else {
+			throw new IllegalArgumentException("Unexpected map choice");
+		}
+		return mapOptions;
+	}
+
+	private void prepareRun(final boolean foreground) {
+		this.foreground = foreground;
 		final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
-		ImagePlus image;
+		localThickness.setTitleSuffix(suffix);
+		localThickness.inverse = !foreground;
+	}
+
+	private ImagePlus createMap() {
+		final ImagePlus image;
 
 		if (cropToRois) {
 			final RoiManager roiManager = RoiManager.getInstance2();
-
-			Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(roiManager,
-				inputImage.getStack(), true, 0x00);
-
+			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
+				roiManager, inputImage.getStack(), true, 0x00);
 			if (!stackOptional.isPresent()) {
-				uiService.showDialog("There are no ROIs in the ROI Manager",
-					MessageType.ERROR_MESSAGE);
+				cancel("Can't crop without valid ROIs in the ROIManager");
 				return null;
 			}
 			image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
 		}
 		else {
-			image = inputImage.duplicate();
-			image.setTitle(inputImage.getTitle());
+			image = cleanDuplicate(inputImage);
 		}
 
-		final LocalThicknessWrapper localThickness = new LocalThicknessWrapper();
-		localThickness.setSilence(true);
-		localThickness.inverse = !foreground;
-		localThickness.setShowOptions(false);
-		localThickness.maskThicknessMap = maskArtefacts;
-		localThickness.setTitleSuffix(suffix);
-		localThickness.calibratePixels = true;
-		final ImagePlus map = localThickness.processImage(image);
-
-		if (showMaps) {
-			map.show();
-			IJ.run("Fire");
-		}
-
-		return map;
+		return localThickness.processImage(image);
 	}
 
-	private static void showMapStatistics(final ImagePlus map,
-		final boolean foreground)
-	{
+	private void createLocalThickness() {
+		localThickness = new LocalThicknessWrapper();
+		localThickness.setSilence(true);
+		localThickness.setShowOptions(false);
+		localThickness.maskThicknessMap = maskArtefacts;
+		localThickness.calibratePixels = true;
+	}
+
+	private void addMapResults(final ImagePlus map) {
+		if (map == null) {
+			return;
+		}
 		final String unitHeader = getUnitHeader(map);
 		final String label = map.getTitle();
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
@@ -180,19 +204,14 @@ public class ThicknessWrapper extends ContextCommand {
 			max = Double.NaN;
 		}
 
-		ResultsInserter inserter = ResultsInserter.getInstance();
-		inserter.setMeasurementInFirstFreeRow(label, prefix + " Mean" + unitHeader,
-			mean);
-		inserter.setMeasurementInFirstFreeRow(label, prefix + " Std Dev" +
-			unitHeader, stdDev);
-		inserter.setMeasurementInFirstFreeRow(label, prefix + " Max" + unitHeader,
-			max);
-		inserter.updateResults();
+		SharedTable.add(label, prefix + " Mean" + unitHeader, mean);
+		SharedTable.add(label, prefix + " Std Dev" + unitHeader, stdDev);
+		SharedTable.add(label, prefix + " Max" + unitHeader, max);
 	}
 
 	private static String getUnitHeader(final ImagePlus map) {
 		final String unit = map.getCalibration().getUnit();
-		// TODO replace with StringUtils.nullOrEmtpy
+		// TODO replace with StringUtils.nullOrEmpty
 		if (unit == null || unit.isEmpty() || "pixel".equalsIgnoreCase(unit) ||
 			"unit".equalsIgnoreCase(unit))
 		{
@@ -223,8 +242,8 @@ public class ThicknessWrapper extends ContextCommand {
 			return;
 		}
 
-		if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(
-			inputImage))
+		if (!ImagePlusCheck.isBinaryColour(inputImage) || inputImage
+			.getBitDepth() != 8)
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);
 			return;

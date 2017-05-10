@@ -67,7 +67,7 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testGetSpatialUnitUnconvertibleUnits() throws Exception {
+	public void testGetSpatialUnitInconvertibleUnits() throws Exception {
 		final String[][] units = { { "m", "" }, { "cm", "kg" } };
 		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img);
@@ -81,9 +81,8 @@ public class AxisUtilsTest {
 			final Optional<String> result = AxisUtils.getSpatialUnit(imgPlus,
 				unitService);
 
-			assertFalse(
-				"Unit should not be present when calibrations are unconvertible", result
-					.isPresent());
+			assertTrue(result.isPresent());
+			assertTrue("Unit should be empty", result.get().isEmpty());
 		}
 	}
 

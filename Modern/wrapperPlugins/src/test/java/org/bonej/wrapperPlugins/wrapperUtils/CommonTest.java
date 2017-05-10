@@ -18,6 +18,10 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.Roi;
+
 /**
  * Unit tests for the {@link Common} utility class
  *
@@ -30,6 +34,27 @@ public class CommonTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+	}
+
+	@Test
+	public void cleanDuplicate() throws Exception {
+		final String title = "bonej-test-image.tiff";
+		final int width = 5;
+		final int height = 7;
+		final int depth = 11;
+		final Roi roi = new Roi(1, 1, 3, 3);
+		final ImagePlus image = IJ.createImage(title, width, height, depth, 8);
+		image.setRoi(roi);
+
+		final ImagePlus result = Common.cleanDuplicate(image);
+
+		assertEquals("Duplicate has wrong title", result.getTitle(), title);
+		assertEquals("ROI should not affect duplicate size", width, result
+			.getWidth());
+		assertEquals("ROI should not affect duplicate size", height, result
+			.getHeight());
+		assertEquals("The original image should still have its ROI", roi, image
+			.getRoi());
 	}
 
 	@Test

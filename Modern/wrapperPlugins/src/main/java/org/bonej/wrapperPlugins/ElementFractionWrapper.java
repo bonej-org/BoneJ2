@@ -1,11 +1,16 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.CommonMessages.WEIRD_SPATIAL;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -13,9 +18,10 @@ import net.imglib2.type.numeric.RealType;
 
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
-import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -40,6 +46,16 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
 
+	/**
+	 * The element faction results in a {@link Table}
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
+
+
 	@Parameter
 	private OpService opService;
 
@@ -57,8 +73,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private String ratioHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
-	private static ResultsInserter resultsInserter = ResultsInserter
-		.getInstance();
 
 	//TODO Split hyperstacks to 2D/3D?
 	@Override
@@ -73,7 +87,10 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 			.getRealDouble() * elementSize;
 		final double totalSize = bitImgPlus.size() * elementSize;
 		final double ratio = foregroundSize / totalSize;
-		showResults(foregroundSize, totalSize, ratio);
+		addResults(foregroundSize, totalSize, ratio);
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
 	}
 
 	// region -- Helper methods --
@@ -86,24 +103,21 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		}
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
-		boneSizeHeader = "Bone " + sizeDescription + " " + unitHeader;
-		totalSizeHeader = "Total " + sizeDescription + " " + unitHeader;
+		boneSizeHeader = "Bone " + sizeDescription.toLowerCase() + " " + unitHeader;
+		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " + unitHeader;
 		ratioHeader = sizeDescription + " Ratio";
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
 			unitService);
 
 	}
 
-	private void showResults(final double foregroundSize, final double totalSize,
+	private void addResults(final double foregroundSize, final double totalSize,
 		final double ratio)
 	{
 		final String label = inputImage.getName();
-		resultsInserter.setMeasurementInFirstFreeRow(label, boneSizeHeader,
-			foregroundSize);
-		resultsInserter.setMeasurementInFirstFreeRow(label, totalSizeHeader,
-			totalSize);
-		resultsInserter.setMeasurementInFirstFreeRow(label, ratioHeader, ratio);
-		resultsInserter.updateResults();
+		SharedTable.add(label, boneSizeHeader, foregroundSize);
+		SharedTable.add(label, totalSizeHeader, totalSize);
+		SharedTable.add(label, ratioHeader, ratio);
 	}
 
 	@SuppressWarnings("unused")

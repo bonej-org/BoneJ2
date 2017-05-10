@@ -1,7 +1,7 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -13,7 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import net.imagej.ImageJ;
@@ -29,6 +32,9 @@ import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
+import ij.ImagePlus;
+import ij.process.ImageStatistics;
+
 /**
  * Common tests for wrapper plugins
  *
@@ -39,17 +45,14 @@ public class CommonWrapperTests {
 	public static <C extends Command> void testNullImageCancelsPlugin(
 		final ImageJ imageJ, final Class<C> commandClass) throws Exception
 	{
-		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(anyString(), anyString(), any(), any()))
-			.thenReturn(mockPrompt);
-		imageJ.ui().setDefaultUI(mockUI);
+		// SETUP
+		final UserInterface mockUI = mockUIService(imageJ);
 
-		// Run command
+		// EXECUTE
 		final CommandModule module = imageJ.command().run(commandClass, true,
 			"inputImage", null).get();
 
+		// VERIFY
 		assertTrue("Null image should have canceled the plugin", module
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN,
@@ -61,13 +64,8 @@ public class CommonWrapperTests {
 	public static <C extends Command> void test2DImageCancelsPlugin(
 		final ImageJ imageJ, final Class<C> commandClass) throws Exception
 	{
-		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(anyString(), anyString(), any(), any()))
-			.thenReturn(mockPrompt);
-		imageJ.ui().setDefaultUI(mockUI);
-
+		// SETUP
+		final UserInterface mockUI = mockUIService(imageJ);
 		// Create an image with only two spatial dimensions
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
@@ -76,10 +74,11 @@ public class CommonWrapperTests {
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, cAxis);
 
-		// Run command
+		// EXECUTE
 		final CommandModule module = imageJ.command().run(commandClass, true,
 			"inputImage", imgPlus).get();
 
+		// VERIFY
 		assertTrue("2D image should have cancelled the plugin", module
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
@@ -91,13 +90,8 @@ public class CommonWrapperTests {
 	public static <C extends Command> void testNonBinaryImageCancelsPlugin(
 		final ImageJ imageJ, final Class<C> commandClass) throws Exception
 	{
-		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(anyString(), anyString(), any(), any()))
-			.thenReturn(mockPrompt);
-		imageJ.ui().setDefaultUI(mockUI);
-
+		// SETUP
+		final UserInterface mockUI = mockUIService(imageJ);
 		// Create a test image with more than two colors
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
@@ -109,10 +103,11 @@ public class CommonWrapperTests {
 			.iterator();
 		imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-		// Run command
+		// EXECUTE
 		final CommandModule module = imageJ.command().run(commandClass, true,
 			"inputImage", imgPlus).get();
 
+		// VERIFY
 		assertTrue(
 			"An image with more than two colours should have cancelled the plugin",
 			module.isCanceled());
@@ -126,13 +121,13 @@ public class CommonWrapperTests {
 		final ImageJ imageJ, final Class<C> commandClass,
 		Object... additionalInputs) throws Exception
 	{
+		// SETUP
 		// Mock UI
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 		imageJ.ui().setDefaultUI(mockUI);
-
 		// Create an hyperstack with no calibration
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
@@ -141,18 +136,75 @@ public class CommonWrapperTests {
 		final Img<DoubleType> img = ArrayImgs.doubles(5, 5, 5, 2);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, zAxis, tAxis);
+		final List<Object> inputs = new ArrayList<>();
+		inputs.add("inputImage");
+		inputs.add(imgPlus);
+		Collections.addAll(inputs, additionalInputs);
 
-		// Run command
-		int baseSize = additionalInputs != null ? additionalInputs.length : 0;
-		Object[] inputs = new Object[additionalInputs.length + 2];
-		inputs[0] = "inputImage";
-		inputs[1] = imgPlus;
-		if (baseSize > 0) {
-			System.arraycopy(additionalInputs, 0, inputs, 2, baseSize);
-		}
-		imageJ.command().run(commandClass, true, inputs).get();
+		// EXECUTE
+		imageJ.command().run(commandClass, true, inputs.toArray()).get();
 
+		// VERIFY
 		verify(mockUI, after(100).times(1)).dialogPrompt(eq(BAD_CALIBRATION),
 			anyString(), eq(WARNING_MESSAGE), any());
+	}
+
+	public static <C extends Command> void testNonBinaryImagePlusCancelsPlugin(
+		final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	{
+		// SETUP
+		final UserInterface mockUI = mockUIService(imageJ);
+		final ImagePlus nonBinaryImage = mock(ImagePlus.class);
+		final ImageStatistics stats = new ImageStatistics();
+		stats.pixelCount = 3;
+		stats.histogram = new int[256];
+		stats.histogram[0x00] = 1;
+		stats.histogram[0x01] = 1;
+		stats.histogram[0xFF] = 1;
+		when(nonBinaryImage.getStatistics()).thenReturn(stats);
+		when(nonBinaryImage.getNSlices()).thenReturn(2);
+
+		// EXECUTE
+		final CommandModule module = imageJ.command().run(commandClass, true,
+			"inputImage", nonBinaryImage).get();
+
+		// VERIFY
+		assertTrue(
+			"An image with more than two colours should have cancelled the plugin",
+			module.isCanceled());
+		assertEquals("Cancel reason is incorrect",
+			CommonMessages.NOT_8_BIT_BINARY_IMAGE, module.getCancelReason());
+		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+			any());
+	}
+
+	public static <C extends Command> void test2DImagePlusCancelsPlugin(
+		final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	{
+		// SETUP
+		final UserInterface mockUI = mockUIService(imageJ);
+		final ImagePlus image = mock(ImagePlus.class);
+		when(image.getNSlices()).thenReturn(1);
+
+		// EXECUTE
+		final CommandModule module = imageJ.command().run(commandClass, true,
+			"inputImage", image).get();
+
+		// VERIFY
+		assertTrue("2D image should have cancelled the plugin", module
+			.isCanceled());
+		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
+			module.getCancelReason());
+		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+			any());
+	}
+
+	public static UserInterface mockUIService(final ImageJ imageJ) {
+		final UserInterface mockUI = mock(UserInterface.class);
+		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+		when(mockUI.dialogPrompt(any(), anyString(), any(), any())).thenReturn(
+			mockPrompt);
+		imageJ.ui().setDefaultUI(mockUI);
+		return mockUI;
 	}
 }

@@ -1,3 +1,4 @@
+
 package org.bonej.wrapperPlugins;
 
 import static org.bonej.utilities.Streamers.spatialAxisStream;
@@ -28,6 +29,8 @@ import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.space.AnnotatedSpace;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -37,11 +40,12 @@ import net.imglib2.type.numeric.RealType;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
-import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
@@ -57,189 +61,234 @@ import org.scijava.widget.FileWidget;
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Isosurface", headless = true)
-public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
-    static {
-        // TODO Replace with StringUtils.padRight
-        final String boneJHeader = "Binary STL created by BoneJ";
-        StringBuilder builder = new StringBuilder(boneJHeader);
-        for (int i = 0; i < 80 - boneJHeader.length(); i++) {
-            builder.append('.');
-        }
-        STL_HEADER = builder.toString();
-    }
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Isosurface",
+	headless = true)
+public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
+	ContextCommand
+{
 
-    public static final String STL_WRITE_ERROR = "Failed to write the following STL files:\n\n";
-    public static final String STL_HEADER;
-    public static final String BAD_SCALING = "Cannot scale result because axis calibrations don't match";
+	static {
+		// TODO Replace with StringUtils.padRight
+		final String boneJHeader = "Binary STL created by BoneJ";
+		StringBuilder builder = new StringBuilder(boneJHeader);
+		for (int i = 0; i < 80 - boneJHeader.length(); i++) {
+			builder.append('.');
+		}
+		STL_HEADER = builder.toString();
+	}
 
-    @Parameter(validater = "validateImage")
-    private ImgPlus<T> inputImage;
+	public static final String STL_WRITE_ERROR =
+		"Failed to write the following STL files:\n\n";
+	public static final String STL_HEADER;
+	public static final String BAD_SCALING =
+		"Cannot scale result because axis calibrations don't match";
 
-    @Parameter(label = "Export STL file(s)", description = "Create a binary STL file from the surface mesh",
-            required = false)
-    private boolean exportSTL;
+	@Parameter(validater = "validateImage")
+	private ImgPlus<T> inputImage;
 
-    @Parameter(label = "Help", description = "Open help web page", callback = "openHelpPage")
-    private Button helpButton;
+	/**
+	 * The surface area results in a {@link Table}
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
 
-    @Parameter
-    private LogService logService;
+	@Parameter(label = "Export STL file(s)",
+		description = "Create a binary STL file from the surface mesh",
+		required = false)
+	private boolean exportSTL;
 
-    @Parameter
-    private OpService ops;
+	@Parameter(label = "Help", description = "Open help web page",
+		callback = "openHelpPage")
+	private Button helpButton;
 
-    @Parameter
-    private PlatformService platformService;
+	@Parameter
+	private LogService logService;
 
-    @Parameter
-    private UIService uiService;
+	@Parameter
+	private OpService ops;
 
-    @Parameter
-    private UnitService unitService;
+	@Parameter
+	private PlatformService platformService;
 
-    private boolean calibrationWarned = false;
-    private boolean scalingWarned = false;
-    private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
+	@Parameter
+	private UIService uiService;
 
-    @Override
-    public void run() {
-        final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops, inputImage);
+	@Parameter
+	private UnitService unitService;
+
+	private String path = "";
+	private String extension = "";
+	private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
+	private double areaScale;
+	private String unitHeader = "";
+
+	@Override
+	public void run() {
+		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops,
+			inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(Collectors.toList());
-        matchOps(subspaces.get(0).interval);
-        processViews(subspaces);
-    }
+		if (subspaces.isEmpty()) {
+			// TODO Add warning dialog
+			return;
+		}
+		matchOps(subspaces.get(0).interval);
+		prepareResults();
+		final Map<String, Mesh> meshes = processViews(subspaces);
+		if (exportSTL) {
+			getFileName();
+			saveMeshes(meshes);
+		}
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
+	}
 
-    // -- Helper methods --
-    private static void writeSTLFacet(ByteBuffer buffer, TriangularFacet facet) {
-        writeSTLVector(buffer, facet.getNormal());
-        writeSTLVector(buffer, facet.getP0());
-        writeSTLVector(buffer, facet.getP1());
-        writeSTLVector(buffer, facet.getP2());
-        buffer.putShort((short) 0); // Attribute byte count
-    }
+	private void prepareResults() {
+		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
+		if (unitHeader.isEmpty()) {
+			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+		}
 
-    private static void writeSTLVector(ByteBuffer buffer, Vector3D v) {
-        buffer.putFloat((float) v.getX());
-        buffer.putFloat((float) v.getY());
-        buffer.putFloat((float) v.getZ());
-    }
+		if (!isAxesMatchingSpatialCalibration(inputImage)) {
+			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
+			areaScale = 1.0;
+		}
+		else {
+			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
+			areaScale = scale * scale;
+		}
+	}
 
-    private void matchOps(final RandomAccessibleInterval<BitType> matchingView) {
-        //TODO match with suitable mocked "NilTypes" (conforms == true)
-        marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class, Mesh.class, matchingView);
-    }
+	// -- Helper methods --
+	private static void writeSTLFacet(ByteBuffer buffer, TriangularFacet facet) {
+		writeSTLVector(buffer, facet.getNormal());
+		writeSTLVector(buffer, facet.getP0());
+		writeSTLVector(buffer, facet.getP1());
+		writeSTLVector(buffer, facet.getP2());
+		buffer.putShort((short) 0); // Attribute byte count
+	}
 
-    private void processViews(List<Subspace<BitType>> subspaces) {
-        final String name = inputImage.getName();
-        final Map<String, String> failedMeshes = new HashMap<>();
+	private static void writeSTLVector(ByteBuffer buffer, Vector3D v) {
+		buffer.putFloat((float) v.getX());
+		buffer.putFloat((float) v.getY());
+		buffer.putFloat((float) v.getZ());
+	}
 
-        String path = "";
-        String extension = "";
-        if (exportSTL) {
-            path = choosePath();
-            if (path == null) {
-                return;
-            }
+	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
+		marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class,
+			Mesh.class, interval);
+	}
 
-            final String fileName = path.substring(path.lastIndexOf(File.separator) + 1);
-            final int dot = fileName.lastIndexOf(".");
-            if (dot >= 0) {
-                extension = fileName.substring(dot);
-                //TODO add check for bad extension when DialogPrompt YES/NO options work correctly
-                path = path.substring(0, path.length() - extension.length());
-            } else {
-                extension = ".stl";
-            }
-        }
+	private Map<String, Mesh> processViews(List<Subspace<BitType>> subspaces) {
+		final String name = inputImage.getName();
+		final Map<String, Mesh> meshes = new HashMap<>();
+		for (Subspace<BitType> subspace : subspaces) {
+			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
+			final double area = mesh.getSurfaceArea();
+			final String label = name + " " + subspace.toString();
+			addResult(label, area);
+			meshes.put(subspace.toString(), mesh);
+		}
+		return meshes;
+	}
 
-        for (Subspace<?> subspace : subspaces) {
-            final String label = name + " " + subspace.toString();
-            final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
-            final double area = mesh.getSurfaceArea();
-            showArea(label, area);
+	private void saveMeshes(final Map<String, Mesh> meshes) {
+		final Map<String, String> savingErrors = new HashMap<>();
+		meshes.entrySet().forEach(entry -> {
+			final String subspaceId = entry.getKey().replace(' ', '_');
+			final String filePath = path + "_" + subspaceId + extension;
+			try {
+				final Mesh subspaceMesh = entry.getValue();
+				writeBinarySTLFile(filePath, subspaceMesh);
+			}
+			catch (IOException e) {
+				savingErrors.put(filePath, e.getMessage());
+			}
+		});
+		if (!savingErrors.isEmpty()) {
+			showSavingErrorsDialog(savingErrors);
+		}
+	}
 
-            if (exportSTL) {
-                try {
-                    writeBinarySTLFile(path + subspace.toString() + extension, mesh);
-                } catch (Exception e) {
-                    failedMeshes.put(label, e.getMessage());
-                }
-            }
-        }
+	private void showSavingErrorsDialog(final Map<String, String> savingErrors) {
+		StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
+		savingErrors.forEach((k, v) -> msgBuilder.append(k).append(": ").append(v));
+		uiService.showDialog(msgBuilder.toString(), ERROR_MESSAGE);
+	}
 
-        if (failedMeshes.size() > 0) {
-            StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
-            failedMeshes.forEach((k, v) -> msgBuilder.append(k).append(": ").append(v));
-            uiService.showDialog(msgBuilder.toString(), ERROR_MESSAGE);
-        }
-    }
+	private void getFileName() {
+		path = choosePath();
+		if (path == null) {
+			return;
+		}
 
-    private String choosePath() {
-        String initialName = stripFileExtension(inputImage.getName());
+		final String fileName = path.substring(path.lastIndexOf(File.separator) +
+			1);
+		final int dot = fileName.lastIndexOf(".");
+		if (dot >= 0) {
+			extension = fileName.substring(dot);
+			// TODO Verify extension if not .stl, when DialogPrompt YES/NO options
+			// work correctly
+			path = stripFileExtension(path);
+		}
+		else {
+			extension = ".stl";
+		}
+	}
 
-        // The file dialog won't allow empty filenames, and it prompts when file already exists
-        File file = uiService.chooseFile(new File(initialName), FileWidget.SAVE_STYLE);
-        if (file == null) {
-            // User pressed cancel on file dialog
-            return null;
-        }
+	private String choosePath() {
+		String initialName = stripFileExtension(inputImage.getName());
 
-        return file.getAbsolutePath();
-    }
+		// The file dialog won't allow empty filenames, and it prompts when file
+		// already exists
+		File file = uiService.chooseFile(new File(initialName),
+			FileWidget.SAVE_STYLE);
+		if (file == null) {
+			// User pressed cancel on file dialog
+			return null;
+		}
 
-    //TODO make into a utility method
-    private static String stripFileExtension(String path) {
-        final int dot = path.lastIndexOf('.');
+		return file.getAbsolutePath();
+	}
 
-        return dot == -1 ? path : path.substring(0, dot);
-    }
+	// TODO make into a utility method
+	private static String stripFileExtension(String path) {
+		final int dot = path.lastIndexOf('.');
 
-    private void showArea(final String label, double area) {
-        final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
+		return dot == -1 ? path : path.substring(0, dot);
+	}
 
-        if (unitHeader.isEmpty() && !calibrationWarned) {
-            uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-            calibrationWarned = true;
-        }
+	private void addResult(final String label, final double area) {
+		SharedTable.add(label, "Surface area " + unitHeader, area * areaScale);
+	}
 
-        if (!isAxesMatchingSpatialCalibration(inputImage) && !scalingWarned) {
-            uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
-            scalingWarned = true;
-        } else {
-            final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
-            final double areaCalibration = scale * scale;
-            area *= areaCalibration;
-        }
+	@SuppressWarnings("unused")
+	private void validateImage() {
+		if (inputImage == null) {
+			cancel(NO_IMAGE_OPEN);
+			return;
+		}
 
-        final ResultsInserter resultsInserter = ResultsInserter.getInstance();
-        resultsInserter.setMeasurementInFirstFreeRow(label, "Surface area " + unitHeader, area);
-        resultsInserter.updateResults();
-    }
+		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+			cancel(NOT_3D_IMAGE);
+		}
 
-    @SuppressWarnings("unused")
-    private void validateImage() {
-        if (inputImage == null) {
-            cancel(NO_IMAGE_OPEN);
-            return;
-        }
+		if (!ElementUtil.isColorsBinary(inputImage)) {
+			cancel(NOT_BINARY);
+		}
+	}
 
-        if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
-            cancel(NOT_3D_IMAGE);
-        }
+	@SuppressWarnings("unused")
+	private void openHelpPage() {
+		Help.openHelpPage("http://bonej.org/isosurface", platformService, uiService,
+			logService);
+	}
 
-        if (!ElementUtil.isColorsBinary(inputImage)) {
-            cancel(NOT_BINARY);
-        }
-    }
-
-    @SuppressWarnings("unused")
-    private void openHelpPage() {
-        Help.openHelpPage("http://bonej.org/isosurface", platformService, uiService, logService);
-    }
-
-    // -- Utility methods --
+	// -- Utility methods --
 
 	/**
 	 * Writes the surface mesh as a binary, little endian STL file
@@ -286,17 +335,18 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends Co
 		}
 	}
 
-    /**
-     * Check if all the spatial axes have a matching calibration, e.g. same unit, same scaling
-     * <p>
-     * NB: Public and static for testing purposes
-     * </p>
-     */
-    // TODO make into a utility method or remove if mesh area considers calibration in the future
+	/**
+	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
+	 * same scaling
+	 * 
+	 * @implNote NB: Public and static for testing purposes
+	 */
+	// TODO make into a utility method or remove if mesh area considers
+	// calibration in the future
 	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
 		isAxesMatchingSpatialCalibration(T space)
 	{
-	    //TODO replace with StringUtils.isNullOrEmpty
+		// TODO replace with StringUtils.isNullOrEmpty
 		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
 			.allMatch(s -> s == null || s.isEmpty());
 		final boolean matchingUnit = spatialAxisStream(space).map(

@@ -1,7 +1,10 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.List;
@@ -14,6 +17,8 @@ import net.imagej.ops.geom.geom3d.mesh.DefaultMesh;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
@@ -24,11 +29,12 @@ import net.imglib2.type.numeric.real.DoubleType;
 
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
-import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -58,6 +64,15 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
 
+	/**
+	 * The surface faction results in a {@link Table}
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
+
 	@Parameter
 	private OpService opService;
 
@@ -73,8 +88,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private String tVHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
-	private static ResultsInserter resultsInserter = ResultsInserter
-		.getInstance();
 
 	@Override
 	public void run() {
@@ -87,10 +100,12 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final String name = inputImage.getName();
 		subspaces.forEach(subspace -> {
 			final double[] results = subSpaceFraction(subspace.interval);
-			final String label = name+ " " + subspace.toString();
+			final String label = name + " " + subspace.toString();
 			addResults(label, results);
 		});
-		resultsInserter.updateResults();
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
 	}
 
 	// region -- Helper methods --
@@ -106,10 +121,9 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	}
 
 	private void addResults(final String label, final double[] results) {
-		resultsInserter.setMeasurementInFirstFreeRow(label, bVHeader, results[0]);
-		resultsInserter.setMeasurementInFirstFreeRow(label, tVHeader, results[1]);
-		resultsInserter.setMeasurementInFirstFreeRow(label, ratioHeader,
-			results[2]);
+		SharedTable.add(label, bVHeader, results[0]);
+		SharedTable.add(label, tVHeader, results[1]);
+		SharedTable.add(label, ratioHeader, results[2]);
 	}
 
 	private void prepareResultDisplay() {

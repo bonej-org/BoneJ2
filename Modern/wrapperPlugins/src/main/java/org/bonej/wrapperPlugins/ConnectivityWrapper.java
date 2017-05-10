@@ -1,7 +1,10 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.*;
+import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
@@ -10,19 +13,26 @@ import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
+import net.imagej.ops.special.hybrid.Hybrids;
+import net.imagej.ops.special.hybrid.UnaryHybridCF;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.real.DoubleType;
 
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
-import org.bonej.utilities.ResultsInserter;
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -45,6 +55,15 @@ public class ConnectivityWrapper extends ContextCommand {
 	@Parameter(validater = "validateImage")
 	private ImgPlus<UnsignedByteType> inputImage;
 
+	/**
+	 * The connectivity results in a {@link Table}
+	 * <p>
+	 * Null if there are no results
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<String>, String> resultsTable;
+
 	@Parameter
 	private OpService opService;
 
@@ -54,34 +73,54 @@ public class ConnectivityWrapper extends ContextCommand {
 	@Parameter
 	private UnitService unitService;
 
+	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCharacteristicOp;
+	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCorrectionOp;
+
+	/** A flag to avoid showing the same warning repeatedly */
 	private boolean negativityWarned = false;
-	private boolean calibrationWarned = false;
+	/** The unit displayed in the results */
+	private String unitHeader;
 
 	@Override
 	public void run() {
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		final String name = inputImage.getName();
-
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(Collectors.toList());
-		for (Subspace subspace : subspaces) {
+		if (!subspaces.isEmpty()) {
+			determineResultUnit();
+			matchOps(subspaces.get(0).interval);
+		}
+		subspaces.forEach(subspace -> {
 			final String label = name + " " + subspace.toString();
 			subspaceConnectivity(label, subspace.interval);
-		}
+		});
 	}
 
 	// region -- Helper methods --
+	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
+        eulerCharacteristicOp = Hybrids.unaryCF(opService,
+			Ops.Topology.EulerCharacteristic26NFloating.class, DoubleType.class,
+                interval);
+		eulerCorrectionOp = Hybrids.unaryCF(opService,
+			Ops.Topology.EulerCorrection.class, DoubleType.class, interval);
+	}
+
+	private void determineResultUnit() {
+		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
+		if (unitHeader.isEmpty()) {
+			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+		}
+	}
 
 	/** Process connectivity for one 3D subspace */
 	private void subspaceConnectivity(final String label,
-		final RandomAccessibleInterval subspace)
+		final RandomAccessibleInterval<BitType> subspace)
 	{
-	    //TODO match ops
-		final double eulerCharacteristic = opService.topology()
-			.eulerCharacteristic26NFloating(subspace).get();
-		final double edgeCorrection = opService.topology().eulerCorrection(subspace)
+		final double eulerCharacteristic = eulerCharacteristicOp.calculate(subspace)
 			.get();
+		final double edgeCorrection = eulerCorrectionOp.calculate(subspace).get();
 		final double correctedEuler = eulerCharacteristic - edgeCorrection;
 		final double connectivity = 1 - correctedEuler;
 		final double connectivityDensity = calculateConnectivityDensity(subspace,
@@ -95,28 +134,18 @@ public class ConnectivityWrapper extends ContextCommand {
 		final double deltaEuler, final double connectivity,
 		final double connectivityDensity)
 	{
-		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
-			'³');
-
 		if (connectivity < 0 && !negativityWarned) {
 			uiService.showDialog(NEGATIVE_CONNECTIVITY, INFORMATION_MESSAGE);
 			negativityWarned = true;
 		}
 
-		if (unitHeader.isEmpty() && !calibrationWarned) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-			calibrationWarned = true;
+		SharedTable.add(label, "Euler char. (χ)", eulerCharacteristic);
+		SharedTable.add(label, "Corrected Euler (χ + Δχ)", deltaEuler);
+		SharedTable.add(label, "Connectivity", connectivity);
+		SharedTable.add(label, "Conn. density " + unitHeader, connectivityDensity);
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
 		}
-
-		final ResultsInserter inserter = ResultsInserter.getInstance();
-		inserter.setMeasurementInFirstFreeRow(label, "Euler char. (χ)",
-			eulerCharacteristic);
-		inserter.setMeasurementInFirstFreeRow(label, "Corrected Euler (χ + Δχ)",
-			deltaEuler);
-		inserter.setMeasurementInFirstFreeRow(label, "Connectivity", connectivity);
-		inserter.setMeasurementInFirstFreeRow(label, "Conn. density " + unitHeader,
-			connectivityDensity);
-		inserter.updateResults();
 	}
 
 	private double calculateConnectivityDensity(

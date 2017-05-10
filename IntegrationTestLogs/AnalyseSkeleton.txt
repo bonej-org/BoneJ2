@@ -3,198 +3,76 @@ Integration tests for the AnalyseSkeleton plugin
 
 Case 1
 =======================================================================
-User should see an error dialog when no images are open
+Pressing cancel in the file dialog stops the plugin
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Close all images
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
 2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+3. Set "Prune cycle method" to "Lowest intensity voxel"
+4. Click "OK"
+5. Click cancel on the pop-up file dialog
 
 Expected result
 -----------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
+Plugin stops
 
-Completed May 25 2016 Richard Domander
+Completed May 10th Richard Domander
 -----------------------------------------------------------------------
 
 
 Case 2
 =======================================================================
-User should see an error dialog if image is not 8-bit binary
+Wrong type intensity image cancels plugin
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Open "blobs.gif" (File>Open Samples>Blobs)
-2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+1. Open "clown.jpg" (File>Open Samples>Clown)
+2. Save the image disk as "clown.jpg", and close it
+3. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+4. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+5. Set "Prune cycle method" to "Lowest intensity branch"
+6. Click "OK"
+7. In the file dialog open "clown.jpg"
 
 Expected result
 -----------------------------------------------------------------------
-An error dialog should open, and the plugin stop running
+A dialog about wrong type intensity image pops open, and plugin stops
 
-Completed May 25 2016 Richard Domander
+Completed May 10th Richard Domander
 -----------------------------------------------------------------------
 
 
 Case 3
 =======================================================================
-User should see an info dialog if image contains no skeletons
+Test exclude ROI
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Create a new image (File>New>Image...)
-2. Type: "8-bit", Fill with: "Black", Slices: "1"
-3. Click "OK"
-4. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-5. Click "OK"
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+ 2. Draw a rectangular ROI that covers the bottom half of the image
+ 3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+ 4. Set options
+   - "Prune cycle method" <- "None"
+   - "Prune ends" <- false
+   - "Exclude ROI from pruning" <- false
+ 5. Click "OK"
+ 6. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+ 7. Set options
+   - "Prune cycle method" <- "None"
+   - "Prune ends" <- false
+   - "Exclude ROI from pruning" <- true
+ 8. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
+ 9. Set options
+   - "Prune cycle method" <- "None"
+   - "Prune ends" <- true
+   - "Exclude ROI from pruning" <- true
+10. Click "OK"
 
 Expected result
 -----------------------------------------------------------------------
-The plugin should run and display an info dialog
+On the second run results should not change from the first. On the third
+they should
 
-Completed May 12 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 4
-=======================================================================
-Results are displayed correctly
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Skeletonise image (Plugins>BoneJ>Skeletonise)
-3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-4. Click "OK"
-
-Expected result
------------------------------------------------------------------------
-Setup dialog opens, plugin runs successfully, and results table opens
-
-Completed May 12 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 5
-=======================================================================
-Verify that settings persist
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Skeletonise image (Plugins>BoneJ>Skeletonise)
-3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-4. Set options:
-    - Prune cycle method: shortest branch
-    - Prune ends: check
-    - Calculate largest shortest path: check
-    - Show detailed info: check
-    - Display labeled skeletons: check
-5. Press "OK"
-6. Close ImageJ and repeat steps 1 - 3
-7. Verify that the options above have not changed
-
-Expected result
------------------------------------------------------------------------
-Settings persist between runs
-
-Completed May 12 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 6
-=======================================================================
-Verify that settings don't change if user cancels plugin
-=======================================================================
-Prerequisites
------------------------------------------------------------------------
-Complete case 5
-
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Skeletonise image (Plugins>BoneJ>Skeletonise)
-3. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-4. Set options:
-    - Prune cycle method: none
-    - Prune ends: unchecked
-    - Calculate largest shortest path: unchecked
-    - Show detailed info: unchecked
-    - Display labeled skeletons: unchecked
-5. Press "Cancel"
-6. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-7. Verify that the options have reset to:
-    - Prune cycle method: shortest branch
-    - Prune ends: check
-    - Calculate largest shortest path: check
-    - Show detailed info: check
-    - Display labeled skeletons: check
-
-Expected result
------------------------------------------------------------------------
-Settings don't persist if dialog is cancelled
-
-Completed May 13 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 7
-=======================================================================
-Input image is skeletonised if necessary
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
-2. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-3. Click "OK"
-
-Expected result
------------------------------------------------------------------------
-An info dialog ("Image was skeletonised") and the skeletonised image
-open
-
-Completed May 25 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 8
-=======================================================================
-Analyses the skeleton of a composite image
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "hela-cells.tif" (File>Open Samples>HeLa Cells)
-2. Binarise image (Process>Binary>Make Binary)
-3. Click "OK"
-4. Skeletonise image (Plugins>BoneJ>Skeletonise)
-5. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-6. Click "OK"
-
-Expected result
------------------------------------------------------------------------
-Plugin runs successfully and "Tagged skeleton" image has 3 channels
-
-Completed May 25 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Case 9
-=======================================================================
-Analyses the skeleton of an image with a time axis
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open "mitosis.tif" (File>Open Samples>Mitosis)
-2. Remove channels (Image>Color>Stack to RBG)
-3. Uncheck "Keep original" on click "OK"
-4. Binarise image (Process>Binary>Make Binary)
-5. Click "OK"
-6. Skeletonise image (Plugins>BoneJ>Skeletonise)
-7. Run Analyse Skeleton (Plugins>BoneJ>Analyse Skeleton)
-8. Click "OK"
-
-Expected result
------------------------------------------------------------------------
-Plugin runs successfully and "Tagged skeleton" image has a time axis
-
-TODO: Complete when AnalyzeSkeleton 3.1.1 is released
+Completed May 10th Richard Domander
 -----------------------------------------------------------------------
