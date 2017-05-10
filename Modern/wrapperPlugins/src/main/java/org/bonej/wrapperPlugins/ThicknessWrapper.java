@@ -242,8 +242,8 @@ public class ThicknessWrapper extends ContextCommand {
 			return;
 		}
 
-		if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(
-			inputImage))
+		if (!ImagePlusCheck.isBinaryColour(inputImage) || inputImage
+			.getBitDepth() != 8)
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);
 			return;

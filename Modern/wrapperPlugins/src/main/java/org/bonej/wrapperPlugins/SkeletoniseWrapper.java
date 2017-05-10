@@ -59,8 +59,8 @@ public class SkeletoniseWrapper extends ContextCommand {
 			cancel(NO_IMAGE_OPEN);
 			return;
 		}
-		if (inputImage.getType() != ImagePlus.GRAY8 || !ImagePlusCheck
-			.isBinaryColour(inputImage))
+		if (!ImagePlusCheck.isBinaryColour(inputImage) || inputImage
+			.getBitDepth() != 8)
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);
 		}

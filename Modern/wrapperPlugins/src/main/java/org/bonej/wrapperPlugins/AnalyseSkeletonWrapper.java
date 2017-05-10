@@ -9,7 +9,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
-import ij.IJ;
 import io.scif.FormatException;
 import io.scif.services.FormatService;
 
@@ -19,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.imagej.Dataset;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
@@ -203,27 +203,29 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		}
 		try {
 			formatService.getFormat(file.getAbsolutePath());
-			final Object o = ioService.open(file.getAbsolutePath());
-			if (!convertService.supports(o, ImagePlus.class)) {
+			final Dataset dataset = (Dataset) ioService.open(file.getAbsolutePath());
+			final int channels = dataset.getCompositeChannelCount();
+			if (channels != 1 || dataset.getValidBits() != 8) {
+				// When SCIFIO is enabled, the convert intensityImage won't have the
+				// necessary metadata to check if it's greyscale (at least when image is
+				// opened from HDD and not the Samples menu...)
+				intensityImage = null;
+				cancel("The intensity image needs to be 8-bit greyscale");
+				return;
+			}
+			if (!convertService.supports(dataset, ImagePlus.class)) {
 				cancel("Intensity image could not be converted into an ImagePlus");
 				return;
 			}
-			intensityImage = convertService.convert(o, ImagePlus.class);
-		} catch (FormatException e) {
+			intensityImage = convertService.convert(dataset, ImagePlus.class);
+		}
+		catch (FormatException e) {
 			cancel("Image format is not recognized");
 			logService.trace(e);
-			return;
 		}
 		catch (IOException | NullPointerException e) {
 			cancel("An error occurred while opening the image");
 			logService.trace(e);
-			return;
-		}
-		if (intensityImage.getType() != ImagePlus.GRAY8) {
-			//TODO FIX - type always GRAY8
-			// AnalyzeSkeleton_ casts to byte[], anything else than 8-bit will crash
-			intensityImage = null;
-			cancel("The intensity image needs to be 8-bit greyscale");
 		}
 	}
 
@@ -354,8 +356,8 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			return;
 		}
 
-		if (inputImage.getType() != ImagePlus.GRAY8 || !ImagePlusCheck
-			.isBinaryColour(inputImage))
+		if (!ImagePlusCheck.isBinaryColour(inputImage) || inputImage
+			.getBitDepth() != 8)
 		{
 			// AnalyzeSkeleton_ and Skeletonize_ cast to byte[], anything else than
 			// 8-bit will crash
