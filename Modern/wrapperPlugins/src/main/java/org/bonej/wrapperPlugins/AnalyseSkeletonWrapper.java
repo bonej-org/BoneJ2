@@ -7,6 +7,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
 import io.scif.FormatException;
@@ -274,7 +275,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	 * </p>
 	 */
 	private ImagePlus skeletonise(final ImagePlus inputImage) {
-		final ImagePlus skeleton = inputImage.duplicate();
+		final ImagePlus skeleton = cleanDuplicate(inputImage);
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);

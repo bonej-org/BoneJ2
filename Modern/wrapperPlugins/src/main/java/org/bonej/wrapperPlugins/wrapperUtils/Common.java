@@ -1,6 +1,7 @@
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
+import ij.ImagePlus;
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
@@ -14,6 +15,15 @@ import net.imglib2.type.numeric.ComplexType;
  * @author Richard Domander
  */
 public class Common {
+
+	/** Duplicates the image without changing the title of the copy, or cropping it to the ROI */
+	public static ImagePlus cleanDuplicate(final ImagePlus image) {
+		image.killRoi();
+		final ImagePlus copy = image.duplicate();
+		image.restoreRoi();
+		copy.setTitle(image.getTitle());
+		return copy;
+	}
 
 	/**
 	 * Converts the ImagePlus to a new ImagePlus where elements are of the given

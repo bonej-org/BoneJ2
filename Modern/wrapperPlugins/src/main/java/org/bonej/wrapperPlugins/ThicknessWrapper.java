@@ -6,6 +6,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
 import static org.scijava.ui.DialogPrompt.MessageType;
 import static org.scijava.ui.DialogPrompt.OptionType;
 import static org.scijava.ui.DialogPrompt.Result;
@@ -170,8 +171,7 @@ public class ThicknessWrapper extends ContextCommand {
 			image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
 		}
 		else {
-			image = inputImage.duplicate();
-			image.setTitle(inputImage.getTitle());
+			image = cleanDuplicate(inputImage);
 		}
 
 		return localThickness.processImage(image);
