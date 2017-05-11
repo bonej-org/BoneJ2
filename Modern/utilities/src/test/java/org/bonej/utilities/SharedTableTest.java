@@ -106,6 +106,19 @@ public class SharedTableTest {
 	}
 
 	@Test
+	public void testFoo() throws Exception {
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 1);
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 2);
+
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(2, table.getRowCount());
+		assertEquals("1", table.get("Run").get(0));
+		assertEquals("2", table.get("Run").get(1));
+	}
+
+	@Test
 	public void testAddMultipleColumns() throws Exception {
 		// SETUP
 		final String label = "Image";
@@ -134,17 +147,21 @@ public class SharedTableTest {
 		SharedTable.add(label, "Header", 3.0);
 		SharedTable.add(label2, "Header", 1.0);
 		SharedTable.add(label3, "Header", 2.0);
+		SharedTable.add(label, "Header", 4.0);
 		SharedTable.add(label, "Header 2", 4.0);
 
 		// VERIFY
 		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(3, table.getRowCount());
+		assertEquals(4, table.getRowCount());
 		assertEquals(label2, table.get(0, 0));
 		assertEquals(String.valueOf(1.0), table.get(1, 0));
 		assertEquals(label3, table.get(0, 1));
 		assertEquals(String.valueOf(2.0), table.get(1, 1));
 		assertEquals(label, table.get(0, 2));
 		assertEquals(String.valueOf(3.0), table.get(1, 2));
+		assertEquals(String.valueOf(4.0), table.get(2, 2));
+		assertEquals(label, table.get(0, 3));
+		assertEquals(String.valueOf(4.0), table.get(1, 3));
 	}
 
 	/*

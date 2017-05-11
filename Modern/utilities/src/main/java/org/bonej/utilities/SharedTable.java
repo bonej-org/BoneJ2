@@ -24,8 +24,8 @@ import net.imagej.table.Table;
  * and add the new value there. If there are no empty cells, then add a new
  * row.</li>
  * <li>Labels and columns are kept in alphabetical order</li>
- * <li>If there are multiple rows with the same label, the last inserted comes
- * first</li>
+ * <li>If there are multiple rows with the same labels & non-empty cells, the
+ * last inserted value comes last</li>
  * </ol>
  *
  * @author Richard Domander
@@ -50,17 +50,25 @@ public class SharedTable {
 			!EMPTY_CELL.equals(s));
 	}
 
-	/** Adds new value as a {@link String} to the shared table
-	 * @see #add(String, String, String)  */
+	/**
+	 * Adds new value as a {@link String} to the shared table
+	 * 
+	 * @see #add(String, String, String)
+	 */
 	public static void add(final String label, final String header,
-						   final long value) {
+		final long value)
+	{
 		add(label, header, String.valueOf(value));
 	}
 
-	/** Adds new value as a {@link String} to the shared table
-	 * @see #add(String, String, String)  */
+	/**
+	 * Adds new value as a {@link String} to the shared table
+	 * 
+	 * @see #add(String, String, String)
+	 */
 	public static void add(final String label, final String header,
-						   final double value) {
+		final double value)
+	{
 		add(label, header, String.valueOf(value));
 	}
 
@@ -86,17 +94,8 @@ public class SharedTable {
 			return;
 		}
 
-		final int rows = table.getRowCount();
 		final int columns = table.getColumnCount();
-		final int rowIndex = labelAlphabeticIndex(label);
-		final int columnIndex = headerIndex(header);
-
-		if (rowIndex == rows) {
-			appendEmptyRow(label);
-		}
-		else if (!table.get(LABEL_HEADER).get(rowIndex).equals(label)) {
-			insertEmptyRow(label, rowIndex);
-		}
+		final int columnIndex = alphabeticalHeaderIndex(header);
 
 		if (columnIndex == columns) {
 			appendEmptyColumn(header);
@@ -105,11 +104,7 @@ public class SharedTable {
 			insertEmptyColumn(columnIndex, header);
 		}
 
-		if (!table.get(columnIndex, rowIndex).equals(EMPTY_CELL)) {
-			insertEmptyRow(label, rowIndex);
-		}
-
-		table.set(columnIndex, rowIndex, value);
+		insertIntoNextFreeRow(label, columnIndex, value);
 	}
 
 	/** Initializes the table into a new empty table */
@@ -142,12 +137,6 @@ public class SharedTable {
 		IntStream.range(0, column.size()).forEach(i -> column.set(i, EMPTY_CELL));
 	}
 
-	private static void appendEmptyRow(final String label) {
-		table.appendRow();
-		final int lastRow = table.getRowCount() - 1;
-		fillEmptyRow(label, lastRow);
-	}
-
 	private static void insertEmptyRow(final String label, final int rowIndex) {
 		table.insertRow(rowIndex);
 		fillEmptyRow(label, rowIndex);
@@ -160,18 +149,30 @@ public class SharedTable {
 			EMPTY_CELL));
 	}
 
-	private static int headerIndex(final String header) {
+	private static int alphabeticalHeaderIndex(final String header) {
 		final int cols = table.getColumnCount();
-		return IntStream.range(1, cols).filter(i -> table.get(i).getHeader()
-				.equals(header)).findFirst().orElse(cols);
+		return IntStream.range(1, cols).filter(i -> table.get(i).getHeader().equals(
+			header)).findFirst().orElse(cols);
 	}
 
-	private static int labelAlphabeticIndex(final String label) {
+	private static void insertIntoNextFreeRow(final String label,
+		final int columnIndex, final String value)
+	{
 		final int rows = table.getRowCount();
 		final DefaultColumn<String> labelColumn = table.get(LABEL_HEADER);
-		return IntStream.range(0, rows).filter(i -> labelColumn.get(i).compareTo(
-			label) >= 0).findFirst().orElse(rows);
+		int alphabeticalIndex = IntStream.range(0, rows).filter(i -> labelColumn
+			.get(i).compareTo(label) >= 0).findFirst().orElse(rows);
+		while (alphabeticalIndex < rows && labelColumn.get(alphabeticalIndex)
+			.equals(label))
+		{
+			if (EMPTY_CELL.equals(table.get(columnIndex).get(alphabeticalIndex))) {
+				table.set(columnIndex, alphabeticalIndex, value);
+				return;
+			}
+			alphabeticalIndex++;
+		}
+		insertEmptyRow(label, alphabeticalIndex);
+		table.set(columnIndex, alphabeticalIndex, value);
 	}
-
 	// endregion
 }

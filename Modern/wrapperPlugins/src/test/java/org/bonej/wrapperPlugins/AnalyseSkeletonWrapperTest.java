@@ -222,10 +222,10 @@ public class AnalyseSkeletonWrapperTest {
 			"# Junctions", "# End-point voxels", "# Junction voxels", "# Slab voxels",
 			"Average Branch Length", "# Triple points", "# Quadruple points",
 			"Maximum Branch Length", "Longest Shortest Path", "spx", "spy", "spz" };
-		final String[][] expectedValues = { { "2", "1" }, { "0", "0" }, { "0",
+		final String[][] expectedValues = { { "1", "2" }, { "0", "0" }, { "0",
 			"0" }, { "1", "1" }, { "0", "0" }, { "0", "0" }, { "0.0", "0.0" }, { "0",
-				"0" }, { "0", "0" }, { "0.0", "0.0" }, { "0.0", "0.0" }, { "3.0",
-					"1.0" }, { "3.0", "1.0" }, { "0.0", "0.0" } };
+				"0" }, { "0", "0" }, { "0.0", "0.0" }, { "0.0", "0.0" }, { "1.0",
+					"3.0" }, { "1.0", "3.0" }, { "0.0", "0.0" } };
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
