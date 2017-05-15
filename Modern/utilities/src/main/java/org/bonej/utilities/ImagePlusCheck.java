@@ -3,8 +3,11 @@ package org.bonej.utilities;
 
 import java.util.Arrays;
 
+import ij.CompositeImage;
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
+import ij.process.LUT;
 
 /**
  * Utility methods for checking ImagePlus properties
@@ -64,5 +67,22 @@ public class ImagePlusCheck {
 
 		return Math.max(widthHeightAnisotropy, Math.max(widthDepthAnisotropy,
 			heightDepthAnisotropy));
+	}
+
+	public static void revertInversion(final ImagePlus image) {
+		if (!image.isInvertedLut()) {
+			return;
+		}
+		if (image.isComposite()) {
+			final CompositeImage ci = (CompositeImage) image;
+			final LUT lut = ci.getChannelLut();
+			if (lut != null) ci.setChannelLut(lut.createInvertedLut());
+			return;
+		}
+		final ImageProcessor ip = image.getProcessor();
+		ip.invertLut();
+		if (image.getStackSize() > 1) {
+			image.getStack().setColorModel(ip.getColorModel());
+		}
 	}
 }

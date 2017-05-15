@@ -10,7 +10,9 @@ import static org.mockito.Mockito.when;
 import org.junit.Test;
 
 import ij.ImagePlus;
+import ij.gui.NewImage;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 
 /**
@@ -140,5 +142,37 @@ public class ImagePlusCheckTest {
 		final boolean result = ImagePlusCheck.is3D(imagePlus);
 
 		assertTrue("Image with more than 1 slice should be 3D", result);
+	}
+
+	@Test
+	public void testRevertInversion() throws Exception {
+		// SETUP (not inverted)
+		ImagePlus image = NewImage.createByteImage("", 3, 3, 3,
+			NewImage.FILL_RANDOM);
+
+		// EXECUTE
+		ImagePlusCheck.revertInversion(image);
+
+		// VERIFY
+		assertFalse(image.isInvertedLut());
+
+		// SETUP (inverted)
+		image = createInvertedLUTImage();
+
+		// EXECUTE
+		ImagePlusCheck.revertInversion(image);
+
+		// VERIFY
+		assertFalse(image.isInvertedLut());
+	}
+
+	private ImagePlus createInvertedLUTImage() {
+		final ImagePlus image = NewImage.createByteImage("", 3, 3, 3,
+			NewImage.FILL_RANDOM);
+		ImageProcessor ip = image.getProcessor();
+		ip.invertLut();
+		if (image.getStackSize() > 1) image.getStack().setColorModel(ip
+			.getColorModel());
+		return image;
 	}
 }
