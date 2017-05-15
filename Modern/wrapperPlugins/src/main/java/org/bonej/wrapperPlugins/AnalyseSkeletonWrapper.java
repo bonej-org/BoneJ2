@@ -29,7 +29,7 @@ import net.imagej.table.PrimitiveColumn;
 import net.imagej.table.Table;
 
 import org.apache.commons.math3.util.MathArrays;
-import org.bonej.utilities.ImagePlusCheck;
+import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -357,7 +357,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			return;
 		}
 
-		if (!ImagePlusCheck.isBinaryColour(inputImage) || inputImage
+		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
 			.getBitDepth() != 8)
 		{
 			// AnalyzeSkeleton_ and Skeletonize_ cast to byte[], anything else than

@@ -14,7 +14,7 @@ import ij.process.LUT;
  *
  * @author Richard Domander
  */
-public class ImagePlusCheck {
+public class ImagePlusUtil {
 
 	/**
 	 * Checks if the image is 3D

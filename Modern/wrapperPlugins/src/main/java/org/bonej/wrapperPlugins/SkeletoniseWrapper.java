@@ -9,7 +9,7 @@ import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
 
 import net.imagej.patcher.LegacyInjector;
 
-import org.bonej.utilities.ImagePlusCheck;
+import org.bonej.utilities.ImagePlusUtil;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -59,7 +59,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 			cancel(NO_IMAGE_OPEN);
 			return;
 		}
-		if (!ImagePlusCheck.isBinaryColour(inputImage) || inputImage
+		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
 			.getBitDepth() != 8)
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);

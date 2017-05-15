@@ -21,7 +21,7 @@ import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 
-import org.bonej.utilities.ImagePlusCheck;
+import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
@@ -228,7 +228,7 @@ public class ThicknessWrapper extends ContextCommand {
 			return;
 		}
 
-		if (!ImagePlusCheck.is3D(inputImage)) {
+		if (!ImagePlusUtil.is3D(inputImage)) {
 			cancel(NOT_3D_IMAGE);
 			return;
 		}
@@ -242,14 +242,14 @@ public class ThicknessWrapper extends ContextCommand {
 			return;
 		}
 
-		if (!ImagePlusCheck.isBinaryColour(inputImage) || inputImage
+		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
 			.getBitDepth() != 8)
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 
-		final double anisotropy = ImagePlusCheck.anisotropy(inputImage);
+		final double anisotropy = ImagePlusUtil.anisotropy(inputImage);
 		if (anisotropy > 1E-3) {
 			final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy *
 				100.0);

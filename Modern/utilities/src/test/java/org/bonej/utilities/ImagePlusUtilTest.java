@@ -20,11 +20,11 @@ import ij.process.ImageStatistics;
  *
  * @author Richard Domander
  */
-public class ImagePlusCheckTest {
+public class ImagePlusUtilTest {
 
 	@Test
 	public void testAnisotropyReturnsNaNIfImageIsNull() throws Exception {
-		final double anisotropy = ImagePlusCheck.anisotropy(null);
+		final double anisotropy = ImagePlusUtil.anisotropy(null);
 
 		assertTrue("Anisotropy should be NaN for a null image", Double.isNaN(
 			anisotropy));
@@ -42,7 +42,7 @@ public class ImagePlusCheckTest {
 		when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
 		when(testImage.getNSlices()).thenReturn(10);
 
-		final double result = ImagePlusCheck.anisotropy(testImage);
+		final double result = ImagePlusUtil.anisotropy(testImage);
 
 		assertEquals("Anisotropy should be " + expected, expected, result, 1e-12);
 	}
@@ -60,14 +60,14 @@ public class ImagePlusCheckTest {
 		when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
 		when(testImage.getNSlices()).thenReturn(1);
 
-		final double result = ImagePlusCheck.anisotropy(testImage);
+		final double result = ImagePlusUtil.anisotropy(testImage);
 
 		assertEquals("Anisotropy should be 0.0", 0.0, result, 1e-12);
 	}
 
 	@Test
 	public void testIsBinaryColourReturnsFalseIfImageIsNull() throws Exception {
-		boolean result = ImagePlusCheck.isBinaryColour(null);
+		boolean result = ImagePlusUtil.isBinaryColour(null);
 		assertFalse("Null image should not be binary", result);
 	}
 
@@ -81,7 +81,7 @@ public class ImagePlusCheckTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		boolean result = ImagePlusCheck.isBinaryColour(testImage);
+		boolean result = ImagePlusUtil.isBinaryColour(testImage);
 		assertTrue("A monochrome image should be binary", result);
 	}
 
@@ -97,7 +97,7 @@ public class ImagePlusCheckTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		boolean result = ImagePlusCheck.isBinaryColour(testImage);
+		boolean result = ImagePlusUtil.isBinaryColour(testImage);
 		assertFalse("A multicolor image should be binary", result);
 	}
 
@@ -112,14 +112,14 @@ public class ImagePlusCheckTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		boolean result = ImagePlusCheck.isBinaryColour(testImage);
+		boolean result = ImagePlusUtil.isBinaryColour(testImage);
 		assertTrue("Image with two colors (black & white) should be binary",
 			result);
 	}
 
 	@Test
 	public void testIs3DFalseIfImageNull() throws Exception {
-		final boolean result = ImagePlusCheck.is3D(null);
+		final boolean result = ImagePlusUtil.is3D(null);
 
 		assertFalse("Null image should not be 3D", result);
 	}
@@ -129,7 +129,7 @@ public class ImagePlusCheckTest {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		when(imagePlus.getNSlices()).thenReturn(1);
 
-		final boolean result = ImagePlusCheck.is3D(imagePlus);
+		final boolean result = ImagePlusUtil.is3D(imagePlus);
 
 		assertFalse("2D image should not be 3D", result);
 	}
@@ -139,7 +139,7 @@ public class ImagePlusCheckTest {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		when(imagePlus.getNSlices()).thenReturn(10);
 
-		final boolean result = ImagePlusCheck.is3D(imagePlus);
+		final boolean result = ImagePlusUtil.is3D(imagePlus);
 
 		assertTrue("Image with more than 1 slice should be 3D", result);
 	}
@@ -151,7 +151,7 @@ public class ImagePlusCheckTest {
 			NewImage.FILL_RANDOM);
 
 		// EXECUTE
-		ImagePlusCheck.revertInversion(image);
+		ImagePlusUtil.revertInversion(image);
 
 		// VERIFY
 		assertFalse(image.isInvertedLut());
@@ -160,7 +160,7 @@ public class ImagePlusCheckTest {
 		image = createInvertedLUTImage();
 
 		// EXECUTE
-		ImagePlusCheck.revertInversion(image);
+		ImagePlusUtil.revertInversion(image);
 
 		// VERIFY
 		assertFalse(image.isInvertedLut());

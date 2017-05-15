@@ -18,7 +18,7 @@ import net.imagej.table.Table;
 
 import org.bonej.ops.TriplePointAngles;
 import org.bonej.ops.TriplePointAngles.TriplePoint;
-import org.bonej.utilities.ImagePlusCheck;
+import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
@@ -165,7 +165,7 @@ public class TriplePointAnglesWrapper extends ContextCommand {
 			return;
 		}
 
-		if (inputImage.getBitDepth() != 8 || !ImagePlusCheck.isBinaryColour(
+		if (inputImage.getBitDepth() != 8 || !ImagePlusUtil.isBinaryColour(
 			inputImage))
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);
