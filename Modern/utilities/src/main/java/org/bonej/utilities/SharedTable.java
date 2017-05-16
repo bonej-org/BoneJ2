@@ -109,7 +109,7 @@ public class SharedTable {
 
 	/** Initializes the table into a new empty table */
 	public static void reset() {
-		table = createTable();
+        table = createTable();
 	}
 
 	// region -- Helper methods --
