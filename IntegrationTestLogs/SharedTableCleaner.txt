@@ -1,0 +1,19 @@
+Integration tests for the SharedTableCleaner plugin
+
+
+Case 1
+=======================================================================
+Plugin closes the results table
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+ 2. Run Plugins>BoneJ>Fraction>Volume/area fraction
+ 3. Run Plugins>BoneJ>Table>Clear BoneJ results
+
+Expected result
+-----------------------------------------------------------------------
+The table window should close
+
+Completed --/--/---- Test Tester
+-----------------------------------------------------------------------
