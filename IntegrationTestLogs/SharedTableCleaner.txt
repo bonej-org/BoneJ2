@@ -15,5 +15,5 @@ Expected result
 -----------------------------------------------------------------------
 The table window should close
 
-Completed --/--/---- Test Tester
+Completed May 16 2017 Richard Domander
 -----------------------------------------------------------------------
