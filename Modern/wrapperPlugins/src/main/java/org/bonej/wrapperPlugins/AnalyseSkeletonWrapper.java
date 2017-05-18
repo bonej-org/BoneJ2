@@ -1,14 +1,12 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.GOT_SKELETONISED;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
-import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
 import io.scif.FormatException;
 import io.scif.services.FormatService;
@@ -207,6 +205,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			final Dataset dataset = (Dataset) ioService.open(file.getAbsolutePath());
 			final int channels = dataset.getCompositeChannelCount();
 			if (channels != 1 || dataset.getValidBits() != 8) {
+				// TODO Check that dimensions match, and no time axis?
 				// When SCIFIO is enabled, the convert intensityImage won't have the
 				// necessary metadata to check if it's greyscale (at least when image is
 				// opened from HDD and not the Samples menu...)
@@ -279,14 +278,16 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-		showSkeletonisationInfo(skeletoniser);
+		showSkeleton(skeletoniser, skeleton);
 		return skeleton;
 	}
 
-	private void showSkeletonisationInfo(final Skeletonize3D_ skeletoniser) {
+	private void showSkeleton(final Skeletonize3D_ skeletoniser, final ImagePlus skeleton) {
 		final int iterations = skeletoniser.getThinningIterations();
 		if (iterations > 1) {
-			uiService.showDialog(GOT_SKELETONISED, INFORMATION_MESSAGE);
+			//TODO Show a status message about skeletonisation
+			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
+			uiService.show(skeleton);
 		}
 	}
 

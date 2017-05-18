@@ -2,7 +2,6 @@
 package org.bonej.wrapperPlugins;
 
 import static ij.gui.NewImage.FILL_BLACK;
-import static org.bonej.wrapperPlugins.CommonMessages.GOT_SKELETONISED;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -12,12 +11,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
 import java.io.File;
 
@@ -33,7 +30,6 @@ import org.junit.AfterClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
-import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -132,16 +128,13 @@ public class AnalyseSkeletonWrapperTest {
 	}
 
 	/**
-	 * Test that there is no dialog about skeletonisation when image is already a
-	 * skeleton (or skeletonisation didn't change it)
+	 * Test that no skeleton image pops open, when the input is already a skeleton
+	 * (or skeletonisation didn't change it)
 	 */
 	@Test
-	public void testNoDialogWhenImageSkeleton() throws Exception {
+	public void testNoImageWhenNoSkeletonisation() throws Exception {
 		// SETUP
 		final UserInterface mockUI = mock(UserInterface.class);
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(eq(GOT_SKELETONISED), anyString(), eq(
-			INFORMATION_MESSAGE), any())).thenReturn(mockPrompt);
 		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus pixel = NewImage.createByteImage("Test", 3, 3, 1,
 			FILL_BLACK);
@@ -154,19 +147,15 @@ public class AnalyseSkeletonWrapperTest {
 
 		// VERIFY
 		assertFalse(
-			"Sanity check failed: plugin cancelled before dialog could have been shown",
+			"Sanity check failed: plugin cancelled before image could have been shown",
 			module.isCanceled());
-		verify(mockUI, after(100).never()).dialogPrompt(eq(GOT_SKELETONISED),
-			anyString(), eq(INFORMATION_MESSAGE), any());
+		verify(mockUI, after(100).never()).show(any(ImagePlus.class));
 	}
 
-	/** Test that a dialog about the image being skeletonised is shown */
+	/** Test that the skeleton is displayed, when the input image gets skeletonised */
 	@Test
-	public void testSkeletonisationDialog() throws Exception {
+	public void testSkeletonImageWhenSkeletonised() throws Exception {
 		final UserInterface mockUI = mock(UserInterface.class);
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(eq(GOT_SKELETONISED), anyString(), eq(
-			INFORMATION_MESSAGE), any())).thenReturn(mockPrompt);
 		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus square = NewImage.createByteImage("Test", 4, 4, 1,
 			FILL_BLACK);
@@ -181,10 +170,9 @@ public class AnalyseSkeletonWrapperTest {
 
 		// VERIFY
 		assertFalse(
-			"Sanity check failed: plugin cancelled before dialog could have been shown",
+			"Sanity check failed: plugin cancelled before image could have been shown",
 			module.isCanceled());
-		verify(mockUI, after(100).times(1)).dialogPrompt(eq(GOT_SKELETONISED),
-			anyString(), eq(INFORMATION_MESSAGE), any());
+		verify(mockUI, after(100)).show(any(ImagePlus.class));
 	}
 
 	@Test
