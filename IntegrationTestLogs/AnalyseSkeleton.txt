@@ -17,13 +17,13 @@ Expected result
 -----------------------------------------------------------------------
 Plugin stops
 
-Completed May 10th Richard Domander
+Completed May 10th 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
 Case 2
 =======================================================================
-Wrong type intensity image cancels plugin
+A coloured intensity image cancels the plugin
 =======================================================================
 Steps
 -----------------------------------------------------------------------
@@ -39,7 +39,7 @@ Expected result
 -----------------------------------------------------------------------
 A dialog about wrong type intensity image pops open, and plugin stops
 
-Completed May 10th Richard Domander
+Completed May 24th 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -74,5 +74,5 @@ Expected result
 On the second run results should not change from the first. On the third
 they should
 
-Completed May 10th Richard Domander
+Completed May 10th 2017 Richard Domander
 -----------------------------------------------------------------------
