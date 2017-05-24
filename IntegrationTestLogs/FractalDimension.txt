@@ -96,5 +96,5 @@ Expected result
 -----------------------------------------------------------------------
 Results match BoneJ1 (considering rounding)
 
-Completed April 18 2017 Richard Domander
+Completed May 24 2017 Richard Domander
 -----------------------------------------------------------------------
