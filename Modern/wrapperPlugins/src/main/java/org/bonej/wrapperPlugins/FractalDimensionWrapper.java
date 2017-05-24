@@ -12,10 +12,11 @@ import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.ops.special.hybrid.BinaryHybridCF;
 import net.imagej.ops.special.hybrid.Hybrids;
-import net.imagej.ops.special.hybrid.UnaryHybridCF;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.DoubleColumn;
@@ -32,8 +33,6 @@ import net.imglib2.util.ValuePair;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.bonej.ops.BoxCount;
-import org.bonej.ops.Hollow;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
@@ -145,7 +144,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter
 	private PlatformService platformService;
 
-	private UnaryHybridCF<RandomAccessibleInterval<BitType>, RandomAccessibleInterval<BitType>> hollowOp;
+	private BinaryHybridCF<RandomAccessibleInterval<BitType>, Boolean, RandomAccessibleInterval<BitType>> hollowOp;
 	private UnaryFunctionOp<RandomAccessibleInterval<BitType>, List<ValuePair<DoubleType, DoubleType>>> boxCountOp;
 	private long autoMax;
 
@@ -179,7 +178,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		statusService.showStatus("Fractal dimension: finished");
 	}
 
 	// region -- Helper methods --
@@ -192,8 +190,8 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 			.size());
 		final DoubleColumn xColumn = new DoubleColumn("-log(size)");
 		final DoubleColumn yColumn = new DoubleColumn("log(count)");
-		pairs.stream().map(p -> p.b.get()).forEach(xColumn::add);
-		pairs.stream().map(p -> p.a.get()).forEach(yColumn::add);
+		pairs.stream().map(p -> p.a.get()).forEach(xColumn::add);
+		pairs.stream().map(p -> p.b.get()).forEach(yColumn::add);
 		final GenericTable resultsTable = new DefaultGenericTable();
 		resultsTable.add(labelColumn);
 		resultsTable.add(xColumn);
@@ -234,7 +232,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 
 	private double getRSquared(List<ValuePair<DoubleType, DoubleType>> pairs) {
 		SimpleRegression regression = new SimpleRegression();
-		pairs.forEach(pair -> regression.addData(pair.b.get(), pair.a.get()));
+		pairs.forEach(pair -> regression.addData(pair.a.get(), pair.b.get()));
 		return regression.getRSquare();
 	}
 
@@ -242,7 +240,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		final List<ValuePair<DoubleType, DoubleType>> pairs)
 	{
 		WeightedObservedPoints points = new WeightedObservedPoints();
-		pairs.forEach(pair -> points.add(pair.b.get(), pair.a.get()));
+		pairs.forEach(pair -> points.add(pair.a.get(), pair.b.get()));
 		return points;
 	}
 
@@ -256,10 +254,11 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		autoMax = maxDimension / 4;
 	}
 
+	@SuppressWarnings("unchecked")
 	private void matchOps(final RandomAccessibleInterval<BitType> input) {
-		hollowOp = (UnaryHybridCF) Hybrids.unaryCF(opService, Hollow.class,
+		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService, Ops.Morphology.Outline.class,
 			RandomAccessibleInterval.class, input, true);
-		boxCountOp = (UnaryFunctionOp) Functions.unary(opService, BoxCount.class,
+		boxCountOp = (UnaryFunctionOp) Functions.unary(opService, Ops.Topology.BoxCount.class,
 			List.class, input, startBoxSize, smallestBoxSize, scaleFactor,
 			translations);
 	}

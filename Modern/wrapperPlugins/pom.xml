@@ -127,6 +127,8 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
+            <!-- TODO: drop version when pom-scijava updates -->
+            <version>0.37.0</version>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
