@@ -27,6 +27,7 @@ import net.imagej.table.PrimitiveColumn;
 import net.imagej.table.Table;
 
 import org.apache.commons.math3.util.MathArrays;
+import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
@@ -203,14 +204,12 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		try {
 			formatService.getFormat(file.getAbsolutePath());
 			final Dataset dataset = (Dataset) ioService.open(file.getAbsolutePath());
-			final int channels = dataset.getCompositeChannelCount();
-			if (channels != 1 || dataset.getValidBits() != 8) {
+			if (!isValidIntensityImage(dataset)) {
 				// TODO Check that dimensions match, and no time axis?
 				// When SCIFIO is enabled, the convert intensityImage won't have the
 				// necessary metadata to check if it's greyscale (at least when image is
 				// opened from HDD and not the Samples menu...)
 				intensityImage = null;
-				cancel("The intensity image needs to be 8-bit greyscale");
 				return;
 			}
 			if (!convertService.supports(dataset, ImagePlus.class)) {
@@ -227,6 +226,33 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			cancel("An error occurred while opening the image");
 			logService.trace(e);
 		}
+	}
+
+	private boolean isValidIntensityImage(final Dataset dataset) {
+		// NB Composite channel count is a hacky way to check if the image is
+		// greyscale. It doesn't not correspond with the number of channels in the
+		// image
+		final int compositeChannelCount = dataset.getCompositeChannelCount();
+		if (compositeChannelCount != 1 || dataset.getValidBits() != 8) {
+			cancel("The intensity image needs to be 8-bit greyscale");
+			return false;
+		}
+		if (AxisUtils.hasTimeDimensions(dataset)) {
+			cancel("The intensity image can't have a time dimension");
+			return false;
+		}
+		if (AxisUtils.hasChannelDimensions(dataset)) {
+			cancel("The intensity image can't have a channel dimension");
+			return false;
+		}
+		if (AxisUtils.countSpatialDimensions(dataset) != inputImage
+			.getNDimensions())
+		{
+			cancel(
+				"The intensity image should match the dimensionality of the input image");
+			return false;
+		}
+		return true;
 	}
 
 	private void showResults(final SkeletonResult results) {
@@ -282,10 +308,12 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		return skeleton;
 	}
 
-	private void showSkeleton(final Skeletonize3D_ skeletoniser, final ImagePlus skeleton) {
+	private void showSkeleton(final Skeletonize3D_ skeletoniser,
+		final ImagePlus skeleton)
+	{
 		final int iterations = skeletoniser.getThinningIterations();
 		if (iterations > 1) {
-			//TODO Show a status message about skeletonisation
+			// TODO Show a status message about skeletonisation
 			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
 			uiService.show(skeleton);
 		}
@@ -367,10 +395,11 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			return;
 		}
 
-		if (inputImage.isComposite()) {
+		if (inputImage.getNChannels() > 1) {
 			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+			return;
 		}
-		else if (inputImage.isHyperStack()) {
+		if (inputImage.getNFrames() > 1) {
 			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 	}

@@ -63,11 +63,13 @@ public class SkeletoniseWrapper extends ContextCommand {
 			.getBitDepth() != 8)
 		{
 			cancel(NOT_8_BIT_BINARY_IMAGE);
+			return;
 		}
-		if (inputImage.isComposite()) {
+		if (inputImage.getNChannels() > 1) {
 			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+			return;
 		}
-		else if (inputImage.isHyperStack()) {
+		if (inputImage.getNFrames() > 1) {
 			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 	}

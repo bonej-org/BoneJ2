@@ -152,7 +152,9 @@ public class AnalyseSkeletonWrapperTest {
 		verify(mockUI, after(100).never()).show(any(ImagePlus.class));
 	}
 
-	/** Test that the skeleton is displayed, when the input image gets skeletonised */
+	/**
+	 * Test that the skeleton is displayed, when the input image gets skeletonised
+	 */
 	@Test
 	public void testSkeletonImageWhenSkeletonised() throws Exception {
 		final UserInterface mockUI = mock(UserInterface.class);
@@ -358,5 +360,90 @@ public class AnalyseSkeletonWrapperTest {
 			labelledSkeleton);
 		assertNotEquals("Input image should not have been overwritten", pixel,
 			shortestPaths);
+	}
+
+	@Test
+	public void testNot8BitIntensityImageCancelsPlugin() throws Exception {
+		// SETUP
+		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 3, 8);
+		final String intensityPath =
+			"16bit-unsigned&pixelType=uint16&planarDims=2&lengths=10,11,3&axes=X,Y,Z.fake";
+		mockIntensityFileOpening(intensityPath);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
+			"pruneCycleMethod", "Lowest intensity voxel").get();
+
+		// VERIFY
+		assertTrue(module.isCanceled());
+		assertEquals("The intensity image needs to be 8-bit greyscale", module
+			.getCancelReason());
+	}
+
+	@Test
+	public void testIntensityImageChannelsCancelPlugin() throws Exception {
+		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 3, 8);
+		final String intensityPath =
+			"8bit-signed&pixelType=int8&planarDims=2&lengths=5,5,3&axes=X,Y,Channel.fake";
+		mockIntensityFileOpening(intensityPath);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
+			"pruneCycleMethod", "Lowest intensity voxel").get();
+
+		// VERIFY
+		assertTrue(module.isCanceled());
+		assertEquals("The intensity image can't have a channel dimension", module
+			.getCancelReason());
+	}
+
+	@Test
+	public void testIntensityImageFramesCancelPlugin() throws Exception {
+		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 3, 8);
+		final String intensityPath =
+			"8bit-signed&pixelType=int8&planarDims=2&lengths=5,5,3&axes=X,Y,Time.fake";
+		mockIntensityFileOpening(intensityPath);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
+			"pruneCycleMethod", "Lowest intensity voxel").get();
+
+		// VERIFY
+		assertTrue(module.isCanceled());
+		assertEquals("The intensity image can't have a time dimension", module
+			.getCancelReason());
+	}
+
+	@Test
+	public void testIntensityImageMismatchingDimensionsCancelPlugin()
+		throws Exception
+	{
+		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 1, 8);
+		final String intensityPath =
+			"8bit-signed&pixelType=int8&planarDims=2&lengths=5,5,3&axes=X,Y,Z.fake";
+		mockIntensityFileOpening(intensityPath);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
+			"pruneCycleMethod", "Lowest intensity voxel").get();
+
+		// VERIFY
+		assertTrue(module.isCanceled());
+		assertEquals(
+			"The intensity image should match the dimensionality of the input image",
+			module.getCancelReason());
+	}
+
+	private void mockIntensityFileOpening(String path) {
+		final File intensityFile = mock(File.class);
+		final UserInterface mockUI = mock(UserInterface.class);
+		when(intensityFile.getAbsolutePath()).thenReturn(path);
+		when(mockUI.chooseFile(any(File.class), anyString())).thenReturn(
+			intensityFile);
+		IMAGE_J.ui().setDefaultUI(mockUI);
 	}
 }
