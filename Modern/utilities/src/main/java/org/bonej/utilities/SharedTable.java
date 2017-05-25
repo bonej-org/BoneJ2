@@ -7,6 +7,7 @@ import java.util.stream.IntStream;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.Table;
+
 import org.scijava.util.StringUtils;
 
 /**
@@ -36,6 +37,12 @@ public class SharedTable {
 	public static final String LABEL_HEADER = "Label";
 	public static final String EMPTY_CELL = "";
 
+	/**
+	 * @implNote Using String values, so that we can mark empty cells with empty
+	 *           Strings. Numerical columns cannot have empty cells. Unfortunately
+	 *           this causes sorting in UI to work alphabetically, i.e. "1", "11",
+	 *           "2"
+	 */
 	private static Table<DefaultColumn<String>, String> table = createTable();
 
 	private SharedTable() {}
@@ -105,7 +112,7 @@ public class SharedTable {
 
 	/** Initializes the table into a new empty table */
 	public static void reset() {
-        table = createTable();
+		table = createTable();
 	}
 
 	// region -- Helper methods --
