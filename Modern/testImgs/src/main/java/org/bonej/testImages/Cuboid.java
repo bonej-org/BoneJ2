@@ -85,7 +85,8 @@ public class Cuboid extends AbstractNullaryFunctionOp<ImgPlus<BitType>> {
 	}
 
 	public static void main(String... args) {
-		final ImageJ ij = net.imagej.Main.launch(args);
+		final ImageJ ij = new ImageJ();
+		ij.launch(args);
 		Object cuboid = ij.op().run(Cuboid.class, 100L, 100L, 10L, 3L, 1L, 5L);
 		ij.ui().show(cuboid);
 	}

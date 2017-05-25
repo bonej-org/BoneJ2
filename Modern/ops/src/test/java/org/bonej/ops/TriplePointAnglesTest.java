@@ -1,7 +1,6 @@
 
 package org.bonej.ops;
 
-import static java.util.Arrays.asList;
 import static org.bonej.ops.TriplePointAngles.TriplePoint;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,7 +38,7 @@ public class TriplePointAnglesTest {
 	 * because the vertex centroid doesn't align with them. The error is the
 	 * smaller the further away from the vertex you measure.
 	 */
-	public static final double HALF_PI_W_ERROR = 1.9106332362490184;
+	private static final double HALF_PI_W_ERROR = 1.9106332362490184;
 	private static final double HALF_PI = Math.PI / 2.0;
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static Graph[] cuboidGraphs;

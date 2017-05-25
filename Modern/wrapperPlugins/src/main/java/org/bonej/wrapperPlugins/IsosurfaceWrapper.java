@@ -53,6 +53,7 @@ import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
+import org.scijava.util.StringUtils;
 import org.scijava.widget.Button;
 import org.scijava.widget.FileWidget;
 
@@ -66,19 +67,10 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
-	static {
-		// TODO Replace with StringUtils.padRight
-		final String boneJHeader = "Binary STL created by BoneJ";
-		StringBuilder builder = new StringBuilder(boneJHeader);
-		for (int i = 0; i < 80 - boneJHeader.length(); i++) {
-			builder.append('.');
-		}
-		STL_HEADER = builder.toString();
-	}
-
 	public static final String STL_WRITE_ERROR =
 		"Failed to write the following STL files:\n\n";
-	public static final String STL_HEADER;
+	public static final String STL_HEADER = StringUtils.padEnd(
+		"Binary STL created by BoneJ", 80, '.');
 	public static final String BAD_SCALING =
 		"Cannot scale result because axis calibrations don't match";
 
@@ -130,10 +122,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(Collectors.toList());
-		if (subspaces.isEmpty()) {
-			// TODO Add warning dialog
-			return;
-		}
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
 		final Map<String, Mesh> meshes = processViews(subspaces);
@@ -306,8 +294,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (mesh == null) {
 			throw new NullPointerException("Mesh cannot be null");
 		}
-		// TODO Replace with StringUtils.isNullOrEmpty
-		if (path == null || path.isEmpty()) {
+
+		if (StringUtils.isNullOrEmpty(path)) {
 			throw new IllegalArgumentException("Filename cannot be null or empty");
 		}
 		if (!mesh.triangularFacets()) {
@@ -345,9 +333,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
 		isAxesMatchingSpatialCalibration(T space)
 	{
-		// TODO replace with StringUtils.isNullOrEmpty
 		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.allMatch(s -> s == null || s.isEmpty());
+			.allMatch(StringUtils::isNullOrEmpty);
 		final boolean matchingUnit = spatialAxisStream(space).map(
 			CalibratedAxis::unit).distinct().count() == 1;
 		final boolean matchingScale = spatialAxisStream(space).map(a -> a

@@ -38,11 +38,6 @@ public class Help implements Command {
 		openHelpPage("http://bonej.org/", platformService, uiService, logService);
 	}
 
-	public static void main(String... args) {
-		final ImageJ imageJ = net.imagej.Main.launch();
-		imageJ.command().run(Help.class, true);
-	}
-
 	/**
 	 * Opens the given help page using the PlatformService
 	 *

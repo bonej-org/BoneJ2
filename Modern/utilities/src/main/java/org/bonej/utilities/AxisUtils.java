@@ -15,6 +15,7 @@ import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
+import org.scijava.util.StringUtils;
 
 /**
  * Various utils for inspecting image axis properties
@@ -197,9 +198,9 @@ public class AxisUtils {
 		isUnitsConvertible(T space, final UnitService unitService)
 	{
 		final long spatialDimensions = countSpatialDimensions(space);
-        //TODO Replace with StringUtils.isNullOrEmpty
+
 		final long uncalibrated = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.filter(s -> s == null || s.isEmpty()).count();
+			.filter(StringUtils::isNullOrEmpty).count();
 
 		if (uncalibrated == spatialDimensions) {
 			return true;

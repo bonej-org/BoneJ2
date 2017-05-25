@@ -7,6 +7,7 @@ import java.util.stream.IntStream;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.Table;
+import org.scijava.util.StringUtils;
 
 /**
  * Stores a {@link Table}, which is ordered according to the following rules:
@@ -41,7 +42,6 @@ public class SharedTable {
 
 	/** Returns the shared table instance */
 	public static Table<DefaultColumn<String>, String> getTable() {
-		// TODO Return a clone of the table?
 		return table;
 	}
 
@@ -86,11 +86,7 @@ public class SharedTable {
 	public static void add(final String label, final String header,
 		final String value)
 	{
-		// TODO Replace with StringUtils.isNullOrEmpty
-		if (label == null || label.isEmpty()) {
-			return;
-		}
-		if (header == null || header.isEmpty()) {
+		if (StringUtils.isNullOrEmpty(label) || StringUtils.isNullOrEmpty(header)) {
 			return;
 		}
 

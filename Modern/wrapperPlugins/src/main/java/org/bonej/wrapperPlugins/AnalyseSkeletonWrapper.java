@@ -205,10 +205,6 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			formatService.getFormat(file.getAbsolutePath());
 			final Dataset dataset = (Dataset) ioService.open(file.getAbsolutePath());
 			if (!isValidIntensityImage(dataset)) {
-				// TODO Check that dimensions match, and no time axis?
-				// When SCIFIO is enabled, the convert intensityImage won't have the
-				// necessary metadata to check if it's greyscale (at least when image is
-				// opened from HDD and not the Samples menu...)
 				intensityImage = null;
 				return;
 			}

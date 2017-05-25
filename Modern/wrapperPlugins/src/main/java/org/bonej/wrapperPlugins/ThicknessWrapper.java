@@ -32,6 +32,7 @@ import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
+import org.scijava.util.StringUtils;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 
@@ -212,7 +213,7 @@ public class ThicknessWrapper extends ContextCommand {
 	private static String getUnitHeader(final ImagePlus map) {
 		final String unit = map.getCalibration().getUnit();
 		// TODO replace with StringUtils.nullOrEmpty
-		if (unit == null || unit.isEmpty() || "pixel".equalsIgnoreCase(unit) ||
+		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
 			"unit".equalsIgnoreCase(unit))
 		{
 			return "";

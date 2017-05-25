@@ -20,6 +20,7 @@ import net.imglib2.type.numeric.RealType;
 
 import org.bonej.utilities.AxisUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
+import org.scijava.util.StringUtils;
 
 /**
  * Static utility methods that help display results to the user
@@ -129,8 +130,7 @@ public class ResultUtils {
 	public static GenericColumn createLabelColumn(final String label, int rows) {
 		final GenericColumn labelColumn = new GenericColumn("Label");
 		final int n = Math.max(0, rows);
-		// TODO Replace with scijava-common/StringUtils.isNullOrEmpty
-		final String s = (label == null || label.isEmpty()) ? "-" : label;
+		final String s = StringUtils.isNullOrEmpty(label) ? "-" : label;
 		Stream.generate(() -> s).limit(n).forEach(labelColumn::add);
 		return labelColumn;
 	}

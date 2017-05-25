@@ -130,10 +130,11 @@ public class WireFrameCuboid extends
 	// endregion
 
 	public static void main(String... args) {
-		final ImageJ ij = net.imagej.Main.launch(args);
+		final ImageJ imageJ = new ImageJ();
+		imageJ.launch(args);
 		// Call the hybrid op without a ready buffer (null)
-		Object cuboid = ij.op().run(WireFrameCuboid.class, 50L, 50L, 5L, 1L, 1L,
+		Object cuboid = imageJ.op().run(WireFrameCuboid.class, 50L, 50L, 5L, 1L, 1L,
 			1L);
-		ij.ui().show(cuboid);
+		imageJ.ui().show(cuboid);
 	}
 }
