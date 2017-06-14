@@ -22,6 +22,7 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -65,6 +66,9 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter
 	private UnitService unitService;
 
+	@Parameter
+    private StatusService statusService;
+
 	/** Header of the foreground (bone) volume column in the results table */
 	private String boneSizeHeader;
 	/** Header of the total volume column in the results table */
@@ -77,12 +81,14 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	//TODO Split hyperstacks to 2D/3D?
 	@Override
 	public void run() {
+	    statusService.showStatus("Element fraction: initializing");
 		// Our image has binary values, but convert to actual binary type
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		prepareResultDisplay();
 		// The value of each foreground element in a bit type image is 1, so we can
 		// count their number just by summing
+        statusService.showStatus("Element fraction: calculating");
 		final double foregroundSize = opService.stats().sum(bitImgPlus)
 			.getRealDouble() * elementSize;
 		final double totalSize = bitImgPlus.size() * elementSize;

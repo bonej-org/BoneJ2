@@ -46,6 +46,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
@@ -110,6 +111,9 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter
 	private UnitService unitService;
 
+    @Parameter
+    private StatusService statusService;
+
 	private String path = "";
 	private String extension = "";
 	private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
@@ -118,15 +122,18 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Override
 	public void run() {
+	    statusService.showStatus("Surface area: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops,
 			inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(Collectors.toList());
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
+		statusService.showStatus("Surface area: creating meshes");
 		final Map<String, Mesh> meshes = processViews(subspaces);
 		if (exportSTL) {
 			getFileName();
+            statusService.showStatus("Surface area: saving files");
 			saveMeshes(meshes);
 		}
 		if (SharedTable.hasData()) {

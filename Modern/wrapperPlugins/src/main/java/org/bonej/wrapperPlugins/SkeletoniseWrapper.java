@@ -11,6 +11,7 @@ import net.imagej.patcher.LegacyInjector;
 
 import org.bonej.utilities.ImagePlusUtil;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -44,11 +45,15 @@ public class SkeletoniseWrapper extends ContextCommand {
 	@Parameter(type = ItemIO.OUTPUT)
 	private ImagePlus skeleton;
 
+	@Parameter
+    private StatusService statusService;
+
 	@Override
 	public void run() {
 		skeleton = cleanDuplicate(inputImage);
 		skeleton.setTitle("Skeleton of " + inputImage.getTitle());
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
 	}

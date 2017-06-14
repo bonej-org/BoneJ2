@@ -25,6 +25,7 @@ import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
@@ -109,6 +110,9 @@ public class ThicknessWrapper extends ContextCommand {
 	@Parameter
 	private UIService uiService;
 
+	@Parameter
+    private StatusService statusService;
+
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
 
@@ -119,7 +123,9 @@ public class ThicknessWrapper extends ContextCommand {
 		final Map<Boolean, ImagePlus> thicknessMaps = new HashMap<>();
 		mapOptions.forEach(foreground -> {
 			prepareRun(foreground);
+			statusService.showStatus("Thickness: creating thickness map");
 			final ImagePlus map = createMap();
+            statusService.showStatus("Thickness: calculating results");
 			addMapResults(map);
 			thicknessMaps.put(foreground, map);
 		});
@@ -212,7 +218,6 @@ public class ThicknessWrapper extends ContextCommand {
 
 	private static String getUnitHeader(final ImagePlus map) {
 		final String unit = map.getCalibration().getUnit();
-		// TODO replace with StringUtils.nullOrEmpty
 		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
 			"unit".equalsIgnoreCase(unit))
 		{

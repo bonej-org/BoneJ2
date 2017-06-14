@@ -32,6 +32,7 @@ import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.convert.ConvertService;
@@ -153,6 +154,9 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter
 	private LogService logService;
 
+	@Parameter
+    private StatusService statusService;
+
 	private ImagePlus intensityImage = null;
 
 	@Override
@@ -163,13 +167,15 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 				return;
 			}
 		}
+		statusService.showStatus("Analyse skeleton: skeletonising");
 		final ImagePlus skeleton = skeletonise(inputImage);
 		final int pruneIndex = mapPruneCycleMethod(pruneCycleMethod);
 		final AnalyzeSkeleton_ analyzeSkeleton_ = new AnalyzeSkeleton_();
 		final Roi roi = excludeRoi ? inputImage.getRoi() : null;
 		analyzeSkeleton_.setup("", skeleton);
+        statusService.showStatus("Analyse skeleton: analysing skeletons");
 		// "Silent" parameter cannot be controlled by the user in the original
-		// plugin. We set it "true" so that no images pop open explicitly
+		// plugin. We set it "true" so that no images pop open
 		final SkeletonResult results = analyzeSkeleton_.run(pruneIndex, pruneEnds,
 			calculateShortestPath, intensityImage, true, verbose, roi);
 		if (hasNoSkeletons(analyzeSkeleton_)) {

@@ -33,6 +33,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -73,6 +74,9 @@ public class ConnectivityWrapper extends ContextCommand {
 	@Parameter
 	private UnitService unitService;
 
+	@Parameter
+    private StatusService statusService;
+
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCharacteristicOp;
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCorrectionOp;
 
@@ -83,19 +87,23 @@ public class ConnectivityWrapper extends ContextCommand {
 
 	@Override
 	public void run() {
+		statusService.showStatus("Connectivity: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		final String name = inputImage.getName();
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(Collectors.toList());
-		if (!subspaces.isEmpty()) {
-			determineResultUnit();
-			matchOps(subspaces.get(0).interval);
-		}
+
+		determineResultUnit();
+		matchOps(subspaces.get(0).interval);
+
 		subspaces.forEach(subspace -> {
 			final String label = name + " " + subspace.toString();
 			subspaceConnectivity(label, subspace.interval);
 		});
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
 	}
 
 	// region -- Helper methods --
@@ -118,19 +126,21 @@ public class ConnectivityWrapper extends ContextCommand {
 	private void subspaceConnectivity(final String label,
 		final RandomAccessibleInterval<BitType> subspace)
 	{
+	    statusService.showStatus("Connectivity: calculating connectivity");
 		final double eulerCharacteristic = eulerCharacteristicOp.calculate(subspace)
 			.get();
+        statusService.showStatus("Connectivity: calculating euler correction");
 		final double edgeCorrection = eulerCorrectionOp.calculate(subspace).get();
 		final double correctedEuler = eulerCharacteristic - edgeCorrection;
 		final double connectivity = 1 - correctedEuler;
 		final double connectivityDensity = calculateConnectivityDensity(subspace,
 			connectivity);
 
-		showResults(label, eulerCharacteristic, correctedEuler, connectivity,
+		addResults(label, eulerCharacteristic, correctedEuler, connectivity,
 			connectivityDensity);
 	}
 
-	private void showResults(String label, final double eulerCharacteristic,
+	private void addResults(String label, final double eulerCharacteristic,
 		final double deltaEuler, final double connectivity,
 		final double connectivityDensity)
 	{
@@ -143,9 +153,6 @@ public class ConnectivityWrapper extends ContextCommand {
 		SharedTable.add(label, "Corrected Euler (χ + Δχ)", deltaEuler);
 		SharedTable.add(label, "Connectivity", connectivity);
 		SharedTable.add(label, "Conn. density " + unitHeader, connectivityDensity);
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
 	}
 
 	private double calculateConnectivityDensity(

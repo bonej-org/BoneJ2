@@ -35,6 +35,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
@@ -82,6 +83,9 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter
 	private UnitService unitService;
 
+    @Parameter
+    private StatusService statusService;
+
 	/** Header of the thresholded volume column in the results table */
 	private String bVHeader;
 	/** Header of the total volume column in the results table */
@@ -91,6 +95,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@Override
 	public void run() {
+        statusService.showStatus("Surface fraction: initializing");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
@@ -144,6 +149,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private double[] subSpaceFraction(
 		RandomAccessibleInterval<BitType> subSpace)
 	{
+        statusService.showStatus("Surface fraction: creating surface");
 		// Create masks for marching cubes
 		final RandomAccessibleInterval totalMask = raiCopy.calculate(subSpace);
 		// Because we want to create a surface from the whole image, set everything
@@ -153,6 +159,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		// Create surface meshes and calculate their volume. If the input interval
 		// wasn't binary, we'd have to threshold it before these calls.
 		final Mesh thresholdMesh = marchingCubes.calculate(subSpace);
+        statusService.showStatus("Surface fraction: calculating volume");
 		final double rawThresholdVolume = meshVolume.calculate(thresholdMesh).get();
 		final Mesh totalMesh = marchingCubes.calculate(totalMask);
 		final double rawTotalVolume = meshVolume.calculate(totalMesh).get();
