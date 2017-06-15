@@ -1,0 +1,39 @@
+Case 1
+=======================================================================
+"Minimum valence" cannot be set greater than "Maximum valence"
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open the sample: File > Open Samples > Bat Cochlea Volume
+2. Run plugin BoneJ > Inter-trabecular Angle
+3. Slide "Maximum valence" to 5 
+4. Slide "Minimum valence" to 6
+
+Expected result
+-----------------------------------------------------------------------
+"Minimum valance" is set to 5
+
+Completed -- -- --- Testo McTester
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+Test that plugin processes the largest skeleton
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open the sample: File > Open Samples > Tree Rings
+2. Invert LUT Image > Lookup Tables > Invert LUT
+3. Convert image to skeleton BoneJ > Skeletonise
+3. Run plugin BoneJ > Analyse skeleton 
+4. Run plugin BoneJ > Inter-trabecular Angle
+
+Expected result
+-----------------------------------------------------------------------
+Analyse skeleton shows that the image has one skeleton that's
+significantly larger than the others (> 1000 branches). Check that
+ITA processes that and shows more than 1000 angles.
+ 
+Completed -- -- --- Testo McTester
+-----------------------------------------------------------------------

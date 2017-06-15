@@ -69,6 +69,21 @@
             <timezone>+0</timezone>
         </developer>
         <developer>
+            <id>alessandrofelder</id>
+            <name>Alessandro Felder</name>
+            <email>afelder@rvc.ac.uk</email>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <roles>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+0</timezone>
+        </developer>
+        <developer>
             <id>ctrueden</id>
             <name>Curtis Rueden</name>
             <email>ctrueden@wisc.edu</email>
