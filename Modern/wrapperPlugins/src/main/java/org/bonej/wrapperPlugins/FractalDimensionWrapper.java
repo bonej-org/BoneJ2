@@ -205,7 +205,9 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		final String imageName = inputImage.getName();
 		final int results = fractalDimensions.size();
 		for (int i = 0; i < results; i++) {
-			final String label = imageName + " " + subspaces.get(i).toString();
+			final String suffix = subspaces.get(i).toString();
+			final String label = suffix.isEmpty() ? imageName : imageName + " " +
+				suffix;
 			SharedTable.add(label, "Fractal dimension", fractalDimensions.get(i));
 			SharedTable.add(label, "R²", rSquared.get(i));
 		}

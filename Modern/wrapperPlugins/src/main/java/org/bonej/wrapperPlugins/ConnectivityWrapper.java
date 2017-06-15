@@ -96,9 +96,9 @@ public class ConnectivityWrapper extends ContextCommand {
 
 		determineResultUnit();
 		matchOps(subspaces.get(0).interval);
-
 		subspaces.forEach(subspace -> {
-			final String label = name + " " + subspace.toString();
+			final String suffix = subspace.toString();
+			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			subspaceConnectivity(label, subspace.interval);
 		});
 		if (SharedTable.hasData()) {

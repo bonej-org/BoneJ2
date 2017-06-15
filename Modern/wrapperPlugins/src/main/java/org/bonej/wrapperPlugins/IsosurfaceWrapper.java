@@ -183,7 +183,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		for (Subspace<BitType> subspace : subspaces) {
 			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
 			final double area = mesh.getSurfaceArea();
-			final String label = name + " " + subspace.toString();
+			final String suffix = subspace.toString();
+			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			addResult(label, area);
 			meshes.put(subspace.toString(), mesh);
 		}

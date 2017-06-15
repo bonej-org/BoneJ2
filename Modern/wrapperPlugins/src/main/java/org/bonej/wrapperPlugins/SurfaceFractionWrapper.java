@@ -105,7 +105,8 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final String name = inputImage.getName();
 		subspaces.forEach(subspace -> {
 			final double[] results = subSpaceFraction(subspace.interval);
-			final String label = name + " " + subspace.toString();
+			final String suffix = subspace.toString();
+			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			addResults(label, results);
 		});
 		if (SharedTable.hasData()) {

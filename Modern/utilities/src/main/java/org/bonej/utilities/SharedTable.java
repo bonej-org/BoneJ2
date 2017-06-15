@@ -168,7 +168,8 @@ public class SharedTable {
 		while (alphabeticalIndex < rows && labelColumn.get(alphabeticalIndex)
 			.equals(label))
 		{
-			if (EMPTY_CELL.equals(table.get(columnIndex).get(alphabeticalIndex))) {
+			final String cell = table.get(columnIndex).get(alphabeticalIndex);
+			if (cell == null || EMPTY_CELL.equals(cell)) {
 				table.set(columnIndex, alphabeticalIndex, value);
 				return;
 			}
