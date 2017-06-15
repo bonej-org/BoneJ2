@@ -152,7 +152,7 @@
             <artifactId>ij1-patcher</artifactId>
         </dependency>
         <dependency>
-            <!-- Needed for UI. Do not remove until issues with SciJava Swing UI are solved -->
+            <!-- Needed legacy things like ImagePlus UI. Do not remove. -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
             <scope>runtime</scope>
@@ -180,6 +180,10 @@
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>scijava-ui-swing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>vecmath</artifactId>
         </dependency>
 
         <!-- Other dependencies -->
