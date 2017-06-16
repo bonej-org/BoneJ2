@@ -94,7 +94,7 @@ public class IntertrabecularAngleWrapperTest {
 		line.getStack().getProcessor(1).set(3, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(IntertrabecularAngleWrapper.class, false, "inputImage", line,
+		final CommandModule module = IMAGE_J.command().run(IntertrabecularAngleWrapper.class, true, "inputImage", line,
 				"minimumTrabecularLength", 0, "printCentroids", true).get();
 
 		final DefaultResultsTable centroids = (DefaultResultsTable) module.getOutput("centroidTable");

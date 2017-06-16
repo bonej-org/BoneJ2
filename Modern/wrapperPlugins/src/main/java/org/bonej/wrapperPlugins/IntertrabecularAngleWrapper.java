@@ -74,7 +74,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  * @see sc.fiji.analyzeSkeleton.AnalyzeSkeleton_
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular Angle", initializer = "commandInit")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular Angle")
 public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	public static final String NO_RESULTS_MSG = "There were no results - try changing valence range or minimum trabecular length";
@@ -94,7 +94,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@Parameter(label = "Maximum valence", min = "3", max = "50", stepSize = "1", description = "Maximum number of outgoing branches needed for a trabecular node to be included in analysis", style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_max_valence", callback = "enforceValidRange")
 	private int maximumValence = 3;
 
-	@Parameter(label = "Minimum trabecular length (px)", min = "0", stepSize = "1", description = "Minimum length for a trabecula to be kept from being fused into a node", style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength")
+	@Parameter(label = "Minimum trabecular length (px)", min = "0", stepSize = "1", description = "Minimum length for a trabecula to be kept from being fused into a node", style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength", persist = false, initializer = "initRealLength")
 	private int minimumTrabecularLength = 0;
 
 	@Parameter(label = "Calibrated minimum length", visibility = ItemVisibility.MESSAGE, persist = false)
@@ -336,13 +336,6 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		}
 
 		warnAnisotropy();
-	}
-
-	@SuppressWarnings("unused")
-	private void commandInit() {
-		final String s = prefService.get(getClass(), "minimumTrabecularLength");
-		minimumTrabecularLength = s == null ? 0 : Integer.valueOf(s);
-		initRealLength();
 	}
 
 	@SuppressWarnings("unused")
