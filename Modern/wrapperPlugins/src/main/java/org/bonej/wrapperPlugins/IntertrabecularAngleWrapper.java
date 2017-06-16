@@ -150,6 +150,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private CleanShortEdges.PercentagesOfCulledEdges percentages;
 	private List<Double> coefficients;
 	private double calibratedMinimumLength;
+	private boolean anisotropyWarned = false;
 
 	@Override
 	public void run() {
@@ -335,7 +336,10 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 
-		warnAnisotropy();
+		if (!anisotropyWarned) {
+			warnAnisotropy();
+			anisotropyWarned = true;
+		}
 	}
 
 	@SuppressWarnings("unused")
