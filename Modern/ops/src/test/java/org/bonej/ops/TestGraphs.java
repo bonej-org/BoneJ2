@@ -361,4 +361,45 @@ public class TestGraphs {
 
 		return GraphUtil.createGraph(edges, vertices);
 	}
+
+	/**
+	 * Structure of the stick figure graph example
+	 * 
+	 * <pre>
+	 * 0     1
+	 *  \   /
+	 *   \ /
+	 * 6--2--7
+	 *    |
+	 *    |
+	 *    |
+	 *    |
+	 *    3
+	 *   / \
+	 *  /   \
+	 * 4     5
+	 * </pre>
+	 */
+	public static Graph createStickFigureGraph() {
+		final List<Vertex> vertices = Stream.generate(Vertex::new).limit(8).collect(Collectors.toList());
+
+		vertices.get(0).addPoint(new Point(-2, 4, 0));
+		vertices.get(1).addPoint(new Point(2, 4, 0));
+		vertices.get(2).addPoint(new Point(0, 3, 0));
+		vertices.get(3).addPoint(new Point(0, -3, 0));
+		vertices.get(4).addPoint(new Point(-2, -4, 0));
+		vertices.get(5).addPoint(new Point(-2, -4, 0));
+		vertices.get(5).addPoint(new Point(2, 3, 0));
+		vertices.get(5).addPoint(new Point(2, 3, 0));
+
+		final List<Edge> edges = Arrays.asList(new Edge(vertices.get(0), vertices.get(2), null, Math.sqrt(5.0)),
+				new Edge(vertices.get(1), vertices.get(2), null, Math.sqrt(5.0)),
+				new Edge(vertices.get(2), vertices.get(3), null, 6.0),
+				new Edge(vertices.get(3), vertices.get(4), null, Math.sqrt(5.0)),
+				new Edge(vertices.get(3), vertices.get(5), null, Math.sqrt(5.0)),
+				new Edge(vertices.get(6), vertices.get(2), null, 2.0),
+				new Edge(vertices.get(7), vertices.get(2), null, 2.0));
+
+		return GraphUtil.createGraph(edges, vertices);
+	}
 }

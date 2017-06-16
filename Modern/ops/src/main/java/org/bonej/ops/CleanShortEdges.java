@@ -158,7 +158,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	 *           kept
 	 * @param graph
 	 *            A {@link Graph} that's assumed undirected
-     * @return Number of parallel edges removed
+	 * @return Number of parallel edges removed
 	 */
 	public static int removeParallelEdges(final Graph graph) {
 		final ArrayList<Vertex> vertices = graph.getVertices();
@@ -200,7 +200,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		return loops.size();
 	}
 
-    /**
+	/**
 	 * Prunes clusters and changes the affected edges. Preserves topology not
 	 * directly connected to the clusters.
 	 * <p>
@@ -325,7 +325,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		return clusterPoints.map(GraphUtil::toVector3d).collect(Collectors.toList());
 	}
 
-    private static int pruneDeadEnds(final Graph graph, final Double tolerance) {
+	private static int pruneDeadEnds(final Graph graph, final Double tolerance) {
 		final List<Edge> deadEnds = graph.getEdges().stream().filter(e -> isDeadEndEdge(e) && isShortEdge(e, tolerance))
 				.collect(toList());
 		final List<Vertex> terminals = deadEnds.stream().flatMap(e -> Stream.of(e.getV1(), e.getV2()))
@@ -411,7 +411,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		return edgeCounts.keySet().stream().filter(e -> edgeCounts.get(e) == 1).collect(toSet());
 	}
 
-    public static final class PercentagesOfCulledEdges {
+	public static final class PercentagesOfCulledEdges {
 		private double percentageDeadEnds = Double.NaN;
 		private double percentageParallelEdges = Double.NaN;
 		private double percentageLoopEdges = Double.NaN;

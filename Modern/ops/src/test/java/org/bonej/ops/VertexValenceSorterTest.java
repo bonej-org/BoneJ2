@@ -88,6 +88,20 @@ public class VertexValenceSorterTest {
 
 	}
 
+	@Test
+	public void testMissingValenceExitsCorrectly() {
+		final Graph stickFigureGraph = TestGraphs.createStickFigureGraph();
+
+		final Pair<Integer, Integer> range = new ValuePair<>(3, 5);
+
+		final Map<Integer, List<Vertex>> map = valenceSorterOp.calculate(stickFigureGraph, range);
+		final Set<Integer> keySet = map.keySet();
+		
+		assertEquals(2,keySet.size());
+		assertTrue(keySet.contains(3));
+		assertTrue(keySet.contains(5));
+	}
+
 	/** Test that conforms fails when the valence range has null arguments */
 	@Test(expected = IllegalArgumentException.class)
 	public void testNullRange() throws Exception {
