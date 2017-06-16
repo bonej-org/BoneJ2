@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bonej.utilities.GraphUtil;
+
 import sc.fiji.analyzeSkeleton.Edge;
 import sc.fiji.analyzeSkeleton.Graph;
 import sc.fiji.analyzeSkeleton.Point;
@@ -14,7 +15,7 @@ import sc.fiji.analyzeSkeleton.Vertex;
 
 public class TestGraphs {
 
-    /**
+	/**
 	 * Structure of sail graph example
 	 * 
 	 * <pre>
@@ -82,8 +83,8 @@ public class TestGraphs {
 	 *             4
 	 *           _/|
 	 *     3--2_/  |
-	 *     |\_|	   |
-	 *    _0--1	   |
+	 *     |\_|    |
+	 *    _0--1    |
 	 *  _/         |	
 	 * /           |
 	 *5------------6
@@ -358,6 +359,65 @@ public class TestGraphs {
 				new Edge(vertices.get(1), vertices.get(3), null, Math.sqrt(3.0)),
 				new Edge(vertices.get(2), vertices.get(3), null, Math.sqrt(3.0)),
 				new Edge(vertices.get(3), vertices.get(4), null, 3 * Math.sqrt(2.0)));
+
+		return GraphUtil.createGraph(edges, vertices);
+	}
+
+	/**
+	 * Structure of the four straight line segments graph example
+	 * 
+	 * <pre>
+	 * 0---1-2-3---4
+	 * </pre>
+	 */
+
+	public static Graph createFourStraightLineSegmentsGraph() {
+
+		final List<Vertex> vertices = Stream.generate(Vertex::new).limit(5).collect(Collectors.toList());
+		vertices.get(0).addPoint(new Point(-16, 0, 0));
+		vertices.get(1).addPoint(new Point(-4, 0, 0));
+		vertices.get(2).addPoint(new Point(0, 0, 0));
+		vertices.get(3).addPoint(new Point(4, 0, 0));
+		vertices.get(4).addPoint(new Point(16, 0, 0));
+
+		final List<Edge> edges = Arrays.asList(new Edge(vertices.get(0), vertices.get(1), null, 12.0),
+				new Edge(vertices.get(1), vertices.get(2), null, 4.0),
+				new Edge(vertices.get(2), vertices.get(3), null, 4.0),
+				new Edge(vertices.get(3), vertices.get(4), null, 12.0));
+
+		return GraphUtil.createGraph(edges, vertices);
+	}
+
+	/**
+	 * Structure of the three straight line segments graph example
+	 * 
+	 * <pre>
+	 * 0
+	 * |
+	 * |
+	 * |
+	 * 1
+	 * |
+	 * |
+	 * 2
+	 * |
+	 * |
+	 * |
+	 * 3
+	 * </pre>
+	 */
+
+	public static Graph createThreeStraightLineSegmentsGraph() {
+
+		final List<Vertex> vertices = Stream.generate(Vertex::new).limit(4).collect(Collectors.toList());
+		vertices.get(0).addPoint(new Point(0, -16, 0));
+		vertices.get(1).addPoint(new Point(0, -4, 0));
+		vertices.get(2).addPoint(new Point(0, 4, 0));
+		vertices.get(3).addPoint(new Point(0, 16, 0));
+
+		final List<Edge> edges = Arrays.asList(new Edge(vertices.get(0), vertices.get(1), null, 12.0),
+				new Edge(vertices.get(1), vertices.get(2), null, 8.0),
+				new Edge(vertices.get(2), vertices.get(3), null, 12.0));
 
 		return GraphUtil.createGraph(edges, vertices);
 	}

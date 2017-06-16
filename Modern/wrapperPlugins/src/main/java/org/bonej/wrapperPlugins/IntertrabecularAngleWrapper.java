@@ -97,11 +97,14 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@Parameter(label = "Minimum trabecular length (px)", min = "0", stepSize = "1", description = "Minimum length for a trabecula to be kept from being fused into a node", style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength")
 	private int minimumTrabecularLength = 0;
 
-    @Parameter(label = "Calibrated minimum length", visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(label = "Calibrated minimum length", visibility = ItemVisibility.MESSAGE, persist = false)
 	private String realLength = "";
 
-	@Parameter(label = "Iterate pruning", description = "Iterate pruning as long as short edges remain, or stop after a single pass", required = false, persistKey = "ITA_iterate")
+	@Parameter(label = "Iterate pruning", description = "If true, iterate pruning as long as short edges remain, or stop after a single pass", required = false, persistKey = "ITA_iterate")
 	private boolean iteratePruning = false;
+
+	@Parameter(label = "Use clusters", description = "If true, considers connected components together as a cluster, otherwise only looks at single short edges (order-dependent!)", required = false, persistKey = "ITA_useClusters")
+	private boolean useClusters = true;
 
 	@Parameter(label = "Print centroids", description = "Print the centroids of vertices at either end of each edge", required = false, persistKey = "ITA_print_centroids")
 	private boolean printCentroids = false;
@@ -146,9 +149,9 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private ValuePair<Integer, Integer> range;
 	private CleanShortEdges.PercentagesOfCulledEdges percentages;
 	private List<Double> coefficients;
-    private double calibratedMinimumLength;
+	private double calibratedMinimumLength;
 
-    @Override
+	@Override
 	public void run() {
 		statusService.showStatus("Intertrabecular angles: Initialising...");
 		matchOps();
@@ -174,7 +177,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		printCulledEdgePercentages();
 	}
 
-    private void printEdgeCentroids(final List<Edge> edges) {
+	private void printEdgeCentroids(final List<Edge> edges) {
 		if (!printCentroids || edges == null || edges.isEmpty()) {
 			return;
 		}
@@ -182,10 +185,10 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		final List<DoubleColumn> columns = Arrays.asList(new DoubleColumn("V1x"), new DoubleColumn("V1y"),
 				new DoubleColumn("V1z"), new DoubleColumn("V2x"), new DoubleColumn("V2y"), new DoubleColumn("V2z"));
 
-		final List<Vector3d> v1Centroids = edges.stream().map(e -> e.getV1().getPoints())
-				.map(GraphUtil::toVector3d).map(centroidOp::calculate).collect(toList());
-		final List<Vector3d> v2Centroids = edges.stream().map(e -> e.getV2().getPoints())
-				.map(GraphUtil::toVector3d).map(centroidOp::calculate).collect(toList());
+		final List<Vector3d> v1Centroids = edges.stream().map(e -> e.getV1().getPoints()).map(GraphUtil::toVector3d)
+				.map(centroidOp::calculate).collect(toList());
+		final List<Vector3d> v2Centroids = edges.stream().map(e -> e.getV2().getPoints()).map(GraphUtil::toVector3d)
+				.map(centroidOp::calculate).collect(toList());
 		for (int i = 0; i < v1Centroids.size(); i++) {
 			final Vector3d v1centroid = v1Centroids.get(i);
 			columns.get(0).add(v1centroid.x);
@@ -254,7 +257,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private void matchOps() {
 		centroidOp = Functions.unary(opService, CentroidLinAlg3d.class, Vector3d.class, List.class);
 		cleanShortEdgesOp = Functions.binary(opService, CleanShortEdges.class, Graph.class, Graph.class, Double.class,
-				coefficients, iteratePruning);
+				coefficients, iteratePruning, useClusters);
 		range = new ValuePair<>(minimumValence, maximumValence);
 		valenceSorterOp = (BinaryFunctionOp) Functions.binary(opService, VertexValenceSorter.class, Map.class,
 				Graph.class, range);
@@ -346,17 +349,17 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private void initRealLength() {
 		if (inputImage == null || inputImage.getCalibration() == null) {
 			coefficients = Arrays.asList(1.0, 1.0, 1.0);
-            realLength = String.join(" ", String.format("%.2g", (double)minimumTrabecularLength));
+			realLength = String.join(" ", String.format("%.2g", (double) minimumTrabecularLength));
 		} else {
 			final Calibration calibration = inputImage.getCalibration();
 			coefficients = Arrays.asList(calibration.pixelWidth, calibration.pixelHeight, calibration.pixelDepth);
-            calculateRealLength();
+			calculateRealLength();
 		}
 	}
-    
+
 	@SuppressWarnings("unused")
 	private void calculateRealLength() {
-        calibratedMinimumLength = minimumTrabecularLength * coefficients.get(0);
+		calibratedMinimumLength = minimumTrabecularLength * coefficients.get(0);
 		final String unit = inputImage.getCalibration().getUnit();
 		realLength = String.join(" ", String.format("%.2g", calibratedMinimumLength), unit);
 	}

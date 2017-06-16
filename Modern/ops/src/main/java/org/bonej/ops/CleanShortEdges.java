@@ -44,6 +44,9 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	@Parameter(persist = false, required = false)
 	private boolean iterativePruning = false;
 
+	@Parameter(persist = false, required = false)
+	private boolean useClusters = true;
+
 	private UnaryFunctionOp<List, Vector3d> centroidOp;
 
 	private PercentagesOfCulledEdges percentages;
@@ -84,7 +87,13 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 			final int startSize = graph.getVertices().size();
 			deadEnds = deadEnds + pruneDeadEnds(graph, tolerance);
 			final int edges = graph.getEdges().size();
-			final Graph cleanGraph = cleaningStep(graph, tolerance);
+			Graph cleanGraph = new Graph();
+			if (useClusters) {
+				cleanGraph = cleaningStep(graph, tolerance);
+			} else {
+				cleanGraph = cleaningStepUsingEdges(graph, tolerance);
+			}
+
 			removeParallelEdges(cleanGraph);
 			clusterEdges = clusterEdges + (edges - cleanGraph.getEdges().size());
 			final int cleanSize = cleanGraph.getVertices().size();
@@ -238,6 +247,54 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		copyLonelyVertices(graph, cleanGraph);
 		removeDanglingEdges(cleanGraph);
 		return cleanGraph;
+	}
+
+	private Graph cleaningStepUsingEdges(final Graph graph, final Double tolerance) {
+		Graph currentGraph = cloneGraph(graph);
+		final List<Edge> shortInnerEdges = currentGraph.getEdges().stream()
+				.filter(e -> isShortEdge(e, tolerance) && !isDeadEndEdge(e)).collect(toList());
+
+		for (int i = 0; i < shortInnerEdges.size(); i++) {
+			final Edge currentShortEdge = shortInnerEdges.get(i);
+			final List<Set<Vertex>> clusters = new ArrayList<>();
+			final Set<Vertex> currentCluster = new HashSet<>();
+			currentCluster.add(currentShortEdge.getV1());
+			currentCluster.add(currentShortEdge.getV2());
+			clusters.add(currentCluster);
+
+			final Map<Set<Vertex>, Vertex> clusterCentres = clusters.stream()
+					.collect(Collectors.toMap(Function.identity(), this::getClusterCentre));
+
+			final Map<Edge, Edge> replacementMap = new HashMap<>();
+			clusterCentres.forEach((cluster, centre) -> mapReplacementEdges(replacementMap, cluster, centre));
+			final Collection<Edge> clusterConnectingEdges = replacementMap.values();
+			clusterConnectingEdges.forEach(this::euclideanDistance);
+
+			final List<Edge> nonClusterEdges = currentGraph.getEdges().stream()
+					.filter(e -> !replacementMap.containsKey(e) && !isClusterEdge(e, clusters)).collect(toList());
+
+			final Graph cleanGraph = new Graph();
+			final Set<Edge> cleanEdges = new HashSet<>();
+			cleanEdges.addAll(nonClusterEdges);
+			cleanEdges.addAll(clusterConnectingEdges);
+			cleanGraph.getEdges().addAll(cleanEdges);
+			clusterCentres.values().forEach(cleanGraph::addVertex);
+			endpointStream(nonClusterEdges).forEach(cleanGraph::addVertex);
+			endpointStream(clusterConnectingEdges).forEach(cleanGraph::addVertex);
+
+			copyLonelyVertices(currentGraph, cleanGraph);
+			removeDanglingEdges(cleanGraph);
+
+			shortInnerEdges.forEach(e -> {
+				if (replacementMap.containsKey(e)) {
+					final int index = shortInnerEdges.indexOf(e);
+					shortInnerEdges.set(index, replacementMap.get(e));
+				}
+			});
+			currentGraph = cleanGraph;
+		}
+		final Graph cleanOverallGraph = currentGraph;
+		return cleanOverallGraph;
 	}
 
 	private static Stream<Vertex> endpointStream(final Collection<Edge> edges) {

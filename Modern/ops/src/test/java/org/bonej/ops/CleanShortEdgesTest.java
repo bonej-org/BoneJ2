@@ -150,7 +150,7 @@ public class CleanShortEdgesTest {
 		});
 	}
 
-    @Test
+	@Test
 	public void testNoClusterReturnsEmptyList() {
 		final List<Vertex> vertices = Stream.generate(Vertex::new).limit(2).collect(Collectors.toList());
 		vertices.get(0).addPoint(new Point(0, 0, 0));
@@ -163,7 +163,7 @@ public class CleanShortEdgesTest {
 		assertTrue(clusters.isEmpty());
 	}
 
-    @Test
+	@Test
 	public void testLonelyVertexReturnsLonelyVertex() {
 		final Vertex vertex = new Vertex();
 		final Point randomNonZero = new Point(7, 1, 3);
@@ -202,6 +202,32 @@ public class CleanShortEdgesTest {
 	}
 
 	@Test
+	public void testRecursiveIndividualEdgePruning() {
+		final Graph segmentGraph = TestGraphs.createFourStraightLineSegmentsGraph();
+		final List<Double> dummyIsotropicCalibration = Arrays.asList(1.0, 1.0, 1.0);
+		final Graph cleanSegmentGraph = (Graph) imageJ.op().run(CleanShortEdges.class, segmentGraph, 4.01,
+				dummyIsotropicCalibration, false, false);
+
+		assertEquals(3, cleanSegmentGraph.getVertices().size());
+		assertEquals(2, cleanSegmentGraph.getEdges().size());
+		assertTrue(cleanSegmentGraph.getEdges().stream().anyMatch(e -> e.getLength() == 17.0));
+		assertTrue(cleanSegmentGraph.getEdges().stream().anyMatch(e -> e.getLength() == 15.0));
+	}
+
+	@Test
+	public void testOneTimeIndividualEdgePruning() {
+		final Graph segmentGraph = TestGraphs.createThreeStraightLineSegmentsGraph();
+		final List<Double> dummyIsotropicCalibration = Arrays.asList(1.0, 1.0, 1.0);
+		final Graph cleanSegmentGraph = (Graph) imageJ.op().run(CleanShortEdges.class, segmentGraph, 8.01,
+				dummyIsotropicCalibration, false, false);
+
+		assertEquals(3, cleanSegmentGraph.getVertices().size());
+		assertEquals(2, cleanSegmentGraph.getEdges().size());
+		assertTrue(cleanSegmentGraph.getEdges().stream().anyMatch(e -> e.getLength() == 16.0));
+		assertTrue(cleanSegmentGraph.getEdges().stream().anyMatch(e -> e.getLength() == 16.0));
+	}
+
+	@Test
 	public void testFindClusterInKite() {
 		final Graph kiteGraph = TestGraphs.createKiteGraph();
 		final ArrayList<Vertex> vertices = kiteGraph.getVertices();
@@ -223,18 +249,18 @@ public class CleanShortEdgesTest {
 	}
 
 	@Test
-    public void testClusterCentresHaveOnePoint() {
-        final Graph graph = TestGraphs.createDumbbellGraph();
-        final List<Set<Vertex>> clusters = findClusters(graph, 2.01);
-        final CleanShortEdges cleanShortEdges = new CleanShortEdges();
-        cleanShortEdges.setEnvironment(imageJ.op());
-        cleanShortEdges.initialize();
+	public void testClusterCentresHaveOnePoint() {
+		final Graph graph = TestGraphs.createDumbbellGraph();
+		final List<Set<Vertex>> clusters = findClusters(graph, 2.01);
+		final CleanShortEdges cleanShortEdges = new CleanShortEdges();
+		cleanShortEdges.setEnvironment(imageJ.op());
+		cleanShortEdges.initialize();
 
-        final List<Vertex> centres =
-                clusters.stream().map(cleanShortEdges::getClusterCentre).collect(Collectors.toList());
+		final List<Vertex> centres = clusters.stream().map(cleanShortEdges::getClusterCentre)
+				.collect(Collectors.toList());
 
-        assertTrue(centres.stream().allMatch(c -> c.getPoints().size() == 1));
-    }
+		assertTrue(centres.stream().allMatch(c -> c.getPoints().size() == 1));
+	}
 
 	@Test
 	public void testFindClustersInDumbbell() {

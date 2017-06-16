@@ -94,9 +94,8 @@ public class IntertrabecularAngleWrapperTest {
 		line.getStack().getProcessor(1).set(3, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
-			IntertrabecularAngleWrapper.class, false, "inputImage", line,
-			"minimumTrabecularLength", 0, "printCentroids", true).get();
+		final CommandModule module = IMAGE_J.command().run(IntertrabecularAngleWrapper.class, false, "inputImage", line,
+				"minimumTrabecularLength", 0, "printCentroids", true).get();
 
 		final DefaultResultsTable centroids = (DefaultResultsTable) module.getOutput("centroidTable");
 		// VERIFY
@@ -231,8 +230,7 @@ public class IntertrabecularAngleWrapperTest {
 		pixels.getStack().getProcessor(1).set(3, 3, (byte) 0xFF);
 
 		// EXECUTE
-		IMAGE_J.command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
-			pixels).get();
+		IMAGE_J.command().run(IntertrabecularAngleWrapper.class, true, "inputImage", pixels).get();
 
 		// VERIFY
 		verify(mockUI, after(100)).dialogPrompt(startsWith("Image has multiple skeletons"), anyString(),
