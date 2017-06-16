@@ -13,7 +13,7 @@ Expected result
 -----------------------------------------------------------------------
 "Minimum valance" is set to 5
 
-Completed -- -- --- Testo McTester
+Completed 16 June 2017 Alessandro Felder
 -----------------------------------------------------------------------
 
 
@@ -24,16 +24,48 @@ Test that plugin processes the largest skeleton
 Steps
 -----------------------------------------------------------------------
 1. Open the sample: File > Open Samples > Tree Rings
-2. Invert LUT Image > Lookup Tables > Invert LUT
+2. Run Process > Binary > Make Binary
 3. Convert image to skeleton BoneJ > Skeletonise
-3. Run plugin BoneJ > Analyse skeleton 
-4. Run plugin BoneJ > Inter-trabecular Angle
+4. Run plugin BoneJ > Analyse skeleton 
+	
+	pruning = None
+	all tick boxes = false
 
+5. Run plugin BoneJ > Inter-trabecular Angle
+
+	valence range 3-50
+	minimum length = 0
+	all tick boxes = false
+	
 Expected result
 -----------------------------------------------------------------------
 Analyse skeleton shows that the image has one skeleton that's
 significantly larger than the others (> 1000 branches). Check that
-ITA processes that and shows more than 1000 angles.
+ITA processes that and shows more than 1000 rows.
  
-Completed -- -- --- Testo McTester
+Completed 16 June 2017 Alessandro Felder
+-----------------------------------------------------------------------
+
+Case 3
+=======================================================================
+Test that plugin returns expected culling percentages
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open the sample: File > Open Samples > Tree Rings
+2. Run Process > Binary > Make Binary
+3. Run plugin BoneJ > Inter-trabecular Angle with
+ 	
+	valence range 3-50
+	minimum length = 5
+	iteratePruning = false
+	percentages = true
+	
+Expected result
+-----------------------------------------------------------------------
+Edge culling percentages correspond to 
+loops			repeated		short inner		short dead ends
+0.7867132867132868	4.108391608391608	25.961538461538463	5.244755244755245
+
+Completed 16 June 2017 Alessandro Felder
 -----------------------------------------------------------------------
