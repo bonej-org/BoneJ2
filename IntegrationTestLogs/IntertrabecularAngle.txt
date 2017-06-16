@@ -46,6 +46,7 @@ ITA processes that and shows more than 1000 rows.
 Completed 16 June 2017 Alessandro Felder
 -----------------------------------------------------------------------
 
+
 Case 3
 =======================================================================
 Test that plugin returns expected culling percentages
@@ -55,11 +56,10 @@ Steps
 1. Open the sample: File > Open Samples > Tree Rings
 2. Run Process > Binary > Make Binary
 3. Run plugin BoneJ > Inter-trabecular Angle with
- 	
-	valence range 3-50
-	minimum length = 5
-	iteratePruning = false
-	percentages = true
+	- valence range 3-50
+	- minimum length = 5
+	- iterate pruning = false
+	- print % culled edges = true
 	
 Expected result
 -----------------------------------------------------------------------
@@ -68,4 +68,33 @@ loops			repeated		short inner		short dead ends
 0.7867132867132868	4.108391608391608	25.961538461538463	5.244755244755245
 
 Completed 16 June 2017 Alessandro Felder
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+Test calibration affects the number of pruned edges
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open the sample: File > Open Samples > Bat Cochlea Volume
+2. Run plugin BoneJ > Inter-trabecular Angle
+   - valence range 3-50
+   - minimum length = 3
+   - iterate pruning = false
+   - print % culled edges = true
+3. Close all windows except for the Bat Cochlea image
+4. Set scale on Bat Cochlea: Analyze > Set scale...
+   - Distance in pixels: 1
+   - Known distance: 3.0
+   - Pixel aspect ratio: 3
+   - Unit: mm
+4. Run plugin BoneJ > Inter-trabecular Angle with same settings
+5. Click OK on the anisotropy warning
+
+Expected result
+-----------------------------------------------------------------------
+Number of culled edges (short edges) changes after the second run
+
+Completed 16 June 2017 Richard Domander
 -----------------------------------------------------------------------
