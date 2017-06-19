@@ -115,6 +115,7 @@ public class ThicknessWrapper extends ContextCommand {
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
+	private boolean anisotropyWarned = false;
 
 	@Override
 	public void run() {
@@ -255,17 +256,20 @@ public class ThicknessWrapper extends ContextCommand {
 			return;
 		}
 
-		final double anisotropy = ImagePlusUtil.anisotropy(inputImage);
-		if (anisotropy > 1E-3) {
-			final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy *
-				100.0);
-			final Result result = uiService.showDialog("The image is anisotropic" +
-				anisotropyPercent + ". Continue anyway?", MessageType.WARNING_MESSAGE,
-				OptionType.OK_CANCEL_OPTION);
-			if (result == Result.CANCEL_OPTION) {
-				cancel(null);
-			}
-		}
+		if (!anisotropyWarned) {
+            final double anisotropy = ImagePlusUtil.anisotropy(inputImage);
+            if (anisotropy > 1E-3) {
+                final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy *
+                        100.0);
+                final Result result = uiService.showDialog("The image is anisotropic" +
+                                anisotropyPercent + ". Continue anyway?", MessageType.WARNING_MESSAGE,
+                        OptionType.OK_CANCEL_OPTION);
+                if (result == Result.CANCEL_OPTION) {
+                    cancel(null);
+                }
+            }
+            anisotropyWarned = true;
+        }
 	}
 
 	@SuppressWarnings("unused")
