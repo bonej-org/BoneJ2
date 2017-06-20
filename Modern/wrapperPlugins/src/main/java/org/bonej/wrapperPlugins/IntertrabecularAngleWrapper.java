@@ -97,6 +97,9 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@Parameter(label = "Minimum trabecular length (px)", min = "0", stepSize = "1", description = "Minimum length for a trabecula to be kept from being fused into a node", style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength", persist = false, initializer = "initRealLength")
 	private int minimumTrabecularLength = 0;
 
+	@Parameter(label = "Margin (px)", min = "0", stepSize = "1", description = "Nodes with centroids closer than this value to any image boundary will not be included in results", style = NumberWidget.SPINNER_STYLE)
+	private int marginCutOff = 0;
+
 	@Parameter(label = "Calibrated minimum length", visibility = ItemVisibility.MESSAGE, persist = false)
 	private String realLength = "";
 
@@ -203,7 +206,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		centroidTable = new DefaultResultsTable();
 		centroidTable.addAll(columns);
 	}
-	
+
 	private void printCulledEdgePercentages() {
 		if (!printCulledEdgePercentages) {
 			return;
@@ -271,9 +274,9 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		final int width = inputImage.getWidth();
 		final int height = inputImage.getHeight();
 		final int depth = inputImage.getNSlices();
-		return centroid.x < minimumTrabecularLength || centroid.x > width - minimumTrabecularLength
-				|| centroid.y < minimumTrabecularLength || centroid.y > height - minimumTrabecularLength
-				|| depth != 1 && (centroid.z < minimumTrabecularLength || centroid.z > depth - minimumTrabecularLength);
+		return centroid.x < marginCutOff || centroid.x > width - marginCutOff
+				|| centroid.y < marginCutOff || centroid.y > height - marginCutOff
+				|| depth != 1 && (centroid.z < marginCutOff || centroid.z > depth - marginCutOff);
 	}
 
 	private Graph[] analyzeSkeleton(final ImagePlus skeleton) {

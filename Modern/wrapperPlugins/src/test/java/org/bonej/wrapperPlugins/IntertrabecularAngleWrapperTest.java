@@ -20,7 +20,6 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.net.URL;
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -280,7 +279,7 @@ public class IntertrabecularAngleWrapperTest {
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
-			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
+			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2, "marginCutOff", 0,
 			"useClusters", true, "iteratePruning", false).get();
 
 		// VERIFY
@@ -301,5 +300,31 @@ public class IntertrabecularAngleWrapperTest {
 		assertEquals(6, fiveColumn.stream().filter(nonEmpty).distinct().count());
 		assertEquals(1, fiveColumn.stream().filter(nonEmpty).map(Double::valueOf).filter(d -> d == Math.PI).count());
 		assertEquals(2, fiveColumn.stream().filter(nonEmpty).map(Double::valueOf).filter(d -> d == Math.PI / 2).count());
+	}
+
+	@Test
+	public void testMargins() throws Exception {
+		// SETUP
+		final Predicate<String> nonEmpty = s -> !s.equals(SharedTable.EMPTY_CELL);
+		final URL resource = getClass().getClassLoader().getResource("test-skelly.zip");
+		assert resource != null;
+		final ImagePlus skelly = IJ.openImage(resource.getFile());
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+				IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+				"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2, "marginCutOff", 10,
+				"useClusters", true, "iteratePruning", false).get();
+
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+				(Table<DefaultColumn<String>, String>) module.getOutput("anglesTable");
+		assertNotNull(table);
+		assertEquals(2, table.size());
+		final DefaultColumn<String> fiveColumn = table.get(1);
+		assertEquals("5", fiveColumn.getHeader());
+		assertEquals(10, fiveColumn.size());
+		assertEquals(10, fiveColumn.stream().filter(nonEmpty).count());
 	}
 }
