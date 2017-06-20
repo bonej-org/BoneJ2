@@ -203,8 +203,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		centroidTable = new DefaultResultsTable();
 		centroidTable.addAll(columns);
 	}
-
-	// TODO test (& test that culled with calibrated length)
+	
 	private void printCulledEdgePercentages() {
 		if (!printCulledEdgePercentages) {
 			return;
