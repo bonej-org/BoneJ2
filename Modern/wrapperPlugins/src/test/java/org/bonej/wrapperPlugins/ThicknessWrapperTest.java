@@ -9,13 +9,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -29,9 +24,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UserInterface;
-import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -119,29 +112,7 @@ public class ThicknessWrapperTest {
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() throws Exception {
-		// SETUP
-		final UserInterface mockUI = mock(UserInterface.class);
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockPrompt.prompt()).thenReturn(DialogPrompt.Result.CANCEL_OPTION);
-		when(mockUI.dialogPrompt(startsWith("The image is anisotropic"),
-			anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
-		final Calibration calibration = new Calibration();
-		calibration.pixelWidth = 300;
-		calibration.pixelHeight = 1;
-		calibration.pixelDepth = 1;
-		final ImagePlus imagePlus = NewImage.createByteImage("", 5, 5, 5, 1);
-		imagePlus.setCalibration(calibration);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus).get();
-
-		// VERIFY
-		verify(mockUI, after(100).times(1)).dialogPrompt(startsWith(
-			"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
-		assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
-			module.isCanceled());
+		CommonWrapperTests.testAnisotropyWarning(IMAGE_J, ThicknessWrapper.class);
 	}
 
 	@Test

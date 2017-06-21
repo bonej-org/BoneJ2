@@ -212,8 +212,6 @@ public class CommonWrapperTests {
 		return mockUI;
 	}
 
-	// TODO Refactor ThicknessWrapper.testAnisotropicImageShowsWarningDialog to
-	// use this
 	/**
 	 * Tests that running the given command with an anisotropic {@link ImagePlus}
 	 * shows a warning dialog that can be used to cancel the plugin
