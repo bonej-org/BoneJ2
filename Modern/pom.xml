@@ -12,7 +12,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej2</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>POM BoneJ2</name>
@@ -146,9 +146,9 @@
     </ciManagement>
 
     <properties>
-        <wrapperPlugins.version>0.2.0</wrapperPlugins.version>
-        <utilities.version>0.2.0</utilities.version>
-        <ops.version>0.2.0</ops.version>
+        <wrapperPlugins.version>0.3.0-SNAPSHOT</wrapperPlugins.version>
+        <utilities.version>0.3.0-SNAPSHOT</utilities.version>
+        <ops.version>0.3.0-SNAPSHOT</ops.version>
         <license.licenseName>BSD-2-Clause</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
     </properties>
