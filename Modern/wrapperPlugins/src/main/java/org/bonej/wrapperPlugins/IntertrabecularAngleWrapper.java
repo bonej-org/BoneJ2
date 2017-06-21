@@ -368,7 +368,6 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		}
 	}
 
-	// TODO make util
 	private void warnAnisotropy() {
 		final double anisotropy = ImagePlusUtil.anisotropy(inputImage);
 		if (anisotropy > 1E-3) {

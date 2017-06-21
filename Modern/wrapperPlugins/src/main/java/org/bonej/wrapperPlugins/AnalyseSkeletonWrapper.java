@@ -315,7 +315,6 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	{
 		final int iterations = skeletoniser.getThinningIterations();
 		if (iterations > 1) {
-			// TODO Show a status message about skeletonisation
 			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
 			uiService.show(skeleton);
 		}
