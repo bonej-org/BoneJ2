@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -29,10 +30,13 @@ import net.imglib2.type.numeric.real.DoubleType;
 
 import org.scijava.command.Command;
 import org.scijava.command.CommandModule;
+import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 import ij.ImagePlus;
+import ij.gui.NewImage;
+import ij.measure.Calibration;
 import ij.process.ImageStatistics;
 
 /**
@@ -206,5 +210,39 @@ public class CommonWrapperTests {
 			mockPrompt);
 		imageJ.ui().setDefaultUI(mockUI);
 		return mockUI;
+	}
+
+	// TODO Refactor ThicknessWrapper.testAnisotropicImageShowsWarningDialog to
+	// use this
+	/**
+	 * Tests that running the given command with an anisotropic {@link ImagePlus}
+	 * shows a warning dialog that can be used to cancel the plugin
+	 */
+	public static <C extends Command> void testAnisotropyWarning(
+			final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	{
+		// SETUP
+		final UserInterface mockUI = mock(UserInterface.class);
+		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+		when(mockPrompt.prompt()).thenReturn(DialogPrompt.Result.CANCEL_OPTION);
+		when(mockUI.dialogPrompt(startsWith("The image is anisotropic"),
+				anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
+		imageJ.ui().setDefaultUI(mockUI);
+		final Calibration calibration = new Calibration();
+		calibration.pixelWidth = 300;
+		calibration.pixelHeight = 1;
+		calibration.pixelDepth = 1;
+		final ImagePlus imagePlus = NewImage.createByteImage("", 5, 5, 5, 1);
+		imagePlus.setCalibration(calibration);
+
+		// EXECUTE
+		final CommandModule module = imageJ.command().run(commandClass, true,
+				"inputImage", imagePlus).get();
+
+		// VERIFY
+		verify(mockUI, after(100).times(1)).dialogPrompt(startsWith(
+				"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
+		assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
+				module.isCanceled());
 	}
 }
