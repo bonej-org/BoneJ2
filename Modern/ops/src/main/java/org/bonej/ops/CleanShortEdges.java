@@ -87,13 +87,12 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 			final int startSize = graph.getVertices().size();
 			deadEnds = deadEnds + pruneDeadEnds(graph, tolerance);
 			final int edges = graph.getEdges().size();
-			Graph cleanGraph = new Graph();
+			final Graph cleanGraph;
 			if (useClusters) {
 				cleanGraph = cleaningStep(graph, tolerance);
 			} else {
 				cleanGraph = cleaningStepUsingEdges(graph, tolerance);
 			}
-
 			removeParallelEdges(cleanGraph);
 			clusterEdges = clusterEdges + (edges - cleanGraph.getEdges().size());
 			final int cleanSize = cleanGraph.getVertices().size();
@@ -293,8 +292,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 			});
 			currentGraph = cleanGraph;
 		}
-		final Graph cleanOverallGraph = currentGraph;
-		return cleanOverallGraph;
+		return currentGraph;
 	}
 
 	private static Stream<Vertex> endpointStream(final Collection<Edge> edges) {

@@ -31,6 +31,7 @@ import net.imglib2.util.ValuePair;
 
 import org.bonej.ops.CentroidLinAlg3d;
 import org.bonej.ops.CleanShortEdges;
+import org.bonej.ops.CleanShortEdges.PercentagesOfCulledEdges;
 import org.bonej.ops.NPoint;
 import org.bonej.ops.NPoint.VectorsAngle;
 import org.bonej.ops.NPointAngles;
@@ -150,7 +151,6 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private BinaryFunctionOp<Graph, Pair<Integer, Integer>, Map<Integer, List<Vertex>>> valenceSorterOp;
 	private BinaryFunctionOp<List<Vertex>, Integer, List<NPoint>> nPointAnglesOp;
 	private ValuePair<Integer, Integer> range;
-	private CleanShortEdges.PercentagesOfCulledEdges percentages;
 	private List<Double> coefficients;
 	private double calibratedMinimumLength;
 	private boolean anisotropyWarned = false;
@@ -211,11 +211,11 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		if (!printCulledEdgePercentages) {
 			return;
 		}
-		percentages = ((CleanShortEdges) cleanShortEdgesOp).getPercentages();
+		final PercentagesOfCulledEdges percentages =
+			((CleanShortEdges) cleanShortEdgesOp).getPercentages();
 		if (percentages.getTotalEdges() == 0) {
 			return;
 		}
-
 		final DoubleColumn loopCol = new DoubleColumn("Loop edges (%)");
 		final DoubleColumn repeatedCol = new DoubleColumn("Repeated edges (%)");
 		final DoubleColumn shortCol = new DoubleColumn("Short edges (%)");
@@ -304,8 +304,6 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {
-		// TODO remove table reset when merged with current master
-		SharedTable.reset();
 		final String label = inputImage.getTitle();
 		anglesMap.forEach((valence, angles) -> {
 			final String heading = valence.toString();
