@@ -101,8 +101,8 @@
         <url>https://github.com/bonej-org/BoneJ2/issues</url>
     </issueManagement>
     <ciManagement>
-        <system>Jenkins</system>
-        <url>http://jenkins.imagej.net/view/BoneJ/</url>
+        <system>Travis CI</system>
+        <url>https://travis-ci.org/bonej-org/BoneJ2</url>
     </ciManagement>
 
     <properties>
