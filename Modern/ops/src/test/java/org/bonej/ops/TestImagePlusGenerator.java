@@ -13,6 +13,7 @@ import ij.process.ImageProcessor;
  *
  * @author Richard Domander
  */
+@Deprecated
 public class TestImagePlusGenerator {
 
 	private TestImagePlusGenerator() {}

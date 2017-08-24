@@ -1,9 +1,17 @@
 
 package org.bonej.testImages;
 
-import static org.bonej.testImages.IJ1ImgPlus.*;
+import static org.bonej.testImages.IJ1ImgPlus.CHANNEL_DIM;
+import static org.bonej.testImages.IJ1ImgPlus.TIME_DIM;
+import static org.bonej.testImages.IJ1ImgPlus.X_DIM;
+import static org.bonej.testImages.IJ1ImgPlus.Y_DIM;
+import static org.bonej.testImages.IJ1ImgPlus.Z_DIM;
+import static org.bonej.testImages.IJ1ImgPlus.createIJ1ImgPlus;
 
 import java.util.stream.LongStream;
+
+import org.scijava.plugin.Parameter;
+import org.scijava.plugin.Plugin;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
@@ -11,9 +19,6 @@ import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractNullaryFunctionOp;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.logic.BitType;
-
-import org.scijava.plugin.Parameter;
-import org.scijava.plugin.Plugin;
 
 /**
  * Creates an ImgPlus<BitType> of a hollow cuboid.
@@ -107,9 +112,9 @@ public class HollowCuboid extends AbstractNullaryFunctionOp<ImgPlus<BitType>> {
 	}
 
 	public static void main(String... args) {
-		final ImageJ ij = net.imagej.Main.launch(args);
-		Object cuboid = ij.op().run(HollowCuboid.class, 100L, 100L, 10L, 3L, 5L,
-			5L);
+		final ImageJ ij = new ImageJ();
+		ij.launch(args);
+		final Object cuboid = ij.op().run(HollowCuboid.class, 100L, 100L, 10L, 3L, 5L, 5L);
 		ij.ui().show(cuboid);
 	}
 }
