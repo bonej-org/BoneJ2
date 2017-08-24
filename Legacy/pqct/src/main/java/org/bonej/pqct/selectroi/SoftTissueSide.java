@@ -27,6 +27,7 @@ import java.util.Vector;
 //image data
 import org.bonej.pqct.io.ImageAndAnalysisDetails;
 
+@Deprecated
 public class SoftTissueSide {
 	public SelectROI roi;
 	public byte[] softTissueSideSieve;

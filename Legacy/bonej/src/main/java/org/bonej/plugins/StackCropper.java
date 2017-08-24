@@ -35,6 +35,7 @@ import org.bonej.util.RoiMan;
  * @author Michael Doube
  *
  */
+@Deprecated
 public class StackCropper implements PlugIn {
 
 	@Override
