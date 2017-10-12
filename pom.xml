@@ -9,7 +9,15 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>Legacy</module>
         <module>Modern</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>legacy</id>
+            <modules>
+                <module>Legacy</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>
