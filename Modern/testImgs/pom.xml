@@ -5,7 +5,7 @@
     <parent>
         <artifactId>pom-bonej2</artifactId>
         <groupId>org.bonej</groupId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -118,8 +118,8 @@
         <url>https://github.com/bonej-org/BoneJ2/issues</url>
     </issueManagement>
     <ciManagement>
-        <system>Jenkins</system>
-        <url>http://jenkins.imagej.net/view/BoneJ/</url>
+        <system>Travis CI</system>
+        <url>https://travis-ci.org/bonej-org/BoneJ2</url>
     </ciManagement>
 
     <properties>
