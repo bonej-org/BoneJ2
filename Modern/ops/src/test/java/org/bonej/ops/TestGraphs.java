@@ -77,6 +77,48 @@ public class TestGraphs {
 	}
 
 	/**
+	 * Structure of the door knob graph example
+	 * 
+	 * <pre>
+	 *   4
+	 *   |
+	 *   |
+	 *   |
+	 * 1 |
+	 * |\2--6
+	 * |
+	 * |/3--7
+	 * 0 |
+	 *   |
+	 *   |
+	 *   |
+	 *   5
+	 * </pre>
+	 */
+	public static Graph createDoorknobGraph() {
+
+		final List<Vertex> vertices = Stream.generate(Vertex::new).limit(8).collect(Collectors.toList());
+		vertices.get(0).addPoint(new Point(0, 0, 0));
+		vertices.get(1).addPoint(new Point(0, 3, 0));
+		vertices.get(2).addPoint(new Point(1, 2, 0));
+		vertices.get(3).addPoint(new Point(1, 1, 0));
+		vertices.get(4).addPoint(new Point(1, 6, 0));
+		vertices.get(5).addPoint(new Point(1, -3, 0));
+		vertices.get(6).addPoint(new Point(3, 2, 0));
+		vertices.get(7).addPoint(new Point(3, 1, 0));
+
+		final List<Edge> edges = Arrays.asList(new Edge(vertices.get(0), vertices.get(1), null, 3.0),
+				new Edge(vertices.get(0), vertices.get(3), null, Math.sqrt(2.0)),
+				new Edge(vertices.get(1), vertices.get(2), null, Math.sqrt(2.0)),
+				new Edge(vertices.get(2), vertices.get(4), null, Math.sqrt(4.0)),
+				new Edge(vertices.get(3), vertices.get(5), null, Math.sqrt(4.0)),
+				new Edge(vertices.get(2), vertices.get(6), null, 2.0),
+				new Edge(vertices.get(3), vertices.get(7), null, 2.0));
+
+		return GraphUtil.createGraph(edges, vertices);
+	}
+
+	/**
 	 * Creates a triangle graph with square cluster
 	 * 
 	 * <pre>

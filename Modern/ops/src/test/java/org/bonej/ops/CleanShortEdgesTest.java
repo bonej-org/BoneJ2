@@ -413,6 +413,21 @@ public class CleanShortEdgesTest {
 	}
 
 	@Test
+	public void testIterativePruning() {
+		final Graph doorknob = TestGraphs.createDoorknobGraph();
+
+		final Graph cleanedOnce = (Graph) imageJ.op().run(CleanShortEdges.class, doorknob, 2.01, "iterativePruning", false);
+		final Graph cleanedTwice = (Graph) imageJ.op().run(CleanShortEdges.class, doorknob, 2.01, "iterativePruning", true);
+
+		assertEquals(4, cleanedOnce.getVertices().size());
+		assertEquals(3, cleanedOnce.getEdges().size());
+
+		assertEquals(3, cleanedTwice.getVertices().size());
+		assertEquals(2, cleanedTwice.getEdges().size());
+
+	}
+
+	@Test
 	public void testCleaningOfTriangleWithSquareCluster() {
 		final Graph squareWithDiagAndLooseEnds = TestGraphs.createTriangleWithSquareCluster();
 		final Graph cleaned = cleanShortEdgesOp.calculate(squareWithDiagAndLooseEnds, 2.01);
