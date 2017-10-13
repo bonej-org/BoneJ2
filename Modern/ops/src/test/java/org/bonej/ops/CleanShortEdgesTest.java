@@ -402,17 +402,6 @@ public class CleanShortEdgesTest {
 	}
 
 	@Test
-	public void testSeveralCleaningSteps() {
-		final Graph opposingWedges = TestGraphs.createOpposingWedgesGraph();
-
-		final Graph cleaned = (Graph) imageJ.op().run(CleanShortEdges.class, opposingWedges, 2.5, "iterativePruning",
-				true);
-
-		assertEquals(1, cleaned.getVertices().size());
-		assertTrue(cleaned.getEdges().isEmpty());
-	}
-
-	@Test
 	public void testIterativePruning() {
 		final Graph doorknob = TestGraphs.createDoorknobGraph();
 

@@ -44,39 +44,6 @@ public class TestGraphs {
 	}
 
 	/**
-	 * Structure of the opposing wedges graph example
-	 * <p>
-	 * Vertices 1 and 3 have same point coordinate, but are not connected
-	 * </p>
-	 * 
-	 * <pre>
-	 * 2-------5
-	 * |\_   _/|
-	 * 0--1 3--4
-	 * </pre>
-	 */
-	public static Graph createOpposingWedgesGraph() {
-
-		final List<Vertex> vertices = Stream.generate(Vertex::new).limit(6).collect(Collectors.toList());
-		vertices.get(0).addPoint(new Point(0, 0, 0));
-		vertices.get(1).addPoint(new Point(2, 0, 0));
-		vertices.get(2).addPoint(new Point(0, 1, 0));
-		vertices.get(3).addPoint(new Point(2, 0, 0));
-		vertices.get(4).addPoint(new Point(4, 0, 0));
-		vertices.get(5).addPoint(new Point(4, 1, 0));
-
-		final List<Edge> edges = Arrays.asList(new Edge(vertices.get(0), vertices.get(1), null, 2.0),
-				new Edge(vertices.get(0), vertices.get(2), null, 1.0),
-				new Edge(vertices.get(1), vertices.get(2), null, Math.sqrt(5.0)),
-				new Edge(vertices.get(2), vertices.get(5), null, 4),
-				new Edge(vertices.get(5), vertices.get(3), null, Math.sqrt(5.0)),
-				new Edge(vertices.get(5), vertices.get(4), null, 1.0),
-				new Edge(vertices.get(3), vertices.get(4), null, 2.0));
-
-		return GraphUtil.createGraph(edges, vertices);
-	}
-
-	/**
 	 * Structure of the door knob graph example
 	 * 
 	 * <pre>
