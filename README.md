@@ -5,4 +5,4 @@ The `Legacy` module contains the "mavenized" versions of the plugins in BoneJ1. 
 
 See [the wiki](https://github.com/bonej-org/BoneJ2/wiki) for more information about the project.
 
-[![Build Status](http://jenkins.imagej.net/view/BoneJ/job/BoneJ2/badge/icon)](http://jenkins.imagej.net/view/BoneJ/job/BoneJ2/)
+[![Build Status](https://travis-ci.org/bonej-org/BoneJ2.svg?branch=master)](https://travis-ci.org/bonej-org/BoneJ2)
