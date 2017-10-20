@@ -19,20 +19,23 @@ public class Streamers {
 	private Streamers() {}
 
 	/**
-	 * Generates a Stream from the axes in the given space
+	 * Generates a {@link Stream} from the axes in the given space.
 	 *
-	 * @return A Stream<S> of the axes. An empty stream if space == null or space
-	 *         has no axes
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of the axes.
+	 * @return a Stream of the axes. An empty stream if space == null or space has
+	 *         no axes.
 	 */
-	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> Stream<S>
-		axisStream(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> Stream<A>
+		axisStream(final S space)
 	{
 		if (space == null) {
 			return Stream.empty();
 		}
 
 		final int dimensions = space.numDimensions();
-		final Stream.Builder<S> builder = Stream.builder();
+		final Stream.Builder<A> builder = Stream.builder();
 		for (int d = 0; d < dimensions; d++) {
 			builder.add(space.axis(d));
 		}
@@ -41,11 +44,12 @@ public class Streamers {
 	}
 
 	/**
-	 * Generates a Stream from the realDouble values in the Iterable of T extends
-	 * RealType<T>
+	 * Generates a Stream from the realDouble values in the Iterable.
 	 *
-	 * @return A DoubleStream of the realDouble values, or empty stream if
-	 *         iterable == null
+	 * @param iterable an iterable collection.
+	 * @param <T> type of the elements in the iterable.
+	 * @return a DoubleStream of the realDouble values, or empty stream if
+	 *         iterable == null.
 	 */
 	public static <T extends RealType<T>> DoubleStream realDoubleStream(
 		Iterable<T> iterable)
@@ -59,12 +63,15 @@ public class Streamers {
 	}
 
 	/**
-	 * Generates a Stream from the spatial axes in the given space
-	 *
-	 * @return A Stream<S> of spatial axes. An empty stream if space == null
+	 * Generates a {@link Stream} from the spatial axes in the given space.
+	 * 
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of the axes.
+	 * @return a Stream of spatial axes. An empty stream if space == null.
 	 */
-	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> Stream<S>
-		spatialAxisStream(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> Stream<A>
+		spatialAxisStream(final S space)
 	{
 		return axisStream(space).filter(a -> a.type().isSpatial());
 	}

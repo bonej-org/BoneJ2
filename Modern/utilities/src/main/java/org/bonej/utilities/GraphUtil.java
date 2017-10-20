@@ -55,15 +55,30 @@ public class GraphUtil {
 	}
 
 	/**
-	 * Returns true if the edge connects a vertex to itself, that is its endpoints
-	 * are the same
+	 * Checks if the edge forms a loop.
+	 *
+	 * @param edge an edge in a graph.
+	 * @return true if both endpoints of the edge is the same vertex.
 	 */
 	public static boolean isLoop(final Edge edge) {
 		return !(edge.getV1() == null && edge.getV2() == null) && edge
 			.getV1() == edge.getV2();
 	}
 
-	/** @see #createGraph(Collection, Collection) */
+	/**
+	 * Creates a {@link Graph} with a single edge.
+	 * <p>
+	 * NB Adds the edge as a branch of its end points. The connections between the
+	 * vertices are defined in the {@link Edge} and {@link Vertex} classes.
+	 * </p>
+	 * 
+	 * @see Edge#getV1()
+	 * @see Edge#getV2()
+	 * @see Vertex#getBranches()
+	 * @param edge the edge of the graph.
+	 * @param vertices vertices of the graph.
+	 * @return A graph where the vertices are connected by the edges.
+	 */
 	public static Graph createGraph(final Edge edge,
 		final Collection<Vertex> vertices)
 	{
@@ -71,10 +86,19 @@ public class GraphUtil {
 	}
 
 	/**
-     * Creates a {@link Graph}, and adds the given edges and vertices to it
-     *
-     * @implNote Adds edges as branches of their end points
-     */
+	 * Creates a {@link Graph}, and adds the given edges and vertices to it.
+	 * <p>
+	 * NB Adds edges as branches of their end points. The connections between the
+	 * vertices are defined in the {@link Edge} and {@link Vertex} classes.
+	 * </p>
+	 * 
+	 * @see Edge#getV1()
+	 * @see Edge#getV2()
+	 * @see Vertex#getBranches()
+	 * @param edges edges of the graph.
+	 * @param vertices vertices of the graph.
+	 * @return A graph that contains the vertices and the edge.
+	 */
 	public static Graph createGraph(final Collection<Edge> edges,
 		final Collection<Vertex> vertices)
 	{

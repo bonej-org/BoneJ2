@@ -38,25 +38,31 @@ import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace.HyperAxisM
  * certain subspace. Each {@link Subspace} also contains metadata, which locates
  * the subspace in the hyperspace.
  * </p>
- *
+ * <p>
+ * The code works for now, but a refactor is in place if/when {@link ImgPlus}
+ * API changes or is replaced by another metadata rich class.
+ * </p>
+ * <p>
+ * If you want to split a hyperspace into {X, Y, T} subspaces, and the
+ * hyperspace has more than one time dimension, *all* of the time dimensions
+ * will be lumped into {X, Y, T<sub>1</sub>, T<sub>2</sub>, .. T<sub>n</sub>}
+ * subspaces. That is, instead of {X, Y, T<sub>1</sub>}, {X, Y, T<sub>2</sub>},
+ * .. {X, Y, T<sub>n</sub>}.
+ * </p>
+ * 
  * @author Richard Domander
- * @implNote This code is hacky spaghetti, and it's design is all over the
- *           place. It works for now, but a refactor is in place if/when
- *           {@link ImgPlus} API changes or it's replaced by another metadata
- *           rich class
- * @implNote If you want to split a hyperspace into {X, Y, T} subspaces, and the
- *           hyperspace has more than one time dimension, *all* of the time
- *           dimensions will be lumped into {X, Y, T1, T2, .. TN} subspaces.
- *           That is, instead of {X, Y, T1}, {X, Y, T2}, .. {X, Y, TN}.
  */
 public class HyperstackUtils {
 
 	private HyperstackUtils() {}
 
 	/**
-	 * Splits the hyperstack into {X, Y, Z} subspaces
+	 * Splits the hyperstack into {X, Y, Z} subspaces.
 	 * 
 	 * @see #splitSubspaces(ImgPlus, List)
+     * @param hyperStack an N-dimensional image.
+     * @param <T> type of the elements in the image.
+     * @return a stream of all the subspaces found.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> Stream<Subspace<T>>
 		split3DSubspaces(final ImgPlus<T> hyperStack)
@@ -65,7 +71,7 @@ public class HyperstackUtils {
 	}
 
 	/**
-	 * Splits the hyperstack into subspaces defined by the given axes
+	 * Splits the hyperstack into subspaces defined by the given axes.
 	 * <p>
 	 * If all the given axis types are not found in the hyperstack, gives
 	 * subspaces of the found types. If none of the types are found, returns an
@@ -77,9 +83,10 @@ public class HyperstackUtils {
 	 * its {@link CalibratedAxis} have {@link AxisType}.
 	 * </p>
 	 *
-	 * @param hyperStack An n-dimensional image
-	 * @param subspaceTypes The types of the axis in the desired subspace
-	 * @return A stream of all the subspaces found
+	 * @param hyperStack an N-dimensional image.
+	 * @param <T> type of the elements in the image.
+	 * @param subspaceTypes the types of the axis in the desired subspace.
+	 * @return a stream of all the subspaces found.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> Stream<Subspace<T>>
 		splitSubspaces(final ImgPlus<T> hyperStack, List<AxisType> subspaceTypes)
@@ -101,15 +108,15 @@ public class HyperstackUtils {
 	// region -- Helper methods --
 
 	/**
-	 * Maps the type subscripts of axes in the hyperstack
+	 * Maps the type subscripts of axes in the hyperstack.
 	 * <p>
 	 * If the hyperstack has multiple axes of the same type, e.g. more than one
 	 * time-axis, the subscripts are used to tell them apart. The default
 	 * subscript for each axis type is one.
 	 * </p>
 	 * 
-	 * @param hyperStack the space to be split
-	 * @param splitIndices Indices of the axes
+	 * @param hyperStack the space to be split.
+	 * @param splitIndices indices of the axes.
 	 * @return An array of subscripts where [i] is the subscript for axis at
 	 *         splitIndices[i]
 	 */
@@ -129,7 +136,7 @@ public class HyperstackUtils {
 
 	/**
 	 * Recursively calls {@link #applySplit(ImgPlus, List)} to split the
-	 * hyperstack into subspaces
+	 * hyperstack into subspaces.
 	 *
 	 * @param hyperstack an n-dimensional image
 	 * @param splitIndices the indices of the axes in the hyperstack used for
@@ -320,6 +327,8 @@ public class HyperstackUtils {
 		 * For example, one 3D {X, Y, Z} subspace of a 5D {X, Y, C, Z, T}
 		 * hyperspace, would have position {0, 1} - 1st channel, 2nd frame.
 		 * </p>
+		 * 
+		 * @return a stream of the positions in order.
 		 */
 		public LongStream getPosition() {
 			return subspaceMeta.stream().mapToLong(HyperAxisMeta::getPosition);
@@ -331,6 +340,7 @@ public class HyperstackUtils {
 		 * For example a 3D {X, Y, Z} subspace of a 5D {X, Y, C, Z, T} hyperspace,
 		 * would have types {Axes.CHANNEL, Axes.TIME}.
 		 * </p>
+		 * @return a stream of the types in order.
 		 */
 		public Stream<AxisType> getAxisTypes() {
 			return subspaceMeta.stream().map(HyperAxisMeta::getType);
@@ -345,6 +355,7 @@ public class HyperstackUtils {
 		 * For example a 3D {X, Y} subspace of a 6D {X, Y, C, Z, T, T} hyperspace,
 		 * would have subscripts {1, 1, 1, 2}.
 		 * </p>
+         * @return a stream of the positions in order.
 		 */
 		public LongStream getSubScripts() {
 			return subspaceMeta.stream().mapToLong(HyperAxisMeta::getSubscript);

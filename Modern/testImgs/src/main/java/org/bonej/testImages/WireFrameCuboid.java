@@ -14,7 +14,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 /**
- * Creates an ImgPlus<BitType> of a wire-frame cuboid.
+ * Creates an ImgPlus&lt;BitType&gt; of a wire-frame cuboid.
  *
  * @author Richard Domander
  */

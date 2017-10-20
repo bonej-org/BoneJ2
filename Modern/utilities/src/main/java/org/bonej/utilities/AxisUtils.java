@@ -15,6 +15,7 @@ import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
+
 import org.scijava.util.StringUtils;
 
 /**
@@ -26,13 +27,16 @@ public class AxisUtils {
 
 	/**
 	 * Indices of the first three spatial dimensions in the Axes array of the
-	 * given space
+	 * given space.
 	 *
-	 * @return An Optional containing the indices, or empty if failed to find
-	 *         three spatial dimensions
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return an Optional containing the indices, or empty if failed to find
+	 *         three spatial dimensions.
 	 */
-	public static <T extends AnnotatedSpace<A>, A extends TypedAxis>
-		Optional<int[]> getXYZIndices(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis>
+		Optional<int[]> getXYZIndices(final S space)
 	{
 		if (space == null) {
 			return Optional.empty();
@@ -46,11 +50,15 @@ public class AxisUtils {
 	}
 
 	/**
-	 * Gets the index of the first time dimension in the space, or -1 if there are
-	 * no such dimensions
+	 * Gets the index of the time axis in the dimensions of the space.
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return index of the time axis, or -1 if there's none.
 	 */
-	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int
-		getTimeIndex(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> int
+		getTimeIndex(final S space)
 	{
 		if (space == null) {
 			return -1;
@@ -62,11 +70,15 @@ public class AxisUtils {
 	}
 
 	/**
-	 * Gets the index of the first channel dimension in the space, or -1 if there
-	 * are no such dimensions
+	 * Gets the index of the channel axis in the dimensions of the space.
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return index of the channel axis, or -1 if there's none.
 	 */
-	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> int
-		getChannelIndex(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> int
+		getChannelIndex(final S space)
 	{
 		if (space == null) {
 			return -1;
@@ -78,31 +90,35 @@ public class AxisUtils {
 	}
 
 	/**
-	 * Counts the number of spatial dimensions in the given space
+	 * Counts the number of spatial dimensions in the given space.
 	 *
-	 * @return Number of spatial dimensions in the space, or 0 if space == null
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return number of spatial dimensions in the space.
 	 */
-	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> long
-		countSpatialDimensions(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> long
+		countSpatialDimensions(final S space)
 	{
 		return spatialAxisStream(space).count();
 	}
 
 	/**
-	 * Determines the maximum difference between the spatial axes calibrations
+	 * Determines the coefficient to convert units from the spatial axis with the
+	 * smallest calibration to the largest.
 	 *
-	 * @param scale Scale of the first spatial axis
-	 * @param unit Unit of the first spatial axis
-	 * @param space A space containing calibrated axes
-	 * @param unitService An unit service to convert axis calibrations
-	 * @return Greatest conversion coefficient between two axes found. Coefficient
-	 *         == 0.0 if space == null, or there are no spatial axes
-	 * @implNote Coefficient is always from the smaller unit to the larger, i.e.
-	 *           >= 1.0
+	 * @param scale scale of the first spatial axis.
+	 * @param unit unit of the first spatial axis.
+	 * @param space an n-dimensional space with calibrated axes.
+	 * @param <S> type of the space.
+	 * @param unitService an {@link UnitService} to convert axis calibrations.
+	 * @return greatest conversion coefficient between two axes found. Coefficient
+	 *         == 0.0 if space == null, or there are no spatial axes.
 	 */
-	public static <T extends AnnotatedSpace<CalibratedAxis>> double
+	//TODO scale and unit are redundant parameters
+	public static <S extends AnnotatedSpace<CalibratedAxis>> double
 		getMaxConversion(final double scale, final String unit,
-			final T space, final UnitService unitService)
+						 final S space, final UnitService unitService)
 	{
 		final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
 			toList());
@@ -116,7 +132,7 @@ public class AxisUtils {
 			final double fromConversion = axisScale * unitService.value(1.0, axisUnit,
 				unit) / scale;
 
-			double conversion = toConversion >= fromConversion ? toConversion
+			final double conversion = toConversion >= fromConversion ? toConversion
 				: fromConversion;
 
 			if (conversion >= maxConversion) {
@@ -128,14 +144,22 @@ public class AxisUtils {
 	}
 
 	/**
-	 * Returns the unit of the spatial calibration of the given space
+	 * Returns the common unit of the spatial calibrations of the given space.
+	 * <p>
+	 * The common unit is the unit of the first spatial axis if it can be
+	 * converted to the units of the other axes.
+	 * </p>
 	 *
-	 * @return The Optional is empty if the space == null, or there are no spatial
-	 *         axes, or there's no conversion between the units. The Optional
-	 *         contains an empty string if all the axes are uncalibrated
+	 * @param space an n-dimensional space with calibrated axes.
+	 * @param <S> type of the space.
+	 * @param unitService an {@link UnitService} to convert axis calibrations.
+	 * @return an optional with the unit of spatial calibration. It's empty if the
+	 *         space == null, there are no spatial axes, or there's no conversion
+	 *         between their units. The Optional contains an empty string none of
+	 *         the calibrations have a unit.
 	 */
-	public static <T extends AnnotatedSpace<CalibratedAxis>> Optional<String>
-		 getSpatialUnit(final T space, final UnitService unitService)
+	public static <S extends AnnotatedSpace<CalibratedAxis>> Optional<String>
+		 getSpatialUnit(final S space, final UnitService unitService)
 	{
 		if (space == null || !hasSpatialDimensions(space))
 		{
@@ -149,37 +173,58 @@ public class AxisUtils {
 	}
 
 	/**
-	 * Checks if the given space has a channel dimension
+	 * Checks if the given space has a channel dimension.
 	 *
-	 * @return true if for any axis CalibratedAxis.type() == Axes.CHANNEL, false
-	 *         if not, or space == null
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return true if there are any channel type axes.
 	 */
-	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasChannelDimensions(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
+		hasChannelDimensions(final S space)
 	{
 		return axisStream(space).anyMatch(a -> a.type() == Axes.CHANNEL);
 	}
 
-	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasSpatialDimensions(final T space)
+	/**
+	 * Checks if the given space has any spatial dimensions.
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return true if there are any spatial type axes.
+	 */
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
+		hasSpatialDimensions(final S space)
 	{
 		return axisStream(space).anyMatch(a -> a.type().isSpatial());
 	}
 
 	/**
-	 * Checks if the given space has a time dimension
+	 * Checks if the given space has a time dimension.
 	 *
-	 * @return true if for any axis CalibratedAxis.type() == Axes.TIME, false if
-	 *         not, or space == null
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return true if there are any time type axes.
 	 */
-	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasTimeDimensions(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
+		hasTimeDimensions(final S space)
 	{
 		return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
 	}
 
-	public static <T extends AnnotatedSpace<S>, S extends TypedAxis> boolean
-		hasNonLinearSpatialAxes(final T space)
+	/**
+	 * Checks if the given space has any non-linear spatial dimensions.
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return true if there are any power, logarithmic or other non-linear axes.
+	 */
+	//TODO is this really necessary?
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
+		hasNonLinearSpatialAxes(final S space)
 	{
 		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
 			.type().isSpatial());

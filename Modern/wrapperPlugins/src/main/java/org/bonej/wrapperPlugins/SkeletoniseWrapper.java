@@ -33,14 +33,14 @@ public class SkeletoniseWrapper extends ContextCommand {
 	}
 
 	/**
-	 * @implNote Use ImagePlus because of conversion issues of composite images
+	 * Use ImagePlus because of conversion issues of composite images.
 	 */
 	@Parameter(validater = "validateImage")
 	private ImagePlus inputImage;
 
 	/**
-	 * @implNote Use ImagePlus because a (converted) Dataset has display issues
-	 *           with a composite image
+	 * Use ImagePlus because a (converted) Dataset has display issues with a
+	 * composite image.
 	 */
 	@Parameter(type = ItemIO.OUTPUT)
 	private ImagePlus skeleton;

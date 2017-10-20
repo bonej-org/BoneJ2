@@ -16,7 +16,6 @@ import ij.process.ImageProcessor;
  *
  * @author Michael Doube
  * @author Richard Domander
- * @implNote Can't be used with hyperstacks
  */
 public class RoiManagerUtil {
 
@@ -30,9 +29,10 @@ public class RoiManagerUtil {
 	/**
 	 * Returns a list of ROIs that are active in the given slice.
 	 *
-	 * @param roiMan The collection of all the current ROIs
-	 * @param sliceNumber Number of the slice to be searched
-	 * @return In addition to the active ROIs, returns all the ROIs without a
+	 * @param roiMan the collection of all the current ROIs.
+	 * @param stack the 3D stack where the ROIs are.
+	 * @param sliceNumber number of the slice to be searched.
+	 * @return in addition to the active ROIs, returns all the ROIs without a
 	 *         slice number (assumed to be active in all slices). Returns an empty
 	 *         list if sliceNumber is out of bounds, or roiMan == null, or stack
 	 *         == null
@@ -64,15 +64,17 @@ public class RoiManagerUtil {
 
 	/**
 	 * Find the x, y and z limits of the stack defined by the ROIs in the ROI
-	 * Manager
-	 *
-	 * @param roiMan The collection of all the current ROIs
-	 * @param stack The stack inside which the ROIs must fit (max limits).
-	 * @return Returns an Optional with the limits in an int array {x0, x1, y0,
+	 * Manager.
+	 * <p>
+	 * NB If for any ROI isActiveOnAllSlices == true, then z0 == 1 and z1 ==
+	 * stack.getSize().
+	 * </p>
+	 * 
+	 * @param roiMan the collection of all the current ROIs.
+	 * @param stack the stack inside which the ROIs must fit (max limits).
+	 * @return returns an Optional with the limits in an int array {x0, x1, y0,
 	 *         y1, z0, z1}. Returns an empty Optional if roiMan == null or stack
-	 *         == null or roiMan is empty
-	 * @implNote If for any ROI isActiveOnAllSlices == true, then z0 == 1 and z1
-	 *           == stack.getSize().
+	 *         == null or roiMan is empty.
 	 */
 	public static Optional<int[]> getLimits(final RoiManager roiMan,
 		final ImageStack stack)
@@ -135,12 +137,12 @@ public class RoiManagerUtil {
 	}
 
 	/**
-	 * Crops the given rectangle to the area [0, 0, width, height]
+	 * Crops the given rectangle to the area [0, 0, width, height].
 	 *
-	 * @param bounds The rectangle to be fitted
-	 * @param width Maximum width of the rectangle
-	 * @param height Maximum height of the rectangle
-	 * @return false if the height or width of the fitted rectangle is 0 (Couldn't
+	 * @param bounds the rectangle to be fitted.
+	 * @param width maximum width of the rectangle.
+	 * @param height maximum height of the rectangle.
+	 * @return false if the height or width of the fitted rectangle is 0 (couldn't
 	 *         be cropped inside the area).
 	 */
 	public static boolean getSafeRoiBounds(final Rectangle bounds,
@@ -158,7 +160,18 @@ public class RoiManagerUtil {
 		return newWidth > 0 && newHeight > 0;
 	}
 
-	/** Same as @see RoiUtil.cropToRois, but with default padding of 0. */
+	/**
+	 * Cropping the stack without any padding.
+	 *
+	 * @see #cropToRois(RoiManager, ImageStack, boolean, int, int)
+	 * @param roiMan the manager containing the ROIs.
+	 * @param sourceStack the image to be cropped.
+	 * @param fillBackground if true, fill the background of the cropped image.
+	 * @param fillColor color of the background of the cropped image.
+	 * @return an Optional with the cropped stack of the given image. The Optional
+	 *         is empty if roiMan == null, or sourceStack == null, or roiMan is
+	 *         empty.
+	 */
 	public static Optional<ImageStack> cropToRois(
 		final RoiManager roiMan, final ImageStack sourceStack,
 		final boolean fillBackground, final int fillColor)
@@ -170,15 +183,15 @@ public class RoiManagerUtil {
 	 * Crop a stack to the limits defined by the ROIs in the ROI Manager and
 	 * optionally fill the background with a single pixel value.
 	 *
-	 * @param roiMan The manager containing the ROIs
-	 * @param sourceStack The image to be cropped
-	 * @param fillBackground If true, fill the background of the cropped image
-	 * @param fillColor Color of the background of the cropped image
-	 * @param padding Number of pixels added to the each side of the resulting
-	 *          image
-	 * @return An Optional with the cropped stack of the given image. The Optional
+	 * @param roiMan the manager containing the ROIs.
+	 * @param sourceStack the image to be cropped.
+	 * @param fillBackground if true, fill the background of the cropped image.
+	 * @param fillColor color of the background of the cropped image.
+	 * @param padding number of pixels added to the each side of the resulting
+	 *          image.
+	 * @return an Optional with the cropped stack of the given image. The Optional
 	 *         is empty if roiMan == null, or sourceStack == null, or roiMan is
-	 *         empty
+	 *         empty.
 	 */
 	public static Optional<ImageStack> cropToRois(
 		final RoiManager roiMan, final ImageStack sourceStack,
@@ -236,7 +249,7 @@ public class RoiManagerUtil {
 	// region -- Helper methods --
 
 	/**
-	 * Copies pixels under all the ROIs on a slide
+	 * Copies pixels under all the ROIs on a slide.
 	 *
 	 * @param sourceProcessor The source image slide
 	 * @param targetProcessor The target slide
@@ -275,17 +288,19 @@ public class RoiManagerUtil {
 
 	/**
 	 * Copies the pixels in the given ROI from the source image to the target
-	 * image. Copies only those pixels where the color of the given mask > 0.
-	 *
+	 * image. Copies only those pixels where the color of the given mask &gt; 0.
+	 * <p>
+	 * NB Calls copyRoi with the given parameters if sourceProcessor.getMask() ==
+	 * null.
+	 * </p>
+	 * 
 	 * @param sourceProcessor Copy source
 	 * @param targetProcessor Copy target
-	 * @param minX Horizontal start of the copy area 0 <= minX < width
-	 * @param minY Vertical start of the copy area 0 <= minY < height
-	 * @param maxX Horizontal end of the copy area 0 <= maxX <= width
-	 * @param maxY Vertical end of the copy area 0 <= maxY <= height
+	 * @param minX Horizontal start of the copy area 0 &lt;= minX &lt; width
+	 * @param minY Vertical start of the copy area 0 &lt;= minY &lt; height
+	 * @param maxX Horizontal end of the copy area 0 &lt;= maxX &lt;= width
+	 * @param maxY Vertical end of the copy area 0 &lt;= maxY &lt;= height
 	 * @param padding Number pixels added to each side of the copy target
-	 * @implNote Calls copyRoi with the given parameters if
-	 *           sourceProcessor.getMask() == null
 	 */
 	private static void copyRoiWithMask(final ImageProcessor sourceProcessor,
 		final ImageProcessor targetProcessor, final int minX, final int minY,
@@ -314,10 +329,10 @@ public class RoiManagerUtil {
 	 *
 	 * @param sourceProcessor Copy source
 	 * @param targetProcessor Copy target
-	 * @param minX Horizontal start of the copy area 0 <= minX < width
-	 * @param minY Vertical start of the copy area 0 <= minY < height
-	 * @param maxX Horizontal end of the copy area 0 <= maxX <= width
-	 * @param maxY Vertical end of the copy area 0 <= maxY <= height
+	 * @param minX Horizontal start of the copy area 0 &lt;= minX &lt; width
+	 * @param minY Vertical start of the copy area 0 &lt;= minY &lt; height
+	 * @param maxX Horizontal end of the copy area 0 &lt;= maxX &lt;= width
+	 * @param maxY Vertical end of the copy area 0 &lt;= maxY &lt;= height
 	 * @param padding Number pixels added to each side of the copy target
 	 */
 	private static void copyRoi(ImageProcessor sourceProcessor,

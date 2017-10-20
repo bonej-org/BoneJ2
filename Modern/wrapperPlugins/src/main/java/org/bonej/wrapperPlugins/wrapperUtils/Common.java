@@ -1,13 +1,14 @@
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import ij.ImagePlus;
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.ComplexType;
+
+import ij.ImagePlus;
 
 /**
  * Miscellaneous utility methods
@@ -16,7 +17,16 @@ import net.imglib2.type.numeric.ComplexType;
  */
 public class Common {
 
-	/** Duplicates the image without changing the title of the copy, or cropping it to the ROI */
+	/**
+	 * Duplicates the image without changing the title of the copy, or cropping it
+	 * to the ROI.
+	 * <p>
+	 * Circumvents the default behaviour of {@link ImagePlus#duplicate()}.
+	 * </p>
+	 * 
+	 * @param image an ImageJ1 style ImagePlus.
+	 * @return an unchanged copy of the image.
+	 */
 	public static ImagePlus cleanDuplicate(final ImagePlus image) {
 		image.killRoi();
 		final ImagePlus copy = image.duplicate();
@@ -26,8 +36,17 @@ public class Common {
 	}
 
 	/**
-	 * Converts the ImagePlus to a new ImagePlus where elements are of the given
-	 * type
+	 * Converts the {@link ImgPlus} to a new ImagePlus where elements are of the
+	 * given type.
+	 * <p>
+	 * The metadata in ImgPlus is not needed, but the class is used instead of
+	 * {@link Img} for convenience.
+	 * </p>
+	 * 
+	 * @param ops an {@link OpService} to find the necessary ops for conversion.
+	 * @param imgPlus an image.
+	 * @param <C> type of the elements in the input image.
+	 * @return the image converted to bit type.
 	 */
 	public static <C extends ComplexType<C>> ImgPlus<BitType> toBitTypeImgPlus(
 		OpService ops, final ImgPlus<C> imgPlus)
@@ -41,7 +60,10 @@ public class Common {
 
 	/**
 	 * Copies image metadata such as name, axis types and calibrations from source
-	 * to target
+	 * to target.
+     *
+     * @param source source of metadata.
+     * @param target target of metadata.
 	 */
 	private static void copyMetadata(ImgPlus<?> source, ImgPlus<?> target) {
 		target.setName(source.getName());

@@ -17,20 +17,22 @@ import ij.process.LUT;
 public class ImagePlusUtil {
 
 	/**
-	 * Checks if the image is 3D
+	 * Checks if the image is 3D.
 	 *
+	 * @param image an ImageJ1 style {@link ImagePlus}.
 	 * @return true if the image has more than one slice, false if not, or image
-	 *         is null
+	 *         is null.
 	 */
 	public static boolean is3D(final ImagePlus image) {
 		return image != null && image.getNSlices() > 1;
 	}
 
 	/**
-	 * Checks if the image has only two different colours
+	 * Checks if the image has only two different colours.
 	 *
+	 * @param image an ImageJ1 style {@link ImagePlus}.
 	 * @return true if there are only two distinct pixel values present in the
-	 *         image, false if more, or the image is null
+	 *         image, false if more, or the image is null.
 	 */
 	public static boolean isBinaryColour(final ImagePlus image) {
 		return image != null && Arrays.stream(image.getStatistics().histogram)
@@ -39,10 +41,11 @@ public class ImagePlusUtil {
 
 	/**
 	 * Calculates the degree of anisotropy in the image, i.e. the maximum
-	 * difference in the ratios of the dimensions
+	 * difference in the calibrations of the dimensions.
 	 *
+	 * @param image an ImageJ1 style {@link ImagePlus}.
 	 * @return Anisotropy fraction [0.0, Double.MAX_VALUE], an isotropic image
-	 *         returns 0.0 Returns Double.NaN if image == null
+	 *         returns 0.0 Returns Double.NaN if image == null.
 	 */
 	public static double anisotropy(final ImagePlus image) {
 		if (image == null) {
@@ -69,6 +72,7 @@ public class ImagePlusUtil {
 			heightDepthAnisotropy));
 	}
 
+	@Deprecated
 	public static void revertInversion(final ImagePlus image) {
 		if (!image.isInvertedLut()) {
 			return;

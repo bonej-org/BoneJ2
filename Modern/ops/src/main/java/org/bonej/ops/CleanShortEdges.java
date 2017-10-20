@@ -158,14 +158,13 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	 * Removes parallel edges from the graph, leaving at most one connection
 	 * between each vertex pair
 	 * <p>
-	 * An edge is parallel, if there's another edge between its endpoint
-	 * vertices.
+	 * An edge is parallel, if there's another edge between its endpoint vertices.
+	 * </p>
+	 * <p>
+	 * NB non-deterministic in choosing which of the parallel edges is kept.
 	 * </p>
 	 *
-	 * @implNote Non-deterministic in choosing which of the parallel edges is
-	 *           kept
-	 * @param graph
-	 *            A {@link Graph} that's assumed undirected
+	 * @param graph A {@link Graph} that's assumed undirected
 	 * @return Number of parallel edges removed
 	 */
 	public static int removeParallelEdges(final Graph graph) {
@@ -368,7 +367,12 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		return clusters.stream().anyMatch(c -> c.contains(e.getV1()) && c.contains(e.getV2()));
 	}
 
-	/** Calculates the centroid of all the vertices in a cluster */
+	/**
+	 * Creates a centroid vertex of all the vertices in a cluster.
+	 *
+	 * @param cluster a collection of directly connected vertices.
+	 * @return A vertex at the geometric center of the cluster.
+	 */
 	public Vertex getClusterCentre(final Set<Vertex> cluster) {
 		final List<Vector3d> clusterVectors = getClusterVectors(cluster);
 		final Vector3d clusterCentroid = centroidOp.calculate(clusterVectors);
@@ -458,7 +462,10 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	}
 
 	/**
-	 * Finds the edges that connect the cluster vertices to outside the cluster
+	 * Finds the edges that connect the cluster vertices to outside the cluster.
+	 *
+	 * @param cluster a collection of directly connected vertices.
+	 * @return the edges that originate from the cluster but terminate outside it.
 	 */
 	public static Set<Edge> findEdgesWithOneEndInCluster(final Set<Vertex> cluster) {
 		final Map<Edge, Long> edgeCounts = cluster.stream().flatMap(v -> v.getBranches().stream())

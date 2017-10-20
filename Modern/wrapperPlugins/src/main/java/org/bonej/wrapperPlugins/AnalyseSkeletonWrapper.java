@@ -68,10 +68,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		LegacyInjector.preinit();
 	}
 
-	/**
-	 * @implNote Use ImagePlus because of conversion issues of composite images
-	 */
-	@Parameter(label = "Input image", validater = "validateImage",
+    @Parameter(label = "Input image", validater = "validateImage",
 		persist = false)
 	private ImagePlus inputImage;
 
@@ -106,7 +103,8 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	private boolean displaySkeletons = false;
 
 	/**
-	 * The skeleton results in a {@link Table}, null if there are no results
+	 * The results of the analysis in a {@link Table}, null if there are no
+	 * results.
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
 	private Table<DefaultColumn<String>, String> resultsTable;
@@ -120,14 +118,14 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 
 	/**
 	 * The labelled skeletons image, null if user didn't check the
-	 * {@link #displaySkeletons} option
+	 * {@link #displaySkeletons} option.
 	 */
 	@Parameter(type = ItemIO.OUTPUT)
 	private ImagePlus labelledSkeleton;
 
 	/**
 	 * The shortest paths image, null if user didn't check the
-	 * {@link #displaySkeletons} option
+	 * {@link #displaySkeletons} option.
 	 */
 	@Parameter(type = ItemIO.OUTPUT)
 	private ImagePlus shortestPaths;

@@ -14,7 +14,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 /**
- * Creates an ImgPlus<BitType> of a solid cuboid.
+ * Creates an ImgPlus&lt;BitType&gt; of a solid cuboid.
  *
  * @author Richard Domander
  */

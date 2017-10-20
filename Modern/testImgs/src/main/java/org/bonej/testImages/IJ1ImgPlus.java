@@ -40,12 +40,15 @@ public class IJ1ImgPlus {
 	 * Creates a 5-dimensional ImgPlus
 	 *
 	 * @param title Name of the image
+	 * @param width pixels in the x-dimension
+	 * @param height pixels in the y-dimension
+	 * @param depth pixels in the z-dimension
 	 * @param channels Number of colour channels
 	 * @param frames Number of frames
-	 * @param padding Padding added to width, height & depth (final width = width
+	 * @param padding Padding added to width, height &amp; depth (final width = width
 	 *          + 2 * padding)
-	 * @param scale Scale of calibration in x, y & z
-	 * @param unit Unit of calibration in x, y & z
+	 * @param scale Scale of calibration in x, y &amp; z
+	 * @param unit Unit of calibration in x, y &amp; z
 	 * @return An empty ImgPlus
 	 */
 	public static ImgPlus<BitType> createIJ1ImgPlus(String title,

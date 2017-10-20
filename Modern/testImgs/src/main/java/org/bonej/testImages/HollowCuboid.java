@@ -21,7 +21,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.type.logic.BitType;
 
 /**
- * Creates an ImgPlus<BitType> of a hollow cuboid.
+ * Creates an ImgPlus&lt;BitType&gt; of a hollow cuboid.
  *
  * @author Richard Domander
  */

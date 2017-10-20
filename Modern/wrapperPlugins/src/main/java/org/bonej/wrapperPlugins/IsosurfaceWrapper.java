@@ -288,12 +288,15 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	/**
 	 * Writes the surface mesh as a binary, little endian STL file
 	 * <p>
-	 * <p>
 	 * NB: Public and static for testing purposes
 	 * </p>
 	 *
 	 * @param path The absolute path to the save location of the STL file
 	 * @param mesh A mesh consisting of triangular facets
+	 * @throws NullPointerException if mesh is null
+	 * @throws IllegalArgumentException if path is null or empty, or mesh doesn't
+	 *           have triangular facets
+	 * @throws IOException if there's an error while writing the file
 	 */
 	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
 	public static void writeBinarySTLFile(final String path, final Mesh mesh)
@@ -332,9 +335,15 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	/**
 	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
-	 * same scaling
+	 * same scaling.
+	 * <p>
+	 * NB: Public and static for testing purposes.
+	 * </p>
 	 * 
-	 * @implNote NB: Public and static for testing purposes
+	 * @param space an N-dimensional space.
+	 * @param <T> type of the space
+	 * @return true if all spatial axes have matching calibration. Also returns
+	 *         true if none of them have a unit
 	 */
 	// TODO make into a utility method or remove if mesh area considers
 	// calibration in the future

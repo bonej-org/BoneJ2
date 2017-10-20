@@ -25,11 +25,15 @@ public class ElementUtil {
 	private ElementUtil() {}
 
 	/**
-	 * Checks whether the interval contains only two distinct values
-	 *
-	 * @implNote A hacky brute force approach
-	 * @return True if only two distinct values, false if interval is null, empty
-	 *         or has more colors
+	 * Checks whether the interval contains only two distinct values.
+	 * <p>
+	 * NB a hacky brute force approach.
+	 * </p>
+	 * 
+	 * @param interval an iterable interval.
+	 * @param <T> type of the elements in the interval.
+	 * @return true if only two distinct values, false if interval is null, empty
+	 *         or has more colors.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> boolean isColorsBinary(
 		final IterableInterval<T> interval)
@@ -53,10 +57,18 @@ public class ElementUtil {
 
 	/**
 	 * Returns the calibrated size of a single spatial element in the given space,
-	 * e.g. the volume of an element in a 3D space
-	 *
+	 * e.g. the volume of an element in a 3D space, or area in 2D.
+	 * <p>
+	 * Spatial axes do not have to have the same unit in calibration, but you must
+	 * be able to convert between them.
+	 * </p>
+	 * 
+	 * @param space an N-dimensional space.
+	 * @param <T> type of the space.
+	 * @param unitService needed to convert between units of different
+	 *          calibrations.
 	 * @return Calibrated size of a spatial element, or Double.NaN if space ==
-	 *         null, has nonlinear axes, or calibration units don't match
+	 *         null, has nonlinear axes, or calibration units don't match.
 	 */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> double
 		calibratedSpatialElementSize(final T space, final UnitService unitService)

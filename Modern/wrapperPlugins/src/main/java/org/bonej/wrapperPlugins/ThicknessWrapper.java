@@ -55,9 +55,6 @@ public class ThicknessWrapper extends ContextCommand {
 		LegacyInjector.preinit();
 	}
 
-	/**
-	 * @implNote Use ImagePlus because of conversion issues of composite images
-	 */
 	@Parameter(validater = "validateImage")
 	private ImagePlus inputImage;
 

@@ -33,10 +33,15 @@ public class ResultUtils {
 
 	/**
 	 * Returns a verbal description of the size of the elements in the given
-	 * space, e.g. "Area" for 2D images
+	 * space, e.g. "Area" for 2D images.
+	 * 
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+     * @param <A> type of the axes.
+	 * @return the noun for the size of the elements.
 	 */
-	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> String
-		getSizeDescription(T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> String
+		getSizeDescription(S space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
 
@@ -52,10 +57,16 @@ public class ResultUtils {
 
 	/**
 	 * Returns the exponent character of the elements in this space, e.g. '³' for
-	 * a spatial 3D space
+	 * a spatial 3D space.
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+     * @param <A> type of the axes.
+	 * @return the exponent character if the space has 2 - 9 spatial dimensions.
+	 *         An empty character otherwise.
 	 */
-	public static <T extends AnnotatedSpace<A>, A extends TypedAxis> char
-		getExponent(final T space)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> char
+		getExponent(final S space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
 
@@ -88,24 +99,37 @@ public class ResultUtils {
 		return '\u0000';
 	}
 
-	/** @see ResultUtils#getUnitHeader(AnnotatedSpace, UnitService, char) */
-	public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
-		final T space, final UnitService unitService)
+	/**
+	 * Returns the common unit string that describes the elements in the space.
+	 *
+	 * @see ResultUtils#getUnitHeader(AnnotatedSpace, UnitService, char)
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param unitService an {@link UnitService} to convert axis calibrations.
+	 * @return the unit string with the exponent.
+	 */
+	public static <S extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
+		final S space, final UnitService unitService)
 	{
 		return getUnitHeader(space, unitService, '\u0000');
 	}
 
 	/**
-	 * Returns the unit used in the calibration of the space that can be shown in
-	 * e.g. ResultsTable
+	 * Returns the common unit string, e.g. "mm<sup>3</sup>" that describes the
+	 * elements in the space.
 	 * <p>
-	 * Returns "(mm)" if calibration unit is "mm"
+	 * The common unit is the unit of the first spatial axis if it can be
+	 * converted to the units of the other axes.
+	 * </p>
 	 *
-	 * @param exponent An exponent to be added to the unit, e.g. '³'
-	 * @return Unit for column headers or empty if there's no unit
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param unitService an {@link UnitService} to convert axis calibrations.
+	 * @param exponent an exponent to be added to the unit, e.g. '³'.
+	 * @return the unit string with the exponent.
 	 */
-	public static <T extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
-		final T space, final UnitService unitService, final char exponent)
+	public static <S extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
+		final S space, final UnitService unitService, final char exponent)
 	{
 		final Optional<String> unit = AxisUtils.getSpatialUnit(space, unitService);
 		if (!unit.isPresent()) {
@@ -125,7 +149,11 @@ public class ResultUtils {
 
 	/**
 	 * Creates a column for a {@link net.imagej.table.GenericTable} that repeats
-	 * the given label on each row
+	 * the given label on each row.
+	 *
+	 * @param label the string displayed on each row.
+	 * @param rows number of rows created.
+	 * @return a column that repeats the label.
 	 */
 	public static GenericColumn createLabelColumn(final String label, int rows) {
 		final GenericColumn labelColumn = new GenericColumn("Label");
@@ -140,11 +168,14 @@ public class ResultUtils {
 	 * positions of the subspaces in a hyperspace
 	 * <p>
 	 * For example, if you've split a {X, Y, Z, C, T} space into {X, Y, Z}, the
-	 * method returns "Channel" and "Time" columns that show list the positions of
-	 * the subspaces in C and T.
+	 * method returns "Channel" and "Time" columns that list the positions of the
+	 * subspaces in C and T.
 	 * </p>
 	 * 
 	 * @see Subspace
+	 * @param subspaces the subspaces of a hyperspace.
+     * @param <T> type of the elements in the spaces.
+	 * @return columns that list the positions of the subspaces.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> List<LongColumn>
 		createCoordinateColumns(List<Subspace<T>> subspaces)
@@ -169,8 +200,12 @@ public class ResultUtils {
 	}
 
 	/**
-	 * If needed, converts the given index to the ImageJ(1) convention where Z,
-	 * Channel and Time axes start from 1
+	 * If needed, converts the given index to the ImageJ1 convention where Z,
+	 * Channel and Time axes start from 1.
+	 *
+	 * @param type type of the axis's dimension.
+	 * @param index the index in the axis.
+	 * @return index + 1 if type is Z, Channel or Time. Index otherwise.
 	 */
 	public static long toConventionalIndex(final AxisType type,
 		final long index)

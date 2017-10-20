@@ -26,7 +26,7 @@ import org.scijava.util.StringUtils;
  * and add the new value there. If there are no empty cells, then add a new
  * row.</li>
  * <li>Labels and columns are kept in alphabetical order</li>
- * <li>If there are multiple rows with the same labels & non-empty cells, the
+ * <li>If there are multiple rows with the same labels &amp; non-empty cells, the
  * last inserted value comes last</li>
  * </ol>
  *
@@ -38,16 +38,19 @@ public class SharedTable {
 	public static final String EMPTY_CELL = "";
 
 	/**
-	 * @implNote Using String values, so that we can mark empty cells with empty
-	 *           Strings. Numerical columns cannot have empty cells. Unfortunately
-	 *           this causes sorting in UI to work alphabetically, i.e. "1", "11",
-	 *           "2"
+	 * The table uses String values, so that we can mark empty cells with empty
+	 * Strings. Numerical columns cannot have empty cells. Unfortunately this
+	 * causes sorting in UI to work alphabetically, i.e. "1", "11", "2".
 	 */
 	private static Table<DefaultColumn<String>, String> table = createTable();
 
 	private SharedTable() {}
 
-	/** Returns the shared table instance */
+	/**
+	 * Gets the shared {@link Table} instance.
+	 *
+	 * @return the singleton table.
+	 */
 	public static Table<DefaultColumn<String>, String> getTable() {
 		return table;
 	}
@@ -58,9 +61,12 @@ public class SharedTable {
 	}
 
 	/**
-	 * Adds new value as a {@link String} to the shared table
+	 * Adds new value as a {@link String} to the shared table.
 	 * 
 	 * @see #add(String, String, String)
+	 * @param label the row label of the new data.
+	 * @param header the column heading of the new data.
+	 * @param value the value of the new data.
 	 */
 	public static void add(final String label, final String header,
 		final long value)
@@ -72,6 +78,9 @@ public class SharedTable {
 	 * Adds new value as a {@link String} to the shared table
 	 * 
 	 * @see #add(String, String, String)
+	 * @param label the row label of the new data.
+	 * @param header the column heading of the new data.
+	 * @param value the value of the new data.
 	 */
 	public static void add(final String label, final String header,
 		final double value)
@@ -81,14 +90,14 @@ public class SharedTable {
 
 	/**
 	 * Adds new data to the shared table according to the policy described in
-	 * {@link SharedTable}
+	 * {@link SharedTable}.
 	 * <p>
-	 * Empty or null labels and headers are ignored
+	 * Empty or null labels and headers are ignored.
 	 * </p>
 	 *
-	 * @param label The row label of the new data
-	 * @param header The column heading of the new data
-	 * @param value The value of the new data
+	 * @param label the row label of the new data.
+	 * @param header the column heading of the new data.
+	 * @param value the value of the new data.
 	 */
 	public static void add(final String label, final String header,
 		final String value)
