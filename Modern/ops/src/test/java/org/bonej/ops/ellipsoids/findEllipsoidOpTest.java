@@ -59,7 +59,7 @@ public class findEllipsoidOpTest {
             cursor.fwd();
             long [] currentCoords = new long[3];
             cursor.localize(currentCoords);
-            if((50.5-currentCoords[0])*(50-currentCoords[0])+(50-currentCoords[1])*(50-currentCoords[1])+(50-currentCoords[2])*(50-currentCoords[2]) <= 625)
+            if((50-currentCoords[0])*(50-currentCoords[0])+(50-currentCoords[1])*(50-currentCoords[1])+(50-currentCoords[2])*(50-currentCoords[2]) <= 625)
                 cursor.get().setOne();
         }
 
