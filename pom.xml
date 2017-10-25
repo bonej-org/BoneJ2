@@ -12,6 +12,10 @@
         <module>Modern</module>
     </modules>
 
+    <properties>
+      <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <profiles>
         <profile>
             <id>legacy</id>
