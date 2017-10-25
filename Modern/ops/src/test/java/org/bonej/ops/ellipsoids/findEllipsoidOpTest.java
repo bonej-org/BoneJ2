@@ -1,19 +1,19 @@
 package org.bonej.ops.ellipsoids;
 
-import clojure.core.Vec;
+import static org.junit.Assert.assertEquals;
+
+import java.util.List;
+
 import net.imagej.ImgPlus;
 import net.imglib2.Cursor;
-import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class findEllipsoidOpTest {
     @Test
@@ -72,5 +72,12 @@ public class findEllipsoidOpTest {
         assertEquals(25,radialVector1.getNorm(),1e-12);
         Vector3D radialVector2 = lastFGVoxelAlongRay2.subtract(new Vector3D(50,50,50));
         assertEquals(26,radialVector2.getNorm(),1e-12);
+    }
+
+    //main method for manual visual testing
+    public static void main(String[] args)
+    {
+        List<Vector3D> spiralVectors = findEllipsoidOp.generalizedSpiralSetOnSphere(700);
+        spiralVectors.forEach(v -> System.out.println(v.getX()+","+v.getY()+","+v.getZ()));
     }
 }
