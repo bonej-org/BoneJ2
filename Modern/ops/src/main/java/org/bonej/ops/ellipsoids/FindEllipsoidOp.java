@@ -1,7 +1,9 @@
 package org.bonej.ops.ellipsoids;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
@@ -11,19 +13,39 @@ import net.imglib2.type.BooleanType;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-public class findEllipsoidOp <B extends BooleanType<B>> extends AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Vector3D, Ellipsoid> implements Contingent {
+import static java.util.stream.Collectors.toList;
+
+public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Vector3D, Ellipsoid> implements Contingent {
 
 
     @Override
     public Ellipsoid calculate(final RandomAccessibleInterval<B> binaryImage, final Vector3D seedPoint) {
-        findLastFGVoxelAlongRay(new Vector3D(1,0,0), seedPoint);
-        generalizedSpiralSetOnSphere(100);
-        return null;
+
+        int n = estimateNSpiralPointsRequired(5,1.0);
+        List<Vector3D> samplingDirections = generalizedSpiralSetOnSphere(n);
+        List<Vector3D> contactPoints = new ArrayList<>();
+        samplingDirections.forEach(d -> contactPoints.add(findLastFGVoxelAlongRay(d, seedPoint)));
+        contactPoints.sort((o1, o2) -> {
+            if(o1.subtract(seedPoint).getNorm()<o2.subtract(seedPoint).getNorm())
+            {
+                return -1;
+            }
+            if(o1.subtract(seedPoint).getNorm()>o2.subtract(seedPoint).getNorm())
+            {
+                return 1;
+            }
+            return 0;
+        });
+        double a = seedPoint.subtract(contactPoints.get(0)).getNorm();
+        return new Ellipsoid(a,a,a);
     }
 
+
+
     static List<Vector3D> generalizedSpiralSetOnSphere(int n){
-        //follows nomenclature of Saff adn Kuijlaars, 1997 describing the work of Rakhmanov et al, 1994
-        //k is shifted to the left for convenient indexing
+        //follows nomenclature of Saff and Kuijlaars, 1997 describing the work of Rakhmanov et al, 1994
+        //k is shifted to the left for convenient indexing.
+        //n needs to be greater than 2.
         List<Vector3D> spiralSet = new ArrayList<>();
 
         List<Double> phi = new ArrayList<>();
@@ -53,8 +75,12 @@ public class findEllipsoidOp <B extends BooleanType<B>> extends AbstractBinaryFu
         return phiK - Math.floor(phiK/(2*Math.PI))*2*Math.PI;
     }
 
+    private static int estimateNSpiralPointsRequired(double searchRadius, double pixelWidth)
+    {
+        return (int) Math.ceil(Math.pow(searchRadius*3.809/pixelWidth,2));
+    }
 
-    Vector3D findLastFGVoxelAlongRay(Vector3D direction, Vector3D start)
+    Vector3D findLastFGVoxelAlongRay(final Vector3D direction, final Vector3D start)
     {
         RandomAccess<B> randomAccess = in1().randomAccess();
 
