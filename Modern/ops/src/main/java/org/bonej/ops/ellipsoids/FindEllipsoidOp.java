@@ -1,8 +1,8 @@
 package org.bonej.ops.ellipsoids;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Vector;
 import java.util.stream.Collectors;
 
 import edu.mines.jtk.opt.Vect;
@@ -59,6 +59,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         Vector3D secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
 
         List<Vector3D> thirdAxisSearchDirections = new ArrayList<>();
+
         Vector3D thirdAxisSearchDirection = getFlooredVector3D(secondAxis).crossProduct(getFlooredVector3D(firstAxis)).normalize();
         thirdAxisSearchDirections.add(thirdAxisSearchDirection);
         thirdAxisSearchDirections.add(thirdAxisSearchDirection.scalarMultiply(-1.0));
@@ -78,6 +79,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
 
     private static List<Vector3D> getOrthogonalSearchDirections(Vector3D firstAxis, int nPlane) {
         Rotation inPlaneRotation = new Rotation(firstAxis, 2*Math.PI/nPlane);
+
 
         double [] searchDirection = rvg.nextVector();
         Vector3D orthogonal = firstAxis.crossProduct(new Vector3D(searchDirection[0],searchDirection[1],searchDirection[2]));
@@ -108,7 +110,6 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
 
             return contactPoints.get(0).subtract(seedPoint);
     }
-
 
     static List<Vector3D> getGeneralizedSpiralSetOnSphere(int n){
         //follows nomenclature of Saff and Kuijlaars, 1997 describing the work of Rakhmanov et al, 1994

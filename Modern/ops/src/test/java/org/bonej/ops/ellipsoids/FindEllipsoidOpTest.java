@@ -72,9 +72,11 @@ public class FindEllipsoidOpTest {
             cursor.fwd();
             long [] coordinates = new long[3];
             cursor.localize(coordinates);
+
             if(coordinates[2]==0 || coordinates[2]==imageDimensions[2]-1) continue;
             double x = imageCentre.getX()-coordinates[0];
             double y = imageCentre.getY()-coordinates[1];
+
             double distanceFromCentreLine = x*x+y*y;
             if( distanceFromCentreLine <= cylinderRadius*cylinderRadius)
                 cursor.get().setOne();
@@ -85,13 +87,12 @@ public class FindEllipsoidOpTest {
         findEllipsoidOp.setInput1(imgPlus);
         findEllipsoidOp.setInput2(imageCentre);
 
-        Ellipsoid maxEllipsoid = findEllipsoidOp.calculate();
+       Ellipsoid maxEllipsoid = findEllipsoidOp.calculate();
 
         //expected value is pixel next to axis-aligned circle.
         assertEquals(cylinderRadius, maxEllipsoid.getA(), 1+1e-12);
         assertEquals(cylinderRadius, maxEllipsoid.getB(), 1+1e-12);
         assertEquals(Math.floor(imageDimensions[2]/2.0), maxEllipsoid.getC(), 5+1e-12);
-
     }
 
     @Test
@@ -101,6 +102,7 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
+
         Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
 
         assertEquals(5,lastFGVoxelAlongRay.getX(),1.0e-12);
@@ -118,6 +120,7 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
+
         Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
 
         assertEquals(9,lastFGVoxelAlongRay.getX(),1.0e-12);
@@ -143,6 +146,7 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
+
         Vector3D alongRay1 = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
         Vector3D alongRay2 = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
 
