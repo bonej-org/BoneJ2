@@ -32,6 +32,7 @@ public class FindEllipsoidOpTest {
             cursor.fwd();
             long [] coordinates = new long[3];
             cursor.localize(coordinates);
+            if(coordinates[2]==0 || coordinates[2]==imageDimensions[2]) continue;
             long x = (long)(imageCentre.getX()-coordinates[0]);
             long y = (long)(imageCentre.getY()-coordinates[1]);
             double distanceFromCentreLine = x*x+y*y;
@@ -46,10 +47,9 @@ public class FindEllipsoidOpTest {
 
         Ellipsoid sphere = findEllipsoidOp.calculate();
 
-        assertEquals(cylinderRadius, sphere.getA(), 1);
-        assertEquals(cylinderRadius, sphere.getB(), 1);
-        assertEquals(cylinderRadius, sphere.getC(), 1);
-
+        assertEquals(cylinderRadius, sphere.getA(), 1+1e-12);
+        assertEquals(cylinderRadius, sphere.getB(), 1+1e-12);
+        assertEquals(imageDimensions[2]/2, sphere.getC(), 1+1e-12);
 
     }
 
@@ -60,7 +60,7 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
-        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findLastFGVoxelAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
+        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
 
         assertEquals(5,lastFGVoxelAlongRay.getX(),1.0e-12);
         assertEquals(5,lastFGVoxelAlongRay.getY(),1.0e-12);
@@ -77,7 +77,7 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
-        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findLastFGVoxelAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
+        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
 
         assertEquals(9,lastFGVoxelAlongRay.getX(),1.0e-12);
         assertEquals(5,lastFGVoxelAlongRay.getY(),1.0e-12);
@@ -102,8 +102,8 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
-        Vector3D lastFGVoxelAlongRay1 = FindEllipsoidOp.findLastFGVoxelAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
-        Vector3D lastFGVoxelAlongRay2 = FindEllipsoidOp.findLastFGVoxelAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
+        Vector3D lastFGVoxelAlongRay1 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
+        Vector3D lastFGVoxelAlongRay2 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
 
         Vector3D radialVector1 = lastFGVoxelAlongRay1.subtract(new Vector3D(50,50,50));
         assertEquals(25,radialVector1.getNorm(),1e-12);
@@ -114,7 +114,7 @@ public class FindEllipsoidOpTest {
     //main method for manual visual testing
     public static void main(String[] args)
     {
-        List<Vector3D> spiralVectors = FindEllipsoidOp.generalizedSpiralSetOnSphere(700);
+        List<Vector3D> spiralVectors = FindEllipsoidOp.getGeneralizedSpiralSetOnSphere(700);
         spiralVectors.forEach(v -> System.out.println(v.getX()+","+v.getY()+","+v.getZ()));
     }
 }

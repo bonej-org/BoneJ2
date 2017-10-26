@@ -1,9 +1,8 @@
 package org.bonej.ops.ellipsoids;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Vector;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
@@ -11,20 +10,61 @@ import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import static java.util.stream.Collectors.toList;
+import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 
 public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Vector3D, Ellipsoid> implements Contingent {
 
+    private final static UnitSphereRandomVectorGenerator rvg = new UnitSphereRandomVectorGenerator(4);
 
     @Override
     public Ellipsoid calculate(final RandomAccessibleInterval<B> binaryImage, final Vector3D seedPoint) {
 
-        int n = estimateNSpiralPointsRequired(5,1.0);
-        List<Vector3D> samplingDirections = generalizedSpiralSetOnSphere(n);
+        double maxSamplingRadius = 25.0;
+
+        int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,1.0);
+        List<Vector3D> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+
+        Vector3D firstAxis = findClosestContact(seedPoint, sphereSamplingDirections);
+
+        int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius);
+        List<Vector3D> orthogonalSearchDirections = getOrthogonalSearchDirections(firstAxis, nPlane);
+
+        Vector3D secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
+
+        List<Vector3D> thirdAxisSearchDirections = new ArrayList<>();
+        thirdAxisSearchDirections.add(secondAxis.crossProduct(firstAxis));
+        thirdAxisSearchDirections.add(secondAxis.crossProduct(firstAxis).scalarMultiply(-1.0));
+
+        Vector3D thirdAxis = findClosestContact(seedPoint,thirdAxisSearchDirections);
+
+        double a = firstAxis.getNorm();
+        double b = secondAxis.getNorm();
+        double c = thirdAxis.getNorm();
+
+        return new Ellipsoid(a,b,c);
+    }
+
+    private static List<Vector3D> getOrthogonalSearchDirections(Vector3D firstAxis, int nPlane) {
+        Rotation inPlaneRotation = new Rotation(firstAxis, 2*Math.PI/nPlane);
+
+        double [] searchDirection = rvg.nextVector();
+        Vector3D orthogonal = firstAxis.crossProduct(new Vector3D(searchDirection[0],searchDirection[1],searchDirection[2]));
+
+        List<Vector3D> orthogonalSearchDirections = new ArrayList<>();
+
+        for(int k=0; k<nPlane-1; k++)
+        {
+            orthogonalSearchDirections.add(new Vector3D(1.0,orthogonal));
+            orthogonal = inPlaneRotation.applyTo(orthogonal);
+        }
+        return orthogonalSearchDirections;
+    }
+
+    private Vector3D findClosestContact(Vector3D seedPoint, List<Vector3D> samplingDirections) {
         List<Vector3D> contactPoints = new ArrayList<>();
-        samplingDirections.forEach(d -> contactPoints.add(findLastFGVoxelAlongRay(d, seedPoint)));
+        samplingDirections.forEach(d -> contactPoints.add(findFirstBGVoxelAlongRay(d.normalize(), seedPoint)));
         contactPoints.sort((o1, o2) -> {
             if(o1.subtract(seedPoint).getNorm()<o2.subtract(seedPoint).getNorm())
             {
@@ -36,13 +76,12 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
             }
             return 0;
         });
-        double a = seedPoint.subtract(contactPoints.get(0)).getNorm();
-        return new Ellipsoid(a,a,a);
+
+        return seedPoint.subtract(contactPoints.get(0));
     }
 
 
-
-    static List<Vector3D> generalizedSpiralSetOnSphere(int n){
+    static List<Vector3D> getGeneralizedSpiralSetOnSphere(int n){
         //follows nomenclature of Saff and Kuijlaars, 1997 describing the work of Rakhmanov et al, 1994
         //k is shifted to the left for convenient indexing.
         //n needs to be greater than 2.
@@ -80,7 +119,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return (int) Math.ceil(Math.pow(searchRadius*3.809/pixelWidth,2));
     }
 
-    Vector3D findLastFGVoxelAlongRay(final Vector3D direction, final Vector3D start)
+    Vector3D findFirstBGVoxelAlongRay(final Vector3D direction, final Vector3D start)
     {
         RandomAccess<B> randomAccess = in1().randomAccess();
 
