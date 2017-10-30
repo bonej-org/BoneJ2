@@ -76,7 +76,6 @@ public class FindEllipsoidOpTest {
             if(coordinates[2]==0 || coordinates[2]==imageDimensions[2]-1) continue;
             double x = imageCentre.getX()-coordinates[0];
             double y = imageCentre.getY()-coordinates[1];
-
             double distanceFromCentreLine = x*x+y*y;
             if( distanceFromCentreLine <= cylinderRadius*cylinderRadius)
                 cursor.get().setOne();

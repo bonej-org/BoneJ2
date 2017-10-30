@@ -28,7 +28,6 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
 
         int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,samplingWidth);
         int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius/samplingWidth);
-
         List<Vector3D> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
 
         List<Ellipsoid> ellipsoids = sphereSamplingDirections.stream().map(dir -> getEllipsoidFromInitialAxis(seedPoint, nPlane, dir)).collect(Collectors.toList());
