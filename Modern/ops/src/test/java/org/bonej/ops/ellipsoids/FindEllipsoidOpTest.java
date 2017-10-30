@@ -19,9 +19,9 @@ public class FindEllipsoidOpTest {
     @Test
     public void testContactPointsInCylinder()
     {
-        long[] imageDimensions = {100,100,100};
-        Vector3D imageCentre = new Vector3D(Math.floor(imageDimensions[0]/2),Math.floor(imageDimensions[1]/2),Math.floor(imageDimensions[2]/2));
-        long cylinderRadius = 25;
+        long[] imageDimensions = {101,101,101};
+        Vector3D imageCentre = new Vector3D(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
+        long cylinderRadius = 23;
 
         final Img<BitType> img = ArrayImgs.bits(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cylinder test image");
@@ -32,9 +32,9 @@ public class FindEllipsoidOpTest {
             cursor.fwd();
             long [] coordinates = new long[3];
             cursor.localize(coordinates);
-            if(coordinates[2]==0 || coordinates[2]==imageDimensions[2]) continue;
-            long x = (long)(imageCentre.getX()-coordinates[0]);
-            long y = (long)(imageCentre.getY()-coordinates[1]);
+            if(coordinates[2]==0 || coordinates[2]==imageDimensions[2]-1) continue;
+            double x = imageCentre.getX()-coordinates[0];
+            double y = imageCentre.getY()-coordinates[1];
             double distanceFromCentreLine = x*x+y*y;
             if( distanceFromCentreLine <= cylinderRadius*cylinderRadius)
                 cursor.get().setOne();
@@ -45,11 +45,12 @@ public class FindEllipsoidOpTest {
         findEllipsoidOp.setInput1(imgPlus);
         findEllipsoidOp.setInput2(imageCentre);
 
-        Ellipsoid sphere = findEllipsoidOp.calculate();
+        Ellipsoid ellipsoid = findEllipsoidOp.calculate();
 
-        assertEquals(cylinderRadius, sphere.getA(), 1+1e-12);
-        assertEquals(cylinderRadius, sphere.getB(), 1+1e-12);
-        assertEquals(imageDimensions[2]/2, sphere.getC(), 1+1e-12);
+        //expected value is pixel next to axis-aligned circle.
+        assertEquals(Math.sqrt(cylinderRadius*cylinderRadius+1), ellipsoid.getA(), 1e-12);
+        assertEquals(Math.sqrt(cylinderRadius*cylinderRadius+1), ellipsoid.getB(), 1e-12);
+        assertEquals(Math.floor(imageDimensions[2]/2.0), ellipsoid.getC(), 1e-12);
 
     }
 
@@ -86,7 +87,7 @@ public class FindEllipsoidOpTest {
 
     @Test
     public void testRayInSphere(){
-        final Img<BitType> img = ArrayImgs.bits(100, 100, 100);
+        final Img<BitType> img = ArrayImgs.bits(101, 101, 101);
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Sphere test image");
         IntervalView<BitType> imgCentre = Views.interval(imgPlus, new long[]{25, 25, 25}, new long[]{75, 75, 75});
         Cursor<BitType> cursor = imgCentre.localizingCursor();
@@ -102,13 +103,13 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
-        Vector3D lastFGVoxelAlongRay1 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
-        Vector3D lastFGVoxelAlongRay2 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
+        Vector3D firstBGVoxelAlongRay1 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
+        Vector3D firstBGVoxelAlongRay2 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
 
-        Vector3D radialVector1 = lastFGVoxelAlongRay1.subtract(new Vector3D(50,50,50));
-        assertEquals(25,radialVector1.getNorm(),1e-12);
-        Vector3D radialVector2 = lastFGVoxelAlongRay2.subtract(new Vector3D(50,50,50));
-        assertEquals(26,radialVector2.getNorm(),1e-12);
+        Vector3D radialVector1 = firstBGVoxelAlongRay1.subtract(new Vector3D(50,50,50));
+        Vector3D radialVector2 = firstBGVoxelAlongRay2.subtract(new Vector3D(50,50,50));
+        assertEquals(26,radialVector1.getNorm(),0.2);
+        assertEquals(26,radialVector2.getNorm(),0.2);
     }
 
     //main method for manual visual testing

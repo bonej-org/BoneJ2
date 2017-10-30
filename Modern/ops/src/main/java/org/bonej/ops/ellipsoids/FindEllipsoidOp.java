@@ -21,7 +21,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
     @Override
     public Ellipsoid calculate(final RandomAccessibleInterval<B> binaryImage, final Vector3D seedPoint) {
 
-        double maxSamplingRadius = 25.0;
+        double maxSamplingRadius = 100;
 
         int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,1.0);
         List<Vector3D> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
@@ -34,8 +34,9 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         Vector3D secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
 
         List<Vector3D> thirdAxisSearchDirections = new ArrayList<>();
-        thirdAxisSearchDirections.add(secondAxis.crossProduct(firstAxis));
-        thirdAxisSearchDirections.add(secondAxis.crossProduct(firstAxis).scalarMultiply(-1.0));
+        Vector3D thirdAxisSearchDirection = secondAxis.crossProduct(firstAxis).normalize();
+        thirdAxisSearchDirections.add(thirdAxisSearchDirection);
+        thirdAxisSearchDirections.add(thirdAxisSearchDirection.scalarMultiply(-1.0));
 
         Vector3D thirdAxis = findClosestContact(seedPoint,thirdAxisSearchDirections);
 
@@ -51,6 +52,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
 
         double [] searchDirection = rvg.nextVector();
         Vector3D orthogonal = firstAxis.crossProduct(new Vector3D(searchDirection[0],searchDirection[1],searchDirection[2]));
+        orthogonal = orthogonal.normalize();
 
         List<Vector3D> orthogonalSearchDirections = new ArrayList<>();
 
@@ -132,7 +134,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
             if(!isInBounds(currentPixelPosition)) break;
             randomAccess.setPosition(currentPixelPosition);
         }
-        return currentPosition;
+        return new Vector3D(Math.floor(currentPosition.getX()), Math.floor(currentPosition.getY()),Math.floor(currentPosition.getZ()));
     }
 
     private boolean isInBounds(long[] currentPixelPosition) {
