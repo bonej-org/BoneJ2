@@ -1,56 +1,89 @@
 
 package org.bonej.ops;
 
-import net.imagej.ops.AbstractOp;
 import net.imagej.ops.Op;
-import net.imglib2.type.numeric.real.DoubleType;
+import net.imagej.ops.special.hybrid.AbstractBinaryHybridCFI1;
 
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
-import org.scijava.ItemIO;
-import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Quat4d;
 import org.scijava.vecmath.Vector3d;
 
 /**
- * Rotates a vector around an axis by the given radians.
+ * Rotates a vector around an axis.
  * <p>
  * The rotations are done by quaternions so there's no risk of gimbal lock as
  * with rotation matrices.
  * </p>
- * 
+ *
+ * @see AxisAngle4d
  * @author Richard Domander
  */
 @Plugin(type = Op.class)
-public class RotateAboutAxis extends AbstractOp {
-
-	@Parameter(type = ItemIO.BOTH)
-	private Vector3d vector;
-
-	/**
-	 * An axis around which the vector is rotated. The axis should be a unit
-	 * vector, if not it'll be normalized. If left null, it's generated randomly.
-	 */
-	@Parameter(type = ItemIO.BOTH, required = false)
-	private Vector3d axis;
-
-	/** The rotation angle in radians. If left null, it's generated randomly. */
-	// A ItemIO.BOTH needs to be a mutable object, i.e. a Double won't do.
-	@Parameter(type = ItemIO.BOTH, required = false)
-	private DoubleType angle;
+public class RotateAboutAxis extends
+	AbstractBinaryHybridCFI1<Vector3d, AxisAngle4d, Vector3d>
+{
 
 	/**
-	 * Generates four normally distributed values that describe a unit quaternion.
-	 * These can be used to create uniformally distributed rotations.
+	 * Generates four normally distributed values between [0, 1] that describe a
+	 * unit quaternion. These can be used to create isotropically distributed
+	 * rotations.
 	 */
 	private static final UnitSphereRandomVectorGenerator qGenerator =
 		new UnitSphereRandomVectorGenerator(4);
 
+	/**
+	 * Rotates the input vector around the axis-angle and stores the result in the
+	 * output.
+	 *
+	 * @param input input vector.
+	 * @param axisAngle the rotation axis and angle.
+	 * @param output the input vector rotated.
+	 */
 	@Override
-	public void run() {
-		final Quat4d q = populateParameters();
-		rotate(vector, q);
+	public void compute(final Vector3d input, final AxisAngle4d axisAngle,
+		final Vector3d output)
+	{
+		mutate1(output, axisAngle);
+	}
+
+	/**
+	 * Initialises the output vector by calling the copy constructor with the
+	 * input.
+	 */
+	@Override
+	public Vector3d createOutput(final Vector3d input,
+		final AxisAngle4d axisAngle)
+	{
+		return new Vector3d(input);
+	}
+
+	/**
+	 * Rotates the vector and stores the result in the given object.
+	 *
+	 * @param v the input and output vector.
+	 * @param axisAngle the rotation axis and angle.
+	 */
+	@Override
+	public void mutate1(final Vector3d v, final AxisAngle4d axisAngle) {
+		final Quat4d q = new Quat4d();
+		// the setter normalizes the quaternion
+		q.set(axisAngle);
+		rotate(v, q);
+	}
+
+	/**
+	 * Creates {@link AxisAngle4d} from random isotropically distributed
+	 * quaternions.
+	 *
+	 * @return an axis-angle which can be used as a parameter for the op.
+	 */
+	public static AxisAngle4d randomAxisAngle() {
+		final Quat4d q = new Quat4d(qGenerator.nextVector());
+		final AxisAngle4d axisAngle4d = new AxisAngle4d();
+		axisAngle4d.set(q);
+		return axisAngle4d;
 	}
 
 	private static void rotate(final Vector3d v, final Quat4d q) {
@@ -60,25 +93,5 @@ public class RotateAboutAxis extends AbstractOp {
 		r.mul(p);
 		r.mulInverse(q);
 		v.set(r.x, r.y, r.z);
-	}
-
-	private Quat4d populateParameters() {
-		final Quat4d q = new Quat4d();
-		q.set(qGenerator.nextVector());
-		final AxisAngle4d axisAngle = new AxisAngle4d();
-		axisAngle.set(q);
-		if (axis == null) {
-			axis = new Vector3d(axisAngle.x, axisAngle.y, axisAngle.z);
-		}
-		else {
-			axis.normalize();
-		}
-		if (angle == null) {
-			angle = new DoubleType(axisAngle.angle);
-		}
-		axisAngle.set(axis.getX(), axis.getY(), axis.getZ(), angle.get());
-		q.set(axisAngle);
-		q.normalize();
-		return q;
 	}
 }
