@@ -2,7 +2,6 @@ package org.bonej.ops.ellipsoids;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
@@ -121,20 +120,22 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return (int) Math.ceil(Math.pow(searchRadius*3.809/pixelWidth,2));
     }
 
-    Vector3D findFirstBGVoxelAlongRay(final Vector3D direction, final Vector3D start)
+    long[] findFirstBGVoxelAlongRay(final Vector3D direction, final Vector3D start)
     {
         RandomAccess<B> randomAccess = in1().randomAccess();
 
-        Vector3D currentPosition = start;
-        randomAccess.setPosition(vectorToPixelGrid(start));
+        Vector3D currentRealPosition = start;
+        long[] currentPixelPosition = vectorToPixelGrid(start);
+        randomAccess.setPosition(currentPixelPosition);
+
         while(randomAccess.get().get())
         {
-            currentPosition = currentPosition.add(direction);
-            long[] currentPixelPosition = vectorToPixelGrid(currentPosition);
+            currentRealPosition = currentRealPosition.add(direction);
+            currentPixelPosition = vectorToPixelGrid(currentRealPosition);
             if(!isInBounds(currentPixelPosition)) break;
             randomAccess.setPosition(currentPixelPosition);
         }
-        return new Vector3D(Math.floor(currentPosition.getX()), Math.floor(currentPosition.getY()),Math.floor(currentPosition.getZ()));
+        return currentPixelPosition;
     }
 
     private boolean isInBounds(long[] currentPixelPosition) {
