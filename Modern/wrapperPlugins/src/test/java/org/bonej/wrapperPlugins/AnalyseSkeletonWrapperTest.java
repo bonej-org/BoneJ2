@@ -123,7 +123,7 @@ public class AnalyseSkeletonWrapperTest {
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_SKELETONS, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, after(250)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
