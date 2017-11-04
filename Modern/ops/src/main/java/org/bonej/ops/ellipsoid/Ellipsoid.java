@@ -25,28 +25,29 @@ public class Ellipsoid {
 	private double a;
 	private double b;
 	private double c;
+	private Vector3d centroid = new Vector3d();
 	// TODO Add a way to change the sampling function, either by passing and Op of
 	// certain type, or by creating an enumerator.
 	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;
 	private OpEnvironment ops;
 
-    /**
-     * Constructs an {@link Ellipsoid} object.
-     * <p>
-     * The radii will be sorted in the constructor.
-     * </p>
-     *
-     * @param a smallest radius of the ellipsoid.
-     * @param b 2nd radius of the ellipsoid.
-     * @param c largest radius of the ellipsoid.
-     */
+	/**
+	 * Constructs an {@link Ellipsoid} object.
+	 * <p>
+	 * The radii will be sorted in the constructor.
+	 * </p>
+	 *
+	 * @param a smallest radius of the ellipsoid.
+	 * @param b 2nd radius of the ellipsoid.
+	 * @param c largest radius of the ellipsoid.
+	 */
 	public Ellipsoid(final double a, final double b, final double c) {
-        final double[] radii = { a, b, c };
-        Arrays.sort(radii);
-        setC(radii[2]);
-        setB(radii[1]);
-        setA(radii[0]);
-    }
+		final double[] radii = { a, b, c };
+		Arrays.sort(radii);
+		setC(radii[2]);
+		setB(radii[1]);
+		setA(radii[0]);
+	}
 
 	/**
 	 * Constructs an {@link Ellipsoid} object.
@@ -162,7 +163,7 @@ public class Ellipsoid {
 				"Radius must be a finite positive number.");
 		}
 		if (c < b) {
-            throw new IllegalArgumentException("Radius 'c' must be the largest.");
+			throw new IllegalArgumentException("Radius 'c' must be the largest.");
 		}
 		this.c = c;
 	}
@@ -175,6 +176,7 @@ public class Ellipsoid {
 	 * @throws NullPointerException if the object has no {@link OpEnvironment}.
 	 * @see #setOpEnvironment(OpEnvironment)
 	 */
+	// TODO Remove OpEnvironment field and make param, or setSamplingMode?
 	public List<Vector3d> samplePoints(final long n) throws NullPointerException {
 		if (ops == null) {
 			throw new NullPointerException("Can't sample without an op environment");
@@ -182,7 +184,32 @@ public class Ellipsoid {
 		if (!samplingInitialized()) {
 			matchSamplingOp(n);
 		}
-		return isotropicSampling.calculate(new double[] { a, b, c }, n);
+		final List<Vector3d> points = isotropicSampling.calculate(new double[] { a,
+			b, c }, n);
+		points.forEach(p -> p.add(centroid));
+		return points;
+	}
+
+	/**
+	 * Gets a copy of center point of the ellipsoid.
+     *
+	 * @return the centroid of the ellipsoid.
+	 */
+	public Vector3d getCentroid() {
+		return new Vector3d(centroid);
+	}
+
+	/**
+	 * Sets the coordinates of the centroid of the ellipsoid.
+	 *
+	 * @param centroid the new coordinates of the center point.
+	 * @throws NullPointerException if the parameter is null.
+	 */
+	public void setCentroid(final Vector3d centroid) throws NullPointerException {
+		if (centroid == null) {
+			throw new NullPointerException("Centroid can't be null");
+		}
+		this.centroid.set(centroid);
 	}
 
 	@SuppressWarnings("unchecked")
