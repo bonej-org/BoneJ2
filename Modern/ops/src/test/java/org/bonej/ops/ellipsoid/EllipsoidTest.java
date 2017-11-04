@@ -32,7 +32,7 @@ public class EllipsoidTest {
 		final double b = 2.0;
 		final double c = 3.0;
 
-		final Ellipsoid ellipsoid = new Ellipsoid(b, c, a, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(b, c, a);
 
 		assertEquals(a, ellipsoid.getA(), 1e-12);
         assertEquals(b, ellipsoid.getB(), 1e-12);
@@ -41,49 +41,49 @@ public class EllipsoidTest {
 
 	@Test(expected = NullPointerException.class)
 	public void testSetOpEnvironmentThrowsNPE() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setOpEnvironment(null);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetAThrowsExceptionNegativeRadius() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(-1);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetAThrowsExceptionZeroRadius() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(0);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetAThrowsExceptionNonFiniteRadius() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(Double.NaN);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetAThrowsExceptionGTB() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(3);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetAThrowsExceptionGTC() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(2, 2, 2, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(2, 2, 2);
 
 		ellipsoid.setA(3);
 	}
 
 	@Test
 	public void testSetA() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(6, 7, 8, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(6, 7, 8);
 
 		ellipsoid.setA(5);
 
@@ -92,21 +92,21 @@ public class EllipsoidTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetBThrowsExceptionLTA() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4);
 
 		ellipsoid.setB(1);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetBThrowsExceptionGTC() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setB(4);
 	}
 
 	@Test
 	public void testSetB() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 7, 8, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 7, 8);
 
 		ellipsoid.setB(4);
 
@@ -115,21 +115,21 @@ public class EllipsoidTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetCThrowsExceptionLTA() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4);
 
 		ellipsoid.setC(1);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetCThrowsExceptionLTB() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4);
 
 		ellipsoid.setC(2);
 	}
 
 	@Test
 	public void testSetC() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(6, 7, 8, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(6, 7, 8);
 
 		ellipsoid.setC(11);
 
@@ -145,5 +145,12 @@ public class EllipsoidTest {
 
         assertNotNull(points);
         assertEquals(n, points.size());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testSamplePointsThrowsNPEIfOpEnvironmentNull() throws Exception {
+        final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
+
+        ellipsoid.samplePoints(10);
     }
 }

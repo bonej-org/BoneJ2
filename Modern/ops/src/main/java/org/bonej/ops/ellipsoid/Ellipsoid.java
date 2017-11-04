@@ -30,8 +30,26 @@ public class Ellipsoid {
 	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;
 	private OpEnvironment ops;
 
+    /**
+     * Constructs an {@link Ellipsoid} object.
+     * <p>
+     * The radii will be sorted in the constructor.
+     * </p>
+     *
+     * @param a smallest radius of the ellipsoid.
+     * @param b 2nd radius of the ellipsoid.
+     * @param c largest radius of the ellipsoid.
+     */
+	public Ellipsoid(final double a, final double b, final double c) {
+        final double[] radii = { a, b, c };
+        Arrays.sort(radii);
+        setC(radii[2]);
+        setB(radii[1]);
+        setA(radii[0]);
+    }
+
 	/**
-	 * Creates an ellipsoid.
+	 * Constructs an {@link Ellipsoid} object.
 	 * <p>
 	 * The radii will be sorted in the constructor.
 	 * </p>
@@ -44,11 +62,7 @@ public class Ellipsoid {
 	public Ellipsoid(final double a, final double b, final double c,
 		final OpEnvironment ops)
 	{
-		final double[] radii = { a, b, c };
-		Arrays.sort(radii);
-		setC(radii[2]);
-		setB(radii[1]);
-		setA(radii[0]);
+		this(a, b, c);
 		setOpEnvironment(ops);
 	}
 
@@ -153,7 +167,18 @@ public class Ellipsoid {
 		this.c = c;
 	}
 
-	public List<Vector3d> samplePoints(final long n) {
+	/**
+	 * Return a random collection of points on the ellipsoid surface.
+	 *
+	 * @param n number of points generated.
+	 * @return a collection of points isotropically distributed on the ellipsoid.
+	 * @throws NullPointerException if the object has no {@link OpEnvironment}.
+	 * @see #setOpEnvironment(OpEnvironment)
+	 */
+	public List<Vector3d> samplePoints(final long n) throws NullPointerException {
+		if (ops == null) {
+			throw new NullPointerException("Can't sample without an op environment");
+		}
 		if (!samplingInitialized()) {
 			matchSamplingOp(n);
 		}
