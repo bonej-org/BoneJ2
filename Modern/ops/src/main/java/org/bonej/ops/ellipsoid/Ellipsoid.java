@@ -29,7 +29,6 @@ public class Ellipsoid {
 	// TODO Add a way to change the sampling function, either by passing and Op of
 	// certain type, or by creating an enumerator.
 	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;
-	private OpEnvironment ops;
 
 	/**
 	 * Constructs an {@link Ellipsoid} object.
@@ -47,39 +46,6 @@ public class Ellipsoid {
 		setC(radii[2]);
 		setB(radii[1]);
 		setA(radii[0]);
-	}
-
-	/**
-	 * Constructs an {@link Ellipsoid} object.
-	 * <p>
-	 * The radii will be sorted in the constructor.
-	 * </p>
-	 * 
-	 * @param a smallest radius of the ellipsoid.
-	 * @param b 2nd radius of the ellipsoid.
-	 * @param c largest radius of the ellipsoid.
-	 * @param ops the environment used for the sampling ops.
-	 */
-	public Ellipsoid(final double a, final double b, final double c,
-		final OpEnvironment ops)
-	{
-		this(a, b, c);
-		setOpEnvironment(ops);
-	}
-
-	/**
-	 * Sets the OpEnvironment where sampling ops can be found.
-	 *
-	 * @param ops a reference to the op environment in the current context.
-	 * @throws NullPointerException if ops is null
-	 */
-	public void setOpEnvironment(final OpEnvironment ops)
-		throws NullPointerException
-	{
-		if (ops == null) {
-			throw new NullPointerException("Op environment can't be set null");
-		}
-		this.ops = ops;
 	}
 
 	/**
@@ -169,20 +135,37 @@ public class Ellipsoid {
 	}
 
 	/**
+	 * Initializes the ellipsoid point sampling function.
+	 *
+	 * @param ops the op environment of the current context.
+	 * @throws NullPointerException if the parameter is null
+	 */
+    @SuppressWarnings("unchecked")
+	public void initSampling(final OpEnvironment ops)
+		throws NullPointerException
+	{
+		if (ops == null) {
+			throw new NullPointerException("Op environment cannot be null");
+		}
+		isotropicSampling = (BinaryFunctionOp) Functions.binary(ops,
+			EllipsoidPoints.class, List.class, new double[] { a, b, c }, 0L);
+	}
+
+	private boolean samplingInitialized() {
+		return isotropicSampling != null;
+	}
+
+	/**
 	 * Return a random collection of points on the ellipsoid surface.
 	 *
 	 * @param n number of points generated.
 	 * @return a collection of points isotropically distributed on the ellipsoid.
-	 * @throws NullPointerException if the object has no {@link OpEnvironment}.
-	 * @see #setOpEnvironment(OpEnvironment)
+	 * @throws RuntimeException if sampling hasn't been initialized.
+	 * @see #initSampling(OpEnvironment)
 	 */
-	// TODO Remove OpEnvironment field and make param, or setSamplingMode?
-	public List<Vector3d> samplePoints(final long n) throws NullPointerException {
-		if (ops == null) {
-			throw new NullPointerException("Can't sample without an op environment");
-		}
+	public List<Vector3d> samplePoints(final long n) throws RuntimeException {
 		if (!samplingInitialized()) {
-			matchSamplingOp(n);
+			throw new RuntimeException("Sampling has not been initialized");
 		}
 		final List<Vector3d> points = isotropicSampling.calculate(new double[] { a,
 			b, c }, n);
@@ -192,7 +175,7 @@ public class Ellipsoid {
 
 	/**
 	 * Gets a copy of center point of the ellipsoid.
-     *
+	 *
 	 * @return the centroid of the ellipsoid.
 	 */
 	public Vector3d getCentroid() {
@@ -210,15 +193,5 @@ public class Ellipsoid {
 			throw new NullPointerException("Centroid can't be null");
 		}
 		this.centroid.set(centroid);
-	}
-
-	@SuppressWarnings("unchecked")
-	private void matchSamplingOp(final long n) {
-		isotropicSampling = (BinaryFunctionOp) Functions.binary(ops,
-			EllipsoidPoints.class, List.class, new double[] { a, b, c }, n);
-	}
-
-	private boolean samplingInitialized() {
-		return isotropicSampling != null;
 	}
 }

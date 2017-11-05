@@ -46,13 +46,6 @@ public class EllipsoidTest {
 			centroid);
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void testSetOpEnvironmentThrowsNPE() throws Exception {
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
-
-		ellipsoid.setOpEnvironment(null);
-	}
-
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetAThrowsExceptionNegativeRadius() throws Exception {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
@@ -147,9 +140,9 @@ public class EllipsoidTest {
 	public void testSamplePoints() throws Exception {
 		final Vector3d centroid = new Vector3d(4, 5, 6);
 		final double a = 2.0;
-        final double b = 3.0;
+		final double b = 3.0;
 		final double c = 4.0;
-		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c, imageJ.op());
+		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c);
 		ellipsoid.setCentroid(centroid);
 		final long n = 10;
 		final Function<Vector3d, Double> ellipsoidEq = (Vector3d p) -> {
@@ -157,6 +150,7 @@ public class EllipsoidTest {
 				r);
 			return term.apply(p.x, a) + term.apply(p.y, b) + term.apply(p.z, c);
 		};
+		ellipsoid.initSampling(imageJ.op());
 
 		final List<Vector3d> points = ellipsoid.samplePoints(n);
 
@@ -169,14 +163,23 @@ public class EllipsoidTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testSamplePointsThrowsNPEIfOpEnvironmentNull() throws Exception {
+    public void testInitSamplingThrowsNPEIfOpsNull() {
+        final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
+
+        ellipsoid.initSampling(null);
+    }
+
+	@Test(expected = RuntimeException.class)
+	public void testSamplePointsThrowsRuntimeExceptionIfNotInitialized()
+		throws Exception
+	{
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.samplePoints(10);
 	}
 
 	@Test
-	public void testGetCentroid() {
+	public void testGetCentroid() throws Exception {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 		final Vector3d centroid = new Vector3d(6, 7, 8);
 		ellipsoid.setCentroid(centroid);
@@ -189,14 +192,14 @@ public class EllipsoidTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testSetCentroidThrowsNPEIfCentroidNull() {
+	public void testSetCentroidThrowsNPEIfCentroidNull() throws Exception {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setCentroid(null);
 	}
 
 	@Test
-	public void testSetCentroid() {
+	public void testSetCentroid() throws Exception {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 		final Vector3d centroid = new Vector3d(6, 7, 8);
 
