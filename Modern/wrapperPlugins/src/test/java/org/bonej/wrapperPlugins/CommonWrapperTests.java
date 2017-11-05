@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
@@ -178,7 +179,7 @@ public class CommonWrapperTests {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect",
 			CommonMessages.NOT_8_BIT_BINARY_IMAGE, module.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
