@@ -17,6 +17,8 @@ import org.scijava.vecmath.Vector3d;
 /**
  * Tests for {@link SolveQuadricEq}.
  *
+ * @see org.bonej.ops.ellipsoid.QuadricToEllipsoidTest for more tests related to
+ *      quadric equations.
  * @author Richard Domander
  */
 public class SolveQuadricEqTest {
