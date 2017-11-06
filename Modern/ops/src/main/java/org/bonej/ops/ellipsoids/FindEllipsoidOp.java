@@ -21,19 +21,20 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
     public Ellipsoid calculate(final RandomAccessibleInterval<B> binaryImage, final Vector3D seedPoint) {
 
         double maxSamplingRadius = 100;
+        double samplingWidth = 1.0;
 
-        int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,1.0);
+        int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,samplingWidth);
         List<Vector3D> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
 
         Vector3D firstAxis = findClosestContact(seedPoint, sphereSamplingDirections);
 
-        int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius);
-        List<Vector3D> orthogonalSearchDirections = getOrthogonalSearchDirections(firstAxis, nPlane);
+        int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius/samplingWidth);
+        List<Vector3D> orthogonalSearchDirections = getOrthogonalSearchDirections(getFlooredVector3D(firstAxis), nPlane);
 
         Vector3D secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
 
         List<Vector3D> thirdAxisSearchDirections = new ArrayList<>();
-        Vector3D thirdAxisSearchDirection = secondAxis.crossProduct(firstAxis).normalize();
+        Vector3D thirdAxisSearchDirection = getFlooredVector3D(secondAxis).crossProduct(getFlooredVector3D(firstAxis)).normalize();
         thirdAxisSearchDirections.add(thirdAxisSearchDirection);
         thirdAxisSearchDirections.add(thirdAxisSearchDirection.scalarMultiply(-1.0));
 
@@ -44,6 +45,10 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         double c = thirdAxis.getNorm();
 
         return new Ellipsoid(a,b,c);
+    }
+
+    public static Vector3D getFlooredVector3D(Vector3D vector) {
+        return new Vector3D(Math.floor(vector.getX()), Math.floor(vector.getY()), Math.floor(vector.getZ()));
     }
 
     private static List<Vector3D> getOrthogonalSearchDirections(Vector3D firstAxis, int nPlane) {
@@ -65,7 +70,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
 
     private Vector3D findClosestContact(Vector3D seedPoint, List<Vector3D> samplingDirections) {
         List<Vector3D> contactPoints = new ArrayList<>();
-        samplingDirections.forEach(d -> contactPoints.add(findFirstBGVoxelAlongRay(d.normalize(), seedPoint)));
+        samplingDirections.forEach(d -> contactPoints.add(findFirstPointInBGAlongRay(d.normalize(), seedPoint)));
         contactPoints.sort((o1, o2) -> {
             if(o1.subtract(seedPoint).getNorm()<o2.subtract(seedPoint).getNorm())
             {
@@ -120,7 +125,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return (int) Math.ceil(Math.pow(searchRadius*3.809/pixelWidth,2));
     }
 
-    long[] findFirstBGVoxelAlongRay(final Vector3D direction, final Vector3D start)
+    Vector3D findFirstPointInBGAlongRay(final Vector3D rayIncrement, final Vector3D start)
     {
         RandomAccess<B> randomAccess = in1().randomAccess();
 
@@ -130,12 +135,12 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
 
         while(randomAccess.get().get())
         {
-            currentRealPosition = currentRealPosition.add(direction);
+            currentRealPosition = currentRealPosition.add(rayIncrement);
             currentPixelPosition = vectorToPixelGrid(currentRealPosition);
             if(!isInBounds(currentPixelPosition)) break;
             randomAccess.setPosition(currentPixelPosition);
         }
-        return currentPixelPosition;
+        return currentRealPosition;
     }
 
     private boolean isInBounds(long[] currentPixelPosition) {

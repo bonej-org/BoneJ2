@@ -48,8 +48,8 @@ public class FindEllipsoidOpTest {
         Ellipsoid ellipsoid = findEllipsoidOp.calculate();
 
         //expected value is pixel next to axis-aligned circle.
-        assertEquals(Math.sqrt(cylinderRadius*cylinderRadius+1), ellipsoid.getA(), 1e-12);
-        assertEquals(Math.sqrt(cylinderRadius*cylinderRadius+1), ellipsoid.getB(), 1e-12);
+        assertEquals(cylinderRadius, ellipsoid.getA(), 1+1e-12);
+        assertEquals(cylinderRadius, ellipsoid.getB(), 1+1e-12);
         assertEquals(Math.floor(imageDimensions[2]/2.0), ellipsoid.getC(), 1e-12);
 
     }
@@ -61,7 +61,7 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
-        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
+        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
 
         assertEquals(5,lastFGVoxelAlongRay.getX(),1.0e-12);
         assertEquals(5,lastFGVoxelAlongRay.getY(),1.0e-12);
@@ -78,7 +78,7 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
-        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
+        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
 
         assertEquals(9,lastFGVoxelAlongRay.getX(),1.0e-12);
         assertEquals(5,lastFGVoxelAlongRay.getY(),1.0e-12);
@@ -103,14 +103,18 @@ public class FindEllipsoidOpTest {
 
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
-        Vector3D firstBGVoxelAlongRay1 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
-        Vector3D firstBGVoxelAlongRay2 = FindEllipsoidOp.findFirstBGVoxelAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
+        Vector3D alongRay1 = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
+        Vector3D alongRay2 = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
 
-        Vector3D radialVector1 = firstBGVoxelAlongRay1.subtract(new Vector3D(50,50,50));
-        Vector3D radialVector2 = firstBGVoxelAlongRay2.subtract(new Vector3D(50,50,50));
+        alongRay1 = FindEllipsoidOp.getFlooredVector3D(alongRay1);
+        alongRay2 = FindEllipsoidOp.getFlooredVector3D(alongRay2);
+
+        Vector3D radialVector1 = alongRay1.subtract(new Vector3D(50,50,50));
+        Vector3D radialVector2 = alongRay2.subtract(new Vector3D(50,50,50));
         assertEquals(26,radialVector1.getNorm(),0.2);
         assertEquals(26,radialVector2.getNorm(),0.2);
     }
+
 
     //main method for manual visual testing
     public static void main(String[] args)
