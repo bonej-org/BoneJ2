@@ -80,6 +80,17 @@ public class EllipsoidTest {
 			expected == orientation);
 	}
 
+	@Test
+	public void testGetVolume() throws Exception {
+		final double a = 2.3;
+		final double b = 3.14;
+		final double c = 4.25;
+		final double expectedVolume = (4.0 / 3.0) * Math.PI * a * b * c;
+		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c);
+
+		assertEquals(expectedVolume, ellipsoid.getVolume(), 1e-12);
+	}
+
 	@Test(expected = NullPointerException.class)
 	public void testInitSamplingThrowsNPEIfOpsNull() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
