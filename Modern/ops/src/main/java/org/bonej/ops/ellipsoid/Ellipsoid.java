@@ -29,7 +29,7 @@ public class Ellipsoid {
 	private double b;
 	private double c;
 	private Vector3d centroid = new Vector3d();
-	private Matrix4d orientation = new Matrix4d();
+	private Matrix3d orientation = new Matrix3d();
 	// TODO Add a way to change the sampling function, either by passing and Op of
 	// certain type, or by creating an enumerator.
 	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;
@@ -166,7 +166,9 @@ public class Ellipsoid {
 	 * @return orientations of the semi-axes in homogeneous coordinates.
 	 */
 	public Matrix4d getOrientation() {
-		return new Matrix4d(orientation);
+		final Matrix4d homogeneous = new Matrix4d();
+		homogeneous.set(orientation);
+		return homogeneous;
 	}
 
 	/**

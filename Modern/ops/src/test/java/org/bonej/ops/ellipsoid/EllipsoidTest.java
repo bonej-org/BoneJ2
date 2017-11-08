@@ -269,7 +269,8 @@ public class EllipsoidTest {
 				m.m20, m.m21, m.m22
 		);
 		// @formatter:on
-		assertEquals("Setter copied values incorrectly", original, result);
+		assertEquals("Setter copied values incorrectly or set a reference",
+			original, result);
 	}
 
 	@Test
