@@ -38,13 +38,6 @@ import org.scijava.vecmath.Vector3d;
  * @author Richard Domander
  * @see org.bonej.ops.SolveQuadricEq
  */
-/* TODO reverse engineer the rotation of the ellipsoid as an axis-angle.
- * Part of the problem is that an ellipsoid is a symmetrical object, and thus there
- * are several orientations for the eigen vectors that produce the same results.
- * They might not even be right-handed, which creates errors when trying to feed
- * the 3x3 rotational matrix with the eigen vectors as columns to a method that
- * solves the axis-angle pair.
- */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends
 	AbstractUnaryFunctionOp<Matrix4d, Optional<Ellipsoid>>
@@ -158,6 +151,7 @@ public class QuadricToEllipsoid extends
 		final Vector3d z = new Vector3d(e3.getEntry(0), e3.getEntry(1), e3.getEntry(
 			2));
 		if (isLeftHandedBasis(x, y, z)) {
+			// Make the basis right handed
 			final Vector3d tmp = new Vector3d(y);
 			y.set(z);
 			z.set(tmp);
