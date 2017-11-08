@@ -16,6 +16,7 @@ import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.Vector3d;
@@ -38,7 +39,7 @@ public class EllipsoidPoints extends
 	/** Largest radius of the ellipsoid (z) */
 	private double c;
 	private static final Random rng = new Random();
-	private static final UnitSphereRandomVectorGenerator sphereRng =
+	private static UnitSphereRandomVectorGenerator sphereRng =
 		new UnitSphereRandomVectorGenerator(3);
 
 	/**
@@ -56,6 +57,22 @@ public class EllipsoidPoints extends
 		b = radii[1];
 		c = radii[2];
 		return sampleEllipsoidPoints(n);
+	}
+
+	/**
+	 * Sets the seed of the random generators used in point creation.
+	 * <p>
+	 * Setting a constant seed makes testing easier.
+	 * </p>
+	 *
+	 * @param seed the seed number.
+	 * @see Random#setSeed(long)
+	 * @see MersenneTwister#MersenneTwister(long)
+	 */
+	public static void setSeed(final long seed) {
+		rng.setSeed(seed);
+		sphereRng = new UnitSphereRandomVectorGenerator(3, new MersenneTwister(
+			seed));
 	}
 
 	private List<Vector3d> sampleEllipsoidPoints(final long n) {

@@ -196,7 +196,8 @@ public class Ellipsoid {
 		semiAxes.getColumn(1, v);
 		final Vector3d w = new Vector3d();
 		semiAxes.getColumn(2, w);
-		if (u.dot(v) != 0 || u.dot(w) != 0 || v.dot(w) != 0) {
+		final double eps = 1e-12;
+		if (u.dot(v) > eps || u.dot(w) > eps || v.dot(w) > eps) {
 			throw new IllegalArgumentException("Vectors must be orthogonal");
 		}
 		u.normalize();

@@ -10,8 +10,10 @@ import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.EigenDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.GMatrix;
+import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Matrix4d;
 import org.scijava.vecmath.SingularMatrixException;
 import org.scijava.vecmath.Vector3d;
@@ -60,7 +62,8 @@ public class QuadricToEllipsoid extends
 		Vector3d center;
 		try {
 			center = findCenter(quadricSolution);
-		} catch (SingularMatrixException sme) {
+		}
+		catch (SingularMatrixException sme) {
 			return Optional.empty();
 		}
 		final Matrix4d translated = translateToCenter(quadricSolution, center);
@@ -73,6 +76,8 @@ public class QuadricToEllipsoid extends
 			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
 		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
 		ellipsoid.setCentroid(center);
+		final Matrix3d orientation = toOrientationMatrix(decomposition);
+		ellipsoid.setOrientation(orientation);
 		return Optional.of(ellipsoid);
 	}
 
@@ -118,6 +123,14 @@ public class QuadricToEllipsoid extends
 		return Arrays.stream(eigenvalues).allMatch(x -> x > EIGENVALUE_TOLERANCE);
 	}
 
+	private boolean isLeftHandedBasis(final Vector3d x, final Vector3d y,
+		final Vector3d z)
+	{
+		final Vector3d v = new Vector3d();
+		v.cross(x, y);
+		return v.dot(z) < 0;
+	}
+
 	// Using apache.commons.math3 since scijava.vecmath doesn't yet have eigen
 	// decomposition, and I can't figure out how to use the tensor eigen stuff
 	// from net.imglib2.algorithm.linalg.eigen
@@ -132,6 +145,28 @@ public class QuadricToEllipsoid extends
 		}).scalarMultiply(-1.0 / quadric.m33);
 		// @formatter:on
 		return new EigenDecomposition(input);
+	}
+
+	private Matrix3d toOrientationMatrix(final EigenDecomposition decomposition) {
+		final RealVector e1 = decomposition.getEigenvector(0);
+		final RealVector e2 = decomposition.getEigenvector(1);
+		final RealVector e3 = decomposition.getEigenvector(2);
+		final Vector3d x = new Vector3d(e1.getEntry(0), e1.getEntry(1), e1.getEntry(
+			2));
+		final Vector3d y = new Vector3d(e2.getEntry(0), e2.getEntry(1), e2.getEntry(
+			2));
+		final Vector3d z = new Vector3d(e3.getEntry(0), e3.getEntry(1), e3.getEntry(
+			2));
+		if (isLeftHandedBasis(x, y, z)) {
+			final Vector3d tmp = new Vector3d(y);
+			y.set(z);
+			z.set(tmp);
+		}
+		final Matrix3d orientation = new Matrix3d();
+		orientation.setColumn(0, x);
+		orientation.setColumn(1, y);
+		orientation.setColumn(2, z);
+		return orientation;
 	}
 
 	/**
