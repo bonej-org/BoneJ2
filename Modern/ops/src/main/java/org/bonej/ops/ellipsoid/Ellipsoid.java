@@ -249,9 +249,21 @@ public class Ellipsoid {
 		}
 		final List<Vector3d> points = isotropicSampling.calculate(new double[] { a,
 			b, c }, n);
+		points.forEach(this::mapToOrientation);
 		points.forEach(p -> p.add(centroid));
-		// TODO add orientation
 		return points;
+	}
+
+	private void mapToOrientation(final Vector3d v) {
+		final Vector3d[] rowVectors = Stream.generate(Vector3d::new).limit(3)
+			.toArray(Vector3d[]::new);
+		final double[] coordinates = new double[3];
+		for (int i = 0; i < 3; i++) {
+			final Vector3d r = rowVectors[i];
+			orientation.getRow(i, r);
+			coordinates[i] = r.x * v.x + r.y * v.y + r.z * v.z;
+		}
+		v.set(coordinates);
 	}
 
 	private boolean samplingInitialized() {

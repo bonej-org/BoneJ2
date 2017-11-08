@@ -6,17 +6,22 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import net.imagej.ImageJ;
+import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
+import net.imagej.ops.special.hybrid.Hybrids;
 
+import org.bonej.ops.RotateAboutAxis;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Matrix4d;
 import org.scijava.vecmath.Vector3d;
@@ -29,7 +34,7 @@ import org.scijava.vecmath.Vector4d;
  */
 public class EllipsoidTest {
 
-	private static final ImageJ imageJ = new ImageJ();
+	private static final ImageJ IMAGE_J = new ImageJ();
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
@@ -98,33 +103,53 @@ public class EllipsoidTest {
 		ellipsoid.initSampling(null);
 	}
 
-	// TODO add orientation
 	@Test
 	public void testSamplePoints() throws Exception {
+		// SETUP
 		final double a = 2.0;
 		final double b = 3.0;
 		final double c = 4.0;
 		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c);
 		final Vector3d centroid = new Vector3d(4, 5, 6);
 		ellipsoid.setCentroid(centroid);
+		final double sinAlpha = Math.sin(Math.PI / 4.0);
+		final double cosAlpha = Math.cos(Math.PI / 4.0);
+		// Orientation of an ellipsoid that's been rotated 45 deg around the z-axis
+		// @formatter:off
+		final Matrix3d orientation = new Matrix3d(
+				cosAlpha, -sinAlpha, 0,
+				sinAlpha, cosAlpha, 0,
+				0, 0, 1
+		);
+		// @formatter:on
+		final AxisAngle4d invRotation = new AxisAngle4d();
+		invRotation.set(orientation);
+		invRotation.setAngle(-invRotation.angle);
+		final BinaryHybridCFI1<Serializable, AxisAngle4d, Vector3d> inverseRotation =
+			Hybrids.binaryCFI1(IMAGE_J.op(), RotateAboutAxis.class, Vector3d.class,
+				Vector3d.class, invRotation);
+		ellipsoid.setOrientation(orientation);
 		final long n = 10;
 		final Function<Vector3d, Double> ellipsoidEq = (Vector3d p) -> {
 			final BiFunction<Double, Double, Double> term = (x, r) -> (x * x) / (r *
 				r);
 			return term.apply(p.x, a) + term.apply(p.y, b) + term.apply(p.z, c);
 		};
-		ellipsoid.initSampling(imageJ.op());
+		ellipsoid.initSampling(IMAGE_J.op());
 
+		// EXECUTE
 		final List<Vector3d> points = ellipsoid.samplePoints(n);
 
+		// VERIFY
 		assertNotNull(points);
 		assertEquals(n, points.size());
 		// Reverse the translation and rotation so that we can assert the easier
 		// equation of an axis-aligned ellipsoid at centroid
 		points.forEach(p -> p.sub(centroid));
+		points.forEach(inverseRotation::mutate);
 		points.forEach(p -> assertEquals(
 			"Point doesn't solve the ellipsoid equation", 1.0, ellipsoidEq.apply(p),
-			1e-12));
+			1e-5));
 	}
 
 	@Test(expected = RuntimeException.class)
@@ -366,6 +391,6 @@ public class EllipsoidTest {
 
 	@AfterClass
 	public static void oneTimeTearDown() {
-		imageJ.context().dispose();
+		IMAGE_J.context().dispose();
 	}
 }
