@@ -26,6 +26,7 @@ import org.scijava.vecmath.Vector3d;
  * homogeneous coordinates (w = 1) is Ax<sup>2</sup> + By<sup>2</sup> +
  * Cz<sup>2</sup> + 2Dxy + 2Exz + 2Fyz + 2Gx + 2Hy + 2Iz, then the matrix must
  * be:<br>
+ * </p>
  * 
  * <pre>
  * [a, d, e, g]
@@ -33,7 +34,6 @@ import org.scijava.vecmath.Vector3d;
  * [e, f, c, i]
  * [g, h, i, -1]
  * </pre>
- * </p>
  * 
  * @author Richard Domander
  * @see org.bonej.ops.SolveQuadricEq
