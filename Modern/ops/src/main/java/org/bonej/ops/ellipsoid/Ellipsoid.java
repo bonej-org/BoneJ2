@@ -1,8 +1,10 @@
 
 package org.bonej.ops.ellipsoid;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.ops.OpEnvironment;
@@ -23,6 +25,7 @@ import org.scijava.vecmath.Vector3d;
  * @author Richard Domander
  * @author Alessandro Felder
  */
+// TODO Should vectors also be (returned) in homogeneous coordinates (Vector4d)?
 public class Ellipsoid {
 
 	private double a;
@@ -211,6 +214,23 @@ public class Ellipsoid {
 	}
 
 	/**
+	 * Returns a copy of the semi-axes of the ellipsoid.
+	 *
+	 * @return semi-axes with radii a, b, c.
+	 */
+	public List<Vector3d> getSemiAxes() {
+		final double[] radii = { a, b, c };
+		final ArrayList<Vector3d> axes = Stream.generate(Vector3d::new).limit(3)
+			.collect(Collectors.toCollection(ArrayList::new));
+		for (int i = 0; i < 3; i++) {
+			final Vector3d axis = axes.get(i);
+			orientation.getColumn(i, axis);
+			axis.scale(radii[i]);
+		}
+		return axes;
+	}
+
+	/**
 	 * Gets the volume of the ellipsoid.
 	 *
 	 * @return ellipsoid volume.
@@ -255,6 +275,7 @@ public class Ellipsoid {
 		return points;
 	}
 
+	// region -- Helper methods --
 	private void mapToOrientation(final Vector3d v) {
 		final Vector3d[] rowVectors = Stream.generate(Vector3d::new).limit(3)
 			.toArray(Vector3d[]::new);
@@ -274,4 +295,5 @@ public class Ellipsoid {
 	private static boolean validRadius(final double r) {
 		return r > 0 && Double.isFinite(r);
 	}
+	// endregion
 }

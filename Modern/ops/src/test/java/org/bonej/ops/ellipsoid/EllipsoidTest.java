@@ -40,25 +40,37 @@ public class EllipsoidTest {
 
 	@Test
 	public void testConstructor() throws Exception {
+		// SETUP
 		final double a = 1.0;
 		final double b = 2.0;
 		final double c = 3.0;
+		final Vector3d expectedCentroid = new Vector3d(0, 0, 0);
+		final Matrix4d expectedOrientation = new Matrix4d();
+		expectedOrientation.setIdentity();
+		final List<Vector3d> expectedAxes = Arrays.asList(new Vector3d(a, 0, 0),
+			new Vector3d(0, b, 0), new Vector3d(0, 0, c));
 
+		// EXECUTE
 		final Ellipsoid ellipsoid = new Ellipsoid(b, c, a);
 
+		// VERIFY
 		assertEquals(a, ellipsoid.getA(), 1e-12);
 		assertEquals(b, ellipsoid.getB(), 1e-12);
 		assertEquals(c, ellipsoid.getC(), 1e-12);
 		final Vector3d centroid = ellipsoid.getCentroid();
 		assertNotNull("Default centroid should not be null", centroid);
-		assertEquals("Default centroid should be at origin", new Vector3d(0, 0, 0),
+		assertEquals("Default centroid should be at origin", expectedCentroid,
 			centroid);
 		final Matrix4d orientation = ellipsoid.getOrientation();
 		assertNotNull("Default orientation matrix should not be null", orientation);
-		final Matrix4d i = new Matrix4d();
-		i.setIdentity();
-		assertEquals("Default orientation matrix should be identity", i,
-			orientation);
+		assertEquals("Default orientation matrix should be identity",
+			expectedOrientation, orientation);
+		final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
+		assertNotNull("Default semi-axes should not be null", semiAxes);
+		for (int i = 0; i < 3; i++) {
+			assertEquals("Default semi-axis is incorrect", expectedAxes.get(i),
+				semiAxes.get(i));
+		}
 	}
 
 	@Test
@@ -83,6 +95,34 @@ public class EllipsoidTest {
 
 		assertFalse("Getter should have returned a copy, not a reference",
 			expected == orientation);
+	}
+
+	@Test
+	public void testGetSemiAxes() throws Exception {
+		// SETUP
+		final double a = 2.0;
+		final double b = 4.0;
+		final double c = 8.0;
+		// @formatter:off
+		final Matrix3d orientation = new Matrix3d(
+				-1, 0, 0,
+				0, -1, 0,
+				0, 0, 1
+		);
+		// @formatter:on
+		final List<Vector3d> expectedAxes = Arrays.asList(new Vector3d(-a, 0, 0),
+			new Vector3d(0, -b, 0), new Vector3d(0, 0, c));
+		final Ellipsoid ellipsoid = new Ellipsoid(b, c, a);
+		ellipsoid.setOrientation(orientation);
+
+		// EXECUTE
+		final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
+
+		// VERIFY
+		for (int i = 0; i < 3; i++) {
+			assertEquals("Default semi-axis is incorrect", expectedAxes.get(i),
+				semiAxes.get(i));
+		}
 	}
 
 	@Test
