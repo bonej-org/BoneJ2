@@ -146,7 +146,8 @@ public class SolveQuadricEq extends
 	}
 
 	/**
-	 * Creates a matrix out of a quadric surface solution vector.
+	 * Creates a matrix out of a quadric surface solution vector in homogeneous
+	 * coordinates (w = 1).
 	 *
 	 * @see #solveVector(Collection)
 	 * @return a matrix representing the polynomial solution vector in an
