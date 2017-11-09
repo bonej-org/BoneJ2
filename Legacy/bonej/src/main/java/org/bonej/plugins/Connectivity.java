@@ -108,7 +108,6 @@ public class Connectivity implements PlugIn {
 		if (!ImageCheck.checkEnvironment())
 			return;
 		final ImagePlus imp = IJ.getImage();
-		final ImageCheck ic = new ImageCheck();
 		if (!ImageCheck.isBinary(imp)) {
 			IJ.error("Connectivity requires a binary image.");
 			return;

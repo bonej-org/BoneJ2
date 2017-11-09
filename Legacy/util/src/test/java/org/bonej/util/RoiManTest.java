@@ -187,9 +187,6 @@ public class RoiManTest {
 		when(mockRoiManager.getRoisAsArray()).thenReturn(rois);
 		when(mockRoiManager.getCount()).thenReturn(rois.length);
 
-		assertTrue("Sanity check failed: ROI is not active on all slides",
-				RoiMan.isActiveOnAllSlices(mockRoiManager, allActive));
-
 		final int limitsResult[] = RoiMan.getLimits(mockRoiManager, testStack);
 
 		assertEquals("Limits should start from the first slide", 1, limitsResult[MIN_Z_INDEX]);

@@ -22,14 +22,9 @@
 package org.bonej.geometry;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-
 import org.junit.Test;
-
-import sc.fiji.analyzeSkeleton.Point;
 
 public class CentroidTest {
 
@@ -80,33 +75,4 @@ public class CentroidTest {
 		assertArrayEquals(centroid1d, Centroid.getCentroid(oneD), 1E-9);
 
 	}
-
-	@Test
-	public void testGetCentroidDoubleArray() {
-		assertEquals(10.5, Centroid.getCentroid(oneDa), 1E-9);
-		assertEquals(10.0, Centroid.getCentroid(oneDb), 1E-9);
-		assertEquals(9.0, Centroid.getCentroid(oneDc), 1E-9);
-		assertEquals(8.5, Centroid.getCentroid(oneDd), 1E-9);
-		assertEquals(8.0, Centroid.getCentroid(oneDe), 1E-9);
-		assertEquals(7.5, Centroid.getCentroid(oneDf), 1E-9);
-		assertEquals(7.0, Centroid.getCentroid(oneDg), 1E-9);
-		assertEquals(6.5, Centroid.getCentroid(oneDh), 1E-9);
-		assertEquals(6.0, Centroid.getCentroid(oneDi), 1E-9);
-		assertEquals(5.5, Centroid.getCentroid(oneDj), 1E-9);
-	}
-
-	@Test
-	public void testGetCentroidArrayListPoint() {
-		final ArrayList<Point> points = new ArrayList<Point>();
-		for (int iMax = 10; iMax < 1000; iMax++) {
-			points.clear();
-			for (int i = 1; i < iMax; i++) {
-				points.add(new Point(i, i, i));
-			}
-			final double expected = iMax / 2.0;
-			final double[] expecteds = { expected, expected, expected };
-			assertArrayEquals(expecteds, Centroid.getCentroid(points), 1E-9);
-		}
-	}
-
 }

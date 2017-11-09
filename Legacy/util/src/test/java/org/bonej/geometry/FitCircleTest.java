@@ -33,8 +33,6 @@ public class FitCircleTest {
 	final static double y = 100;
 	/** radius */
 	final static double r = 100;
-	/** expected result */
-	final static double[] expected = { x, y, r };
 	/** Equally-spaced points on a full circle, without noise */
 	final static double[][] points = FitCircle.getTestCircle(x, y, r, 1000, 0.0);
 	/** Equally-spaced points on a full circle, with noise */
@@ -43,78 +41,6 @@ public class FitCircleTest {
 	final static double[][] arcPoints = FitCircle.getTestCircle(x, y, r, 100, 1, 1.5, 0.0);
 	/** Equally-spaced points on a circular arc, with noise */
 	final static double[][] noisyArcPoints = FitCircle.getTestCircle(x, y, r, 100, 1, 1.5, 0.001);
-
-	@Test
-	public void testKasaFit() {
-		assertArrayEquals(expected, FitCircle.kasaFit(points), 1e-10);
-		assertArrayEquals(expected, FitCircle.kasaFit(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.kasaFit(arcPoints), 1e-10);
-		assertArrayEquals(expected, FitCircle.kasaFit(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testPrattNewton() {
-		assertArrayEquals(expected, FitCircle.prattNewton(points), 1e-10);
-		assertArrayEquals(expected, FitCircle.prattNewton(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.prattNewton(arcPoints), 1e-10);
-		assertArrayEquals(expected, FitCircle.prattNewton(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testPrattSVD() {
-		assertArrayEquals(expected, FitCircle.prattSVD(points), 1e-10);
-		assertArrayEquals(expected, FitCircle.prattSVD(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.prattSVD(arcPoints), 1e-10);
-		assertArrayEquals(expected, FitCircle.prattSVD(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testTaubinNewton() {
-		assertArrayEquals(expected, FitCircle.taubinNewton(points), 1e-10);
-		assertArrayEquals(expected, FitCircle.taubinNewton(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.taubinNewton(arcPoints), 1e-10);
-		assertArrayEquals(expected, FitCircle.taubinNewton(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testTaubinSVD() {
-		assertArrayEquals(expected, FitCircle.taubinSVD(points), 1e-10);
-		assertArrayEquals(expected, FitCircle.taubinSVD(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.taubinSVD(arcPoints), 1e-10);
-		assertArrayEquals(expected, FitCircle.taubinSVD(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testHyperSimple() {
-		assertArrayEquals(expected, FitCircle.hyperSimple(points), 1e-6);
-		assertArrayEquals(expected, FitCircle.hyperSimple(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.hyperSimple(arcPoints), 1e-6);
-		assertArrayEquals(expected, FitCircle.hyperSimple(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testHyperStable() {
-		assertArrayEquals(expected, FitCircle.hyperSimple(points), 1e-6);
-		assertArrayEquals(expected, FitCircle.hyperSimple(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.hyperSimple(arcPoints), 1e-6);
-		assertArrayEquals(expected, FitCircle.hyperSimple(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testLevenMarqFull() {
-		assertArrayEquals(expected, FitCircle.levenMarqFull(points), 1e-10);
-		assertArrayEquals(expected, FitCircle.levenMarqFull(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.levenMarqFull(arcPoints), 1e-10);
-		assertArrayEquals(expected, FitCircle.levenMarqFull(noisyArcPoints), 1);
-	}
-
-	@Test
-	public void testLevenMarqRed() {
-		assertArrayEquals(expected, FitCircle.levenMarqRed(points), 1e-10);
-		assertArrayEquals(expected, FitCircle.levenMarqRed(noisyPoints), 1e-2);
-		assertArrayEquals(expected, FitCircle.levenMarqRed(arcPoints), 1e-10);
-		assertArrayEquals(expected, FitCircle.levenMarqRed(noisyArcPoints), 1);
-	}
 
 	@Test
 	public void testGetTestCircle() {

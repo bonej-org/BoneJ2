@@ -21,10 +21,6 @@
  */
 package org.bonej.geometry;
 
-import java.util.ArrayList;
-
-import sc.fiji.analyzeSkeleton.Point;
-
 public class Centroid {
 
 	/**
@@ -143,75 +139,5 @@ public class Centroid {
 		}
 
 		return centroid;
-	}
-
-	/**
-	 * Return the centroid of a 1D array, which is its mean value
-	 *
-	 * @param points
-	 * @return the mean value of the points
-	 */
-	@Deprecated
-	public static double getCentroid(final double[] points) {
-		final int nPoints = points.length;
-		double sum = 0;
-		for (int n = 0; n < nPoints; n++) {
-			sum += points[n];
-		}
-		return sum / nPoints;
-	}
-
-	/**
-	 * Calculate the centroid of a list of 3D Points
-	 *
-	 * @param points
-	 * @return
-	 */
-	@Deprecated
-	public static double[] getCentroid(final ArrayList<Point> points) {
-		double xsum = 0;
-		double ysum = 0;
-		double zsum = 0;
-		final double n = points.size();
-
-		for (final Point p : points) {
-			xsum += p.x;
-			ysum += p.y;
-			zsum += p.z;
-		}
-		final double[] centroid = { xsum / n, ysum / n, zsum / n };
-		return centroid;
-	}
-
-	/**
-	 * Returns the centroid Point of the given Points
-	 *
-	 * NB Might not be the exact centroid, because Point coordinates are
-	 * integers.
-	 *
-	 * @return The centroid Point Returns null if the given list is null or
-	 *         empty
-	 */
-	@Deprecated
-	public static Point getCentroidPoint(final ArrayList<Point> points) {
-		if (points == null || points.isEmpty()) {
-			return null;
-		}
-
-		double xSum = 0.0;
-		double ySum = 0.0;
-		double zSum = 0.0;
-
-		for (final Point p : points) {
-			xSum += p.x;
-			ySum += p.y;
-			zSum += p.z;
-		}
-
-		final double n = points.size();
-		final int x = (int) Math.round(xSum / n);
-		final int y = (int) Math.round(ySum / n);
-		final int z = (int) Math.round(zSum / n);
-		return new Point(x, y, z);
 	}
 }

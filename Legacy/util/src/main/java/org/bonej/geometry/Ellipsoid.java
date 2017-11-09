@@ -288,18 +288,6 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Contract the semiaxes by independent absolute amounts
-	 *
-	 * @param ca
-	 * @param cb
-	 * @param cd
-	 */
-	@Deprecated
-	public void contract(final double ca, final double cb, final double cd) {
-		dilate(-ca, -cb, -cd);
-	}
-
-	/**
 	 * Dilate the ellipsoid semiaxes by independent absolute amounts
 	 *
 	 * @param da
@@ -308,23 +296,6 @@ public class Ellipsoid {
 	 */
 	public void dilate(final double da, final double db, final double dc) {
 		setRadii(this.ra + da, this.rb + db, this.rc + dc);
-	}
-
-	/**
-	 * Translate the ellipsoid
-	 *
-	 * @param dx
-	 *            shift in x
-	 * @param dy
-	 *            shift in y
-	 * @param dz
-	 *            shift in z
-	 */
-	@Deprecated
-	public void translate(final double dx, final double dy, final double dz) {
-		this.cx += dx;
-		this.cy += dy;
-		this.cz += dz;
 	}
 
 	/**
@@ -468,54 +439,6 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Get the 9 variables a - k of the equation
-	 * <p>
-	 * <i>ax</i><sup>2</sup> + <i>by</i><sup>2</sup> + <i>cz</i><sup>2</sup> + 2
-	 * <i>dxy</i> + 2<i>fxz</i> + 2<i>gyz</i> + 2<i>hx</i> + 2<i>jy</i> + 2
-	 * <i>kz</i> = 1
-	 * </p>
-	 *
-	 * Thanks to Alessandro Felder for pointing out how this can be determined
-	 * trivially by multiplying out the elements of the matrix relation
-	 *
-	 * <p>
-	 * [X - X<sub>0</sub>]<sup><i>T</i></sup> <i>H</i> [X - X<sub>0</sub>]
-	 * </p>
-	 *
-	 * @return 9-element array containing the ellipsoid equation variables a-k
-	 *
-	 * @see http://en.wikipedia.org/wiki/Matrix_multiplication#Row_vector.2
-	 *      C_square_matrix.2C_and_column_vector
-	 */
-	@Deprecated
-	public double[] getEquation() {
-		final double h2112 = eh[1][0] + eh[0][1];
-		final double h3113 = eh[2][0] + eh[0][2];
-		final double h3223 = eh[2][1] + eh[1][2];
-		final double h11 = eh[0][0];
-		final double h22 = eh[1][1];
-		final double h33 = eh[2][2];
-		final double p = h11 * cx * cx + h22 * cy * cy + h33 * cz * cz + h2112 * cx * cy + h3113 * cx * cz
-				+ h3223 * cy * cz;
-		final double q = 1 - p;
-		final double twoQ = 2 * q;
-
-		final double a = h11 / q;
-		final double b = h22 / q;
-		final double c = h33 / q;
-		final double d = h2112 / twoQ;
-		final double f = h3113 / twoQ;
-		final double g = h3223 / twoQ;
-		final double h = (-2 * cx * h11 - cy * h2112 - cz * h3113) / twoQ;
-		final double j = (-2 * cy * h22 - cx * h2112 - cz * h3223) / twoQ;
-		final double k = (-2 * cz * h33 - cx * h3113 - cy * h3223) / twoQ;
-
-		final double[] equation = { a, b, c, d, f, g, h, j, k };
-
-		return equation;
-	}
-
-	/**
 	 * High performance 3x3 matrix multiplier with no bounds or error checking
 	 *
 	 * @param a
@@ -628,40 +551,5 @@ public class Ellipsoid {
 	public Ellipsoid copy() {
 		final Ellipsoid copy = new Ellipsoid(this.ra, this.rb, this.rc, this.cx, this.cy, this.cz, this.ev.clone());
 		return copy;
-	}
-
-	/**
-	 * Generate a string of useful information about this Ellipsoid
-	 */
-	@Deprecated
-	public String debugOutput() {
-		String string = "Ellipsoid variables:\n";
-
-		string = string + "\nCentre: \n";
-		string = string + "cx: " + this.cx + "\n";
-		string = string + "cy: " + this.cy + "\n";
-		string = string + "cz: " + this.cz + "\n";
-
-		string = string + "\nRadii: \n";
-		string = string + "ra: " + this.ra + "\n";
-		string = string + "rb: " + this.rb + "\n";
-		string = string + "rc: " + this.rc + "\n";
-
-		string = string + "\nEigenvalues: \n";
-		string = string + "eVal0 = " + ed[0][0] + "\n";
-		string = string + "eVal1 = " + ed[1][1] + "\n";
-		string = string + "eVal2 = " + ed[2][2] + "\n";
-
-		string = string + "\nEigenvectors: \n";
-		string = string + "eV00 = " + ev[0][0] + "\n";
-		string = string + "eV01 = " + ev[0][1] + "\n";
-		string = string + "eV02 = " + ev[0][2] + "\n";
-		string = string + "eV10 = " + ev[1][0] + "\n";
-		string = string + "eV11 = " + ev[1][1] + "\n";
-		string = string + "eV12 = " + ev[1][2] + "\n";
-		string = string + "eV20 = " + ev[2][0] + "\n";
-		string = string + "eV21 = " + ev[2][1] + "\n";
-		string = string + "eV22 = " + ev[2][2] + "\n";
-		return string;
 	}
 }

@@ -231,12 +231,6 @@ public class TestDataMaker {
 		return imp;
 	}
 
-	/** @deprecated Use {@link #binaryNoise(int, int, int, double, Random) binaryNoise} instead */
-	@Deprecated
-	public static ImagePlus binaryNoise(final int width, final int height, final int depth, final double ratio) {
-		return  binaryNoise(width, height, depth, ratio, new Random());
-	}
-
 	public static ImagePlus plates(final int width, final int height, final int depth, final int spacing) {
 		final ImageStack stack = new ImageStack(width, height);
 		for (int i = 0; i < depth; i++)

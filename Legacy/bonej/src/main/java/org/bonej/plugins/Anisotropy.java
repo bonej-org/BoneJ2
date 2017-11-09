@@ -94,7 +94,6 @@ public class Anisotropy implements PlugIn, DialogListener {
 			IJ.noImage();
 			return;
 		}
-		final ImageCheck ic = new ImageCheck();
 		if (!ImageCheck.isBinary(imp)) {
 			IJ.error("8-bit binary (black and white only) image required.");
 			return;

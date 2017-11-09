@@ -187,16 +187,6 @@ public class RoiMan {
 		return limits;
 	}
 
-	@Deprecated
-	public static boolean isActiveOnAllSlices(final RoiManager roiManager, final Roi roi) {
-		if (roi.getName() == null) {
-			return false;
-		}
-
-		final int sliceNumber = roiManager.getSliceNumber(roi.getName());
-		return isActiveOnAllSlices(sliceNumber);
-	}
-
 	/**
 	 * Crops the given rectangle to the area [0, 0, width, height]
 	 *

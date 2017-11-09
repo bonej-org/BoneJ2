@@ -47,15 +47,6 @@ public class MatrixUtils {
 	}
 
 	/**
-	 * Print Matrix to ImageJ log window
-	 */
-	@Deprecated
-	public static void printToIJLog(final Matrix matrix) {
-		printToIJLog(matrix, "");
-		return;
-	}
-
-	/**
 	 * Print the Matrix to the ImageJ log
 	 *
 	 * @param title
@@ -130,36 +121,6 @@ public class MatrixUtils {
 			return true;
 
 		return false;
-	}
-
-	/**
-	 * Create an n * n square identity matrix with 1 on the diagonal and 0
-	 * elsewhere
-	 *
-	 * @param n
-	 *            square matrix dimension
-	 * @return n * n identity matrix
-	 */
-	@Deprecated
-	public static Matrix eye(final int n) {
-		return eye(n, n);
-	}
-
-	/**
-	 * Create an m * n identity matrix
-	 *
-	 * @param m
-	 * @param n
-	 * @return
-	 */
-	@Deprecated
-	public static Matrix eye(final int m, final int n) {
-		final double[][] eye = new double[m][n];
-		final int min = Math.min(m, n);
-		for (int i = 0; i < min; i++) {
-			eye[i][i] = 1;
-		}
-		return new Matrix(eye);
 	}
 
 	/**

@@ -44,7 +44,6 @@ public class DetectedEdge implements Comparable<DetectedEdge> {
 
 	@Override
 	public int compareTo(final DetectedEdge o) {
-		final int returnValue = 0;
 		if (o == null || this == null) {
 			throw new NullPointerException();
 		}

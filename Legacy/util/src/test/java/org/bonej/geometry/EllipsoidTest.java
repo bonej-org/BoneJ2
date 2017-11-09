@@ -248,24 +248,4 @@ public class EllipsoidTest {
 		}
 	}
 
-	@Test
-	public void testGetEquation() {
-
-		for (int i = 1; i < 1000; i++) {
-			final double q = i * 0.1;
-			final double a = q;
-			final double b = Math.pow(q, 1.1);
-			final double c = Math.pow(q, 1.5);
-			final double x = i;
-			final double y = i * 0.1;
-			final double z = i;
-
-			final Object[] fit = FitEllipsoid
-					.yuryPetrov(FitEllipsoid.testEllipsoid(a, b, c, Math.PI / 4.32, x, y, z, 0, 1000, true));
-			final Ellipsoid ellipsoid = new Ellipsoid(fit);
-			final double[] eq = ellipsoid.getEquation();
-			final double[] fitEq = (double[]) fit[3];
-			assertArrayEquals(fitEq, eq, 1E-3);
-		}
-	}
 }

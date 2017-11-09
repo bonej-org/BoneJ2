@@ -52,33 +52,6 @@ public class Vectors {
 	}
 
 	/**
-	 * Calculate the cross product of 3 double[3]'s, which describe two vectors
-	 * joined at the tails. Can be used to find the plane / surface normal of a
-	 * triangle. Half of its magnitude is the area of the triangle.
-	 *
-	 * @param point0
-	 *            both vectors' tails
-	 * @param point1
-	 *            vector 1's head
-	 * @param point2
-	 *            vector 2's head
-	 *
-	 * @return cross product vector
-	 */
-	@Deprecated
-	public static double[] crossProduct(final double[] point0, final double[] point1, final double[] point2) {
-		final double x1 = point1[0] - point0[0];
-		final double y1 = point1[1] - point0[1];
-		final double z1 = point1[2] - point0[2];
-
-		final double x2 = point2[0] - point0[0];
-		final double y2 = point2[1] - point0[1];
-		final double z2 = point2[2] - point0[2];
-
-		return crossProduct(x1, y1, z1, x2, y2, z2);
-	}
-
-	/**
 	 * Calculate the cross product of two vectors (x1, y1, z1) and (x2, y2, z2)
 	 *
 	 * @param x1

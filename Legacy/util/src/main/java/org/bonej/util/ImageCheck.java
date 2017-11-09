@@ -124,18 +124,6 @@ public class ImageCheck {
 	}
 
 	/**
-	 * Run isVoxelIsotropic() with a default tolerance of 0%
-	 *
-	 * @param imp
-	 *            input image
-	 * @return false if voxel dimensions are not equal
-	 */
-	@Deprecated
-	public static boolean isVoxelIsotropic(final ImagePlus imp) {
-		return isVoxelIsotropic(imp, 0.0);
-	}
-
-	/**
 	 * Check that the voxel thickness is correct
 	 *
 	 * @param imp
@@ -261,48 +249,6 @@ public class ImageCheck {
 		}
 
 		return checkIJVersion();
-	}
-
-	/**
-	 * Check that IJ has enough memory to do the job
-	 *
-	 * @param memoryRequirement
-	 *            Estimated required memory
-	 * @return True if there is enough memory or if the user wants to continue.
-	 *         False if the user wants to continue despite a risk of
-	 *         insufficient memory
-	 */
-	@Deprecated
-	public static boolean checkMemory(final long memoryRequirement) {
-		if (memoryRequirement > IJ.maxMemory()) {
-			final String message = "You might not have enough memory to run this job.\n" + "Do you want to continue?";
-			if (IJ.showMessageWithCancel("Memory Warning", message))
-				return true;
-
-			return false;
-		}
-		return true;
-	}
-
-	@Deprecated
-	public static boolean checkMemory(final ImagePlus imp, final double ratio) {
-		double size = ((double) imp.getWidth() * imp.getHeight() * imp.getStackSize());
-		switch (imp.getType()) {
-		case ImagePlus.GRAY8:
-		case ImagePlus.COLOR_256:
-			break;
-		case ImagePlus.GRAY16:
-			size *= 2.0;
-			break;
-		case ImagePlus.GRAY32:
-			size *= 4.0;
-			break;
-		case ImagePlus.COLOR_RGB:
-			size *= 4.0;
-			break;
-		}
-		final long memoryRequirement = (long) (size * ratio);
-		return checkMemory(memoryRequirement);
 	}
 
 	/**

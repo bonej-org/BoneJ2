@@ -24,9 +24,10 @@ package org.bonej.geometry;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-//import org.doube.jama.Matrix;
 import org.junit.Test;
 import org.scijava.vecmath.Point3f;
+
+//import org.doube.jama.Matrix;
 
 public class VectorsTest {
 	Point3f p0 = new Point3f(1.0f, 2.0f, 3.0f);
@@ -48,13 +49,6 @@ public class VectorsTest {
 		final Point3f result = Vectors.crossProduct(p0, p1, p2);
 		final Point3f expected = new Point3f(6.0f, -12.0f, 6.0f);
 		assertEquals(expected, result);
-	}
-
-	@Test
-	public void testCrossProductDoubleArrayDoubleArrayDoubleArray() {
-		final double[] result = Vectors.crossProduct(point0, point1, point2);
-		final double[] expected = { 6, -12, 6 };
-		assertArrayEquals(expected, result, 1e-12);
 	}
 
 	@Test

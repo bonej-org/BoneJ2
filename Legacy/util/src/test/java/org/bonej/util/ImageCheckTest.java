@@ -21,12 +21,6 @@ public class ImageCheckTest {
 	private static final int BINARY_BLACK = 0x00;
 
 	@Test
-	public void testIsVoxelIsotropicReturnsFalseIfImageIsNull() throws Exception {
-		final boolean result = ImageCheck.isVoxelIsotropic(null);
-		assertFalse("Null image should not be isotropic", result);
-	}
-
-	@Test
 	public void testIsVoxelIsotropic() throws Exception {
 		final ImagePlus testImage = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
