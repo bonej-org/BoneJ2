@@ -6,37 +6,44 @@ import java.util.stream.Collectors;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
+import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
+import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
+import org.bonej.ops.RotateAboutAxis;
+import org.scijava.vecmath.AxisAngle4d;
+import org.scijava.vecmath.Vector3d;
 
 
-public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Vector3D, Ellipsoid> implements Contingent {
+public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Vector3d, Ellipsoid> implements Contingent {
 
     private final static UnitSphereRandomVectorGenerator rvg = new UnitSphereRandomVectorGenerator(4);
+    private BinaryHybridCFI1<Vector3d, AxisAngle4d, Vector3d> rotateVectorOp;
+
 
     @Override
-    public Ellipsoid calculate(final RandomAccessibleInterval<B> binaryImage, final Vector3D seedPoint) {
+    public Ellipsoid calculate(final RandomAccessibleInterval<B> binaryImage, final Vector3d seedPoint) {
+        rotateVectorOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class, Vector3d.class,
+                Vector3d.class, AxisAngle4d.class);
 
         double maxSamplingRadius = 25;
         double samplingWidth = 1.0;
 
         int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,samplingWidth);
         int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius/samplingWidth);
-        List<Vector3D> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+        List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
 
         List<Ellipsoid> ellipsoids = sphereSamplingDirections.stream().map(dir -> getEllipsoidFromInitialAxis(seedPoint, nPlane, dir)).collect(Collectors.toList());
 
         ellipsoids.sort((o1,o2) -> {
-                if(o1.getA()*o1.getB()*o1.getC()<o2.getA()*o2.getB()*o2.getC())
+                if(o1.getVolume()<o2.getVolume())
                 {
                     return 1;
                 }
-                if(o1.getA()*o1.getB()*o1.getC()>o2.getA()*o2.getB()*o2.getC())
+                if(o1.getVolume()>o2.getVolume())
                 {
                     return -1;
                 }
@@ -46,74 +53,91 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return ellipsoids.get(0);
     }
 
-    public Ellipsoid getEllipsoidFromInitialAxis(Vector3D seedPoint, int nPlane, Vector3D initialAxis) {
-        List<Vector3D> firstDirectionToTry = new ArrayList<>();
+    public Ellipsoid getEllipsoidFromInitialAxis(Vector3d seedPoint, int nPlane, Vector3d initialAxis) {
+        List<Vector3d> firstDirectionToTry = new ArrayList<>();
         firstDirectionToTry.add(initialAxis);
 
-        Vector3D firstAxis = findClosestContact(seedPoint, firstDirectionToTry);
+        Vector3d firstAxis = findClosestContact(seedPoint, firstDirectionToTry);
 
-        List<Vector3D> orthogonalSearchDirections = getOrthogonalSearchDirections(getFlooredVector3D(firstAxis), nPlane);
+        List<Vector3d> orthogonalSearchDirections = getSearchDirectionsInPlane(getFlooredVector3d(firstAxis), nPlane);
 
-        Vector3D secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
+        Vector3d secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
 
-        List<Vector3D> thirdAxisSearchDirections = new ArrayList<>();
+        List<Vector3d> thirdAxisSearchDirections = new ArrayList<>();
 
-        Vector3D thirdAxisSearchDirection = getFlooredVector3D(secondAxis).crossProduct(getFlooredVector3D(firstAxis)).normalize();
+        Vector3d thirdAxisSearchDirection = new Vector3d();
+        thirdAxisSearchDirection.cross(secondAxis,firstAxis);
+        thirdAxisSearchDirection.normalize();
+        Vector3d negativeThirdAxisSearchDirection = new Vector3d(thirdAxisSearchDirection);
+        negativeThirdAxisSearchDirection.scale(-1.0);
+
         thirdAxisSearchDirections.add(thirdAxisSearchDirection);
-        thirdAxisSearchDirections.add(thirdAxisSearchDirection.scalarMultiply(-1.0));
+        thirdAxisSearchDirections.add(negativeThirdAxisSearchDirection);
 
-        Vector3D thirdAxis = findClosestContact(seedPoint,thirdAxisSearchDirections);
+        Vector3d thirdAxis = findClosestContact(seedPoint,thirdAxisSearchDirections);
 
-        double a = Math.max(firstAxis.getNorm()-1,1.0);
-        double b = Math.max(secondAxis.getNorm()-1,1.0);
-        double c = Math.max(thirdAxis.getNorm()-1,1.0);
+        double a = Math.max(firstAxis.length()-1,1.0);
+        double b = Math.max(secondAxis.length()-1,1.0);
+        double c = Math.max(thirdAxis.length()-1,1.0);
 
-        return new Ellipsoid(a,b,c);
+        Ellipsoid ellipsoid = new Ellipsoid(a,b,c);
+
+        //ellipsoid.setOrientation(new Matrix3d(firstAxis.getX(),secondAxis.getX(),thirdAxis.getX()));
+
+        return ellipsoid;
     }
 
-    public static Vector3D getFlooredVector3D(Vector3D vector) {
-        return new Vector3D(Math.floor(vector.getX()), Math.floor(vector.getY()), Math.floor(vector.getZ()));
+    static Vector3d getFlooredVector3d(Vector3d vector) {
+        return new Vector3d(Math.floor(vector.getX()), Math.floor(vector.getY()), Math.floor(vector.getZ()));
     }
 
-    private static List<Vector3D> getOrthogonalSearchDirections(Vector3D firstAxis, int nPlane) {
-        Rotation inPlaneRotation = new Rotation(firstAxis, 2*Math.PI/nPlane);
-
+    private List<Vector3d> getSearchDirectionsInPlane(Vector3d planeNormalAxis, int n) {
+        AxisAngle4d axisAngle = new AxisAngle4d(planeNormalAxis, 2*Math.PI/n);
 
         double [] searchDirection = rvg.nextVector();
-        Vector3D orthogonal = firstAxis.crossProduct(new Vector3D(searchDirection[0],searchDirection[1],searchDirection[2]));
-        orthogonal = orthogonal.normalize();
+        Vector3d inPlaneVector = new Vector3d(searchDirection[0],searchDirection[1],searchDirection[2]);
+        inPlaneVector.cross(planeNormalAxis, inPlaneVector);
+        inPlaneVector.normalize();
 
-        List<Vector3D> orthogonalSearchDirections = new ArrayList<>();
+        List<Vector3d> inPlaneSearchDirections = new ArrayList<>();
 
-        for(int k=0; k<nPlane-1; k++)
+        for(int k=0; k<n-1; k++)
         {
-            orthogonalSearchDirections.add(new Vector3D(1.0,orthogonal));
-            orthogonal = inPlaneRotation.applyTo(orthogonal);
+            inPlaneSearchDirections.add(inPlaneVector);
+            inPlaneVector = rotateVectorOp.calculate(inPlaneVector,axisAngle);
         }
-        return orthogonalSearchDirections;
+        return inPlaneSearchDirections;
     }
 
-    private Vector3D findClosestContact(Vector3D seedPoint, List<Vector3D> samplingDirections) throws IllegalArgumentException {
-            List<Vector3D> contactPoints = new ArrayList<>();
-            samplingDirections.forEach(d -> contactPoints.add(findFirstPointInBGAlongRay(d.normalize(), seedPoint)));
+    private Vector3d findClosestContact(Vector3d seedPoint, List<Vector3d> samplingDirections) {
+            List<Vector3d> contactPoints = new ArrayList<>();
+
+            samplingDirections.forEach(d -> {
+                d.normalize();
+                contactPoints.add(findFirstPointInBGAlongRay(d, seedPoint));});
+
             contactPoints.sort((o1, o2) -> {
-                if (o1.subtract(seedPoint).getNorm() < o2.subtract(seedPoint).getNorm()) {
+                o1.scaleAdd(-1.0,seedPoint);
+                o2.scaleAdd(-1.0,seedPoint);
+                if (o1.length() < o2.length()) {
                     return -1;
                 }
-                if (o1.subtract(seedPoint).getNorm() > o2.subtract(seedPoint).getNorm()) {
+                if (o1.length() > o2.length()) {
                     return 1;
                 }
                 return 0;
             });
 
-            return contactPoints.get(0).subtract(seedPoint);
+            Vector3d closestContact = contactPoints.get(0);
+            closestContact.scaleAdd(-1.0,seedPoint);
+            return closestContact;
     }
 
-    static List<Vector3D> getGeneralizedSpiralSetOnSphere(int n){
+    static List<Vector3d> getGeneralizedSpiralSetOnSphere(int n){
         //follows nomenclature of Saff and Kuijlaars, 1997 describing the work of Rakhmanov et al, 1994
         //k is shifted to the left for convenient indexing.
         //n needs to be greater than 2.
-        List<Vector3D> spiralSet = new ArrayList<>();
+        List<Vector3d> spiralSet = new ArrayList<>();
 
         List<Double> phi = new ArrayList<>();
         phi.add(0.0);
@@ -128,7 +152,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         {
             double h = -1.0+2.0*((double)k)/(n-1);
             double theta = Math.acos(h);
-             spiralSet.add(new Vector3D(Math.sin(theta)*Math.cos(phi.get(k)), Math.sin(theta)*Math.sin(phi.get(k)), Math.cos(theta)));
+             spiralSet.add(new Vector3d(Math.sin(theta)*Math.cos(phi.get(k)), Math.sin(theta)*Math.sin(phi.get(k)), Math.cos(theta)));
 
         }
 
@@ -147,17 +171,17 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return (int) Math.ceil(Math.pow(searchRadius*3.809/pixelWidth,2));
     }
 
-    Vector3D findFirstPointInBGAlongRay(final Vector3D rayIncrement, final Vector3D start)
+    Vector3d findFirstPointInBGAlongRay(final Vector3d rayIncrement, final Vector3d start)
     {
         RandomAccess<B> randomAccess = in1().randomAccess();
 
-        Vector3D currentRealPosition = start;
+        Vector3d currentRealPosition = start;
         long[] currentPixelPosition = vectorToPixelGrid(start);
         randomAccess.setPosition(currentPixelPosition);
 
         while(randomAccess.get().get())
         {
-            currentRealPosition = currentRealPosition.add(rayIncrement);
+            currentRealPosition.add(rayIncrement);
             currentPixelPosition = vectorToPixelGrid(currentRealPosition);
             if(!isInBounds(currentPixelPosition)) break;
             randomAccess.setPosition(currentPixelPosition);
@@ -172,8 +196,8 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return currentPixelPosition[0]>0 && currentPixelPosition[0]<width && currentPixelPosition[1]>0 && currentPixelPosition[1]<height && currentPixelPosition[2]>0 && currentPixelPosition[2]<depth;
     }
 
-    private long[] vectorToPixelGrid(Vector3D currentPosition) {
-        double[] dArray = currentPosition.toArray();
+    private long[] vectorToPixelGrid(Vector3d currentPosition) {
+        double[] dArray = {currentPosition.getX(), currentPosition.getY(), currentPosition.getZ()};
         long[] lArray = new long[3];
         lArray[0] = (long) dArray[0];
         lArray[1] = (long) dArray[1];

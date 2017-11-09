@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
+import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imglib2.Cursor;
 import net.imglib2.img.Img;
@@ -12,16 +13,19 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.junit.AfterClass;
 import org.junit.Test;
+import org.scijava.vecmath.Vector3d;
 
 public class FindEllipsoidOpTest {
+
+    private static final ImageJ IMAGE_J = new ImageJ();
 
     @Test
     public void testMaximalEllipsoidInConcaveSpace()
     {
         long[] imageDimensions = {101,101,101};
-        Vector3D imageCentre = new Vector3D(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
+        Vector3d imageCentre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
         long[] semiAxes1 = {2,3,1};
         long[] semiAxes2 = {6,1,1};
 
@@ -39,13 +43,14 @@ public class FindEllipsoidOpTest {
             double y = imageCentre.getY()-coordinates[1];
             double z = imageCentre.getZ()-coordinates[2];
 
-            boolean condition1 = ((x*x)/(semiAxes1[0]*semiAxes1[0])+(y*y)/(semiAxes1[1]*semiAxes1[1])+z*z/(semiAxes1[2]*semiAxes1[2])<=1.0);
-            boolean condition2 = ((x*x)/(semiAxes2[0]*semiAxes2[0])+(y*y)/(semiAxes2[1]*semiAxes2[1])+z*z/(semiAxes2[2]*semiAxes2[2])<=1.0);
+            boolean condition1 = ((x*x)/(semiAxes1[0]*semiAxes1[0])+(y*y)/(semiAxes1[1]*semiAxes1[1])+(z*z)/(semiAxes1[2]*semiAxes1[2])<=1.0);
+            boolean condition2 = ((x*x)/(semiAxes2[0]*semiAxes2[0])+(y*y)/(semiAxes2[1]*semiAxes2[1])+(z*z)/(semiAxes2[2]*semiAxes2[2])<=1.0);
             if(condition1 || condition2)
                 cursor.get().setOne();
         }
 
         FindEllipsoidOp<BitType> findEllipsoidOp = new FindEllipsoidOp<>();
+        findEllipsoidOp.setEnvironment(IMAGE_J.op());
 
         findEllipsoidOp.setInput1(imgPlus);
         findEllipsoidOp.setInput2(imageCentre);
@@ -60,7 +65,7 @@ public class FindEllipsoidOpTest {
     public void testContactPointsInCylinder()
     {
         long[] imageDimensions = {101,101,101};
-        Vector3D imageCentre = new Vector3D(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
+        Vector3d imageCentre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
         long cylinderRadius = 23;
 
         final Img<BitType> img = ArrayImgs.bits(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
@@ -102,7 +107,7 @@ public class FindEllipsoidOpTest {
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
 
-        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
+        Vector3d lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3d(1, 0, 0), new Vector3d(5, 5, 5));
 
         assertEquals(5,lastFGVoxelAlongRay.getX(),1.0e-12);
         assertEquals(5,lastFGVoxelAlongRay.getY(),1.0e-12);
@@ -120,7 +125,7 @@ public class FindEllipsoidOpTest {
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
 
-        Vector3D lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 0, 0), new Vector3D(5, 5, 5));
+        Vector3d lastFGVoxelAlongRay = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3d(1, 0, 0), new Vector3d(5, 5, 5));
 
         assertEquals(9,lastFGVoxelAlongRay.getX(),1.0e-12);
         assertEquals(5,lastFGVoxelAlongRay.getY(),1.0e-12);
@@ -146,23 +151,34 @@ public class FindEllipsoidOpTest {
         FindEllipsoidOp<BitType> FindEllipsoidOp = new FindEllipsoidOp<>();
         FindEllipsoidOp.setInput1(imgPlus);
 
-        Vector3D alongRay1 = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(-4, -3, -5).normalize(), new Vector3D(50, 50, 50));
-        Vector3D alongRay2 = FindEllipsoidOp.findFirstPointInBGAlongRay(new Vector3D(1, 1, 1).normalize(), new Vector3D(50, 50, 50));
+        Vector3d ray1 = new Vector3d(-4, -3, -5);
+        ray1.normalize();
+        Vector3d ray2 = new Vector3d(1, 1, 1);
+        ray2.normalize();
 
-        alongRay1 = FindEllipsoidOp.getFlooredVector3D(alongRay1);
-        alongRay2 = FindEllipsoidOp.getFlooredVector3D(alongRay2);
+        Vector3d alongRay1 = FindEllipsoidOp.findFirstPointInBGAlongRay(ray1, new Vector3d(50, 50, 50));
+        Vector3d alongRay2 = FindEllipsoidOp.findFirstPointInBGAlongRay(ray2, new Vector3d(50, 50, 50));
 
-        Vector3D radialVector1 = alongRay1.subtract(new Vector3D(50,50,50));
-        Vector3D radialVector2 = alongRay2.subtract(new Vector3D(50,50,50));
-        assertEquals(26,radialVector1.getNorm(),0.2);
-        assertEquals(26,radialVector2.getNorm(),0.2);
+        alongRay1 = FindEllipsoidOp.getFlooredVector3d(alongRay1);
+        alongRay2 = FindEllipsoidOp.getFlooredVector3d(alongRay2);
+
+        alongRay1.scaleAdd(-1.0,new Vector3d(50,50,50));
+        alongRay2.scaleAdd(-1.0,new Vector3d(50,50,50));
+        assertEquals(26,alongRay1.length(),0.2);
+        assertEquals(26,alongRay2.length(),0.2);
     }
 
 
     //main method for manual visual testing
     public static void main(String[] args)
     {
-        List<Vector3D> spiralVectors = FindEllipsoidOp.getGeneralizedSpiralSetOnSphere(700);
+        List<Vector3d> spiralVectors = FindEllipsoidOp.getGeneralizedSpiralSetOnSphere(700);
         spiralVectors.forEach(v -> System.out.println(v.getX()+","+v.getY()+","+v.getZ()));
+    }
+
+
+    @AfterClass
+    public static void oneTimeTearDown() {
+        IMAGE_J.context().dispose();
     }
 }
