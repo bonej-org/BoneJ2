@@ -4,7 +4,6 @@ package org.bonej.ops.ellipsoid;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -339,6 +338,20 @@ public class EllipsoidTest {
 	}
 
 	@Test
+	public void testSetOrientationAllowsLeftHandedBasis() throws Exception {
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 4);
+		// @formatter:off
+		final Matrix3d leftHanded = new Matrix3d(
+				1, 0, 0,
+				0, 1, 0,
+				0, 0, -1
+		);
+		// @formatter:on
+
+		ellipsoid.setOrientation(leftHanded);
+	}
+
+	@Test
 	public void testSetOrientationNormalizesVectors() throws Exception {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 4);
 		// @formatter:off
@@ -357,26 +370,6 @@ public class EllipsoidTest {
 			m.getColumn(i, v);
 			assertEquals("Vector is not a unit vector", 1.0, v.length(), 1e-12);
 		}
-	}
-
-	@Test
-	public void testSetOrientationThrowsIAEIfNegativeDeterminant()
-		throws Exception
-	{
-		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
-		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("A rotation matrix must have a positive determinant");
-		// @formatter:off
-		final Matrix3d negDeterminant = new Matrix3d(
-			0, 0, 1,
-			0, 4, 0,
-			4, 0, 0
-		);
-		// @formatter:on
-		assertTrue("Sanity check failed: test matrix has positive determinant",
-			negDeterminant.determinant() <= 0);
-
-		ellipsoid.setOrientation(negDeterminant);
 	}
 
 	@Test

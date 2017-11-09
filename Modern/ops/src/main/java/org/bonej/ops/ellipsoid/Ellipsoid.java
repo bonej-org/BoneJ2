@@ -56,6 +56,9 @@ public class Ellipsoid {
 		orientation.setIdentity();
 	}
 
+	// TODO Add a constructor with three Vector3d parameters. Radii and
+	// orientation are determined from them.
+
 	/**
 	 * Gets the smallest radius of the ellipsoid.
 	 *
@@ -165,7 +168,11 @@ public class Ellipsoid {
 	 * <p>
 	 * The orientations are the column vectors of the matrix.
 	 * </p>
-	 *
+	 * <p>
+	 * NB the vectors may form a left-handed basis! This may cause exceptions if
+	 * the matrix is used with other linear algebra libraries.
+	 * </p>
+	 * 
 	 * @return orientations of the semi-axes in homogeneous coordinates.
 	 */
 	public Matrix4d getOrientation() {
@@ -179,8 +186,8 @@ public class Ellipsoid {
 	 *
 	 * @param semiAxes matrix with the orientations of the semi-axes as column
 	 *          vectors.
-	 * @throws IllegalArgumentException if the matrix has non-positive determinant
-	 *           or the column vectors are not orthogonal.
+	 * @throws IllegalArgumentException if the column vectors of the matrix are
+	 *           not orthogonal.
 	 * @throws NullPointerException if the matrix is null.
 	 */
 	public void setOrientation(final Matrix3d semiAxes)
@@ -188,10 +195,6 @@ public class Ellipsoid {
 	{
 		if (semiAxes == null) {
 			throw new NullPointerException("Matrix cannot be null");
-		}
-		if (semiAxes.determinant() <= 0) {
-			throw new IllegalArgumentException(
-				"A rotation matrix must have a positive determinant");
 		}
 		final Vector3d u = new Vector3d();
 		semiAxes.getColumn(0, u);

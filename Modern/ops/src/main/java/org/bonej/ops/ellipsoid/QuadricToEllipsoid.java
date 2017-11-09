@@ -116,14 +116,6 @@ public class QuadricToEllipsoid extends
 		return Arrays.stream(eigenvalues).allMatch(x -> x > EIGENVALUE_TOLERANCE);
 	}
 
-	private boolean isLeftHandedBasis(final Vector3d x, final Vector3d y,
-		final Vector3d z)
-	{
-		final Vector3d v = new Vector3d();
-		v.cross(x, y);
-		return v.dot(z) < 0;
-	}
-
 	// Using apache.commons.math3 since scijava.vecmath doesn't yet have eigen
 	// decomposition, and I can't figure out how to use the tensor eigen stuff
 	// from net.imglib2.algorithm.linalg.eigen
@@ -150,12 +142,6 @@ public class QuadricToEllipsoid extends
 			2));
 		final Vector3d z = new Vector3d(e3.getEntry(0), e3.getEntry(1), e3.getEntry(
 			2));
-		if (isLeftHandedBasis(x, y, z)) {
-			// Make the basis right handed
-			final Vector3d tmp = new Vector3d(y);
-			y.set(z);
-			z.set(tmp);
-		}
 		final Matrix3d orientation = new Matrix3d();
 		orientation.setColumn(0, x);
 		orientation.setColumn(1, y);
