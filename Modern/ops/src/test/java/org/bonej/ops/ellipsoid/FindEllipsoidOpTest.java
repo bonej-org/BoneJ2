@@ -1,4 +1,4 @@
-package org.bonej.ops.ellipsoids;
+package org.bonej.ops.ellipsoid;
 
 import static org.junit.Assert.assertEquals;
 

@@ -1,11 +1,9 @@
-package org.bonej.ops.ellipsoids;
+package org.bonej.ops.ellipsoid;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 import java.util.stream.Collectors;
 
-import edu.mines.jtk.opt.Vect;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.RandomAccess;
@@ -15,6 +13,7 @@ import net.imglib2.type.BooleanType;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
+
 
 public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Vector3D, Ellipsoid> implements Contingent {
 
