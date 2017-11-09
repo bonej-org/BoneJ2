@@ -16,6 +16,46 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
 public class FindEllipsoidOpTest {
+
+    @Test
+    public void testMaximalEllipsoidInConcaveSpace()
+    {
+        long[] imageDimensions = {101,101,101};
+        Vector3D imageCentre = new Vector3D(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
+        long[] semiAxes1 = {2,3,1};
+        long[] semiAxes2 = {6,1,1};
+
+        final Img<BitType> img = ArrayImgs.bits(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
+        final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cylinder test image");
+        Cursor<BitType> cursor = imgPlus.localizingCursor();
+
+        while(cursor.hasNext())
+        {
+            cursor.fwd();
+            long [] coordinates = new long[3];
+            cursor.localize(coordinates);
+            if(coordinates[2]==0 || coordinates[2]==imageDimensions[2]-1) continue;
+            double x = imageCentre.getX()-coordinates[0];
+            double y = imageCentre.getY()-coordinates[1];
+            double z = imageCentre.getZ()-coordinates[2];
+
+            boolean condition1 = ((x*x)/(semiAxes1[0]*semiAxes1[0])+(y*y)/(semiAxes1[1]*semiAxes1[1])+z*z/(semiAxes1[2]*semiAxes1[2])<=1.0);
+            boolean condition2 = ((x*x)/(semiAxes2[0]*semiAxes2[0])+(y*y)/(semiAxes2[1]*semiAxes2[1])+z*z/(semiAxes2[2]*semiAxes2[2])<=1.0);
+            if(condition1 || condition2)
+                cursor.get().setOne();
+        }
+
+        FindEllipsoidOp<BitType> findEllipsoidOp = new FindEllipsoidOp<>();
+
+        findEllipsoidOp.setInput1(imgPlus);
+        findEllipsoidOp.setInput2(imageCentre);
+
+        Ellipsoid maxEllipsoid = findEllipsoidOp.calculate();
+
+        assertEquals(6.0, maxEllipsoid.getA()*maxEllipsoid.getB()*maxEllipsoid.getC(), 1+1e-12);
+
+    }
+
     @Test
     public void testContactPointsInCylinder()
     {
@@ -45,12 +85,12 @@ public class FindEllipsoidOpTest {
         findEllipsoidOp.setInput1(imgPlus);
         findEllipsoidOp.setInput2(imageCentre);
 
-        Ellipsoid ellipsoid = findEllipsoidOp.calculate();
+        Ellipsoid maxEllipsoid = findEllipsoidOp.calculate();
 
         //expected value is pixel next to axis-aligned circle.
-        assertEquals(cylinderRadius, ellipsoid.getA(), 1+1e-12);
-        assertEquals(cylinderRadius, ellipsoid.getB(), 1+1e-12);
-        assertEquals(Math.floor(imageDimensions[2]/2.0), ellipsoid.getC(), 1e-12);
+        assertEquals(cylinderRadius, maxEllipsoid.getA(), 1+1e-12);
+        assertEquals(cylinderRadius, maxEllipsoid.getB(), 1+1e-12);
+        assertEquals(Math.floor(imageDimensions[2]/2.0), maxEllipsoid.getC(), 5+1e-12);
 
     }
 

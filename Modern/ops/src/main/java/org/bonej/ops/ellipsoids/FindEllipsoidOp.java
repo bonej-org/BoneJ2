@@ -1,8 +1,11 @@
 package org.bonej.ops.ellipsoids;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import edu.mines.jtk.opt.Vect;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.RandomAccess;
@@ -20,15 +23,37 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
     @Override
     public Ellipsoid calculate(final RandomAccessibleInterval<B> binaryImage, final Vector3D seedPoint) {
 
-        double maxSamplingRadius = 100;
+        double maxSamplingRadius = 25;
         double samplingWidth = 1.0;
 
         int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,samplingWidth);
+        int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius/samplingWidth);
+
         List<Vector3D> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
 
-        Vector3D firstAxis = findClosestContact(seedPoint, sphereSamplingDirections);
+        List<Ellipsoid> ellipsoids = sphereSamplingDirections.stream().map(dir -> getEllipsoidFromInitialAxis(seedPoint, nPlane, dir)).collect(Collectors.toList());
 
-        int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius/samplingWidth);
+        ellipsoids.sort((o1,o2) -> {
+                if(o1.getA()*o1.getB()*o1.getC()<o2.getA()*o2.getB()*o2.getC())
+                {
+                    return 1;
+                }
+                if(o1.getA()*o1.getB()*o1.getC()>o2.getA()*o2.getB()*o2.getC())
+                {
+                    return -1;
+                }
+                return 0;
+            });
+
+        return ellipsoids.get(0);
+    }
+
+    public Ellipsoid getEllipsoidFromInitialAxis(Vector3D seedPoint, int nPlane, Vector3D initialAxis) {
+        List<Vector3D> firstDirectionToTry = new ArrayList<>();
+        firstDirectionToTry.add(initialAxis);
+
+        Vector3D firstAxis = findClosestContact(seedPoint, firstDirectionToTry);
+
         List<Vector3D> orthogonalSearchDirections = getOrthogonalSearchDirections(getFlooredVector3D(firstAxis), nPlane);
 
         Vector3D secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
@@ -40,9 +65,9 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
 
         Vector3D thirdAxis = findClosestContact(seedPoint,thirdAxisSearchDirections);
 
-        double a = firstAxis.getNorm();
-        double b = secondAxis.getNorm();
-        double c = thirdAxis.getNorm();
+        double a = Math.max(firstAxis.getNorm()-1,1.0);
+        double b = Math.max(secondAxis.getNorm()-1,1.0);
+        double c = Math.max(thirdAxis.getNorm()-1,1.0);
 
         return new Ellipsoid(a,b,c);
     }
@@ -68,22 +93,20 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return orthogonalSearchDirections;
     }
 
-    private Vector3D findClosestContact(Vector3D seedPoint, List<Vector3D> samplingDirections) {
-        List<Vector3D> contactPoints = new ArrayList<>();
-        samplingDirections.forEach(d -> contactPoints.add(findFirstPointInBGAlongRay(d.normalize(), seedPoint)));
-        contactPoints.sort((o1, o2) -> {
-            if(o1.subtract(seedPoint).getNorm()<o2.subtract(seedPoint).getNorm())
-            {
-                return -1;
-            }
-            if(o1.subtract(seedPoint).getNorm()>o2.subtract(seedPoint).getNorm())
-            {
-                return 1;
-            }
-            return 0;
-        });
+    private Vector3D findClosestContact(Vector3D seedPoint, List<Vector3D> samplingDirections) throws IllegalArgumentException {
+            List<Vector3D> contactPoints = new ArrayList<>();
+            samplingDirections.forEach(d -> contactPoints.add(findFirstPointInBGAlongRay(d.normalize(), seedPoint)));
+            contactPoints.sort((o1, o2) -> {
+                if (o1.subtract(seedPoint).getNorm() < o2.subtract(seedPoint).getNorm()) {
+                    return -1;
+                }
+                if (o1.subtract(seedPoint).getNorm() > o2.subtract(seedPoint).getNorm()) {
+                    return 1;
+                }
+                return 0;
+            });
 
-        return seedPoint.subtract(contactPoints.get(0));
+            return contactPoints.get(0).subtract(seedPoint);
     }
 
 
