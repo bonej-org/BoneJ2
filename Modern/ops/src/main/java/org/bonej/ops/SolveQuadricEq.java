@@ -46,7 +46,7 @@ public class SolveQuadricEq extends
 	 * solve the equation.
 	 * </p>
 	 */
-	private static final int QUADRIC_TERMS = 9;
+	public static final int QUADRIC_TERMS = 9;
 
 	@Override
 	public Matrix4d calculate(final Collection<Vector3d> points) {
