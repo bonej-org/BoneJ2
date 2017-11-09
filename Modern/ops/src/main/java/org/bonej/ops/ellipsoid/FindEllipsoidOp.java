@@ -15,6 +15,7 @@ import net.imglib2.type.BooleanType;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.bonej.ops.RotateAboutAxis;
 import org.scijava.vecmath.AxisAngle4d;
+import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
 
 
@@ -29,12 +30,14 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         rotateVectorOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class, Vector3d.class,
                 Vector3d.class, AxisAngle4d.class);
 
-        double maxSamplingRadius = 25;
+        double maxSamplingRadius = 10;
         double samplingWidth = 1.0;
 
         int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,samplingWidth);
         int nPlane = (int) Math.ceil(2*Math.PI*maxSamplingRadius/samplingWidth);
         List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+        //List<Vector3d> sphereSamplingDirections = new ArrayList<>();
+        //sphereSamplingDirections.add(new Vector3d(1,0,0));
 
         List<Ellipsoid> ellipsoids = sphereSamplingDirections.stream().map(dir -> getEllipsoidFromInitialAxis(seedPoint, nPlane, dir)).collect(Collectors.toList());
 
@@ -54,14 +57,16 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
     }
 
     public Ellipsoid getEllipsoidFromInitialAxis(Vector3d seedPoint, int nPlane, Vector3d initialAxis) {
-        List<Vector3d> firstDirectionToTry = new ArrayList<>();
-        firstDirectionToTry.add(initialAxis);
+        List<Vector3d> initialDirectionToTry = new ArrayList<>();
+        initialDirectionToTry.add(initialAxis);
 
-        Vector3d firstAxis = findClosestContact(seedPoint, firstDirectionToTry);
+        Vector3d firstAxis = findClosestContactPoint(seedPoint, initialDirectionToTry);
+        firstAxis.scaleAdd(-1.0, seedPoint);
 
-        List<Vector3d> orthogonalSearchDirections = getSearchDirectionsInPlane(getFlooredVector3d(firstAxis), nPlane);
+        List<Vector3d> orthogonalSearchDirections = getSearchDirectionsInPlane(initialAxis, nPlane);
 
-        Vector3d secondAxis = findClosestContact(seedPoint,orthogonalSearchDirections);
+        Vector3d secondAxis = findClosestContactPoint(seedPoint,orthogonalSearchDirections);
+        secondAxis.scaleAdd(-1.0, seedPoint);
 
         List<Vector3d> thirdAxisSearchDirections = new ArrayList<>();
 
@@ -74,15 +79,22 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         thirdAxisSearchDirections.add(thirdAxisSearchDirection);
         thirdAxisSearchDirections.add(negativeThirdAxisSearchDirection);
 
-        Vector3d thirdAxis = findClosestContact(seedPoint,thirdAxisSearchDirections);
+        Vector3d thirdAxis = findClosestContactPoint(seedPoint,thirdAxisSearchDirections);
+        thirdAxis.scaleAdd(-1.0, seedPoint);
+
+        ensureRightHandedBasis(firstAxis,secondAxis,thirdAxis);
 
         double a = Math.max(firstAxis.length()-1,1.0);
         double b = Math.max(secondAxis.length()-1,1.0);
         double c = Math.max(thirdAxis.length()-1,1.0);
 
-        Ellipsoid ellipsoid = new Ellipsoid(a,b,c);
+        firstAxis.normalize();
+        secondAxis.normalize();
+        thirdAxis.normalize();
 
-        //ellipsoid.setOrientation(new Matrix3d(firstAxis.getX(),secondAxis.getX(),thirdAxis.getX()));
+        Ellipsoid ellipsoid = new Ellipsoid(a,b,c);
+        ellipsoid.setCentroid(seedPoint);
+        ellipsoid.setOrientation(new Matrix3d(firstAxis.getX(),secondAxis.getX(),thirdAxis.getX(),firstAxis.getY(),secondAxis.getY(),thirdAxis.getY(),firstAxis.getZ(),secondAxis.getZ(),thirdAxis.getZ()));
 
         return ellipsoid;
     }
@@ -92,7 +104,7 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
     }
 
     private List<Vector3d> getSearchDirectionsInPlane(Vector3d planeNormalAxis, int n) {
-        AxisAngle4d axisAngle = new AxisAngle4d(planeNormalAxis, 2*Math.PI/n);
+        AxisAngle4d axisAngle = new AxisAngle4d(planeNormalAxis, 2*Math.PI/(n-1));
 
         double [] searchDirection = rvg.nextVector();
         Vector3d inPlaneVector = new Vector3d(searchDirection[0],searchDirection[1],searchDirection[2]);
@@ -109,27 +121,23 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         return inPlaneSearchDirections;
     }
 
-    private Vector3d findClosestContact(Vector3d seedPoint, List<Vector3d> samplingDirections) {
+    private Vector3d findClosestContactPoint(Vector3d seedPoint, List<Vector3d> samplingDirections) {
             List<Vector3d> contactPoints = new ArrayList<>();
 
             samplingDirections.forEach(d -> {
                 d.normalize();
-                contactPoints.add(findFirstPointInBGAlongRay(d, seedPoint));});
+                contactPoints.add(findFirstPointInBGAlongRay(d, new Vector3d(seedPoint)));
+            });
 
             contactPoints.sort((o1, o2) -> {
-                o1.scaleAdd(-1.0,seedPoint);
-                o2.scaleAdd(-1.0,seedPoint);
-                if (o1.length() < o2.length()) {
-                    return -1;
-                }
-                if (o1.length() > o2.length()) {
-                    return 1;
-                }
-                return 0;
+                Vector3d dist1 = new Vector3d();
+                Vector3d dist2 = new Vector3d();
+                dist1.sub(o1, seedPoint);
+                dist2.sub(o2,seedPoint);
+                return Double.compare(dist1.length(), dist2.length());
             });
 
             Vector3d closestContact = contactPoints.get(0);
-            closestContact.scaleAdd(-1.0,seedPoint);
             return closestContact;
     }
 
@@ -203,6 +211,26 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends AbstractBinaryFun
         lArray[1] = (long) dArray[1];
         lArray[2] = (long) dArray[2];
         return lArray;
+    }
+
+    //TODO make this a utility function and make a ensureRightHandedBasis function
+    private boolean isLeftHandedBasis(final Vector3d x, final Vector3d y,
+                                      final Vector3d z)
+    {
+        final Vector3d v = new Vector3d();
+        v.cross(x, y);
+        return v.dot(z) < 0;
+    }
+
+    private void ensureRightHandedBasis(Vector3d x, Vector3d y, Vector3d z)
+    {
+        if(isLeftHandedBasis(x,y,z))
+        {
+            // Make the basis right handed
+            final Vector3d tmp = new Vector3d(y);
+            y.set(z);
+            z.set(tmp);
+        }
     }
 
     @Override

@@ -24,10 +24,10 @@ public class FindEllipsoidOpTest {
     @Test
     public void testMaximalEllipsoidInConcaveSpace()
     {
-        long[] imageDimensions = {101,101,101};
+        long[] imageDimensions = {200,200,200};
         Vector3d imageCentre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
-        long[] semiAxes1 = {2,3,1};
-        long[] semiAxes2 = {6,1,1};
+        long[] semiAxes1 = {20,30,10};
+        long[] semiAxes2 = {60,10,10};
 
         final Img<BitType> img = ArrayImgs.bits(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cylinder test image");
@@ -57,7 +57,7 @@ public class FindEllipsoidOpTest {
 
         Ellipsoid maxEllipsoid = findEllipsoidOp.calculate();
 
-        assertEquals(6.0, maxEllipsoid.getA()*maxEllipsoid.getB()*maxEllipsoid.getC(), 1+1e-12);
+        assertEquals(1.0, maxEllipsoid.getVolume()/(4.0/3.0*Math.PI*60*29*9), 0.1);
 
     }
 
@@ -66,7 +66,7 @@ public class FindEllipsoidOpTest {
     {
         long[] imageDimensions = {101,101,101};
         Vector3d imageCentre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
-        long cylinderRadius = 23;
+        long cylinderRadius = 8;
 
         final Img<BitType> img = ArrayImgs.bits(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
         final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cylinder test image");
@@ -87,16 +87,17 @@ public class FindEllipsoidOpTest {
         }
 
         FindEllipsoidOp<BitType> findEllipsoidOp = new FindEllipsoidOp<>();
+        findEllipsoidOp.setEnvironment(IMAGE_J.op());
 
         findEllipsoidOp.setInput1(imgPlus);
         findEllipsoidOp.setInput2(imageCentre);
 
-       Ellipsoid maxEllipsoid = findEllipsoidOp.calculate();
+        Ellipsoid maxEllipsoid = findEllipsoidOp.calculate();
 
         //expected value is pixel next to axis-aligned circle.
         assertEquals(cylinderRadius, maxEllipsoid.getA(), 1+1e-12);
         assertEquals(cylinderRadius, maxEllipsoid.getB(), 1+1e-12);
-        assertEquals(Math.floor(imageDimensions[2]/2.0), maxEllipsoid.getC(), 5+1e-12);
+        assertEquals(Math.floor(imageDimensions[2]/2.0)-1, maxEllipsoid.getC(), 1e-12);
     }
 
     @Test
