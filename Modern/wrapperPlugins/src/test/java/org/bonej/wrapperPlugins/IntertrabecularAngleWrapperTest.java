@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
@@ -89,7 +90,7 @@ public class IntertrabecularAngleWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -149,7 +150,7 @@ public class IntertrabecularAngleWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -167,7 +168,7 @@ public class IntertrabecularAngleWrapperTest {
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_SKELETONS, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -193,7 +194,7 @@ public class IntertrabecularAngleWrapperTest {
 		assertEquals(
 			"Sanity check failed: plugin cancelled before image could have been shown",
 			NO_RESULTS_MSG, module.getCancelReason());
-		verify(mockUI, after(100).never()).show(any(ImagePlus.class));
+		verify(mockUI, after(250).never()).show(any(ImagePlus.class));
 	}
 
 	/**
@@ -217,7 +218,7 @@ public class IntertrabecularAngleWrapperTest {
 			square).get();
 
 		// VERIFY
-		verify(mockUI, after(100)).show(any(ImagePlus.class));
+		verify(mockUI, timeout(1000)).show(any(ImagePlus.class));
 	}
 
 	@Test
@@ -236,7 +237,7 @@ public class IntertrabecularAngleWrapperTest {
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_RESULTS_MSG, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -264,7 +265,7 @@ public class IntertrabecularAngleWrapperTest {
 			pixels).get();
 
 		// VERIFY
-		verify(mockUI, after(100)).dialogPrompt(startsWith(
+		verify(mockUI, timeout(1000)).dialogPrompt(startsWith(
 			"Image has multiple skeletons"), anyString(), eq(WARNING_MESSAGE), any());
 	}
 

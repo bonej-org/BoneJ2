@@ -7,8 +7,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
@@ -112,7 +112,7 @@ public class ConnectivityWrapperTest {
 			imgPlus).get();
 
 		// Dialog should only be shown once
-		verify(mockUI, after(100).times(1)).dialogPrompt(eq(NEGATIVE_CONNECTIVITY),
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(NEGATIVE_CONNECTIVITY),
 			anyString(), eq(INFORMATION_MESSAGE), any());
 	}
 

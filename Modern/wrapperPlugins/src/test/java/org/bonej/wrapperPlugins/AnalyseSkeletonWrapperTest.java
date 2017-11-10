@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -83,7 +84,7 @@ public class AnalyseSkeletonWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -104,7 +105,7 @@ public class AnalyseSkeletonWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -123,7 +124,7 @@ public class AnalyseSkeletonWrapperTest {
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_SKELETONS, module
 			.getCancelReason());
-		verify(mockUI, after(250)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -149,7 +150,7 @@ public class AnalyseSkeletonWrapperTest {
 		assertFalse(
 			"Sanity check failed: plugin cancelled before image could have been shown",
 			module.isCanceled());
-		verify(mockUI, after(100).never()).show(any(ImagePlus.class));
+		verify(mockUI, after(250).never()).show(any(ImagePlus.class));
 	}
 
 	/**
@@ -174,7 +175,7 @@ public class AnalyseSkeletonWrapperTest {
 		assertFalse(
 			"Sanity check failed: plugin cancelled before image could have been shown",
 			module.isCanceled());
-		verify(mockUI, after(100)).show(any(ImagePlus.class));
+		verify(mockUI, timeout(1000)).show(any(ImagePlus.class));
 	}
 
 	@Test

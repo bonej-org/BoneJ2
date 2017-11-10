@@ -8,7 +8,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -62,7 +61,7 @@ public class CommonWrapperTests {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN,
 			module.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -88,7 +87,7 @@ public class CommonWrapperTests {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
 			module.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -118,7 +117,7 @@ public class CommonWrapperTests {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module
 			.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -150,7 +149,7 @@ public class CommonWrapperTests {
 		imageJ.command().run(commandClass, true, inputs.toArray()).get();
 
 		// VERIFY
-		verify(mockUI, after(100).times(1)).dialogPrompt(eq(BAD_CALIBRATION),
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(BAD_CALIBRATION),
 			anyString(), eq(WARNING_MESSAGE), any());
 	}
 
@@ -200,7 +199,7 @@ public class CommonWrapperTests {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
 			module.getCancelReason());
-		verify(mockUI, after(100)).dialogPrompt(anyString(), anyString(), any(),
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -239,7 +238,7 @@ public class CommonWrapperTests {
 				"inputImage", imagePlus).get();
 
 		// VERIFY
-		verify(mockUI, after(100).times(1)).dialogPrompt(startsWith(
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
 				"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
 		assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
 				module.isCanceled());

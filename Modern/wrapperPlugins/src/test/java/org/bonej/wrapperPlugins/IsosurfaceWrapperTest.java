@@ -10,8 +10,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
@@ -264,7 +264,7 @@ public class IsosurfaceWrapperTest {
 			"exportSTL", true).get();
 
 		// Verify that write error dialog got shown
-		verify(mockUI, after(100).times(1)).dialogPrompt(startsWith(
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
 			STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
 	}
 
@@ -292,7 +292,7 @@ public class IsosurfaceWrapperTest {
 			"exportSTL", false).get();
 
 		// Verify that warning dialog about result scaling got shown once
-		verify(mockUI, after(100).times(1)).dialogPrompt(eq(
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
 			IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
