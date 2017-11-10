@@ -1,6 +1,7 @@
 
 package org.bonej.ops.ellipsoid;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
@@ -71,6 +73,56 @@ public class EllipsoidTest {
 				semiAxes.get(i));
 		}
 	}
+
+	@Test
+    public void testSemiAxesConstructor() throws Exception {
+	    // SETUP
+        final Vector3d u = new Vector3d(2, -2, 0);
+        final Vector3d v = new Vector3d(1, 1, 0);
+        final Vector3d w = new Vector3d(0, 0, 1);
+        final List<Vector3d> normalized = Stream.of(w, v, u).map(Vector3d::new).map(e -> {
+            e.normalize();
+            return e;
+        }).collect(toList());
+        final Matrix4d expectedOrientation = new Matrix4d();
+        expectedOrientation.setIdentity();
+        for (int i = 0; i < 3; i++) {
+            final Vector3d e = normalized.get(i);
+            expectedOrientation.setColumn(i, e.x, e.y, e.z, 0);
+        }
+
+        // EXECUTE
+        final Ellipsoid ellipsoid = new Ellipsoid(u, w, v);
+
+        // VERIFY
+        final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
+        assertEquals(w, semiAxes.get(0));
+        assertEquals(v, semiAxes.get(1));
+        assertEquals(u, semiAxes.get(2));
+        assertEquals(w.length(), ellipsoid.getA(), 1e-12);
+        assertEquals(v.length(), ellipsoid.getB(), 1e-12);
+        assertEquals(u.length(), ellipsoid.getC(), 1e-12);
+        assertEquals(expectedOrientation, ellipsoid.getOrientation());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testSetSemiAxesThrowsNPEIfParameterNull() {
+        final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
+
+        ellipsoid.setSemiaxes(new Vector3d(), new Vector3d(), null);
+    }
+
+    @Test
+    public void testSetSemiAxesClonesParameters() {
+        final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
+        final Vector3d v = new Vector3d(0, 0, 2);
+        final Vector3d original = new Vector3d(v);
+
+        ellipsoid.setSemiaxes(new Vector3d(2, 0, 0), new Vector3d(0, 2, 0), v);
+
+        assertFalse("Setter copied reference", v == ellipsoid.getSemiAxes().get(2));
+        assertEquals("Setter changed parameter", original, v);
+    }
 
 	@Test
 	public void testGetCentroid() throws Exception {
