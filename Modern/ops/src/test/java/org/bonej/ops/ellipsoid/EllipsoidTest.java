@@ -109,7 +109,7 @@ public class EllipsoidTest {
     public void testSetSemiAxesThrowsNPEIfParameterNull() {
         final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
-        ellipsoid.setSemiaxes(new Vector3d(), new Vector3d(), null);
+        ellipsoid.setSemiAxes(new Vector3d(), new Vector3d(), null);
     }
 
     @Test
@@ -118,7 +118,7 @@ public class EllipsoidTest {
         final Vector3d v = new Vector3d(0, 0, 2);
         final Vector3d original = new Vector3d(v);
 
-        ellipsoid.setSemiaxes(new Vector3d(2, 0, 0), new Vector3d(0, 2, 0), v);
+        ellipsoid.setSemiAxes(new Vector3d(2, 0, 0), new Vector3d(0, 2, 0), v);
 
         assertFalse("Setter copied reference", v == ellipsoid.getSemiAxes().get(2));
         assertEquals("Setter changed parameter", original, v);

@@ -65,10 +65,10 @@ public class Ellipsoid {
 	 * @param u a semi-axis of the ellipsoid.
 	 * @param v a semi-axis of the ellipsoid.
 	 * @param w a semi-axis of the ellipsoid.
-	 * @see #setSemiaxes(Vector3d, Vector3d, Vector3d)
+	 * @see #setSemiAxes(Vector3d, Vector3d, Vector3d)
 	 */
 	public Ellipsoid(final Vector3d u, final Vector3d v, final Vector3d w) {
-		setSemiaxes(u, v, w);
+		setSemiAxes(u, v, w);
 	}
 
 	/**
@@ -236,7 +236,7 @@ public class Ellipsoid {
 	 * @throws IllegalArgumentException if the vectors are not orthogonal.
 	 * @throws NullPointerException if any of the vectors is null.
 	 */
-	public void setSemiaxes(final Vector3d u, final Vector3d v, final Vector3d w)
+	public void setSemiAxes(final Vector3d u, final Vector3d v, final Vector3d w)
 		throws IllegalArgumentException, NullPointerException
 	{
         if (u == null || v == null || w == null) {
