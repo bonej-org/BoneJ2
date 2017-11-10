@@ -1,7 +1,7 @@
 
 package org.bonej.utilities;
 
-import java.awt.Rectangle;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -277,6 +277,16 @@ public class RoiManagerUtil {
 			}).collect(Collectors.toList());
 	}
 
+	/**
+	 * Checks if a ROI is active on all slices.
+	 *
+	 * @param sliceNumber the slice number or z-position of the ROI.
+	 * @return true if the ROI is not associated with a particular slide.
+	 */
+	public static boolean isActiveOnAllSlices(final int sliceNumber) {
+		return sliceNumber <= 0;
+	}
+
 	// endregion
 
 	// region -- Helper methods --
@@ -326,7 +336,7 @@ public class RoiManagerUtil {
 	 * NB Calls copyRoi with the given parameters if sourceProcessor.getMask() ==
 	 * null.
 	 * </p>
-	 * 
+	 *
 	 * @param sourceProcessor Copy source
 	 * @param targetProcessor Copy target
 	 * @param minX Horizontal start of the copy area 0 &lt;= minX &lt; width
@@ -384,11 +394,7 @@ public class RoiManagerUtil {
 		}
 	}
 
-	private static boolean isActiveOnAllSlices(final int sliceNumber) {
-		return sliceNumber == NO_SLICE_NUMBER;
-	}
-
-	private static int clamp(final int value, final int min, final int max) {
+    private static int clamp(final int value, final int min, final int max) {
 		if (Integer.compare(value, min) < 0) {
 			return min;
 		}
