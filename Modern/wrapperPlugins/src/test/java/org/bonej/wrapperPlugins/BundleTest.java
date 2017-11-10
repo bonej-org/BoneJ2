@@ -10,11 +10,12 @@ import net.imagej.ImageJ;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.scijava.command.CommandInfo;
+import org.scijava.plugin.PluginInfo;
 
 /**
  * There is a number of tools which we want to offer BoneJ users, but on which
- * BoneJ2 plugins do not depend in compilation or testing This test checks that
- * those tools are present in vanilla ImageJ2.
+ * BoneJ2 plugins do not depend on in compilation or testing This test checks that
+ * those tools are present in the build environment.
  *
  * @author Richard Domander
  */
@@ -44,4 +45,20 @@ public class BundleTest {
 		assertTrue(commands.anyMatch(i -> i.getClassName().equals(
 			"net.imagej.plugins.commands.binary.DilateBinaryImage")));
 	}
+
+	@Test
+    public void checkScancoISQFormat() {
+        final Stream<PluginInfo<?>> infoStream = IMAGE_J.plugin().getPlugins().stream();
+
+        assertTrue(infoStream.anyMatch(i -> i.getClassName().equals("io.scif.formats.ScancoISQFormat")));
+    }
+
+    @Test
+    public void checkKontronFormat() {
+        final Stream<PluginInfo<?>> infoStream = IMAGE_J.plugin().getPlugins().stream();
+
+        assertTrue(infoStream.anyMatch(i -> i.getClassName().equals("io.scif.formats.KontronFormat")));
+    }
+
+    // TODO add test for StratecPQCT format
 }
