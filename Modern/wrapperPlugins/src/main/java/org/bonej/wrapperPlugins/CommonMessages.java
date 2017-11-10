@@ -19,7 +19,6 @@ public class CommonMessages {
 		"Need an 8-bit binary image";
 	public static final String NO_IMAGE_OPEN = "No image open";
 	public static final String NO_SKELETONS = "Image contained no skeletons";
-	public static final String GOT_SKELETONISED = "The image was skeletonised";
 	public static final String BAD_CALIBRATION =
 		"Calibration cannot be determined";
 

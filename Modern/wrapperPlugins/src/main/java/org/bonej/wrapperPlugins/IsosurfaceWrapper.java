@@ -193,17 +193,15 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	private void saveMeshes(final Map<String, Mesh> meshes) {
 		final Map<String, String> savingErrors = new HashMap<>();
-		meshes.entrySet().forEach(entry -> {
-			final String subspaceId = entry.getKey().replace(' ', '_');
-			final String filePath = path + "_" + subspaceId + extension;
-			try {
-				final Mesh subspaceMesh = entry.getValue();
-				writeBinarySTLFile(filePath, subspaceMesh);
-			}
-			catch (IOException e) {
-				savingErrors.put(filePath, e.getMessage());
-			}
-		});
+		meshes.forEach((key, subspaceMesh) -> {
+            final String subspaceId = key.replace(' ', '_');
+            final String filePath = path + "_" + subspaceId + extension;
+            try {
+                writeBinarySTLFile(filePath, subspaceMesh);
+            } catch (IOException e) {
+                savingErrors.put(filePath, e.getMessage());
+            }
+        });
 		if (!savingErrors.isEmpty()) {
 			showSavingErrorsDialog(savingErrors);
 		}

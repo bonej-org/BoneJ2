@@ -36,11 +36,10 @@ public class Common {
 	}
 
 	/**
-	 * Converts the {@link ImgPlus} to a new ImagePlus where elements are of the
-	 * given type.
+	 * Converts the {@link ImgPlus} to a new ImgPlus with {@link BitType}
+	 * elements.
 	 * <p>
-	 * The metadata in ImgPlus is not needed, but the class is used instead of
-	 * {@link Img} for convenience.
+	 * Also copies ImgPlus metadata.
 	 * </p>
 	 * 
 	 * @param ops an {@link OpService} to find the necessary ops for conversion.

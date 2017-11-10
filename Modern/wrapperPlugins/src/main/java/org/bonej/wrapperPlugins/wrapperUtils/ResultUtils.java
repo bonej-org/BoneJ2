@@ -176,7 +176,9 @@ public class ResultUtils {
 	 * @param subspaces the subspaces of a hyperspace.
      * @param <T> type of the elements in the spaces.
 	 * @return columns that list the positions of the subspaces.
+     * @deprecated only used in tests.
 	 */
+	@Deprecated
 	public static <T extends RealType<T> & NativeType<T>> List<LongColumn>
 		createCoordinateColumns(List<Subspace<T>> subspaces)
 	{

@@ -34,7 +34,9 @@ public class AxisUtils {
 	 * @param <A> type of axes in the space.
 	 * @return an Optional containing the indices, or empty if failed to find
 	 *         three spatial dimensions.
+	 * @deprecated Only used in tests.
 	 */
+	@Deprecated
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis>
 		Optional<int[]> getXYZIndices(final S space)
 	{
@@ -56,7 +58,9 @@ public class AxisUtils {
 	 * @param <S> type of the space.
 	 * @param <A> type of axes in the space.
 	 * @return index of the time axis, or -1 if there's none.
+     * @deprecated only used in test code.
 	 */
+	@Deprecated
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> int
 		getTimeIndex(final S space)
 	{
@@ -76,7 +80,9 @@ public class AxisUtils {
 	 * @param <S> type of the space.
 	 * @param <A> type of axes in the space.
 	 * @return index of the channel axis, or -1 if there's none.
+     * @deprecated only used in test code.
 	 */
+	@Deprecated
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> int
 		getChannelIndex(final S space)
 	{
@@ -114,8 +120,9 @@ public class AxisUtils {
 	 * @param unitService an {@link UnitService} to convert axis calibrations.
 	 * @return greatest conversion coefficient between two axes found. Coefficient
 	 *         == 0.0 if space == null, or there are no spatial axes.
+     * @deprecated only used in test code.
 	 */
-	//TODO scale and unit are redundant parameters
+	@Deprecated
 	public static <S extends AnnotatedSpace<CalibratedAxis>> double
 		getMaxConversion(final double scale, final String unit,
 						 final S space, final UnitService unitService)

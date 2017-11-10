@@ -246,6 +246,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		return points;
 	}
 
+    @SuppressWarnings("unused")
 	private void initAutoParam() {
 		if (inputImage == null) {
 			return;
@@ -265,6 +266,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 			translations);
 	}
 
+    @SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
@@ -284,6 +286,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		translations = 0;
 	}
 
+	@SuppressWarnings("unused")
 	private void enforceValidSizes() {
 		if (smallestBoxSize > startBoxSize) {
 			smallestBoxSize = startBoxSize;

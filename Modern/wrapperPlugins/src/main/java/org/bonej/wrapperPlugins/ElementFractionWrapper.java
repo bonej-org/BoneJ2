@@ -78,11 +78,9 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	/** The calibrated size of an element in the image */
 	private double elementSize;
 
-	//TODO Split hyperstacks to 2D/3D?
-	@Override
+    @Override
 	public void run() {
 	    statusService.showStatus("Element fraction: initializing");
-		// Our image has binary values, but convert to actual binary type
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		prepareResultDisplay();
