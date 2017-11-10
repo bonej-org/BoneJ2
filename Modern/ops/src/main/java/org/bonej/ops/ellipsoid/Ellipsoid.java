@@ -1,6 +1,9 @@
 
 package org.bonej.ops.ellipsoid;
 
+import static java.util.Comparator.comparingDouble;
+import static java.util.stream.Collectors.toList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,8 +59,17 @@ public class Ellipsoid {
 		orientation.setIdentity();
 	}
 
-	// TODO Add a constructor with three Vector3d parameters. Radii and
-	// orientation are determined from them.
+	/**
+	 * Constructs an {@link Ellipsoid} from semi-axes.
+	 *
+	 * @param u a semi-axis of the ellipsoid.
+	 * @param v a semi-axis of the ellipsoid.
+	 * @param w a semi-axis of the ellipsoid.
+	 * @see #setSemiAxes(Vector3d, Vector3d, Vector3d)
+	 */
+	public Ellipsoid(final Vector3d u, final Vector3d v, final Vector3d w) {
+		setSemiAxes(u, v, w);
+	}
 
 	/**
 	 * Gets the smallest radius of the ellipsoid.
@@ -164,7 +176,7 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Gets a copy of the orientation vectors of the ellipsoid.
+	 * Gets a copy of the orientation unit vectors of the ellipsoid.
 	 * <p>
 	 * The orientations are the column vectors of the matrix.
 	 * </p>
@@ -183,6 +195,10 @@ public class Ellipsoid {
 
 	/**
 	 * Sets the values of the orientation vectors of the ellipsoid.
+	 * <p>
+	 * The 1st column vector will correspond to radius {@link #a}, and the 3rd to
+	 * radius {@link #c}.
+	 * </p>
 	 *
 	 * @param semiAxes matrix with the orientations of the semi-axes as column
 	 *          vectors.
@@ -202,18 +218,36 @@ public class Ellipsoid {
 		semiAxes.getColumn(1, v);
 		final Vector3d w = new Vector3d();
 		semiAxes.getColumn(2, w);
-		final double eps = 1e-12;
-		if (u.dot(v) > eps || u.dot(w) > eps || v.dot(w) > eps) {
-			throw new IllegalArgumentException("Vectors must be orthogonal");
+		setOrientation(u, v, w);
+	}
+
+	/**
+	 * Sets the semi-axes of the ellipsoid.
+	 * <p>
+	 * Semi-axes will be sorted by length in ascending order so that the shortest
+	 * vector becomes the 1st and the longest the 3rd column vector in the
+	 * orientation matrix. Thus radius {@link #a} will be the length of the 1st
+	 * column vector etc.
+	 * </p>
+	 * 
+	 * @param u a semi-axis of the ellipsoid.
+	 * @param v a semi-axis of the ellipsoid.
+	 * @param w a semi-axis of the ellipsoid.
+	 * @throws IllegalArgumentException if the vectors are not orthogonal.
+	 * @throws NullPointerException if any of the vectors is null.
+	 */
+	public void setSemiAxes(final Vector3d u, final Vector3d v, final Vector3d w)
+		throws IllegalArgumentException, NullPointerException
+	{
+        if (u == null || v == null || w == null) {
+			throw new NullPointerException("Vectors cannot be null.");
 		}
-		u.normalize();
-		v.normalize();
-		w.normalize();
-		final double[][] columns = Stream.of(u, v, w).map(e -> new double[] { e.x,
-			e.y, e.z, 0 }).toArray(double[][]::new);
-		for (int i = 0; i < 3; i++) {
-			orientation.setColumn(i, columns[i]);
-		}
+		final List<Vector3d> semiAxes = Stream.of(u, v, w).map(Vector3d::new)
+			.sorted(comparingDouble(Vector3d::length)).collect(toList());
+		setC(semiAxes.get(2).length());
+		setB(semiAxes.get(1).length());
+		setA(semiAxes.get(0).length());
+		setOrientation(semiAxes.get(0), semiAxes.get(1), semiAxes.get(2));
 	}
 
 	/**
@@ -279,6 +313,7 @@ public class Ellipsoid {
 	}
 
 	// region -- Helper methods --
+
 	private void mapToOrientation(final Vector3d v) {
 		final Vector3d[] rowVectors = Stream.generate(Vector3d::new).limit(3)
 			.toArray(Vector3d[]::new);
@@ -297,6 +332,23 @@ public class Ellipsoid {
 
 	private static boolean validRadius(final double r) {
 		return r > 0 && Double.isFinite(r);
+	}
+
+	private void setOrientation(final Vector3d u, final Vector3d v,
+		final Vector3d w)
+	{
+		final double eps = 1e-12;
+		if (u.dot(v) > eps || u.dot(w) > eps || v.dot(w) > eps) {
+			throw new IllegalArgumentException("Vectors must be orthogonal");
+		}
+		u.normalize();
+		v.normalize();
+		w.normalize();
+		final double[][] columns = Stream.of(u, v, w).map(e -> new double[] { e.x,
+			e.y, e.z, 0 }).toArray(double[][]::new);
+		for (int i = 0; i < 3; i++) {
+			orientation.setColumn(i, columns[i]);
+		}
 	}
 	// endregion
 }
