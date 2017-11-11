@@ -38,7 +38,7 @@ import ij.process.ImageProcessor;
  */
 public class RoiManagerUtilTest {
 
-	private static ImagePlus testImage;
+    private static ImagePlus testImage;
 	private static ImageStack testStack;
 
 	private static final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
@@ -461,6 +461,15 @@ public class RoiManagerUtilTest {
 		assertTrue(points.isEmpty());
 	}
 
+    @Test
+    public void testIsActiveOnAllSlices() throws Exception {
+	    assertTrue(RoiManagerUtil.isActiveOnAllSlices(-1));
+        assertTrue(RoiManagerUtil.isActiveOnAllSlices(0));
+        assertFalse(RoiManagerUtil.isActiveOnAllSlices(1));
+    }
+
+    //region -- Helper methods --
+
 	/**
 	 * Creates an L-shaped mask that blocks the lower right-hand corner of an
 	 * image NB width & height need to be the same than the dimensions of the
@@ -570,4 +579,5 @@ public class RoiManagerUtilTest {
 
 		return imagePlus;
 	}
+	//endregion
 }
