@@ -7,9 +7,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
-import static org.scijava.ui.DialogPrompt.MessageType;
-import static org.scijava.ui.DialogPrompt.OptionType;
-import static org.scijava.ui.DialogPrompt.Result;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +21,7 @@ import net.imagej.table.Table;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -254,26 +252,14 @@ public class ThicknessWrapper extends ContextCommand {
 		}
 
 		if (!anisotropyWarned) {
- 			warnAnisotropy();
+ 			if(!Common.warnAnisotropy(inputImage, uiService)) {
+ 			    cancel(null);
+            }
             anisotropyWarned = true;
         }
 	}
 
-	private void warnAnisotropy() {
-		final double anisotropy = ImagePlusUtil.anisotropy(inputImage);
-		if (anisotropy > 1E-3) {
-			final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy *
-				100.0);
-			final Result result = uiService.showDialog("The image is anisotropic" +
-				anisotropyPercent + ". Continue anyway?", MessageType.WARNING_MESSAGE,
-				OptionType.OK_CANCEL_OPTION);
-			if (result == Result.CANCEL_OPTION) {
-				cancel(null);
-			}
-		}
-	}
-
-	@SuppressWarnings("unused")
+    @SuppressWarnings("unused")
 	private void openHelpPage() {
 		Help.openHelpPage("http://bonej.org/thickness", platformService, uiService,
 			logService);
