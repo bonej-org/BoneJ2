@@ -2,7 +2,17 @@
 package org.bonej.wrapperPlugins.wrapperUtils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.scijava.ui.DialogPrompt.Result.CANCEL_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.CLOSED_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import java.util.stream.IntStream;
 
@@ -17,13 +27,16 @@ import net.imglib2.type.numeric.real.DoubleType;
 
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.scijava.ui.DialogPrompt.MessageType;
+import org.scijava.ui.UIService;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
+import ij.measure.Calibration;
 
 /**
- * Unit tests for the {@link Common} utility class
+ * Unit tests for the {@link Common} utility class.
  *
  * @author Richard Domander
  */
@@ -57,8 +70,8 @@ public class CommonTest {
 			.getRoi());
 	}
 
-	@Test
-	public void testConvertWithMetadata() throws AssertionError {
+    @Test
+	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
 		final String name = "Test image";
 		final double scale = 0.5;
@@ -79,5 +92,66 @@ public class CommonTest {
 		assertEquals("Axis unit was not copied", unit, result.axis(0).unit());
 		assertEquals("Axis scale was not copied", scale, result.axis(0)
 			.averageScale(0, 1), 1e-12);
+	}
+
+	@Test
+	public void testWarnAnisotropyReturnsTrueIfAnisotropicImageAndUserOK()
+		throws Exception
+	{
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 0.5;
+		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
+		final UIService uiService = mock(UIService.class);
+		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
+			.thenReturn(OK_OPTION);
+
+		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
+        verify(uiService, timeout(1000)).showDialog(anyString(), any(
+                MessageType.class), any());
+	}
+
+	@Test
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels()
+		throws Exception
+	{
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 0.5;
+		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
+		final UIService uiService = mock(UIService.class);
+		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
+			.thenReturn(CANCEL_OPTION);
+
+        assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+        verify(uiService, timeout(1000)).showDialog(anyString(), any(
+                MessageType.class), any());
+	}
+
+	@Test
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses()
+		throws Exception
+	{
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 0.5;
+		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
+		final UIService uiService = mock(UIService.class);
+		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
+			.thenReturn(CLOSED_OPTION);
+
+        assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+        verify(uiService, timeout(1000)).showDialog(anyString(), any(
+                MessageType.class), any());
+	}
+
+	@Test
+	public void testWarnAnisotropyReturnsTrueIfIsotropicImage() throws Exception {
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration calibration = new Calibration();
+		when(imagePlus.getCalibration()).thenReturn(calibration);
+		final UIService uiService = mock(UIService.class);
+
+		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
 	}
 }
