@@ -3,6 +3,7 @@ package org.bonej.utilities;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -18,23 +19,26 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.scijava.vecmath.Vector3d;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.PointRoi;
 import ij.gui.Roi;
+import ij.gui.TextRoi;
 import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
 /**
- * Unit tests for the {@link RoiManagerUtil RoiManagerUtil} class
+ * Unit tests for the {@link RoiManagerUtil RoiManagerUtil} class.
  *
  * @author Richard Domander
  */
 public class RoiManagerUtilTest {
 
-	private static ImagePlus testImage;
+    private static ImagePlus testImage;
 	private static ImageStack testStack;
 
 	private static final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
@@ -430,6 +434,42 @@ public class RoiManagerUtilTest {
 			foregroundCount);
 	}
 
+	@Test
+	public void testPointRoiCoordinates() throws Exception {
+		final PointRoi pointRoi = new PointRoi(8, 9);
+		pointRoi.setPosition(13);
+		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(new Roi[] { new Roi(1, 2,
+			1, 1), pointRoi, new TextRoi(3, 4, "foo") });
+
+		final List<Vector3d> points = RoiManagerUtil.pointROICoordinates(
+			MOCK_ROI_MANAGER);
+
+		assertEquals(1, points.size());
+		final Vector3d point = points.get(0);
+		assertEquals(pointRoi.getXBase(), point.x, 1e-12);
+		assertEquals(pointRoi.getYBase(), point.y, 1e-12);
+		assertEquals(pointRoi.getPosition(), point.z, 1e-12);
+	}
+
+	@Test
+	public void testPointRoiCoordinatesReturnsEmptyListIfManagerNull()
+			throws Exception
+	{
+		final List<Vector3d> points = RoiManagerUtil.pointROICoordinates(null);
+
+		assertNotNull(points);
+		assertTrue(points.isEmpty());
+	}
+
+    @Test
+    public void testIsActiveOnAllSlices() throws Exception {
+	    assertTrue(RoiManagerUtil.isActiveOnAllSlices(-1));
+        assertTrue(RoiManagerUtil.isActiveOnAllSlices(0));
+        assertFalse(RoiManagerUtil.isActiveOnAllSlices(1));
+    }
+
+    //region -- Helper methods --
+
 	/**
 	 * Creates an L-shaped mask that blocks the lower right-hand corner of an
 	 * image NB width & height need to be the same than the dimensions of the
@@ -539,4 +579,5 @@ public class RoiManagerUtilTest {
 
 		return imagePlus;
 	}
+	//endregion
 }

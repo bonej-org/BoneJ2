@@ -2,7 +2,6 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -11,9 +10,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-
-import java.util.Iterator;
-import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
 import net.imagej.table.DefaultColumn;
@@ -135,27 +131,7 @@ public class ThicknessWrapperTest {
 			any());
 	}
 
-	@Test
-	public void testNoHeaderUnitsWhenUncalibrated() throws Exception {
-		// SETUP
-		final ImagePlus imagePlus = NewImage.createByteImage("", 2, 2, 2, 1);
-		final Iterator<String> expectedHeaders = Stream.of("Label", "Tb.Th Mean",
-			"Tb.Th Std Dev", "Tb.Th Max").iterator();
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Trabecular thickness").get();
-
-		// VERIFY
-		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
-		assertTrue(table.stream().allMatch(c -> expectedHeaders.next().equals(c
-			.getHeader())));
-		assertFalse(expectedHeaders.hasNext());
-	}
-
-	@Test
+    @Test
 	public void testResults() throws Exception {
 		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("", 2, 2, 2, 1);

@@ -39,7 +39,9 @@ import ij.plugin.frame.RoiManager;
  *
  *
  * @author Michael Doube
+ * @deprecated replaced by FitEllipsoidWrapper in Modern.
  */
+@Deprecated
 public class EllipsoidFitter implements PlugIn {
 
 	@Override

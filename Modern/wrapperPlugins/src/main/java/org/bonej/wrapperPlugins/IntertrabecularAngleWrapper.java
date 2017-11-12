@@ -6,8 +6,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
-import static org.scijava.ui.DialogPrompt.Result.CANCEL_OPTION;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -48,7 +46,6 @@ import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.Vector3d;
 import org.scijava.widget.NumberWidget;
@@ -337,7 +334,9 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		}
 
 		if (!anisotropyWarned) {
-			warnAnisotropy();
+			if (!Common.warnAnisotropy(inputImage, uiService)) {
+			    cancel(null);
+            }
 			anisotropyWarned = true;
 		}
 	}
@@ -365,19 +364,6 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private void enforceValidRange() {
 		if (minimumValence > maximumValence) {
 			minimumValence = maximumValence;
-		}
-	}
-
-	private void warnAnisotropy() {
-		final double anisotropy = ImagePlusUtil.anisotropy(inputImage);
-		if (anisotropy > 1E-3) {
-			final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy * 100.0);
-			final DialogPrompt.Result result = uiService.showDialog(
-					"The image is anisotropic" + anisotropyPercent + ". Continue anyway?", WARNING_MESSAGE,
-					OK_CANCEL_OPTION);
-			if (result == CANCEL_OPTION) {
-				cancel(null);
-			}
 		}
 	}
 }

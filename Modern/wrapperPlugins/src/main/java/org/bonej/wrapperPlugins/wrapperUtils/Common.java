@@ -1,6 +1,10 @@
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
+
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
@@ -8,10 +12,13 @@ import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.ComplexType;
 
+import org.bonej.utilities.ImagePlusUtil;
+import org.scijava.ui.UIService;
+
 import ij.ImagePlus;
 
 /**
- * Miscellaneous utility methods
+ * Miscellaneous utility methods.
  *
  * @author Richard Domander
  */
@@ -55,6 +62,29 @@ public class Common {
 		copyMetadata(imgPlus, convertedImgPlus);
 
 		return convertedImgPlus;
+	}
+
+	/**
+	 * Shows a warning dialog about image anisotropy, and asks if the user wants
+	 * to continue.
+	 *
+	 * @param image the current image open in ImageJ.
+	 * @param uiService used to display the warning dialog.
+	 * @return true if user chose OK_OPTION, or image is not anisotropic. False if
+	 *         user chose 'cancel' or they closed the dialog.
+	 */
+	public static boolean warnAnisotropy(final ImagePlus image,
+		final UIService uiService)
+	{
+		final double anisotropy = ImagePlusUtil.anisotropy(image);
+		if (anisotropy < 1E-3) {
+			return true;
+		}
+		final String anisotropyPercent = String.format("(%.1f %%)", anisotropy *
+			100.0);
+		return uiService.showDialog("The image is anisotropic " +
+			anisotropyPercent + ". Continue anyway?", WARNING_MESSAGE,
+			OK_CANCEL_OPTION) == OK_OPTION;
 	}
 
 	/**

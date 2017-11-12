@@ -7,9 +7,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
-import static org.scijava.ui.DialogPrompt.MessageType;
-import static org.scijava.ui.DialogPrompt.OptionType;
-import static org.scijava.ui.DialogPrompt.Result;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +21,8 @@ import net.imagej.table.Table;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -33,7 +32,6 @@ import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-import org.scijava.util.StringUtils;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 
@@ -194,7 +192,7 @@ public class ThicknessWrapper extends ContextCommand {
 		if (map == null) {
 			return;
 		}
-		final String unitHeader = getUnitHeader(map);
+		final String unitHeader = ResultUtils.getUnitHeader(map);
 		final String label = map.getTitle();
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
 		final StackStatistics resultStats = new StackStatistics(map);
@@ -209,23 +207,12 @@ public class ThicknessWrapper extends ContextCommand {
 			max = Double.NaN;
 		}
 
-		SharedTable.add(label, prefix + " Mean" + unitHeader, mean);
-		SharedTable.add(label, prefix + " Std Dev" + unitHeader, stdDev);
-		SharedTable.add(label, prefix + " Max" + unitHeader, max);
+		SharedTable.add(label, prefix + " Mean " + unitHeader, mean);
+		SharedTable.add(label, prefix + " Std Dev " + unitHeader, stdDev);
+		SharedTable.add(label, prefix + " Max " + unitHeader, max);
 	}
 
-	private static String getUnitHeader(final ImagePlus map) {
-		final String unit = map.getCalibration().getUnit();
-		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
-			"unit".equalsIgnoreCase(unit))
-		{
-			return "";
-		}
-
-		return " (" + unit + ")";
-	}
-
-	@SuppressWarnings("unused")
+    @SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
@@ -254,26 +241,14 @@ public class ThicknessWrapper extends ContextCommand {
 		}
 
 		if (!anisotropyWarned) {
- 			warnAnisotropy();
+ 			if(!Common.warnAnisotropy(inputImage, uiService)) {
+ 			    cancel(null);
+            }
             anisotropyWarned = true;
         }
 	}
 
-	private void warnAnisotropy() {
-		final double anisotropy = ImagePlusUtil.anisotropy(inputImage);
-		if (anisotropy > 1E-3) {
-			final String anisotropyPercent = String.format(" (%.1f %%)", anisotropy *
-				100.0);
-			final Result result = uiService.showDialog("The image is anisotropic" +
-				anisotropyPercent + ". Continue anyway?", MessageType.WARNING_MESSAGE,
-				OptionType.OK_CANCEL_OPTION);
-			if (result == Result.CANCEL_OPTION) {
-				cancel(null);
-			}
-		}
-	}
-
-	@SuppressWarnings("unused")
+    @SuppressWarnings("unused")
 	private void openHelpPage() {
 		Help.openHelpPage("http://bonej.org/thickness", platformService, uiService,
 			logService);

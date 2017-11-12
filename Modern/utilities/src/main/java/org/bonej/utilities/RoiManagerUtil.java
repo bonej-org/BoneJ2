@@ -1,10 +1,15 @@
 
 package org.bonej.utilities;
 
-import java.awt.Rectangle;
+import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.scijava.vecmath.Vector3d;
 
 import ij.ImageStack;
 import ij.gui.Roi;
@@ -244,6 +249,44 @@ public class RoiManagerUtil {
 
 		return Optional.of(targetStack);
 	}
+
+	/**
+	 * Gets the coordinates of all point ROIs in the manager.
+	 * <p>
+	 * NB z-coordinates start from 1. If a ROI is not associated with a slice,
+	 * it's z = 0.
+	 * </p>
+	 *
+	 * @param manager an instance of {@link RoiManager}.
+	 * @return point ROI coordinates.
+	 */
+	public static List<Vector3d> pointROICoordinates(final RoiManager manager) {
+		if (manager == null) {
+			return Collections.emptyList();
+		}
+		final Roi[] rois = manager.getRoisAsArray();
+		// To be completely accurate, we'd have to calculate the centers of the ROIs
+		// bounding boxes, but since we're only interested in point ROIs that won't
+		// make a huge difference.
+		return Arrays.stream(rois).filter(roi -> roi.getType() == Roi.POINT).map(
+			roi -> {
+				final double x = roi.getXBase();
+				final double y = roi.getYBase();
+				final int z = roi.getZPosition();
+				return new Vector3d(x, y, z);
+			}).collect(Collectors.toList());
+	}
+
+	/**
+	 * Checks if a ROI is active on all slices.
+	 *
+	 * @param sliceNumber the slice number or z-position of the ROI.
+	 * @return true if the ROI is not associated with a particular slide.
+	 */
+	public static boolean isActiveOnAllSlices(final int sliceNumber) {
+		return sliceNumber <= 0;
+	}
+
 	// endregion
 
 	// region -- Helper methods --
@@ -293,7 +336,7 @@ public class RoiManagerUtil {
 	 * NB Calls copyRoi with the given parameters if sourceProcessor.getMask() ==
 	 * null.
 	 * </p>
-	 * 
+	 *
 	 * @param sourceProcessor Copy source
 	 * @param targetProcessor Copy target
 	 * @param minX Horizontal start of the copy area 0 &lt;= minX &lt; width
@@ -351,11 +394,7 @@ public class RoiManagerUtil {
 		}
 	}
 
-    private static boolean isActiveOnAllSlices(final int sliceNumber) {
-		return sliceNumber == NO_SLICE_NUMBER;
-	}
-
-	private static int clamp(final int value, final int min, final int max) {
+    private static int clamp(final int value, final int min, final int max) {
 		if (Integer.compare(value, min) < 0) {
 			return min;
 		}
