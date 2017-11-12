@@ -22,6 +22,8 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.scijava.util.StringUtils;
 
+import ij.ImagePlus;
+
 /**
  * Static utility methods that help display results to the user
  *
@@ -217,5 +219,23 @@ public class ResultUtils {
 			return index + 1;
 		}
 		return index;
+	}
+
+	/**
+	 * Gets the unit of the image calibration, which can be displayed to the user.
+	 *
+	 * @param imagePlus a ImageJ1 style {@link ImagePlus}.
+	 * @return calibration unit, or empty string if there's no unit, or the
+	 *         calibration has a placeholder unit.
+	 */
+	public static String getUnitHeader(final ImagePlus imagePlus) {
+		final String unit = imagePlus.getCalibration().getUnit();
+		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
+			"unit".equalsIgnoreCase(unit))
+		{
+			return "";
+		}
+
+		return "(" + unit + ")";
 	}
 }
