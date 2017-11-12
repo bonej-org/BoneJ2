@@ -1,0 +1,113 @@
+Integration tests for the Fit Ellipsoid command.
+
+
+Case 1
+=======================================================================
+Too few point ROIs cancel the plugin
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume).
+ 2. Open ROI Manager (Analyze>Tools>RoiManager).
+ 3. Select the Point ROI tool.
+ 4. Draw a Point ROI on the image.
+    - Press "Add" on the ROI Manager window.
+	- Repeat eight(8) times.
+ 5. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog about too few points opens, and the plugin stops.
+
+Completed [Month] [Day] [Year] [Name] 
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+Plugin ignores other types of ROIs
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+ 1. Same as Case 1, but after drawing the Point ROIs,
+    add a rectangular ROI.
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog about failed fitting opens, and the plugin stops.
+
+Completed [Month] [Day] [Year] [Name] 
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+User sees an error dialog if fitting fails
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume).
+ 2. Open ROI Manager (Analyze>Tools>RoiManager).
+ 3. Select the Point ROI tool.
+ 4. Draw a Point ROIs on the image.
+    - Draw at least nine in a tight cluster on a single slice.
+	- Press "Add" on the ROI Manager window after each point.
+ 5. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid)
+
+Expected result
+-----------------------------------------------------------------------
+An error dialog about failed fitting opens, and the plugin stops.
+
+Completed [Month] [Day] [Year] [Name] 
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+Fitting results
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume).
+ 2. Open ROI Manager (Analyze>Tools>RoiManager).
+ 3. Select the Point ROI tool.
+ 4. Draw a Point ROIs on the image.
+    - Draw lots of points in a roughly spherical cluster on 
+	  different slices.
+	- Press "Add" on the ROI Manager window after each point.
+ 5. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid)
+
+Expected result
+-----------------------------------------------------------------------
+User sees the BoneJ results table with the radii and centroid 
+coordinates of an ellipsoid.
+
+Completed [Month] [Day] [Year] [Name] 
+-----------------------------------------------------------------------
+
+
+Case 5
+=======================================================================
+Calibration affects ellipsoid properties
+=======================================================================
+Prerequisites
+-----------------------------------------------------------------------
+Points have been drawn, and Case 4 has been completed.
+
+Steps
+-----------------------------------------------------------------------
+ 1. Set scale (Analyze>Set Scale)
+ 2. Set options
+    - "Distance in pixels" to "1"
+    - "Known distance" to "0.50"
+    - "Pixel aspect ratio" to "1.0"
+    - "Unit of length" to "mm"
+ 3. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid)
+ 
+
+Expected result
+-----------------------------------------------------------------------
+Results differ from Case 4.
+
+Completed [Month] [Day] [Year] [Name] 
+-----------------------------------------------------------------------
