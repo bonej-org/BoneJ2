@@ -13,13 +13,13 @@ Steps
  4. Draw a Point ROI on the image.
     - Press "Add" on the ROI Manager window.
 	- Repeat eight(8) times.
- 5. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid)
+ 5. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid).
 
 Expected result
 -----------------------------------------------------------------------
 An error dialog about too few points opens, and the plugin stops.
 
-Completed [Month] [Day] [Year] [Name] 
+Completed: November 12th 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -27,20 +27,51 @@ Case 2
 =======================================================================
 Plugin ignores other types of ROIs
 =======================================================================
+Prerequisites
+-----------------------------------------------------------------------
+Case 1 has been completed.
+
 Steps
 -----------------------------------------------------------------------
- 1. Same as Case 1, but after drawing the Point ROIs,
-    add a rectangular ROI.
-
+ 1. Select the Rectangular ROI tool.
+ 2. Draw a Rectangular ROI on the image.
+ 3. Press "Add" on the ROI Manager window.
+ 4. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid).
+ 
 Expected result
 -----------------------------------------------------------------------
-An error dialog about failed fitting opens, and the plugin stops.
+An error dialog about too few points opens, and the plugin stops.
 
-Completed [Month] [Day] [Year] [Name] 
+Completed: November 12th 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
 Case 3
+=======================================================================
+Plugin ignores ROIs active on all slices
+=======================================================================
+Prerequisites
+-----------------------------------------------------------------------
+Case 1 has been completed.
+
+Steps
+-----------------------------------------------------------------------
+ 1. Draw a ninth Point ROI.
+ 2. Press "Add" on the ROI Manager window.
+ 3. Select the newest ROI from the ROI Manager.
+ 4. Click the "Properties" button.
+ 5. Set "Position" to "0".
+ 6. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid).
+ 
+Expected result
+-----------------------------------------------------------------------
+An error dialog about too few points opens, and the plugin stops.
+
+Completed: November 12th 2017 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 4
 =======================================================================
 User sees an error dialog if fitting fails
 =======================================================================
@@ -58,11 +89,11 @@ Expected result
 -----------------------------------------------------------------------
 An error dialog about failed fitting opens, and the plugin stops.
 
-Completed [Month] [Day] [Year] [Name] 
+Completed: November 12th 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
-Case 4
+Case 5
 =======================================================================
 Fitting results
 =======================================================================
@@ -82,17 +113,17 @@ Expected result
 User sees the BoneJ results table with the radii and centroid 
 coordinates of an ellipsoid.
 
-Completed [Month] [Day] [Year] [Name] 
+Completed: November 12th 2017 Richard Domander
 -----------------------------------------------------------------------
 
 
-Case 5
+Case 6
 =======================================================================
 Calibration affects ellipsoid properties
 =======================================================================
 Prerequisites
 -----------------------------------------------------------------------
-Points have been drawn, and Case 4 has been completed.
+Points have been drawn, and Case 5 has been completed.
 
 Steps
 -----------------------------------------------------------------------
@@ -107,7 +138,7 @@ Steps
 
 Expected result
 -----------------------------------------------------------------------
-Results differ from Case 4.
+Results are half from Case 5.
 
-Completed [Month] [Day] [Year] [Name] 
+Completed: November 12th 2017 Richard Domander
 -----------------------------------------------------------------------
