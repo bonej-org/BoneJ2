@@ -30,6 +30,9 @@ import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import ij.ImagePlus;
+import ij.measure.Calibration;
+
 /**
  * Unit tests for the {@link ResultUtils ResultUtils} class.
  *
@@ -232,5 +235,59 @@ public class ResultUtilsTest {
 
 		types.map(type -> ResultUtils.toConventionalIndex(type, 0)).forEach(
 			i -> assertEquals(expectedIndices.next().longValue(), i.longValue()));
+	}
+
+	@Test
+	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitEmpty()
+		throws Exception
+	{
+		final ImagePlus imagePlus = new ImagePlus();
+		final Calibration calibration = new Calibration();
+		calibration.setUnit("");
+		imagePlus.setCalibration(calibration);
+
+		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
+
+		assertEquals("", unitHeader);
+	}
+
+	@Test
+	public void testGetUnitHeaderImagePlusReturnsEmptyIfDefaultUnit()
+		throws Exception
+	{
+		final ImagePlus imagePlus = new ImagePlus();
+		final Calibration calibration = new Calibration();
+		imagePlus.setCalibration(calibration);
+
+		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
+
+		assertEquals("", unitHeader);
+	}
+
+	@Test
+	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitUnit()
+		throws Exception
+	{
+		final ImagePlus imagePlus = new ImagePlus();
+		final Calibration calibration = new Calibration();
+		calibration.setUnit("unit");
+		imagePlus.setCalibration(calibration);
+
+		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
+
+		assertEquals("", unitHeader);
+	}
+
+	@Test
+	public void testGetUnitHeaderImagePlus() throws Exception {
+		final ImagePlus imagePlus = new ImagePlus();
+		final Calibration calibration = new Calibration();
+        final String unit = "mm";
+        calibration.setUnit(unit);
+		imagePlus.setCalibration(calibration);
+
+		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
+
+		assertEquals("(" + unit + ")", unitHeader);
 	}
 }
