@@ -38,6 +38,7 @@ import org.bonej.utilities.GraphUtil;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -356,7 +357,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void calculateRealLength() {
 		calibratedMinimumLength = minimumTrabecularLength * coefficients.get(0);
-		final String unit = inputImage.getCalibration().getUnit();
+		final String unit = ResultUtils.getUnitHeader(inputImage);
 		realLength = String.join(" ", String.format("%.2g", calibratedMinimumLength), unit);
 	}
 
