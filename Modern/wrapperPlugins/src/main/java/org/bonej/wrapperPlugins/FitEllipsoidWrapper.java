@@ -111,12 +111,12 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage);
 		final String label = inputImage.getTitle();
 		final Vector3d centroid = ellipsoid.getCentroid();
-		SharedTable.add(label, "Centroid x (" + unitHeader + ")", centroid.getX());
-		SharedTable.add(label, "Centroid y (" + unitHeader + ")", centroid.getY());
-		SharedTable.add(label, "Centroid z (" + unitHeader + ")", centroid.getZ());
-		SharedTable.add(label, "Radius a (" + unitHeader + ")", ellipsoid.getA());
-		SharedTable.add(label, "Radius b (" + unitHeader + ")", ellipsoid.getB());
-		SharedTable.add(label, "Radius c (" + unitHeader + ")", ellipsoid.getC());
+		SharedTable.add(label, "Centroid x " + unitHeader, centroid.getX());
+		SharedTable.add(label, "Centroid y " + unitHeader, centroid.getY());
+		SharedTable.add(label, "Centroid z " + unitHeader, centroid.getZ());
+		SharedTable.add(label, "Radius a " + unitHeader, ellipsoid.getA());
+		SharedTable.add(label, "Radius b " + unitHeader, ellipsoid.getB());
+		SharedTable.add(label, "Radius c " + unitHeader, ellipsoid.getC());
 	}
 
 	private boolean initPointROIs() {
