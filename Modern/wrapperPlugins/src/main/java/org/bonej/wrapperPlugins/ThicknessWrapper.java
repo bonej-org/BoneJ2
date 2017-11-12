@@ -22,6 +22,7 @@ import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
+import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -31,7 +32,6 @@ import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-import org.scijava.util.StringUtils;
 import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 
@@ -192,7 +192,7 @@ public class ThicknessWrapper extends ContextCommand {
 		if (map == null) {
 			return;
 		}
-		final String unitHeader = getUnitHeader(map);
+		final String unitHeader = ResultUtils.getUnitHeader(map);
 		final String label = map.getTitle();
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
 		final StackStatistics resultStats = new StackStatistics(map);
@@ -207,23 +207,12 @@ public class ThicknessWrapper extends ContextCommand {
 			max = Double.NaN;
 		}
 
-		SharedTable.add(label, prefix + " Mean" + unitHeader, mean);
-		SharedTable.add(label, prefix + " Std Dev" + unitHeader, stdDev);
-		SharedTable.add(label, prefix + " Max" + unitHeader, max);
+		SharedTable.add(label, prefix + " Mean " + unitHeader, mean);
+		SharedTable.add(label, prefix + " Std Dev " + unitHeader, stdDev);
+		SharedTable.add(label, prefix + " Max " + unitHeader, max);
 	}
 
-	private static String getUnitHeader(final ImagePlus map) {
-		final String unit = map.getCalibration().getUnit();
-		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
-			"unit".equalsIgnoreCase(unit))
-		{
-			return "";
-		}
-
-		return " (" + unit + ")";
-	}
-
-	@SuppressWarnings("unused")
+    @SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
