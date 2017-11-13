@@ -76,10 +76,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 
 	@Parameter
 	private UIService uiService;
-
-	@Parameter
-	private UnitService unitService;
-
+    
 	private List<Vector3d> points;
 
 	@Override
@@ -149,7 +146,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			return;
 		}
 		if (!Common.warnAnisotropy(inputImage, uiService)) {
-			cancel("null");
+			cancel(null);
 		}
 	}
 }
