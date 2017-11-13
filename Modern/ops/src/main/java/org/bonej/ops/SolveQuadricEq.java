@@ -23,7 +23,8 @@ import org.scijava.vecmath.Vector3d;
  * <p>
  * The op first solves the quadric that best fits the point cloud by minimising
  * the distance by least squares fitting. It's found by solving a polynomial -
- * the general equation of a quadric.
+ * the general equation of a quadric. The algorithm is sensitive to outlier
+ * points.
  * </p>
  * <p>
  * The op is based on the the implementations of Yury Petrov &amp; "KalebKE".

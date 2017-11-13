@@ -14,7 +14,6 @@ import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
-import net.imagej.units.UnitService;
 
 import org.bonej.ops.SolveQuadricEq;
 import org.bonej.ops.ellipsoid.Ellipsoid;
@@ -76,7 +75,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 
 	@Parameter
 	private UIService uiService;
-    
+
 	private List<Vector3d> points;
 
 	@Override
