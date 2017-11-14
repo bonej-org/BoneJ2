@@ -27,6 +27,7 @@ import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
@@ -36,6 +37,7 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  *
  * @author Richard Domander
  */
+@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ElementFractionWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();

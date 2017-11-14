@@ -28,6 +28,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
 
+import org.junit.experimental.categories.Category;
 import org.scijava.command.Command;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.DialogPrompt;
@@ -44,6 +45,7 @@ import ij.process.ImageStatistics;
  *
  * @author Richard Domander
  */
+@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class CommonWrapperTests {
 
 	public static <C extends Command> void testNullImageCancelsPlugin(

@@ -12,6 +12,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.scijava.log.LogService;
 import org.scijava.platform.PlatformService;
 import org.scijava.ui.UIService;
@@ -21,6 +22,7 @@ import org.scijava.ui.UIService;
  *
  * @author Richard Domander
  */
+@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class HelpTest {
 
 	@Test

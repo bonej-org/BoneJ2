@@ -12,6 +12,7 @@ import net.imagej.ImageJ;
 
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 
@@ -23,7 +24,7 @@ import ij.gui.NewImage;
  *
  * @author Richard Domander
  */
-
+@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class FitEllipsoidWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();

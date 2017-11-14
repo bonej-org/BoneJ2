@@ -27,6 +27,7 @@ import net.imglib2.type.numeric.real.DoubleType;
 
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.scijava.ui.DialogPrompt.MessageType;
 import org.scijava.ui.UIService;
 
@@ -95,6 +96,7 @@ public class CommonTest {
 	}
 
 	@Test
+    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsTrueIfAnisotropicImageAndUserOK()
 		throws Exception
 	{
@@ -129,6 +131,7 @@ public class CommonTest {
 	}
 
 	@Test
+    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses()
 		throws Exception
 	{
@@ -146,6 +149,7 @@ public class CommonTest {
 	}
 
 	@Test
+    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsTrueIfIsotropicImage() throws Exception {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration calibration = new Calibration();

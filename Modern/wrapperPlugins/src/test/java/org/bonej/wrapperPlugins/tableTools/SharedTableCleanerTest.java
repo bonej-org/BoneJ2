@@ -9,12 +9,14 @@ import net.imagej.ImageJ;
 import org.bonej.utilities.SharedTable;
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /**
  * Tests for {@link SharedTableCleaner}
  *
  * @author Richard Domander
  */
+@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SharedTableCleanerTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
