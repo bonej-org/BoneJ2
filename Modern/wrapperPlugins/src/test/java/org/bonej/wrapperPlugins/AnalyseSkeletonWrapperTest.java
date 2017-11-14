@@ -5,8 +5,8 @@ import static ij.gui.NewImage.FILL_BLACK;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -357,9 +357,9 @@ public class AnalyseSkeletonWrapperTest {
 		final ImagePlus shortestPaths = (ImagePlus) module.getOutput(
 			"shortestPaths");
 		assertNotNull(shortestPaths);
-		assertNotEquals("Input image should not have been overwritten", pixel,
+		assertNotSame("Input image should not have been overwritten", pixel,
 			labelledSkeleton);
-		assertNotEquals("Input image should not have been overwritten", pixel,
+        assertNotSame("Input image should not have been overwritten", pixel,
 			shortestPaths);
 	}
 

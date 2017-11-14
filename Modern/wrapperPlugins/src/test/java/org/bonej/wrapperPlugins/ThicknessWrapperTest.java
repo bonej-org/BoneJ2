@@ -2,8 +2,8 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -192,10 +192,10 @@ public class ThicknessWrapperTest {
 		final ImagePlus spacingMap = (ImagePlus) module.getOutput("spacingMap");
 		assertNotNull(trabecularMap);
 		assertNotNull(spacingMap);
-		assertNotEquals("Original image should not have been overwritten",
+        assertNotSame("Original image should not have been overwritten",
 			imagePlus, trabecularMap);
-		assertNotEquals("Original image should not have been overwritten",
+        assertNotSame("Original image should not have been overwritten",
 			imagePlus, spacingMap);
-		assertNotEquals("Map images should be independent", trabecularMap, spacingMap);
+        assertNotSame("Map images should be independent", trabecularMap, spacingMap);
 	}
 }

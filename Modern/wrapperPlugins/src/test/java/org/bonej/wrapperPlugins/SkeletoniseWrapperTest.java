@@ -2,8 +2,8 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -117,7 +117,7 @@ public class SkeletoniseWrapperTest {
 			.getTitle());
 		assertEquals("Skeleton should have same calibration", "my unit", skeleton
 			.getCalibration().getUnit());
-		assertNotEquals("Original image should not have been overwritten",
+        assertNotSame("Original image should not have been overwritten",
 			imagePlus, skeleton);
 	}
 
