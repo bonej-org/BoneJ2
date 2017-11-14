@@ -238,7 +238,17 @@
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
     </properties>
 
+    <!-- TODO add a profile for running SlowWrapperTest category -->
+
     <build>
         <finalName>BoneJ2DPL</finalName>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludedGroups>org.bonej.wrapperPlugins.SlowWrapperTest</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>
