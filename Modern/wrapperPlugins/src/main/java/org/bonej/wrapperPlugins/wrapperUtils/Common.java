@@ -24,25 +24,7 @@ import ij.ImagePlus;
  */
 public class Common {
 
-	/**
-	 * Duplicates the image without changing the title of the copy, or cropping it
-	 * to the ROI.
-	 * <p>
-	 * Circumvents the default behaviour of {@link ImagePlus#duplicate()}.
-	 * </p>
-	 * 
-	 * @param image an ImageJ1 style ImagePlus.
-	 * @return an unchanged copy of the image.
-	 */
-	public static ImagePlus cleanDuplicate(final ImagePlus image) {
-		image.killRoi();
-		final ImagePlus copy = image.duplicate();
-		image.restoreRoi();
-		copy.setTitle(image.getTitle());
-		return copy;
-	}
-
-	/**
+    /**
 	 * Converts the {@link ImgPlus} to a new ImgPlus with {@link BitType}
 	 * elements.
 	 * <p>

@@ -287,7 +287,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	private ImagePlus skeletonise() {
 		// Skeletonise input image
-		final ImagePlus skeleton = Common.cleanDuplicate(inputImage);
+		final ImagePlus skeleton = ImagePlusUtil.cleanDuplicate(inputImage);
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);

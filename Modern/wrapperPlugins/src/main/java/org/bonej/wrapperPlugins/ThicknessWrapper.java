@@ -6,7 +6,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.bonej.wrapperPlugins.wrapperUtils.Common.cleanDuplicate;
+import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
