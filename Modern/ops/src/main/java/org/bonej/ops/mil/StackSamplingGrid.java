@@ -3,8 +3,13 @@ package org.bonej.ops.mil;
 
 import java.util.Random;
 
+import net.imagej.ops.OpEnvironment;
+import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
+import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.util.ValuePair;
 
+import org.bonej.ops.RotateAboutAxis;
+import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Point3d;
 import org.scijava.vecmath.Vector3d;
 
@@ -36,8 +41,9 @@ public final class StackSamplingGrid {
 		 *
 		 * @param orientation initial orientation of the plane.
 		 */
-		public StackSamplingPlane(final Orientation orientation)
-			 {this(orientation, 1.0);}
+		public StackSamplingPlane(final Orientation orientation) {
+			this(orientation, 1.0);
+		}
 
 		/**
 		 * Constructs an instance of {@link StackSamplingPlane}.
@@ -49,8 +55,8 @@ public final class StackSamplingGrid {
 		 * @see #getSamplingLine()
 		 * @throws IllegalArgumentException if scalar is not a finite number.
 		 */
-		public StackSamplingPlane(final Orientation orientation, final double scalar)
-			throws IllegalArgumentException
+		public StackSamplingPlane(final Orientation orientation,
+			final double scalar) throws IllegalArgumentException
 		{
 			if (!Double.isFinite(scalar)) {
 				throw new IllegalArgumentException("Scalar must be a finite number");
@@ -99,6 +105,28 @@ public final class StackSamplingGrid {
 			origin.scaleAdd(d, v, origin);
 			final Vector3d direction = new Vector3d(normal);
 			return new ValuePair<>(origin, direction);
+		}
+
+		/**
+		 * Applies the rotation to the normal and unit vectors of the plane.
+		 *
+		 * @param rotation a rotation expressed as an {@link AxisAngle4d}.
+		 * @param ops an {@link OpEnvironment} where a rotation op can be found.
+		 * @see #getSamplingLine()
+		 * @throws NullPointerException if rotation is null
+		 */
+		public void setRotation(final AxisAngle4d rotation, final OpEnvironment ops)
+			throws NullPointerException
+		{
+			if (rotation == null) {
+				throw new NullPointerException("Rotation cannot be null");
+			}
+			final BinaryHybridCFI1<Vector3d, AxisAngle4d, Vector3d> rotateOp = Hybrids
+				.binaryCFI1(ops, RotateAboutAxis.class, Vector3d.class, new Vector3d(),
+					rotation);
+			rotateOp.mutate1(u, rotation);
+			rotateOp.mutate1(v, rotation);
+			rotateOp.mutate1(normal, rotation);
 		}
 
 		/**
