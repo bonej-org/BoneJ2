@@ -38,6 +38,21 @@ public class StackSamplingGridTest {
 		StackSamplingPlane.setRandomGenerator(random);
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testSamplingPlaneThrowsIAEIfScalarNotFinite() {
+		new StackSamplingPlane(XY, Double.NaN);
+	}
+
+	@Test
+	public void testSamplingPlaneOriginScaling() throws Exception {
+		StackSamplingPlane.setRandomGenerator(new OneGenerator());
+		final StackSamplingPlane plane = new StackSamplingPlane(XY, 3.0);
+
+		final Point3d origin = plane.getSamplingLine().a;
+
+		assertEquals(new Point3d(3, 3, 0), origin);
+	}
+
 	@Test
 	public void testSamplingPlaneNormalIsNotReference() throws Exception {
 		final StackSamplingPlane plane = new StackSamplingPlane(XY);
