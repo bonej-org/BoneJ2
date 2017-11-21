@@ -16,6 +16,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.vecmath.AxisAngle4d;
+import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
@@ -26,11 +27,11 @@ import org.scijava.vecmath.Vector3d;
 public class RotateAboutAxisTest {
 
 	private static final ImageJ imageJ = new ImageJ();
-	private static BinaryHybridCFI1<Vector3d, AxisAngle4d, Vector3d> rotateOp;
+	private static BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 
 	@Test
 	public void testCalculateDoesNotMutateInput() throws Exception {
-		final Vector3d v = new Vector3d(1, 2, 3);
+		final Tuple3d v = new Vector3d(1, 2, 3);
 
 		rotateOp.calculate(v, new AxisAngle4d(0, 0, 1, Math.PI / 2.0));
 
@@ -39,7 +40,7 @@ public class RotateAboutAxisTest {
 
 	@Test
 	public void testMutateChangesInput() throws Exception {
-		final Vector3d input = new Vector3d(1, 0, 0);
+		final Tuple3d input = new Vector3d(1, 0, 0);
 
 		rotateOp.mutate1(input, new AxisAngle4d(0, 0, 1, Math.PI / 2.0));
 
@@ -49,12 +50,12 @@ public class RotateAboutAxisTest {
 
 	@Test
 	public void testOp() throws Exception {
-		final Vector3d expected = new Vector3d(Math.cos(Math.PI / 4.0), Math.sin(
+		final Tuple3d expected = new Vector3d(Math.cos(Math.PI / 4.0), Math.sin(
 			Math.PI / 4.0), 0);
 		expected.scale(3.0);
 		final AxisAngle4d axisAngle4d = new AxisAngle4d(0, 0, 3, Math.PI / 4.0);
 
-		final Vector3d rotated = rotateOp.calculate(new Vector3d(3, 0, 0),
+		final Tuple3d rotated = rotateOp.calculate(new Vector3d(3, 0, 0),
 			axisAngle4d);
 
 		assertTrue("Rotated vector is incorrect.", expected.epsilonEquals(rotated,
@@ -79,7 +80,7 @@ public class RotateAboutAxisTest {
 	@BeforeClass
 	public static void oneTimeSetUp() {
 		rotateOp = Hybrids.binaryCFI1(imageJ.op(), RotateAboutAxis.class,
-			Vector3d.class, new Vector3d(), new AxisAngle4d());
+			Tuple3d.class, new Vector3d(), new AxisAngle4d());
 	}
 
 	@AfterClass

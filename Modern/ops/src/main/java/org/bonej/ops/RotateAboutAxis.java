@@ -8,10 +8,11 @@ import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Quat4d;
+import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
- * Rotates a vector around an axis.
+ * Rotates a tuple i.e. a vector or a point around an axis.
  * <p>
  * The rotations are done by quaternions so there's no risk of gimbal lock as
  * with rotation matrices.
@@ -22,7 +23,7 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class RotateAboutAxis extends
-	AbstractBinaryHybridCFI1<Vector3d, AxisAngle4d, Vector3d>
+	AbstractBinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d>
 {
 
 	/**
@@ -34,16 +35,16 @@ public class RotateAboutAxis extends
 		new UnitSphereRandomVectorGenerator(4);
 
 	/**
-	 * Rotates the input vector around the axis-angle and stores the result in the
+	 * Rotates the input tuple around the axis-angle and stores the result in the
 	 * output.
 	 *
-	 * @param input input vector.
+	 * @param input input tuple.
 	 * @param axisAngle the rotation axis and angle.
-	 * @param output the input vector rotated.
+	 * @param output the input tuple rotated.
 	 */
 	@Override
-	public void compute(final Vector3d input, final AxisAngle4d axisAngle,
-		final Vector3d output)
+	public void compute(final Tuple3d input, final AxisAngle4d axisAngle,
+		final Tuple3d output)
 	{
 		mutate1(output, axisAngle);
 	}
@@ -53,20 +54,20 @@ public class RotateAboutAxis extends
 	 * input.
 	 */
 	@Override
-	public Vector3d createOutput(final Vector3d input,
+	public Vector3d createOutput(final Tuple3d input,
 		final AxisAngle4d axisAngle)
 	{
 		return new Vector3d(input);
 	}
 
 	/**
-	 * Rotates the vector and stores the result in the given object.
+	 * Rotates the tuple and stores the result in the given object.
 	 *
-	 * @param v the input and output vector.
+	 * @param v the input and output tuple.
 	 * @param axisAngle the rotation axis and angle.
 	 */
 	@Override
-	public void mutate1(final Vector3d v, final AxisAngle4d axisAngle) {
+	public void mutate1(final Tuple3d v, final AxisAngle4d axisAngle) {
 		final Quat4d q = new Quat4d();
 		// the setter normalizes the quaternion
 		q.set(axisAngle);
@@ -86,7 +87,7 @@ public class RotateAboutAxis extends
 		return axisAngle4d;
 	}
 
-	private static void rotate(final Vector3d v, final Quat4d q) {
+	private static void rotate(final Tuple3d v, final Quat4d q) {
 		final Quat4d p = new Quat4d();
 		p.set(v.getX(), v.getY(), v.getZ(), 0);
 		final Quat4d r = new Quat4d(q);
