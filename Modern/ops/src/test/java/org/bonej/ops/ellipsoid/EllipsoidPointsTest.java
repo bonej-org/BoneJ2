@@ -84,5 +84,5 @@ public class EllipsoidPointsTest {
 		assertTrue(points.stream().allMatch(p -> Math.abs(p.x) <= a));
 		assertTrue(points.stream().allMatch(p -> Math.abs(p.y) <= b));
 		assertTrue(points.stream().allMatch(p -> Math.abs(p.z) <= c));
-    }
+	}
 }

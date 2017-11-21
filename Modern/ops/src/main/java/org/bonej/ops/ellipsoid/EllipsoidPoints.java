@@ -28,8 +28,7 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class EllipsoidPoints extends
-	AbstractBinaryFunctionOp<double[], Long, List<Vector3d>> implements
-	Contingent
+	AbstractBinaryFunctionOp<double[], Long, List<Vector3d>> implements Contingent
 {
 
 	/** Smallest radius of the ellipsoid (x) */
