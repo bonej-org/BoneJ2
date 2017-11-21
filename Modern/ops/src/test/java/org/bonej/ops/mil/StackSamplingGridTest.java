@@ -15,11 +15,15 @@ import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import net.imagej.ImageJ;
 import net.imglib2.util.ValuePair;
 
+import org.bonej.ops.RotateAboutAxis;
 import org.bonej.ops.mil.StackSamplingGrid.StackSamplingPlane;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Point3d;
 import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
@@ -32,25 +36,11 @@ import org.scijava.vecmath.Vector3d;
 public class StackSamplingGridTest {
 
 	private static final Random random = new Random();
+	private static final ImageJ IMAGE_J = new ImageJ();
 
 	@Before
 	public void setup() {
 		StackSamplingPlane.setRandomGenerator(random);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testSamplingPlaneThrowsIAEIfScalarNotFinite() {
-		new StackSamplingPlane(XY, Double.NaN);
-	}
-
-	@Test
-	public void testSamplingPlaneOriginScaling() throws Exception {
-		StackSamplingPlane.setRandomGenerator(new OneGenerator());
-		final StackSamplingPlane plane = new StackSamplingPlane(XY, 3.0);
-
-		final Point3d origin = plane.getSamplingLine().a;
-
-		assertEquals(new Point3d(3, 3, 0), origin);
 	}
 
 	@Test
@@ -93,6 +83,16 @@ public class StackSamplingGridTest {
 	@Test(expected = NullPointerException.class)
 	public void testSamplingPlaneNullOrientationThrowsNPE() throws Exception {
 		new StackSamplingPlane(null);
+	}
+
+	@Test
+	public void testSamplingPlaneOriginScaling() throws Exception {
+		StackSamplingPlane.setRandomGenerator(new OneGenerator());
+		final StackSamplingPlane plane = new StackSamplingPlane(XY, 3.0);
+
+		final Point3d origin = plane.getSamplingLine().a;
+
+		assertEquals(new Point3d(3, 3, 0), origin);
 	}
 
 	/**
@@ -150,6 +150,57 @@ public class StackSamplingGridTest {
 	@Test(expected = NullPointerException.class)
 	public void testSamplingPlaneSetRandomGeneratorThrowsNPE() throws Exception {
 		StackSamplingPlane.setRandomGenerator(null);
+	}
+
+	@Test
+	public void testSamplingPlaneSetRotation() {
+		// SETUP
+
+		StackSamplingPlane.setRandomGenerator(new OneGenerator());
+		final StackSamplingPlane plane = new StackSamplingPlane(XY);
+		final Vector3d axis = new Vector3d(1, 0, 1);
+		axis.normalize();
+		final double angle = Math.PI / 4.0;
+		final AxisAngle4d rotation = new AxisAngle4d(axis, angle);
+		final Point3d expectedOrigin = new Point3d(1, 1, 0);
+		IMAGE_J.op().run(RotateAboutAxis.class, expectedOrigin, expectedOrigin,
+			rotation);
+		final Vector3d expectedNormal = new Vector3d(0, 0, 1);
+		IMAGE_J.op().run(RotateAboutAxis.class, expectedNormal, expectedNormal,
+			rotation);
+		plane.setRotation(rotation, IMAGE_J.op());
+
+		// EXECUTE
+		final ValuePair<Point3d, Vector3d> line = plane.getSamplingLine();
+
+		// VERIFY
+		assertTrue("Origin rotated incorrectly", expectedOrigin.epsilonEquals(
+			line.a, 1e-12));
+		assertEquals("Normal rotated incorrectly", expectedNormal, line.b);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testSamplingPlaneSetRotationThrowsNPEIfOpEnvironmentNull() {
+		final StackSamplingPlane plane = new StackSamplingPlane(XY);
+
+		plane.setRotation(new AxisAngle4d(), null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testSamplingPlaneSetRotationThrowsNPEIfRotationNull() {
+		final StackSamplingPlane plane = new StackSamplingPlane(XY);
+
+		plane.setRotation(null, IMAGE_J.op());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testSamplingPlaneThrowsIAEIfScalarNotFinite() {
+		new StackSamplingPlane(XY, Double.NaN);
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 
 	// region -- Helper methods --
