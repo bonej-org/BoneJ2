@@ -32,11 +32,30 @@ public final class StackSamplingGrid {
 		private final Vector3d normal = new Vector3d();
 
 		/**
-		 * Constructs an instance of {@link StackSamplingGrid}.
+		 * Constructs an instance of {@link StackSamplingPlane}.
 		 *
 		 * @param orientation initial orientation of the plane.
 		 */
-		public StackSamplingPlane(final Orientation orientation) {
+		public StackSamplingPlane(final Orientation orientation)
+			 {this(orientation, 1.0);}
+
+		/**
+		 * Constructs an instance of {@link StackSamplingPlane}.
+		 *
+		 * @param orientation initial orientation of the plane.
+		 * @param scalar the size of the four equal sides of the plane. More
+		 *          formally, it's the scalar s that multiplies the unit vectors
+		 *          used in line generation.
+		 * @see #getSamplingLine()
+		 * @throws IllegalArgumentException if scalar is not a finite number.
+		 */
+		public StackSamplingPlane(final Orientation orientation, final double scalar)
+			throws IllegalArgumentException
+		{
+			if (!Double.isFinite(scalar)) {
+				throw new IllegalArgumentException("Scalar must be a finite number");
+			}
+
 			switch (orientation) {
 				case XY:
 					u.set(X_UNIT);
@@ -56,20 +75,28 @@ public final class StackSamplingGrid {
 				default:
 					throw new IllegalArgumentException("Unexpected or null orientation");
 			}
+			u.scale(scalar);
+			v.scale(scalar);
 		}
 
 		/**
 		 * Returns a line in the parametric form a + t * v, where a is an origin
 		 * point on the plane, t = 1 and v is a vector normal to the plane.
+		 * <p>
+		 * The origin points are generated from the parametric equation of the plane
+		 * r = r<sub>0</sub> + s * (c * u + d * v), where r<sub>0</sub> = (0, 0, 0),
+		 * s = the scalar set in the constructor, c,d ∈ [0.0, 1.0) random numbers,
+		 * and u,v are orthogonal unit vectors. By default s = 1.
+		 * </p>
 		 *
 		 * @return a (origin, direction) pair. Direction is a unit vector.
 		 */
 		public ValuePair<Point3d, Vector3d> getSamplingLine() {
-			final double s = rng.nextDouble();
-			final double t = rng.nextDouble();
+			final double c = rng.nextDouble();
+			final double d = rng.nextDouble();
 			final Point3d origin = new Point3d(u);
-			origin.scale(s);
-			origin.scaleAdd(t, v, origin);
+			origin.scale(c);
+			origin.scaleAdd(d, v, origin);
 			final Vector3d direction = new Vector3d(normal);
 			return new ValuePair<>(origin, direction);
 		}
@@ -92,8 +119,8 @@ public final class StackSamplingGrid {
 		/**
 		 * The initial orientation of the plane, i.e. before rotation.
 		 * <p>
-		 * For example, if orientation is XY, then the plane is parallel to the x-
-		 * and y-axes.
+		 * For example, if orientation is XY, then the unit vectors u, v of the
+		 * parametric equation of the plane are the x- and y-axes respectively.
 		 * </p>
 		 */
 		public enum Orientation {
