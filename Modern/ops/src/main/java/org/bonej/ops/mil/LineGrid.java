@@ -1,11 +1,18 @@
 
 package org.bonej.ops.mil;
 
+import static org.bonej.ops.mil.LineGrid.LinePlane.Orientation.XY;
+import static org.bonej.ops.mil.LineGrid.LinePlane.Orientation.XZ;
+import static org.bonej.ops.mil.LineGrid.LinePlane.Orientation.YZ;
+
 import java.util.Random;
+import java.util.function.Function;
+import java.util.stream.LongStream;
 
 import net.imagej.ops.OpEnvironment;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
+import net.imglib2.Interval;
 import net.imglib2.util.ValuePair;
 
 import org.bonej.ops.RotateAboutAxis;
@@ -14,11 +21,87 @@ import org.scijava.vecmath.Point3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
- * A class that describes a grid of vectors around a stack.
+ * A class that generates lines through an interval in a cubical grid pattern.
+ * <p>
+ * The lines go through three orthogonal planes that meet at the corner of the
+ * grid. The size of the grid is d<sup>3</sup>, where d = sqrt(width<sup>2</sup>
+ * + height<sup>2</sup> + depth<sup>2</sup>)
+ * </p>
  *
  * @author Richard Domander
  */
-public final class StackSamplingGrid {
+public final class LineGrid {
+
+	private final LinePlane xy;
+	private final LinePlane xz;
+	private final LinePlane yz;
+	private final Function<Interval, LongStream> dims = interval -> LongStream.of(
+		interval.dimension(0), interval.dimension(1), interval.dimension(2));
+	private long count;
+
+	/**
+	 * Constructs an instance of {@link LineGrid}.
+	 *
+	 * @param interval a 3D interval.
+	 * @param <I> type of the interval.
+	 */
+	public <I extends Interval> LineGrid(final I interval) {
+		final boolean emptyDims = dims.apply(interval).anyMatch(i -> i == 0);
+		if (interval.numDimensions() < 3 || emptyDims) {
+			throw new IllegalArgumentException(
+				"Interval must have at least three dimensions");
+		}
+		setRandomGenerator(new Random());
+		final double planeSize = findPlaneSize(interval);
+		xy = new LinePlane(XY, planeSize);
+		xz = new LinePlane(XZ, planeSize);
+		yz = new LinePlane(YZ, planeSize);
+	}
+
+	/**
+	 * Creates the next line of the grid.
+	 * <p>
+	 * Alternates between the three planes in sequence.
+	 * </p>
+	 * <p>
+	 * NB the line may not intersect the interval, or it may do so only at one
+	 * point.
+	 * </p>
+	 *
+	 * @return an (origin, direction) pair that describes a line.
+	 * @see LinePlane#getLine()
+	 */
+	public ValuePair<Point3d, Vector3d> nextLine() {
+		final int sequence = (int) (count % 3);
+		count++;
+		switch (sequence) {
+			case 0:
+				return xy.getLine();
+			case 1:
+				return xz.getLine();
+			case 2:
+				return yz.getLine();
+		}
+		throw new RuntimeException("Execution should not go here");
+	}
+
+	/**
+	 * Sets the random generator used in generating the lines.
+	 *
+	 * @param random an instance of the {@link Random} class.
+	 */
+	public void setRandomGenerator(final Random random) {
+		LinePlane.setRandomGenerator(random);
+	}
+
+	// region -- Helper methods --
+
+	private <I extends Interval> double findPlaneSize(final I interval) {
+		final long sqSum = dims.apply(interval).map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
+	}
+
+	// endregion
 
 	// region -- Helper class --
 
@@ -26,7 +109,7 @@ public final class StackSamplingGrid {
 	 * A class that generates lines, which pass through a plane in a direction
 	 * parallel to its normal.
 	 */
-	public static final class StackSamplingPlane {
+	public static final class LinePlane {
 
 		private static final double[] X_UNIT = { 1, 0, 0 };
 		private static final double[] Y_UNIT = { 0, 1, 0 };
@@ -37,26 +120,26 @@ public final class StackSamplingGrid {
 		private final Vector3d normal = new Vector3d();
 
 		/**
-		 * Constructs an instance of {@link StackSamplingPlane}.
+		 * Constructs an instance of {@link LinePlane}.
 		 *
 		 * @param orientation initial orientation of the plane.
 		 */
-		public StackSamplingPlane(final Orientation orientation) {
+		public LinePlane(final Orientation orientation) {
 			this(orientation, 1.0);
 		}
 
 		/**
-		 * Constructs an instance of {@link StackSamplingPlane}.
+		 * Constructs an instance of {@link LinePlane}.
 		 *
 		 * @param orientation initial orientation of the plane.
 		 * @param scalar the size of the four equal sides of the plane. More
 		 *          formally, it's the scalar s that multiplies the unit vectors
 		 *          used in line generation.
-		 * @see #getSamplingLine()
+		 * @see #getLine()
 		 * @throws IllegalArgumentException if scalar is not a finite number.
 		 */
-		public StackSamplingPlane(final Orientation orientation,
-			final double scalar) throws IllegalArgumentException
+		public LinePlane(final Orientation orientation, final double scalar)
+			throws IllegalArgumentException
 		{
 			if (!Double.isFinite(scalar)) {
 				throw new IllegalArgumentException("Scalar must be a finite number");
@@ -97,7 +180,7 @@ public final class StackSamplingGrid {
 		 *
 		 * @return a (origin, direction) pair. Direction is a unit vector.
 		 */
-		public ValuePair<Point3d, Vector3d> getSamplingLine() {
+		public ValuePair<Point3d, Vector3d> getLine() {
 			final double c = rng.nextDouble();
 			final double d = rng.nextDouble();
 			final Point3d origin = new Point3d(u);
@@ -112,7 +195,7 @@ public final class StackSamplingGrid {
 		 *
 		 * @param rotation a rotation expressed as an {@link AxisAngle4d}.
 		 * @param ops an {@link OpEnvironment} where a rotation op can be found.
-		 * @see #getSamplingLine()
+		 * @see #getLine()
 		 * @throws NullPointerException if rotation is null
 		 */
 		public void setRotation(final AxisAngle4d rotation, final OpEnvironment ops)
@@ -130,7 +213,7 @@ public final class StackSamplingGrid {
 		}
 
 		/**
-		 * Sets the random generator used in generating sampling lines.
+		 * Sets the random generator used in generating the lines.
 		 *
 		 * @param random an instance of the {@link Random} class.
 		 * @throws NullPointerException if random is null.
