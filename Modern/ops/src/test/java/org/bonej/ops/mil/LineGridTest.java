@@ -89,6 +89,11 @@ public class LineGridTest {
 			line.b);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testGridSetRandomGeneratorThrowsNPE() {
+		new LineGrid(null);
+	}
+
 	@Test
 	public void testGridLineSequence() {
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
