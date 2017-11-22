@@ -110,8 +110,8 @@ public class BoxIntersectTest {
 
 		assertTrue(result.isPresent());
 		final ValuePair<DoubleType, DoubleType> scalars = result.get();
-		assertEquals(Math.sqrt(2) / 2.0, scalars.a.get(), 1e-11);
-		assertEquals(0.848528137423857, scalars.b.get(), 1e-11);
+		assertEquals(Math.sqrt(2) * 0.5, scalars.a.get(), 1e-11);
+		assertEquals(Math.sqrt(2) * 0.6, scalars.b.get(), 1e-11);
 	}
 
 	@Test
