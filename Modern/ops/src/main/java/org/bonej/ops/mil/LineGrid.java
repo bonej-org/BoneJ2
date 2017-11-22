@@ -75,8 +75,8 @@ public final class LineGrid {
 	 */
 	public void flipPlanes() {
 		xyTranslation.setZ(-xyTranslation.z);
-		xzTranslation.setY(-xyTranslation.y);
-		yzTranslation.setX(-xyTranslation.x);
+		xzTranslation.setY(-xzTranslation.y);
+		yzTranslation.setX(-yzTranslation.x);
 		normalDirection = -normalDirection;
 	}
 
@@ -125,6 +125,20 @@ public final class LineGrid {
 	 */
 	public void setRandomGenerator(final Random random) {
 		LinePlane.setRandomGenerator(random);
+	}
+
+	/**
+	 * Applies a rotation to the grid lines.
+	 *
+	 * @param rotation a rotation expressed as an {@link AxisAngle4d}.
+	 * @param ops an {@link OpEnvironment} where a rotation op can be found.
+	 */
+	public void setRotation(final AxisAngle4d rotation, final OpEnvironment ops)
+		throws NullPointerException
+	{
+		xy.setRotation(rotation, ops);
+		xz.setRotation(rotation, ops);
+		yz.setRotation(rotation, ops);
 	}
 
 	// region -- Helper methods --
