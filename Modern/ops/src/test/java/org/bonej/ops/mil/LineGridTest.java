@@ -195,7 +195,7 @@ public class LineGridTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testGridSetRotationThrowsNPEIfOpsNull() {
+	public void testGridSetRotationThrowsNPEIfOpEnvironmentNull() {
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
 		final LineGrid grid = new LineGrid(img);
 
@@ -322,7 +322,6 @@ public class LineGridTest {
 	@Test
 	public void testLinePlaneSetRotation() {
 		// SETUP
-
 		LinePlane.setRandomGenerator(new OneGenerator());
 		final LinePlane plane = new LinePlane(XY);
 		final Vector3d axis = new Vector3d(1, 0, 1);
@@ -330,12 +329,10 @@ public class LineGridTest {
 		final double angle = Math.PI / 4.0;
 		final AxisAngle4d rotation = new AxisAngle4d(axis, angle);
 		final Point3d expectedOrigin = new Point3d(1, 1, 0);
-		IMAGE_J.op().run(RotateAboutAxis.class, expectedOrigin, expectedOrigin,
-			rotation);
+		rotateOp.mutate1(expectedOrigin, rotation);
 		final Vector3d expectedNormal = new Vector3d(0, 0, 1);
-		IMAGE_J.op().run(RotateAboutAxis.class, expectedNormal, expectedNormal,
-			rotation);
-		plane.setRotation(rotation, IMAGE_J.op());
+		rotateOp.mutate1(expectedNormal, rotation);
+		plane.setRotation(rotation, rotateOp);
 
 		// EXECUTE
 		final ValuePair<Point3d, Vector3d> line = plane.getLine();
@@ -347,7 +344,7 @@ public class LineGridTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testLinePlaneSetRotationThrowsNPEIfOpEnvironmentNull() {
+	public void testLinePlaneSetRotationThrowsNPEIfOpNull() {
 		final LinePlane plane = new LinePlane(XY);
 
 		plane.setRotation(new AxisAngle4d(), null);
@@ -357,7 +354,7 @@ public class LineGridTest {
 	public void testLinePlaneSetRotationThrowsNPEIfRotationNull() {
 		final LinePlane plane = new LinePlane(XY);
 
-		plane.setRotation(null, IMAGE_J.op());
+		plane.setRotation(null, rotateOp);
 	}
 
 	@Test(expected = IllegalArgumentException.class)

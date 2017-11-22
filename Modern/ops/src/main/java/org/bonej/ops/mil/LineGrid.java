@@ -19,6 +19,7 @@ import net.imglib2.util.ValuePair;
 import org.bonej.ops.RotateAboutAxis;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Point3d;
+import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
@@ -136,9 +137,15 @@ public final class LineGrid {
 	public void setRotation(final AxisAngle4d rotation, final OpEnvironment ops)
 		throws NullPointerException
 	{
-		xy.setRotation(rotation, ops);
-		xz.setRotation(rotation, ops);
-		yz.setRotation(rotation, ops);
+		if (rotation == null) {
+			throw new NullPointerException("Rotation cannot be null");
+		}
+		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp = Hybrids
+			.binaryCFI1(ops, RotateAboutAxis.class, Tuple3d.class, new Vector3d(),
+				rotation);
+		xy.setRotation(rotation, rotateOp);
+		xz.setRotation(rotation, rotateOp);
+		yz.setRotation(rotation, rotateOp);
 	}
 
 	// region -- Helper methods --
@@ -254,19 +261,17 @@ public final class LineGrid {
 		 * Applies the rotation to the normal and unit vectors of the plane.
 		 *
 		 * @param rotation a rotation expressed as an {@link AxisAngle4d}.
-		 * @param ops an {@link OpEnvironment} where a rotation op can be found.
+		 * @param rotateOp an op for rotating.
 		 * @see #getLine()
-		 * @throws NullPointerException if rotation is null
+		 * @throws NullPointerException if rotation is null.
 		 */
-		public void setRotation(final AxisAngle4d rotation, final OpEnvironment ops)
+		public void setRotation(final AxisAngle4d rotation,
+			final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp)
 			throws NullPointerException
 		{
 			if (rotation == null) {
 				throw new NullPointerException("Rotation cannot be null");
 			}
-			final BinaryHybridCFI1<Vector3d, AxisAngle4d, Vector3d> rotateOp = Hybrids
-				.binaryCFI1(ops, RotateAboutAxis.class, Vector3d.class, new Vector3d(),
-					rotation);
 			rotateOp.mutate1(u, rotation);
 			rotateOp.mutate1(v, rotation);
 			rotateOp.mutate1(normal, rotation);
