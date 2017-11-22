@@ -52,36 +52,6 @@ public class BoxIntersectTest {
 	}
 
 	@Test
-	public void testEmptyInterval() {
-		final Point3d origin = new Point3d(0, 0, -1);
-		final Vector3d direction = new Vector3d(0, 0, 1);
-		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
-			direction);
-		final Img<BitType> emptyInterval = ArrayImgs.bits(0, 0, 0);
-
-		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
-			.calculate(line, emptyInterval);
-
-		assertFalse(result.isPresent());
-	}
-
-	@Test
-	public void testLineParallelToStackEdge() {
-		final Point3d origin = new Point3d(0, 0, -1);
-		final Vector3d direction = new Vector3d(0, 0, 1);
-		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
-			direction);
-
-		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
-			.calculate(line);
-
-		assertTrue(result.isPresent());
-		final ValuePair<DoubleType, DoubleType> scalars = result.get();
-		assertEquals(1.0, scalars.a.get(), 1e-11);
-		assertEquals(6.0, scalars.b.get(), 1e-11);
-	}
-
-	@Test
 	public void testCornerToCornerLine() {
 		final Point3d origin = new Point3d(-1, -1, -1);
 		final Vector3d direction = new Vector3d(1, 1, 1);
@@ -97,21 +67,17 @@ public class BoxIntersectTest {
 		assertEquals(Math.sqrt(6 * 6 * 3), scalars.b.get(), 1e-11);
 	}
 
-	// Tests a line that only enters the interval for a short while
 	@Test
-	public void testShortSegment() {
-		final Point3d origin = new Point3d(0.5, 0.6, -0.5);
-		final Vector3d direction = new Vector3d(0, -1, 1);
+	public void testDirectionIsNotMutated() {
+		final Point3d origin = new Point3d(0, 0, -1);
+		final Vector3d direction = new Vector3d(0, 0, 3);
+		final Vector3d original = new Vector3d(direction);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
 			direction);
 
-		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
-			.calculate(line);
+		boxIntersect.calculate(line);
 
-		assertTrue(result.isPresent());
-		final ValuePair<DoubleType, DoubleType> scalars = result.get();
-		assertEquals(Math.sqrt(2) * 0.5, scalars.a.get(), 1e-11);
-		assertEquals(Math.sqrt(2) * 0.6, scalars.b.get(), 1e-11);
+		assertEquals("Direction vector has changed", original, direction);
 	}
 
 	@Test
@@ -131,16 +97,17 @@ public class BoxIntersectTest {
 	}
 
 	@Test
-	public void testDirectionIsNotMutated() {
+	public void testEmptyInterval() {
 		final Point3d origin = new Point3d(0, 0, -1);
-		final Vector3d direction = new Vector3d(0, 0, 3);
-		final Vector3d original = new Vector3d(direction);
+		final Vector3d direction = new Vector3d(0, 0, 1);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
 			direction);
+		final Img<BitType> emptyInterval = ArrayImgs.bits(0, 0, 0);
 
-		boxIntersect.calculate(line);
+		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
+			.calculate(line, emptyInterval);
 
-		assertEquals("Direction vector has changed", original, direction);
+		assertFalse(result.isPresent());
 	}
 
 	@Test
@@ -175,23 +142,17 @@ public class BoxIntersectTest {
 			5, (long) exitInc.z);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testInfiniteDirection() throws Exception {
 		final Point3d origin = new Point3d(2, 2, -2);
 		final Vector3d direction = new Vector3d(0, 0, Double.POSITIVE_INFINITY);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
 			direction);
 
-		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
-			.calculate(line);
-
-		assertTrue(result.isPresent());
-		final ValuePair<DoubleType, DoubleType> scalars = result.get();
-		assertEquals(0, scalars.a.get(), 1e-11);
-		assertEquals(0, scalars.b.get(), 1e-11);
+		boxIntersect.calculate(line);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testInfiniteOrigin() throws Exception {
 		final Point3d origin = new Point3d(2, 2, Double.NEGATIVE_INFINITY);
 		final Vector3d direction = new Vector3d(0, 0, 1);
@@ -205,6 +166,22 @@ public class BoxIntersectTest {
 		final ValuePair<DoubleType, DoubleType> scalars = result.get();
 		assertEquals(Double.POSITIVE_INFINITY, scalars.a.get(), 1e-11);
 		assertEquals(Double.POSITIVE_INFINITY, scalars.b.get(), 1e-11);
+	}
+
+	@Test
+	public void testLineParallelToStackEdge() {
+		final Point3d origin = new Point3d(0, 0, -1);
+		final Vector3d direction = new Vector3d(0, 0, 1);
+		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
+			direction);
+
+		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
+			.calculate(line);
+
+		assertTrue(result.isPresent());
+		final ValuePair<DoubleType, DoubleType> scalars = result.get();
+		assertEquals(1.0, scalars.a.get(), 1e-11);
+		assertEquals(6.0, scalars.b.get(), 1e-11);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -225,20 +202,17 @@ public class BoxIntersectTest {
 		IMAGE_J.op().run(BoxIntersect.class, line, interval4D);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testNaNDirection() throws Exception {
 		final Point3d origin = new Point3d(2, 2, -1);
 		final Vector3d direction = new Vector3d(0, 0, Double.NaN);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
 			direction);
 
-		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
-			.calculate(line);
-
-		assertFalse(result.isPresent());
+		boxIntersect.calculate(line);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testNanOrigin() throws Exception {
 		final Point3d origin = new Point3d(2, Double.NaN, -1);
 		final Vector3d direction = new Vector3d(0, 0, 1);
@@ -265,6 +239,23 @@ public class BoxIntersectTest {
 		final ValuePair<DoubleType, DoubleType> scalars = result.get();
 		assertEquals(-1, scalars.a.get(), 1e-11);
 		assertEquals(-6, scalars.b.get(), 1e-11);
+	}
+
+	// Tests a line that only enters the interval for a short while
+	@Test
+	public void testShortSegment() {
+		final Point3d origin = new Point3d(0.5, 0.6, -0.5);
+		final Vector3d direction = new Vector3d(0, -1, 1);
+		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
+			direction);
+
+		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
+			.calculate(line);
+
+		assertTrue(result.isPresent());
+		final ValuePair<DoubleType, DoubleType> scalars = result.get();
+		assertEquals(Math.sqrt(2) * 0.5, scalars.a.get(), 1e-11);
+		assertEquals(Math.sqrt(2) * 0.6, scalars.b.get(), 1e-11);
 	}
 
 	@Test
@@ -306,20 +297,14 @@ public class BoxIntersectTest {
 		assertFalse(result.isPresent());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testZeroLengthDirection() {
 		final Point3d origin = new Point3d(2, 2, -2);
 		final Vector3d direction = new Vector3d();
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
 			direction);
 
-		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
-			.calculate(line);
-
-		assertTrue(result.isPresent());
-		final ValuePair<DoubleType, DoubleType> scalars = result.get();
-		assertEquals(Double.POSITIVE_INFINITY, scalars.a.get(), 1e-11);
-		assertEquals(Double.POSITIVE_INFINITY, scalars.b.get(), 1e-11);
+		boxIntersect.calculate(line);
 	}
 
 	@BeforeClass

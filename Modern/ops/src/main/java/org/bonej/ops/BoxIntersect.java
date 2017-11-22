@@ -13,14 +13,15 @@ import net.imglib2.util.ValuePair;
 
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.vecmath.Point3d;
 import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
  * Solves scalar values (t<sub>1</sub>, t<sub>2</sub>) for the parametric
- * equation of a line a + t * v, where t = 1. The line enters and exits the
- * interval at the points a + t<sub>1</sub> * v and a + t<sub>2</sub> * v
- * respectively.
+ * equation of a line a + v, where a is a point and v a unit vector. The line
+ * enters and exits the interval at the points a + t<sub>1</sub> * v and a +
+ * t<sub>2</sub> * v respectively.
  *
  * @author Richard Domander
  */
@@ -58,19 +59,24 @@ public class BoxIntersect extends
 	public Optional<ValuePair<DoubleType, DoubleType>> calculate(
 		final ValuePair<Tuple3d, Vector3d> line, final Interval interval)
 	{
+		final Vector3d direction = new Vector3d(line.b);
+		final Point3d origin = new Point3d(line.a);
+		if (!validCoordinates(direction) || !validCoordinates(origin)) {
+			throw new IllegalArgumentException(
+				"Direction or origin has non-finite coordinates");
+		}
+		if (direction.length() == 0.0) {
+			throw new IllegalArgumentException("Direction either has zero length");
+		}
+		direction.normalize();
 		final int d = interval.numDimensions();
 		final long[] minBounds = new long[d];
 		interval.min(minBounds);
 		final long[] maxBounds = new long[d];
 		interval.max(maxBounds);
-		final Vector3d direction = new Vector3d(line.b);
-		final double length = direction.length();
-		if (length > 0.0 && Double.isFinite(length)) {
-			direction.normalize();
-		}
 
 		final ValuePair<DoubleType, DoubleType> pair = findIntervalIntersections(
-			line.a, direction, minBounds, maxBounds);
+			origin, direction, minBounds, maxBounds);
 		if (pair == null) {
 			return Optional.empty();
 		}
@@ -88,8 +94,6 @@ public class BoxIntersect extends
 	public boolean conforms() {
 		return in2().numDimensions() == 3;
 	}
-
-	// region -- Helper classes --
 
 	private ValuePair<DoubleType, DoubleType> findIntervalIntersections(
 		final Tuple3d origin, final Vector3d direction, final long[] min,
@@ -134,6 +138,8 @@ public class BoxIntersect extends
 		return new ValuePair<>(new DoubleType(tMin), new DoubleType(tMax));
 	}
 
+	// region -- Helper classes --
+
 	private boolean hasNanCoordinates(final Tuple3d origin) {
 		return DoubleStream.of(origin.x, origin.y, origin.z).anyMatch(
 			Double::isNaN);
@@ -168,6 +174,10 @@ public class BoxIntersect extends
 	/** Checks if the scalars reverse the direction of the line */
 	private boolean reverseScalars(final ValuePair<DoubleType, DoubleType> pair) {
 		return pair.a.get() < 0 && pair.b.get() < 0;
+	}
+
+	private boolean validCoordinates(final Tuple3d t) {
+		return DoubleStream.of(t.x, t.y, t.z).allMatch(Double::isFinite);
 	}
 
 	// endregion
