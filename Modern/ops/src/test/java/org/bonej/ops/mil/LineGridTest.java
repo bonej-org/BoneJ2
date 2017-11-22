@@ -68,6 +68,28 @@ public class LineGridTest {
 	}
 
 	@Test
+	public void testFlipPlanes() {
+		final long side = 10;
+		final double planeSize = Math.sqrt(side * side * 3);
+		final Vector3d centroid = new Vector3d(side * 0.5, side * 0.5, side * 0.5);
+		final Vector3d translation = new Vector3d(-0.5 * planeSize, -0.5 *
+			planeSize, 0.5 * planeSize);
+		final Point3d expectedOrigin = new Point3d(planeSize, planeSize, 0);
+		expectedOrigin.add(translation);
+		expectedOrigin.add(centroid);
+		final Img<BitType> img = ArrayImgs.bits(side, side, side);
+		final LineGrid grid = new LineGrid(img);
+		grid.setRandomGenerator(new OneGenerator());
+		grid.flipPlanes();
+
+		final ValuePair<Point3d, Vector3d> line = grid.nextLine();
+
+		assertEquals("Origin wasn't mirrored properly", expectedOrigin, line.a);
+		assertEquals("Normal wasn't mirrored properly", new Vector3d(0, 0, -1),
+			line.b);
+	}
+
+	@Test
 	public void testGridLineSequence() {
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
 		final LineGrid grid = new LineGrid(img);

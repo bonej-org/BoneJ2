@@ -43,6 +43,7 @@ public final class LineGrid {
 	private final Vector3d xzTranslation = new Vector3d();
 	private final Vector3d yzTranslation = new Vector3d();
 	private long count;
+	private double normalDirection = 1.0;
 
 	/**
 	 * Constructs an instance of {@link LineGrid}.
@@ -63,6 +64,20 @@ public final class LineGrid {
 		xz = new LinePlane(XZ, planeSize);
 		yz = new LinePlane(YZ, planeSize);
 		initTranslations(planeSize);
+	}
+
+	/**
+	 * Flips the grid so that each line originates from the other side of the
+	 * interval centroid.
+	 * <p>
+	 * Line directions are also flipped so that they point towards the interval.
+	 * </p>
+	 */
+	public void flipPlanes() {
+		xyTranslation.setZ(-xyTranslation.z);
+		xzTranslation.setY(-xyTranslation.y);
+		yzTranslation.setX(-xyTranslation.x);
+		normalDirection = -normalDirection;
 	}
 
 	/**
@@ -98,6 +113,7 @@ public final class LineGrid {
 				throw new RuntimeException("Execution should not go here");
 		}
 		line.a.add(centroid);
+		line.b.scale(normalDirection);
 		count++;
 		return line;
 	}
