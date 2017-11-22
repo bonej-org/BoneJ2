@@ -7,6 +7,7 @@ import static org.bonej.ops.mil.LineGrid.LinePlane.Orientation.YZ;
 
 import java.util.Random;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import net.imagej.ops.OpEnvironment;
@@ -37,6 +38,10 @@ public final class LineGrid {
 	private final LinePlane yz;
 	private final Function<Interval, LongStream> dims = interval -> LongStream.of(
 		interval.dimension(0), interval.dimension(1), interval.dimension(2));
+	private final Point3d centroid;
+	private final Vector3d xyTranslation = new Vector3d();
+	private final Vector3d xzTranslation = new Vector3d();
+	private final Vector3d yzTranslation = new Vector3d();
 	private long count;
 
 	/**
@@ -53,9 +58,11 @@ public final class LineGrid {
 		}
 		setRandomGenerator(new Random());
 		final double planeSize = findPlaneSize(interval);
+		centroid = findCentroid(interval);
 		xy = new LinePlane(XY, planeSize);
 		xz = new LinePlane(XZ, planeSize);
 		yz = new LinePlane(YZ, planeSize);
+		initTranslations(planeSize);
 	}
 
 	/**
@@ -73,16 +80,26 @@ public final class LineGrid {
 	 */
 	public ValuePair<Point3d, Vector3d> nextLine() {
 		final int sequence = (int) (count % 3);
-		count++;
+		final ValuePair<Point3d, Vector3d> line;
 		switch (sequence) {
 			case 0:
-				return xy.getLine();
+				line = xy.getLine();
+				line.a.add(xyTranslation);
+				break;
 			case 1:
-				return xz.getLine();
+				line = xz.getLine();
+				line.a.add(xzTranslation);
+				break;
 			case 2:
-				return yz.getLine();
+				line = yz.getLine();
+				line.a.add(yzTranslation);
+				break;
+			default:
+				throw new RuntimeException("Execution should not go here");
 		}
-		throw new RuntimeException("Execution should not go here");
+		line.a.add(centroid);
+		count++;
+		return line;
 	}
 
 	/**
@@ -96,9 +113,22 @@ public final class LineGrid {
 
 	// region -- Helper methods --
 
+	private <I extends Interval> Point3d findCentroid(final I interval) {
+		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
+			.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
+		return new Point3d(coordinates);
+	}
+
 	private <I extends Interval> double findPlaneSize(final I interval) {
 		final long sqSum = dims.apply(interval).map(x -> x * x).sum();
 		return Math.sqrt(sqSum);
+	}
+
+	private void initTranslations(final double planeSize) {
+		final double halfGrid = 0.5 * planeSize;
+		xyTranslation.set(-halfGrid, -halfGrid, -halfGrid);
+		xzTranslation.set(-halfGrid, -halfGrid, -halfGrid);
+		yzTranslation.set(-halfGrid, -halfGrid, -halfGrid);
 	}
 
 	// endregion

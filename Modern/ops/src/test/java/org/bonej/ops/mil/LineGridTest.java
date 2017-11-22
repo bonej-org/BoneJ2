@@ -86,29 +86,16 @@ public class LineGridTest {
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
 		final LineGrid grid = new LineGrid(img);
 
-		final Point3d xYOrigin = grid.nextLine().a;
-		final Point3d xZOrigin = grid.nextLine().a;
-		final Point3d yZOrigin = grid.nextLine().a;
+		final Vector3d xyNormal = grid.nextLine().b;
+		final Vector3d xzNormal = grid.nextLine().b;
+		final Vector3d yzNormal = grid.nextLine().b;
 
-		assertEquals("The origin of the line is on the wrong plane", 0.0, dot.apply(
-			new Vector3d(0, 0, 1), xYOrigin), 1e-12);
-		assertEquals("The origin of the line is on the wrong plane", 0.0, dot.apply(
-			new Vector3d(0, 1, 0), xZOrigin), 1e-12);
-		assertEquals("The origin of the line is on the wrong plane", 0.0, dot.apply(
-			new Vector3d(1, 0, 0), yZOrigin), 1e-12);
-	}
-
-	@Test
-	public void testGridSize() {
-		final Img<BitType> img = ArrayImgs.bits(10, 10, 10);
-		final LineGrid grid = new LineGrid(img);
-		grid.setRandomGenerator(new OneGenerator());
-		final double expectedCoordinate = Math.sqrt(300);
-
-		final Point3d origin = grid.nextLine().a;
-
-		assertEquals(new Point3d(expectedCoordinate, expectedCoordinate, 0),
-			origin);
+		assertEquals("First line should be normal to the xy-plane", new Vector3d(0,
+			0, 1), xyNormal);
+		assertEquals("Second line should be normal to the xz-plane", new Vector3d(0,
+			1, 0), xzNormal);
+		assertEquals("Third line should be normal to the yz-plane", new Vector3d(1,
+			0, 0), yzNormal);
 	}
 
 	@Test
@@ -264,6 +251,27 @@ public class LineGridTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testLinePlaneThrowsIAEIfScalarNotFinite() {
 		new LinePlane(XY, Double.NaN);
+	}
+
+	@Test
+	public void testNextLine() {
+		final long side = 10;
+		final Img<BitType> img = ArrayImgs.bits(side, side, side);
+		final LineGrid grid = new LineGrid(img);
+		grid.setRandomGenerator(new OneGenerator());
+		final double planeSize = Math.sqrt(side * side * 3);
+		final Vector3d centroid = new Vector3d(side * 0.5, side * 0.5, side * 0.5);
+		final Vector3d translation = new Vector3d(-0.5 * planeSize, -0.5 *
+			planeSize, -0.5 * planeSize);
+		final Point3d expectedOrigin = new Point3d(planeSize, planeSize, 0);
+		expectedOrigin.add(translation);
+		expectedOrigin.add(centroid);
+
+		final Point3d origin = grid.nextLine().a;
+
+		assertEquals(
+			"Unexpected origin - nextLine() scales and/or translates incorrectly",
+			expectedOrigin, origin);
 	}
 
 	@AfterClass
