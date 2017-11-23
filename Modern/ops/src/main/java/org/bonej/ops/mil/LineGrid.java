@@ -1,22 +1,22 @@
 
 package org.bonej.ops.mil;
 
-import static org.bonej.ops.mil.LineGrid.LinePlane.Orientation.XY;
-import static org.bonej.ops.mil.LineGrid.LinePlane.Orientation.XZ;
-import static org.bonej.ops.mil.LineGrid.LinePlane.Orientation.YZ;
+import static org.bonej.ops.mil.LineGrid.Orientation.XY;
+import static org.bonej.ops.mil.LineGrid.Orientation.XZ;
+import static org.bonej.ops.mil.LineGrid.Orientation.YZ;
 
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 
-import net.imagej.ops.OpEnvironment;
+import net.imagej.ops.special.hybrid.AbstractBinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
-import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.Interval;
 import net.imglib2.util.ValuePair;
 
-import org.bonej.ops.RotateAboutAxis;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Point3d;
 import org.scijava.vecmath.Tuple3d;
@@ -39,20 +39,19 @@ public final class LineGrid {
 	private final LinePlane xy;
 	private final LinePlane xz;
 	private final LinePlane yz;
-	private final Function<Interval, LongStream> dims = interval -> LongStream.of(
-		interval.dimension(0), interval.dimension(1), interval.dimension(2));
-	private final Point3d centroid;
-	private final Vector3d xyTranslation = new Vector3d();
-	private final Vector3d xzTranslation = new Vector3d();
-	private final Vector3d yzTranslation = new Vector3d();
-	private long count;
-	private double normalDirection = 1.0;
+	private static final Function<Interval, LongStream> dims =
+		interval -> LongStream.of(interval.dimension(0), interval.dimension(1),
+			interval.dimension(2));
+	private Random rng;
+	private boolean mirrorXY = false;
+	private boolean mirrorXZ = false;
+	private boolean mirrorYZ = false;
 
 	/**
 	 * Constructs an instance of {@link LineGrid}.
 	 *
-	 * @param interval a integer interval. The method assumes that the
-	 *          first three dimensions are x, y and z.
+	 * @param interval a integer interval. The method assumes that the first three
+	 *          dimensions are x, y and z.
 	 * @param <I> type of the interval.
 	 */
 	public <I extends Interval> LineGrid(final I interval) {
@@ -61,94 +60,100 @@ public final class LineGrid {
 			throw new IllegalArgumentException(
 				"Interval must have at least three dimensions");
 		}
-		setRandomGenerator(new Random());
 		final double planeSize = findPlaneSize(interval);
-		centroid = findCentroid(interval);
-		xy = new LinePlane(XY, planeSize);
-		xz = new LinePlane(XZ, planeSize);
-		yz = new LinePlane(YZ, planeSize);
-		initTranslations(planeSize);
+		final double t = planeSize * 0.5;
+		final Point3d centroid = findCentroid(interval);
+		xy = new LinePlane(XY, planeSize, new Vector3d(0, 0, -t), centroid);
+		xz = new LinePlane(XZ, planeSize, new Vector3d(0, -t, 0), centroid);
+		yz = new LinePlane(YZ, planeSize, new Vector3d(-t, 0, 0), centroid);
+		setRandomGenerator(new Random());
+		setRotation(new NoopRotation(), new AxisAngle4d());
 	}
 
 	/**
-	 * Flips the grid so that each line originates from the other side of the
-	 * interval centroid.
+	 * Generates <em>n</em> * <em>n</em> lines through each orthogonal plane of
+	 * the grid.
 	 * <p>
-	 * Line directions are also flipped so that they point towards the interval.
+	 * The lines are in the parametric form <b>a</b> + <b>v</b>, where <b>a</b> is
+	 * an origin point on one of the three planes, <b>v</b> is a vector normal to
+	 * the plane. The lines are ordered so that first come all the lines on the
+	 * first (xy) plane etc.
 	 * </p>
+	 * <p>
+	 * The bins parameter controls from how many plane sections the origin points
+	 * are generated. For example, if bins = 2 and plane size = 1 then each plane
+	 * is divided into four sections. First origin point will be from the section
+	 * [0 -- 1/2, 0 -- 1/2], second from [1/2 -- 1, 0 -- 1/2] and so forth.
+	 * </p>
+	 * 
+	 * @param bins the number of bins (<em>n</em>) per plane dimension.
+	 * @return a finite {@link Stream} of (origin, direction) pairs.
+	 * @throws IllegalArgumentException if bins is non-positive.
 	 */
-	public void flipPlanes() {
-		xyTranslation.setZ(-xyTranslation.z);
-		xzTranslation.setY(-xzTranslation.y);
-		yzTranslation.setX(-yzTranslation.x);
-		normalDirection = -normalDirection;
-	}
-
-	/**
-	 * Creates the next line of the grid.
-	 * <p>
-	 * Alternates between the three planes in sequence.
-	 * </p>
-	 * <p>
-	 * NB the line may not intersect the interval, or it may do so only at one
-	 * point.
-	 * </p>
-	 *
-	 * @return an (origin, direction) pair that describes a line.
-	 * @see LinePlane#getLine()
-	 */
-	public ValuePair<Point3d, Vector3d> nextLine() {
-		final int sequence = (int) (count % 3);
-		final ValuePair<Point3d, Vector3d> line;
-		switch (sequence) {
-			case 0:
-				line = xy.getLine();
-				line.a.add(xyTranslation);
-				break;
-			case 1:
-				line = xz.getLine();
-				line.a.add(xzTranslation);
-				break;
-			case 2:
-				line = yz.getLine();
-				line.a.add(yzTranslation);
-				break;
-			default:
-				throw new RuntimeException("Execution should not go here");
+	public Stream<ValuePair<Point3d, Vector3d>> lines(final long bins)
+		throws IllegalArgumentException
+	{
+		if (bins < 1) {
+			throw new IllegalArgumentException(
+				"Must generate at least one line per plane.");
 		}
-		line.a.add(centroid);
-		line.b.scale(normalDirection);
-		count++;
-		return line;
+		final Stream<ValuePair<Point3d, Vector3d>> xyLines = xy.lines(bins,
+			mirrorXY);
+		final Stream<ValuePair<Point3d, Vector3d>> xzLines = xz.lines(bins,
+			mirrorXZ);
+		final Stream<ValuePair<Point3d, Vector3d>> yzLines = yz.lines(bins,
+			mirrorYZ);
+		return Stream.of(xyLines, xzLines, yzLines).flatMap(s -> s);
 	}
 
 	/**
 	 * Sets the random generator used in generating the lines.
 	 *
 	 * @param random an instance of the {@link Random} class.
+	 * @throws NullPointerException if random is null.
 	 */
-	public void setRandomGenerator(final Random random) {
-		LinePlane.setRandomGenerator(random);
+	public void setRandomGenerator(final Random random)
+		throws NullPointerException
+	{
+		if (random == null) {
+			throw new NullPointerException("Random generator cannot be null");
+		}
+		rng = random;
+		xy.setRandomGenerator(random);
+		xz.setRandomGenerator(random);
+		yz.setRandomGenerator(random);
 	}
 
 	/**
-	 * Applies a rotation to the grid lines.
+	 * Applies a rotation to the grid.
 	 *
+	 * @param rotateOp an op for rotation.
 	 * @param rotation a rotation expressed as an {@link AxisAngle4d}.
-	 * @param ops an {@link OpEnvironment} where a rotation op can be found.
+	 * @throws NullPointerException if the op or rotation is null.
 	 */
-	public void setRotation(final AxisAngle4d rotation, final OpEnvironment ops)
-		throws NullPointerException
+	public void setRotation(
+		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp,
+		final AxisAngle4d rotation) throws NullPointerException
 	{
+		if (rotateOp == null) {
+			throw new NullPointerException("Op cannot be null");
+		}
 		if (rotation == null) {
 			throw new NullPointerException("Rotation cannot be null");
 		}
-		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp = Hybrids
-			.binaryCFI1(ops, RotateAboutAxis.class, Tuple3d.class, new Vector3d(),
-				rotation);
 		xy.setRotation(rotation, rotateOp);
 		xz.setRotation(rotation, rotateOp);
 		yz.setRotation(rotation, rotateOp);
+	}
+
+	/**
+	 * Randomly mirrors each plane of the grid to the other side of the centroid.
+	 * Also mirrors the directions of the lines.
+	 */
+	public void randomReflection() {
+		mirrorXY = rng.nextBoolean();
+		mirrorXZ = rng.nextBoolean();
+		mirrorYZ = rng.nextBoolean();
 	}
 
 	// region -- Helper methods --
@@ -164,57 +169,40 @@ public final class LineGrid {
 		return Math.sqrt(sqSum);
 	}
 
-	private void initTranslations(final double planeSize) {
-		final double halfGrid = 0.5 * planeSize;
-		xyTranslation.set(-halfGrid, -halfGrid, -halfGrid);
-		xzTranslation.set(-halfGrid, -halfGrid, -halfGrid);
-		yzTranslation.set(-halfGrid, -halfGrid, -halfGrid);
-	}
-
 	// endregion
 
 	// region -- Helper class --
 
 	/**
 	 * A class that generates lines, which pass through a plane in a direction
-	 * parallel to its normal.
+	 * parallel to its normal. The plane is centered around the origin.
 	 */
-	public static final class LinePlane {
+	private static final class LinePlane {
 
 		private static final double[] X_UNIT = { 1, 0, 0 };
 		private static final double[] Y_UNIT = { 0, 1, 0 };
 		private static final double[] Z_UNIT = { 0, 0, 1 };
-		private static Random rng = new Random();
+		private Random rng = new Random();
 		private final Vector3d u = new Vector3d();
 		private final Vector3d v = new Vector3d();
 		private final Vector3d normal = new Vector3d();
+		private final Vector3d translation = new Vector3d();
+		private final Point3d centroid = new Point3d();
+		private final double size;
+		private BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
+		private AxisAngle4d rotation = new AxisAngle4d();
 
 		/**
 		 * Constructs an instance of {@link LinePlane}.
 		 *
 		 * @param orientation initial orientation of the plane.
+		 * @param size the size of the four equal sides of the plane. More formally,
+		 *          it's the scalar s that multiplies the unit vectors used in line
+		 *          generation.
 		 */
-		public LinePlane(final Orientation orientation) {
-			this(orientation, 1.0);
-		}
-
-		/**
-		 * Constructs an instance of {@link LinePlane}.
-		 *
-		 * @param orientation initial orientation of the plane.
-		 * @param scalar the size of the four equal sides of the plane. More
-		 *          formally, it's the scalar s that multiplies the unit vectors
-		 *          used in line generation.
-		 * @see #getLine()
-		 * @throws IllegalArgumentException if scalar is not a finite number.
-		 */
-		public LinePlane(final Orientation orientation, final double scalar)
-			throws IllegalArgumentException
+		private LinePlane(final Orientation orientation, final double size,
+			final Vector3d translation, final Point3d centroid)
 		{
-			if (!Double.isFinite(scalar)) {
-				throw new IllegalArgumentException("Scalar must be a finite number");
-			}
-
 			switch (orientation) {
 				case XY:
 					u.set(X_UNIT);
@@ -234,33 +222,49 @@ public final class LineGrid {
 				default:
 					throw new IllegalArgumentException("Unexpected or null orientation");
 			}
-			u.scale(scalar);
-			v.scale(scalar);
+			this.size = size;
+			this.translation.set(translation);
+			this.centroid.set(centroid);
 		}
 
-		/**
-		 * Returns a line in the parametric form <b>a<sub>0</sub></b> + <b>v</b>, where <b>a<sub>0</sub></b> is an
-		 * origin point on the plane and <b>v</b> is a directional unit vector normal to the
-		 * plane.
-		 * <p>
-		 * The origin points are generated from the parametric equation of the plane
-		 * <b>r</b> = <b>r<sub>0</sub></b> + <em>s</em> (<em>c</em> <b>u</b> +
-		 * <em>d</em> <b>v</b>), where <b>r<sub>0</sub></b> = (0, 0, 0), <em>s</em>
-		 * = the scalar set in the constructor, <em>c</em>, <em>d</em> &isin; [0.0,
-		 * 1.0) random numbers, and <b>u</b>, <b>v</b> are orthogonal unit vectors.
-		 * By default <em>s</em> = 1.
-		 * </p>
-		 *
-		 * @return a (origin, direction) pair.
-		 */
-		public ValuePair<Point3d, Vector3d> getLine() {
-			final double c = rng.nextDouble();
-			final double d = rng.nextDouble();
-			final Point3d origin = new Point3d(u);
-			origin.scale(c);
-			origin.scaleAdd(d, v, origin);
+		private Stream<ValuePair<Point3d, Vector3d>> lines(final long bins,
+			final boolean mirror)
+		{
+			final double sign = mirror ? -1.0 : 1.0;
 			final Vector3d direction = new Vector3d(normal);
-			return new ValuePair<>(origin, direction);
+			direction.scale(sign);
+			rotateOp.mutate1(direction, rotation);
+			final Vector3d t = new Vector3d(translation);
+			t.scale(sign);
+			final double range = 1.0 / bins;
+			final Builder<ValuePair<Point3d, Vector3d>> builder = Stream.builder();
+			for (double minC = 0.0; minC < 1.0; minC += range) {
+				for (double minD = 0.0; minD < 1.0; minD += range) {
+					final double c = (rng.nextDouble() * range + minC) * size - 0.5 *
+						size;
+					final double d = (rng.nextDouble() * range + minD) * size - 0.5 *
+						size;
+					final Point3d origin = createOrigin(c, d, t);
+					builder.add(new ValuePair<>(origin, direction));
+				}
+			}
+			return builder.build();
+		}
+
+		private Point3d createOrigin(final double c, final double d,
+			final Vector3d translation)
+		{
+			final Vector3d a = new Vector3d(u);
+			a.scale(c);
+			final Vector3d b = new Vector3d(v);
+			b.scale(d);
+			final Point3d origin = new Point3d();
+			origin.add(a);
+			origin.add(b);
+			origin.add(translation);
+			rotateOp.mutate1(origin, rotation);
+			origin.add(centroid);
+			return origin;
 		}
 
 		/**
@@ -268,47 +272,53 @@ public final class LineGrid {
 		 *
 		 * @param rotation a rotation expressed as an {@link AxisAngle4d}.
 		 * @param rotateOp an op for rotating.
-		 * @see #getLine()
-		 * @throws NullPointerException if rotation is null.
 		 */
-		public void setRotation(final AxisAngle4d rotation,
+		private void setRotation(final AxisAngle4d rotation,
 			final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp)
-			throws NullPointerException
 		{
-			if (rotation == null) {
-				throw new NullPointerException("Rotation cannot be null");
-			}
-			rotateOp.mutate1(u, rotation);
-			rotateOp.mutate1(v, rotation);
-			rotateOp.mutate1(normal, rotation);
+			this.rotation.set(rotation);
+			this.rotateOp = rotateOp;
 		}
 
 		/**
 		 * Sets the random generator used in generating the lines.
 		 *
 		 * @param random an instance of the {@link Random} class.
-		 * @throws NullPointerException if random is null.
 		 */
-		public static void setRandomGenerator(final Random random)
-			throws NullPointerException
-		{
-			if (random == null) {
-				throw new NullPointerException("Random generator cannot be set null");
-			}
+		private void setRandomGenerator(final Random random) {
 			rng = random;
 		}
+	}
 
-		/**
-		 * The initial orientation of the plane, i.e. before rotation.
-		 * <p>
-		 * For example, if orientation is XY, then the unit vectors <b>u</b>,
-		 * <b>v</b> of the parametric equation of the plane are the x- and y-axes
-		 * respectively.
-		 * </p>
-		 */
-		public enum Orientation {
-				XY, XZ, YZ
+	/**
+	 * The initial orientation of a plane, i.e. before rotation.
+	 * <p>
+	 * For example, if orientation is XY, then the unit vectors <b>u</b>, <b>v</b>
+	 * of the parametric equation of the plane are the x- and y-axes respectively.
+	 * </p>
+	 */
+	public enum Orientation {
+			XY, XZ, YZ
+	}
+
+	private final class NoopRotation extends
+		AbstractBinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d>
+	{
+
+		@Override
+		public Tuple3d createOutput(final Tuple3d input1,
+			final AxisAngle4d input2)
+		{
+			return new Vector3d(input1);
 		}
+
+		@Override
+		public void compute(final Tuple3d input1, final AxisAngle4d input2,
+			final Tuple3d output)
+		{}
+
+		@Override
+		public void mutate1(final Tuple3d arg, final AxisAngle4d in) {}
 	}
 	// endregion
 }
