@@ -92,7 +92,7 @@ public class BoxIntersect extends
 
 	@Override
 	public boolean conforms() {
-		return in2().numDimensions() == 3;
+		return in2().numDimensions() >= 3;
 	}
 
 	private ValuePair<DoubleType, DoubleType> findIntervalIntersections(
