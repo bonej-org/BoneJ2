@@ -26,8 +26,10 @@ import org.scijava.vecmath.Vector3d;
  * A class that generates lines through an interval in a cubical grid pattern.
  * <p>
  * The lines go through three orthogonal planes that meet at the corner of the
- * grid. The size of the grid is d<sup>3</sup>, where d = sqrt(width<sup>2</sup>
- * + height<sup>2</sup> + depth<sup>2</sup>)
+ * grid. The size of the grid is <em>d<sup>3</sup></em>, where <em>d</em> =
+ * sqrt(<em>width<sup>2</sup></em> + <em>height<sup>2</sup></em> +
+ * <em>depth<sup>2</sup></em>). The grid is centered on the centroid of the
+ * interval.
  * </p>
  *
  * @author Richard Domander
@@ -49,7 +51,8 @@ public final class LineGrid {
 	/**
 	 * Constructs an instance of {@link LineGrid}.
 	 *
-	 * @param interval a 3D interval.
+	 * @param interval a integer interval. The method assumes that the
+	 *          first three dimensions are x, y and z.
 	 * @param <I> type of the interval.
 	 */
 	public <I extends Interval> LineGrid(final I interval) {
@@ -236,16 +239,19 @@ public final class LineGrid {
 		}
 
 		/**
-		 * Returns a line in the parametric form a + t * v, where a is an origin
-		 * point on the plane, t = 1 and v is a vector normal to the plane.
+		 * Returns a line in the parametric form <b>a<sub>0</sub></b> + <b>v</b>, where <b>a<sub>0</sub></b> is an
+		 * origin point on the plane and <b>v</b> is a directional unit vector normal to the
+		 * plane.
 		 * <p>
 		 * The origin points are generated from the parametric equation of the plane
-		 * r = r<sub>0</sub> + s * (c * u + d * v), where r<sub>0</sub> = (0, 0, 0),
-		 * s = the scalar set in the constructor, c,d ∈ [0.0, 1.0) random numbers,
-		 * and u,v are orthogonal unit vectors. By default s = 1.
+		 * <b>r</b> = <b>r<sub>0</sub></b> + <em>s</em> (<em>c</em> <b>u</b> +
+		 * <em>d</em> <b>v</b>), where <b>r<sub>0</sub></b> = (0, 0, 0), <em>s</em>
+		 * = the scalar set in the constructor, <em>c</em>, <em>d</em> &isin; [0.0,
+		 * 1.0) random numbers, and <b>u</b>, <b>v</b> are orthogonal unit vectors.
+		 * By default <em>s</em> = 1.
 		 * </p>
 		 *
-		 * @return a (origin, direction) pair. Direction is a unit vector.
+		 * @return a (origin, direction) pair.
 		 */
 		public ValuePair<Point3d, Vector3d> getLine() {
 			final double c = rng.nextDouble();
@@ -295,8 +301,9 @@ public final class LineGrid {
 		/**
 		 * The initial orientation of the plane, i.e. before rotation.
 		 * <p>
-		 * For example, if orientation is XY, then the unit vectors u, v of the
-		 * parametric equation of the plane are the x- and y-axes respectively.
+		 * For example, if orientation is XY, then the unit vectors <b>u</b>,
+		 * <b>v</b> of the parametric equation of the plane are the x- and y-axes
+		 * respectively.
 		 * </p>
 		 */
 		public enum Orientation {

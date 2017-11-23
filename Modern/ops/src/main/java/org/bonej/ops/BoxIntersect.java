@@ -18,10 +18,12 @@ import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
- * Solves scalar values (t<sub>1</sub>, t<sub>2</sub>) for the parametric
- * equation of a line a + v, where a is a point and v a unit vector. The line
- * enters and exits the interval at the points a + t<sub>1</sub> * v and a +
- * t<sub>2</sub> * v respectively.
+ * Solves scalar values (<em>t<sub>1</sub></em>, <em>t<sub>2</sub></em>) for the
+ * parametric equation of a line <b>a<sub>0</sub></b> + <b>v</b>, where
+ * <b>a<sub>0</sub></b> is a point and <b>v</b> a directional unit vector. The
+ * line enters and exits the interval at the points <b>a<sub>0</sub></b> +
+ * <em>t<sub>1</sub></em> <b>v</b> and <b>a<sub>0</sub></b> +
+ * <em>t<sub>2</sub></em> <b>v</b> respectively.
  *
  * @author Richard Domander
  */
@@ -33,7 +35,7 @@ public class BoxIntersect extends
 
 	/**
 	 * If true, the method solves for intersections with the interval at
-	 * [minBounds, maxBounds). If false, then for maxBounds exactly.
+	 * [minBounds, maxBounds + 1). If false, then for maxBounds + 1 exactly.
 	 * <p>
 	 * For example, if you wanted to find the intersection points of a
 	 * [100x100x100] image stack, exclusion makes sure that ((50, 50, 0); (0, 0,
@@ -49,10 +51,13 @@ public class BoxIntersect extends
 	 * Finds intersection points of the line and the minimum and maximum bounds of
 	 * the interval.
 	 *
-	 * @param line parametric equation of a line a + v as a (point, vector) pair.
-	 * @param interval an interval with integer coordinates.
+	 * @param line parametric equation of a line <b>a<sub>0</sub></b> + <b>v</b>
+	 *          as a (point, vector) pair.
+	 * @param interval an interval with integer coordinates. The method assumes that the
+	 *          first three dimensions are x, y and z.
 	 * @return scalar values (t<sub>1</sub>, t<sub>2</sub>) for intersection
-	 *         points (a + t<sub>1</sub> * v, a + t<sub>2</sub> * v).
+	 *         points (<b>a<sub>0</sub></b> + <em>t<sub>1</sub></em> <b>v</b>,
+	 *         <b>a<sub>0</sub></b> + <em>t<sub>2</sub></em> <b>v</b>).
 	 *         {@link Optional#empty()} if the line doesn't intersect the stack.
 	 */
 	@Override
@@ -66,7 +71,7 @@ public class BoxIntersect extends
 				"Direction or origin has non-finite coordinates");
 		}
 		if (direction.length() == 0.0) {
-			throw new IllegalArgumentException("Direction either has zero length");
+			throw new IllegalArgumentException("Direction has zero length");
 		}
 		direction.normalize();
 		final int d = interval.numDimensions();
