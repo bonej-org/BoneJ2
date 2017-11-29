@@ -194,15 +194,6 @@ public class BoxIntersectTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testMatchingFailsIfInterval4D() {
-		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(new Point3d(2, 2,
-			-1), new Vector3d(0, 0, 1));
-		final Img<BitType> interval4D = ArrayImgs.bits(5, 5, 5, 5);
-
-		IMAGE_J.op().run(BoxIntersect.class, line, interval4D);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
 	public void testNaNDirection() throws Exception {
 		final Point3d origin = new Point3d(2, 2, -1);
 		final Vector3d direction = new Vector3d(0, 0, Double.NaN);
