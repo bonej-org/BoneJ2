@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
@@ -41,39 +40,44 @@ import org.scijava.vecmath.Vector3d;
  */
 public class MILPOCSampling {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
-	private static BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> boxIntersect;
-	private static BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
-	private static Random random = new Random();
-
-	public static void main(String... args) throws ExecutionException,
-		InterruptedException
-	{
+	public static void main(String... args) {
+		// SETUP
+		final ImageJ imageJ = new ImageJ();
+		final Random random = new Random();
 		final int width = 100;
 		final int height = 100;
 		final int depth = 100;
 		final int rotations = 100;
 		final int bins = 100;
 		final Img<FloatType> img = ArrayImgs.floats(width, height, depth);
-		boxIntersect = (BinaryFunctionOp) Functions.binary(IMAGE_J.op(),
-			BoxIntersect.class, Optional.class, ValuePair.class, img);
-		rotateOp = Hybrids.binaryCFI1(IMAGE_J.op(), RotateAboutAxis.class,
-			Tuple3d.class, new Vector3d(), new AxisAngle4d());
+		@SuppressWarnings("unchecked")
+		final BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp =
+			(BinaryFunctionOp) Functions.binary(imageJ.op(), BoxIntersect.class,
+				Optional.class, ValuePair.class, img);
+		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp = Hybrids
+			.binaryCFI1(imageJ.op(), RotateAboutAxis.class, Tuple3d.class,
+				new Vector3d(), new AxisAngle4d());
+
+		// EXECUTE
 		for (int i = 0; i < rotations; i++) {
 			final AxisAngle4d rotation = RotateAboutAxis.randomAxisAngle();
-			final LineGrid grid = createGrid(img, rotation);
-			final Stream<Section> sections = createSections(img, grid, bins);
-			sections.forEach(s -> sample(img, s, 1.0));
+			final LineGrid grid = createGrid(img, rotateOp, rotation, random);
+			final Stream<Section> sections = createSections(img, grid, bins,
+				intersectOp);
+			sections.forEach(s -> sample(img, s, 1.0, random));
 		}
+
+		// DISPLAY RESULT
 		final ImgPlus<FloatType> image = new ImgPlus<>(img, "Sampling count",
 			new DefaultLinearAxis(Axes.X), new DefaultLinearAxis(Axes.Y),
 			new DefaultLinearAxis(Axes.Z));
-		IMAGE_J.launch(args);
-		IMAGE_J.ui().show(image);
+		imageJ.launch(args);
+		imageJ.ui().show(image);
 	}
 
-	private static LineGrid createGrid(final Img<?> img,
-		final AxisAngle4d rotation)
+	static LineGrid createGrid(final Img<?> img,
+		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp,
+		final AxisAngle4d rotation, final Random random)
 	{
 		final LineGrid grid = new LineGrid(img);
 		grid.setRandomGenerator(random);
@@ -84,10 +88,11 @@ public class MILPOCSampling {
 		return grid;
 	}
 
-	private static Stream<Section> createSections(final Interval interval,
-		final LineGrid grid, final long bins)
+	static Stream<Section> createSections(final Interval interval,
+		final LineGrid grid, final long bins,
+		final BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp)
 	{
-		return grid.lines(bins).map(l -> section(l, interval)).filter(
+		return grid.lines(bins).map(l -> section(l, interval, intersectOp)).filter(
 			Objects::nonNull);
 	}
 
@@ -98,16 +103,16 @@ public class MILPOCSampling {
 	 * Section#tMax. After each increment the section coordinates are floored to
 	 * the voxel grid.
 	 * </p>
-	 *
+	 * 
 	 * @param img a 3D image.
 	 * @param section a section of a line inside the image.
 	 * @param increment the scalar step between the sample positions. For example,
 	 *          an increment of 1.0 adds a vector of length 1.0 to the position.
-	 *          More formally, this is the value added to <em>t</em> in the line
-	 *          equation <b>a</b> + <em>t</em><b>v</b>.
+	 *          More formally, this is the value added to <em>t</em> in the line.
+	 * @param random a random generator.
 	 */
 	private static void sample(final Img<FloatType> img, final Section section,
-		final double increment)
+		final double increment, final Random random)
 	{
 		final Vector3d startOffset = new Vector3d(section.direction);
 		// Add a random offset so that sampling doesn't always start from the same
@@ -140,13 +145,16 @@ public class MILPOCSampling {
 	 *
 	 * @param line an (origin, direction pair)
 	 * @param interval a 3D interval.
+	 * @param intersectOp an op that finds intersection points between the line
+	 *          and the interval.
 	 * @return a {@link Section} in the interval, null if line doesn't intersect
 	 *         it.
 	 */
-	private static Section section(final ValuePair<Point3d, Vector3d> line,
-		final Interval interval)
+	static Section section(final ValuePair<Point3d, Vector3d> line,
+		final Interval interval,
+		final BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp)
 	{
-		final Optional<ValuePair<DoubleType, DoubleType>> result = boxIntersect
+		final Optional<ValuePair<DoubleType, DoubleType>> result = intersectOp
 			.calculate(line, interval);
 		if (!result.isPresent()) {
 			return null;
@@ -162,7 +170,7 @@ public class MILPOCSampling {
 	 * scalars for <b>a</b> + <em>t<sub>1</sub></em><b>v</b> and <b>a</b> +
 	 * <em>t<sub>2</sub></em><b>v</b> where the line intersects an interval.
 	 */
-	private static class Section {
+	static class Section {
 
 		public final double tMin;
 		public final double tMax;
