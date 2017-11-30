@@ -130,7 +130,7 @@ public class FindEllipsoidOpTest {
 
 		final Img<BitType> img = ArrayImgs.bits(imageDimensions[0],
 			imageDimensions[1], imageDimensions[2]);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cylinder test image");
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube test image");
 		Cursor<BitType> cursor = imgPlus.localizingCursor();
 
 		while (cursor.hasNext()) {

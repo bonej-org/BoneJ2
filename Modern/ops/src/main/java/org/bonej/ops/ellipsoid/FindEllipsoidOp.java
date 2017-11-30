@@ -18,6 +18,7 @@ import net.imglib2.type.BooleanType;
 
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.bonej.ops.RotateAboutAxis;
+import org.scijava.plugin.Parameter;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
@@ -26,6 +27,9 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends
 	AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Vector3d, Ellipsoid>
 	implements Contingent
 {
+
+    @Parameter
+    private final double estimatedCharacteristicSize = 5.0;
 
 	private final static UnitSphereRandomVectorGenerator rvg =
 		new UnitSphereRandomVectorGenerator(4);
@@ -38,12 +42,10 @@ public class FindEllipsoidOp<B extends BooleanType<B>> extends
 		rotateVectorOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class,
 			Vector3d.class, Vector3d.class, AxisAngle4d.class);
 
-		double maxSamplingRadius = 10;
 		double samplingWidth = 1.0;
-
-		int nSphere = estimateNSpiralPointsRequired(maxSamplingRadius,
+		int nSphere = estimateNSpiralPointsRequired(estimatedCharacteristicSize,
 			samplingWidth);
-		int nPlane = (int) Math.ceil(2 * Math.PI * maxSamplingRadius);
+		int nPlane = (int) Math.ceil(2 * Math.PI * estimatedCharacteristicSize/samplingWidth);
 
 		List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(
 			nSphere);
