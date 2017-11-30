@@ -16,7 +16,7 @@ import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.GMatrix;
 import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
+import org.scijava.vecmath.Tuple3d;
 
 /**
  * An op that fits a quadratic surface (quadric) into a set of points.
@@ -34,10 +34,11 @@ import org.scijava.vecmath.Vector3d;
  * </p>
  *
  * @author Richard Domander
+ * @param <T> type of the three-element tuple.
  */
 @Plugin(type = Op.class)
-public class SolveQuadricEq extends
-	AbstractUnaryFunctionOp<Collection<Vector3d>, Matrix4d> implements Contingent
+public class SolveQuadricEq<T extends Tuple3d> extends
+	AbstractUnaryFunctionOp<Collection<T>, Matrix4d> implements Contingent
 {
 
 	/**
@@ -50,7 +51,7 @@ public class SolveQuadricEq extends
 	public static final int QUADRIC_TERMS = 9;
 
 	@Override
-	public Matrix4d calculate(final Collection<Vector3d> points) {
+	public Matrix4d calculate(final Collection<T> points) {
 		final double[] vector = solveVector(points);
 		return toQuadricMatrix(vector);
 	}
@@ -68,11 +69,11 @@ public class SolveQuadricEq extends
 	 * @param points points in a 3D space.
 	 * @return a [points.size()][9] matrix of real values.
 	 */
-	private GMatrix createDesignMatrix(final Collection<Vector3d> points) {
+	private GMatrix createDesignMatrix(final Collection<T> points) {
 		final GMatrix designMatrix = new GMatrix(points.size(), 9);
-		final Iterator<Vector3d> iterator = points.iterator();
+		final Iterator<T> iterator = points.iterator();
 		for (int i = 0; i < points.size(); i++) {
-			final Vector3d p = iterator.next();
+			final T p = iterator.next();
 			final double[] rowData = { p.x * p.x, p.y * p.y, p.z * p.z, 2 * p.x * p.y,
 				2 * p.x * p.z, 2 * p.y * p.z, 2 * p.x, 2 * p.y, 2 * p.z };
 			designMatrix.setRow(i, rowData);
@@ -124,7 +125,7 @@ public class SolveQuadricEq extends
 	 * @param points A collection of points in a 3D space.
 	 * @return the solution vector of the surface.
 	 */
-	private double[] solveVector(final Collection<Vector3d> points) {
+	private double[] solveVector(final Collection<T> points) {
 		final int n = points.size();
 		// Find (dT * d)^-1
 		final GMatrix d = createDesignMatrix(points);
