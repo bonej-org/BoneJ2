@@ -151,7 +151,7 @@ public class LineGridTest {
 	@Test
 	public void testLinesNBins() throws Exception {
 		// SETUP
-		final long bins = 2;
+		final long bins = 10;
 		final long binsPerPlane = bins * bins;
 		final long expectedLines = binsPerPlane * 3;
 		final LineGrid grid = new LineGrid(img);

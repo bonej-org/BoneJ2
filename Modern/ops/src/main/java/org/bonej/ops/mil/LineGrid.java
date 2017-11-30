@@ -238,8 +238,10 @@ public final class LineGrid {
 			t.scale(sign);
 			final double range = 1.0 / bins;
 			final Builder<ValuePair<Point3d, Vector3d>> builder = Stream.builder();
-			for (double minC = 0.0; minC < 1.0; minC += range) {
-				for (double minD = 0.0; minD < 1.0; minD += range) {
+			for (int i = 0; i < bins; i++) {
+				final double minC = i * range;
+				for (int j = 0; j < bins; j++) {
+					final double minD = j * range;
 					final double c = (rng.nextDouble() * range + minC) * size - 0.5 *
 						size;
 					final double d = (rng.nextDouble() * range + minD) * size - 0.5 *
