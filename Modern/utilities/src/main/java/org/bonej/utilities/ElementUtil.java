@@ -20,6 +20,7 @@ import net.imglib2.type.numeric.RealType;
  *
  * @author Richard Domander
  */
+// TODO Throw exceptions
 public class ElementUtil {
 
 	private ElementUtil() {}
