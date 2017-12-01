@@ -56,8 +56,9 @@ import process3d.Dilate_;
  * @author Michael Doube
  * @see <a href="http://doi.org/10.1080/01495739708936692">doi:
  *      10.1080/01495739708936692</a>
- *
+ * @deprecated Won't be ported to BoneJ2
  */
+@Deprecated
 public class StructureModelIndex implements PlugIn {
 
 	private static boolean do3D = false;

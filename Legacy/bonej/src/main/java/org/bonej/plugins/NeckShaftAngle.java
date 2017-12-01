@@ -79,7 +79,9 @@ import ij.process.ImageProcessor;
  *
  * @author Michael Doube
  * @version 0.1
+ * @deprecated Won't be ported to BoneJ2
  */
+@Deprecated
 public class NeckShaftAngle implements PlugIn, MouseListener, DialogListener {
 
 	private ImageCanvas canvas;

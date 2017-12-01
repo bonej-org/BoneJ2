@@ -24,6 +24,8 @@ package org.bonej.plugins;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
+import org.bonej.util.ImageCheck;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -33,9 +35,12 @@ import ij.plugin.filter.ThresholdToSelection;
 import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
-import org.bonej.util.ImageCheck;
 import vib.BinaryInterpolator;
 
+/**
+ * @deprecated Won't be ported to BoneJ2
+ */
+@Deprecated
 public class RoiInterpolator implements PlugIn {
 	int[][] idt;
 	int w, h;
