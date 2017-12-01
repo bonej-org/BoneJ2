@@ -39,8 +39,9 @@ import Jama.SingularValueDecomposition;
  *      <a href="http://www.math.uab.edu/~chernov/cl/MATLABcircle.html" >http://
  *      www.math.uab.edu/~chernov/cl/MATLABcircle.html</a>
  *      </p>
- *
+ * @deprecated Only used by deprecated code.
  */
+@Deprecated
 public class FitCircle {
 
 	/**

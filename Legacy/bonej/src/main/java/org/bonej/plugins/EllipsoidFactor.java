@@ -1603,6 +1603,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	}
 
 	private int[][] skeletonPoints(final ImagePlus imp) {
+		// TODO Make getSkeleton a method of the class and deprecate SkeletonUtils
 		final ImagePlus skeleton = SkeletonUtils.getSkeleton(imp);
 		final ImageStack skeletonStack = skeleton.getStack();
 

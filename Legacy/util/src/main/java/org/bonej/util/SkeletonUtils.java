@@ -43,6 +43,7 @@ public class SkeletonUtils {
 	 */
 
 	public static ImagePlus getSkeleton(final ImagePlus imp) {
+		// TODO Duplicate so that ROIs don't affect the result (side effect of duplicate())
 		final ImagePlus skeleton = imp.duplicate();
 
 		skeletoniser.setup("", skeleton);
