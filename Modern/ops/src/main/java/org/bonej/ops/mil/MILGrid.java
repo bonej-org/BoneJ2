@@ -108,10 +108,14 @@ public class MILGrid<B extends BooleanType<B>> extends
 	 * @param interval an interval with at least three dimensions. The method
 	 *          assumes that the first three are X,Y and Z. It ignores others.
 	 * @return a cloud of MIL vectors around the origin.
+	 * @throws IllegalArgumentException if {@link MILGrid#samplingIncrement} is
+	 *           too small.
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<Vector3d> calculate(final RandomAccessibleInterval<B> interval) {
+	public List<Vector3d> calculate(final RandomAccessibleInterval<B> interval)
+		throws IllegalArgumentException
+	{
 		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 		final BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp;
 		final AxisAngle4d rotation;
@@ -129,6 +133,9 @@ public class MILGrid<B extends BooleanType<B>> extends
 				.dimension(1), interval.dimension(2)).max().orElse(0);
 			bins = linesPerDimension != null ? linesPerDimension : defaultBins;
 			increment = samplingIncrement != null ? samplingIncrement : 1.0;
+			if (increment < 1e-4) {
+				throw new IllegalArgumentException("Increment too small");
+			}
 			rng = random != null ? random : new Random();
 		}
 		final LineGrid grid = createGrid(interval, rotateOp, rotation, rng);

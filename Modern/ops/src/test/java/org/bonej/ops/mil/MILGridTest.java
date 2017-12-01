@@ -208,6 +208,12 @@ public class MILGridTest {
 			.allMatch(v -> v.length() == 1.0 / (2 * numSheets)));
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testThrowsIAEIfIncrementTooSmall() throws Exception {
+		IMAGE_J.op().run(MILGrid.class, BG_IMG, DEFAULT_BINS, 1e-12, IDENTITY_ROTATION,
+				new Random(0xc0ff33));
+	}
+
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
