@@ -52,14 +52,14 @@ public class FractalDimensionWrapperTest {
 	}
 
 	@Test
-	public void testNullImageCancelsIsosurface() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			IsosurfaceWrapper.class);
+	public void testNonBinaryImageCancelsFractalDimension() throws Exception {
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+			FractalDimensionWrapper.class);
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsFractalDimension() throws Exception {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+	public void testNullImageCancelsFractalDimension() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			FractalDimensionWrapper.class);
 	}
 
