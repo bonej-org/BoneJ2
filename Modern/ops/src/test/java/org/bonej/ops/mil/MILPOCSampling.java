@@ -30,11 +30,10 @@ import org.scijava.vecmath.Point3d;
 import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
-// TODO Link op class to comment.
 /**
  * A small proof-of-concept that shows that a grid of directional vectors
  * samples an image uniformly when rotated multiple times. A similar type of
- * sampling is the first step in the MeanInterceptLengths op.
+ * sampling is the first step in the {@link MILGrid} op.
  *
  * @author Richard Domander
  */

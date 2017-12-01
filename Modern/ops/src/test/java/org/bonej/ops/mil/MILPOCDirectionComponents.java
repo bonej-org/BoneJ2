@@ -1,8 +1,6 @@
 
 package org.bonej.ops.mil;
 
-// TODO Link op class to comment.
-
 import static org.bonej.ops.mil.MILPOCSampling.createGrid;
 import static org.bonej.ops.mil.MILPOCSampling.createSections;
 
@@ -38,7 +36,7 @@ import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
- * Another proof-of-concept for Mean intercept length that continues where
+ * Another proof-of-concept for the {@link MILGrid} op that continues where
  * {@link MILPOCSampling} left. This one shows that an image is sampled randomly
  * from each orthogonal direction (x,y,z). Result is displayed as an image with
  * three channels: red for X, green for Y and blue for Z.
