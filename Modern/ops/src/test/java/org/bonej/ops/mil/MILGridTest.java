@@ -55,8 +55,8 @@ public class MILGridTest {
 	public void testBinsParameter() throws Exception {
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, DEFAULT_BINS + 1L, DEFAULT_INCREMENT,
-			IDENTITY_ROTATION, new Random(0xc0ff33));
+			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS + 1L,
+			DEFAULT_INCREMENT, new Random(0xc0ff33));
 
 		assertTrue("The bins parameter had no effect", EXPECTED_SIZE < milVectors
 			.size());
@@ -76,7 +76,7 @@ public class MILGridTest {
 
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, cube, 10L, DEFAULT_INCREMENT, IDENTITY_ROTATION,
+			MILGrid.class, cube, IDENTITY_ROTATION, 10L, DEFAULT_INCREMENT,
 			new Random(0xc0ff33));
 
 		// Some vectors will always miss the object, so not all vectors will have
@@ -93,7 +93,7 @@ public class MILGridTest {
 	public void testEmptyInterval() throws Exception {
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, DEFAULT_BINS, DEFAULT_INCREMENT, IDENTITY_ROTATION,
+			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
 			new Random(0xc0ff33));
 
 		assertEquals("Regression test failed: number of vectors unexpected",
@@ -120,7 +120,7 @@ public class MILGridTest {
 		// EXECUTE
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, sheets, DEFAULT_BINS, 1.1, IDENTITY_ROTATION, new Random(
+			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS, 1.1, new Random(
 				0xc0ff33));
 
 		// VERIFY
@@ -147,7 +147,7 @@ public class MILGridTest {
 
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, DEFAULT_BINS, DEFAULT_INCREMENT, rotation,
+			MILGrid.class, BG_IMG, rotation, DEFAULT_BINS, DEFAULT_INCREMENT,
 			new Random(0xc0ff33));
 
 		assertTrue("Changing the rotation parameter had no effect", milVectors
@@ -169,7 +169,7 @@ public class MILGridTest {
 		// EXECUTE
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, sheets, DEFAULT_BINS, DEFAULT_INCREMENT, IDENTITY_ROTATION,
+			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
 			new Random(0xc0ff33));
 
 		// VERIFY
@@ -198,7 +198,7 @@ public class MILGridTest {
 		// EXECUTE
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, sheets, DEFAULT_BINS, DEFAULT_INCREMENT, IDENTITY_ROTATION,
+			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
 			new Random(0xc0ff33));
 
 		// VERIFY
@@ -210,7 +210,7 @@ public class MILGridTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testThrowsIAEIfIncrementTooSmall() throws Exception {
-		IMAGE_J.op().run(MILGrid.class, BG_IMG, DEFAULT_BINS, 1e-12, IDENTITY_ROTATION,
+		IMAGE_J.op().run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, 1e-12,
 				new Random(0xc0ff33));
 	}
 
