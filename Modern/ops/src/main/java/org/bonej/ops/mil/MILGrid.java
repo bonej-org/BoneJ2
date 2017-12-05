@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
-import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
+import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
@@ -58,7 +58,7 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class MILGrid<B extends BooleanType<B>> extends
-	AbstractUnaryFunctionOp<RandomAccessibleInterval<B>, List<Vector3d>>
+        AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, AxisAngle4d, List<Vector3d>>
 	implements Contingent
 {
 
@@ -86,14 +86,6 @@ public class MILGrid<B extends BooleanType<B>> extends
 	@Parameter(required = false, persist = false)
 	private Double samplingIncrement;
 	/**
-	 * A rotation applied to the grid.
-	 * <p>
-	 * If left null, a random rotation is used.
-	 * </p>
-	 */
-	@Parameter(required = false, persist = false)
-	private AxisAngle4d gridRotation;
-	/**
 	 * The random generator used in the method.
 	 * <p>
 	 * If left null, a new generator is created with the default constructor.
@@ -107,18 +99,17 @@ public class MILGrid<B extends BooleanType<B>> extends
 	 *
 	 * @param interval an interval with at least three dimensions. The method
 	 *          assumes that the first three are X,Y and Z. It ignores others.
+	 * @param rotation a rotation applied to the grid.
 	 * @return a cloud of MIL vectors around the origin.
 	 * @throws IllegalArgumentException if {@link MILGrid#samplingIncrement} is
 	 *           too small.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
-	public List<Vector3d> calculate(final RandomAccessibleInterval<B> interval)
-		throws IllegalArgumentException
+	public List<Vector3d> calculate(final RandomAccessibleInterval<B> interval,
+		final AxisAngle4d rotation)
 	{
 		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 		final BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp;
-		final AxisAngle4d rotation;
 		final long bins;
 		final double increment;
 		final Random rng;
@@ -127,8 +118,6 @@ public class MILGrid<B extends BooleanType<B>> extends
 				new Vector3d(), new AxisAngle4d());
 			intersectOp = (BinaryFunctionOp) Functions.binary(ops(),
 				BoxIntersect.class, Optional.class, ValuePair.class, interval);
-			rotation = gridRotation != null ? gridRotation : RotateAboutAxis
-				.randomAxisAngle();
 			final long defaultBins = LongStream.of(interval.dimension(0), interval
 				.dimension(1), interval.dimension(2)).max().orElse(0);
 			bins = linesPerDimension != null ? linesPerDimension : defaultBins;
@@ -143,6 +132,25 @@ public class MILGrid<B extends BooleanType<B>> extends
 			line, interval, intersectOp)).filter(Objects::nonNull);
 		return sections.map(section -> toMILVector(section, interval, increment,
 			random)).filter(Objects::nonNull).collect(toList());
+	}
+
+    /**
+	 * Finds the MIL vectors of the interval.
+     * <p>
+     * Applies a random rotation to the grid.
+     * </p>
+	 *
+	 * @param interval an interval with at least three dimensions. The method
+	 *          assumes that the first three are X,Y and Z. It ignores others.
+	 * @return a cloud of MIL vectors around the origin.
+	 * @throws IllegalArgumentException if {@link MILGrid#samplingIncrement} is
+	 *           too small.
+	 */
+	@Override
+	public List<Vector3d> calculate(final RandomAccessibleInterval<B> interval)
+		throws IllegalArgumentException
+	{
+		return this.calculate(interval, RotateAboutAxis.randomAxisAngle());
 	}
 
 	@Override
