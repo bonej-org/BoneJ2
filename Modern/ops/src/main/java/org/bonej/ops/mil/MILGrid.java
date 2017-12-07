@@ -1,12 +1,15 @@
 
 package org.bonej.ops.mil;
 
+import static java.util.Comparator.comparingDouble;
 import static java.util.stream.Collectors.toList;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -26,6 +29,7 @@ import net.imglib2.util.ValuePair;
 
 import org.bonej.ops.BoxIntersect;
 import org.bonej.ops.RotateAboutAxis;
+import org.scijava.ItemIO;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.AxisAngle4d;
@@ -58,7 +62,7 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class MILGrid<B extends BooleanType<B>> extends
-        AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, AxisAngle4d, List<Vector3d>>
+	AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, AxisAngle4d, List<Vector3d>>
 	implements Contingent
 {
 
@@ -69,6 +73,10 @@ public class MILGrid<B extends BooleanType<B>> extends
 	 * <p>
 	 * If left null, the parameter is set to the size of the biggest dimension of
 	 * the interval.
+	 * </p>
+	 * <p>
+	 * The higher the number, the more likely it is that the MIL vectors returned
+	 * are truly the shortest ones.
 	 * </p>
 	 * 
 	 * @see LineGrid#lines(long)
@@ -82,9 +90,14 @@ public class MILGrid<B extends BooleanType<B>> extends
 	 * <p>
 	 * If left null, the increment is set to 1.0.
 	 * </p>
+	 * <p>
+	 * The higher the number, the more likely it is that all foreground --
+	 * background intercepts are found.
+	 * </p>
 	 */
 	@Parameter(required = false, persist = false)
 	private Double samplingIncrement;
+	// TODO Use Long seed instead of Random
 	/**
 	 * The random generator used in the method.
 	 * <p>
@@ -94,13 +107,24 @@ public class MILGrid<B extends BooleanType<B>> extends
 	@Parameter(required = false, persist = false)
 	private Random random;
 
+	// TODO Figure out a better way to test the effect of bins & increment
 	/**
-	 * Finds the MIL vectors of the interval.
+	 * The theoretical maximum of the number of samples taken.
+	 * <p>
+	 * In practice it'll nearly always be smaller since due rotation and other
+	 * factors.
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, persist = false)
+	private Long potentialSamples = 0L;
+
+	/**
+	 * Finds the shortest three MIL vectors of the interval.
 	 *
 	 * @param interval an interval with at least three dimensions. The method
 	 *          assumes that the first three are X,Y and Z. It ignores others.
 	 * @param rotation a rotation applied to the grid.
-	 * @return a cloud of MIL vectors around the origin.
+	 * @return the three shortest orthogonal MIL vectors around the origin.
 	 * @throws IllegalArgumentException if {@link MILGrid#samplingIncrement} is
 	 *           too small.
 	 */
@@ -113,13 +137,15 @@ public class MILGrid<B extends BooleanType<B>> extends
 		final long bins;
 		final double increment;
 		final Random rng;
+		final Function<RandomAccessibleInterval, LongStream> dimStream =
+			rai -> LongStream.of(rai.dimension(0), rai.dimension(1), rai.dimension(
+				2));
 		synchronized (this) {
 			rotateOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class, Tuple3d.class,
 				new Vector3d(), new AxisAngle4d());
 			intersectOp = (BinaryFunctionOp) Functions.binary(ops(),
 				BoxIntersect.class, Optional.class, ValuePair.class, interval);
-			final long defaultBins = LongStream.of(interval.dimension(0), interval
-				.dimension(1), interval.dimension(2)).max().orElse(0);
+			final long defaultBins = dimStream.apply(interval).max().orElse(0);
 			bins = linesPerDimension != null ? linesPerDimension : defaultBins;
 			increment = samplingIncrement != null ? samplingIncrement : 1.0;
 			if (increment < 1e-4) {
@@ -128,17 +154,40 @@ public class MILGrid<B extends BooleanType<B>> extends
 			rng = random != null ? random : new Random();
 		}
 		final LineGrid grid = createGrid(interval, rotateOp, rotation, rng);
+		final double increments = dimStream.apply(interval).mapToDouble(dim -> dim /
+			increment).reduce((a, b) -> a * b).orElse(0.0);
+		potentialSamples = (long) Math.floor(bins * bins * 3 * increments);
 		final Stream<Section> sections = grid.lines(bins).map((line) -> findSection(
 			line, interval, intersectOp)).filter(Objects::nonNull);
-		return sections.map(section -> toMILVector(section, interval, increment,
-			random)).filter(Objects::nonNull).collect(toList());
+		final List<Vector3d> milVectors = sections.map(section -> toMILVector(
+			section, interval, increment, random)).filter(Objects::nonNull).collect(
+				toList());
+		final BiFunction<Vector3d, Vector3d, Boolean> epsParallel = (u, v) -> u
+			.angle(v) < 1e-4;
+		final BiFunction<Vector3d, List<Vector3d>, Stream<Vector3d>> parallelVectors =
+			(u, list) -> list.stream().filter(v -> epsParallel.apply(u, v));
+		final List<Vector3d> normals = grid.getOrientation();
+		// TODO Figure out which version creates the best results
+		/* For each normal, return a vector with same direction and avg. length of all parallel vectors
+		return normals.stream().map(n -> {
+			final double avgLength = parallelVectors.apply(n, milVectors).mapToDouble(
+				Vector3d::length).summaryStatistics().getAverage();
+			final Vector3d avgLine = new Vector3d(n);
+			avgLine.scale(avgLength);
+			return avgLine;
+		}).collect(toList()); */
+		// For each normal, return the shortest milVector parallel to it
+		final Function<Vector3d, Vector3d> shortestParallelMILVector =
+			v -> parallelVectors.apply(v, milVectors).min(comparingDouble(
+				Vector3d::length)).orElse(v);
+		return normals.stream().map(shortestParallelMILVector).collect(toList());
 	}
 
-    /**
+	/**
 	 * Finds the MIL vectors of the interval.
-     * <p>
-     * Applies a random rotation to the grid.
-     * </p>
+	 * <p>
+	 * Applies a random rotation to the grid.
+	 * </p>
 	 *
 	 * @param interval an interval with at least three dimensions. The method
 	 *          assumes that the first three are X,Y and Z. It ignores others.
