@@ -4,10 +4,12 @@ package org.bonej.ops.mil;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
@@ -46,26 +48,26 @@ public class LineGridTest {
 	private static final Vector3d zAxis = new Vector3d(0, 0, 1);
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testConstructorThrowsIAEIfIntervalLT3D() throws Exception {
+	public void testConstructorThrowsIAEIfIntervalLT3D() {
 		final Img<BitType> img = ArrayImgs.bits(5, 5);
 
 		new LineGrid(img);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testConstructorThrowsIAEIfZeroDimension() throws Exception {
+	public void testConstructorThrowsIAEIfZeroDimension() {
 		final Img<BitType> img = ArrayImgs.bits(5, 5, 0);
 
 		new LineGrid(img);
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testConstructorThrowsNPEIfIntervalNull() throws Exception {
+	public void testConstructorThrowsNPEIfIntervalNull() {
 		new LineGrid(null);
 	}
 
 	@Test
-	public void testRandomReflection() throws Exception {
+	public void testRandomReflection() {
 		// SETUP
 		final LineGrid grid = new LineGrid(img);
 		grid.setRandomGenerator(new OneGenerator());
@@ -112,7 +114,7 @@ public class LineGridTest {
 	 * </ul>
 	 */
 	@Test
-	public void testLines() throws Exception {
+	public void testLines() {
 		// SETUP
 		final LineGrid grid = new LineGrid(img);
 		grid.setRandomGenerator(new OneGenerator());
@@ -141,7 +143,7 @@ public class LineGridTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testLinesNonPositiveBinsThrowsIAE() throws Exception {
+	public void testLinesNonPositiveBinsThrowsIAE() {
 		final LineGrid grid = new LineGrid(img);
 
 		grid.lines(0);
@@ -149,7 +151,7 @@ public class LineGridTest {
 
 	/** Test that lines are generated correctly with multiple bins. */
 	@Test
-	public void testLinesNBins() throws Exception {
+	public void testLinesNBins() {
 		// SETUP
 		final long bins = 10;
 		final long binsPerPlane = bins * bins;
@@ -188,7 +190,7 @@ public class LineGridTest {
 	}
 
 	@Test
-	public void testSetRotation() throws Exception {
+	public void testSetRotation() {
 		// SETUP
 		final AxisAngle4d rotation = new AxisAngle4d(0, 0, 1, Math.PI / 4.0);
 		final LineGrid grid = new LineGrid(img);
@@ -230,7 +232,7 @@ public class LineGridTest {
 	}
 
 	@Test
-	public void testSetRandomGenerator() throws Exception {
+	public void testSetRandomGenerator() {
 		final LineGrid grid = new LineGrid(img);
 
 		grid.setRandomGenerator(new OneGenerator());
@@ -245,14 +247,14 @@ public class LineGridTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testSetRandomGeneratorThrowsNPE() throws Exception {
+	public void testSetRandomGeneratorThrowsNPE() {
 		final LineGrid grid = new LineGrid(img);
 
 		grid.setRandomGenerator(null);
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testSetRotationThrowsNPEIfOpNull() throws Exception {
+	public void testSetRotationThrowsNPEIfOpNull() {
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
 		final LineGrid grid = new LineGrid(img);
 
@@ -260,12 +262,55 @@ public class LineGridTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testSetRotationThrowsNPEIfRotationNull() throws Exception {
+	public void testSetRotationThrowsNPEIfRotationNull() {
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
 		final LineGrid grid = new LineGrid(img);
 
 		grid.setRotation(rotateOp, null);
 	}
+
+	@Test
+	public void testGetOrientation() {
+		final LineGrid grid = new LineGrid(img);
+
+		final List<Vector3d> orientation = grid.getOrientation();
+
+		assertNotNull(orientation);
+		assertEquals(3, orientation.size());
+		assertEquals(xAxis, orientation.get(0));
+		assertEquals(yAxis, orientation.get(1));
+		assertEquals(zAxis, orientation.get(2));
+	}
+
+	@Test
+	public void testGetOrientationReflected() {
+		final LineGrid grid = new LineGrid(img);
+		grid.setRandomGenerator(new OneGenerator());
+		grid.randomReflection();
+
+		final List<Vector3d> orientation = grid.getOrientation();
+
+		assertNotNull(orientation);
+		assertEquals(3, orientation.size());
+		assertEquals(new Vector3d(-1, 0, 0), orientation.get(0));
+		assertEquals(new Vector3d(0, -1, 0), orientation.get(1));
+		assertEquals(new Vector3d(0, 0, -1), orientation.get(2));
+	}
+
+	@Test
+	public void testGetOrientationRotated() {
+		final AxisAngle4d rotation = RotateAboutAxis.randomAxisAngle();
+		final List<Vector3d> expectedOrientation = Stream.of(xAxis, yAxis, zAxis)
+			.map(v -> (Vector3d) rotateOp.calculate(v, rotation)).collect(toList());
+		final LineGrid grid = new LineGrid(img);
+		grid.setRotation(rotateOp, rotation);
+
+		final List<Vector3d> orientation = grid.getOrientation();
+
+		for (int i = 0; i < expectedOrientation.size(); i++) {
+			assertEquals(expectedOrientation.get(i), orientation.get(i));
+		}
+    }
 
 	@BeforeClass
 	public static void oneTimeSetup() {
