@@ -5,23 +5,15 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>bonej-aggregator</artifactId>
-    <version>3.1.0-SNAPSHOT</version>
+    <version>4.0.0</version>
     <packaging>pom</packaging>
 
     <modules>
         <module>Modern</module>
+        <module>Legacy</module>
     </modules>
 
     <properties>
       <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
-
-    <profiles>
-        <profile>
-            <id>legacy</id>
-            <modules>
-                <module>Legacy</module>
-            </modules>
-        </profile>
-    </profiles>
 </project>
