@@ -12,7 +12,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>bonej-legacy</artifactId>
-    <version>3.1.0-SNAPSHOT</version>
+    <version>4.0.0</version>
     <packaging>pom</packaging>
 
     <name>POM BoneJ legacy</name>
@@ -125,8 +125,8 @@
     </ciManagement>
 
     <properties>
-        <legacy-util.version>2.0.1-SNAPSHOT</legacy-util.version>
-        <legacy-plugins.version>2.1.0-SNAPSHOT</legacy-plugins.version>
+        <legacy-util.version>3.0.0</legacy-util.version>
+        <legacy-plugins.version>3.0.0</legacy-plugins.version>
         <legacy-pqct.version>1.2.0-SNAPSHOT</legacy-pqct.version>
         <license.licenseName>BSD-2-Clause</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
@@ -134,7 +134,7 @@
 
     <modules>
         <module>bonej</module>
-        <module>pqct</module>
+        <!--<module>pqct</module>-->
         <module>util</module>
     </modules>
 
