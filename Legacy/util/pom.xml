@@ -7,11 +7,11 @@
     <parent>
         <groupId>org.bonej</groupId>
         <artifactId>pom-bonej-legacy</artifactId>
-        <version>3.1.0-SNAPSHOT</version>
+        <version>4.0.0</version>
     </parent>
 
     <artifactId>bonej-legacy-util</artifactId>
-    <version>2.0.1-SNAPSHOT</version>
+    <version>3.0.0</version>
 
 
     <name>BoneJ legacy utilities</name>
