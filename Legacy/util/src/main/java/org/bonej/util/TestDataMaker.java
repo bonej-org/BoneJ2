@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import ij.gui.NewImage;
 import org.scijava.vecmath.Point3f;
 
 import ij.ImagePlus;
@@ -44,7 +43,7 @@ public class TestDataMaker {
 	 * An octahedron with vertices defined by points using values of 2, 1.198039
 	 * and 2.801961.
 	 *
-	 * It has a calculated surface area of 4.4558146404 units^2
+	 * It has a calculated surface area of 4.4558146404 units<sup>2</sup>
 	 *
 	 * @return points defining the vertices of the octahedron's triangles
 	 */
@@ -84,10 +83,10 @@ public class TestDataMaker {
 	 * Generate a rod of circular cross-section. The rod is oriented with its
 	 * axis in the z direction and in a stack of 2*diameter wide and high.
 	 *
-	 * @param length
-	 * @param diameter
+	 * @param length length of the rod.
+	 * @param diameter diameter of the rod.
 	 *
-	 * @return
+	 * @return an image containing the rod.
 	 */
 	public static ImagePlus rod(final int length, final int diameter) {
 		final ImageStack stack = new ImageStack(2 * diameter, 2 * diameter);
@@ -105,7 +104,7 @@ public class TestDataMaker {
 	 * Draw a solid sphere in the foreground, padded with 1 voxel of background
 	 * on all stack faces
 	 *
-	 * @param radius
+	 * @param radius radius of the sphere.
 	 * @return stack containing solid binary sphere
 	 */
 	public static ImagePlus sphere(final int radius) {
@@ -130,9 +129,9 @@ public class TestDataMaker {
 	 * Create a binary brick of arbitrary width, height and depth, padded with 1
 	 * voxel of background on all faces.
 	 *
-	 * @param width
-	 * @param height
-	 * @param depth
+	 * @param width width of the brick.
+	 * @param height height of the brick.
+	 * @param depth depth of the brick.
 	 * @return image with brick in foreground
 	 */
 	public static ImagePlus brick(final int width, final int height, final int depth) {
@@ -155,8 +154,7 @@ public class TestDataMaker {
 	/**
 	 * Draw a circle with vertical and horizontal crossing, then skeletonize it
 	 *
-	 * @param size
-	 *            width and height of the image, circle diameter is size/2
+	 * @param size width and height of the image, circle diameter is size/2
 	 * @return image containing a white (255) circle on black (0) background
 	 */
 	public static ImagePlus crossedCircle(final int size) {
@@ -173,12 +171,9 @@ public class TestDataMaker {
 	/**
 	 * Draw the edges of a brick with 32 pixels of padding on all faces
 	 *
-	 * @param width
-	 *            Width of the box frame in pixels
-	 * @param height
-	 *            Height of the box frame in pixels
-	 * @param depth
-	 *            Depth of the box frame in pixels
+	 * @param width Width of the box frame in pixels
+	 * @param height Height of the box frame in pixels
+	 * @param depth Depth of the box frame in pixels
 	 * @return Image containing a 1-pixel wide outline of a 3D box
 	 */
 	public static ImagePlus boxFrame(final int width, final int height, final int depth) {
@@ -208,11 +203,16 @@ public class TestDataMaker {
 	}
 
 	/**
-	 * Creates an ImagePlus with black (0x00) & white (0xFF) noise
+	 * Creates an ImagePlus with black (0x00) &amp; white (0xFF) noise
 	 *
-	 * @param ratio 		Probability that pixel P(x is black)
-	 * @param generator		A random generator for the noise. Using a generator with predetermined
-	 * 						{@link Random#Random(long)} seed} makes the result of this method repeatable
+	 * @param width width of the image.
+	 * @param height height of the image.
+	 * @param depth depth of the image.
+	 * @param ratio Probability that pixel P(x is black)
+	 * @param generator A random generator for the noise. Using a generator with
+	 *          predetermined {@link Random#Random(long)} seed} makes the result
+	 *          of this method repeatable
+	 * @return an image with binary noise.
 	 */
 	public static ImagePlus binaryNoise(final int width, final int height, final int depth, final double ratio,
 										final Random generator) {
@@ -231,7 +231,16 @@ public class TestDataMaker {
 		return imp;
 	}
 
-	public static ImagePlus plates(final int width, final int height, final int depth, final int spacing) {
+    /**
+     * Creates and image with "plates" or "sheets".
+     *
+     * @param width width of the image.
+     * @param height height of the image.
+     * @param depth depth of the image.
+     * @param spacing space between the sheets in z.
+     * @return an image with xy-plates.
+     */
+    public static ImagePlus plates(final int width, final int height, final int depth, final int spacing) {
 		final ImageStack stack = new ImageStack(width, height);
 		for (int i = 0; i < depth; i++)
 			stack.addSlice(new ByteProcessor(width, height));

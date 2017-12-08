@@ -24,17 +24,15 @@ package org.bonej.geometry;
 import org.scijava.vecmath.Point3f;
 
 public class Vectors {
+	
 	/**
 	 * Calculate the cross product of 3 Point3f's, which describe two vectors
 	 * joined at the tails. Can be used to find the plane / surface normal of a
 	 * triangle. Half of its magnitude is the area of the triangle.
 	 *
-	 * @param point0
-	 *            both vectors' tails
-	 * @param point1
-	 *            vector 1's head
-	 * @param point2
-	 *            vector 2's head
+	 * @param point0 both vectors' tails
+	 * @param point1 vector 1's head
+	 * @param point2 vector 2's head
 	 * @return cross product vector
 	 */
 	public static Point3f crossProduct(final Point3f point0, final Point3f point1, final Point3f point2) {
@@ -54,12 +52,12 @@ public class Vectors {
 	/**
 	 * Calculate the cross product of two vectors (x1, y1, z1) and (x2, y2, z2)
 	 *
-	 * @param x1
-	 * @param y1
-	 * @param z1
-	 * @param x2
-	 * @param y2
-	 * @param z2
+	 * @param x1 x-coordinate of the 1st vector.
+	 * @param y1 y-coordinate of the 1st vector.
+	 * @param z1 z-coordinate of the 1st vector.
+	 * @param x2 x-coordinate of the 2nd vector.
+	 * @param y2 y-coordinate of the 2nd vector.
+	 * @param z2 z-coordinate of the 2nd vector.
 	 * @return cross product in {x, y, z} format
 	 */
 	public static double[] crossProduct(final double x1, final double y1, final double z1, final double x2,
@@ -75,10 +73,8 @@ public class Vectors {
 	 * Calculate the cross product of 2 column vectors, both in double[3][1]
 	 * format
 	 *
-	 * @param a
-	 *            first vector
-	 * @param b
-	 *            second vector
+	 * @param a first vector
+	 * @param b second vector
 	 * @return resulting vector in double[3][1] format
 	 */
 	public static double[][] crossProduct(final double[][] a, final double[][] b) {
@@ -92,10 +88,8 @@ public class Vectors {
 	/**
 	 * Calculate the cross product of 2 vectors, both in double[3] format
 	 *
-	 * @param a
-	 *            first vector
-	 * @param b
-	 *            second vector
+	 * @param a first vector
+	 * @param b second vector
 	 * @return resulting vector in double[3] format
 	 */
 	public static double[] crossProduct(final double[] a, final double[] b) {
@@ -106,7 +100,7 @@ public class Vectors {
 	 * Normalise a vector to have a length of 1 and the same orientation as the
 	 * input vector a
 	 *
-	 * @param a
+	 * @param a a 3D vector.
 	 * @return Unit vector in direction of a
 	 */
 	public static double[] norm(final double[] a) {

@@ -19,11 +19,10 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Choice;
-import java.awt.TextField;
+import java.awt.*;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -43,30 +42,24 @@ import ij.plugin.PlugIn;
  * <p>
  * Purify_ plugin for ImageJ
  * </p>
- *
  * <p>
  * Prepare binary stack for connectivity analysis by reducing number of
  * reference phase (foreground) particles to 1, filling cavities within the
  * single reference phase particle and ensuring there is only 1 particle in the
  * background phase.
  * </p>
- *
  * <p>
  * Foreground is 26-connected and background is 6-connected.
  * </p>
- *
+ * <p>
+ * Odgaard A, Gundersen HJG (1993) Quantification of connectivity in cancellous
+ * bone, with special emphasis on 3-D reconstructions. Bone 14: 173-182.
+ * <a href="http://dx.doi.org/10.1016/8756-3282(93)90245-6">doi:10.1016
+ * /8756-3282(93)90245-6</a>
+ * </p>
  *
  * @author Michael Doube
  * @version 1.0
- * @see
- * 		<p>
- *      Odgaard A, Gundersen HJG (1993) Quantification of connectivity in
- *      cancellous bone, with special emphasis on 3-D reconstructions. Bone 14:
- *      173-182.
- *      <a href="http://dx.doi.org/10.1016/8756-3282(93)90245-6">doi:10.1016
- *      /8756-3282(93)90245-6</a>
- *      </p>
- *
  */
 public class Purify implements PlugIn, DialogListener {
 
@@ -127,10 +120,9 @@ public class Purify implements PlugIn, DialogListener {
 	 * Find all foreground and particles in an image and remove all but the
 	 * largest. Foreground is 26-connected and background is 8-connected.
 	 *
-	 * @param imp
-	 *            input image
-	 * @param slicesPerChunk
-	 *            number of slices to send to each CPU core as a chunk
+	 * @param imp input image
+	 * @param slicesPerChunk number of slices to send to each CPU core as a chunk
+	 * @param labelMethod number of labelling method
 	 * @return purified image
 	 */
 	public ImagePlus purify(final ImagePlus imp, final int slicesPerChunk, final int labelMethod) {
@@ -170,17 +162,16 @@ public class Purify implements PlugIn, DialogListener {
 	/**
 	 * <p>
 	 * Find particles of phase that touch the stack sides and assign them the ID
-	 * of the biggest particle of phase. Euler number calculation assumes that
-	 * the background phase is connected outside the image stack, so apparently
-	 * isolated background particles touching the sides should be assigned to
-	 * the single background particle.
+	 * of the biggest particle of phase. Euler number calculation assumes that the
+	 * background phase is connected outside the image stack, so apparently
+	 * isolated background particles touching the sides should be assigned to the
+	 * single background particle.
 	 * </p>
 	 *
-	 * @param workArray
-	 * @param particleLabels
-	 * @param particleSizes
-	 * @param phase
-	 * @return particleLabels
+	 * @param workArray a work array
+	 * @param particleLabels particle labels.
+	 * @param particleSizes sizes of the particles.
+	 * @param phase foreground or background.
 	 */
 	private void touchEdges(final ImagePlus imp, final byte[][] workArray, final int[][] particleLabels,
 			final long[] particleSizes, final int phase) {
@@ -292,11 +283,10 @@ public class Purify implements PlugIn, DialogListener {
 	/**
 	 * Remove all but the largest phase particle from workArray
 	 *
-	 * @param workArray
-	 * @param particleLabels
-	 * @param particleSizes
-	 * @param phase
-	 * @return workArray
+	 * @param workArray a work array
+	 * @param particleLabels particle labels.
+	 * @param particleSizes sizes of the particles.
+	 * @param phase foreground or background.
 	 */
 	private void removeSmallParticles(final byte[][] workArray, final int[][] particleLabels,
 			final long[] particleSizes, final int phase) {
@@ -357,8 +347,10 @@ public class Purify implements PlugIn, DialogListener {
 	/**
 	 * Show a Results table containing some performance information
 	 *
-	 * @param chunkRanges
-	 * @param duration
+	 * @param duration time elapsed in purifying.
+     * @param imp the purified image.
+     * @param slicesPerChunk slices processed by each chunk.
+     * @param labelMethod labelling method used.
 	 */
 	private void showResults(final double duration, final ImagePlus imp, int slicesPerChunk, final int labelMethod) {
 		if (labelMethod == ParticleCounter.LINEAR)

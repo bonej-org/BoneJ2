@@ -50,27 +50,23 @@ public class FitEllipsoid {
 	}
 
 	/**
+	 * Ellipsoid fitting method by Yury Petrov.
 	 * <p>
-	 * Ellipsoid fitting method by Yury Petrov.<br />
 	 * Fits an ellipsoid in the form <i>Ax</i><sup>2</sup> + <i>By</i>
 	 * <sup>2</sup> + <i>Cz</i><sup>2</sup> + 2<i>Dxy</i> + 2<i>Exz</i> + 2
-	 * <i>Fyz</i> + 2<i>Gx</i> + 2<i>Hy</i> + 2<i>Iz</i> = 1 <br />
+	 * <i>Fyz</i> + 2<i>Gx</i> + 2<i>Hy</i> + 2<i>Iz</i> = 1
 	 * To an n * 3 array of coordinates.
 	 * </p>
-	 *
-	 * @see
-	 * 		<p>
-	 *      <a href=
-	 *      "http://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
-	 *      >MATLAB script</a>
-	 *      </p>
-	 *
-	 * @param coOrdinates
-	 *            array[n][3] where n > 8
+	 * <p>
+	 * See <a href=
+	 * "http://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
+	 * >MATLAB script</a>
+	 * </p>
+	 * 
+	 * @param points array[n][3] where n &gt; 8
 	 * @return Object[] array containing the centre, radii, eigenvectors of the
 	 *         axes, the 9 variables of the ellipsoid equation and the EVD
-	 * @throws IllegalArgumentException
-	 *             if number of coordinates is less than 9
+	 * @throws IllegalArgumentException if number of coordinates is less than 9
 	 */
 	public static Object[] yuryPetrov(final double[][] points) {
 

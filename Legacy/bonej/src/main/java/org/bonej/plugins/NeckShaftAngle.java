@@ -21,10 +21,7 @@
  */
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
-import java.awt.Rectangle;
-import java.awt.TextField;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Vector;
@@ -56,9 +53,8 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 
 /**
+ * Neck Shaft Angle
  * <p>
- * Neck Shaft Angle<br />
- *
  * Tool to calculate the neck shaft angle of 3D images of femora.
  * </p>
  * <p>
@@ -66,12 +62,12 @@ import ij.process.ImageProcessor;
  * lines <b>N</b> and <b>S</b>. <br>
  * <b>S</b> is the singular value decomposition (orthogonal distance regression)
  * vector that passes through the centroid (<b>B</b>) of the bone and describes
- * the long axis of the bone.<br/>
- * <b>C</b> is the centre of a sphere fit to the femoral head.<br/>
+ * the long axis of the bone.
+ * <b>C</b> is the centre of a sphere fit to the femoral head.
  *
- * <b>P</b> is the plane that contains <b>S</b> and <b>C</b>. <br />
+ * <b>P</b> is the plane that contains <b>S</b> and <b>C</b>.
  * <b>N</b> is the projection onto <b>P</b> of a vector originating at <b>C</b>
- * and passing through the 'middle' of the femoral neck.<br />
+ * and passing through the 'middle' of the femoral neck.
  *
  * Singular value decomposition performed with the
  * <a href="http://math.nist.gov/javanumerics/jama/">Jama</a> package
@@ -203,12 +199,9 @@ public class NeckShaftAngle implements PlugIn, MouseListener, DialogListener {
 	 * regression vector and the vector connecting the centroid and the femoral
 	 * head centre
 	 *
-	 * @param shaftVector
-	 *            double[][]
-	 * @param headCentre
-	 *            double[][]
-	 * @param centroid
-	 *            double[][]
+	 * @param shaftVector double[][]
+	 * @param headCentre double[][]
+	 * @param centroid double[][]
 	 * @return double[][] projectionPlane
 	 */
 	private double[][] getProjectionPlane(final double[][] shaftVector, final double[] headCentre,
@@ -240,13 +233,15 @@ public class NeckShaftAngle implements PlugIn, MouseListener, DialogListener {
 	 * Calculate the orthogonal distance regression plane of a set of points by
 	 * the covariance method and Singular Value Decomposition
 	 *
-	 * @param stack
-	 * @param centroid
+	 * @param imp an image.
+	 * @param centroid the centroid of the points.
+	 * @param startSlice first slice of the algorithm.
+	 * @param endSlice last slice of the algorithm.
+	 * @param min minimum value for a pixel to be included.
+	 * @param max maximum value for a pixel to be included.
 	 * @return SingularValueDecomposition containing eigenvector and eigenvalue
-	 *
 	 * @see <a href="http://mathforum.org/library/drmath/view/63765.html">
 	 *      Description on Ask Dr Math</a>
-	 *
 	 */
 	private double[][] regression3D(final ImagePlus imp, final double[] centroid, final int startSlice,
 			final int endSlice, final double min, final double max) {
@@ -370,17 +365,7 @@ public class NeckShaftAngle implements PlugIn, MouseListener, DialogListener {
 		return;
 	}
 
-	/**
-	 * <p>
-	 * Calculate curvature of bone using shaft vector as a reference axis and
-	 * centre of femoral head to define reference plane
-	 * </p>
-	 *
-	 * @param stack
-	 * @param shaftVector
-	 * @param headCentre
-	 */
-	private void calculateCurvature(final ImagePlus imp, final double[][] shaftVector, final double[] headCentre,
+    private void calculateCurvature(final ImagePlus imp, final double[][] shaftVector, final double[] headCentre,
 			final double[] centroid, final int startSlice, final int endSlice, final double min, final double max) {
 		// calculate the eigenvector of the reference plane containing
 		// the shaftVector and the headCentre

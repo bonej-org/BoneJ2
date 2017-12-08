@@ -31,11 +31,11 @@ import Jama.SingularValueDecomposition;
  * @author Michael Doube, ported from Nikolai Chernov's MATLAB scripts
  * @see
  * 		<p>
- *      Al-Sharadqha & Chernov (2009)
+ *      Al-Sharadqha &amp; Chernov (2009)
  *      <a href="http://dx.doi.org/10.1214/09-EJS419"> Error analysis for circle
  *      fitting algorithms</a>. Electronic Journal of Statistics 3, pp. 886-911
- *      <br/>
- *      <br />
+ *      </p>
+ *      <p>
  *      <a href="http://www.math.uab.edu/~chernov/cl/MATLABcircle.html" >http://
  *      www.math.uab.edu/~chernov/cl/MATLABcircle.html</a>
  *      </p>
@@ -140,7 +140,7 @@ public class FitCircle {
 	 * @param noise
 	 *            Add noise of intensity 'noise'
 	 *
-	 * @return
+	 * @return a [n][2] array of (x,y) coordinates.
 	 */
 	public static double[][] getTestCircle(final double x, final double y, final double r, final int n,
 			final double startAngle, final double endAngle, final double noise) {
@@ -169,7 +169,7 @@ public class FitCircle {
 	 * @param noise
 	 *            Add noise of intensity 'noise'
 	 *
-	 * @return
+	 * @return a [n][2] array of (x,y) coordinates.
 	 */
 	public static double[][] getTestCircle(final double x, final double y, final double r, final int n,
 			final double noise) {

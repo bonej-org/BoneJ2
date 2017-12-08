@@ -22,10 +22,7 @@
 
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
-import java.awt.Rectangle;
-import java.awt.TextField;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -178,14 +175,12 @@ public class Moments implements PlugIn, DialogListener {
 	 * calibration constants <i>m</i>, <i>c</i> for the equation <i>y</i> =
 	 * <i>mx</i> + <i>c</i>
 	 *
-	 * @param pixelValue
-	 *            raw pixel value
-	 * @param m
-	 *            slope of regression line
-	 * @param c
-	 *            y intercept of regression line
-	 *
+	 * @param pixelValue raw pixel value
+	 * @param m slope of regression line
+	 * @param c y intercept of regression line
+	 * @param factor divider of voxel density.
 	 * @return voxelDensity
+     * @see #getDensityFactor(ImagePlus)
 	 */
 	private double voxelDensity(final double pixelValue, final double m, final double c, final double factor) {
 		double voxelDensity = (m * pixelValue + c) / factor;
@@ -195,11 +190,11 @@ public class Moments implements PlugIn, DialogListener {
 	}/* end voxelDensity */
 
 	/**
-	 * Get a scale factor because density is in g / cm³ but our units are mm so
+	 * Get a scale factor because density is in g / cm<sup>3</sup> but our units are mm so
 	 * density is 1000* too high
 	 *
-	 * @param imp
-	 * @return
+	 * @param imp an image.
+	 * @return divisor to convert calibration values to g / cm<sup>3</sup>
 	 */
 	private double getDensityFactor(final ImagePlus imp) {
 		final String units = imp.getCalibration().getUnits();
@@ -217,9 +212,9 @@ public class Moments implements PlugIn, DialogListener {
 	 * required. Returns an Object, which can be used when adding an empty slice
 	 * to a stack
 	 *
-	 * @param w
-	 * @param h
-	 * @param bitDepth
+	 * @param w width of the array.
+	 * @param h height of the array.
+	 * @param bitDepth bits per pixel.
 	 * @return Object containing an array of the type needed for an image with
 	 *         bitDepth
 	 */
@@ -243,20 +238,13 @@ public class Moments implements PlugIn, DialogListener {
 	 * Calculate a density-weighted centroid in an image using z-clip planes,
 	 * threshold clipping and density = m * pixel value + c density equation
 	 *
-	 * @param imp
-	 *            ImagePlus
-	 * @param startSlice
-	 *            first slice to use
-	 * @param endSlice
-	 *            last slice to use
-	 * @param min
-	 *            minimum threshold value
-	 * @param max
-	 *            maximum threshold value
-	 * @param m
-	 *            slope of density equation (set to 0 if constant density)
-	 * @param c
-	 *            constant in density equation
+	 * @param imp ImagePlus
+	 * @param startSlice first slice to use
+	 * @param endSlice last slice to use
+	 * @param min minimum threshold value
+	 * @param max maximum threshold value
+	 * @param m slope of density equation (set to 0 if constant density)
+	 * @param c constant in density equation
 	 * @return double[] containing (x,y,z) centroid in scaled units
 	 */
 	public double[] getCentroid3D(final ImagePlus imp, final int startSlice, final int endSlice, final double min,
@@ -308,8 +296,8 @@ public class Moments implements PlugIn, DialogListener {
 		return centroid;
 	}/* end findCentroid3D */
 
-	public Object[] calculateMoments(final ImagePlus imp, final int startSlice, final int endSlice,
-			final double[] centroid, final double min, final double max, final double m, final double c) {
+	private Object[] calculateMoments(final ImagePlus imp, final int startSlice, final int endSlice,
+            final double[] centroid, final double min, final double max, final double m, final double c) {
 		// START OF 3D MOMENT CALCULATIONS
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
@@ -389,22 +377,16 @@ public class Moments implements PlugIn, DialogListener {
 	/**
 	 * Draw a copy of the original image aligned to its principal axes
 	 *
-	 * @param imp
-	 *            Input image
-	 * @param E
-	 *            Rotation matrix
-	 * @param centroid
-	 *            3-element array containing centroid coordinates, {x,y,z}
-	 * @param startSlice
-	 *            first slice to copy
-	 * @param endSlice
-	 *            final slice to copy
-	 * @param doAxes
-	 *            if true, draw axes on the aligned copy
+	 * @param imp Input image
+	 * @param E Rotation matrix
+	 * @param centroid 3-element array containing centroid coordinates, {x,y,z}
+	 * @param startSlice first slice to copy
+	 * @param endSlice final slice to copy
+	 * @param doAxes if true, draw axes on the aligned copy
 	 * @return ImagePlus copy of the input image
 	 */
-	public ImagePlus alignToPrincipalAxes(final ImagePlus imp, final Matrix E, final double[] centroid,
-			final int startSlice, final int endSlice, final double min, final double max, final boolean doAxes) {
+    private ImagePlus alignToPrincipalAxes(final ImagePlus imp, final Matrix E, final double[] centroid,
+            final int startSlice, final int endSlice, final double min, final double max, final boolean doAxes) {
 		final ImageStack sourceStack = imp.getImageStack();
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
@@ -563,24 +545,24 @@ public class Moments implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Multithreading class to look up aligned voxel values, processing each
+     * Multithreading class to look up aligned voxel values, processing each
 	 * slice in its own thread
 	 *
 	 * @author Michael Doube
 	 *
 	 */
-	class AlignThread extends Thread {
-		final int thread, nThreads, wT, hT, dT, startSlice, endSlice;
-		final ImagePlus impT;
-		final ImageStack stackT;
-		final ImageProcessor[] sliceProcessors, targetProcessors;
-		final double[][] eigenVecInv;
-		final double[] centroid;
+    private class AlignThread extends Thread {
+		private final int thread, nThreads, wT, hT, dT, startSlice, endSlice;
+		private final ImagePlus impT;
+		private final ImageStack stackT;
+		private final ImageProcessor[] sliceProcessors, targetProcessors;
+		private final double[][] eigenVecInv;
+		private final double[] centroid;
 
-		public AlignThread(final int thread, final int nThreads, final ImagePlus imp,
-				final ImageProcessor[] sliceProcessors, final ImageProcessor[] targetProcessors,
-				final double[][] eigenVecInv, final double[] centroid, final int wT, final int hT, final int dT,
-				final int startSlice, final int endSlice) {
+		private AlignThread(final int thread, final int nThreads, final ImagePlus imp,
+                final ImageProcessor[] sliceProcessors, final ImageProcessor[] targetProcessors,
+                final double[][] eigenVecInv, final double[] centroid, final int wT, final int hT, final int dT,
+                final int startSlice, final int endSlice) {
 			this.impT = imp;
 			this.stackT = this.impT.getStack();
 			this.thread = thread;
@@ -652,8 +634,9 @@ public class Moments implements PlugIn, DialogListener {
 						final int yA = (int) Math.floor((yAlign + dYc) / vH);
 						final int zA = (int) Math.floor((zAlign + dZc) / vD);
 
-						if (xA < rX || xA >= rW || yA < rY || yA >= rH || zA < this.startSlice || zA > this.endSlice)
-							continue;
+                        if (xA < rX || xA >= rW || yA < rY || yA >= rH || zA < this.startSlice || zA > this.endSlice) {
+                            continue;
+                        }
 						targetIP.set(x, y, this.sliceProcessors[zA].get(xA, yA));
 					}
 				}
@@ -662,25 +645,17 @@ public class Moments implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Find side lengths in pixels of the smallest stack to fit the aligned
-	 * image
+	 * Find side lengths in pixels of the smallest stack to fit the aligned image
 	 *
-	 * @param E
-	 *            Rotation matrix
-	 * @param imp
-	 *            Source image
-	 * @param centroid
-	 *            3D centroid in 3-element array {x,y,z}
-	 * @param startSlice
-	 *            first slice of source image
-	 * @param endSlice
-	 *            last slice of source image
-	 * @param min
-	 *            minimum threshold
-	 * @param max
-	 *            maximum threshold
-	 * @return Width, height and depth of a stack that will 'just fit' the
-	 *         aligned image
+	 * @param E Rotation matrix
+	 * @param imp Source image
+	 * @param centroid 3D centroid in 3-element array {x,y,z}
+	 * @param startSlice first slice of source image
+	 * @param endSlice last slice of source image
+	 * @param min minimum threshold
+	 * @param max maximum threshold
+	 * @return Width, height and depth of a stack that will 'just fit' the aligned
+	 *         image
 	 */
 	private int[] getRotatedSize(final Matrix E, final ImagePlus imp, final double[] centroid, final int startSlice,
 			final int endSlice, final double min, final double max) {
@@ -763,27 +738,18 @@ public class Moments implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Create a copy of the original image aligned to the tensor defined by a
-	 * 3x3 Eigenvector matrix
+	 * Create a copy of the original image aligned to the tensor defined by a 3x3
+	 * Eigenvector matrix
 	 *
-	 * @param imp
-	 *            input ImagePlus stack
-	 * @param E
-	 *            Eigenvector rotation matrix
-	 * @param doAxes
-	 *            if true, draws axes on the aligned image
-	 * @param startSlice
-	 *            first slice to use
-	 * @param endSlice
-	 *            last slice to use
-	 * @param min
-	 *            minimum threshold
-	 * @param max
-	 *            maximum threshold
-	 * @param m
-	 *            slope of pixel to density equation, d = m * p + c
-	 * @param c
-	 *            intercept of density equation, d = m * p + c
+	 * @param imp input ImagePlus stack
+	 * @param E Eigenvector rotation matrix
+	 * @param doAxes if true, draws axes on the aligned image
+	 * @param startSlice first slice to use
+	 * @param endSlice last slice to use
+	 * @param min minimum threshold
+	 * @param max maximum threshold
+	 * @param m slope of pixel to density equation, d = m * p + c
+	 * @param c intercept of density equation, d = m * p + c
 	 * @return aligned ImagePlus
 	 */
 	public ImagePlus alignImage(final ImagePlus imp, final Matrix E, final boolean doAxes, final int startSlice,
@@ -796,20 +762,13 @@ public class Moments implements PlugIn, DialogListener {
 	/**
 	 * Display principal axes on a 3D rendered version of the image
 	 *
-	 * @param imp
-	 *            Original image
-	 * @param E
-	 *            eigenvectors of the principal axes
-	 * @param centroid
-	 *            in real units
-	 * @param startSlice
-	 *            first slice
-	 * @param endSlice
-	 *            last slice
-	 * @param min
-	 *            lower threshold
-	 * @param max
-	 *            upper threshold
+	 * @param imp Original image
+	 * @param E eigenvectors of the principal axes
+	 * @param centroid in real units
+	 * @param startSlice first slice
+	 * @param endSlice last slice
+	 * @param min lower threshold
+	 * @param max upper threshold
 	 */
 	private void show3DAxes(final ImagePlus imp, final Matrix E, final double[] centroid, final int startSlice,
 			final int endSlice, final double min, final double max) {

@@ -46,24 +46,16 @@ public class Trig {
 	}
 
 	/**
-	 * <p>
 	 * Calculate the distance between 2 3D points <i>p</i>(x, y, z) and <i>q</i>
 	 * (x, y, z) using Pythagoras' theorem
-	 * </p>
 	 *
-	 * @param px
-	 *            x-coordinate of first point
-	 * @param py
-	 *            y-coordinate of first point
-	 * @param pz
-	 *            z-coordinate of first point
-	 * @param qx
-	 *            x-coordinate of second point
-	 * @param qy
-	 *            y-coordinate of second point
-	 * @param qz
-	 *            z-coordinate of second point
-	 * @return
+	 * @param px x-coordinate of first point
+	 * @param py y-coordinate of first point
+	 * @param pz z-coordinate of first point
+	 * @param qx x-coordinate of second point
+	 * @param qy y-coordinate of second point
+	 * @param qz z-coordinate of second point
+	 * @return distance between points.
 	 */
 	public static double distance3D(final double px, final double py, final double pz, final double qx, final double qy,
 			final double qz) {
@@ -76,10 +68,10 @@ public class Trig {
 	 * vectors, calculates the vector sum
 	 * </p>
 	 *
-	 * @param x
-	 * @param y
-	 * @param z
-	 * @return
+	 * @param x x-coordinate of the point.
+	 * @param y y-coordinate of the point.
+	 * @param z z-coordinate of the point.
+	 * @return distance of the point to the origin.
 	 */
 	public static double distance3D(final double x, final double y, final double z) {
 		return Math.sqrt(x * x + y * y + z * z);

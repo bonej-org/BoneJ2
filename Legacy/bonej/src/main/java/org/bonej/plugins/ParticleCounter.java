@@ -21,10 +21,7 @@
  */
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
-import java.awt.Choice;
-import java.awt.TextField;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -34,8 +31,8 @@ import java.util.ListIterator;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.geometry.FitEllipsoid;
+import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
@@ -86,7 +83,6 @@ import marchingcubes.MCTriangulator;
  * thread</li>
  * </ol>
  * </li>
- *
  * </ol>
  * <p>
  * The performance improvement should be in the region of a factor of <i>n</i>
@@ -99,11 +95,10 @@ import marchingcubes.MCTriangulator;
  * @author Fabrice Cordelires
  * @author Michał Kłosowski
  * @see
- * 		<p>
+ *      <p>
  *      <a href="http://rsbweb.nih.gov/ij/plugins/track/objects.html">3D Object
  *      Counter</a>
  *      </p>
- *
  */
 public class ParticleCounter implements PlugIn, DialogListener {
 
@@ -511,14 +506,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Get the mean and standard deviation of pixel values above a minimum value
 	 * for each particle in a particle label work array
 	 *
-	 * @param imp
-	 *            Input image containing pixel values
-	 * @param particleLabels
-	 *            workArray containing particle labels
-	 * @param particleSizes
-	 *            array of particle sizes as pixel counts
-	 * @param threshold
-	 *            restrict calculation to values > i
+	 * @param imp Input image containing pixel values
+	 * @param particleLabels workArray containing particle labels
+	 * @param particleSizes array of particle sizes as pixel counts
+	 * @param threshold restrict calculation to values > i
 	 * @return array containing mean, std dev and max pixel values for each
 	 *         particle
 	 */
@@ -567,11 +558,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Get the Euler characteristic of each particle
 	 *
-	 * @param imp
-	 * @param particleLabels
-	 * @param limits
-	 * @param nParticles
-	 * @return
+	 * @param imp an image.
+	 * @param particleLabels particles of the image.
+	 * @param limits limits of the particles.
+	 * @param nParticles number particles.
+	 * @return euler characteristic of each image.
 	 */
 	private double[][] getEulerCharacter(final ImagePlus imp, final int[][] particleLabels, final int[][] limits,
 			final int nParticles) {
@@ -602,12 +593,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Get the minimum and maximum x, y and z coordinates of each particle
 	 *
-	 * @param imp
-	 *            ImagePlus (used for stack size)
-	 * @param particleLabels
-	 *            work array containing labelled particles
-	 * @param nParticles
-	 *            number of particles in the stack
+	 * @param imp ImagePlus (used for stack size)
+	 * @param particleLabels work array containing labelled particles
+	 * @param nParticles number of particles in the stack
 	 * @return int[][] containing x, y and z minima and maxima.
 	 */
 	private int[][] getParticleLimits(final ImagePlus imp, final int[][] particleLabels, final int nParticles) {
@@ -701,10 +689,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Get the maximum distances from the centroid in x, y, and z axes, and
 	 * transformed x, y and z axes
 	 *
-	 * @param imp
-	 * @param particleLabels
-	 * @param centroids
-	 * @param E
+	 * @param imp an image.
+	 * @param particleLabels labelled particles in the image.
+	 * @param centroids centroids of the particles.
+	 * @param E transformation eigenvectors and values of the particles.
 	 * @return array containing two nPoints * 3 arrays with max and max
 	 *         transformed distances respectively
 	 *
@@ -783,14 +771,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Draws 3 orthogonal axes defined by the centroid, unitvector and axis
 	 * length.
 	 *
-	 * @param univ
-	 * @param centroid
-	 * @param unitVector
-	 * @param lengths
-	 * @param red
-	 * @param green
-	 * @param blue
-	 * @param title
+	 * @param univ the universe where axes are drawn.
+	 * @param centroid centroid of a particle.
+	 * @param unitVector orientation of the particle.
+	 * @param lengths lengths of the axes.
+	 * @param red red component of the axes' color.
+	 * @param green green component of the axes' color.
+	 * @param blue blue component of the axes' color.
+	 * @param title text shown by the axes.
 	 */
 	private void displayAxes(final Image3DUniverse univ, final double[] centroid, final double[][] unitVector,
 			final double[] lengths, final float red, final float green, final float blue, final String title) {
@@ -859,8 +847,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Draw the particle centroids in a 3D viewer
 	 *
-	 * @param centroids
-	 * @param univ
+	 * @param centroids [n][3] centroids of particles.
+	 * @param univ universe where the centroids are displayed.
 	 */
 	private void displayCentroids(final double[][] centroids, final Image3DUniverse univ) {
 		final int nCentroids = centroids.length;
@@ -893,8 +881,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Draw the particle surfaces in a 3D viewer
 	 *
-	 * @param univ
-	 * @param surfacePoints
+     * @param univ universe where the centroids are displayed.
+	 * @param surfacePoints points of each particle.
 	 *
 	 */
 	private void displayParticleSurfaces(final Image3DUniverse univ, final ArrayList<List<Point3f>> surfacePoints,
@@ -1005,8 +993,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Get the Feret diameter of a surface. Uses an inefficient brute-force
 	 * algorithm.
 	 *
-	 * @param particleSurfaces
-	 * @return
+	 * @param particleSurfaces points of all the particles.
+	 * @return Feret diameters of the surfaces.
 	 */
 	private double[] getFerets(final ArrayList<List<Point3f>> particleSurfaces) {
 		final int nParticles = particleSurfaces.size();
@@ -1045,17 +1033,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * create a binary ImagePlus containing a single particle and which 'just
 	 * fits' the particle
 	 *
-	 * @param p
-	 *            The particle ID to get
-	 * @param imp
-	 *            original image, used for calibration
-	 * @param particleLabels
-	 *            work array of particle labels
-	 * @param limits
-	 *            x,y and z limits of each particle
-	 * @param padding
-	 *            amount of empty space to pad around each particle
-	 * @return
+	 * @param p The particle ID to get
+	 * @param imp original image, used for calibration
+	 * @param particleLabels work array of particle labels
+	 * @param limits x,y and z limits of each particle
+	 * @param padding amount of empty space to pad around each particle
+	 * @return a cropped single particle image.
 	 */
 	private static ImagePlus getBinaryParticle(final int p, final ImagePlus imp, final int[][] particleLabels,
 			final int[][] limits, final int padding) {
@@ -1096,13 +1079,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Create an image showing some particle measurement
 	 *
-	 * @param imp
-	 * @param particleLabels
-	 * @param values
-	 *            list of values whose array indices correspond to
-	 *            particlelabels
-	 * @param title
-	 *            tag stating what we are displaying
+	 * @param imp an image.
+	 * @param particleLabels the particles in the image.
+	 * @param values list of values whose array indices correspond to
+	 *          particlelabels
+	 * @param title tag stating what we are displaying
 	 * @return ImagePlus with particle labels substituted with some value
 	 */
 	private ImagePlus displayParticleValues(final ImagePlus imp, final int[][] particleLabels, final double[] values,
@@ -1135,9 +1116,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Get the centroids of all the particles in real units
 	 *
-	 * @param imp
-	 * @param particleLabels
-	 * @param particleSizes
+	 * @param imp an image.
+	 * @param particleLabels particles in the image.
+	 * @param particleSizes sizes of the particles
 	 * @return double[][] containing all the particles' centroids
 	 */
 	private double[][] getCentroids(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes) {
@@ -1181,18 +1162,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Get particles, particle labels and particle sizes from a 3D ImagePlus
 	 *
-	 * @param imp
-	 *            Binary input image
-	 * @param slicesPerChunk
-	 *            number of slices per chunk. 2 is generally good.
-	 * @param minVol
-	 *            minimum volume particle to include
-	 * @param maxVol
-	 *            maximum volume particle to include
-	 * @param phase
-	 *            foreground or background (FORE or BACK)
-	 * @param doExclude
-	 *            if true, remove particles touching sides of the stack
+	 * @param imp Binary input image
+	 * @param slicesPerChunk number of slices per chunk. 2 is generally good.
+	 * @param minVol minimum volume particle to include
+	 * @param maxVol maximum volume particle to include
+	 * @param phase foreground or background (FORE or BACK)
+	 * @param doExclude if true, remove particles touching sides of the stack
 	 * @return Object[] {byte[][], int[][]} containing a binary workArray and
 	 *         particle labels.
 	 */
@@ -1215,6 +1190,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
 	}
 
+	//TODO Remove
 	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
 			final int phase, final int method) {
 		final double minVol = 0;
@@ -1231,18 +1207,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Get particles, particle labels and sizes from a workArray using an
 	 * ImagePlus for scale information
 	 *
-	 * @param imp
-	 *            input binary image
-	 * @param binary
-	 *            work array
-	 * @param slicesPerChunk
-	 *            number of slices to use for each chunk
-	 * @param minVol
-	 *            minimum volume particle to include
-	 * @param maxVol
-	 *            maximum volume particle to include
-	 * @param phase
-	 *            FORE or BACK for foreground or background respectively
+	 * @param imp input binary image
+	 * @param workArray work array
+	 * @param slicesPerChunk number of slices to use for each chunk
+	 * @param minVol minimum volume particle to include
+	 * @param maxVol maximum volume particle to include
+	 * @param phase FORE or BACK for foreground or background respectively
+	 * @param doExclude exclude particles touching the edges.
 	 * @return Object[] array containing a binary workArray, particle labels and
 	 *         particle sizes
 	 */
@@ -1306,18 +1277,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Remove particles outside user-specified volume thresholds
 	 *
-	 * @param imp
-	 *            ImagePlus, used for calibration
-	 * @param workArray
-	 *            binary foreground and background information
-	 * @param particleLabels
-	 *            Packed 3D array of particle labels
-	 * @param minVol
-	 *            minimum (inclusive) particle volume
-	 * @param maxVol
-	 *            maximum (inclusive) particle volume
-	 * @param phase
-	 *            phase we are interested in
+	 * @param imp ImagePlus, used for calibration
+	 * @param workArray binary foreground and background information
+	 * @param particleLabels Packed 3D array of particle labels
+	 * @param minVol minimum (inclusive) particle volume
+	 * @param maxVol maximum (inclusive) particle volume
+	 * @param phase phase we are interested in
 	 */
 	private void filterParticles(final ImagePlus imp, final byte[][] workArray, final int[][] particleLabels,
 			final double minVol, final double maxVol, final int phase) {
@@ -1348,8 +1313,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Gets rid of redundant particle labels
 	 *
-	 * @param particleLabels
-	 * @return
+	 * @param particleLabels particles in the image.
 	 */
 	private void minimiseLabels(final int[][] particleLabels) {
 		IJ.showStatus("Minimising labels...");
@@ -1391,11 +1355,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Scans edge voxels and set all touching particles to background
 	 *
-	 * @param particleLabels
-	 * @param nLabels
-	 * @param w
-	 * @param h
-	 * @param d
+     * @param imp an image.
+	 * @param particleLabels particles in the image.
 	 */
 	private void excludeOnEdges(final ImagePlus imp, final int[][] particleLabels, final byte[][] workArray) {
 		final int w = imp.getWidth();
@@ -1466,10 +1427,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Gets number of chunks needed to divide a stack into evenly-sized sets of
 	 * slices.
 	 *
-	 * @param imp
-	 *            input image
-	 * @param slicesPerChunk
-	 *            number of slices per chunk
+	 * @param imp input image
+	 * @param slicesPerChunk number of slices per chunk
 	 * @return number of chunks
 	 */
 	public int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
@@ -1487,12 +1446,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Go through all pixels and assign initial particle label
 	 *
-	 * @param workArray
-	 *            byte[] array containing pixel values
-	 * @param phase
-	 *            FORE or BACK for foreground of background respectively
-	 * @return particleLabels int[] array containing label associating every
-	 *         pixel with a particle
+     * @param imp an image.
+	 * @param workArray byte[] array containing pixel values
+	 * @param phase FORE or BACK for foreground of background respectively
+	 * @return particleLabels int[] array containing label associating every pixel
+	 *         with a particle
 	 */
 	private int[][] firstIDAttribution(final ImagePlus imp, final byte[][] workArray, final int phase) {
 		final int w = imp.getWidth();
@@ -1609,14 +1567,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Connect structures = minimisation of IDs
 	 *
-	 * @param workArray
-	 * @param particleLabels
-	 * @param phase
-	 *            foreground or background
-	 * @param scanRanges
-	 *            int[][] listgetPixel(particleLabels, x, y, z, w, h, d);ing
-	 *            ranges to run connectStructures on
-	 * @return particleLabels with all particles connected
+	 * @param imp an image.
+	 * @param workArray work array.
+	 * @param particleLabels particles in the image.
+	 * @param phase foreground or background
+	 * @param scanRanges int[][] listgetPixel(particleLabels, x, y, z, w, h,
+	 *          d);ing ranges to run connectStructures on
 	 */
 	private void connectStructures(final ImagePlus imp, final byte[][] workArray, final int[][] particleLabels,
 			final int phase, final int[][] scanRanges) {
@@ -1814,8 +1770,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Joins semi-labelled particles using a non-recursive algorithm
 	 *
-	 * @param imp
-	 * @param particleLabels
+	 * @param imp an image.
+	 * @param particleLabels particles in the image.
+	 * @param phase foreground or background
 	 */
 	private void joinStructures(final ImagePlus imp, final int[][] particleLabels, final int phase) {
 		final int w = imp.getWidth();
@@ -1908,8 +1865,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return;
 	}
 
-	public ArrayList<ArrayList<short[]>> getParticleLists(final int[][] particleLabels, final int nBlobs, final int w,
-			final int h, final int d) {
+	private ArrayList<ArrayList<short[]>> getParticleLists(final int[][] particleLabels, final int nBlobs, final int w,
+            final int h, final int d) {
 		final ArrayList<ArrayList<short[]>> pL = new ArrayList<ArrayList<short[]>>(nBlobs);
 		final long[] particleSizes = getParticleSizes(particleLabels);
 		final ArrayList<short[]> background = new ArrayList<short[]>(0);
@@ -1940,14 +1897,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Join particle p to particle b, relabelling p with b.
 	 *
-	 * @param b
-	 * @param p
-	 * @param particleLabels
-	 *            array of particle labels
-	 * @param particleLists
-	 *            list of particle voxel coordinates
-	 * @param w
-	 *            stack width
+	 * @param b a particle label.
+	 * @param p another particle label.
+	 * @param particleLabels array of particle labels
+	 * @param particleLists list of particle voxel coordinates
+	 * @param w stack width
 	 */
 	public void joinBlobs(final int b, final int p, final int[][] particleLabels,
 			final ArrayList<ArrayList<short[]>> particleLists, final int w) {
@@ -2190,8 +2144,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Iterate backwards over map entries, moving set values to their new lut
 	 * positions in the map. Updates LUT value of shifted values
 	 *
-	 * @param lut
-	 * @param map
+	 * @param lut a color look-up table.
+	 * @param map a map of LUT values.
 	 * @return false if nothing changed, true if something changed
 	 */
 	private boolean snowballLUT(final int[] lut, final ArrayList<HashSet<Integer>> map,
@@ -2229,10 +2183,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Replace old value with new value in LUT using map
 	 *
-	 * @param oldValue
-	 * @param newValue
-	 * @param lut
-	 * @param lutlist
+	 * @param oldValue a LUT value to be replaced.
+	 * @param newValue new value of the LUT value.
+	 * @param lut a look-up table.
+	 * @param lutlist hash of LUT values.
 	 */
 	private void updateLUT(final int oldValue, final int newValue, final int[] lut,
 			final ArrayList<HashSet<Integer>> lutlist) {
@@ -2240,7 +2194,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final HashSet<Integer> newList = lutlist.get(newValue);
 
 		for (final Integer in : list) {
-			lut[in.intValue()] = newValue;
+			lut[in] = newValue;
 			newList.add(in);
 		}
 		list.clear();
@@ -2249,10 +2203,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Find duplicated values and update the LUT
 	 *
-	 * @param counter
-	 * @param map
-	 * @param lut
-	 * @return
+	 * @param counter counts of LUT values.
+	 * @param map map of LUT values.
+	 * @param lut a look-up table.
+	 * @return total number of duplicate values found.
 	 */
 	private int countDuplicates(int[] counter, final ArrayList<HashSet<Integer>> map, final int[] lut) {
 		// reset to 0 the counter array
@@ -2262,7 +2216,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		for (int i = 1; i < map.size(); i++) {
 			set = map.get(i);
 			for (final Integer val : set) {
-				final int v = val.intValue();
+				final int v = val;
 				// every time a value is seen, log it
 				counter[v]++;
 				// update its LUT value if value was
@@ -2285,29 +2239,18 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	/**
 	 * Add all the neighbouring labels of a pixel to the map, except 0
-	 * (background) and the pixel's own label, which is already in the map.
+	 * (background) and the pixel's own label, which is already in the map. The
+	 * LUT gets updated with the minimum neighbour found, but this is only within
+	 * the first neighbours and not the minimum label in the pixel's neighbour
+	 * network
 	 *
-	 * The LUT gets updated with the minimum neighbour found, but this is only
-	 * within the first neighbours and not the minimum label in the pixel's
-	 * neighbour network
-	 *
-	 * @param map
-	 * @param nbh
-	 * @param centre
-	 *            current pixel's label
-	 * @param lut
+	 * @param map a map of LUT values.
+	 * @param nbh a neighbourhood in the image.
+	 * @param centre current pixel's label
 	 */
 	private void addNeighboursToMap(final ArrayList<HashSet<Integer>> map, final int[] nbh, final int centre) {
 		final HashSet<Integer> set = map.get(centre);
-		final int l = nbh.length;
-		for (int i = 0; i < l; i++) {
-			final int val = nbh[i];
-			// skip background and self-similar labels
-			// adding them again is a redundant waste of time
-			if (val == 0 || val == centre)
-				continue;
-			set.add(Integer.valueOf(val));
-		}
+        Arrays.stream(nbh).filter(n -> n > 0).forEach(set::add);
 	}
 
 	private void applyLUT(final int[][] particleLabels, final int[] lut, final int w, final int h, final int d) {
@@ -2348,15 +2291,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Get neighborhood of a pixel in a 3D image (0 border conditions)
 	 *
-	 * @param image
-	 *            3D image (int[][])
-	 * @param x
-	 *            x- coordinate
-	 * @param y
-	 *            y- coordinate
-	 * @param z
-	 *            z- coordinate (in image stacks the indexes start at 1)
-	 * @return corresponding 26-pixels neighborhood (0 if out of image)
+	 * @param neighborhood a neighbourhood in the image.
+	 * @param image 3D image (int[][])
+	 * @param x x- coordinate
+	 * @param y y- coordinate
+	 * @param z z- coordinate (in image stacks the indexes start at 1)
+	 * @param w width of the image.
+	 * @param h height of the image.
+	 * @param d depth of the image.
 	 */
 	private void get26Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y, final int z,
 			final int w, final int h, final int d) {
@@ -2415,20 +2357,16 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// return neighborhood;
 	}
 
-	/*
-	 * -----------------------------------------------------------------------
-	 */
 	/**
 	 * Get pixel in 3D image (0 border conditions)
 	 *
-	 * @param image
-	 *            3D image
-	 * @param x
-	 *            x- coordinate
-	 * @param y
-	 *            y- coordinate
-	 * @param z
-	 *            z- coordinate (in image stacks the indexes start at 1)
+	 * @param image 3D image
+	 * @param x x- coordinate
+	 * @param y y- coordinate
+	 * @param z z- coordinate (in image stacks the indexes start at 1)
+	 * @param w width of the image.
+	 * @param h height of the image.
+	 * @param d depth of the image.
 	 * @return corresponding pixel (0 if out of image)
 	 */
 	private int getPixel(final int[][] image, final int x, final int y, final int z, final int w, final int h,
@@ -2442,7 +2380,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Create a work array
 	 *
-	 * @return byte[] work array
+     * @param imp an image.
+	 * @return byte[][] work array
 	 */
 	private byte[][] makeWorkArray(final ImagePlus imp) {
 		final int s = imp.getStackSize();
@@ -2462,11 +2401,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Get a 2 d array that defines the z-slices to scan within while connecting
 	 * particles within chunkified stacks.
 	 *
-	 * @param nC
-	 *            number of chunks
+	 * @param imp an image.
+	 * @param nC number of chunks
+	 * @param slicesPerChunk number of slices chunks process.
 	 * @return scanRanges int[][] containing 4 limits: int[0][] - start of outer
-	 *         for; int[1][] end of outer for; int[3][] start of inner for;
-	 *         int[4] end of inner 4. Second dimension is chunk number.
+	 *         for; int[1][] end of outer for; int[3][] start of inner for; int[4]
+	 *         end of inner 4. Second dimension is chunk number.
 	 */
 	public int[][] getChunkRanges(final ImagePlus imp, final int nC, final int slicesPerChunk) {
 		final int nSlices = imp.getImageStackSize();
@@ -2496,16 +2436,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Return scan ranges for stitching. The first 2 values for each chunk are
-	 * the first slice of the next chunk and the last 2 values are the range
-	 * through which to replaceLabels()
+	 * Return scan ranges for stitching. The first 2 values for each chunk are the
+	 * first slice of the next chunk and the last 2 values are the range through
+	 * which to replaceLabels() Running replace labels over incrementally
+	 * increasing volumes as chunks are added is OK (for 1st interface connect
+	 * chunks 0 & 1, for 2nd connect chunks 0, 1, 2, etc.)
 	 *
-	 * Running replace labels over incrementally increasing volumes as chunks
-	 * are added is OK (for 1st interface connect chunks 0 & 1, for 2nd connect
-	 * chunks 0, 1, 2, etc.)
-	 *
-	 * @param nC
-	 *            number of chunks
+	 * @param imp an image.
+	 * @param nC number of chunks
+	 * @param slicesPerChunk number of slices chunks process.
 	 * @return scanRanges list of scan limits for connectStructures() to stitch
 	 *         chunks back together
 	 */
@@ -2555,18 +2494,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Check to see if the pixel at (m,n,o) is within the bounds of the current
 	 * stack
 	 *
-	 * @param m
-	 *            x co-ordinate
-	 * @param n
-	 *            y co-ordinate
-	 * @param o
-	 *            z co-ordinate
-	 * @param startZ
-	 *            first Z coordinate to use
-	 *
-	 * @param endZ
-	 *            last Z coordinate to use
-	 *
+	 * @param m x co-ordinate
+	 * @param n y co-ordinate
+	 * @param o z co-ordinate
+	 * @param w width of the stack.
+	 * @param h height of the stack.
+	 * @param startZ first Z coordinate to use
+	 * @param endZ last Z coordinate to use
 	 * @return True if the pixel is within the bounds of the current stack
 	 */
 	private boolean withinBounds(final int m, final int n, final int o, final int w, final int h, final int startZ,
@@ -2581,11 +2515,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Find the offset within a 1D array given 2 (x, y) offset values
 	 *
-	 * @param m
-	 *            x difference
-	 * @param n
-	 *            y difference
-	 *
+	 * @param m x difference
+	 * @param n y difference
+	 * @param w width of the stack.
 	 * @return Integer offset for looking up pixel in work array
 	 */
 	private int getOffset(final int m, final int n, final int w) {
@@ -2595,14 +2527,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Check whole array replacing m with n
 	 *
-	 * @param m
-	 *            value to be replaced
-	 * @param n
-	 *            new value
-	 * @param startZ
-	 *            first z coordinate to check
-	 * @param endZ
-	 *            last+1 z coordinate to check
+     * @param particleLabels particles labelled in the image.
+	 * @param m value to be replaced
+	 * @param n new value
+	 * @param startZ first z coordinate to check
+	 * @param endZ last+1 z coordinate to check
 	 */
 	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int startZ, final int endZ) {
 		final int s = particleLabels[0].length;
@@ -2617,16 +2546,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Check whole array replacing m with n
 	 *
-	 * @param m
-	 *            value to be replaced
-	 * @param n
-	 *            new value
-	 * @param startZ
-	 *            first z coordinate to check
-	 * @param endZ
-	 *            last+1 z coordinate to check
-	 * @param multithreaded
-	 *            true if label replacement should happen in multiple threads
+     * @param particleLabels particle labels in the image.
+	 * @param m value to be replaced
+	 * @param n new value
+	 * @param startZ first z coordinate to check
+	 * @param endZ last+1 z coordinate to check
+	 * @param multithreaded true if label replacement should happen in multiple
+	 *          threads
 	 */
 	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int startZ, final int endZ,
 			final boolean multithreaded) {
@@ -2656,8 +2582,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Get the sizes of all the particles as a voxel count
 	 *
-	 * @param particleLabels
-	 * @return particleSizes
+	 * @param particleLabels particles in the image.
+	 * @return particleSizes sizes of the particles.
 	 */
 	public long[] getParticleSizes(final int[][] particleLabels) {
 		IJ.showStatus("Getting " + sPhase + " particle sizes");
@@ -2665,7 +2591,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int wh = particleLabels[0].length;
 		// find the highest value particleLabel
 		int maxParticle = 0;
-		for (int z = 0; z < d; z++) {
+        for (int z = 0; z < d; z++) {
 			final int[] slice = particleLabels[z];
 			for (int i = 0; i < wh; i++) {
 				maxParticle = Math.max(maxParticle, slice[i]);
@@ -2686,10 +2612,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Display the particle labels as an ImagePlus
 	 *
-	 * @param particleLabels
-	 * @param imp
-	 *            original image, used for image dimensions, calibration and
-	 *            titles
+	 * @param particleLabels particles labelled in the original image.
+	 * @param imp original image, used for image dimensions, calibration and
+	 *          titles
+	 * @return an image of the particles.
 	 */
 	private ImagePlus displayParticleLabels(final int[][] particleLabels, final ImagePlus imp) {
 		final int w = imp.getWidth();
@@ -2718,8 +2644,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Return the value of this instance's labelMethod field
 	 *
-	 * @return
+	 * @return number of label method.
 	 */
+	// TODO remove
 	public int getLabelMethod() {
 		return labelMethod;
 	}
@@ -2727,8 +2654,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Set the value of this instance's labelMethod field
 	 *
-	 * @param label
-	 *            one of ParticleCounter.MULTI or .LINEAR
+	 * @param label one of ParticleCounter.MULTI or .LINEAR
 	 */
 	public void setLabelMethod(final int label) {
 		if (label != MULTI && label != LINEAR && label != MAPPED) {

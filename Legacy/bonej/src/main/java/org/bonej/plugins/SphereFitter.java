@@ -21,9 +21,7 @@
  */
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
-import java.awt.TextField;
+import java.awt.*;
 import java.util.Vector;
 
 import org.bonej.geometry.FitSphere;
@@ -41,8 +39,9 @@ import ij.gui.OvalRoi;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import ij.plugin.frame.RoiManager;
-//import ij.WindowManager;
 import ij.process.ImageProcessor;
+
+//import ij.WindowManager;
 
 /**
  * <p>
@@ -147,14 +146,6 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return;
 	}
 
-	/**
-	 *
-	 * @param imp
-	 * @param padding
-	 * @param cropFactor
-	 * @param sphereDim
-	 * @return
-	 */
 	public ImagePlus copySphere(final ImagePlus imp, final int padding, final double cropFactor,
 			final double[] sphereDim) {
 		final Calibration cal = imp.getCalibration();
@@ -219,13 +210,6 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return target;
 	}
 
-	/**
-	 *
-	 * @param imp
-	 * @param cropFactor
-	 * @param sphereDim
-	 * @return
-	 */
 	public ImagePlus copyInnerCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
@@ -281,13 +265,6 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return target;
 	}
 
-	/**
-	 *
-	 * @param imp
-	 * @param cropFactor
-	 * @param sphereDim
-	 * @return
-	 */
 	public ImagePlus copyOuterCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
@@ -347,15 +324,12 @@ public class SphereFitter implements PlugIn, DialogListener {
 	 * Add series of circular ROIs to the ROI Manager based on the centre and
 	 * radius of a sphere
 	 *
-	 * @param imp
-	 *            Needed for decalibration of calibrated (x,y,z) r values
-	 * @param roiMan
-	 *            Instance of the ROI Manager i.e. RoiManager.getInstance().
-	 * @param sphereDim
-	 *            calibrated centroid (x, y, z) and radius
-	 * @param clearRois
-	 * @throws IllegalArgumentException
-	 *             if roiMan is null, rather than instantiating RoiManager.
+	 * @param imp Needed for decalibration of calibrated (x,y,z) r values
+	 * @param roiMan Instance of the ROI Manager i.e. RoiManager.getInstance().
+	 * @param sphereDim calibrated centroid (x, y, z) and radius
+	 * @param clearRois empty ROI manager before adding the ROIs.
+	 * @throws IllegalArgumentException if roiMan is null, rather than
+	 *           instantiating RoiManager.
 	 */
 	public static void addToRoiManager(final ImagePlus imp, final RoiManager roiMan, final double[] sphereDim,
 			final boolean clearRois) throws IllegalArgumentException {

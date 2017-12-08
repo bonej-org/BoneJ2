@@ -35,6 +35,7 @@ public class MatrixUtils {
 	/**
 	 * Get the diagonal of the matrix as a column vector
 	 *
+     * @param matrix a JAMA matrix.
 	 * @return Column vector containing diagonal
 	 */
 	public static Matrix diag(final Matrix matrix) {
@@ -49,8 +50,8 @@ public class MatrixUtils {
 	/**
 	 * Print the Matrix to the ImageJ log
 	 *
-	 * @param title
-	 *            Title of the Matrix
+     * @param matrix a JAMA matrix.
+	 * @param title Title of the Matrix
 	 */
 	public static void printToIJLog(final Matrix matrix, final String title) {
 		if (!title.isEmpty())
@@ -75,6 +76,7 @@ public class MatrixUtils {
 	 * matrix, then right-handedness implies rotation only, while
 	 * left-handedness implies a reflection will be performed.
 	 *
+     * @param matrix a JAMA matrix.
 	 * @return true if the Matrix is right handed, false if it is left handed
 	 */
 	public static boolean isRightHanded(final Matrix matrix) {
@@ -108,6 +110,7 @@ public class MatrixUtils {
 	 * Check if a rotation matrix will flip the direction of the z component of
 	 * the original
 	 *
+     * @param matrix a JAMA matrix.
 	 * @return true if the rotation matrix will cause z-flipping
 	 */
 	public static boolean isZFlipped(final Matrix matrix) {
@@ -126,10 +129,8 @@ public class MatrixUtils {
 	/**
 	 * Create an m * n Matrix filled with 1
 	 *
-	 * @param m
-	 *            number of rows
-	 * @param n
-	 *            number of columns
+	 * @param m number of rows
+	 * @param n number of columns
 	 * @return m * n Matrix filled with 1
 	 */
 	public static Matrix ones(final int m, final int n) {

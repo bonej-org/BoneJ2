@@ -21,13 +21,14 @@
  */
 package org.bonej.plugins;
 
+import org.bonej.util.ImageCheck;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.VirtualStack;
 import ij.gui.GenericDialog;
 import ij.plugin.PlugIn;
-import org.bonej.util.ImageCheck;
 
 public class DeleteSliceRange implements PlugIn {
 	@Override
@@ -77,11 +78,9 @@ public class DeleteSliceRange implements PlugIn {
 	/**
 	 * Delete a range of slices from a stack
 	 *
-	 * @param stack
-	 * @param first
-	 *            the first slice to remove
-	 * @param last
-	 *            the last slice to remove
+	 * @param stack an image stack.
+	 * @param first the first slice to remove
+	 * @param last the last slice to remove
 	 */
 	public void deleteSliceRange(final ImageStack stack, final int first, final int last) {
 		for (int s = first; s <= last; s++) {
@@ -93,11 +92,9 @@ public class DeleteSliceRange implements PlugIn {
 	/**
 	 * Delete a range of slices from a virtual stack
 	 *
-	 * @param stack
-	 * @param first
-	 *            the first slice to remove
-	 * @param last
-	 *            the last slice to remove
+	 * @param stack an image stack.
+	 * @param first the first slice to remove
+	 * @param last the last slice to remove
 	 */
 	public void deleteSliceRange(final VirtualStack stack, final int first, final int last) {
 		for (int s = first; s <= last; s++) {

@@ -32,6 +32,7 @@ public class ThresholdGuesser {
 	 * image has HU calibration or plain values if not. Used as a first guess
 	 * for dialogs that have to handle both HU and uncalibrated images.
 	 *
+     * @param imp an image.
 	 * @return double[2] containing minimum and maximum thresholds
 	 */
 	public static double[] setDefaultThreshold(final ImagePlus imp) {

@@ -21,22 +21,7 @@
  */
 package org.bonej.plugins;
 
-import java.awt.BasicStroke;
-import java.awt.Checkbox;
-import java.awt.CheckboxGroup;
-import java.awt.Choice;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Label;
-import java.awt.Panel;
-import java.awt.Point;
-import java.awt.Scrollbar;
-import java.awt.Shape;
-import java.awt.TextField;
+import java.awt.*;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.ItemEvent;
@@ -371,7 +356,7 @@ public class Orienteer extends PlugInFrame
 	/**
 	 * Check if an image is already handled by Orientation
 	 *
-	 * @param imp
+	 * @param imp an image.
 	 * @return true if this image is already handled by Orientation
 	 */
 	private boolean checkHash(final ImagePlus imp) {
@@ -387,7 +372,7 @@ public class Orienteer extends PlugInFrame
 	 * Gets the labels associated with an ImagePlus. Returns null if the image
 	 * isn't being tracked by Orienteer.
 	 *
-	 * @param imp
+     * @param imp an image.
 	 * @return an array of axis labels, with the principal direction in the
 	 *         zeroth position, the principal tail in the 1st position, the
 	 *         secondary head in the 2nd position and the secondary tail in the
@@ -419,13 +404,13 @@ public class Orienteer extends PlugInFrame
 	}
 
 	/**
-	 * Retrieve the orientation of the named axis. If the axis name is not
-	 * found, the principal axis orientation is returned.
+	 * Retrieve the orientation of the named axis. If the axis name is not found,
+	 * the principal axis orientation is returned.
 	 *
-	 * @param direction
-	 *            Label you wish to match
+	 * @param direction Label you wish to match
 	 * @return orientation of the axis in radians clockwise from 12 o'clock
 	 */
+	// TODO Remove
 	public double getOrientation(final String direction) {
 		if (WindowManager.getImageCount() == 0)
 			return 0;
@@ -447,16 +432,17 @@ public class Orienteer extends PlugInFrame
 	/**
 	 * Get the orientation of the principal direction
 	 *
-	 * @param imp
+	 * @param imp an image.
 	 * @return Orientation in radians clockwise from 12 o'clock
-	 * @throws IllegalArgumentException
-	 *             if imp has not been activated by Orientation
+	 * @throws IllegalArgumentException if imp has not been activated by
+	 *           Orientation
 	 */
-	public double getOrientation(final ImagePlus imp) {
+	public double getOrientation(final ImagePlus imp)
+		throws IllegalArgumentException
+	{
 		final Integer id = new Integer(imp.getID());
 		final Double o = thetaHash.get(id);
-		if (o == null)
-			throw new IllegalArgumentException();
+		if (o == null) throw new IllegalArgumentException();
 
 		return o.doubleValue();
 	}
@@ -498,8 +484,7 @@ public class Orienteer extends PlugInFrame
 	 * Given a set of (x,y) coordinates, find the caliper diameters across the
 	 * axes
 	 *
-	 * @param points
-	 *            in double[n][2] format
+	 * @param points in double[n][2] format
 	 * @return caliper diameters across the principal and secondary axes (zeroth
 	 *         and first elements respectively)
 	 */
@@ -526,9 +511,8 @@ public class Orienteer extends PlugInFrame
 	/**
 	 * Rotate the direction indicator by a given angle
 	 *
-	 * @param deltaTheta
-	 *            number of radians to rotate by (+ve is clockwise, -ve is
-	 *            anti-clockwise)
+	 * @param deltaTheta number of radians to rotate by (+ve is clockwise, -ve is
+	 *          anti-clockwise)
 	 */
 	public void rotate(final double deltaTheta) {
 		if (WindowManager.getImageCount() == 0)
@@ -550,11 +534,10 @@ public class Orienteer extends PlugInFrame
 	/**
 	 * Rotate the principal direction to a new angle
 	 *
-	 * @param newTheta
-	 *            desired orientation in radians clockwise from 12 o'clock of
-	 *            the principal direction
+	 * @param newTheta desired orientation in radians clockwise from 12 o'clock of
+	 *          the principal direction
 	 */
-	public void rotateTo(final double newTheta) {
+    private void rotateTo(final double newTheta) {
 		rotate(newTheta - this.theta);
 		this.theta = newTheta;
 		if (WindowManager.getImageCount() == 0)
@@ -613,7 +596,7 @@ public class Orienteer extends PlugInFrame
 			return;
 		// clear the orientation overlay from open images
 		for (final Integer i : thetaHash.keySet()) {
-			WindowManager.getImage(i.intValue()).setOverlay(null);
+			WindowManager.getImage(i).setOverlay(null);
 		}
 	}
 

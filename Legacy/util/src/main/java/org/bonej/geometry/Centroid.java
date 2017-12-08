@@ -27,7 +27,7 @@ public class Centroid {
 	 * Find the centroid of an array in double[n][i] format, where n = number of
 	 * points and i = number of dimensions
 	 *
-	 * @param points
+	 * @param points a set of points in N-dimensions.
 	 * @return array containing centroid in i dimensions
 	 */
 	public static double[] getCentroid(final double[][] points) {

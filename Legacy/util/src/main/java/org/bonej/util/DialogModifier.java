@@ -21,28 +21,21 @@
  */
 package org.bonej.util;
 
-import java.awt.Checkbox;
-import java.awt.Choice;
-import java.awt.Component;
-import java.awt.Label;
-import java.awt.Panel;
-import java.awt.TextField;
+import java.awt.*;
 import java.util.Vector;
 
 import ij.IJ;
 import ij.gui.GenericDialog;
 
 public class DialogModifier {
+	
 	/**
 	 * Replace the unit string to the right of all numeric textboxes in a
 	 * GenericDialog
 	 *
-	 * @param gd
-	 *            the dialog window
-	 * @param oldUnits
-	 *            original unit string
-	 * @param newUnits
-	 *            new unit string
+	 * @param gd the dialog window
+	 * @param oldUnits original unit string
+	 * @param newUnits new unit string
 	 */
 	public static void replaceUnitString(final GenericDialog gd, final String oldUnits, final String newUnits) {
 		for (int n = 0; n < gd.getComponentCount(); n++) {
@@ -63,8 +56,8 @@ public class DialogModifier {
 	 * ArrayIndexOutOfBounds exception if gd.getNext... is called elsewhere in
 	 * dialogItemChanged().
 	 *
-	 * @param gd
-	 * @param comps
+	 * @param gd the dialog window
+	 * @param comps a list of components in the dialog.
 	 */
 	public static void registerMacroValues(final GenericDialog gd, final Component[] comps) {
 		try {
@@ -94,13 +87,11 @@ public class DialogModifier {
 
 	/**
 	 * Check all the numeric text fields in a dialog and return false if any of
-	 * them cannot be parsed into a number. Accepts any decimal number,
-	 * "Infinity" and "NaN". Rejects strings of 0 length or that contain any
-	 * non-decimal characters.
+	 * them cannot be parsed into a number. Accepts any decimal number, "Infinity"
+	 * and "NaN". Rejects strings of 0 length or that contain any non-decimal
+	 * characters.
 	 *
-	 *
-	 * @param textFields
-	 *            e.g. result of GenericDialog.getNumericFields();
+	 * @param textFields e.g. result of GenericDialog.getNumericFields();
 	 * @return true if all numeric text fields contain a valid number
 	 */
 	public static boolean allNumbersValid(final Vector<?> textFields) {

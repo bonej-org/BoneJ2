@@ -43,7 +43,7 @@ public class FitSphere {
 	 *            double[n][3] containing n (x, y, z) coordinates
 	 * @return double[4] containing (x, y, z) centre and radius
 	 * @throws IllegalArgumentException
-	 *             if n < 5
+	 *             if n &lt; 5
 	 */
 	public static double[] fitSphere(final double[][] points) {
 		final int nPoints = points.length;

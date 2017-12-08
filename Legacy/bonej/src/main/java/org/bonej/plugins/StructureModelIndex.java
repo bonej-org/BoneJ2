@@ -140,7 +140,7 @@ public class StructureModelIndex implements PlugIn {
 	 * Calculate the SMI according to the SkyScan technical manual: make a
 	 * surface mesh, get the surface area (s<sub>1</sub>) and volume (v), dilate
 	 * the voxel model, get the new surface area (s<sub>2</sub>), calculate SMI
-	 * as <br/>
+	 * as
 	 * smi = 6 * (s<sub>2</sub>-s<sub>1</sub>)*v / s<sub>1</sub><sup>2</sup>
 	 * </p>
 	 *
@@ -198,12 +198,10 @@ public class StructureModelIndex implements PlugIn {
 	 * Hildebrand and Rüegsegger. Creates a surface model, dilates it by a small
 	 * increment and compares the areas before and after dilation.
 	 * </p>
-	 *
 	 * <p>
-	 * This method is preferred to voxel-dilating methods, like skyScan() in
-	 * this class
+	 * This method is preferred to voxel-dilating methods, like skyScan() in this
+	 * class
 	 * </p>
-	 *
 	 * <p>
 	 * Hildebrand T, Rüegsegger P. Quantification of Bone Microarchitecture with
 	 * the Structure Model Index. Comput Methods Biomech Biomed Engin
@@ -212,13 +210,10 @@ public class StructureModelIndex implements PlugIn {
 	 *
 	 * @see <a href="http://dx.doi.org/10.1080/01495739708936692">doi:
 	 *      10.1080/01495739708936692</a>
-	 *
-	 * @param imp
-	 *            binary 3D image
-	 * @param voxelResampling
-	 *            how much to resample voxels while creating surface mesh
-	 * @param meshSmoothing
-	 *            how much smoothing to apply to the mesh
+	 * @param imp binary 3D image
+	 * @param voxelResampling how much to resample voxels while creating surface
+	 *          mesh
+	 * @param meshSmoothing how much smoothing to apply to the mesh
 	 * @return SMI
 	 */
 	@SuppressWarnings("unchecked")

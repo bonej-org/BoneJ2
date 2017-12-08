@@ -1,13 +1,12 @@
 package org.bonej.menuWrappers;
 
-import java.awt.Checkbox;
+import java.awt.*;
 
+import org.bonej.plugins.UsageReporter;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.ResultInserter;
 import org.bonej.util.RoiMan;
-import org.bonej.plugins.UsageReporter;
 
-import sc.fiji.localThickness.LocalThicknessWrapper;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -16,18 +15,18 @@ import ij.macro.Interpreter;
 import ij.plugin.PlugIn;
 import ij.plugin.frame.RoiManager;
 import ij.process.StackStatistics;
+import sc.fiji.localThickness.LocalThicknessWrapper;
 
 /**
- * A wrapper plugin to add the LocalThickness plugin under Plugins>BoneJ menu
- * path.
- *
+ * A wrapper plugin to add the LocalThickness plugin under BoneJ menu path.
+ * <p>
  * Also shows a custom setup dialog that introduces new options, and overrides
  * the options in the original LocalThickness plugin. Displays additional
  * incompatibility warnings to the user.
- *
+ * </p>
+ * 
  * @author Michael Doube
  * @author Richard Domander
- * @todo Overwrite input or not?
  * @deprecated Replaced by ThicknessWrapper in BoneJ2
  */
 @Deprecated

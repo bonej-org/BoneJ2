@@ -55,7 +55,7 @@ public class BoneList {
 	/**
 	 * Guess from the image title which bone is in the image
 	 *
-	 * @param imp
+	 * @param imp an image of a whole bone.
 	 * @return integer code relating to the position of the bone's name in the
 	 *         bone list
 	 */
@@ -67,10 +67,11 @@ public class BoneList {
 	/**
 	 * Return the boneID of a bone in boneList that matches the input string
 	 *
-	 * @param boneString
-	 * @return
+	 * @param boneString a String with a name of a bone
+	 * @return index of the corresponding bone in {@link #boneList}
 	 */
 	public static int guessBone(final String boneString) {
+	    // TODO Return -1 if none match
 		int boneID = 0;
 		for (int n = 0; n < boneList.length; n++) {
 			final Pattern p = Pattern.compile(boneList[n], Pattern.CASE_INSENSITIVE);

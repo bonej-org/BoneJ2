@@ -21,7 +21,7 @@
  */
 package org.bonej.util;
 
-import java.awt.Rectangle;
+import java.awt.*;
 import java.util.ArrayList;
 
 import ij.ImagePlus;
@@ -42,8 +42,8 @@ public class RoiMan {
 	/**
 	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
 	 *
-	 * @param imp
-	 * @param roiMan
+	 * @param imp an image.
+	 * @param roiMan an instance of {@link RoiManager}
 	 * @return double[n][3] containing n (x, y, z) coordinates or null if there
 	 *         are no points
 	 */
@@ -81,9 +81,9 @@ public class RoiMan {
 	 * Return a list of ROIs that are active in the given slice, sliceNumber.
 	 * ROIs without a slice number are assumed to be active in all slices.
 	 *
-	 * @param roiMan
-	 * @param stack
-	 * @param sliceNumber
+	 * @param roiMan an instance of {@link RoiManager}
+	 * @param stack a image stack
+	 * @param sliceNumber the number of slice in the stack.
 	 * @return A list of active ROIs on the slice. Returns an empty list if
 	 *         roiMan == null or stack == null Returns an empty list if slice
 	 *         number is out of bounds
@@ -117,15 +117,12 @@ public class RoiMan {
 	/**
 	 * Find the x, y and z limits of the ROIs in the ROI Manager
 	 *
-	 * @param roiMan
-	 *            A collection of ROIs
-	 * @param stack
-	 *            The stack inside which the ROIs must fit (max limits).
+	 * @param roiMan A collection of ROIs
+	 * @param stack The stack inside which the ROIs must fit (max limits).
 	 * @return int[] containing x min, x max, y min, y max, z min and z max.
-	 *         Returns null if roiMan == null or if roiMan.getCount() == 0
-	 *         Returns null if stack == null If any of the ROIs contains no
-	 *         slice information, z min is set to 1 and z max is set to
-	 *         stack.getSize()
+	 *         Returns null if roiMan == null or if roiMan.getCount() == 0 Returns
+	 *         null if stack == null If any of the ROIs contains no slice
+	 *         information, z min is set to 1 and z max is set to stack.getSize()
 	 */
 	public static int[] getLimits(final RoiManager roiMan, final ImageStack stack) {
 		if (roiMan == null || roiMan.getCount() == 0) {
@@ -190,14 +187,11 @@ public class RoiMan {
 	/**
 	 * Crops the given rectangle to the area [0, 0, width, height]
 	 *
-	 * @param bounds
-	 *            The rectangle to be fitted
-	 * @param width
-	 *            Maximum width of the rectangle
-	 * @param height
-	 *            Maximum height of the rectangle
-	 * @return false if the height or width of the fitted rectangle is 0
-	 *         (Couldn't be cropped inside the area).
+	 * @param bounds The rectangle to be fitted
+	 * @param width Maximum width of the rectangle
+	 * @param height Maximum height of the rectangle
+	 * @return false if the height or width of the fitted rectangle is 0 (Couldn't
+	 *         be cropped inside the area).
 	 */
 	public static boolean getSafeRoiBounds(final Rectangle bounds, final int width, final int height) {
 		final int xMin = clamp(bounds.x, 0, width);
@@ -216,17 +210,12 @@ public class RoiMan {
 	 * Crop a stack to the limits of the ROIs in the ROI Manager and optionally
 	 * fill the background with a single pixel value.
 	 *
-	 * @param roiMan
-	 *            ROI Manager containing ROIs
-	 * @param sourceStack
-	 *            input stack
-	 * @param fillBackground
-	 *            if true, background will be set to value. NB Will not set the
-	 *            background of the areas copied from sourceStack
-	 * @param fillColor
-	 *            value to set background to
-	 * @param padding
-	 *            empty pixels to pad faces of cropped stack with
+	 * @param roiMan ROI Manager containing ROIs
+	 * @param sourceStack input stack
+	 * @param fillBackground if true, background will be set to value. NB Will not
+	 *          set the background of the areas copied from sourceStack
+	 * @param fillColor value to set background to
+	 * @param padding empty pixels to pad faces of cropped stack with
 	 * @return cropped copy of input stack
 	 */
 	public static ImageStack cropStack(final RoiManager roiMan, final ImageStack sourceStack,
@@ -288,6 +277,8 @@ public class RoiMan {
 
 	/**
 	 * Remove all ROIs from the ROI manager
+     *
+     * @param roiMan an instance of {@link RoiManager}.
 	 */
 	public static void deleteAll(final RoiManager roiMan) {
 		final Roi[] rois = roiMan.getRoisAsArray();
@@ -301,22 +292,15 @@ public class RoiMan {
 
 	/**
 	 * Copies the pixels in the given ROI from the source image to the target
-	 * image. Copies only those pixels where the color of the given mask > 0.
+	 * image. Copies only those pixels where the color of the given mask &gt; 0.
 	 *
-	 * @param sourceProcessor
-	 *            Copy source
-	 * @param targetProcessor
-	 *            Copy target
-	 * @param minX
-	 *            Horizontal start of the copy area 0 <= minX < width
-	 * @param minY
-	 *            Vertical start of the copy area 0 <= minY < height
-	 * @param maxX
-	 *            Horizontal end of the copy area 0 <= maxX <= width
-	 * @param maxY
-	 *            Vertical end of the copy area 0 <= maxY <= height
-	 * @param padding
-	 *            Number pixels added to each side of the copy target
+	 * @param sourceProcessor Copy source
+	 * @param targetProcessor Copy target
+	 * @param minX Horizontal start of the copy area 0 &le; minX &lt; width
+	 * @param minY Vertical start of the copy area 0 &le; minY &lt; height
+	 * @param maxX Horizontal end of the copy area 0 &le; maxX &le; width
+	 * @param maxY Vertical end of the copy area 0 &le; maxY &le; height
+	 * @param padding Number pixels added to each side of the copy target
 	 */
 	public static void copyRoiWithMask(final ImageProcessor sourceProcessor, final ImageProcessor targetProcessor,
 			final int minX, final int minY, final int maxX, final int maxY, final int padding) {
@@ -358,14 +342,10 @@ public class RoiMan {
 	/**
 	 * Copies pixels under all the ROIs on a slide
 	 *
-	 * @param sourceProcessor
-	 *            The source image slide
-	 * @param targetProcessor
-	 *            The target slide
-	 * @param sliceRois
-	 *            List of all the ROIs on the source slide
-	 * @param padding
-	 *            Number of pixels added on each side of the target slide
+	 * @param sourceProcessor The source image slide
+	 * @param targetProcessor The target slide
+	 * @param sliceRois List of all the ROIs on the source slide
+	 * @param padding Number of pixels added on each side of the target slide
 	 */
 	private static void copySlice(final ImageProcessor sourceProcessor, final ImageProcessor targetProcessor,
 			final ArrayList<Roi> sliceRois, final int padding) {
@@ -395,20 +375,13 @@ public class RoiMan {
 	 * Copies the pixels in the given ROI from the source image to the target
 	 * image.
 	 *
-	 * @param sourceProcessor
-	 *            Copy source
-	 * @param targetProcessor
-	 *            Copy target
-	 * @param minX
-	 *            Horizontal start of the copy area 0 <= minX < width
-	 * @param minY
-	 *            Vertical start of the copy area 0 <= minY < height
-	 * @param maxX
-	 *            Horizontal end of the copy area 0 <= maxX <= width
-	 * @param maxY
-	 *            Vertical end of the copy area 0 <= maxY <= height
-	 * @param padding
-	 *            Number pixels added to each side of the copy target
+	 * @param sourceProcessor Copy source
+	 * @param targetProcessor Copy target
+	 * @param minX Horizontal start of the copy area 0 &le; minX &lt; width
+	 * @param minY Vertical start of the copy area 0 &le; minY &lt; height
+	 * @param maxX Horizontal end of the copy area 0 &le; maxX &le; width
+	 * @param maxY Vertical end of the copy area 0 &le; maxY &le; height
+	 * @param padding Number pixels added to each side of the copy target
 	 */
 	private static void copyRoi(final ImageProcessor sourceProcessor, final ImageProcessor targetProcessor,
 			final int minX, final int minY, final int maxX, final int maxY, final int padding) {

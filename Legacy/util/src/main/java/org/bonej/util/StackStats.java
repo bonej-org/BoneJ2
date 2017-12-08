@@ -31,14 +31,13 @@ import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 
 public class StackStats {
+
 	/**
 	 * Work out some summary stats
 	 *
-	 * @param imp
-	 *            32-bit thickness image
-	 * @return double[] containing mean, standard deviation and maximum as its
-	 *         0th and 1st and 2nd elements respectively
-	 *
+	 * @param imp 32-bit thickness image
+	 * @return double[] containing mean, standard deviation and maximum as its 0th
+	 *         and 1st and 2nd elements respectively
 	 */
 	@Deprecated
 	public static double[] meanStdDev(final ImagePlus imp) {
@@ -83,8 +82,8 @@ public class StackStats {
 	/**
 	 * Get a histogram of stack's pixel values
 	 *
-	 * @param imp2
-	 * @return
+	 * @param imp an image
+	 * @return a histogram of the image.
 	 */
 	public static int[] getStackHistogram(final ImagePlus imp) {
 		final int d = imp.getStackSize();

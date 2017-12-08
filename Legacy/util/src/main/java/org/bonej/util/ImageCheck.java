@@ -52,7 +52,7 @@ public class ImageCheck {
 	/**
 	 * Check if image is binary
 	 *
-	 * @param imp
+	 * @param imp a GRAY8 type image.
 	 * @return true if image is binary
 	 */
 	public static boolean isBinary(final ImagePlus imp) {
@@ -72,8 +72,8 @@ public class ImageCheck {
 	/**
 	 * Check if an image is a multi-slice image stack
 	 *
-	 * @param imp
-	 * @return true if the image has >= 2 slices
+	 * @param imp an image.
+	 * @return true if the image has &ge; 2 slices
 	 */
 	public static boolean isMultiSlice(final ImagePlus imp) {
 		if (imp == null) {
@@ -90,10 +90,8 @@ public class ImageCheck {
 	 * Check if the image's voxels are isotropic in all 3 dimensions (i.e. are
 	 * placed on a cubic grid)
 	 *
-	 * @param imp
-	 *            image to test
-	 * @param tolerance
-	 *            tolerated fractional deviation from equal length
+	 * @param imp image to test
+	 * @param tolerance tolerated fractional deviation from equal length
 	 * @return true if voxel width == height == depth
 	 */
 	public static boolean isVoxelIsotropic(final ImagePlus imp, final double tolerance) {
@@ -126,7 +124,7 @@ public class ImageCheck {
 	/**
 	 * Check that the voxel thickness is correct
 	 *
-	 * @param imp
+	 * @param imp an image.
 	 * @return voxel thickness based on DICOM header information. Returns -1 if
 	 *         there is no DICOM slice position information.
 	 */
@@ -181,10 +179,9 @@ public class ImageCheck {
 	/**
 	 * Get the value associated with a DICOM tag from an ImagePlus header
 	 *
-	 * @param imp
-	 * @param slice
-	 * @param tag
-	 *            , in 0000,0000 format.
+	 * @param imp an image.
+	 * @param slice number of slice in image.
+	 * @param tag a DICOM tag.
 	 * @return the value associated with the tag
 	 */
 	private static String getDicomAttribute(final ImagePlus imp, final int slice, final String tag) {
@@ -239,7 +236,10 @@ public class ImageCheck {
 		return true;
 	}
 
-	/** Returns true if the environment has everything BoneJ needs ot run */
+	/**
+     * Checks if BoneJ can run on the current installation.
+     *
+     * @return true if environment is set up correctly. */
 	public static boolean checkEnvironment() {
 		try {
 			Class.forName("ij3d.ImageJ3DViewer");
@@ -254,7 +254,7 @@ public class ImageCheck {
 	/**
 	 * Guess whether an image is Hounsfield unit calibrated
 	 *
-	 * @param imp
+	 * @param imp an image.
 	 * @return true if the image might be HU calibrated
 	 */
 	public static boolean huCalibrated(final ImagePlus imp) {

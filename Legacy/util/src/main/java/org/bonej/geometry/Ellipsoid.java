@@ -69,7 +69,7 @@ public class Ellipsoid {
 	/**
 	 * Instantiate an ellipsoid from the result of FitEllipsoid
 	 *
-	 * @param ellipsoid
+	 * @param ellipsoid the properties of an ellipsoid.
 	 */
 	public Ellipsoid(final Object[] ellipsoid) {
 		final double[] centre = (double[]) ellipsoid[0];
@@ -100,13 +100,13 @@ public class Ellipsoid {
 	 * Construct an Ellipsoid from the radii (a,b,c), centroid (cx, cy, cz) and
 	 * Eigenvectors.
 	 *
-	 * @param a
-	 * @param b
-	 * @param c
-	 * @param cx
-	 * @param cy
-	 * @param cz
-	 * @param eigenVectors
+	 * @param a 1st radius.
+	 * @param b 2nd radius.
+	 * @param c 3rd radius.
+	 * @param cx centroid x-coordinate.
+	 * @param cy centroid y-coordinate.
+	 * @param cz centroid z-coordinate.
+	 * @param eigenVectors the orientation of the ellipsoid.
 	 */
 	public Ellipsoid(final double a, final double b, final double c, final double cx, final double cy, final double cz,
 			final double[][] eigenVectors) {
@@ -128,11 +128,10 @@ public class Ellipsoid {
 	/**
 	 * Gets the volume of this ellipsoid, calculated as PI * a * b * c * 4 / 3
 	 *
-	 * @return
+	 * @return copy of the stored volume value.
 	 */
 	public double getVolume() {
-		final double d = this.volume;
-		return d;
+        return this.volume;
 	}
 
 	private void setVolume() {
@@ -140,6 +139,8 @@ public class Ellipsoid {
 	}
 
 	/**
+     * Gets a copy of the radii.
+     *
 	 * @return the semiaxis lengths a, b and c. Note these are not ordered by
 	 *         size, but the order does relate to the 0th, 1st and 2nd columns
 	 *         of the rotation matrix respectively.
@@ -152,14 +153,14 @@ public class Ellipsoid {
 	/**
 	 * Method based on the inequality
 	 *
-	 * (X-X0)^T H (X-X0) <= 1
+	 * (X-X0)^T H (X-X0) &le; 1
 	 *
 	 * Where X is the test point, X0 is the centroid, H is the ellipsoid's 3x3
 	 * matrix
 	 *
-	 * @param x
-	 * @param y
-	 * @param z
+	 * @param x x-coordinate of the point.
+	 * @param y y-coordinate of the point.
+	 * @param z z-coordinate of the point.
 	 * @return true if the point (x,y,z) lies inside or on the ellipsoid, false
 	 *         otherwise
 	 */
@@ -272,7 +273,7 @@ public class Ellipsoid {
 	/**
 	 * Dilate all three axes by a fractional increment
 	 *
-	 * @param increment
+	 * @param increment scaling factor.
 	 */
 	public void dilate(final double increment) {
 		dilate(this.ra * increment, this.rb * increment, this.rc * increment);
@@ -281,8 +282,9 @@ public class Ellipsoid {
 	/**
 	 * Constrict all three axes by a fractional increment
 	 *
-	 * @param increment
+	 * @param increment scaling factor.
 	 */
+	// TODO Shouldn't this divide the radii, or does it call the wrong dilate..?!
 	public void contract(final double increment) {
 		dilate(-increment);
 	}
@@ -290,9 +292,9 @@ public class Ellipsoid {
 	/**
 	 * Dilate the ellipsoid semiaxes by independent absolute amounts
 	 *
-	 * @param da
-	 * @param db
-	 * @param dc
+	 * @param da value added to the 1st radius.
+	 * @param db value added to the 2nd radius.
+	 * @param dc value added to the 3rd radius.
 	 */
 	public void dilate(final double da, final double db, final double dc) {
 		setRadii(this.ra + da, this.rb + db, this.rc + dc);
@@ -301,12 +303,9 @@ public class Ellipsoid {
 	/**
 	 * Translate the ellipsoid to a given new centroid
 	 *
-	 * @param x
-	 *            new centroid x-coordinate
-	 * @param y
-	 *            new centroid y-coordinate
-	 * @param z
-	 *            new centroid z-coordinate
+	 * @param x new centroid x-coordinate
+	 * @param y new centroid y-coordinate
+	 * @param z new centroid z-coordinate
 	 */
 	public void setCentroid(final double x, final double y, final double z) {
 		this.cx = x;
@@ -317,8 +316,7 @@ public class Ellipsoid {
 	/**
 	 * Rotate the ellipsoid by the given 3x3 Matrix
 	 *
-	 * @param R
-	 *            a 3x3 rotation matrix
+	 * @param rotation a 3x3 rotation matrix
 	 */
 	public void rotate(final double[][] rotation) {
 		setRotation(times(this.ev, rotation));
@@ -326,6 +324,8 @@ public class Ellipsoid {
 
 	/**
 	 * Set rotation to the supplied rotation matrix. Does no error checking.
+     *
+     * @param rotation a 3x3 rotation matrix
 	 */
 	public void setRotation(final double[][] rotation) {
 		this.ev = rotation.clone();
@@ -335,22 +335,23 @@ public class Ellipsoid {
 	/**
 	 * Return a copy of the ellipsoid's eigenvector matrix
 	 *
-	 * @return
+	 * @return a 3x3 rotation matrix
 	 */
 	public double[][] getRotation() {
 		return ev.clone();
 	}
 
 	/**
-	 * Set the radii (semiaxes). No ordering is assumed, except with regard to
-	 * the columns of the eigenvector rotation matrix (i.e. a relates to the 0th
+	 * Set the radii (semiaxes). No ordering is assumed, except with regard to the
+	 * columns of the eigenvector rotation matrix (i.e. a relates to the 0th
 	 * eigenvector column, b to the 1st and c to the 2nd)
 	 *
-	 * @param a
-	 * @param b
-	 * @param c
+	 * @param a 1st radius of the ellipsoid.
+	 * @param b 2nd radius of the ellipsoid.
+	 * @param c 3rd radius of the ellipsoid.
+	 * @throws IllegalArgumentException if radii are non-positive.
 	 */
-	public void setRadii(final double a, final double b, final double c) {
+	public void setRadii(final double a, final double b, final double c) throws IllegalArgumentException {
 		if (a <= 0 || b <= 0 || c <= 0) {
 			throw new IllegalArgumentException("Ellipsoid cannot have semiaxis <= 0");
 		}
@@ -441,10 +442,8 @@ public class Ellipsoid {
 	/**
 	 * High performance 3x3 matrix multiplier with no bounds or error checking
 	 *
-	 * @param a
-	 *            3x3 matrix
-	 * @param b
-	 *            3x3 matrix
+	 * @param a 3x3 matrix
+	 * @param b 3x3 matrix
 	 * @return result of matrix multiplication, c = ab
 	 */
 	private static double[][] times(final double[][] a, final double[][] b) {
@@ -478,6 +477,9 @@ public class Ellipsoid {
 
 	/**
 	 * Transpose a 3x3 matrix in double[][] format. Does no error checking.
+     *
+     * @param a a matrix.
+     * @return new transposed matrix.
 	 */
 	public static double[][] transpose(final double[][] a) {
 		final double[][] t = new double[3][3];
@@ -494,21 +496,20 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Calculate the matrix representation of the ellipsoid (centre,
-	 * eigenvalues, eigenvectors) from the equation variables <i>ax</i>
-	 * <sup>2</sup> + <i>by</i><sup>2</sup> + <i>cz</i><sup>2</sup> + 2
-	 * <i>dxy</i> + 2<i>exz</i> + 2<i>fyz</i> + 2<i>gx</i> + 2<i>hy</i> + 2
-	 * <i>iz</i> = 1 <br />
+	 * Calculate the matrix representation of the ellipsoid (centre, eigenvalues,
+	 * eigenvectors) from the equation <i>ax</i> <sup>2</sup> +
+	 * <i>by</i><sup>2</sup> + <i>cz</i><sup>2</sup> + 2 <i>dxy</i> + 2<i>exz</i>
+	 * + 2<i>fyz</i> + 2<i>gx</i> + 2<i>hy</i> + 2 <i>iz</i> = 1
 	 *
-	 * @param a
-	 * @param b
-	 * @param c
-	 * @param d
-	 * @param e
-	 * @param f
-	 * @param g
-	 * @param h
-	 * @param i
+	 * @param a coefficient of <em>x<sup>2</sup></em>
+	 * @param b coefficient of <em>y<sup>2</sup></em>
+	 * @param c coefficient of <em>z<sup>2</sup></em>.
+	 * @param d coefficient of <em>x</em><em>y</em>.
+	 * @param e coefficient of <em>x</em><em>z</em>.
+	 * @param f coefficient of <em>y</em><em>z</em>.
+	 * @param g coefficient of 2<em>x</em>.
+	 * @param h coefficient of 2<em>y</em>.
+	 * @param i coefficient of 2<em>z</em>.
 	 * @return Object[] array containing centre (double[3]), eigenvalues
 	 *         (double[3][3]), eigenvectors (double[3][3]), and the
 	 *         EigenvalueDecomposition
@@ -546,7 +547,7 @@ public class Ellipsoid {
 	/**
 	 * Perform a deep copy of this Ellipsoid
 	 *
-	 * @return
+	 * @return a copy of the instance.
 	 */
 	public Ellipsoid copy() {
 		final Ellipsoid copy = new Ellipsoid(this.ra, this.rb, this.rc, this.cx, this.cy, this.cz, this.ev.clone());

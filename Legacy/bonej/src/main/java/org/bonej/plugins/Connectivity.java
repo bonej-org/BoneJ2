@@ -139,11 +139,9 @@ public class Connectivity implements PlugIn {
 	/**
 	 * Calculate connectivity density
 	 *
-	 * @param imp
-	 *            Binary ImagePlus
-	 * @param connectivity
-	 *            Result of getConnectivity()
-	 * @return
+	 * @param imp Binary ImagePlus
+	 * @param connectivity Result of getConnectivity()
+	 * @return connectivity density.
 	 */
 	public double getConnDensity(final ImagePlus imp, final double connectivity) {
 		setDimensions(imp);
@@ -159,8 +157,7 @@ public class Connectivity implements PlugIn {
 	/**
 	 * Return the connectivity of the image, which is 1 - deltaChi.
 	 *
-	 * @param deltaChi
-	 *            result of getDeltaChi()
+	 * @param deltaChi result of getDeltaChi()
 	 * @return double connectivity
 	 */
 	public double getConnectivity(final double deltaChi) {
