@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <!--<module>Modern</module>-->
+        <module>Modern</module>
         <module>Legacy</module>
     </modules>
 

@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.bonej</groupId>
         <artifactId>pom-bonej-legacy</artifactId>
-        <version>3.1.0-SNAPSHOT</version>
+        <version>4.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>bonej-legacy-pqct</artifactId>

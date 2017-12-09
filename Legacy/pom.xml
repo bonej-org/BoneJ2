@@ -12,7 +12,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej-legacy</artifactId>
-    <version>4.0.0</version>
+    <version>4.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>POM BoneJ legacy</name>
@@ -134,7 +134,7 @@
 
     <modules>
         <module>bonej</module>
-        <!--<module>pqct</module>-->
+        <module>pqct</module>
         <module>util</module>
     </modules>
 
