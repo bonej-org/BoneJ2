@@ -24,6 +24,8 @@ package org.bonej.util;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 
+/** @deprecated Code is unused. */
+@Deprecated
 public class ThresholdGuesser {
 	private static final double airHU = -1000;
 

@@ -35,7 +35,9 @@ import ij.process.ImageProcessor;
  * Do useful things with ImageJ's ROI Manager
  *
  * @author Michael Doube
+ * @deprecated Code is never used outside its own tests.
  */
+@Deprecated
 public class RoiMan {
 	public static final int NO_SLICE_NUMBER = -1;
 

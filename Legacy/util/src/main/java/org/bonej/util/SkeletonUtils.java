@@ -29,7 +29,9 @@ import ij.ImagePlus;
  *
  * @author Michael Doube
  * @author Mark Hiner
+ * @deprecated Code is never used.
  */
+@Deprecated
 public class SkeletonUtils {
 	private static final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 

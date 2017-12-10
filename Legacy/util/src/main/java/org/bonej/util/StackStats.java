@@ -30,6 +30,8 @@ import ij.gui.Roi;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 
+/** @deprecated Called only from deprecated code. */
+@Deprecated
 public class StackStats {
 
 	/**
