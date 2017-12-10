@@ -32,6 +32,7 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.geometry.FitEllipsoid;
+import org.bonej.geometry.Vectors;
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
@@ -929,13 +930,32 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		while (iter.hasNext()) {
 			final List<Point3f> points = iter.next();
 			if (null != points) {
-				final double surfaceArea = MeasureSurface.getSurfaceArea(points);
+				final double surfaceArea = getSurfaceArea(points);
 				surfaceAreas[p] = surfaceArea;
 			}
 			p++;
 		}
 		return surfaceAreas;
 	}
+
+	/**
+	 * Calculate surface area of the isosurface
+	 *
+	 * @param points in 3D triangle mesh
+	 * @return surface area
+	 */
+    private static double getSurfaceArea(final List<Point3f> points) {
+        double sumArea = 0;
+        final int nPoints = points.size();
+        final Point3f origin = new Point3f(0.0f, 0.0f, 0.0f);
+        for (int n = 0; n < nPoints; n += 3) {
+            IJ.showStatus("Calculating surface area...");
+            final Point3f cp = Vectors.crossProduct(points.get(n), points.get(n + 1), points.get(n + 2));
+            final double deltaArea = 0.5 * cp.distance(origin);
+            sumArea += deltaArea;
+        }
+        return sumArea;
+    }
 
 	private double[] getSurfaceVolume(final ArrayList<List<Point3f>> surfacePoints) {
 		final Iterator<List<Point3f>> iter = surfacePoints.iterator();
