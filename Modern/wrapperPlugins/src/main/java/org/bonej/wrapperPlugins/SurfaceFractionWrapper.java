@@ -193,6 +193,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
 			cancel(NOT_3D_IMAGE);
+            return;
 		}
 
 		if (!ElementUtil.isColorsBinary(inputImage)) {
