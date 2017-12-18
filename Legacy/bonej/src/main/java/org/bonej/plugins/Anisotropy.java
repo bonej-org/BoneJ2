@@ -80,8 +80,9 @@ import ij3d.Image3DUniverse;
  *      </a>.
  *      </p>
  * @author Michael Doube
- *
+ * @deprecated Replaced by AnisotropyWrapper in Modern
  */
+@Deprecated
 public class Anisotropy implements PlugIn, DialogListener {
 
 	@Override
