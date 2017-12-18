@@ -36,9 +36,7 @@ import ij.Prefs;
  *      >http://repo.or.cz/w/trakem2.git?a=blob;f=mpi/fruitfly/general/
  *      MultiThreading.java;hb=HEAD</a>
  *
- * @deprecated Called only from deprecated code.
  */
-@Deprecated
 public class Multithreader {
 
 	public static Thread[] newThreads() {

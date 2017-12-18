@@ -34,9 +34,7 @@ import ij.measure.ResultsTable;
  * </p>
  *
  * @author Michael Doube
- * @deprecated Code is never used.
  */
-@Deprecated
 public class ResultInserter {
 	public static final ResultInserter INSTANCE = new ResultInserter();
 	private static ResultsTable rt;

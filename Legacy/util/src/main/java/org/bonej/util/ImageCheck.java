@@ -31,9 +31,7 @@ import ij.process.ImageStatistics;
  * Check if an image conforms to the type defined by each method.
  *
  * @author Michael Doube
- * @deprecated Code is only called from deprecated classes.
  */
-@Deprecated
 public class ImageCheck {
 
 	/**

@@ -36,9 +36,7 @@ import ij.process.ImageProcessor;
  * Static methods to generate images for testing
  *
  * @author Michael Doube
- * @deprecated Only called from tests of deprecated code.
  */
-@Deprecated
 public class TestDataMaker {
 
 	/**

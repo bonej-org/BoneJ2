@@ -27,8 +27,6 @@ import java.util.Vector;
 import ij.IJ;
 import ij.gui.GenericDialog;
 
-/** @deprecated Code is unused. */
-@Deprecated
 public class DialogModifier {
 	
 	/**

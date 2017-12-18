@@ -30,8 +30,6 @@ import ij.gui.Roi;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 
-/** @deprecated Called only from deprecated code. */
-@Deprecated
 public class StackStats {
 
 	/**
@@ -41,7 +39,6 @@ public class StackStats {
 	 * @return double[] containing mean, standard deviation and maximum as its 0th
 	 *         and 1st and 2nd elements respectively
 	 */
-	@Deprecated
 	public static double[] meanStdDev(final ImagePlus imp) {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
