@@ -4,6 +4,7 @@ package org.bonej.ops.mil;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiPredicate;
@@ -32,7 +33,7 @@ public class MILGridTest {
 	private static final long SIZE = 5;
 	private static final Img<BitType> BG_IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static final long DEFAULT_BINS = SIZE;
-	private static final long EXPECTED_SIZE = 27;
+
 	private static final AxisAngle4d IDENTITY_ROTATION = new AxisAngle4d();
 	private static final double DEFAULT_INCREMENT = 1.0;
 
@@ -49,25 +50,35 @@ public class MILGridTest {
 
 	/**
 	 * Tests that changing the bins parameter changes the number of vectors
-	 * created (in comparison to {@link #testEmptyInterval()})
+	 * created
 	 */
 	@Test
-	public void testBinsParameter() throws Exception {
-		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS + 1L,
-			DEFAULT_INCREMENT, new Random(0xc0ff33));
+	@SuppressWarnings("unchecked")
+	public void testBinsParameter() {
+		final long expectedBaseline = SIZE * SIZE * SIZE * DEFAULT_BINS *
+			DEFAULT_BINS * 3;
+		final long expectedPlusOne = SIZE * SIZE * SIZE * (DEFAULT_BINS + 1) *
+			(DEFAULT_BINS + 1) * 3;
 
-		assertTrue("The bins parameter had no effect", EXPECTED_SIZE < milVectors
-			.size());
+		final Long defaultBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
+			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
+				DEFAULT_INCREMENT, new Random(0xc0ff33))).get(1);
+		final Long plusOneBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
+			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS + 1,
+				DEFAULT_INCREMENT, new Random(0xc0ff33))).get(1);
+
+		assertEquals("Sanity check failed: baseline value unexpected",
+			expectedBaseline, defaultBinsSamples.longValue());
+		assertEquals("Incrementing bins had no effect on the number of samples",
+			expectedPlusOne, plusOneBinsSamples.longValue());
 	}
 
 	/**
-	 * Tests the op on a cube. Most vectors should enter and exit it, i.e. their
+	 * Tests the op on a cube. All vectors should enter and exit it, i.e. their
 	 * length should be 0.5.
 	 */
 	@Test
-	public void testCube() throws Exception {
+	public void testCube() {
 		final Img<BitType> cube = ArrayImgs.bits(100, 100, 100);
 		final IntervalView<BitType> foreground = Views.interval(cube, new long[] {
 			1, 1, 1 }, new long[] { 98, 98, 98 });
@@ -75,64 +86,62 @@ public class MILGridTest {
 		final double expectedLength = 1.0 / 2.0;
 
 		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, cube, IDENTITY_ROTATION, 10L, DEFAULT_INCREMENT,
-			new Random(0xc0ff33));
+		final List<Vector3d> milVectors =
+			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
+				cube, IDENTITY_ROTATION, 10L, DEFAULT_INCREMENT, new Random(0xc0ff33)))
+					.get(0);
 
-		// Some vectors will always miss the object, so not all vectors will have
-		// length < 1.0
-		assertEquals("Regression test failed: number of vectors changed", 95,
-			milVectors.size());
-		assertEquals(
-			"Regression test failed: number of vectors that have intercepted the cube changed",
-			91, milVectors.stream().filter(v -> v.length() == expectedLength)
-				.count());
+		assertEquals("Regression test failed: some vectors have unexpected length",
+			milVectors.size(), milVectors.stream().filter(v -> v
+				.length() == expectedLength).count());
 	}
 
 	@Test
-	public void testEmptyInterval() throws Exception {
+	public void testEmptyInterval() {
 		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
-			new Random(0xc0ff33));
+		final List<Vector3d> milVectors =
+			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
+				BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
+					0xc0ff33))).get(0);
 
-		assertEquals("Regression test failed: number of vectors unexpected",
-			EXPECTED_SIZE, milVectors.size());
-		assertTrue(
-			"Regression test failed: identity rotation should create vectors normal to the XY-plane",
-			milVectors.stream().anyMatch(v -> v.equals(new Vector3d(0, 0, 1))));
-		assertTrue("All vectors should have length 1.0", milVectors.stream()
-			.allMatch(v -> v.length() == 1.0));
+		assertEquals("Regression test failed: number of vectors unexpected", 3,
+			milVectors.size());
+		assertEquals("Regression test failed: unexpected vector", new Vector3d(-1,
+			0, 0), milVectors.get(0));
+		assertEquals("Regression test failed: unexpected vector", new Vector3d(0,
+			-1, 0), milVectors.get(1));
+		assertEquals("Regression test failed: unexpected vector", new Vector3d(0, 0,
+			1), milVectors.get(2));
 	}
 
 	/**
-	 * Tests that changing the increment parameter changes the number of vectors
-	 * that have a certain number of interceptions in comparison to
-	 * {@link #testXYSheets()}. The increasing the increment should move the
-	 * sample points so that most of the vectors encounter the sheets less often.
+	 * Tests that changing the increment parameter changes the number samples
+	 * taken.
 	 */
 	@Test
-	public void testIncrementParameter() throws Exception {
-		// SETUP
-		final long numSheets = 10;
-		final Img<BitType> sheets = drawXYSheets();
+	@SuppressWarnings("unchecked")
+	public void testIncrementParameter() {
+		final long expectedBaseline = SIZE * SIZE * SIZE * DEFAULT_BINS *
+			DEFAULT_BINS * 3;
+		final long expectedDoubleIncrement = (long) ((SIZE * 0.5) * (SIZE * 0.5) *
+			(SIZE * 0.5) * DEFAULT_BINS * DEFAULT_BINS * 3);
 
-		// EXECUTE
-		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS, 1.1, new Random(
-				0xc0ff33));
+		final Long defaultBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
+			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
+				DEFAULT_INCREMENT, new Random(0xc0ff33))).get(1);
+		final Long plusOneBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
+			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
+				DEFAULT_INCREMENT * 2, new Random(0xc0ff33))).get(1);
 
-		// VERIFY
-		final Stream<Vector3d> zVectors = milVectors.stream().filter(v -> isParallel
-			.test(v, new Vector3d(0, 0, 1)));
+		assertEquals("Sanity check failed: baseline value unexpected",
+			expectedBaseline, defaultBinsSamples.longValue());
 		assertEquals(
-			"Regression test failed: changing the increment parameter had no effect",
-			2, zVectors.filter(v -> v.length() == 1.0 / (2 * numSheets)).count());
+			"Doubling the increment had no effect on the number of samples",
+			expectedDoubleIncrement, plusOneBinsSamples.longValue());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testMatchingFailsIf2DInterval() throws Exception {
+	public void testMatchingFailsIf2DInterval() {
 		final Img<BitType> img = ArrayImgs.bits(5, 5);
 		IMAGE_J.op().run(MILGrid.class, img);
 	}
@@ -142,13 +151,14 @@ public class MILGridTest {
 	 * vectors (in comparison to {@link #testEmptyInterval()})
 	 */
 	@Test
-	public void testRotationParameter() throws Exception {
+	public void testRotationParameter() {
 		final AxisAngle4d rotation = new AxisAngle4d(0, 1, 1, Math.PI / 4.0);
 
 		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, rotation, DEFAULT_BINS, DEFAULT_INCREMENT,
-			new Random(0xc0ff33));
+		final List<Vector3d> milVectors =
+			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
+				BG_IMG, rotation, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
+					0xc0ff33))).get(0);
 
 		assertTrue("Changing the rotation parameter had no effect", milVectors
 			.stream().noneMatch(v -> v.equals(new Vector3d(0, 0, 1))));
@@ -159,7 +169,7 @@ public class MILGridTest {
 	 * should be shorter than in x or y.
 	 */
 	@Test
-	public void testXYSheets() throws Exception {
+	public void testXYSheets() {
 		// SETUP
 		final int numSheets = 10;
 		final Vector3d zAxis = new Vector3d(0, 0, 1);
@@ -168,9 +178,10 @@ public class MILGridTest {
 
 		// EXECUTE
 		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
-			new Random(0xc0ff33));
+		final List<Vector3d> milVectors =
+			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
+				sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
+					0xc0ff33))).get(0);
 
 		// VERIFY
 		final Stream<Vector3d> zVectors = milVectors.stream().filter(v -> isParallel
@@ -184,7 +195,7 @@ public class MILGridTest {
 	}
 
 	@Test
-	public void testXZSheets() throws Exception {
+	public void testXZSheets() {
 		// SETUP
 		final Img<BitType> sheets = ArrayImgs.bits(100, 100, 100);
 		// Draw 19 XZ sheets
@@ -197,9 +208,10 @@ public class MILGridTest {
 
 		// EXECUTE
 		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
-			new Random(0xc0ff33));
+		final List<Vector3d> milVectors =
+			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
+				sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
+					0xc0ff33))).get(0);
 
 		// VERIFY
 		final Stream<Vector3d> yVectors = milVectors.stream().filter(v -> isParallel
@@ -209,9 +221,9 @@ public class MILGridTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testThrowsIAEIfIncrementTooSmall() throws Exception {
-		IMAGE_J.op().run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, 1e-12,
-				new Random(0xc0ff33));
+	public void testThrowsIAEIfIncrementTooSmall() {
+		IMAGE_J.op().run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
+			1e-12, new Random(0xc0ff33));
 	}
 
 	@AfterClass

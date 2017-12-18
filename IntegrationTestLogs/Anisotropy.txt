@@ -1,0 +1,65 @@
+Manual integration tests for the Anisotropy command.
+
+
+Case 1
+=======================================================================
+Checking "Auto parameters" sets parameters to default values
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open samples > Bat Cochlea Volume
+2. Run plugin BoneJ > Anisotropy
+3. Set the "Rotations" to 1, "Lines" to 1 and "Increment" to 10.0
+4. Check "Auto parameters"
+
+
+Expected result
+-----------------------------------------------------------------------
+All three values change when check box is ticked
+
+Completed Month Day Year Name Surname
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+Parameter values cannot be changed when "Auto parameters"
+is checked
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open samples > Bat Cochlea Volume
+2. Run plugin BoneJ > Anisotropy
+3. Check "Auto parameters"
+
+Expected result
+-----------------------------------------------------------------------
+"Rotations", "Lines" and "Increment" revert to default value
+when focus leaves their corresponding widget.
+
+Completed Month Day Year Name Surname
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+Clicking "Cancel" on the anisotropic calibration warning dialog
+stops the command.
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open samples > Bat Cochlea Volume
+2. Run Analyze > Set Scale
+3. Set "Distance in pixels" to "1", "Known distance" to "0.5",
+   "Pixel aspect ratio" to "1" and "Unit of length" to "mm"
+4. Run plugin BoneJ > Anisotropy
+5. Check "Auto parameters"
+6. Click "OK"
+7. Click "Cancel" on the warning dialog
+
+Expected result
+-----------------------------------------------------------------------
+Warning dialog pops open, and command stops when user cancels.
+
+Completed Month Day Year Name Surname
+-----------------------------------------------------------------------

@@ -5,7 +5,10 @@ import static org.bonej.ops.mil.LineGrid.Orientation.XY;
 import static org.bonej.ops.mil.LineGrid.Orientation.XZ;
 import static org.bonej.ops.mil.LineGrid.Orientation.YZ;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.function.DoubleSupplier;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -43,9 +46,9 @@ public final class LineGrid {
 		interval -> LongStream.of(interval.dimension(0), interval.dimension(1),
 			interval.dimension(2));
 	private Random rng;
-	private boolean mirrorXY = false;
-	private boolean mirrorXZ = false;
-	private boolean mirrorYZ = false;
+	private double xySign = 1;
+	private double xzSign = 1;
+	private double yzSign = 1;
 
 	/**
 	 * Constructs an instance of {@link LineGrid}.
@@ -97,12 +100,9 @@ public final class LineGrid {
 			throw new IllegalArgumentException(
 				"Must generate at least one line per plane.");
 		}
-		final Stream<ValuePair<Point3d, Vector3d>> xyLines = xy.lines(bins,
-			mirrorXY);
-		final Stream<ValuePair<Point3d, Vector3d>> xzLines = xz.lines(bins,
-			mirrorXZ);
-		final Stream<ValuePair<Point3d, Vector3d>> yzLines = yz.lines(bins,
-			mirrorYZ);
+		final Stream<ValuePair<Point3d, Vector3d>> xyLines = xy.lines(bins, xySign);
+		final Stream<ValuePair<Point3d, Vector3d>> xzLines = xz.lines(bins, xzSign);
+		final Stream<ValuePair<Point3d, Vector3d>> yzLines = yz.lines(bins, yzSign);
 		return Stream.of(xyLines, xzLines, yzLines).flatMap(s -> s);
 	}
 
@@ -151,9 +151,25 @@ public final class LineGrid {
 	 * Also mirrors the directions of the lines.
 	 */
 	public void randomReflection() {
-		mirrorXY = rng.nextBoolean();
-		mirrorXZ = rng.nextBoolean();
-		mirrorYZ = rng.nextBoolean();
+		final DoubleSupplier randomSign = () -> rng.nextBoolean() ? -1.0 : 1.0;
+		xySign = randomSign.getAsDouble();
+		xzSign = randomSign.getAsDouble();
+		yzSign = randomSign.getAsDouble();
+	}
+
+	/**
+	 * Gets copies of the orientation vectors of the grid.
+	 * <p>
+	 * The vectors corresponds to the three directions of the lines in the grid.
+	 * </p>
+	 *
+	 * @return orientation vectors normal to the planes of the grid.
+	 */
+	public List<Vector3d> getOrientation() {
+		// Order normals so that with identity rotation the method returns (1, 0,
+		// 0), (0, 1, 0), (0, 0, 1)
+		return Arrays.asList(yz.getNormal(yzSign), xz.getNormal(xzSign), xy
+			.getNormal(xySign));
 	}
 
 	// region -- Helper methods --
@@ -228,12 +244,9 @@ public final class LineGrid {
 		}
 
 		private Stream<ValuePair<Point3d, Vector3d>> lines(final long bins,
-			final boolean mirror)
+			final double sign)
 		{
-			final double sign = mirror ? -1.0 : 1.0;
-			final Vector3d direction = new Vector3d(normal);
-			direction.scale(sign);
-			rotateOp.mutate1(direction, rotation);
+			final Vector3d direction = getNormal(sign);
 			final Vector3d t = new Vector3d(translation);
 			t.scale(sign);
 			final double range = 1.0 / bins;
@@ -289,6 +302,19 @@ public final class LineGrid {
 		 */
 		private void setRandomGenerator(final Random random) {
 			rng = random;
+		}
+
+		/**
+		 * Gets a copy of the normal of the plane.
+		 *
+		 * @param sign sign of the normal (plane reflected (-1) or not (1)).
+		 * @return the normal vector.
+		 */
+		private Vector3d getNormal(final double sign) {
+			final Vector3d copy = new Vector3d(normal);
+			copy.scale(sign);
+			rotateOp.mutate1(copy, rotation);
+			return copy;
 		}
 	}
 
