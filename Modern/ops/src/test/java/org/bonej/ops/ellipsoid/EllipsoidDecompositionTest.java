@@ -1,6 +1,7 @@
 package org.bonej.ops.ellipsoid;
 
 import net.imagej.ImageJ;
+import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.util.ValuePair;
@@ -12,19 +13,21 @@ import org.scijava.vecmath.Vector4d;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 //lots of expected values calculated with pen and paper.
+//Calculations to be put in documentation.
 public class EllipsoidDecompositionTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
     @SuppressWarnings("unchecked")
-    private static UnaryFunctionOp<List<ValuePair<Vector3d, Vector3d>>, List<Ellipsoid>> ellipsoidDecomposition =
-            (UnaryFunctionOp) Functions.unary(IMAGE_J.op(), EllipsoidDecomposition.class,
-                    List.class, List.class);
+    private static BinaryFunctionOp<List<ValuePair<Vector3d, Vector3d>>,ValuePair<Vector3d,Vector3d>, Optional<Ellipsoid>> ellipsoidDecomposition =
+            (BinaryFunctionOp) Functions.unary(IMAGE_J.op(), EllipsoidDecomposition.class,
+                    Optional.class, List.class, ValuePair.class);
 
     @Test
     public void testRadiusCalculation() {
@@ -44,9 +47,9 @@ public class EllipsoidDecompositionTest {
         Vector3d normalD = new Vector3d(-Math.sqrt(2)/2.0,-Math.sqrt(2)/2.0,0);
         ValuePair<Vector3d,Vector3d> D = new ValuePair<>(vertexD, normalD);
 
-        List<ValuePair<Vector3d,Vector3d>> ABCD = Arrays.asList(A,B,C,D);
+        final List<ValuePair<Vector3d,Vector3d>> verticesToTest = Arrays.asList(A,B,C,D);
 
-        final List<Ellipsoid> ellipsoids = ellipsoidDecomposition.calculate(ABCD);
+        final List<Ellipsoid> ellipsoids = verticesToTest.stream().map(e -> ellipsoidDecomposition.calculate(verticesToTest, e)).filter(e -> e.isPresent()).map(e -> e.get()).collect(Collectors.toList());
 
         assertEquals(3, ellipsoids.size());
         assertEquals(2, ellipsoids.stream().filter(e -> e.getA()==2.0).collect(Collectors.toList()).size());
@@ -97,7 +100,7 @@ public class EllipsoidDecompositionTest {
         );
         // @formatter:on
 
-        Matrix4d q2 = EllipsoidDecomposition.getQuadric2(p,q,np,nq);
+        Matrix4d q2 = EllipsoidDecomposition.getQuadric2(new ValuePair<>(p, np), new ValuePair<>(q, nq));
 
         assertTrue(q2.epsilonEquals(expected,1.0e-12));
 
