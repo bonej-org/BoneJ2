@@ -27,20 +27,30 @@ import java.util.stream.Collectors;
  * @author Alessandro Felder
  */
 @Plugin(type = Op.class)
-public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<ValuePair<Vector3d,Vector3d>>, ValuePair<Vector3d,Vector3d>,Optional<Ellipsoid>> {
+public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<Vector3d>, ValuePair<Vector3d,Vector3d>,Optional<Ellipsoid>> {
+
+    private QuadricToEllipsoid quadricToEllipsoid = new QuadricToEllipsoid();
 
     @Override
-    public Optional<Ellipsoid> calculate(final List<ValuePair<Vector3d,Vector3d>> otherVerticesWithNormals, final ValuePair<Vector3d,Vector3d> vertexWithNormal) {
+    public Optional<Ellipsoid> calculate(final List<Vector3d> otherVerticesWithNormals, final ValuePair<Vector3d,Vector3d> vertexWithNormal) {
 
         VertexWithNormal p = new VertexWithNormal(vertexWithNormal);
-        List<VertexWithNormal> others = new ArrayList<>();
-        otherVerticesWithNormals.forEach(v -> others.add(new VertexWithNormal(v)));
 
-        ValuePair<VertexWithNormal,Double> QAndR = calculateQ(others, p);
-
+        ValuePair<VertexWithNormal,Double> QAndR = calculateQ(otherVerticesWithNormals, p);
         if(QAndR==null) return Optional.empty();
 
-        return Optional.of(new Ellipsoid(QAndR.getB(), QAndR.getB(), QAndR.getB()));
+        Vector3d c = new Vector3d(p.getNormal());
+        c.scaleAdd(QAndR.getB(), p.getVertex());
+        Matrix4d q1 = getQuadric1(c,QAndR.getB());
+        Matrix4d q2 = getQuadric2(p,QAndR.getA());
+
+        double alpha = calculateOptimalAlpha(q1, q2, otherVerticesWithNormals);
+
+        Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
+        q1PlusAlphaQ2.mul(alpha);
+        q1PlusAlphaQ2.add(q1);
+
+        return quadricToEllipsoid.calculate(q1PlusAlphaQ2);
     }
 
     public static Matrix4d getQuadric1(Vector3d sphereCentre, double radius){
@@ -53,11 +63,11 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<ValueP
         return quadric1;
     }
 
-    public static Matrix4d getQuadric2(final ValuePair<Vector3d, Vector3d> pnp, final ValuePair<Vector3d, Vector3d> qnq){
-        Vector3d p = pnp.getA();
-        Vector3d np = pnp.getB();
-        Vector3d q = qnq.getA();
-        Vector3d nq = qnq.getB();
+    public static Matrix4d getQuadric2(final VertexWithNormal pnp, final VertexWithNormal qnq){
+        Vector3d p = pnp.getVertex();
+        Vector3d np = pnp.getNormal();
+        Vector3d q = qnq.getVertex();
+        Vector3d nq = qnq.getNormal();
 
         Matrix3d NRotation = new Matrix3d();
 
@@ -90,7 +100,7 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<ValueP
         return quadric2;
     }
 
-    private static ValuePair<VertexWithNormal,Double> calculateQ(final List<VertexWithNormal> candidateQs, final VertexWithNormal p) {
+    private static ValuePair<VertexWithNormal,Double> calculateQ(final List<Vector3d> candidateQs, final VertexWithNormal p) {
         List<ValuePair<VertexWithNormal, Double>> candidateQAndRs = candidateQs.stream().map(q -> calculatePossibleQAndR(q,p)).filter(qnr -> qnr.getB()>0).collect(Collectors.toList());
 
         candidateQAndRs.sort(Comparator.comparingDouble(ValuePair::getB));
@@ -101,21 +111,27 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<ValueP
             return null;
     }
 
-    private static ValuePair<VertexWithNormal,Double> calculatePossibleQAndR(VertexWithNormal x, VertexWithNormal p)
+    private static ValuePair<VertexWithNormal,Double> calculatePossibleQAndR(Vector3d x, VertexWithNormal p)
     {
         Vector3d xMinusP = new Vector3d(p.getVertex());
-        xMinusP.scaleAdd(-1.0, x.getVertex());
+        xMinusP.scaleAdd(-1.0, x);
         double distanceSquared = xMinusP.lengthSquared();
         double scalarProduct = xMinusP.dot(p.getNormal());
-        if(scalarProduct > 0)
-            return new ValuePair<>(x,distanceSquared/(2*scalarProduct));
-        else
-            return new ValuePair<>(x,-1.0);
+
+        if(scalarProduct<=0.0) return new ValuePair<>(null,-1.0);
+
+        double radius = distanceSquared/(2*scalarProduct);
+        Vector3d centre = new Vector3d(p.getNormal());
+        centre.scaleAdd(radius,p.getVertex());
+        Vector3d cMinusX = new Vector3d(x);
+        cMinusX.scaleAdd(-1.0, centre);
+        return new ValuePair<>(new VertexWithNormal(new ValuePair<>(x,cMinusX)),radius);
+
     }
 
     static double calculateOptimalAlpha(final Matrix4d Q1, final Matrix4d Q2, final List<Vector3d> vertices)
     {
-        final List<Double> alphaValues = vertices.stream().map(v -> calculateAlpha(Q1, Q2, v)).filter(x -> x > 0).collect(Collectors.toList());
+        final List<Double> alphaValues = vertices.stream().map(v -> calculateAlpha(Q1, Q2, v)).filter(a -> !a.isNaN()).collect(Collectors.toList());
         alphaValues.sort(Double::compareTo);
         if(alphaValues.size() > 0)
             return alphaValues.get(0);
@@ -135,7 +151,7 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<ValueP
     static double calculateAlpha(final Matrix4d Q1, final Matrix4d Q2, final Vector3d x)
     {
         double xtQ2X = calculateXtQX(Q2, x);
-        if(xtQ2X<0) return -1.0;
+        if(xtQ2X>=0) return Double.NaN;
 
         double xtQ1X = calculateXtQX(Q1, x);
         return -xtQ1X/xtQ2X;
