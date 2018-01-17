@@ -59,6 +59,4 @@ public class BundleTest {
 
         assertTrue(infoStream.anyMatch(i -> i.getClassName().equals("io.scif.formats.KontronFormat")));
     }
-
-    // TODO add test for StratecPQCT format
 }
