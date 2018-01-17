@@ -59,9 +59,9 @@ public class CleanShortEdgesTest {
 	}
 
 	@Test
-	public void testInputNotAltered() throws Exception {
+	public void testInputNotAltered() {
 		final Graph graph = TestGraphs.createSailGraph();
-		final Graph cloneGraph = CleanShortEdges.cloneGraph(graph);
+		final Graph cloneGraph = graph.clone();
 
 		cleanShortEdgesOp.calculate(graph, Double.MAX_VALUE);
 
@@ -91,7 +91,7 @@ public class CleanShortEdgesTest {
 		});
 
 		// EXECUTE
-		final Graph cloneGraph = CleanShortEdges.cloneGraph(graph);
+		final Graph cloneGraph = graph.clone();
 
 		// VERIFY
 		assertGraphsEqual(graph, cloneGraph);

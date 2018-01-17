@@ -2,7 +2,6 @@ package org.bonej.ops;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.ArrayList;
@@ -76,7 +75,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 			calibration3d = Arrays.asList(1.0, 1.0, 1.0);
 		}
 
-		Graph graph = cloneGraph(input);
+		Graph graph = input.clone();
 		percentages.totalEdges = graph.getEdges().size();
 		percentages.setLoopPercentage(removeLoops(graph));
 		percentages.setParallelPercentage(removeParallelEdges(graph));
@@ -108,50 +107,6 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 
 	public PercentagesOfCulledEdges getPercentages() {
 		return percentages;
-	}
-
-	// TODO Remove when new version of AnalyzeSkeleton_ released
-	public static Graph cloneGraph(final Graph graph) {
-		final Map<Vertex, Vertex> vertexMap = graph.getVertices().stream()
-				.collect(toMap(Function.identity(), CleanShortEdges::cloneVertex));
-		final Map<Edge, Edge> edgeMap = graph.getEdges().stream()
-				.collect(toMap(Function.identity(), e -> cloneEdge(e, vertexMap)));
-		graph.getVertices().forEach(v -> vertexMap.get(v).setPredecessor(edgeMap.get(v.getPredecessor())));
-		final Graph clonedGraph = new Graph();
-		// Iterate in the order of the originals to preserve order in the cloned
-		// graph
-		graph.getEdges().stream().map(edgeMap::get).forEach(clonedGraph::addEdge);
-		graph.getVertices().stream().map(vertexMap::get).forEach(clonedGraph::addVertex);
-		return clonedGraph;
-	}
-
-	private static Vertex cloneVertex(final Vertex vertex) {
-		final List<Point> clonedPoints = vertex.getPoints().stream().map(CleanShortEdges::clonePoint).collect(toList());
-		final Vertex clonedVertex = new Vertex();
-		clonedVertex.setVisited(vertex.isVisited(), vertex.getVisitOrder());
-		clonedVertex.getPoints().addAll(clonedPoints);
-		return clonedVertex;
-	}
-
-	private static Edge cloneEdge(final Edge edge, final Map<Vertex, Vertex> vertexMap) {
-		final Vertex v1 = vertexMap.get(edge.getV1());
-		final Vertex v2 = vertexMap.get(edge.getV2());
-		final ArrayList<Point> oldSlabs = edge.getSlabs();
-		final ArrayList<Point> slabs;
-		if (oldSlabs != null) {
-			slabs = oldSlabs.stream().map(CleanShortEdges::clonePoint).collect(Collectors.toCollection(ArrayList::new));
-		} else {
-			slabs = null;
-		}
-		final Edge clonedEdge = new Edge(v1, v2, slabs, edge.getLength());
-		clonedEdge.setColor(edge.getColor());
-		clonedEdge.setColor3rd(edge.getColor3rd());
-		clonedEdge.setType(edge.getType());
-		return clonedEdge;
-	}
-
-	private static Point clonePoint(final Point point) {
-		return new Point(point.x, point.y, point.z);
 	}
 
 	/**
@@ -248,7 +203,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	}
 
 	private Graph cleaningStepUsingEdges(final Graph graph, final Double tolerance) {
-		Graph currentGraph = cloneGraph(graph);
+		Graph currentGraph = graph.clone();
 		final List<Edge> shortInnerEdges = currentGraph.getEdges().stream()
 				.filter(e -> isShortEdge(e, tolerance) && !isDeadEndEdge(e)).collect(toList());
 
