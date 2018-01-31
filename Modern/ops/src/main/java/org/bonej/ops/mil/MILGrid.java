@@ -1,14 +1,12 @@
 
 package org.bonej.ops.mil;
 
-import static java.util.Comparator.comparingDouble;
 import static java.util.stream.Collectors.toList;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -118,6 +116,9 @@ public class MILGrid<B extends BooleanType<B>> extends
 	@Parameter(type = ItemIO.OUTPUT, persist = false)
 	private Long potentialSamples = 0L;
 
+	private static final Function<RandomAccessibleInterval, LongStream> dimStream =
+		rai -> LongStream.of(rai.dimension(0), rai.dimension(1), rai.dimension(2));
+
 	/**
 	 * Finds the shortest three MIL vectors of the interval.
 	 *
@@ -137,9 +138,6 @@ public class MILGrid<B extends BooleanType<B>> extends
 		final long bins;
 		final double increment;
 		final Random rng;
-		final Function<RandomAccessibleInterval, LongStream> dimStream =
-			rai -> LongStream.of(rai.dimension(0), rai.dimension(1), rai.dimension(
-				2));
 		synchronized (this) {
 			rotateOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class, Tuple3d.class,
 				new Vector3d(), new AxisAngle4d());
@@ -152,35 +150,13 @@ public class MILGrid<B extends BooleanType<B>> extends
 				throw new IllegalArgumentException("Increment too small");
 			}
 			rng = random != null ? random : new Random();
+			potentialSamples = calculatePotentialSamples(interval, increment, bins);
 		}
 		final LineGrid grid = createGrid(interval, rotateOp, rotation, rng);
-		final double increments = dimStream.apply(interval).mapToDouble(dim -> dim /
-			increment).reduce((a, b) -> a * b).orElse(0.0);
-		potentialSamples = (long) Math.floor(bins * bins * 3 * increments);
 		final Stream<Section> sections = grid.lines(bins).map((line) -> findSection(
 			line, interval, intersectOp)).filter(Objects::nonNull);
-		final List<Vector3d> milVectors = sections.map(section -> toMILVector(
-			section, interval, increment, random)).filter(Objects::nonNull).collect(
-				toList());
-		final BiFunction<Vector3d, Vector3d, Boolean> epsParallel = (u, v) -> u
-			.angle(v) < 1e-4;
-		final BiFunction<Vector3d, List<Vector3d>, Stream<Vector3d>> parallelVectors =
-			(u, list) -> list.stream().filter(v -> epsParallel.apply(u, v));
-		final List<Vector3d> normals = grid.getOrientation();
-		// TODO Figure out which version creates the best results
-		/* For each normal, return a vector with same direction and avg. length of all parallel vectors
-		return normals.stream().map(n -> {
-			final double avgLength = parallelVectors.apply(n, milVectors).mapToDouble(
-				Vector3d::length).summaryStatistics().getAverage();
-			final Vector3d avgLine = new Vector3d(n);
-			avgLine.scale(avgLength);
-			return avgLine;
-		}).collect(toList()); */
-		// For each normal, return the shortest milVector parallel to it
-		final Function<Vector3d, Vector3d> shortestParallelMILVector =
-			v -> parallelVectors.apply(v, milVectors).min(comparingDouble(
-				Vector3d::length)).orElse(v);
-		return normals.stream().map(shortestParallelMILVector).collect(toList());
+		return sections.map(section -> toMILVector(section, interval, increment,
+			random)).filter(Objects::nonNull).collect(toList());
 	}
 
 	/**
@@ -208,6 +184,15 @@ public class MILGrid<B extends BooleanType<B>> extends
 	}
 
 	// region -- Helper methods --
+	private static long calculatePotentialSamples(
+		final RandomAccessibleInterval interval, final double increment,
+		final long bins)
+	{
+		final double increments = dimStream.apply(interval).mapToDouble(dim -> dim /
+			increment).reduce((a, b) -> a * b).orElse(0.0);
+		return (long) Math.floor(bins * bins * 3 * increments);
+	}
+
 	private static LineGrid createGrid(final Interval interval,
 		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp,
 		final AxisAngle4d rotation, final Random rng)
@@ -298,9 +283,11 @@ public class MILGrid<B extends BooleanType<B>> extends
 			return null;
 		}
 		final Vector3d milVector = new Vector3d(section.direction);
-		if (intercepts >= 2) {
-			milVector.scale(1.0 / intercepts);
-		}
+		final double length = section.tMax - section.tMin;
+		milVector.scale(length);
+		if (intercepts > 1) {
+            milVector.scale(1.0 / intercepts);
+        }
 		return milVector;
 	}
 

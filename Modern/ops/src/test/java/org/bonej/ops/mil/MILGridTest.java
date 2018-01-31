@@ -33,9 +33,11 @@ public class MILGridTest {
 	private static final long SIZE = 5;
 	private static final Img<BitType> BG_IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static final long DEFAULT_BINS = SIZE;
-
 	private static final AxisAngle4d IDENTITY_ROTATION = new AxisAngle4d();
 	private static final double DEFAULT_INCREMENT = 1.0;
+	private static final Vector3d X_AXIS = new Vector3d(1, 0, 0);
+	private static final Vector3d Y_AXIS = new Vector3d(0, 1, 0);
+	private static final Vector3d Z_AXIS = new Vector3d(0, 0, 1);
 
 	// Each test creates its own random generator with a constant seed. This is
 	// because called through IMAGE_J.op().run(), the ops run in different
@@ -73,29 +75,6 @@ public class MILGridTest {
 			expectedPlusOne, plusOneBinsSamples.longValue());
 	}
 
-	/**
-	 * Tests the op on a cube. All vectors should enter and exit it, i.e. their
-	 * length should be 0.5.
-	 */
-	@Test
-	public void testCube() {
-		final Img<BitType> cube = ArrayImgs.bits(100, 100, 100);
-		final IntervalView<BitType> foreground = Views.interval(cube, new long[] {
-			1, 1, 1 }, new long[] { 98, 98, 98 });
-		foreground.cursor().forEachRemaining(BitType::setOne);
-		final double expectedLength = 1.0 / 2.0;
-
-		@SuppressWarnings("unchecked")
-		final List<Vector3d> milVectors =
-			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
-				cube, IDENTITY_ROTATION, 10L, DEFAULT_INCREMENT, new Random(0xc0ff33)))
-					.get(0);
-
-		assertEquals("Regression test failed: some vectors have unexpected length",
-			milVectors.size(), milVectors.stream().filter(v -> v
-				.length() == expectedLength).count());
-	}
-
 	@Test
 	public void testEmptyInterval() {
 		@SuppressWarnings("unchecked")
@@ -104,14 +83,25 @@ public class MILGridTest {
 				BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
 					0xc0ff33))).get(0);
 
-		assertEquals("Regression test failed: number of vectors unexpected", 3,
-			milVectors.size());
-		assertEquals("Regression test failed: unexpected vector", new Vector3d(-1,
-			0, 0), milVectors.get(0));
-		assertEquals("Regression test failed: unexpected vector", new Vector3d(0,
-			-1, 0), milVectors.get(1));
-		assertEquals("Regression test failed: unexpected vector", new Vector3d(0, 0,
-			1), milVectors.get(2));
+		assertEquals("Wrong Number of vectors", 27, milVectors.size());
+		final long xParallel = milVectors.stream().filter(v -> isParallel.test(v,
+			X_AXIS)).count();
+		assertEquals(9, xParallel);
+		final long yParallel = milVectors.stream().filter(v -> isParallel.test(v,
+			Y_AXIS)).count();
+		assertEquals(xParallel, yParallel);
+		final long zParallel = milVectors.stream().filter(v -> isParallel.test(v,
+			Z_AXIS)).count();
+		assertEquals(yParallel, zParallel);
+		milVectors.stream().filter(v -> isParallel.test(v, X_AXIS)).forEach(
+			yzNormal -> assertTrue(yzNormal.epsilonEquals(new Vector3d(-SIZE, 0, 0),
+				1e-11)));
+		milVectors.stream().filter(v -> isParallel.test(v, Y_AXIS)).forEach(
+			xzNormal -> assertTrue(xzNormal.epsilonEquals(new Vector3d(0, -SIZE, 0),
+				1e-11)));
+		milVectors.stream().filter(v -> isParallel.test(v, Z_AXIS)).forEach(
+			xyNormal -> assertTrue(xyNormal.epsilonEquals(new Vector3d(0, 0, SIZE),
+				1e-11)));
 	}
 
 	/**
@@ -121,11 +111,13 @@ public class MILGridTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testIncrementParameter() {
+		// SETUP
 		final long expectedBaseline = SIZE * SIZE * SIZE * DEFAULT_BINS *
 			DEFAULT_BINS * 3;
 		final long expectedDoubleIncrement = (long) ((SIZE * 0.5) * (SIZE * 0.5) *
 			(SIZE * 0.5) * DEFAULT_BINS * DEFAULT_BINS * 3);
 
+		// EXECUTE
 		final Long defaultBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
 			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
 				DEFAULT_INCREMENT, new Random(0xc0ff33))).get(1);
@@ -133,6 +125,7 @@ public class MILGridTest {
 			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
 				DEFAULT_INCREMENT * 2, new Random(0xc0ff33))).get(1);
 
+		// VERIFY
 		assertEquals("Sanity check failed: baseline value unexpected",
 			expectedBaseline, defaultBinsSamples.longValue());
 		assertEquals(
@@ -171,10 +164,16 @@ public class MILGridTest {
 	@Test
 	public void testXYSheets() {
 		// SETUP
-		final int numSheets = 10;
 		final Vector3d zAxis = new Vector3d(0, 0, 1);
-		final double expectedZLength = 1.0 / (numSheets * 2);
-		final Img<BitType> sheets = drawXYSheets();
+		final long size = 100;
+		final long expectedInterceptions = 20;
+		final double expectedZLength = 1.0 * size / expectedInterceptions;
+		final Img<BitType> sheets = ArrayImgs.bits(size, size, size);
+		for (long z = 5; z < size; z += 10) {
+			final IntervalView<BitType> sheet = Views.interval(sheets, new long[] { 0,
+				0, z }, new long[] { size - 1, size - 1, z });
+			sheet.cursor().forEachRemaining(BitType::setOne);
+		}
 
 		// EXECUTE
 		@SuppressWarnings("unchecked")
@@ -186,23 +185,23 @@ public class MILGridTest {
 		// VERIFY
 		final Stream<Vector3d> zVectors = milVectors.stream().filter(v -> isParallel
 			.test(v, zAxis));
-		assertTrue("MIL vectors in the Z-direction have unexpected length", zVectors
-			.allMatch(v -> v.length() == expectedZLength));
+		zVectors.forEach(v -> assertEquals(expectedZLength, v.length(), 1e-12));
 		final Stream<Vector3d> otherVectors = milVectors.stream().filter(
 			v -> !isParallel.test(v, zAxis));
-		assertTrue("All MIL vectors in X- Y-directions should have length 1.0",
-			otherVectors.allMatch(v -> v.length() == 1.0));
+		otherVectors.forEach(v -> assertEquals(
+			"Length should be equal to stack size", size, v.length(), 1e-12));
 	}
 
 	@Test
 	public void testXZSheets() {
 		// SETUP
-		final Img<BitType> sheets = ArrayImgs.bits(100, 100, 100);
-		// Draw 19 XZ sheets
-		final long numSheets = 19;
-		for (long y = 5; y < 100; y += 5) {
+		final long size = 100;
+		final long expectedInterceptions = 10;
+		final double expectedLength = size / expectedInterceptions;
+		final Img<BitType> sheets = ArrayImgs.bits(size, size, size);
+		for (long y = 5; y < size; y += 20) {
 			final IntervalView<BitType> sheet = Views.interval(sheets, new long[] { 0,
-				y, 0 }, new long[] { 99, y, 99 });
+				y, 0 }, new long[] { size - 1, y, size - 1 });
 			sheet.cursor().forEachRemaining(BitType::setOne);
 		}
 
@@ -216,8 +215,9 @@ public class MILGridTest {
 		// VERIFY
 		final Stream<Vector3d> yVectors = milVectors.stream().filter(v -> isParallel
 			.test(v, new Vector3d(0, 1, 0)));
-		assertTrue("MIL vectors in the Y-direction have unexpected length", yVectors
-			.allMatch(v -> v.length() == 1.0 / (2 * numSheets)));
+		yVectors.forEach(v -> assertEquals(
+			"An XZ-normal vector has unexpected length", expectedLength, v.length(),
+			1e-12));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -230,20 +230,4 @@ public class MILGridTest {
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
 	}
-
-	// region -- Helper methods --
-
-	private static Img<BitType> drawXYSheets() {
-		final Img<BitType> sheets = ArrayImgs.bits(100, 100, 100);
-		long z = 5;
-		for (int i = 0; i < 10; i++) {
-			final IntervalView<BitType> sheet = Views.interval(sheets, new long[] { 0,
-				0, z }, new long[] { 99, 99, z });
-			sheet.cursor().forEachRemaining(BitType::setOne);
-			z += 10;
-		}
-		return sheets;
-	}
-
-	// endregion
 }
