@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
 import net.imagej.ImageJ;
@@ -50,9 +49,9 @@ public class QuadricToEllipsoidTest {
 	// Constant seed for random generators
 	private static final long SEED = 0xc0ffee;
 	@SuppressWarnings("unchecked")
-	private static UnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> quadricToEllipsoid =
+	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoid =
 		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToEllipsoid.class,
-			Optional.class, UNIT_SPHERE);
+			Ellipsoid.class, UNIT_SPHERE);
 	@SuppressWarnings("unchecked")
 	private static BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
 		(BinaryFunctionOp) Functions.binary(IMAGE_J.op(), EllipsoidPoints.class,
@@ -104,13 +103,9 @@ public class QuadricToEllipsoidTest {
 		});
 		final Matrix4d quadric = (Matrix4d) IMAGE_J.op().run(SolveQuadricEq.class,
 			points);
-		final Optional<Ellipsoid> ellipsoidOptional = quadricToEllipsoid.calculate(
-			quadric);
+		final Ellipsoid ellipsoid = quadricToEllipsoid.calculate(quadric);
 
 		// VERIFY
-		assertTrue("Failed to fit transformed ellipsoid", ellipsoidOptional
-			.isPresent());
-		final Ellipsoid ellipsoid = ellipsoidOptional.get();
 		assertTrue("Ellipsoid centre point is not within tolerance", new Vector3d(0,
 			0, 0).epsilonEquals(ellipsoid.getCentroid(), 0.05));
 		assertEquals(radii[0], ellipsoid.getA(), 0.025);
@@ -147,13 +142,10 @@ public class QuadricToEllipsoidTest {
 		points.forEach(p -> p.add(centroid));
 		final Matrix4d quadric = (Matrix4d) IMAGE_J.op().run(SolveQuadricEq.class,
 			points);
-		final Optional<Ellipsoid> ellipsoidOptional = quadricToEllipsoid.calculate(
+		final Ellipsoid transformedEllipsoid = quadricToEllipsoid.calculate(
 			quadric);
 
 		// VERIFY
-		assertTrue("Failed to fit transformed ellipsoid", ellipsoidOptional
-			.isPresent());
-		final Ellipsoid transformedEllipsoid = ellipsoidOptional.get();
 		assertTrue(transformedEllipsoid.getCentroid().epsilonEquals(centroid,
 			1e-12));
 		assertEquals(radii[0], transformedEllipsoid.getA(), 1e-12);
@@ -165,14 +157,12 @@ public class QuadricToEllipsoidTest {
 
 	@Test
 	public void testUnitSphere() {
-		final Optional<Ellipsoid> sphereOptional = quadricToEllipsoid.calculate(
-			UNIT_SPHERE);
 		// A unit sphere has no orientation, so it's matrix will always be identity
 		final Matrix4d expectedOrientation = new Matrix4d();
 		expectedOrientation.setIdentity();
 
-		assertTrue("Failed to fit unit sphere", sphereOptional.isPresent());
-		final Ellipsoid unitSphere = sphereOptional.get();
+		final Ellipsoid unitSphere = quadricToEllipsoid.calculate(UNIT_SPHERE);
+
 		assertEquals(1.0, unitSphere.getA(), 1e-12);
 		assertEquals(1.0, unitSphere.getB(), 1e-12);
 		assertEquals(1.0, unitSphere.getC(), 1e-12);
