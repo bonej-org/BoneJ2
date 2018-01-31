@@ -4,6 +4,7 @@ package org.bonej.ops.ellipsoid;
 import java.util.Arrays;
 import java.util.Optional;
 
+import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 
@@ -40,7 +41,7 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends
-	AbstractUnaryFunctionOp<Matrix4d, Optional<Ellipsoid>>
+	AbstractUnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> implements Contingent
 {
 
 	/**
@@ -72,6 +73,15 @@ public class QuadricToEllipsoid extends
 		final Matrix3d orientation = toOrientationMatrix(decomposition);
 		ellipsoid.setOrientation(orientation);
 		return Optional.of(ellipsoid);
+	}
+
+	@Override
+	public boolean conforms() {
+		final Matrix4d quadric = in();
+		final double a = quadric.m00;
+		final double b = quadric.m11;
+		final double c = quadric.m22;
+		return a > 0 && b > 0 && c > 0;
 	}
 
 	/**

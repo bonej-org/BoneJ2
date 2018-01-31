@@ -2,7 +2,6 @@
 package org.bonej.ops.ellipsoid;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
@@ -38,45 +37,37 @@ import org.scijava.vecmath.Vector3d;
  */
 public class QuadricToEllipsoidTest {
 
+	//@formatter:off
+	private static final Matrix4d UNIT_SPHERE =
+            new Matrix4d(new double[] {
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, -1
+            });
+    //@formatter:on
 	private static final ImageJ IMAGE_J = new ImageJ();
 	// Constant seed for random generators
 	private static final long SEED = 0xc0ffee;
 	@SuppressWarnings("unchecked")
 	private static UnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> quadricToEllipsoid =
 		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToEllipsoid.class,
-			Optional.class, Matrix4d.class);
+			Optional.class, UNIT_SPHERE);
 	@SuppressWarnings("unchecked")
 	private static BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
 		(BinaryFunctionOp) Functions.binary(IMAGE_J.op(), EllipsoidPoints.class,
 			List.class, new double[] { 1, 2, 3 }, 0);
 
-	@Test
-	public void testConeIsNotEllipsoid() throws Exception {
+	@Test(expected = IllegalArgumentException.class)
+	public void testConeFailsMatching() {
 		//@formatter:off
-		final Optional<Ellipsoid> coneOptional = quadricToEllipsoid.calculate(
-				new Matrix4d(new double[] {
-						1, 0, 0, 0,
-						0, -1, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, -1 }));
-		//@formatter:on
-
-		assertFalse(coneOptional.isPresent());
-	}
-
-	@Test
-	public void testCylinderIsNotEllipsoid() throws Exception {
-		// Cylinder also causes SingularMatrixException which should be caught
-		//@formatter:off
-		final Optional<Ellipsoid> cylinderOptional = quadricToEllipsoid.calculate(
-				new Matrix4d(new double[] {
-						1, 0, 0, 0,
-						0, 0, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, -1 }));
-		//@formatter:on
-
-		assertFalse(cylinderOptional.isPresent());
+        final Matrix4d cone = new Matrix4d(new double[]{
+                1, 0, 0, 0,
+                0, -1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, -1});
+        //@formatter:on
+		IMAGE_J.op().run(QuadricToEllipsoid.class, cone);
 	}
 
 	/**
@@ -89,7 +80,7 @@ public class QuadricToEllipsoidTest {
 	 * </p>
 	 */
 	@Test
-	public void testEllipsoidBand() throws Exception {
+	public void testEllipsoidBand() {
 		// SETUP
 		final double[] radii = { 1, 2, 3 };
 		final Matrix4d orientation = new Matrix4d();
@@ -131,11 +122,9 @@ public class QuadricToEllipsoidTest {
 	/**
 	 * Tests a point cloud that's been translated and rotated, which should result
 	 * in a translated an rotated ellipsoid.
-	 * 
-	 * @throws Exception unexpected exception.
 	 */
 	@Test
-	public void testTransformedEllipsoid() throws Exception {
+	public void testTransformedEllipsoid() {
 		// SETUP
 		final Vector3d centroid = new Vector3d(1, 1, 1);
 		final AxisAngle4d rotation = new AxisAngle4d(0, 0, 1, Math.PI / 4.0);
@@ -175,18 +164,12 @@ public class QuadricToEllipsoidTest {
 	}
 
 	@Test
-	public void testUnitSphere() throws Exception {
-		//@formatter:off
+	public void testUnitSphere() {
 		final Optional<Ellipsoid> sphereOptional = quadricToEllipsoid.calculate(
-				new Matrix4d(new double[] {
-						1, 0, 0, 0,
-						0, 1, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, -1 }));
+			UNIT_SPHERE);
 		// A unit sphere has no orientation, so it's matrix will always be identity
 		final Matrix4d expectedOrientation = new Matrix4d();
 		expectedOrientation.setIdentity();
-		//@formatter:on
 
 		assertTrue("Failed to fit unit sphere", sphereOptional.isPresent());
 		final Ellipsoid unitSphere = sphereOptional.get();
