@@ -2,7 +2,6 @@
 package org.bonej.ops.ellipsoid;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
@@ -16,7 +15,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.GMatrix;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.SingularMatrixException;
 import org.scijava.vecmath.Vector3d;
 
 /**
@@ -41,7 +39,7 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends
-	AbstractUnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> implements Contingent
+	AbstractUnaryFunctionOp<Matrix4d, Ellipsoid> implements Contingent
 {
 
 	/**
@@ -52,29 +50,29 @@ public class QuadricToEllipsoid extends
 	private static final double EIGENVALUE_TOLERANCE = 1e-10;
 
 	@Override
-	public Optional<Ellipsoid> calculate(final Matrix4d quadricSolution) {
-		Vector3d center;
-		try {
-			center = findCenter(quadricSolution);
-		}
-		catch (SingularMatrixException sme) {
-			return Optional.empty();
-		}
+	public Ellipsoid calculate(final Matrix4d quadricSolution) {
+		final Vector3d center = findCenter(quadricSolution);
 		final Matrix4d translated = translateToCenter(quadricSolution, center);
 		final EigenDecomposition decomposition = solveEigenDecomposition(
 			translated);
-		if (!isEllipsoid(decomposition.getRealEigenvalues())) {
-			return Optional.empty();
-		}
 		final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
 			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
 		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
 		ellipsoid.setCentroid(center);
 		final Matrix3d orientation = toOrientationMatrix(decomposition);
 		ellipsoid.setOrientation(orientation);
-		return Optional.of(ellipsoid);
+		return ellipsoid;
 	}
 
+	/**
+	 * Checks if the matrix has the equation of an ellipsoid.
+	 * <p>
+	 * If the quadric is an ellipsoid, then the terms a, b, c on the matrix
+	 * diagonal have to be positive.
+	 * </p>
+	 *
+	 * @return true if an ellipsoid can be created from the input quadric.
+	 */
 	@Override
 	public boolean conforms() {
 		final Matrix4d quadric = in();
@@ -107,23 +105,6 @@ public class QuadricToEllipsoid extends
 		final double[] centerCoords = new double[3];
 		center.getColumn(0, centerCoords);
 		return new Vector3d(centerCoords);
-	}
-
-	/**
-	 * Determines if the quadric is an ellipsoid from its eigenvalues.
-	 * <p>
-	 * The signs of the eigenvalues determine the type of a quadric. If they are
-	 * all positive, it is an ellipsoid; two positive and one negative gives a
-	 * hyperboloid of one sheet; one positive and two negative gives a hyperboloid
-	 * of two sheets. If one or more eigenvalues vanish, we have a degenerate case
-	 * such as a paraboloid,or a cylinder or even a pair of planes.
-	 * </p>
-	 *
-	 * @param eigenvalues eigenvalues of a quadric surface
-	 * @return true if the surface is an ellipsoid, false otherwise.
-	 */
-	private static boolean isEllipsoid(final double[] eigenvalues) {
-		return Arrays.stream(eigenvalues).allMatch(x -> x > EIGENVALUE_TOLERANCE);
 	}
 
 	// Using apache.commons.math3 since scijava.vecmath doesn't yet have eigen

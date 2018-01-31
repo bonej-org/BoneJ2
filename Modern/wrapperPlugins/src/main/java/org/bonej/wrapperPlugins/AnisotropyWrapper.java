@@ -75,7 +75,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 {
 
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, List<Vector3d>> milOp;
-	private static UnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
 	private static int ROTATIONS = 1_000;
 	private static int DEFAULT_LINES = 50;
@@ -149,18 +149,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		for (int i = 0; i < subspaces.size(); i++) {
 			final Subspace<BitType> subspace = subspaces.get(i);
 			statusService.showStatus("Anisotropy: sampling subspace #" + (i + 1));
-			Ellipsoid ellipsoid;
+			final List<Vector3d> pointCloud;
 			try {
-				final List<Vector3d> pointCloud = runRotationsInParallel(
-					subspace.interval);
-				applyCalibration(pointCloud);
-				ellipsoid = fitEllipsoid(pointCloud);
+				pointCloud = runRotationsInParallel(subspace.interval);
 			}
 			catch (ExecutionException | InterruptedException e) {
 				logService.trace(e.getMessage());
 				cancel("Parallel execution got interrupted");
 				return;
 			}
+			applyCalibration(pointCloud);
+			final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
 			if (ellipsoid == null) {
 				cancel(
 					"Anisotropy could not be calculated - try adding more rotations");
@@ -209,11 +208,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
-		final Optional<Ellipsoid> result = quadricToEllipsoidOp.calculate(quadric);
-		return result.orElse(null);
+		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
-	//TODO Refactor into a static utility method with unit tests
+	// TODO Refactor into a static utility method with unit tests
 	private boolean isCalibrationIsotropic() {
 		final Optional<String> commonUnit = getSpatialUnit(inputImage, unitService);
 		if (!commonUnit.isPresent()) {
@@ -233,8 +231,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
 			Matrix4d.class, tmpPoints);
-		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService,
-			QuadricToEllipsoid.class, Optional.class, Matrix4d.class);
+		final Matrix4d matchingMock = new Matrix4d();
+		matchingMock.setIdentity();
+		quadricToEllipsoidOp = Functions.unary(opService, QuadricToEllipsoid.class,
+			Ellipsoid.class, matchingMock);
 	}
 
 	private List<Vector3d> runRotationsInParallel(
