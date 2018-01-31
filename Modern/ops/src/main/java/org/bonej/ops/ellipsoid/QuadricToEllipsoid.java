@@ -80,7 +80,7 @@ public class QuadricToEllipsoid extends
 	 * @param quadric the general equation of a quadric in algebraic matrix form.
 	 * @return the 3D center point in a vector.
 	 */
-	private Vector3d findCenter(final Matrix4d quadric) {
+	private static Vector3d findCenter(final Matrix4d quadric) {
 		// @formatter:off
 		final GMatrix sub = new GMatrix(3, 3, new double[] {
 				quadric.m00, quadric.m01, quadric.m02,
@@ -112,7 +112,7 @@ public class QuadricToEllipsoid extends
 	 * @param eigenvalues eigenvalues of a quadric surface
 	 * @return true if the surface is an ellipsoid, false otherwise.
 	 */
-	private boolean isEllipsoid(final double[] eigenvalues) {
+	private static boolean isEllipsoid(final double[] eigenvalues) {
 		return Arrays.stream(eigenvalues).allMatch(x -> x > EIGENVALUE_TOLERANCE);
 	}
 
@@ -132,7 +132,9 @@ public class QuadricToEllipsoid extends
 		return new EigenDecomposition(input);
 	}
 
-	private Matrix3d toOrientationMatrix(final EigenDecomposition decomposition) {
+	private static Matrix3d toOrientationMatrix(
+		final EigenDecomposition decomposition)
+	{
 		final RealVector e1 = decomposition.getEigenvector(0);
 		final RealVector e2 = decomposition.getEigenvector(1);
 		final RealVector e3 = decomposition.getEigenvector(2);
