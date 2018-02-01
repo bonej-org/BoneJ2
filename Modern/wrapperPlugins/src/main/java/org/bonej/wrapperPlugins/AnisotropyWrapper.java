@@ -107,9 +107,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
 		"NB parameter values can affect results significantly";
-	private boolean anisotropyWarningShown;
-
-	// TODO add @Parameter to print eigenvectors & -values of the ellipsoid
+	private boolean calibrationWarned;
+	@Parameter(label = "Print ellipsoids",
+		description = "Print axes of the fitted ellipsoids", required = false)
+	private boolean printEllipsoids;
 
 	// TODO add @Parameter to align the image to the ellipsoid
 	// Create a rotated view from the ImgPlus and pop that into an output
@@ -168,7 +169,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			}
 			statusService.showStatus("Determining anisotropy");
 			final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
-			addResult(subspace, anisotropy);
+			addResults(subspace, anisotropy, ellipsoid);
 		}
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
@@ -177,14 +178,22 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	// region -- Helper methods --
 
-	private void addResult(final Subspace<BitType> subspace,
-		final double anisotropy)
+	private void addResults(final Subspace<BitType> subspace,
+		final double anisotropy, final Ellipsoid ellipsoid)
 	{
 		final String imageName = inputImage.getName();
 		final String suffix = subspace.toString();
 		final String label = suffix.isEmpty() ? imageName : imageName + " " +
 			suffix;
 		SharedTable.add(label, "Degree of anisotropy", anisotropy);
+		if (printEllipsoids) {
+			final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
+			int ordinal = 1;
+			for (final Vector3d axis : semiAxes) {
+				SharedTable.add(label, "Ellipsoid axis #" + ordinal, axis.toString());
+				ordinal++;
+			}
+		}
 	}
 
 	private void applyCalibration(final List<Vector3d> pointCloud) {
@@ -288,13 +297,13 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_BINARY);
 			return;
 		}
-		if (!isCalibrationIsotropic() && !anisotropyWarningShown) {
+		if (!isCalibrationIsotropic() && !calibrationWarned) {
 			final DialogPrompt.Result result = uiService.showDialog(
 				"The image calibration is anisotropic and may affect results. Continue anyway?",
 				WARNING_MESSAGE, OK_CANCEL_OPTION);
 			// Avoid showing warning more than once (validator gets called before and
 			// after dialog pops up..?)
-			anisotropyWarningShown = true;
+			calibrationWarned = true;
 			if (result != OK_OPTION) {
 				cancel(null);
 			}
