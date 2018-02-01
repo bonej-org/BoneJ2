@@ -165,6 +165,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 					"Anisotropy could not be calculated - try adding more rotations");
 				return;
 			}
+			statusService.showStatus("Determining anisotropy");
 			final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
 			addResult(subspace, anisotropy);
 		}
@@ -206,8 +207,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
 			return null;
 		}
-
+        statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
+		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
+			return null;
+		}
+        statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
