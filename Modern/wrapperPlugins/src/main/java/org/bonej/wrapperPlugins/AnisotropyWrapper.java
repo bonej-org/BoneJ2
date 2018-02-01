@@ -111,6 +111,11 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(label = "Print ellipsoids",
 		description = "Print axes of the fitted ellipsoids", required = false)
 	private boolean printEllipsoids;
+	private static Long seed = null;
+
+	public static void setSeed(long seed) {
+		AnisotropyWrapper.seed = seed;
+	}
 
 	// TODO add @Parameter to align the image to the ellipsoid
 	// Create a rotated view from the ImgPlus and pop that into an output
@@ -161,10 +166,14 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				return;
 			}
 			applyCalibration(pointCloud);
+			if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
+			    cancel("Anisotropy could not be calculated - too few points");
+			    return;
+            }
 			final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
 			if (ellipsoid == null) {
 				cancel(
-					"Anisotropy could not be calculated - try adding more rotations");
+					"Anisotropy could not be calculated - ellipsoid fitting failed");
 				return;
 			}
 			statusService.showStatus("Determining anisotropy");
@@ -239,9 +248,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@SuppressWarnings("unchecked")
 	private void matchOps(final Subspace<BitType> subspace) {
+		final Random random = seed != null ? new Random(seed) : new Random();
 		milOp = (BinaryFunctionOp) Functions.binary(opService, MILGrid.class,
 			List.class, subspace.interval, new AxisAngle4d(), lines,
-			samplingIncrement, new Random());
+			samplingIncrement, random);
 		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
 			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
