@@ -107,6 +107,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
 		"NB parameter values can affect results significantly";
+	private boolean anisotropyWarningShown;
 
 	// TODO add @Parameter to print eigenvectors & -values of the ellipsoid
 
@@ -207,12 +208,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
 			return null;
 		}
-        statusService.showStatus("Anisotropy: solving quadric equation");
+		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
 		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
 			return null;
 		}
-        statusService.showStatus("Anisotropy: fitting ellipsoid");
+		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
@@ -287,10 +288,13 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_BINARY);
 			return;
 		}
-		if (!isCalibrationIsotropic()) {
+		if (!isCalibrationIsotropic() && !anisotropyWarningShown) {
 			final DialogPrompt.Result result = uiService.showDialog(
 				"The image calibration is anisotropic and may affect results. Continue anyway?",
 				WARNING_MESSAGE, OK_CANCEL_OPTION);
+			// Avoid showing warning more than once (validator gets called before and
+			// after dialog pops up..?)
+			anisotropyWarningShown = true;
 			if (result != OK_OPTION) {
 				cancel(null);
 			}
