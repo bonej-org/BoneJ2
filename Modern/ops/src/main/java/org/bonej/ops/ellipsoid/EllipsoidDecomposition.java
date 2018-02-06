@@ -1,27 +1,24 @@
 package org.bonej.ops.ellipsoid;
 
+import com.sun.org.glassfish.gmbal.GmbalException;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
-import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imglib2.util.ValuePair;
 import org.scijava.plugin.Plugin;
-import org.scijava.vecmath.Matrix3d;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
-import org.scijava.vecmath.Vector4d;
+import org.scijava.vecmath.*;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
  * Tries to create an {@link Ellipsoid} decomposition from a list of vertex points with inward pointing normals
  * <p>
  * The ellipsoid decomposition is drawn from the paper of Bischoff and Kobbelt, 2002
- * The variable naming follows Bischoff and Kobbelt's nomenclature.
+ * The variable naming follows Bischoff and Kobbelt's nomenclature, it is recommended to read this code in conjunction with the paper.
  * </p>
  *
  * @author Alessandro Felder
@@ -36,19 +33,31 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<Vector
 
         VertexWithNormal p = new VertexWithNormal(vertexWithNormal);
 
-        ValuePair<VertexWithNormal,Double> QAndR = calculateQ(otherVerticesWithNormals, p);
-        if(QAndR==null) return Optional.empty();
+        ValuePair<VertexWithNormal,Double> qAndRadius = calculateQ(otherVerticesWithNormals, p);
+        if(qAndRadius==null) return Optional.empty();
 
         Vector3d c = new Vector3d(p.getNormal());
-        c.scaleAdd(QAndR.getB(), p.getVertex());
-        Matrix4d q1 = getQuadric1(c,QAndR.getB());
-        Matrix4d q2 = getQuadric2(p,QAndR.getA());
+        c.scaleAdd(qAndRadius.getB(), p.getVertex());
+        Matrix4d q1 = getQuadric1(c,qAndRadius.getB());
+        Matrix4d q2 = getQuadric2(p,qAndRadius.getA());
 
-        double alpha = calculateOptimalAlpha(q1, q2, otherVerticesWithNormals);
+        ValuePair<Vector3d,Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, otherVerticesWithNormals);
+        if(rAndAlpha==null) return Optional.empty();
 
         Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
-        q1PlusAlphaQ2.mul(alpha);
+        q1PlusAlphaQ2.mul(rAndAlpha.getB());
         q1PlusAlphaQ2.add(q1);
+
+        Matrix4d q3 = getQuadric3(Stream.of(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()).collect(Collectors.toList()),q1PlusAlphaQ2);
+        //Matrix4d q3 = getQuadric3(Stream.of(p.getVertex(), qAndRadius.getA().getVertex(), new Vector3d(1,0,0)).collect(Collectors.toList()),q1PlusAlphaQ2);
+
+
+        ValuePair<Vector3d,Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, otherVerticesWithNormals);
+        if(sAndBeta==null) return Optional.empty();
+
+        Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
+        q1PlusAlphaQ2plusBetaQ3.mul(sAndBeta.getB());
+        q1PlusAlphaQ2.add(q1PlusAlphaQ2);
 
         return quadricToEllipsoid.calculate(q1PlusAlphaQ2);
     }
@@ -100,6 +109,160 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<Vector
         return quadric2;
     }
 
+    public static Matrix4d getQuadric3(final List<Vector3d> pqr, final Matrix4d qBar)
+    {
+        Matrix4d quadric = new Matrix4d();
+        Matrix3d E = getEllipseMatrix(pqr, qBar);
+
+        Vector2d uvCentre = getUVCentre(E);
+        Vector3d centre = toWorldCoordinates(pqr, uvCentre);
+
+        ValuePair<Vector2d, Vector2d> eigenDecomposition = getEllipseMatrixEigenDecomposition(E);
+
+        ValuePair<Double, Double> lambda1and2 = new ValuePair<>(eigenDecomposition.getA().length(), eigenDecomposition.getB().length());
+        double K = -E.determinant()/(lambda1and2.getA()*lambda1and2.getB());
+
+        centre.scale(0.5);
+        quadric.setTranslation(centre);
+        quadric.setRow(3, new Vector4d(centre));
+
+        Matrix3d a1 = getAxisContribution(toWorldCoordinates(pqr, eigenDecomposition.getA()));
+        Matrix3d a2 = getAxisContribution(toWorldCoordinates(pqr, eigenDecomposition.getB()));
+        a2.add(a1);
+
+        quadric.setRotationScale(a2);
+
+        return quadric;
+
+    }
+
+    public static Matrix3d getAxisContribution(final Vector3d axis) {
+        double radius = axis.length();
+        Vector3d normalizedAxis = new Vector3d(axis);
+        normalizedAxis.normalize();
+
+        Matrix3d axisContribution = new Matrix3d();
+        axisContribution.setM00(normalizedAxis.getX()*normalizedAxis.getX());
+        axisContribution.setM11(normalizedAxis.getY()*normalizedAxis.getY());
+        axisContribution.setM22(normalizedAxis.getZ()*normalizedAxis.getZ());
+
+        axisContribution.setM01(normalizedAxis.getX()*normalizedAxis.getY());
+        axisContribution.setM10(normalizedAxis.getX()*normalizedAxis.getY());
+
+        axisContribution.setM02(normalizedAxis.getX()*normalizedAxis.getZ());
+        axisContribution.setM20(normalizedAxis.getX()*normalizedAxis.getZ());
+
+        axisContribution.setM12(normalizedAxis.getY()*normalizedAxis.getZ());
+        axisContribution.setM21(normalizedAxis.getY()*normalizedAxis.getZ());
+
+        axisContribution.setScale(1.0/(radius*radius));
+        return axisContribution;
+    }
+
+    // Eigenvalue calculation follows explicit formulae derived from characteristic equation
+    // http://croninprojects.org/Vince/Geodesy/FindingEigenvectors.pdf
+    private static ValuePair<Vector2d,Vector2d> getEllipseMatrixEigenDecomposition(final Matrix3d ellipseMatrix) {
+
+        double A = ellipseMatrix.getElement(0, 0);
+        double B = ellipseMatrix.getElement(0, 1);
+        double C = ellipseMatrix.getElement(1, 1);
+
+        double trace = A + C;
+        double determinant = A * C - B * B;
+
+        double lambda1 = trace / 2.0 + Math.sqrt(trace * trace / 4.0 - determinant);
+        double lambda2 = trace / 2.0 - Math.sqrt(trace * trace / 4.0 - determinant);
+
+        Vector2d e1;
+        Vector2d e2;
+
+        if (Math.abs(B) < 1.e-12) {
+            e1 = new Vector2d(1.0, 0.0);
+            e2 = new Vector2d(0.0, 1.0);
+        } else {
+            e1 = new Vector2d(1.0, (lambda1 - A) / B);
+            e1.normalize();
+            e2 = new Vector2d(1.0, (lambda2 - A) / B);
+            e2.normalize();
+        }
+
+        if(Math.abs(lambda1)<1.e-12 || Math.abs(lambda2)<1.e-12)
+        {
+            throw new IllegalArgumentException("Input matrix represents degenerate ellipse.");
+        }
+
+        e1.scale(lambda1);
+        e2.scale(lambda2);
+
+        return new ValuePair<>(e1, e2);
+    }
+
+
+    private static Vector3d toWorldCoordinates(final List<Vector3d> threePointsOnAPlane, final Vector2d parametricCoordinates) {
+        Vector3d p = threePointsOnAPlane.get(0);
+        Vector3d q = threePointsOnAPlane.get(1);
+        Vector3d r = threePointsOnAPlane.get(2);
+
+        Vector3d qMinusP = new Vector3d(p);
+        qMinusP.scaleAdd(-1.0, new Vector3d(q));
+        //qMinusP.scale(parametricCoordinates.getX());
+
+        Vector3d rMinusP = new Vector3d(p);
+        rMinusP.scaleAdd(-1.0, new Vector3d(r));
+       // rMinusP.scale(parametricCoordinates.getY());
+
+        Vector3d result = new Vector3d(p);
+        result.add(qMinusP);
+        result.add(rMinusP);
+        return result;
+    }
+
+    //formula from conic sections article on Wikipedia
+    private static Vector2d getUVCentre(final Matrix3d e) {
+        double A = e.getElement(0,0);
+        double B = 2.0*e.getElement(0,1);
+        double C = e.getElement(1,1);
+        double D = 2.0*e.getElement(0,2);
+        double E = 2.0*e.getElement(1,2);
+
+        double fourACMinusBSquared = 4.0*A*C-B*B;
+
+        return new Vector2d((B*E-2.0*C*D)/fourACMinusBSquared, (D*B-2.0*A*E)/fourACMinusBSquared);
+    }
+
+    private static Matrix3d getEllipseMatrix(final List<Vector3d> pqr, final Matrix4d qBar) {
+        Vector3d p = pqr.get(0);
+        Vector3d q = pqr.get(1);
+        Vector3d r = pqr.get(2);
+
+        Vector4d qMinusP = new Vector4d(p);
+        qMinusP.scaleAdd(-1.0, new Vector4d(q));
+
+        Vector4d rMinusP = new Vector4d(p);
+        rMinusP.scaleAdd(-1.0, new Vector4d(r));
+
+        GMatrix toParameterSpace = new GMatrix(4,3);
+        toParameterSpace.setColumn(0, new GVector(qMinusP));
+        toParameterSpace.setColumn(1, new GVector(rMinusP));
+        toParameterSpace.setColumn(2, new GVector(new Vector4d(p)));
+        toParameterSpace.setElement(3,2,1.0);
+
+        GMatrix fromParameterSpace = new GMatrix(toParameterSpace);
+        fromParameterSpace.transpose();
+
+        GMatrix generalQBar = new GMatrix(4,4);
+        generalQBar.set(qBar);
+
+        toParameterSpace.mul(generalQBar, toParameterSpace);
+
+        GMatrix gE = new GMatrix(3,3);
+        gE.mul(fromParameterSpace,toParameterSpace);
+
+        Matrix3d E = new Matrix3d();
+        gE.get(E);
+        return E;
+    }
+
     private static ValuePair<VertexWithNormal,Double> calculateQ(final List<Vector3d> candidateQs, final VertexWithNormal p) {
         List<ValuePair<VertexWithNormal, Double>> candidateQAndRs = candidateQs.stream().map(q -> calculatePossibleQAndR(q,p)).filter(qnr -> qnr.getB()>0).collect(Collectors.toList());
 
@@ -129,14 +292,14 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<Vector
 
     }
 
-    static double calculateOptimalAlpha(final Matrix4d Q1, final Matrix4d Q2, final List<Vector3d> vertices)
+    private static ValuePair<Vector3d, Double> calculateSurfacePointAndGreekCoefficient(final Matrix4d Q1, final Matrix4d Q2, final List<Vector3d> vertices)
     {
-        final List<Double> alphaValues = vertices.stream().map(v -> calculateAlpha(Q1, Q2, v)).filter(a -> !a.isNaN()).collect(Collectors.toList());
-        alphaValues.sort(Double::compareTo);
-        if(alphaValues.size() > 0)
-            return alphaValues.get(0);
+        final List<ValuePair<Vector3d,Double>> candidatePointsAndCoefficients = vertices.stream().map(v -> calculateCandidateSurfacePointAndGreekCoefficient(Q1, Q2, v)).filter(a -> !a.getB().isNaN()).collect(Collectors.toList());
+        candidatePointsAndCoefficients.sort(Comparator.comparingDouble(ValuePair::getB));
+        if(candidatePointsAndCoefficients.size() > 0)
+            return candidatePointsAndCoefficients.get(0);
         else
-            return Double.NaN;
+            return null;
     }
 
     private static double calculateXtQX(final Matrix4d Q2, Vector3d x)
@@ -148,13 +311,13 @@ public class EllipsoidDecomposition extends AbstractBinaryFunctionOp<List<Vector
         return x4d.dot(Q2X);
     }
 
-    static double calculateAlpha(final Matrix4d Q1, final Matrix4d Q2, final Vector3d x)
+    private static ValuePair<Vector3d, Double> calculateCandidateSurfacePointAndGreekCoefficient(final Matrix4d Q1, final Matrix4d Q2, final Vector3d x)
     {
         double xtQ2X = calculateXtQX(Q2, x);
-        if(xtQ2X>=0) return Double.NaN;
+        if(xtQ2X>=0) return new ValuePair<>(new Vector3d(), Double.NaN);
 
         double xtQ1X = calculateXtQX(Q1, x);
-        return -xtQ1X/xtQ2X;
+        return new ValuePair<>(new Vector3d(x),-xtQ1X/xtQ2X);
     }
 
 
@@ -178,88 +341,4 @@ class VertexWithNormal {
     public Vector3d getNormal() {
         return new Vector3d(vwn.getB());
     }
-}
-
-class EllipsoidDecompositionInfo {
-
-    private VertexWithNormal p;
-    private VertexWithNormal q;
-    private VertexWithNormal r;
-    private VertexWithNormal s;
-
-    private double optimalRadius;
-    private double optimalAlpha;
-
-    private Matrix4d Q1;
-    private Matrix4d Q2;
-
-    EllipsoidDecompositionInfo(VertexWithNormal  initialVectorWithNormal)
-    {
-        this.setP(initialVectorWithNormal);
-    }
-
-    public VertexWithNormal getP() {
-        return p;
-    }
-
-    public void setP(VertexWithNormal p) {
-        this.p = p;
-    }
-
-    public VertexWithNormal getQ() {
-        return q;
-    }
-
-    public void setQ(VertexWithNormal q) {
-        this.q = q;
-    }
-
-    public VertexWithNormal getR() {
-        return r;
-    }
-
-    public void setR(VertexWithNormal r) {
-        this.r = r;
-    }
-
-    public VertexWithNormal getS() {
-        return s;
-    }
-
-    public void setS(VertexWithNormal s) {
-        this.s = s;
-    }
-
-    public double getOptimalRadius() {
-        return optimalRadius;
-    }
-
-    public void setOptimalRadius(double optimalRadius) {
-        this.optimalRadius = optimalRadius;
-    }
-
-    public double getOptimalAlpha() {
-        return optimalAlpha;
-    }
-
-    public void setOptimalAlpha(double optimalAlpha) {
-        this.optimalAlpha = optimalAlpha;
-    }
-
-    public Matrix4d getQ1() {
-        return Q1;
-    }
-
-    public void setQ1(Matrix4d q1) {
-        Q1 = q1;
-    }
-
-    public Matrix4d getQ2() {
-        return Q2;
-    }
-
-    public void setQ2(Matrix4d q2) {
-        Q2 = q2;
-    }
-
 }

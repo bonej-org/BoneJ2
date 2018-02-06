@@ -26,25 +26,48 @@ public class EllipsoidDecompositionTest {
     private static BinaryFunctionOp<List<Vector3d>,ValuePair<Vector3d,Vector3d>, Optional<Ellipsoid>> ellipsoidDecomposition =
             (BinaryFunctionOp) Functions.unary(IMAGE_J.op(), EllipsoidDecomposition.class,
                     Optional.class, List.class, ValuePair.class);
-
     @Test
-    public void testFittingEllipsoidToThreeInputPoints() {
-        Vector3d vertexP = new Vector3d(0,0,0);
+    public void testFittingEllipsoidToThreeInputPointsEasy() {
+        Vector3d vertexP = new Vector3d(0,2,0);
         Vector3d normalP = new Vector3d(0,1,0);
 
-        Vector3d vertexQ = new Vector3d(1,3,0);
-        Vector3d vertexR = new Vector3d(-4,2,0);
+        Vector3d vertexQ = new Vector3d(0,4,0);
+        Vector3d vertexR = new Vector3d(3,3,0);
+        Vector3d vertexS = new Vector3d(0,0,20);
         Vector3d vertexTooFarAway = new Vector3d(10,-20,4);
 
-        final List<Vector3d> allVertices = Arrays.asList(vertexP,vertexQ,vertexR,vertexTooFarAway);
+        final List<Vector3d> allVertices = Arrays.asList(vertexP,vertexQ,vertexR,vertexS,vertexTooFarAway);
         final Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(allVertices, new ValuePair<>(vertexP, normalP));
 
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP,ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexQ,ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexR,ellipsoid.get()));
+        //assertTrue(testPointIsOnEllipsoidSurface(vertexS,ellipsoid.get()));
         assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway,ellipsoid.get()));
     }
+
+    @Test
+    public void testFittingEllipsoidToThreeInputPointsDifficult() {
+        Vector3d vertexP = new Vector3d(0,0,0);
+        Vector3d normalP = new Vector3d(0,1,0);
+
+        Vector3d vertexQ = new Vector3d(1,3,0);
+        Vector3d vertexR = new Vector3d(-4,2,0);
+        Vector3d vertexS = new Vector3d(-2,2,7);
+        Vector3d vertexTooFarAway = new Vector3d(10,-20,4);
+
+        final List<Vector3d> allVertices = Arrays.asList(vertexP,vertexQ,vertexR,vertexS,vertexTooFarAway);
+        final Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(allVertices, new ValuePair<>(vertexP, normalP));
+
+        assertTrue(ellipsoid.isPresent());
+        assertTrue(testPointIsOnEllipsoidSurface(vertexP,ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ,ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexR,ellipsoid.get()));
+        //assertTrue(testPointIsOnEllipsoidSurface(vertexS,ellipsoid.get()));
+        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway,ellipsoid.get()));
+    }
+
 
     private boolean testPointIsOnEllipsoidSurface(Vector3d point, Ellipsoid ellipsoid)
     {
@@ -75,6 +98,7 @@ public class EllipsoidDecompositionTest {
 
         return Math.abs(shouldBeOne-1.0)<1.0e-12;
     }
+
 
     @Test
     public void testQuadric1() {
@@ -123,6 +147,11 @@ public class EllipsoidDecompositionTest {
 
         assertTrue(q2.epsilonEquals(expected,1.0e-12));
 
+
+    }
+
+    @Test
+    public void testQuadric3() {
 
     }
 }
