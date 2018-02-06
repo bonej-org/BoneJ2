@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  * @author Alessandro Felder
  */
 @Plugin(type = Op.class)
-public class EllipsoidPlaneIntersection extends AbstractBinaryFunctionOp<Ellipsoid, ValuePair<Vector3d,Vector3d>, List<Vector3d>>
+public class EllipsoidPlaneIntersectionOp extends AbstractBinaryFunctionOp<Ellipsoid, ValuePair<Vector3d,Vector3d>, List<Vector3d>>
 {
 
     @Override
@@ -73,8 +73,8 @@ public class EllipsoidPlaneIntersection extends AbstractBinaryFunctionOp<Ellipso
         ValuePair<Vector2d,Vector2d> tuAxes = getParametricAxes(semiAxisLengths, basis, q);
 
         Vector3d ellipseCentre = toWorldCoordinates(tuCentre,basis,q);
-        Vector3d ellipseFirstAxis = toWorldCoordinates(tuAxes.getA(),basis,q);
-        Vector3d ellipseSecondAxis = toWorldCoordinates(tuAxes.getB(),basis,q);
+        Vector3d ellipseFirstAxis = toWorldCoordinates(tuAxes.getA(),basis,new Vector3d());
+        Vector3d ellipseSecondAxis = toWorldCoordinates(tuAxes.getB(),basis,new Vector3d());
 
         return Stream.of(ellipseCentre, ellipseFirstAxis, ellipseSecondAxis).collect(Collectors.toList());
     }
