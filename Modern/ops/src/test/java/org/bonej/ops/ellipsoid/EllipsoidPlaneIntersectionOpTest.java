@@ -15,7 +15,7 @@ public class EllipsoidPlaneIntersectionOpTest {
     UnitSphereRandomVectorGenerator sphereRNG = new UnitSphereRandomVectorGenerator(3);
 
     @Test
-    public void testGeneralEllipsoidWithObliquePlane() throws Exception {
+    public void testGeneralEllipsoidAndPlane() throws Exception {
         Ellipsoid axisAligned = new Ellipsoid(1,2,3);
 
         double oneOverSqrtThree = 1.0/Math.sqrt(3.0);

@@ -54,7 +54,7 @@ public class EllipsoidPlaneIntersectionOp extends AbstractBinaryFunctionOp<Ellip
         Vector3d semiAxisLengths = new Vector3d(ellipsoid.getA(), ellipsoid.getB(), ellipsoid.getC());
         List<Vector3d> ellipse3D = findAxisAlignedIntersectionEllipse(semiAxisLengths, new ValuePair<>(interiorPointOnPlane, planeNormal));
 
-        //tranform back
+        //transform back
         rotation.transpose();
         ellipse3D.forEach(rotation::transform);
 
