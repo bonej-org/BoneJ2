@@ -219,18 +219,14 @@ public class MILGrid<B extends BooleanType<B>> extends
 		// Add a random offset so that sampling doesn't always start from the same
 		// plane
 		final double startT = section.tMin + random.nextDouble() * increment;
-		if (startT > section.tMax) {
-			return -1;
-		}
 		final Vector3d samplePoint = new Vector3d(section.direction);
 		samplePoint.scale(startT);
 		samplePoint.add(section.origin);
 		final Vector3d gap = new Vector3d(section.direction);
 		gap.scale(increment);
 		long intercepts = 0;
-		long samples = 0;
 		final RandomAccess<B> access = interval.randomAccess();
-		boolean previous = sampleVoxel(access, samplePoint);
+		boolean previous = false;
 		final long iterations = (long) Math.ceil((section.tMax - startT) /
 			increment);
 		for (long i = 0; i < iterations; i++) {
@@ -240,9 +236,8 @@ public class MILGrid<B extends BooleanType<B>> extends
 			}
 			previous = current;
 			samplePoint.add(gap);
-			samples++;
 		}
-		return samples >= 2 ? intercepts : -1;
+		return intercepts;
 	}
 
 	private static <B extends BooleanType<B>> boolean sampleVoxel(
@@ -260,15 +255,13 @@ public class MILGrid<B extends BooleanType<B>> extends
 	{
 		final long intercepts = sampleIntercepts(interval, section, increment,
 			random);
-		if (intercepts < 0) {
+		if (intercepts <= 0) {
 			return null;
 		}
 		final Vector3d milVector = new Vector3d(section.direction);
 		final double length = section.tMax - section.tMin;
 		milVector.scale(length);
-		if (intercepts > 1) {
-			milVector.scale(1.0 / intercepts);
-		}
+		milVector.scale(1.0 / intercepts);
 		return milVector;
 	}
 

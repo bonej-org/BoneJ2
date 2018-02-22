@@ -2,6 +2,7 @@
 package org.bonej.ops.mil;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Vector3d;
@@ -29,6 +31,7 @@ public class MILGridTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static final long SIZE = 5;
+	private static final Img<BitType> FG_IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static final Img<BitType> BG_IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static final long DEFAULT_BINS = SIZE;
 	private static final AxisAngle4d IDENTITY_ROTATION = new AxisAngle4d();
@@ -52,14 +55,15 @@ public class MILGridTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testBinsParameter() {
-
+		// EXECUTE
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
+			MILGrid.class, FG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
 			SEED);
 		final List<Vector3d> milVectors2 = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS * 2,
+			MILGrid.class, FG_IMG, IDENTITY_ROTATION, DEFAULT_BINS * 2,
 			DEFAULT_INCREMENT, SEED);
 
+		// VERIFY
 		assertTrue("Having more bins should create more vectors", milVectors
 			.size() < milVectors2.size());
 	}
@@ -71,6 +75,18 @@ public class MILGridTest {
 			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
 			SEED);
 
+		assertTrue("Empty interval should return an empty collection", milVectors.isEmpty());
+	}
+
+	@Test
+	public void testForegroundInterval() {
+		// EXECUTE
+		@SuppressWarnings("unchecked")
+		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
+			MILGrid.class, FG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
+			SEED);
+
+		// VERIFY
 		assertEquals("Wrong Number of vectors", 27, milVectors.size());
 		final long xParallel = milVectors.stream().filter(v -> isParallel.test(v,
 			X_AXIS)).count();
@@ -145,8 +161,9 @@ public class MILGridTest {
 
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
-			MILGrid.class, BG_IMG, rotation, DEFAULT_BINS, DEFAULT_INCREMENT, SEED);
+			MILGrid.class, FG_IMG, rotation, DEFAULT_BINS, DEFAULT_INCREMENT, SEED);
 
+		assertFalse(milVectors.isEmpty());
 		assertTrue("Changing the rotation parameter had no effect", milVectors
 			.stream().noneMatch(v -> v.equals(new Vector3d(0, 0, 1))));
 	}
@@ -216,6 +233,11 @@ public class MILGridTest {
 		yVectors.forEach(v -> assertEquals(
 			"An XZ-normal vector has unexpected length", expectedLength, v.length(),
 			1e-12));
+	}
+
+	@BeforeClass
+	public static void oneTimeSetup() {
+		FG_IMG.forEach(BitType::setOne);
 	}
 
 	@AfterClass
