@@ -27,7 +27,6 @@ import net.imglib2.util.ValuePair;
 
 import org.bonej.ops.BoxIntersect;
 import org.bonej.ops.RotateAboutAxis;
-import org.scijava.ItemIO;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.AxisAngle4d;
@@ -107,15 +106,6 @@ public class MILGrid<B extends BooleanType<B>> extends
 	 */
 	@Parameter(required = false, persist = false)
 	private Long seed;
-	/**
-	 * The theoretical maximum of the number of samples taken.
-	 * <p>
-	 * In practice it'll nearly always be smaller since due rotation and other
-	 * factors.
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, persist = false)
-	private Long potentialSamples = 0L;
 
 	/**
 	 * Returns a point cloud of MIL vectors around the origin.
@@ -150,7 +140,6 @@ public class MILGrid<B extends BooleanType<B>> extends
 				throw new IllegalArgumentException("Increment too small");
 			}
 			random = seed != null ? new Random(seed) : new Random();
-			potentialSamples = calculatePotentialSamples(interval, increment, bins);
 		}
 		final LineGrid grid = createGrid(interval, rotateOp, rotation, random);
 		final Stream<Section> sections = grid.lines(bins).map((line) -> findSection(
@@ -184,14 +173,6 @@ public class MILGrid<B extends BooleanType<B>> extends
 	}
 
 	// region -- Helper methods --
-	private static long calculatePotentialSamples(
-		final RandomAccessibleInterval interval, final double increment,
-		final long bins)
-	{
-		final double increments = dimStream.apply(interval).mapToDouble(dim -> dim /
-			increment).reduce((a, b) -> a * b).orElse(0.0);
-		return (long) Math.floor(bins * bins * 3 * increments);
-	}
 
 	private static LineGrid createGrid(final Interval interval,
 		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp,
