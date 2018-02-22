@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
  *lots of expected values calculated with pen and paper or sympy.
  *calculations to be put in documentation.
  */
+
 public class FindLocalEllipsoidOpTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
