@@ -64,6 +64,8 @@ public class MILGrid<B extends BooleanType<B>> extends
 	implements Contingent
 {
 
+	private static final Function<RandomAccessibleInterval, LongStream> dimStream =
+		rai -> LongStream.of(rai.dimension(0), rai.dimension(1), rai.dimension(2));
 	/**
 	 * Number lines drawn from the planes of the grid. For example, if
 	 * linesPerDimension = 2 then 2 * 2 lines are drawn from each plane - a total
@@ -76,7 +78,7 @@ public class MILGrid<B extends BooleanType<B>> extends
 	 * The higher the number, the more likely it is that the MIL vectors returned
 	 * are truly the shortest ones.
 	 * </p>
-	 * 
+	 *
 	 * @see LineGrid#lines(long)
 	 */
 	@Parameter(required = false, persist = false)
@@ -95,17 +97,16 @@ public class MILGrid<B extends BooleanType<B>> extends
 	 */
 	@Parameter(required = false, persist = false)
 	private Double samplingIncrement;
-	// TODO Use Long seed instead of Random
+
+	// TODO Figure out a better way to test the effect of bins & increment
 	/**
-	 * The random generator used in the method.
+	 * The seed used in the Op's random generator.
 	 * <p>
 	 * If left null, a new generator is created with the default constructor.
 	 * </p>
 	 */
 	@Parameter(required = false, persist = false)
-	private Random random;
-
-	// TODO Figure out a better way to test the effect of bins & increment
+	private Long seed;
 	/**
 	 * The theoretical maximum of the number of samples taken.
 	 * <p>
@@ -116,16 +117,15 @@ public class MILGrid<B extends BooleanType<B>> extends
 	@Parameter(type = ItemIO.OUTPUT, persist = false)
 	private Long potentialSamples = 0L;
 
-	private static final Function<RandomAccessibleInterval, LongStream> dimStream =
-		rai -> LongStream.of(rai.dimension(0), rai.dimension(1), rai.dimension(2));
-
 	/**
-	 * Finds the shortest three MIL vectors of the interval.
+	 * Returns a point cloud of MIL vectors around the origin.
 	 *
 	 * @param interval an interval with at least three dimensions. The method
 	 *          assumes that the first three are X,Y and Z. It ignores others.
 	 * @param rotation a rotation applied to the grid.
-	 * @return the three shortest orthogonal MIL vectors around the origin.
+	 * @return a collection of vectors that show mean intercept lengths in
+	 *         different directions. Returns an empty collection if the interval
+	 *         is empty.
 	 * @throws IllegalArgumentException if {@link MILGrid#samplingIncrement} is
 	 *           too small.
 	 */
@@ -137,7 +137,7 @@ public class MILGrid<B extends BooleanType<B>> extends
 		final BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp;
 		final long bins;
 		final double increment;
-		final Random rng;
+		final Random random;
 		synchronized (this) {
 			rotateOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class, Tuple3d.class,
 				new Vector3d(), new AxisAngle4d());
@@ -149,10 +149,10 @@ public class MILGrid<B extends BooleanType<B>> extends
 			if (increment < 1e-4) {
 				throw new IllegalArgumentException("Increment too small");
 			}
-			rng = random != null ? random : new Random();
+			random = seed != null ? new Random(seed) : new Random();
 			potentialSamples = calculatePotentialSamples(interval, increment, bins);
 		}
-		final LineGrid grid = createGrid(interval, rotateOp, rotation, rng);
+		final LineGrid grid = createGrid(interval, rotateOp, rotation, random);
 		final Stream<Section> sections = grid.lines(bins).map((line) -> findSection(
 			line, interval, intersectOp)).filter(Objects::nonNull);
 		return sections.map(section -> toMILVector(section, interval, increment,
@@ -286,8 +286,8 @@ public class MILGrid<B extends BooleanType<B>> extends
 		final double length = section.tMax - section.tMin;
 		milVector.scale(length);
 		if (intercepts > 1) {
-            milVector.scale(1.0 / intercepts);
-        }
+			milVector.scale(1.0 / intercepts);
+		}
 		return milVector;
 	}
 

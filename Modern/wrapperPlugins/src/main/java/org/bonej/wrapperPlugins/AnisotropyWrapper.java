@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -167,13 +166,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			}
 			applyCalibration(pointCloud);
 			if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
-			    cancel("Anisotropy could not be calculated - too few points");
-			    return;
-            }
+				cancel("Anisotropy could not be calculated - too few points");
+				return;
+			}
 			final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
 			if (ellipsoid == null) {
-				cancel(
-					"Anisotropy could not be calculated - ellipsoid fitting failed");
+				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
 				return;
 			}
 			statusService.showStatus("Determining anisotropy");
@@ -248,10 +246,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@SuppressWarnings("unchecked")
 	private void matchOps(final Subspace<BitType> subspace) {
-		final Random random = seed != null ? new Random(seed) : new Random();
 		milOp = (BinaryFunctionOp) Functions.binary(opService, MILGrid.class,
 			List.class, subspace.interval, new AxisAngle4d(), lines,
-			samplingIncrement, random);
+			samplingIncrement, seed);
 		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
 			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,

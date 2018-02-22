@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
@@ -38,7 +37,8 @@ public class MILGridTest {
 	private static final Vector3d X_AXIS = new Vector3d(1, 0, 0);
 	private static final Vector3d Y_AXIS = new Vector3d(0, 1, 0);
 	private static final Vector3d Z_AXIS = new Vector3d(0, 0, 1);
-
+	private static final long SEED = 0xc0ff33;
+	
 	// Each test creates its own random generator with a constant seed. This is
 	// because called through IMAGE_J.op().run(), the ops run in different
 	// threads, thus making the tests non-deterministic if they shared a
@@ -64,10 +64,10 @@ public class MILGridTest {
 
 		final Long defaultBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
 			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
-				DEFAULT_INCREMENT, new Random(0xc0ff33))).get(1);
+				DEFAULT_INCREMENT, SEED)).get(1);
 		final Long plusOneBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
 			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS + 1,
-				DEFAULT_INCREMENT, new Random(0xc0ff33))).get(1);
+				DEFAULT_INCREMENT, SEED)).get(1);
 
 		assertEquals("Sanity check failed: baseline value unexpected",
 			expectedBaseline, defaultBinsSamples.longValue());
@@ -80,8 +80,7 @@ public class MILGridTest {
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors =
 			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
-				BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
-					0xc0ff33))).get(0);
+				BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, SEED)).get(0);
 
 		assertEquals("Wrong Number of vectors", 27, milVectors.size());
 		final long xParallel = milVectors.stream().filter(v -> isParallel.test(v,
@@ -120,10 +119,10 @@ public class MILGridTest {
 		// EXECUTE
 		final Long defaultBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
 			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
-				DEFAULT_INCREMENT, new Random(0xc0ff33))).get(1);
+				DEFAULT_INCREMENT, SEED)).get(1);
 		final Long plusOneBinsSamples = (Long) ((ArrayList<Object>) IMAGE_J.op()
 			.run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
-				DEFAULT_INCREMENT * 2, new Random(0xc0ff33))).get(1);
+				DEFAULT_INCREMENT * 2, SEED)).get(1);
 
 		// VERIFY
 		assertEquals("Sanity check failed: baseline value unexpected",
@@ -150,8 +149,7 @@ public class MILGridTest {
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors =
 			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
-				BG_IMG, rotation, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
-					0xc0ff33))).get(0);
+				BG_IMG, rotation, DEFAULT_BINS, DEFAULT_INCREMENT, SEED)).get(0);
 
 		assertTrue("Changing the rotation parameter had no effect", milVectors
 			.stream().noneMatch(v -> v.equals(new Vector3d(0, 0, 1))));
@@ -179,8 +177,7 @@ public class MILGridTest {
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors =
 			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
-				sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
-					0xc0ff33))).get(0);
+				sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, SEED)).get(0);
 
 		// VERIFY
 		final Stream<Vector3d> zVectors = milVectors.stream().filter(v -> isParallel
@@ -209,8 +206,7 @@ public class MILGridTest {
 		@SuppressWarnings("unchecked")
 		final List<Vector3d> milVectors =
 			(List<Vector3d>) ((ArrayList<Object>) IMAGE_J.op().run(MILGrid.class,
-				sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, new Random(
-					0xc0ff33))).get(0);
+				sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT, SEED)).get(0);
 
 		// VERIFY
 		final Stream<Vector3d> yVectors = milVectors.stream().filter(v -> isParallel
@@ -223,7 +219,7 @@ public class MILGridTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testThrowsIAEIfIncrementTooSmall() {
 		IMAGE_J.op().run(MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS,
-			1e-12, new Random(0xc0ff33));
+			1e-12, SEED);
 	}
 
 	@AfterClass
