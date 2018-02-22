@@ -16,7 +16,6 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Vector3d;
@@ -47,12 +46,23 @@ public class MILGridTest {
 	};
 
 	/**
-	 * Tests that changing the bins parameter changes the number of vectors
-	 * created.
+	 * Tests that changing the bins parameter changes the number of resulting
+	 * vectors
 	 */
-	@Ignore
 	@Test
-	public void testBinsParameter() {}
+	@SuppressWarnings("unchecked")
+	public void testBinsParameter() {
+
+		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
+			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
+			SEED);
+		final List<Vector3d> milVectors2 = (List<Vector3d>) IMAGE_J.op().run(
+			MILGrid.class, BG_IMG, IDENTITY_ROTATION, DEFAULT_BINS * 2,
+			DEFAULT_INCREMENT, SEED);
+
+		assertTrue("Having more bins should create more vectors", milVectors
+			.size() < milVectors2.size());
+	}
 
 	@Test
 	public void testEmptyInterval() {
@@ -82,10 +92,42 @@ public class MILGridTest {
 				1e-11)));
 	}
 
-	/** Tests that changing the increment parameter has an effect on the op. */
-	@Ignore
+	/**
+	 * Tests that changing the increment parameter has an effect on the lengths of
+	 * MIL vectors.
+	 */
+	@SuppressWarnings("unchecked")
 	@Test
-	public void testIncrementParameter() {}
+	public void testIncrementParameter() {
+		// SETUP
+		final Vector3d zAxis = new Vector3d(0, 0, 1);
+		final long size = 100;
+		final Img<BitType> sheets = ArrayImgs.bits(size, size, size);
+		// Draw 20 sheets parallel to XY-plane
+		for (long z = 5; z < size; z += 10) {
+			final IntervalView<BitType> sheet = Views.interval(sheets, new long[] { 0,
+				0, z }, new long[] { size - 1, size - 1, z });
+			sheet.cursor().forEachRemaining(BitType::setOne);
+		}
+
+		// EXECUTE
+		final List<Vector3d> milVectors = (List<Vector3d>) IMAGE_J.op().run(
+			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS, DEFAULT_INCREMENT,
+			SEED);
+		final List<Vector3d> milVectors2 = (List<Vector3d>) IMAGE_J.op().run(
+			MILGrid.class, sheets, IDENTITY_ROTATION, DEFAULT_BINS,
+			DEFAULT_INCREMENT * 1.5, SEED);
+
+		// VERIFY
+		final double avgLength = milVectors.stream().filter(v -> isParallel.test(v,
+			zAxis)).mapToDouble(Vector3d::length).average().orElse(0.0);
+		final double avgLengthBigIncrement = milVectors2.stream().filter(
+			v -> isParallel.test(v, zAxis)).mapToDouble(Vector3d::length).average()
+			.orElse(0.0);
+		assertTrue(
+			"Increasing increment should make MIL vectors longer on average (because they intercept fewer objects)",
+			avgLength < avgLengthBigIncrement);
+	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testMatchingFailsIf2DInterval() {
