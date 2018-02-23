@@ -38,10 +38,11 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
+import org.bonej.ops.RotateAboutAxis;
 import org.bonej.ops.SolveQuadricEq;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
-import org.bonej.ops.mil.MILGrid;
+import org.bonej.ops.mil.MILPlane;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
@@ -73,28 +74,30 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
-	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, List<Vector3d>> milOp;
+	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
-	private static int ROTATIONS = 1_000;
-	private static int DEFAULT_LINES = 50;
+	private static int DEFAULT_DIRECTION = 1_000;
+	private static int DEFAULT_LINES = 100;
 	private static double DEFAULT_INCREMENT = 1.0;
-	/** Assumes that the longest radius of the ellipsoid is 1.0 */
+	private static Long seed = null;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
+	// TODO Fix magic parameters (rotations roughly 2_000 since in Poisson
+	// distributed sampling that'd give points about 5 degrees apart)
 	@Parameter(label = "Auto parameters", required = false, persist = false,
 		callback = "setAutoParam")
 	private boolean autoParameters = false;
-	@Parameter(label = "Rotations",
+	@Parameter(label = "Directions",
 		description = "The number of times sampling is performed from different directions",
-		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
+		min = "10", style = NumberWidget.SPINNER_STYLE, required = false,
 		callback = "setAutoParam")
-	private Integer rotations = ROTATIONS;
-	@Parameter(label = "Sampling lines",
-		description = "Number of sampling lines drawn. The number is squared and multiplied by three",
+	private Integer directions = DEFAULT_DIRECTION;
+	@Parameter(label = "Lines per dimension",
+		description = "How many sampling lines are projected in both 2D directions (this number squared)",
 		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
 		callback = "setAutoParam")
 	private Integer lines = DEFAULT_LINES;
@@ -110,19 +113,13 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(label = "Print ellipsoids",
 		description = "Print axes of the fitted ellipsoids", required = false)
 	private boolean printEllipsoids;
-	private static Long seed = null;
-
-	public static void setSeed(long seed) {
-		AnisotropyWrapper.seed = seed;
-	}
+	// TODO add help button
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String divider = "- - -";
 
 	// TODO add @Parameter to align the image to the ellipsoid
 	// Create a rotated view from the ImgPlus and pop that into an output
 	// @Parameter
-
-	// TODO add help button
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String divider = "- - -";
 	/**
 	 * The anisotropy results in a {@link Table}.
 	 * <p>
@@ -175,12 +172,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				return;
 			}
 			statusService.showStatus("Determining anisotropy");
+			// TODO Normalize ellipsoid radii?
 			final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
 			addResults(subspace, anisotropy, ellipsoid);
 		}
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+	}
+
+	public static void setSeed(long seed) {
+		AnisotropyWrapper.seed = seed;
 	}
 
 	// region -- Helper methods --
@@ -244,11 +246,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			.averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void matchOps(final Subspace<BitType> subspace) {
-		milOp = (BinaryFunctionOp) Functions.binary(opService, MILGrid.class,
-			List.class, subspace.interval, new AxisAngle4d(), lines,
-			samplingIncrement, seed);
+		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
+			subspace.interval, new AxisAngle4d(), lines, samplingIncrement, seed);
 		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
 			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
@@ -263,18 +263,20 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
 	{
+		// return Stream.generate(() -> milOp.calculate(interval,
+		// RotateAboutAxis.randomAxisAngle())).parallel().limit(directions).collect(toList());
 		final ExecutorService executor = Executors.newFixedThreadPool(5);
-		final Callable<List<Vector3d>> milTask = () -> milOp.calculate(interval);
-		final List<Future<List<Vector3d>>> futures = Stream.generate(() -> milTask)
-			.limit(rotations).map(executor::submit).collect(toList());
+		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
+			RotateAboutAxis.randomAxisAngle());
+		final List<Future<Vector3d>> futures = Stream.generate(() -> milTask).limit(
+			directions).map(executor::submit).collect(toList());
 		final List<Vector3d> pointCloud = Collections.synchronizedList(
-			new ArrayList<>(rotations * 3));
+			new ArrayList<>(directions));
 		final int futuresSize = futures.size();
 		for (int j = 0; j < futuresSize; j++) {
 			statusService.showProgress(j, futuresSize);
-			final List<Vector3d> points = futures.get(j).get();
-			pointCloud.addAll(points);
-
+			final Vector3d milVector = futures.get(j).get();
+			pointCloud.add(milVector);
 		}
 		executor.shutdown();
 		return pointCloud;
@@ -285,7 +287,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (!autoParameters) {
 			return;
 		}
-		rotations = ROTATIONS;
+		directions = DEFAULT_DIRECTION;
 		lines = DEFAULT_LINES;
 		samplingIncrement = DEFAULT_INCREMENT;
 	}
