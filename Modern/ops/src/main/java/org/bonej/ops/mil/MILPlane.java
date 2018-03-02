@@ -32,6 +32,36 @@ import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
+ * An op that finds the mean intercept length (MIL) vector of an interval.
+ * <p>
+ * A MIL vector is defined as <em>MIL(<b>v</b>) = C(<b>v</b>) / h</em>, where
+ * <em><b>v</b></em> is a set of parallel lines, <em>C(<b>v</b>)</em> is the
+ * number of times <em><b>v</b></em> intercept foreground, and <em>h</em> is the
+ * sum of lengths of <em><b>v</b></em>. The lines <em><b>v</b></em> are traced
+ * through the interval. A line intercepts foreground, when the previous point
+ * sampled along it is background, and the current one is foreground.
+ * </p>
+ * <p>
+ * For example MIL vectors can be used to estimate the anisotropy of the
+ * "texture" in an image. It's best suited for images that are completely
+ * filled, and a part of a larger whole, e.g. a section of trabecular bone.
+ * </p>
+ * <p>
+ * For more details, see:
+ * </p>
+ * <ul>
+ * <li>Moreno et al., <a href=
+ * "http://liu.diva-portal.org/smash/get/diva2:533443/FULLTEXT01.pdf">On the
+ * Efficiency of the Mean Intercept Length Tensor</a></li>
+ * <li>Odgaard A (1997) Three-dimensional methods for quantification of
+ * cancellous bone architecture. Bone 20: 315-28. <a href=
+ * "http://dx.doi.org/10.1016/S8756-3282(97)00007-0">doi:10.1016/S8756-3282(97)00007-0</a>.</li>
+ * <li>Harrigan TP, Mann RW (1984) Characterization of microstructural
+ * anisotropy in orthotropic materials using a second rank tensor. J Mater Sci
+ * 19: 761-767. <a href=
+ * "http://dx.doi.org/10.1007/BF00540446">doi:10.1007/BF00540446</a>.</li>
+ * </ul>
+ *
  * @author Richard Domander
  */
 @Plugin(type = Op.class)
@@ -78,12 +108,23 @@ public class MILPlane<B extends BooleanType<B>> extends
 	/**
 	 * The seed used in the random generator in the algorithm.
 	 * <p>
+	 * Given that all other parameters all the same (including the interval and
+	 * rotation), then using the same seed will give the same results.
+	 * </p>
+	 * <p>
 	 * If left null, a new generator is created with the default constructor.
 	 * </p>
 	 */
 	@Parameter(required = false, persist = false)
 	private Long seed;
 
+	/**
+	 * Calculates the MIL vector of the interval.
+	 *
+	 * @param interval a 3D interval.
+	 * @param rotation direction of the MIL lines in the interval.
+	 * @return total length / total phase changes of vectors sampled in interval.
+	 */
 	@Override
 	public Vector3d calculate(final RandomAccessibleInterval<B> interval,
 		final AxisAngle4d rotation)
@@ -107,27 +148,26 @@ public class MILPlane<B extends BooleanType<B>> extends
 
 	@Override
 	public boolean conforms() {
-		// TODO check empty dims?
 		return in().numDimensions() >= 3;
 	}
 
 	// region -- Helper methods --
-	private static <B extends BooleanType<B>> long countInterceptions(
+	private static <B extends BooleanType<B>> long countPhaseChanges(
 		final RandomAccessibleInterval<B> interval, final Vector3d start,
 		final Tuple3d gap, final long samples)
 	{
 		final RandomAccess<B> access = interval.randomAccess();
 		boolean previous = false;
-		long intercepts = 0;
+		long phaseChanges = 0;
 		for (long i = 0; i < samples; i++) {
 			final boolean current = getVoxel(access, start);
 			if (current && !previous) {
-				intercepts++;
+				phaseChanges++;
 			}
 			previous = current;
 			start.add(gap);
 		}
-		return intercepts;
+		return phaseChanges;
 	}
 
 	private long defaultBins(final RandomAccessibleInterval<B> interval) {
@@ -140,8 +180,8 @@ public class MILPlane<B extends BooleanType<B>> extends
 		final RandomAccessibleInterval<B> interval)
 	{
 		final Vector3d direction = plane.getDirection();
-		return plane.getOrigins(bins).map(origin -> intersectInterval(origin, direction,
-			interval)).filter(Objects::nonNull);
+		return plane.getOrigins(bins).map(origin -> intersectInterval(origin,
+			direction, interval)).filter(Objects::nonNull);
 	}
 
 	private static <B extends BooleanType<B>> boolean getVoxel(
@@ -200,7 +240,6 @@ public class MILPlane<B extends BooleanType<B>> extends
 				totalLength.set(p.a + totalLength.get());
 				totalIntercepts.set(p.b + totalIntercepts.get());
 			});
-		// TODO throw exception if intercepts 0, or == sections (bad images)
 		totalIntercepts.set(Math.max(totalIntercepts.get(), 1));
 		final Vector3d milVector = new Vector3d(direction);
 		milVector.scale(totalLength.get() / totalIntercepts.get());
@@ -222,15 +261,19 @@ public class MILPlane<B extends BooleanType<B>> extends
 		if (samples < 1) {
 			return -1;
 		}
-		return countInterceptions(interval, samplePoint, gap, samples);
+		return countPhaseChanges(interval, samplePoint, gap, samples);
 	}
 	// endregion
 
+	// region -- Helper classes --
 	/**
 	 * Stores the origin <b>a</b> of a line, and the scalars for <b>a</b> +
 	 * <em>t<sub>1</sub></em><b>v</b> and <b>a</b> +
 	 * <em>t<sub>2</sub></em><b>v</b> where the origin + direction <b>v</b>
 	 * intersects the input interval.
+	 * <p>
+	 * The direction comes from the {@link LinePlane} used in the op.
+	 * </p>
 	 */
 	private static class Section {
 

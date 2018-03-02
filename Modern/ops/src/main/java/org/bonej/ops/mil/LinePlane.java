@@ -15,7 +15,8 @@ import org.scijava.vecmath.Tuple3d;
 import org.scijava.vecmath.Vector3d;
 
 /**
- * Generates parallel lines normal to a plane.
+ * A class that describes a set of parallel lines normal to a plane. The plane
+ * passes through an interval.
  *
  * @author Richard Domander
  */
@@ -29,6 +30,15 @@ class LinePlane {
 	private final AxisAngle4d rotation;
 	private final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 
+	/**
+	 * Creates an instance of {@link LinePlane}, and initializes it for generating
+	 * lines.
+	 *
+	 * @param interval a discrete interval through which the lines pass.
+	 * @param rotation the direction of the lines through the interval.
+	 * @param rotateOp the Op used to rotate the origin points and direction.
+	 * @param <I> type of the interval.
+	 */
 	<I extends Interval> LinePlane(final I interval, final AxisAngle4d rotation,
 		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp)
 	{
@@ -38,6 +48,63 @@ class LinePlane {
 		this.rotateOp = rotateOp;
 		this.rotation = rotation;
 		direction = createDirection();
+	}
+
+	/**
+	 * Generates a random set of points through which lines pass the plane.
+	 * <p>
+	 * If the direction of the lines is (0, 0, 1), then their coordinate range of
+	 * the points will be will be (c<sub>x</sub> &plusmn; d/2, c<sub>y</sub>
+	 * &plusmn; d/2, c<sub>z</sub>), where <b>c</b> is the centroid, and
+	 * <em>d</em> is the length of the largest, "corner-to-corner" diagonal of the
+	 * interval.
+	 * </p>
+	 * <p>
+	 * The points are equidistant from each other in both directions, but
+	 * translated randomly so that they don't always have the same co-ordinates.
+	 * </p>
+	 * <p>
+	 * NB points may lay outside the interval!
+	 * </p>
+	 *
+	 * @param bins number of sub-regions in both dimensions. Bins = 2 creates four
+	 *          points, one from each quadrant of the plane.
+	 * @return a finite stream of origin points on the plane.
+	 */
+	Stream<Point3d> getOrigins(final Long bins) {
+		final Stream.Builder<Point3d> builder = Stream.builder();
+		final double step = 1.0 / bins;
+		final double uOffset = random.nextDouble() * step;
+		final double tOffset = random.nextDouble() * step;
+		for (long i = 0; i < bins; i++) {
+			final double u = i * step + uOffset;
+			for (long j = 0; j < bins; j++) {
+				final double t = j * step + tOffset;
+				final Point3d origin = createOrigin(t, u);
+				builder.add(origin);
+			}
+		}
+		return builder.build();
+	}
+
+	/**
+	 * Gets a reference of the plane's normal.
+	 *
+	 * @return direction of the lines passing through the plane.
+	 */
+	Vector3d getDirection() {
+		return direction;
+	}
+
+	/**
+	 * Sets the seed of the pseudo random number generator used in drawing the
+	 * origin points.
+	 *
+	 * @see #getOrigins(Long)
+	 * @param seed a seed number.
+	 */
+	void setSeed(final long seed) {
+		random.setSeed(seed);
 	}
 
 	// region -- Helper methods --
@@ -69,28 +136,5 @@ class LinePlane {
 		return Math.sqrt(sqSum);
 	}
 
-	Stream<Point3d> getOrigins(final Long bins) {
-		final Stream.Builder<Point3d> builder = Stream.builder();
-		final long squares = 100;
-		final double step = 1.0 / bins;
-		final double offset = random.nextDouble() * step;
-		for (long i = 0; i < squares; i++) {
-			final double u = i * step + offset;
-			for (long j = 0; j < squares; j++) {
-				final double t = j * step + offset;
-				final Point3d origin = createOrigin(t, u);
-				builder.add(origin);
-			}
-		}
-		return builder.build();
-	}
-
-	Vector3d getDirection() {
-		return direction;
-	}
-
-	void setSeed(final long seed) {
-		random.setSeed(seed);
-	}
 	// endregion
 }
