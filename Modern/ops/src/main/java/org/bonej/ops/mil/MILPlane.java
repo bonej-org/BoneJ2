@@ -138,6 +138,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 		if (increment == null) {
 			increment = 1.0;
 		}
+		// TODO throw exception if increment too small
 		if (bins == null) {
 			bins = defaultBins(interval);
 		}
