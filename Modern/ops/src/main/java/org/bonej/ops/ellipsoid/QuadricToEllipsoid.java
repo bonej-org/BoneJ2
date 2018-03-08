@@ -41,7 +41,8 @@ import org.scijava.vecmath.Vector3d;
 public class QuadricToEllipsoid extends
 	AbstractUnaryFunctionOp<Matrix4d, Ellipsoid> implements Contingent
 {
-    @Override
+
+	@Override
 	public Ellipsoid calculate(final Matrix4d quadricSolution) {
 		final Vector3d center = findCenter(quadricSolution);
 		final Matrix4d translated = translateToCenter(quadricSolution, center);
@@ -67,20 +68,17 @@ public class QuadricToEllipsoid extends
 	}
 
 	/**
-	 * Checks if the quadric matrix describes and ellipsoid.
-	 * <p>
-	 * If the quadric is an ellipsoid, then the terms a, b, c on the matrix
-	 * diagonal have to be positive.
-	 * </p>
+	 * Checks if the quadric matrix describes a real ellipsoid.
 	 *
 	 * @param quadric a quadric in the algebraic form.
-	 * @return true if ellipsoid, false if not.
+	 * @return true if an ellipsoid can be created, false if not.
 	 */
 	public static boolean isEllipsoid(final Matrix4d quadric) {
-		final double a = quadric.m00;
-		final double b = quadric.m11;
-		final double c = quadric.m22;
-		return a > 0 && b > 0 && c > 0;
+		final double det2d = quadric.m00 * quadric.m11 - quadric.m10 * quadric.m01;
+		final Matrix3d sub = new Matrix3d();
+		quadric.get(sub);
+		final double det3d = sub.determinant();
+		return quadric.m00 > 0 && det2d > 0 && det3d > 0;
 	}
 
 	/**
