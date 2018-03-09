@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
@@ -85,7 +84,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 */
 	private static int DEFAULT_DIRECTIONS = 2_000;
 	// Magic number, there are no good guesses what might be the right number of
-	// lines
+	// lines. Selected by fiddling around with the tool
 	private static int DEFAULT_LINES = 100;
 	private static double DEFAULT_INCREMENT = 1.0;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
@@ -114,8 +113,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		description = "Print axes of the fitted ellipsoids", required = false)
 	private boolean printEllipsoids;
 
-	// TODO add @Parameter to align the image to the ellipsoid
-	// Create a rotated view from the ImgPlus and pop that into an output?
 	/**
 	 * The anisotropy results in a {@link Table}.
 	 * <p>
@@ -159,32 +156,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	// region -- Helper methods --
 
-	private boolean processSubspace(final Subspace<BitType> subspace) {
-		final List<Vector3d> pointCloud;
-		try {
-			pointCloud = runDirectionsInParallel(subspace.interval);
-		}
-		catch (ExecutionException | InterruptedException e) {
-			logService.trace(e.getMessage());
-			cancel("Anisotropy got interrupted");
-			return false;
-		}
-		applyCalibration(pointCloud);
-		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
-			cancel("Anisotropy could not be calculated - too few points");
-			return false;
-		}
-		final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
-		if (ellipsoid == null) {
-			cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
-			return false;
-		}
-		statusService.showStatus("Determining anisotropy");
-		final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
-		addResults(subspace, anisotropy, ellipsoid);
-		return true;
-	}
-
 	private void addResults(final Subspace<BitType> subspace,
 		final double anisotropy, final Ellipsoid ellipsoid)
 	{
@@ -203,23 +174,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private void applyCalibration(final List<Vector3d> pointCloud) {
-		final double[] scales = spatialAxisStream(inputImage).mapToDouble(
-			axis -> axis.averageScale(0, 1)).toArray();
-		final String[] units = spatialAxisStream(inputImage).map(
-			CalibratedAxis::unit).toArray(String[]::new);
-		final double yxConversion = unitService.value(1.0, units[1], units[0]);
-		final double zxConversion = unitService.value(1.0, units[2], units[0]);
-		final double xScale = scales[0];
-		final double yScale = scales[1] * yxConversion;
-		final double zScale = scales[2] * zxConversion;
-		pointCloud.forEach(p -> {
-			p.setX(p.x * xScale);
-			p.setY(p.y * yScale);
-			p.setZ(p.z * zScale);
-		});
-	}
-
 	private Ellipsoid fitEllipsoid(final List<Vector3d> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
@@ -227,12 +181,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			return null;
 		}
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
-		try {
-			return quadricToEllipsoidOp.calculate(quadric);
-		}
-		catch (IllegalArgumentException e) {
-			return null;
-		}
+		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
 	// TODO Refactor into a static utility method with unit tests
@@ -257,6 +206,31 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		matchingMock.setIdentity();
 		quadricToEllipsoidOp = Functions.unary(opService, QuadricToEllipsoid.class,
 			Ellipsoid.class, matchingMock);
+	}
+
+	private boolean processSubspace(final Subspace<BitType> subspace) {
+		final List<Vector3d> pointCloud;
+		try {
+			pointCloud = runDirectionsInParallel(subspace.interval);
+		}
+		catch (ExecutionException | InterruptedException e) {
+			logService.trace(e.getMessage());
+			cancel("The plug-in was interrupted");
+			return false;
+		}
+		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
+			cancel("Anisotropy could not be calculated - too few points");
+			return false;
+		}
+		final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
+		if (ellipsoid == null) {
+			cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+			return false;
+		}
+		statusService.showStatus("Determining anisotropy");
+		final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
+		addResults(subspace, anisotropy, ellipsoid);
+		return true;
 	}
 
 	private List<Vector3d> runDirectionsInParallel(
