@@ -1,47 +1,8 @@
 Manual integration tests for the Anisotropy command.
+They complement the automated wrapper tests in AnisotropyWrapperTest
 
 
 Case 1
-=======================================================================
-Checking "Auto parameters" sets parameters to default values
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Run File > Open samples > Bat Cochlea Volume
-2. Run plugin BoneJ > Anisotropy
-3. Set the "Rotations" to 1, "Lines" to 1 and "Increment" to 10.0
-4. Check "Auto parameters"
-
-
-Expected result
------------------------------------------------------------------------
-All three values change when check box is ticked
-
-Completed Month Day Year Name Surname
------------------------------------------------------------------------
-
-
-Case 2
-=======================================================================
-Parameter values cannot be changed when "Auto parameters"
-is checked
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Run File > Open samples > Bat Cochlea Volume
-2. Run plugin BoneJ > Anisotropy
-3. Check "Auto parameters"
-
-Expected result
------------------------------------------------------------------------
-"Rotations", "Lines" and "Increment" revert to default value
-when focus leaves their corresponding widget.
-
-Completed Month Day Year Name Surname
------------------------------------------------------------------------
-
-
-Case 3
 =======================================================================
 Clicking "Cancel" on the anisotropic calibration warning dialog
 stops the command.
@@ -61,5 +22,33 @@ Expected result
 -----------------------------------------------------------------------
 Warning dialog pops open, and command stops when user cancels.
 
+
+Case 2
+=======================================================================
+Test hyperstack results
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Anisotropy >
+4. Set "Directions" to "2000", "Lines per dimension" to "50",
+   and "Sampling increment" to "1"
+5. Click "OK" (Execution takes a while)
+
+Expected result
+-----------------------------------------------------------------------
+- Six (new) result rows in the table
+- Two (new) columns: "Label" and "Degree of anisotropy"
+- Anisotropy for "Channel 1, Time 1" and "Channel 3, Time 2"
+  is high (about 0.98) 
+- Anisotropy for "Channel 1, Time 2", "Channel 2, Time 1",
+  "Channel 2, Time 2" and "Channel 3, Time 1" is low (< 0.01)
+
+Notes
+-----------------------------------------------------------------------
+If fitting fails, run again, or add directions.
+
 Completed Month Day Year Name Surname
 -----------------------------------------------------------------------
+
