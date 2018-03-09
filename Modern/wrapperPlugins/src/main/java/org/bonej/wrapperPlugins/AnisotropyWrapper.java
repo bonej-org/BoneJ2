@@ -13,7 +13,6 @@ import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -85,7 +84,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * Poisson distributed sampling that'd give points about 5 degrees apart).
 	 */
 	private static int DEFAULT_DIRECTIONS = 2_000;
-	// TODO Lines from image size check box
+	// Magic number, there are no good guesses what might be the right number of
+	// lines
 	private static int DEFAULT_LINES = 100;
 	private static double DEFAULT_INCREMENT = 1.0;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
@@ -93,23 +93,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
-	@Parameter(label = "Auto parameters", required = false, persist = false,
-		callback = "setAutoParam")
-	private boolean autoParameters = false;
 	@Parameter(label = "Directions",
 		description = "The number of times sampling is performed from different directions",
-		min = "10", style = NumberWidget.SPINNER_STYLE, required = false,
-		callback = "setAutoParam")
+		min = "9", style = NumberWidget.SPINNER_STYLE, required = false)
 	private Integer directions = DEFAULT_DIRECTIONS;
 	@Parameter(label = "Lines per dimension",
 		description = "How many sampling lines are projected in both 2D directions (this number squared)",
-		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
-		callback = "setAutoParam")
+		min = "1", style = NumberWidget.SPINNER_STYLE, required = false)
 	private Integer lines = DEFAULT_LINES;
 	@Parameter(label = "Sampling increment", min = "0.01",
-		description = "Distance between sampling points (in pixels)",
-		style = NumberWidget.SPINNER_STYLE, required = false,
-		callback = "setAutoParam", stepSize = "0.1")
+		description = "Distance between sampling points (in voxels)",
+		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1")
 	private Double samplingIncrement = DEFAULT_INCREMENT;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
@@ -119,9 +113,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(label = "Print ellipsoids",
 		description = "Print axes of the fitted ellipsoids", required = false)
 	private boolean printEllipsoids;
-	// TODO add help button
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String divider = "- - -";
 
 	// TODO add @Parameter to align the image to the ellipsoid
 	// Create a rotated view from the ImgPlus and pop that into an output?
@@ -175,7 +166,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 		catch (ExecutionException | InterruptedException e) {
 			logService.trace(e.getMessage());
-			cancel("Parallel execution got interrupted");
+			cancel("Anisotropy got interrupted");
 			return false;
 		}
 		applyCalibration(pointCloud);
@@ -230,9 +221,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private Ellipsoid fitEllipsoid(final List<Vector3d> pointCloud) {
-		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
-			return null;
-		}
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
 		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
@@ -294,15 +282,16 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	// Shuts down an ExecutorService as per recommended by Oracle
-	private static void shutdownAndAwaitTermination(ExecutorService executor) {
+	private void shutdownAndAwaitTermination(ExecutorService executor) {
 		executor.shutdown(); // Disable new tasks from being submitted
 		try {
 			// Wait a while for existing tasks to terminate
 			if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
 				executor.shutdownNow(); // Cancel currently executing tasks
 				// Wait a while for tasks to respond to being cancelled
-				if (!executor.awaitTermination(60, TimeUnit.SECONDS)) System.err
-					.println("Pool did not terminate");
+				if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+					logService.trace("Pool did not terminate");
+				}
 			}
 		}
 		catch (InterruptedException ie) {
@@ -311,16 +300,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			// Preserve interrupt status
 			Thread.currentThread().interrupt();
 		}
-	}
-
-	@SuppressWarnings("unused")
-	private void setAutoParam() {
-		if (!autoParameters) {
-			return;
-		}
-		directions = DEFAULT_DIRECTIONS;
-		lines = DEFAULT_LINES;
-		samplingIncrement = DEFAULT_INCREMENT;
 	}
 
 	@SuppressWarnings("unused")
