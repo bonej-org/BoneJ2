@@ -119,7 +119,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		description = "Show the radii of the fitted ellipsoid in the results",
 		required = false)
 	private boolean printRadii;
-	
+
 	/**
 	 * The anisotropy results in a {@link Table}.
 	 * <p>
@@ -253,7 +253,14 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
 	{
-		final ExecutorService executor = Executors.newFixedThreadPool(5);
+		final int cores = Runtime.getRuntime().availableProcessors();
+		// The parallellization of the the MILPlane algorithm is a memory bound
+		// problem, which is why speed gains start to drop after 5 cores. With much
+		// larger 'nThreads' it slows down due overhead. Of course '5' here is a bit
+		// of a magic number, which might not hold true for all environment, but we
+		// need some kind of upper bound
+		final int nThreads = Math.max(5, cores);
+		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
 			RotateAboutAxis.randomAxisAngle());
 		final List<Future<Vector3d>> futures = Stream.generate(() -> milTask).limit(
