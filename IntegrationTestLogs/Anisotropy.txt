@@ -12,8 +12,8 @@ Steps
 1. Run File > Open >
 2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
 3. Run Analyze > Set Scale
-4. Set "Distance in pixels" to "1", "Known distance" to "0.5",
-   "Pixel aspect ratio" to "1" and "Unit of length" to "mm"
+4. Set "Distance in pixels" to "1", "Known distance" to "1",
+   "Pixel aspect ratio" to "0.5" and "Unit of length" to "mm"
 5. Run plugin BoneJ > Anisotropy
 6. Click "OK"
 7. Click "Cancel" on the warning dialog
@@ -21,6 +21,9 @@ Steps
 Expected results
 -----------------------------------------------------------------------
 Warning dialog pops open, and command stops when user cancels.
+
+Completed March 12 2018 Richard Domander
+-----------------------------------------------------------------------
 
 
 Case 2
@@ -48,7 +51,7 @@ Notes
 -----------------------------------------------------------------------
 If fitting fails, run again, or add directions.
 
-Completed Month Day Year Name Surname
+Completed March 12 2018 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -79,7 +82,7 @@ Notes
 -----------------------------------------------------------------------
 If fitting fails, run again, or add directions.
 
-Completed Month Day Year Name Surname
+Completed March 12 2018 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -105,5 +108,5 @@ Expected results
    "2000", "100" and "1.0" respectively
 - When "Recommended minimum" is checked, the values cannot be changed
 
-Completed Month Day Year Name Surname
+Completed March 12 2018 Richard Domander
 -----------------------------------------------------------------------
