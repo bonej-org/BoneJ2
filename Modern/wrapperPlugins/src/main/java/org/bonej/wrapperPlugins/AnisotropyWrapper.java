@@ -108,10 +108,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private String instruction =
 		"NB parameter values can affect results significantly";
 	private boolean calibrationWarned;
-	// TODO print ellipsoid radii with two decimal points
-	@Parameter(label = "Print ellipsoids",
-		description = "Print axes of the fitted ellipsoids", required = false)
-	private boolean printEllipsoids;
+	@Parameter(label = "Show radii",
+		description = "Show the radii of the fitted ellipsoid in the results",
+		required = false)
+	private boolean printRadii;
 
 	/**
 	 * The anisotropy results in a {@link Table}.
@@ -164,13 +164,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final String label = suffix.isEmpty() ? imageName : imageName + " " +
 			suffix;
 		SharedTable.add(label, "Degree of anisotropy", anisotropy);
-		if (printEllipsoids) {
-			final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
-			int ordinal = 1;
-			for (final Vector3d axis : semiAxes) {
-				SharedTable.add(label, "Ellipsoid axis #" + ordinal, axis.toString());
-				ordinal++;
-			}
+		if (printRadii) {
+			SharedTable.add(label, "Radius a", String.format("%.2f", ellipsoid.getA()));
+			SharedTable.add(label, "Radius b", String.format("%.2f", ellipsoid.getB()));
+			SharedTable.add(label, "Radius c", String.format("%.2f", ellipsoid.getC()));
 		}
 	}
 
