@@ -165,11 +165,6 @@
             <artifactId>imagej</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>imagej-common</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <properties>
