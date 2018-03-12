@@ -15,11 +15,10 @@ Steps
 4. Set "Distance in pixels" to "1", "Known distance" to "0.5",
    "Pixel aspect ratio" to "1" and "Unit of length" to "mm"
 5. Run plugin BoneJ > Anisotropy
-6. Check "Auto parameters"
-7. Click "OK"
-8. Click "Cancel" on the warning dialog
+6. Click "OK"
+7. Click "Cancel" on the warning dialog
 
-Expected result
+Expected results
 -----------------------------------------------------------------------
 Warning dialog pops open, and command stops when user cancels.
 
@@ -33,11 +32,10 @@ Steps
 1. Run File > Open >
 2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
 3. Run Plugins > BoneJ > Anisotropy >
-4. Set "Directions" to "2000", "Lines per dimension" to "50",
-   and "Sampling increment" to "1", and uncheck "Show radii"
+4. Check "Recommended minimum", and uncheck "Show radii"
 5. Click "OK" (Execution takes a while)
 
-Expected result
+Expected results
 -----------------------------------------------------------------------
 - Six (new) result rows in the table
 - Two (new) columns: "Label" and "Degree of anisotropy"
@@ -63,11 +61,10 @@ Steps
 1. Run File > Open >
 2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
 3. Run Plugins > BoneJ > Anisotropy >
-4. Set "Directions" to "2000", "Lines per dimension" to "50",
-   and "Sampling increment" to "1", and check "Show radii"
+4. Check "Recommended minimum" and "Show radii"
 5. Click "OK" (Execution takes a while)
 
-Expected result
+Expected results
 -----------------------------------------------------------------------
 - Six (new) result rows in the table
 - Five (new) columns: "Label" and "Degree of anisotropy", "Radius a",
@@ -81,6 +78,32 @@ Expected result
 Notes
 -----------------------------------------------------------------------
 If fitting fails, run again, or add directions.
+
+Completed Month Day Year Name Surname
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+Recommended minimum locks parameters
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Anisotropy >
+4. Uncheck "Recommended minimum", set "Directions" to "10",
+   "Lines per dimension" to "10", and "Sampling increment" to "10",
+5. Check "Recommended minimum"
+6. Try to change "Directions", "Lines per dimension",
+   and "Sampling increment"
+
+Expected results
+-----------------------------------------------------------------------
+- When "Recommended minimum" is checked, "Directions",
+  "Lines per dimension" and "Sampling increment" revert to
+   "2000", "100" and "1.0" respectively
+- When "Recommended minimum" is checked, the values cannot be changed
 
 Completed Month Day Year Name Surname
 -----------------------------------------------------------------------

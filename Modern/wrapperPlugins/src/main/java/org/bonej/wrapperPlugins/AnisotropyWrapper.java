@@ -94,16 +94,23 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private ImgPlus<T> inputImage;
 	@Parameter(label = "Directions",
 		description = "The number of times sampling is performed from different directions",
-		min = "9", style = NumberWidget.SPINNER_STYLE, required = false)
+		min = "9", style = NumberWidget.SPINNER_STYLE, required = false,
+		callback = "applyMinimum")
 	private Integer directions = DEFAULT_DIRECTIONS;
 	@Parameter(label = "Lines per dimension",
 		description = "How many sampling lines are projected in both 2D directions (this number squared)",
-		min = "1", style = NumberWidget.SPINNER_STYLE, required = false)
+		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
+		callback = "applyMinimum")
 	private Integer lines = DEFAULT_LINES;
 	@Parameter(label = "Sampling increment", min = "0.01",
 		description = "Distance between sampling points (in voxels)",
-		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1")
+		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1",
+		callback = "applyMinimum")
 	private Double samplingIncrement = DEFAULT_INCREMENT;
+	@Parameter(label = "Recommended minimum",
+		description = "Apply minimum recommended values to directions, lines, and increment",
+		persist = false, required = false, callback = "applyMinimum")
+	private boolean recommendedMin = false;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
 		"NB parameter values can affect results significantly";
@@ -112,7 +119,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		description = "Show the radii of the fitted ellipsoid in the results",
 		required = false)
 	private boolean printRadii;
-
+	
 	/**
 	 * The anisotropy results in a {@link Table}.
 	 * <p>
@@ -165,9 +172,21 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			suffix;
 		SharedTable.add(label, "Degree of anisotropy", anisotropy);
 		if (printRadii) {
-			SharedTable.add(label, "Radius a", String.format("%.2f", ellipsoid.getA()));
-			SharedTable.add(label, "Radius b", String.format("%.2f", ellipsoid.getB()));
-			SharedTable.add(label, "Radius c", String.format("%.2f", ellipsoid.getC()));
+			SharedTable.add(label, "Radius a", String.format("%.2f", ellipsoid
+				.getA()));
+			SharedTable.add(label, "Radius b", String.format("%.2f", ellipsoid
+				.getB()));
+			SharedTable.add(label, "Radius c", String.format("%.2f", ellipsoid
+				.getC()));
+		}
+	}
+
+	@SuppressWarnings("unused")
+	private void applyMinimum() {
+		if (recommendedMin) {
+			lines = DEFAULT_LINES;
+			directions = DEFAULT_DIRECTIONS;
+			samplingIncrement = DEFAULT_INCREMENT;
 		}
 	}
 
