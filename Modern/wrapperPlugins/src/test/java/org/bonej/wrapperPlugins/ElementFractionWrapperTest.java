@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
+import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
@@ -21,8 +22,8 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
+import net.imglib2.view.Views;
 
-import org.bonej.testImages.Cuboid;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -47,14 +48,9 @@ public class ElementFractionWrapperTest {
 		SharedTable.reset();
 	}
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
 	@Test
-	public void testNullImageCancelsElementFraction() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void testNoCalibrationShowsWarning() throws Exception {
+		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
 			ElementFractionWrapper.class);
 	}
 
@@ -65,9 +61,60 @@ public class ElementFractionWrapperTest {
 	}
 
 	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
+	public void testNullImageCancelsElementFraction() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			ElementFractionWrapper.class);
+	}
+
+	// TODO Rewrite with a hyper stack
+	@Test
+	public void testResults() throws Exception {
+		// SETUP
+		final String unit = "mm";
+		final double scale = 0.9;
+		final int cubeSide = 5;
+		final int padding = 1;
+		final int stackSide = cubeSide + padding * 2;
+		final double cubeVolume = cubeSide * cubeSide * cubeSide;
+		final double spaceVolume = stackSide * stackSide * stackSide;
+		final double elementSize = scale * scale * scale;
+		final double[] expectedVolumes = { cubeVolume * elementSize };
+		final double[] expectedTotalVolumes = { spaceVolume * elementSize };
+		final double[] expectedRatios = { cubeVolume / spaceVolume };
+		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
+			expectedRatios };
+		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
+			"Total volume (" + unit + "³)", "Volume Ratio" };
+		// Create an test image of a cuboid
+		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide);
+		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 5 }).forEach(
+			BitType::setOne);
+		double[] calibration = new double[] { scale, scale, scale };
+		final String[] units = new String[] { unit, unit, unit };
+		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z };
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube", axes,
+			calibration, units);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<String>, String> table =
+			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		assertNotNull(table);
+		assertEquals("Wrong number of columns", 4, table.size());
+		for (int i = 0; i < 3; i++) {
+			final DefaultColumn<String> column = table.get(i + 1);
+			assertEquals("Column has wrong number of rows", 1, column.size());
+			assertEquals("Column has incorrect header", expectedHeaders[i], column
+				.getHeader());
+			for (int j = 0; j < 1; j++) {
+				assertEquals("Column has an incorrect value", expectedValues[i][j],
+					Double.parseDouble(column.get(j)), 1e-12);
+			}
+		}
 	}
 
 	@Test
@@ -98,48 +145,8 @@ public class ElementFractionWrapperTest {
 			any());
 	}
 
-	@Test
-	public void testResults() throws Exception {
-		// SETUP
-		// Create an test image of a cuboid
-		final String unit = "mm";
-		final double scale = 0.9;
-		final int cubeSide = 5;
-		final int padding = 1;
-		final int stackSide = cubeSide + padding * 2;
-		final double cubeVolume = cubeSide * cubeSide * cubeSide;
-		final double spaceVolume = stackSide * stackSide * stackSide;
-		final double elementSize = scale * scale * scale;
-		final double[] expectedVolumes = { cubeVolume * elementSize };
-		final double[] expectedTotalVolumes = { spaceVolume * elementSize };
-		final double[] expectedRatios = { cubeVolume / spaceVolume };
-		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
-			expectedRatios };
-		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
-			"Total volume (" + unit + "³)", "Volume Ratio" };
-        @SuppressWarnings("unchecked")
-		final ImgPlus<BitType> imgPlus = (ImgPlus<BitType>) IMAGE_J.op().run(
-			Cuboid.class, cubeSide, cubeSide, cubeSide, 1, 1, padding, scale, unit);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
-			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
-
-		// VERIFY
-		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
-		assertNotNull(table);
-		assertEquals("Wrong number of columns", 4, table.size());
-		for (int i = 0; i < 3; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
-			assertEquals("Column has wrong number of rows", 1, column.size());
-			assertEquals("Column has incorrect header", expectedHeaders[i], column
-				.getHeader());
-			for (int j = 0; j < 1; j++) {
-				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					Double.parseDouble(column.get(j)), 1e-12);
-			}
-		}
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }
