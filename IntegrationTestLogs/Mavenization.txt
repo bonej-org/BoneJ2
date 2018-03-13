@@ -61,58 +61,6 @@ Completed successfully -- -- 2016 Test O'Tester
 -----------------------------------------------------------------------
 
 
-Analyse Skeleton
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File > Open Samples > Bat Cochlea Volume)
-2) Run Skeletonise (Plugins > BoneJ > Skeletonise 3D)
-3) Run Analyse Skeleton (Plugins > BoneJ > Analyse Skeleton)
-3) Set all checkboxes false, and "Prune cycle method" to "none"
-4) Press "OK" on the setup dialog
-5) Verify that "Tagged skeleton" image opens
-5) Verify that "Results" table opens
-
-Expected result
------------------------------------------------------------------------
-Analyse Skeleton completes and shows the "Results" table and image
-
-Completed successfully April 21st 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Anisotropy
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File > Open Samples > Bat Cochlea Volume)
-2) Run Anisotropy (Plugins > BoneJ > Anisotropy)
-3) Press "OK" on the setup dialog (default options)
-
-Expected result
------------------------------------------------------------------------
-Anisotropy displays interactive graph, completes the run,
-and show the results.
-
-Completed successfully April 5 2016 Richard Domander
------------------------------------------------------------------------
-
-Connectivity
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Connectivity (Plugins>BoneJ>Connectivity)
-3) Verify that Results table opens
-
-Expected result
------------------------------------------------------------------------
-Connectivity runs successfully and "Results" pops open
-
-Completed successfully April 22 2016 Richard Domander
------------------------------------------------------------------------
-
-
 Ellipsoid Factor
 =======================================================================
 Steps
@@ -126,41 +74,6 @@ Steps
 Expected result
 -----------------------------------------------------------------------
 Ellipsoid Factor runs successfully and result images pop open
-
-Completed successfully April 22 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Fractal Dimension
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Fractal Dimension (Plugins>BoneJ>Fractal Dimension)
-3) Verify that Results table opens
-4) Verify that Plot window opens
-
-Expected result
------------------------------------------------------------------------
-Fractal Dimension runs successfully and result windows pop open
-
-Completed successfully April 22 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Isosurface
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Isosurface (Plugins>BoneJ>Isosurface)
-3) Press "OK" on the setup dialog (default options)
-4) Verify that Results table opens
-5) Verify that 3D model opens (3D Viewer)
-
-Expected result
------------------------------------------------------------------------
-Isosurface runs successfully and Results table and 3D Viewer open
 
 Completed successfully April 22 2016 Richard Domander
 -----------------------------------------------------------------------
@@ -198,139 +111,6 @@ Expected result
 Purify runs successfully and images and purified image opens
 
 Completed successfully April 22 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Skeletonise
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Skeletonise (Plugins>BoneJ>Skeletonise)
-3) Verify that skeletonised image opens
-
-Expected result
------------------------------------------------------------------------
-Skeletonise runs successfully and skeletonised image opens
-
-Completed successfully April 22 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Structure Model Index
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Structure Model Index (Plugins>BoneJ>Structure Model Index)
-3) Press "OK" on the setup dialog (default options)
-4) Press "OK" on the warning dialog
-5) Verify that Results table opens
-
-Expected result
------------------------------------------------------------------------
-Structure Model Index runs successfully and Results table pops open
-
-Completed successfully April 22 2016 Richard Domander
------------------------------------------------------------------------
-
-Thickness
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Thickness (Plugins>BoneJ>Thickness)
-3) Checkboxes Thickness, Graphic Result and Mask thickness map checked,
-   others unchecked
-4) Press "OK" on the setup dialog
-5) Verify that thickness map opens (bat-cochlea-volume_Tb.Th)
-6) Verify that Results table opens
-
-Expected result
------------------------------------------------------------------------
-Thickness runs successfully and Results table and thickness map pop open
-
-Completed successfully April 22 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Triple point angles
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Triple Point Angles (Plugins>BoneJ>Triple Point Angles)
-3) Verify that Results table opens
-
-Expected result
------------------------------------------------------------------------
-Triple point angles runs successfully and Results table opens
-
-Completed successfully April 25 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Volume Fraction (surface)
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Volume Fraction (Plugins>BoneJ>Volume Fraction)
-3) Set "Algorithm" to "Surface",
-   check "Show 3D result",
-   uncheck "Use ROI Manager",
-   Set "Surface resampling" to '6'.
-4) Press "OK" on the setup dialog
-5) Verify that "Results" table opens
-6) Verify that mesh images open (3D Viewer)
-
-Expected result
------------------------------------------------------------------------
-Volume Fraction runs successfully and "Results" and meshes open
-
-Completed successfully April 25 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Volume Fraction (voxel)
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Open bundled bone sample image (File>Open Samples>Bat Cochlea Volume)
-2) Run Volume Fraction (Plugins>BoneJ>Volume Fraction)
-3) Set "Algorithm" to "Voxel",
-   uncheck "Use ROI Manager".
-4) Press "OK" on the setup dialog
-5) Verify that "Results" table opens
-
-Expected result
------------------------------------------------------------------------
-Volume Fraction runs successfully and "Results" opens
-
-Completed successfully April 25 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Fit Ellipsoid
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
-2. Select slide 3
-3. Select point tool
-4. Draw a point ROI on the white area
-5. Press T to add the point to ROI manager
-6. Select next slide
-7. Return to step 4 until you have 9 points on 9 consecutive slides.
-   Place the points roughly on the same xy-coordinates.
-8. Run Fit Ellipsoid (Plugins > BoneJ > Fit Ellipsoid)
-9. Verify that "Results" table opens
-
-Expected result
------------------------------------------------------------------------
-Fit Ellipsoid runs successfully and "Results" opens
-
-Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -378,31 +158,6 @@ Completed successfully April 25 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
-Neck Shaft Angle
-=======================================================================
-Steps
------------------------------------------------------------------------
- 1. Open femoral images (File > Import > Image Sequence...)
- 2. Select point tool
- 3. Draw a point ROI on the femoral head
- 4. Press T to add the point to ROI manager
- 5. Select next slide
- 6. Return to step 3 until you have 5 points
- 7. Run Neck Shaft Angle (Plugins>BoneJ>Neck Shaft Angle)
- 8. Set the start and end slices of the shaft
- 9. Press "OK" on the setup dialog
-10. Verify that "Results" table opens
-11. When the dialog pops up, click the neck shaft
-12. Verify that "Results" table updates with "Angle" and "Skew" columns
-
-Expected result
------------------------------------------------------------------------
-Neck Shaft Angle runs successfully, "Results" opens and reacts to user
-
-Completed successfully April 28 2016 Richard Domander
------------------------------------------------------------------------
-
-
 Slice Geometry
 =======================================================================
 Steps
@@ -416,40 +171,6 @@ Steps
 Expected result
 -----------------------------------------------------------------------
 Slice Geometry runs successfully and "Results" & "Annotated" slice open
-
-Completed successfully April 26 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Erode (3D)
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
-2. Run Erode (Plugins>Process>Erode (3D))
-3. Set "Iso value" to "255"
-4. Press "OK" on the setup dialog
-
-Expected result
------------------------------------------------------------------------
-Erode runs successfully and white are on the image becomes smaller
-
-Completed successfully April 26 2016 Richard Domander
------------------------------------------------------------------------
-
-
-Dilate (3D)
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
-2. Run Dilate (Plugins>Process>Erode (3D))
-3. Set "Iso value" to "255"
-4. Press "OK" on the setup dialog
-
-Expected result
------------------------------------------------------------------------
-Dilate runs successfully and white are on the image becomes bigger
 
 Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
@@ -490,26 +211,6 @@ Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
 
 
-Interpolate ROIs
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Open bundled bone sample (File>Open Samples>Bat Cochlea Volume)
-2. Select rectangular ROI tool
-3. Draw a ROI on the first slice
-4. Add the Roi to the ROI manager with [t]
-5. Advance to slide 6
-6. Draw another ROI and add it to the manager
-7. Run Interpolate ROIs (Plugins>Stacks>Interpolate ROIs)
-8. Verify that 4 new ROIs appear to the manager (slides 2 - 4)
-
-Expected result
------------------------------------------------------------------------
-Interpolate ROIs creates new ROIs
-
-Completed successfully April 26 2016 Richard Domander
------------------------------------------------------------------------
-
 BoneJ Usage
 =======================================================================
 Steps
@@ -520,21 +221,6 @@ Steps
 Expected result
 -----------------------------------------------------------------------
 Data collection dialog opens
-
-Completed successfully April 26 2016 Richard Domander
------------------------------------------------------------------------
-
-
-BoneJ About
-=======================================================================
-Steps
------------------------------------------------------------------------
-1) Run BoneJ About (Help>About Plugins>BoneJ)
-2) Verify that help window opens
-
-Expected result
------------------------------------------------------------------------
-Help page opens
 
 Completed successfully April 26 2016 Richard Domander
 -----------------------------------------------------------------------
