@@ -9,8 +9,8 @@
         <version>5.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>bonej-legacy-plugins</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <artifactId>bonejLegacyPlugins_</artifactId>
+    <version>4.0.0-SNAPSHOT</version>
 
     <name>BoneJ legacy plugins</name>
     <description> The mavenized versions of the BoneJ1 plugins</description>
@@ -114,7 +114,7 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>bonej-legacy-util</artifactId>
+            <artifactId>bonejLegacyUtil_</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->
@@ -154,9 +154,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <!-- ImageJ1 doesn't recognize packages without underscores as plugins -->
-        <finalName>bonejLegacyPlugins_</finalName>
-    </build>
 </project>

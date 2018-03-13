@@ -10,8 +10,8 @@
         <version>5.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>bonej-legacy-util</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <artifactId>bonejLegacyUtil_</artifactId>
+    <version>4.0.0-SNAPSHOT</version>
 
     <name>BoneJ legacy utilities</name>
     <description>Utility classes for BoneJ1 plugins</description>
@@ -144,9 +144,4 @@
         <license.licenseName>BSD-2-Clause</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
     </properties>
-
-    <build>
-        <!-- ImageJ1 doesn't recognize packages without underscores as plugins -->
-        <finalName>bonejLegacyUtil_</finalName>
-    </build>
 </project>

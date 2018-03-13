@@ -93,12 +93,12 @@
             <!-- BoneJ modules -->
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>bonej-legacy-plugins</artifactId>
+                <artifactId>bonejLegacyPlugins_</artifactId>
                 <version>${legacy-plugins.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>bonej-legacy-util</artifactId>
+                <artifactId>bonejLegacyUtil_</artifactId>
                 <version>${legacy-util.version}</version>
             </dependency>
         </dependencies>
@@ -120,8 +120,8 @@
     </ciManagement>
 
     <properties>
-        <legacy-util.version>3.0.1-SNAPSHOT</legacy-util.version>
-        <legacy-plugins.version>3.0.1-SNAPSHOT</legacy-plugins.version>
+        <legacy-util.version>4.0.0-SNAPSHOT</legacy-util.version>
+        <legacy-plugins.version>4.0.0-SNAPSHOT</legacy-plugins.version>
         <license.licenseName>BSD-2-Clause</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
     </properties>
