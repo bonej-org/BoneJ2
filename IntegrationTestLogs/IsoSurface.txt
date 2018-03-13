@@ -18,7 +18,7 @@ Expected result
 Plugin writes four files with the extension ".stl" to the chosen directory.
 All files can be opened with the stl renderer above.
 
-Completed -
+Completed 13 March 2018 Richard Domander
 -----------------------------------------------------------------------
 
 
