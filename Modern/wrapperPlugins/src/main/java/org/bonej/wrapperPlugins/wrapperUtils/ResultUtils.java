@@ -166,44 +166,6 @@ public class ResultUtils {
 	}
 
 	/**
-	 * Creates columns for a {@link net.imagej.table.Table} that describe the
-	 * positions of the subspaces in a hyperspace
-	 * <p>
-	 * For example, if you've split a {X, Y, Z, C, T} space into {X, Y, Z}, the
-	 * method returns "Channel" and "Time" columns that list the positions of the
-	 * subspaces in C and T.
-	 * </p>
-	 * 
-	 * @see Subspace
-	 * @param subspaces the subspaces of a hyperspace.
-     * @param <T> type of the elements in the spaces.
-	 * @return columns that list the positions of the subspaces.
-     * @deprecated only used in tests.
-	 */
-	@Deprecated
-	public static <T extends RealType<T> & NativeType<T>> List<LongColumn>
-		createCoordinateColumns(List<Subspace<T>> subspaces)
-	{
-		final List<LongColumn> coordinateColumns = new ArrayList<>();
-		if (subspaces == null) {
-			return coordinateColumns;
-		}
-		final AxisType[] types = subspaces.get(0).getAxisTypes().toArray(
-			AxisType[]::new);
-		final List<long[]> positions = subspaces.stream().map(s -> s.getPosition()
-			.toArray()).collect(Collectors.toList());
-		for (int i = 0; i < types.length; i++) {
-			final AxisType type = types[i];
-			final LongColumn coordinateColumn = new LongColumn(type.getLabel());
-			final int index = i;
-			positions.stream().mapToLong(p -> toConventionalIndex(type, p[index]))
-				.forEach(coordinateColumn::add);
-			coordinateColumns.add(coordinateColumn);
-		}
-		return coordinateColumns;
-	}
-
-	/**
 	 * If needed, converts the given index to the ImageJ1 convention where Z,
 	 * Channel and Time axes start from 1.
 	 *

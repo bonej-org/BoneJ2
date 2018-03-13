@@ -72,25 +72,7 @@ public class ImagePlusUtil {
 			heightDepthAnisotropy));
 	}
 
-	@Deprecated
-	public static void revertInversion(final ImagePlus image) {
-		if (!image.isInvertedLut()) {
-			return;
-		}
-		if (image.isComposite()) {
-			final CompositeImage ci = (CompositeImage) image;
-			final LUT lut = ci.getChannelLut();
-			if (lut != null) ci.setChannelLut(lut.createInvertedLut());
-			return;
-		}
-		final ImageProcessor ip = image.getProcessor();
-		ip.invertLut();
-		if (image.getStackSize() > 1) {
-			image.getStack().setColorModel(ip.getColorModel());
-		}
-	}
-
-    /**
+	/**
      * Duplicates the image without changing the title of the copy, or cropping it
      * to the ROI.
      * <p>

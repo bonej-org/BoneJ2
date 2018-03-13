@@ -181,47 +181,6 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testCreateCoordinateColumnsNullSubspace() throws Exception {
-		final List<LongColumn> columns = ResultUtils.createCoordinateColumns(null);
-
-		assertNotNull(columns);
-		assertTrue(columns.isEmpty());
-	}
-
-	@Test
-	public void testCreateCoordinateColumns() throws Exception {
-		// SETUP
-		final Iterator<Long> expectedCPositions = Stream.of(1L, 2L, 1L, 2L)
-			.iterator();
-		final Iterator<Long> expectedTPositions = Stream.of(1L, 1L, 2L, 2L)
-			.iterator();
-		final Img<BitType> img = ArrayImgs.bits(2, 2, 2, 2, 2);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "",
-			new DefaultLinearAxis(Axes.X), new DefaultLinearAxis(Axes.Y),
-			new DefaultLinearAxis(Axes.Z), new DefaultLinearAxis(Axes.CHANNEL),
-			new DefaultLinearAxis(Axes.TIME));
-		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			imgPlus).collect(Collectors.toList());
-
-		// EXECUTE
-		final List<LongColumn> coordinateColumns = ResultUtils
-			.createCoordinateColumns(subspaces);
-
-		// VERIFY
-		assertEquals("Wrong number of columns", 2, coordinateColumns.size());
-		assertEquals("Incorrect header", Axes.CHANNEL.getLabel(), coordinateColumns
-			.get(0).getHeader());
-		assertEquals("Incorrect header", Axes.TIME.getLabel(), coordinateColumns
-			.get(1).getHeader());
-		assertTrue("Columns have wrong number of values", coordinateColumns.stream()
-			.allMatch(c -> c.size() == 4));
-		assertTrue("Wrong values in the channel column", coordinateColumns.get(0)
-			.stream().allMatch(p -> p.longValue() == expectedCPositions.next()));
-		assertTrue("Wrong values in the time column", coordinateColumns.get(1)
-			.stream().allMatch(p -> p.longValue() == expectedTPositions.next()));
-	}
-
-    @Test
     public void testToConventionalIndexNullType() throws Exception {
         assertEquals(0, ResultUtils.toConventionalIndex(null, 0));
     }

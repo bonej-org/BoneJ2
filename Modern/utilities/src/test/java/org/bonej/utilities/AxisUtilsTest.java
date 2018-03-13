@@ -38,35 +38,6 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testGetMaxConversion() throws Exception {
-		final double[][] scales = { { 16.0, 8.0, 32.0 }, { 4.0, 10.0, 1.0 }, { 1.0,
-			2.0, 3.0 }, { 3.0, 2.0, 1.0 }, { 1.0, 40.0, 2.0 } };
-		final String[][] units = { { "m", "km", "µm" }, { "cm", "mm", "km" }, { "m",
-			"m", "m" }, { "mm", "mm", "mm" }, { "cm", "mm", "cm" } };
-		final double[] expected = { 500_000, 25_000, 3.0, 3.0, 4.0 };
-		final Img<ByteType> img = ArrayImgs.bytes(1, 1, 1);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img);
-
-		for (int i = 0; i < scales.length; i++) {
-			final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, units[i][0],
-				scales[i][0]);
-			final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, units[i][1],
-				scales[i][1]);
-			final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, units[i][2],
-				scales[i][2]);
-			imgPlus.setAxis(xAxis, 0);
-			imgPlus.setAxis(yAxis, 1);
-			imgPlus.setAxis(zAxis, 2);
-
-			final double conversion = AxisUtils.getMaxConversion(xAxis.scale(), xAxis
-				.unit(), imgPlus, unitService);
-
-			assertEquals("Unit conversion is incorrect", expected[i], conversion,
-				1e-12);
-		}
-	}
-
-	@Test
 	public void testGetSpatialUnitInconvertibleUnits() throws Exception {
 		final String[][] units = { { "m", "" }, { "cm", "kg" } };
 		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
@@ -114,43 +85,6 @@ public class AxisUtilsTest {
 		assertTrue("String should be present when units are convertible", unit
 			.isPresent());
 		assertEquals("Unit is incorrect", "µm", unit.get());
-	}
-
-	@Test
-	public void testGetXYZIndicesEmptyIfSpaceNull() throws Exception {
-		final Optional<int[]> result = AxisUtils.getXYZIndices(null);
-
-		assertFalse("Optional should be empty", result.isPresent());
-	}
-
-	@Test
-	public void testGetXYZIndicesEmptyIfSpaceNot3D() throws Exception {
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final Img<DoubleType> img = ArrayImgs.doubles(1, 1);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final Optional<int[]> result = AxisUtils.getXYZIndices(imgPlus);
-
-		assertFalse("Optional should be empty", result.isPresent());
-	}
-
-	@Test
-	public void testGetXYZIndices() throws Exception {
-		final int[] expectedIndices = { 0, 1, 3 };
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
-		final Img<DoubleType> img = ArrayImgs.doubles(1, 1, 1, 1);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, cAxis, zAxis);
-
-		final Optional<int[]> result = AxisUtils.getXYZIndices(imgPlus);
-
-		assertTrue("Optional should be present", result.isPresent());
-		assertArrayEquals("Indices are incorrect", expectedIndices, result.get());
 	}
 
 	@Test
@@ -238,53 +172,4 @@ public class AxisUtilsTest {
 		assertEquals("Wrong number of spatial dimensions", 2, result);
 	}
 
-	@Test
-	public void testGetTimeIndexReturnMinusOneIfSpaceNull()
-		throws AssertionError
-	{
-		final int timeIndex = AxisUtils.getTimeIndex(null);
-
-		assertEquals("Index of time dimension is incorrect", -1, timeIndex);
-	}
-
-	@Test
-	public void testGetTimeIndex() throws AssertionError {
-		// Create a test image
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.TIME);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final long[] dimensions = { 10, 3, 10 };
-		final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			channelAxis, yAxis);
-
-		final int timeIndex = AxisUtils.getTimeIndex(imgPlus);
-
-		assertEquals("Index of time dimension is incorrect", 1, timeIndex);
-	}
-
-	@Test
-	public void testGetChannelIndexReturnMinusOneIfSpaceNull()
-		throws AssertionError
-	{
-		final int channelIndex = AxisUtils.getChannelIndex(null);
-
-		assertEquals("Index of channel dimension is incorrect", -1, channelIndex);
-	}
-
-	@Test
-	public void testGetChannelIndex() throws AssertionError {
-		// Create a test image
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final long[] dimensions = { 10, 3, 10 };
-		final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			channelAxis, yAxis);
-
-		final int channelIndex = AxisUtils.getChannelIndex(imgPlus);
-
-		assertEquals("Index of channel dimension is incorrect", 1, channelIndex);
-	}
 }

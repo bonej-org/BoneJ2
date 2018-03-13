@@ -26,76 +26,6 @@ import org.scijava.util.StringUtils;
 public class AxisUtils {
 
 	/**
-	 * Indices of the first three spatial dimensions in the Axes array of the
-	 * given space.
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-	 * @param <A> type of axes in the space.
-	 * @return an Optional containing the indices, or empty if failed to find
-	 *         three spatial dimensions.
-	 * @deprecated Only used in tests.
-	 */
-	@Deprecated
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis>
-		Optional<int[]> getXYZIndices(final S space)
-	{
-		if (space == null) {
-			return Optional.empty();
-		}
-
-		final int dimensions = space.numDimensions();
-		final int[] indices = IntStream.range(0, dimensions).filter(d -> space.axis(
-			d).type().isSpatial()).toArray();
-
-		return indices.length == 3 ? Optional.of(indices) : Optional.empty();
-	}
-
-	/**
-	 * Gets the index of the time axis in the dimensions of the space.
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-	 * @param <A> type of axes in the space.
-	 * @return index of the time axis, or -1 if there's none.
-     * @deprecated only used in test code.
-	 */
-	@Deprecated
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> int
-		getTimeIndex(final S space)
-	{
-		if (space == null) {
-			return -1;
-		}
-
-		final int dimensions = space.numDimensions();
-		return IntStream.range(0, dimensions).filter(d -> space.axis(d)
-			.type() == Axes.TIME).findFirst().orElse(-1);
-	}
-
-	/**
-	 * Gets the index of the channel axis in the dimensions of the space.
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-	 * @param <A> type of axes in the space.
-	 * @return index of the channel axis, or -1 if there's none.
-     * @deprecated only used in test code.
-	 */
-	@Deprecated
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> int
-		getChannelIndex(final S space)
-	{
-		if (space == null) {
-			return -1;
-		}
-
-		final int dimensions = space.numDimensions();
-		return IntStream.range(0, dimensions).filter(d -> space.axis(d)
-			.type() == Axes.CHANNEL).findFirst().orElse(-1);
-	}
-
-	/**
 	 * Counts the number of spatial dimensions in the given space.
 	 *
 	 * @param space an N-dimensional space.
@@ -107,47 +37,6 @@ public class AxisUtils {
 		countSpatialDimensions(final S space)
 	{
 		return spatialAxisStream(space).count();
-	}
-
-	/**
-	 * Determines the coefficient to convert units from the spatial axis with the
-	 * smallest calibration to the largest.
-	 *
-	 * @param scale scale of the first spatial axis.
-	 * @param unit unit of the first spatial axis.
-	 * @param space an n-dimensional space with calibrated axes.
-	 * @param <S> type of the space.
-	 * @param unitService an {@link UnitService} to convert axis calibrations.
-	 * @return greatest conversion coefficient between two axes found. Coefficient
-	 *         == 0.0 if space == null, or there are no spatial axes.
-     * @deprecated only used in test code.
-	 */
-	@Deprecated
-	public static <S extends AnnotatedSpace<CalibratedAxis>> double
-		getMaxConversion(final double scale, final String unit,
-						 final S space, final UnitService unitService)
-	{
-		final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
-			toList());
-		double maxConversion = 0.0;
-
-		for (CalibratedAxis axis : axes) {
-			final double axisScale = axis.averageScale(0.0, 1.0);
-			final String axisUnit = axis.unit().replaceFirst("^µ[mM]$", "um");
-			final double toConversion = scale * unitService.value(1.0, unit,
-				axisUnit) / axisScale;
-			final double fromConversion = axisScale * unitService.value(1.0, axisUnit,
-				unit) / scale;
-
-			final double conversion = toConversion >= fromConversion ? toConversion
-				: fromConversion;
-
-			if (conversion >= maxConversion) {
-				maxConversion = conversion;
-			}
-		}
-
-		return maxConversion;
 	}
 
 	/**
