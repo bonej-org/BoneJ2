@@ -44,11 +44,8 @@ import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.UIService;
-import org.scijava.widget.Button;
 import org.scijava.widget.NumberWidget;
 
 /**
@@ -113,10 +110,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		description = "Show (log(size), -log(count)) points", required = false)
 	private boolean showPoints = false;
 
-	@Parameter(label = "Help", description = "Open help web page",
-		callback = "openHelpPage")
-	private Button helpButton;
-
 	/**
 	 * The fractal dimension and R² values for each 3D subspace in a table
 	 * <p>
@@ -137,12 +130,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@Parameter
 	private StatusService statusService;
-
-	@Parameter
-	private UIService uiService;
-
-	@Parameter
-	private PlatformService platformService;
 
 	private BinaryHybridCF<RandomAccessibleInterval<BitType>, Boolean, RandomAccessibleInterval<BitType>> hollowOp;
 	private UnaryFunctionOp<RandomAccessibleInterval<BitType>, List<ValuePair<DoubleType, DoubleType>>> boxCountOp;
@@ -199,6 +186,32 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		subspaceTables.add(resultsTable);
 	}
 
+	private boolean allValuesFinite(
+		final List<ValuePair<DoubleType, DoubleType>> pairs)
+	{
+		final Stream<Double> xValues = pairs.stream().map(p -> p.a.get());
+		final Stream<Double> yValues = pairs.stream().map(p -> p.b.get());
+		return Stream.concat(xValues, yValues).allMatch(Double::isFinite);
+	}
+
+	private void enforceAutoParam() {
+		if (!autoParam) {
+			return;
+		}
+		startBoxSize = autoMax;
+		smallestBoxSize = Math.min(startBoxSize, 6L);
+		scaleFactor = 1.2;
+		translations = 0;
+	}
+
+	@SuppressWarnings("unused")
+	private void enforceValidSizes() {
+		if (smallestBoxSize > startBoxSize) {
+			smallestBoxSize = startBoxSize;
+		}
+		enforceAutoParam();
+	}
+
 	private void fillResultsTable(final List<Subspace<BitType>> subspaces,
 		final List<Double> fractalDimensions, final List<Double> rSquared)
 	{
@@ -224,29 +237,13 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		return curveFitter.fit(points.toList());
 	}
 
-	private boolean allValuesFinite(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
-	{
-		final Stream<Double> xValues = pairs.stream().map(p -> p.a.get());
-		final Stream<Double> yValues = pairs.stream().map(p -> p.b.get());
-		return Stream.concat(xValues, yValues).allMatch(Double::isFinite);
-	}
-
 	private double getRSquared(List<ValuePair<DoubleType, DoubleType>> pairs) {
 		SimpleRegression regression = new SimpleRegression();
 		pairs.forEach(pair -> regression.addData(pair.a.get(), pair.b.get()));
 		return regression.getRSquare();
 	}
 
-	private WeightedObservedPoints toWeightedObservedPoints(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
-	{
-		WeightedObservedPoints points = new WeightedObservedPoints();
-		pairs.forEach(pair -> points.add(pair.a.get(), pair.b.get()));
-		return points;
-	}
-
-    @SuppressWarnings("unused")
+	@SuppressWarnings("unused")
 	private void initAutoParam() {
 		if (inputImage == null) {
 			return;
@@ -259,14 +256,23 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@SuppressWarnings("unchecked")
 	private void matchOps(final RandomAccessibleInterval<BitType> input) {
-		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService, Ops.Morphology.Outline.class,
-			RandomAccessibleInterval.class, input, true);
-		boxCountOp = (UnaryFunctionOp) Functions.unary(opService, Ops.Topology.BoxCount.class,
-			List.class, input, startBoxSize, smallestBoxSize, scaleFactor,
-			translations);
+		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService,
+			Ops.Morphology.Outline.class, RandomAccessibleInterval.class, input,
+			true);
+		boxCountOp = (UnaryFunctionOp) Functions.unary(opService,
+			Ops.Topology.BoxCount.class, List.class, input, startBoxSize,
+			smallestBoxSize, scaleFactor, translations);
 	}
 
-    @SuppressWarnings("unused")
+	private WeightedObservedPoints toWeightedObservedPoints(
+		final List<ValuePair<DoubleType, DoubleType>> pairs)
+	{
+		WeightedObservedPoints points = new WeightedObservedPoints();
+		pairs.forEach(pair -> points.add(pair.a.get(), pair.b.get()));
+		return points;
+	}
+
+	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
@@ -277,28 +283,5 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		}
 	}
 
-	private void enforceAutoParam() {
-		if (!autoParam) {
-			return;
-		}
-		startBoxSize = autoMax;
-		smallestBoxSize = Math.min(startBoxSize, 6L);
-		scaleFactor = 1.2;
-		translations = 0;
-	}
-
-	@SuppressWarnings("unused")
-	private void enforceValidSizes() {
-		if (smallestBoxSize > startBoxSize) {
-			smallestBoxSize = startBoxSize;
-		}
-		enforceAutoParam();
-	}
-
-	@SuppressWarnings("unused")
-	private void openHelpPage() {
-		Help.openHelpPage("http://bonej.org/fractal", platformService, uiService,
-			null);
-	}
 	// endregion
 }

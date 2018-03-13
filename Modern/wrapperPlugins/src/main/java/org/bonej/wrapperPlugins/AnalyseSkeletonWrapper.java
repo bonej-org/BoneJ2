@@ -1,12 +1,12 @@
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
-import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 
 import io.scif.FormatException;
 import io.scif.services.FormatService;
@@ -38,11 +38,9 @@ import org.scijava.command.ContextCommand;
 import org.scijava.convert.ConvertService;
 import org.scijava.io.IOService;
 import org.scijava.log.LogService;
-import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 import org.scijava.widget.FileWidget;
 
@@ -68,7 +66,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		LegacyInjector.preinit();
 	}
 
-    @Parameter(label = "Input image", validater = "validateImage",
+	@Parameter(label = "Input image", validater = "validateImage",
 		persist = false)
 	private ImagePlus inputImage;
 
@@ -130,15 +128,8 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter(type = ItemIO.OUTPUT)
 	private ImagePlus shortestPaths;
 
-	@Parameter(label = "Help", description = "Open help web page",
-		callback = "openHelpPage")
-	private Button helpButton;
-
 	@Parameter
 	private UIService uiService;
-
-	@Parameter
-	private PlatformService platformService;
 
 	@Parameter
 	private IOService ioService;
@@ -153,7 +144,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	private LogService logService;
 
 	@Parameter
-    private StatusService statusService;
+	private StatusService statusService;
 
 	private ImagePlus intensityImage = null;
 
@@ -171,7 +162,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		final AnalyzeSkeleton_ analyzeSkeleton_ = new AnalyzeSkeleton_();
 		final Roi roi = excludeRoi ? inputImage.getRoi() : null;
 		analyzeSkeleton_.setup("", skeleton);
-        statusService.showStatus("Analyse skeleton: analysing skeletons");
+		statusService.showStatus("Analyse skeleton: analysing skeletons");
 		// "Silent" parameter cannot be controlled by the user in the original
 		// plugin. We set it "true" so that no images pop open
 		final SkeletonResult results = analyzeSkeleton_.run(pruneIndex, pruneEnds,
@@ -193,6 +184,59 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 				shortestPaths = new ImagePlus(title, stack);
 				shortestPaths.setCalibration(inputImage.getCalibration());
 			}
+		}
+	}
+
+	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {
+		final Graph[] graphs = analyzeSkeleton_.getGraphs();
+		return graphs == null || graphs.length == 0;
+	}
+
+	private boolean isIntensityNeeded() {
+		final int i = mapPruneCycleMethod(pruneCycleMethod);
+		return i == AnalyzeSkeleton_.LOWEST_INTENSITY_BRANCH ||
+			i == AnalyzeSkeleton_.LOWEST_INTENSITY_VOXEL;
+	}
+
+	private boolean isValidIntensityImage(final Dataset dataset) {
+		// NB Composite channel count is a hacky way to check if the image is
+		// greyscale. It doesn't not correspond with the number of channels in the
+		// image
+		final int compositeChannelCount = dataset.getCompositeChannelCount();
+		if (compositeChannelCount != 1 || dataset.getValidBits() != 8) {
+			cancel("The intensity image needs to be 8-bit greyscale");
+			return false;
+		}
+		if (AxisUtils.hasTimeDimensions(dataset)) {
+			cancel("The intensity image can't have a time dimension");
+			return false;
+		}
+		if (AxisUtils.hasChannelDimensions(dataset)) {
+			cancel("The intensity image can't have a channel dimension");
+			return false;
+		}
+		if (AxisUtils.countSpatialDimensions(dataset) != inputImage
+			.getNDimensions())
+		{
+			cancel(
+				"The intensity image should match the dimensionality of the input image");
+			return false;
+		}
+		return true;
+	}
+
+	private int mapPruneCycleMethod(final String pruneCycleMethod) {
+		switch (pruneCycleMethod) {
+			case "None":
+				return AnalyzeSkeleton_.NONE;
+			case "Shortest branch":
+				return AnalyzeSkeleton_.NONE;
+			case "Lowest intensity voxel":
+				return AnalyzeSkeleton_.LOWEST_INTENSITY_VOXEL;
+			case "Lowest intensity branch":
+				return AnalyzeSkeleton_.LOWEST_INTENSITY_BRANCH;
+			default:
+				throw new IllegalArgumentException("Unexpected prune cycle method");
 		}
 	}
 
@@ -225,96 +269,6 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		catch (IOException | NullPointerException e) {
 			cancel("An error occurred while opening the image");
 			logService.trace(e);
-		}
-	}
-
-	private boolean isValidIntensityImage(final Dataset dataset) {
-		// NB Composite channel count is a hacky way to check if the image is
-		// greyscale. It doesn't not correspond with the number of channels in the
-		// image
-		final int compositeChannelCount = dataset.getCompositeChannelCount();
-		if (compositeChannelCount != 1 || dataset.getValidBits() != 8) {
-			cancel("The intensity image needs to be 8-bit greyscale");
-			return false;
-		}
-		if (AxisUtils.hasTimeDimensions(dataset)) {
-			cancel("The intensity image can't have a time dimension");
-			return false;
-		}
-		if (AxisUtils.hasChannelDimensions(dataset)) {
-			cancel("The intensity image can't have a channel dimension");
-			return false;
-		}
-		if (AxisUtils.countSpatialDimensions(dataset) != inputImage
-			.getNDimensions())
-		{
-			cancel(
-				"The intensity image should match the dimensionality of the input image");
-			return false;
-		}
-		return true;
-	}
-
-	private void showResults(final SkeletonResult results) {
-		final String[] headers = { "# Skeleton", "# Branches", "# Junctions",
-			"# End-point voxels", "# Junction voxels", "# Slab voxels",
-			"Average Branch Length", "# Triple points", "# Quadruple points",
-			"Maximum Branch Length", "Longest Shortest Path", "spx", "spy", "spz" };
-
-		final String label = inputImage.getTitle();
-		for (int i = 0; i < results.getNumOfTrees(); i++) {
-			SharedTable.add(label, headers[0], i + 1);
-			SharedTable.add(label, headers[1], results.getBranches()[i]);
-			SharedTable.add(label, headers[2], results.getJunctions()[i]);
-			SharedTable.add(label, headers[3], results.getEndPoints()[i]);
-			SharedTable.add(label, headers[4], results.getJunctions()[i]);
-			SharedTable.add(label, headers[5], results.getSlabs()[i]);
-			SharedTable.add(label, headers[6], results.getAverageBranchLength()[i]);
-			SharedTable.add(label, headers[7], results.getTriples()[i]);
-			SharedTable.add(label, headers[8], results.getQuadruples()[i]);
-			SharedTable.add(label, headers[9], results.getMaximumBranchLength()[i]);
-			if (results.getShortestPathList() == null) {
-				continue;
-			}
-			SharedTable.add(label, headers[10], results.getShortestPathList().get(i));
-			SharedTable.add(label, headers[11], results.getSpStartPosition()[i][0]);
-			SharedTable.add(label, headers[12], results.getSpStartPosition()[i][1]);
-			SharedTable.add(label, headers[13], results.getSpStartPosition()[i][2]);
-		}
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
-	}
-
-	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {
-		final Graph[] graphs = analyzeSkeleton_.getGraphs();
-		return graphs == null || graphs.length == 0;
-	}
-
-	/**
-	 * Run {@link Skeletonize3D_} on the input image
-	 * <p>
-	 * I know of no way to check if the given image is already a skeleton, and
-	 * {@link AnalyzeSkeleton_} runs for a very long time if it's not. Thus we
-	 * skeletonise just in case.
-	 * </p>
-	 */
-	private ImagePlus skeletonise(final ImagePlus inputImage) {
-		final ImagePlus skeleton = cleanDuplicate(inputImage);
-		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
-		skeletoniser.setup("", skeleton);
-		skeletoniser.run(null);
-		showSkeleton(skeletoniser, skeleton);
-		return skeleton;
-	}
-
-	private void showSkeleton(final Skeletonize3D_ skeletoniser,
-		final ImagePlus skeleton)
-	{
-		final int iterations = skeletoniser.getThinningIterations();
-		if (iterations > 1) {
-			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-			uiService.show(skeleton);
 		}
 	}
 
@@ -363,19 +317,62 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		}
 	}
 
-	private int mapPruneCycleMethod(final String pruneCycleMethod) {
-		switch (pruneCycleMethod) {
-			case "None":
-				return AnalyzeSkeleton_.NONE;
-			case "Shortest branch":
-				return AnalyzeSkeleton_.NONE;
-			case "Lowest intensity voxel":
-				return AnalyzeSkeleton_.LOWEST_INTENSITY_VOXEL;
-			case "Lowest intensity branch":
-				return AnalyzeSkeleton_.LOWEST_INTENSITY_BRANCH;
-			default:
-				throw new IllegalArgumentException("Unexpected prune cycle method");
+	private void showResults(final SkeletonResult results) {
+		final String[] headers = { "# Skeleton", "# Branches", "# Junctions",
+			"# End-point voxels", "# Junction voxels", "# Slab voxels",
+			"Average Branch Length", "# Triple points", "# Quadruple points",
+			"Maximum Branch Length", "Longest Shortest Path", "spx", "spy", "spz" };
+
+		final String label = inputImage.getTitle();
+		for (int i = 0; i < results.getNumOfTrees(); i++) {
+			SharedTable.add(label, headers[0], i + 1);
+			SharedTable.add(label, headers[1], results.getBranches()[i]);
+			SharedTable.add(label, headers[2], results.getJunctions()[i]);
+			SharedTable.add(label, headers[3], results.getEndPoints()[i]);
+			SharedTable.add(label, headers[4], results.getJunctions()[i]);
+			SharedTable.add(label, headers[5], results.getSlabs()[i]);
+			SharedTable.add(label, headers[6], results.getAverageBranchLength()[i]);
+			SharedTable.add(label, headers[7], results.getTriples()[i]);
+			SharedTable.add(label, headers[8], results.getQuadruples()[i]);
+			SharedTable.add(label, headers[9], results.getMaximumBranchLength()[i]);
+			if (results.getShortestPathList() == null) {
+				continue;
+			}
+			SharedTable.add(label, headers[10], results.getShortestPathList().get(i));
+			SharedTable.add(label, headers[11], results.getSpStartPosition()[i][0]);
+			SharedTable.add(label, headers[12], results.getSpStartPosition()[i][1]);
+			SharedTable.add(label, headers[13], results.getSpStartPosition()[i][2]);
 		}
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
+	}
+
+	private void showSkeleton(final Skeletonize3D_ skeletoniser,
+		final ImagePlus skeleton)
+	{
+		final int iterations = skeletoniser.getThinningIterations();
+		if (iterations > 1) {
+			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
+			uiService.show(skeleton);
+		}
+	}
+
+	/**
+	 * Run {@link Skeletonize3D_} on the input image
+	 * <p>
+	 * I know of no way to check if the given image is already a skeleton, and
+	 * {@link AnalyzeSkeleton_} runs for a very long time if it's not. Thus we
+	 * skeletonise just in case.
+	 * </p>
+	 */
+	private ImagePlus skeletonise(final ImagePlus inputImage) {
+		final ImagePlus skeleton = cleanDuplicate(inputImage);
+		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+		skeletoniser.setup("", skeleton);
+		skeletoniser.run(null);
+		showSkeleton(skeletoniser, skeleton);
+		return skeleton;
 	}
 
 	@SuppressWarnings("unused")
@@ -403,16 +400,5 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		}
 	}
 
-	private boolean isIntensityNeeded() {
-		final int i = mapPruneCycleMethod(pruneCycleMethod);
-		return i == AnalyzeSkeleton_.LOWEST_INTENSITY_BRANCH ||
-			i == AnalyzeSkeleton_.LOWEST_INTENSITY_VOXEL;
-	}
-
-	@SuppressWarnings("unused")
-	private void openHelpPage() {
-		Help.openHelpPage("http://fiji.sc/wiki/index.php/AnalyzeSkeleton",
-			platformService, uiService, logService);
-	}
 	// endregion
 }
