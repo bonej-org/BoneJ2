@@ -33,7 +33,36 @@ public class FindLocalEllipsoidOpTest {
                     Optional.class, List.class, ValuePair.class);
 
     @Test
-    public void testFittingEllipsoidToThreeInputPointsEasy() {
+    public void testFittingEllipsoidToEquidistantCollisionPoints() {
+        Vector3d vertexP = new Vector3d(1, 0, 0);
+        Vector3d normalP = new Vector3d(-1, 0, 0);
+
+        Vector3d vertexQ1 = new Vector3d(-1, 0, 0);
+        Vector3d vertexQ2 = new Vector3d(0, 1, 0);
+        Vector3d vertexQ3 = new Vector3d(0, -1, 0);
+        Vector3d vertexQ4 = new Vector3d(0, 0, 1);
+        Vector3d vertexQ5 = new Vector3d(0, 0, -1);
+        Vector3d vertexTooFarAway = new Vector3d(10, -20, 4);
+
+        List<Vector3d> arrayList = Arrays.asList(vertexP,vertexQ1, vertexQ2, vertexQ3,vertexQ4,vertexQ5,vertexTooFarAway);
+        LinkedList<Vector3d> otherVertices = new LinkedList<>();
+        otherVertices.addAll(arrayList);
+
+        final Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
+
+        assertTrue(ellipsoid.isPresent());
+        assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ1, ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ2, ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ3, ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ4, ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ5, ellipsoid.get()));
+        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
+    }
+
+
+    @Test
+    public void testFittingEllipsoidToFiveInputPointsEasy() {
         Vector3d vertexP = new Vector3d(0, 2, 0);
         Vector3d normalP = new Vector3d(0, 1, 0);
 
@@ -57,7 +86,7 @@ public class FindLocalEllipsoidOpTest {
     }
 
     @Test
-    public void testFittingEllipsoidToThreeInputPointsDifficult() {
+    public void testFittingEllipsoidToFiveInputPointsDifficult() {
         Vector3d vertexP = new Vector3d(0, 0, 0);
         Vector3d normalP = new Vector3d(0, 1, 0);
 
