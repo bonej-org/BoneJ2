@@ -137,9 +137,9 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
      */
     private static Matrix4d getQ3(final List<Vector3d> pqr, Ellipsoid ellipsoid)
     {
-        Vector3d p = pqr.get(0);
-        Vector3d q = pqr.get(1);
-        Vector3d r = pqr.get(2);
+        final Vector3d p = new Vector3d(pqr.get(0));
+        final Vector3d q = new Vector3d(pqr.get(1));
+        final Vector3d r = new Vector3d(pqr.get(2));
 
         Vector3d interiorPoint = new Vector3d(p);
         interiorPoint.scaleAdd(-1.0,q);
