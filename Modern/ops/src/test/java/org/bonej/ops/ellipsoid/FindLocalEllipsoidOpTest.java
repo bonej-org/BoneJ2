@@ -34,14 +34,14 @@ public class FindLocalEllipsoidOpTest {
 
     @Test
     public void testFittingEllipsoidToEquidistantCollisionPoints() {
-        Vector3d vertexP = new Vector3d(1, 0, 0);
-        Vector3d normalP = new Vector3d(-1, 0, 0);
+        Vector3d vertexP = new Vector3d(-2, 0, 0);
+        Vector3d normalP = new Vector3d(1, 0, 0);
 
-        Vector3d vertexQ1 = new Vector3d(-1, 0, 0);
-        Vector3d vertexQ2 = new Vector3d(0, 1, 0);
-        Vector3d vertexQ3 = new Vector3d(0, -1, 0);
-        Vector3d vertexQ4 = new Vector3d(0, 0, 1);
-        Vector3d vertexQ5 = new Vector3d(0, 0, -1);
+        Vector3d vertexQ1 = new Vector3d(-2, 0, 0);
+        Vector3d vertexQ2 = new Vector3d(0, 2, 0);
+        Vector3d vertexQ3 = new Vector3d(0, -2, 0);
+        Vector3d vertexQ4 = new Vector3d(0, 0, 2);
+        Vector3d vertexQ5 = new Vector3d(0, 0, -2);
         Vector3d vertexTooFarAway = new Vector3d(10, -20, 4);
 
         List<Vector3d> arrayList = Arrays.asList(vertexP,vertexQ1, vertexQ2, vertexQ3,vertexQ4,vertexQ5,vertexTooFarAway);
@@ -59,6 +59,7 @@ public class FindLocalEllipsoidOpTest {
         assertTrue(testPointIsOnEllipsoidSurface(vertexQ5, ellipsoid.get()));
         assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
     }
+
 
 
     @Test

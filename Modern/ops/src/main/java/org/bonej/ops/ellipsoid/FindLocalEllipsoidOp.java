@@ -41,8 +41,12 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
         if(qAndRadius==null) return Optional.empty();
         otherVertices.remove(qAndRadius.getA().getVertex());
 
+        Vector3d np = new Vector3d(p.getNormal());
+        np.scale(qAndRadius.getB());
+        p.setNormal(np);
+
         Vector3d c = new Vector3d(p.getNormal());
-        c.scaleAdd(qAndRadius.getB(), p.getVertex());
+        c.add(p.getVertex());
         Matrix4d q1 = getQ1(c,qAndRadius.getB());
         Matrix4d q2 = getQ2(p,qAndRadius.getA());
 
@@ -300,4 +304,6 @@ class VertexWithNormal {
     public Vector3d getNormal() {
         return new Vector3d(vwn.getB());
     }
+
+    public void setNormal(Vector3d n) {this.vwn = new ValuePair<>(this.vwn.getA(), new Vector3d(n));}
 }
