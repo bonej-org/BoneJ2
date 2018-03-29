@@ -404,22 +404,7 @@ public class Orienteer extends PlugInFrame
 	}
 
 	/**
-	 * Retrieve the orientation of the named axis. If the axis name is not found,
-	 * the principal axis orientation is returned.
-	 *
-	 * @param direction Label you wish to match
-	 * @return orientation of the axis in radians clockwise from 12 o'clock
-	 */
-	// TODO Remove
-	public double getOrientation(final String direction) {
-		if (WindowManager.getImageCount() == 0)
-			return 0;
-		final ImagePlus imp = WindowManager.getCurrentImage();
-		return getOrientation(imp, direction);
-	}
-
-	/**
-	 * Overloaded version of getOrientation that takes no argument
+	 * Gets the principal orientation
 	 *
 	 * @return orientation of the principal direction in radians clockwise from
 	 *         12 o'clock

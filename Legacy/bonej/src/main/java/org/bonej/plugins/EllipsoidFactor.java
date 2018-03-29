@@ -759,7 +759,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 *
 	 * @param imp
 	 * @param skeletonPoints
-	 * @param unitVectors
 	 * @return
 	 */
 	private Ellipsoid[] findEllipsoids(final ImagePlus imp, final int[][] skeletonPoints) {

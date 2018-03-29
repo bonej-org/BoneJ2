@@ -28,14 +28,10 @@ import ij.Prefs;
  *
  * @author Stephan Preibisch
  * @author Michael Doube
- *
- * @see
- * 		<p>
- *      <a href=
+ * @see <a href=
  *      "http://repo.or.cz/w/trakem2.git?a=blob;f=mpi/fruitfly/general/MultiThreading.java;hb=HEAD"
  *      >http://repo.or.cz/w/trakem2.git?a=blob;f=mpi/fruitfly/general/
  *      MultiThreading.java;hb=HEAD</a>
- *
  */
 public class Multithreader {
 

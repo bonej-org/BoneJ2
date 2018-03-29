@@ -21,7 +21,10 @@
  */
 package org.bonej.plugins;
 
-import java.awt.*;
+import java.awt.AWTEvent;
+import java.awt.Checkbox;
+import java.awt.Choice;
+import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,7 +33,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 import org.bonej.geometry.FitEllipsoid;
 import org.bonej.geometry.Vectors;
@@ -1205,14 +1207,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final int phase) {
 		final byte[][] workArray = makeWorkArray(imp);
-		final double minVol = 0;
-		final double maxVol = Double.POSITIVE_INFINITY;
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
-	}
-
-	//TODO Remove
-	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-			final int phase, final int method) {
 		final double minVol = 0;
 		final double maxVol = Double.POSITIVE_INFINITY;
 		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
@@ -2643,16 +2637,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			IJ.error("Warning", "More than 16777216 (2^24) particles./n/n"
 					+ "Particle image labels are inaccurate above this number.");
 		return impParticles;
-	}
-
-	/**
-	 * Return the value of this instance's labelMethod field
-	 *
-	 * @return number of label method.
-	 */
-	// TODO remove
-	public int getLabelMethod() {
-		return labelMethod;
 	}
 
 	/**
