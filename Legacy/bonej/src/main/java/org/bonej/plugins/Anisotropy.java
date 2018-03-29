@@ -190,7 +190,7 @@ public class Anisotropy implements PlugIn, DialogListener {
 		if (doAlign) {
 			final EigenvalueDecomposition E = (EigenvalueDecomposition) result[2];
 			final Moments m = new Moments();
-			final ImagePlus alignedImp = m.alignImage(imp, E.getV(), false, 1, d, 128, 255, 0, 1);
+			final ImagePlus alignedImp = m.alignImage(imp, E.getV(), d);
 			alignedImp.show();
 		}
 		UsageReporter.reportEvent(this).send();

@@ -191,10 +191,10 @@ public class RoiMan {
 	 *         be cropped inside the area).
 	 */
 	public static boolean getSafeRoiBounds(final Rectangle bounds, final int width, final int height) {
-		final int xMin = clamp(bounds.x, 0, width);
-		final int xMax = clamp(bounds.x + bounds.width, 0, width);
-		final int yMin = clamp(bounds.y, 0, height);
-		final int yMax = clamp(bounds.y + bounds.height, 0, height);
+		final int xMin = clampToNonNegative(bounds.x, width);
+		final int xMax = clampToNonNegative(bounds.x + bounds.width, width);
+		final int yMin = clampToNonNegative(bounds.y, height);
+		final int yMax = clampToNonNegative(bounds.y + bounds.height, height);
 		final int newWidth = xMax - xMin;
 		final int newHeight = yMax - yMin;
 
@@ -322,9 +322,9 @@ public class RoiMan {
 		}
 	}
 
-	private static int clamp(final int value, final int min, final int max) {
-		if (value < min) {
-			return min;
+	private static int clampToNonNegative(final int value, final int max) {
+		if (value < 0) {
+			return 0;
 		}
 		if (value > max) {
 			return max;

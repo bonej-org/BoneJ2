@@ -99,10 +99,8 @@ import marchingcubes.MCTriangulator;
  * @author Fabrice Cordelires
  * @author Michał Kłosowski
  * @see
- *      <p>
  *      <a href="http://rsbweb.nih.gov/ij/plugins/track/objects.html">3D Object
  *      Counter</a>
- *      </p>
  */
 public class ParticleCounter implements PlugIn, DialogListener {
 
@@ -279,7 +277,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		if (doThickness) {
 			final LocalThickness th = new LocalThickness();
 			final ImagePlus thickImp = th.getLocalThickness(imp, false, doMask);
-			thick = getMeanStdDev(thickImp, particleLabels, particleSizes, 0);
+			thick = getMeanStdDev(thickImp, particleLabels, particleSizes);
 			if (doThickImage) {
 				double max = 0;
 				for (int i = 1; i < nParticles; i++) {
@@ -382,7 +380,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			IJ.run("Fire");
 		}
 		if (doParticleSizeImage) {
-			displayParticleValues(imp, particleLabels, volumes, "volume").show();
+			displayParticleValues(imp, particleLabels, volumes).show();
 			IJ.run("Fire");
 		}
 
@@ -467,7 +465,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				return;
 			}
 			// Add some axes
-			displayAxes(univ, centre, eV, radii, 1.0f, 1.0f, 0.0f, "Ellipsoid Axes " + el);
+			displayAxes(univ, centre, eV, radii, 1.0f, "Ellipsoid Axes " + el);
 		}
 	}
 
@@ -512,18 +510,16 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Get the mean and standard deviation of pixel values above a minimum value
+	 * Get the mean and standard deviation of pixel values &gt;0
 	 * for each particle in a particle label work array
 	 *
 	 * @param imp Input image containing pixel values
 	 * @param particleLabels workArray containing particle labels
 	 * @param particleSizes array of particle sizes as pixel counts
-	 * @param threshold restrict calculation to values > i
 	 * @return array containing mean, std dev and max pixel values for each
 	 *         particle
 	 */
-	private double[][] getMeanStdDev(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes,
-			final int threshold) {
+	private double[][] getMeanStdDev(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes) {
 		final int nParticles = particleSizes.length;
 		final int d = imp.getImageStackSize();
 		final int wh = imp.getWidth() * imp.getHeight();
@@ -534,7 +530,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			final int[] labelPixels = particleLabels[z];
 			for (int i = 0; i < wh; i++) {
 				final double value = pixels[i];
-				if (value > threshold) {
+				if (value > 0) {
 					sums[labelPixels[i]] += value;
 				}
 			}
@@ -550,7 +546,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			final int[] labelPixels = particleLabels[z];
 			for (int i = 0; i < wh; i++) {
 				final double value = pixels[i];
-				if (value > threshold) {
+				if (value > 0) {
 					final int p = labelPixels[i];
 					final double residual = value - meanStdDev[p][0];
 					sumSquares[p] += residual * residual;
@@ -592,7 +588,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	private int getNCavities(final ImagePlus imp) {
-		final Object[] result = getParticles(imp, 4, BACK);
+		final Object[] result = getParticles(imp, BACK);
 		final long[] particleSizes = (long[]) result[2];
 		final int nParticles = particleSizes.length;
 		return nParticles - 2;
@@ -768,25 +764,22 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			IJ.showStatus("Rendering principal axes...");
 			IJ.showProgress(p, nEigens);
 			final Matrix eVec = eigens[p].getV();
-			displayAxes(univ, centroids[p], eVec.getArray(), lengths[p], 1.0f, 0.0f, 0.0f, "Principal Axes " + p);
+			displayAxes(univ, centroids[p], eVec.getArray(), lengths[p], 0.0f, "Principal Axes " + p);
 		}
 	}
 
 	/**
 	 * Draws 3 orthogonal axes defined by the centroid, unitvector and axis
 	 * length.
-	 *
 	 * @param univ the universe where axes are drawn.
 	 * @param centroid centroid of a particle.
 	 * @param unitVector orientation of the particle.
 	 * @param lengths lengths of the axes.
-	 * @param red red component of the axes' color.
 	 * @param green green component of the axes' color.
-	 * @param blue blue component of the axes' color.
 	 * @param title text shown by the axes.
 	 */
 	private void displayAxes(final Image3DUniverse univ, final double[] centroid, final double[][] unitVector,
-			final double[] lengths, final float red, final float green, final float blue, final String title) {
+							 final double[] lengths, final float green, final String title) {
 		final double cX = centroid[0];
 		final double cY = centroid[1];
 		final double cZ = centroid[2];
@@ -840,7 +833,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		end3.z = (float) (cZ + eVec3z * l3);
 		mesh.add(end3);
 
-		final Color3f aColour = new Color3f(red, green, blue);
+		final Color3f aColour = new Color3f(1.0f, green, 0.0f);
 		try {
 			univ.addLineMesh(mesh, aColour, title, false).setLocked(true);
 		} catch (final NullPointerException npe) {
@@ -1105,11 +1098,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param particleLabels the particles in the image.
 	 * @param values list of values whose array indices correspond to
 	 *          particlelabels
-	 * @param title tag stating what we are displaying
 	 * @return ImagePlus with particle labels substituted with some value
 	 */
-	private ImagePlus displayParticleValues(final ImagePlus imp, final int[][] particleLabels, final double[] values,
-			final String title) {
+	private ImagePlus displayParticleValues(final ImagePlus imp, final int[][] particleLabels, final double[] values) {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
@@ -1129,7 +1120,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		for (int i = 0; i < nValues; i++) {
 			max = Math.max(max, values[i]);
 		}
-		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + title, stack);
+		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + "volume", stack);
 		impOut.setCalibration(imp.getCalibration());
 		impOut.getProcessor().setMinAndMax(0, max);
 		return impOut;
@@ -1199,22 +1190,22 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, doExclude);
 	}
 
-	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final double minVol,
-			final double maxVol, final int phase) {
+	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk,
+								 final double maxVol, final int phase) {
 		final byte[][] workArray = makeWorkArray(imp);
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
+		return getParticles(imp, workArray, slicesPerChunk, 0.0, maxVol, phase, false);
 	}
 
-	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final int phase) {
+	public Object[] getParticles(final ImagePlus imp, final int phase) {
 		final byte[][] workArray = makeWorkArray(imp);
 		final double minVol = 0;
 		final double maxVol = Double.POSITIVE_INFINITY;
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
+		return getParticles(imp, workArray, 4, minVol, maxVol, phase, false);
 	}
 
 	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-			final double minVol, final double maxVol, final int phase) {
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
+								 final double maxVol, final int phase) {
+		return getParticles(imp, workArray, slicesPerChunk, 0.0, maxVol, phase, false);
 	}
 
 	/**
@@ -2547,19 +2538,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
      * @param particleLabels particle labels in the image.
 	 * @param m value to be replaced
 	 * @param n new value
-	 * @param startZ first z coordinate to check
 	 * @param endZ last+1 z coordinate to check
-	 * @param multithreaded true if label replacement should happen in multiple
-	 *          threads
 	 */
-	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int startZ, final int endZ,
-			final boolean multithreaded) {
-		if (!multithreaded) {
-			replaceLabel(particleLabels, m, n, startZ, endZ);
-			return;
-		}
+	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int endZ) {
 		final int s = particleLabels[0].length;
-		final AtomicInteger ai = new AtomicInteger(startZ);
+		final AtomicInteger ai = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
 			threads[thread] = new Thread(new Runnable() {

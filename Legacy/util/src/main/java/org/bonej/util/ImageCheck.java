@@ -135,7 +135,7 @@ public class ImageCheck {
 		final double vD = cal.pixelDepth;
 		final int stackSize = imp.getStackSize();
 
-		String position = getDicomAttribute(imp, 1, "0020,0032");
+		String position = getDicomAttribute(imp, 1);
 		if (position == null) {
 			IJ.log("No DICOM slice position data");
 			return -1;
@@ -148,7 +148,7 @@ public class ImageCheck {
 		else
 			return -1;
 
-		position = getDicomAttribute(imp, stackSize, "0020,0032");
+		position = getDicomAttribute(imp, stackSize);
 		xyz = position.split("\\\\");
 		double last;
 
@@ -178,10 +178,9 @@ public class ImageCheck {
 	 *
 	 * @param imp an image.
 	 * @param slice number of slice in image.
-	 * @param tag a DICOM tag.
 	 * @return the value associated with the tag
 	 */
-	private static String getDicomAttribute(final ImagePlus imp, final int slice, final String tag) {
+	private static String getDicomAttribute(final ImagePlus imp, final int slice) {
 		final ImageStack stack = imp.getImageStack();
 		final String header = stack.getSliceLabel(slice);
 		// tag must be in format 0000,0000
@@ -192,6 +191,7 @@ public class ImageCheck {
 			return null;
 		}
 		String value = " ";
+		final String tag = "0020,0032";
 		final int idx1 = header.indexOf(tag);
 		final int idx2 = header.indexOf(":", idx1);
 		final int idx3 = header.indexOf("\n", idx2);

@@ -235,7 +235,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 
 		if (doFlinnPeakPlot) {
 			final ImagePlus flinnPeaks = drawFlinnPeakPlot("FlinnPeaks_" + imp.getTitle(), imp, maxIDs, ellipsoids,
-					gaussianSigma, 512);
+					gaussianSigma);
 			flinnPeaks.show();
 		}
 
@@ -327,12 +327,10 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * @param maxIDs
 	 * @param ellipsoids
 	 * @param sigma
-	 * @param size
-	 *
 	 * @return
 	 */
 	private ImagePlus drawFlinnPeakPlot(final String title, final ImagePlus imp, final int[][] maxIDs,
-			final Ellipsoid[] ellipsoids, final double sigma, final int size) {
+										final Ellipsoid[] ellipsoids, final double sigma) {
 
 		final ImageStack stack = imp.getImageStack();
 		final int w = stack.getWidth();
@@ -406,6 +404,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 			}
 		}
 
+		final int size = 512;
 		final float[][] pixels = new float[size][size];
 
 		for (int j = 0; j < l; j++) {
@@ -966,7 +965,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 				maximal = ellipsoid.copy();
 
 			// rotate a little bit
-			ellipsoid = turn(ellipsoid, contactPoints, 0.1, pixels, pW, pH, pD, w, h, d);
+			ellipsoid = turn(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
 
 			// contract until no contact
 			ellipsoid = shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
@@ -1182,7 +1181,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * ellipsoid
 	 *
 	 * @param ellipsoid
-	 * @param theta
 	 * @param pW
 	 * @param pH
 	 * @param pD
@@ -1191,14 +1189,15 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * @param d
 	 * @return
 	 */
-	private Ellipsoid turn(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints, final double theta,
-			final byte[][] pixels, final double pW, final double pH, final double pD, final int w, final int h,
-			final int d) {
+	private Ellipsoid turn(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints,
+						   final byte[][] pixels, final double pW, final double pH, final double pD, final int w, final int h,
+						   final int d) {
 
 		contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
 		if (contactPoints.size() > 0) {
+			final double theta = 0.1;
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
-			ellipsoid = rotateAboutAxis(ellipsoid, Vectors.norm(torque), theta);
+			ellipsoid = rotateAboutAxis(ellipsoid, Vectors.norm(torque));
 		}
 		return ellipsoid;
 	}
@@ -1319,14 +1318,13 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 *
 	 * @param ellipsoid
 	 * @param axis
-	 * @param theta
 	 * @see <a href=
 	 *      "http://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle">Rotation
 	 *      matrix from axis and angle</a>
 	 * @return
 	 */
-	private Ellipsoid rotateAboutAxis(final Ellipsoid ellipsoid, final double[] axis, final double theta) {
-
+	private Ellipsoid rotateAboutAxis(final Ellipsoid ellipsoid, final double[] axis) {
+		final double theta = 0.1;
 		final double sin = Math.sin(theta);
 		final double cos = Math.cos(theta);
 		final double cos1 = 1 - cos;
@@ -1440,8 +1438,8 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 */
 	private Ellipsoid wiggle(final Ellipsoid ellipsoid) {
 
-		final double b = nudge(0.1);
-		final double c = nudge(0.1);
+		final double b = Math.random() * 0.2 - 0.1;
+		final double c = Math.random() * 0.2 - 0.1;
 		final double a = Math.sqrt(1 - b * b - c * c);
 
 		// zeroth column, should be very close to [1, 0, 0]^T (mostly x)
@@ -1464,16 +1462,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		ellipsoid.rotate(rotation);
 
 		return ellipsoid;
-	}
-
-	/**
-	 * generate a random number between -a and +a
-	 *
-	 * @param a
-	 * @return
-	 */
-	private double nudge(final double a) {
-		return Math.random() * (a + a) - a;
 	}
 
 	private ArrayList<double[]> findContactPoints(final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints,

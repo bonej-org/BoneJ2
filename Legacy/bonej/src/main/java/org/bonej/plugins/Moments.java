@@ -22,7 +22,10 @@
 
 package org.bonej.plugins;
 
-import java.awt.*;
+import java.awt.AWTEvent;
+import java.awt.Checkbox;
+import java.awt.Rectangle;
+import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -735,19 +738,18 @@ public class Moments implements PlugIn, DialogListener {
 	 *
 	 * @param imp input ImagePlus stack
 	 * @param E Eigenvector rotation matrix
-	 * @param doAxes if true, draws axes on the aligned image
-	 * @param startSlice first slice to use
 	 * @param endSlice last slice to use
-	 * @param min minimum threshold
-	 * @param max maximum threshold
-	 * @param m slope of pixel to density equation, d = m * p + c
-	 * @param c intercept of density equation, d = m * p + c
+	 * @deprecated only use from a deprecated class
 	 * @return aligned ImagePlus
 	 */
-	public ImagePlus alignImage(final ImagePlus imp, final Matrix E, final boolean doAxes, final int startSlice,
-			final int endSlice, final double min, final double max, final double m, final double c) {
-		final double[] centroid = getCentroid3D(imp, startSlice, endSlice, min, max, m, c);
-		return alignToPrincipalAxes(imp, E, centroid, startSlice, endSlice, min, max, doAxes);
+	@Deprecated
+	public ImagePlus alignImage(final ImagePlus imp, final Matrix E,
+		final int endSlice)
+	{
+		final double[] centroid = getCentroid3D(imp, 1, endSlice, 128.0, 255.0, 0.0,
+			1.0);
+		return alignToPrincipalAxes(imp, E, centroid, 1, endSlice, 128.0, 255.0,
+			false);
 	}
 
 	/**

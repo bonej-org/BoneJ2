@@ -157,24 +157,20 @@ public class TestDataMaker {
 	/**
 	 * Creates an ImagePlus with black (0x00) &amp; white (0xFF) noise
 	 *
-	 * @param width width of the image.
-	 * @param height height of the image.
-	 * @param depth depth of the image.
-	 * @param ratio Probability that pixel P(x is black)
 	 * @param generator A random generator for the noise. Using a generator with
 	 *          predetermined {@link Random#Random(long)} seed} makes the result
 	 *          of this method repeatable
 	 * @return an image with binary noise.
 	 */
-	public static ImagePlus binaryNoise(final int width, final int height, final int depth, final double ratio,
-										final Random generator) {
-		final int npixels = width * height;
-		final ImageStack stack = new ImageStack(width, height);
-		for (int i = 0; i < depth; i++) {
-			final ByteProcessor bp = new ByteProcessor(width, height);
+	public static ImagePlus binaryNoise(final Random generator) {
+		final int size = 256;
+		final int npixels = size * size;
+		final ImageStack stack = new ImageStack(size, size);
+		for (int i = 0; i < size; i++) {
+			final ByteProcessor bp = new ByteProcessor(size, size);
 			for (int index = 0; index < npixels; index++) {
 				final double random = generator.nextDouble();
-				if (random > ratio)
+				if (random > 0.25)
 					bp.set(index, 255);
 			}
 			stack.addSlice(bp);
@@ -185,18 +181,16 @@ public class TestDataMaker {
     /**
      * Creates and image with "plates" or "sheets".
      *
-     * @param width width of the image.
-     * @param height height of the image.
-     * @param depth depth of the image.
-     * @param spacing space between the sheets in z.
      * @return an image with xy-plates.
      */
-    public static ImagePlus plates(final int width, final int height, final int depth, final int spacing) {
-		final ImageStack stack = new ImageStack(width, height);
-		for (int i = 0; i < depth; i++)
-			stack.addSlice(new ByteProcessor(width, height));
+    public static ImagePlus plates() {
+		final int size = 256;
+		final int spacing = 8;
+		final ImageStack stack = new ImageStack(size, size);
+		for (int i = 0; i < size; i++)
+			stack.addSlice(new ByteProcessor(size, size));
 
-		for (int i = 1; i <= depth; i += spacing) {
+		for (int i = 1; i <= size; i += spacing) {
 			final ByteProcessor bp = (ByteProcessor) stack.getProcessor(i);
 			bp.add(255);
 		}

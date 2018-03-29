@@ -129,7 +129,7 @@ public class Purify implements PlugIn, DialogListener {
 		pc.setLabelMethod(labelMethod);
 
 		final int fg = ParticleCounter.FORE;
-		final Object[] foregroundParticles = pc.getParticles(imp, slicesPerChunk, 0, Double.POSITIVE_INFINITY, fg);
+		final Object[] foregroundParticles = pc.getParticles(imp, slicesPerChunk, Double.POSITIVE_INFINITY, fg);
 		final byte[][] workArray = (byte[][]) foregroundParticles[0];
 		int[][] particleLabels = (int[][]) foregroundParticles[1];
 		// index 0 is background particle's size...
@@ -137,7 +137,7 @@ public class Purify implements PlugIn, DialogListener {
 		removeSmallParticles(workArray, particleLabels, particleSizes, fg);
 
 		final int bg = ParticleCounter.BACK;
-		final Object[] backgroundParticles = pc.getParticles(imp, workArray, slicesPerChunk, 0,
+		final Object[] backgroundParticles = pc.getParticles(imp, workArray, slicesPerChunk,
 				Double.POSITIVE_INFINITY, bg);
 		particleLabels = (int[][]) backgroundParticles[1];
 		particleSizes = pc.getParticleSizes(particleLabels);
@@ -204,7 +204,7 @@ public class Purify implements PlugIn, DialogListener {
 			for (x = 0; x < w; x++) {
 				final int offset = rowOffset + x;
 				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, 0, d, true);
+					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
 		}
@@ -218,7 +218,7 @@ public class Purify implements PlugIn, DialogListener {
 			for (x = 0; x < w; x++) {
 				final int offset = rowOffset + x;
 				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, 0, d, true);
+					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
 		}
@@ -230,7 +230,7 @@ public class Purify implements PlugIn, DialogListener {
 			for (y = 0; y < h; y++) {
 				final int offset = y * w;
 				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, 0, d, true);
+					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
 		}
@@ -242,7 +242,7 @@ public class Purify implements PlugIn, DialogListener {
 			for (y = 0; y < h; y++) {
 				final int offset = y * w + w - 1;
 				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, 0, d, true);
+					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
 		}
@@ -255,7 +255,7 @@ public class Purify implements PlugIn, DialogListener {
 			for (x = 0; x < w; x++) {
 				final int offset = rowOffset + x;
 				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, 0, d, true);
+					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
 		}
@@ -266,7 +266,7 @@ public class Purify implements PlugIn, DialogListener {
 			IJ.showProgress(z, d);
 			for (x = 0; x < w; x++) {
 				if (workArray[z][x] == phase && particleLabels[z][x] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][x], biggestParticle, 0, d, true);
+					pc.replaceLabel(particleLabels, particleLabels[z][x], biggestParticle, d);
 				}
 			}
 		}
