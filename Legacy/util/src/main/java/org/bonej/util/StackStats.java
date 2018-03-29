@@ -97,15 +97,12 @@ public class StackStats {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						IJ.showStatus("Getting stack histogram...");
-						final ImageProcessor ip = stack.getProcessor(z);
-						ip.setRoi(roi);
-						sliceHistograms[z] = ip.getHistogram();
-					}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Getting stack histogram...");
+					final ImageProcessor ip = stack.getProcessor(z);
+					ip.setRoi(roi);
+					sliceHistograms[z] = ip.getHistogram();
 				}
 			});
 		}

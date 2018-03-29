@@ -128,24 +128,21 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						final ImageProcessor ip = stack.getProcessor(z);
-						final ByteProcessor bp = new ByteProcessor(w, h);
-						for (int y = 0; y < h; y++) {
-							for (int x = 0; x < w; x++) {
-								final double pixel = ip.get(x, y);
-								if (pixel > threshold) {
-									bp.set(x, y, 255);
-								} else {
-									bp.set(x, y, 0);
-								}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					final ImageProcessor ip = stack.getProcessor(z);
+					final ByteProcessor bp = new ByteProcessor(w, h);
+					for (int y = 0; y < h; y++) {
+						for (int x = 0; x < w; x++) {
+							final double pixel = ip.get(x, y);
+							if (pixel > threshold) {
+								bp.set(x, y, 255);
+							} else {
+								bp.set(x, y, 0);
 							}
 						}
-						stack2.setPixels(bp.getPixels(), z);
 					}
+					stack2.setPixels(bp.getPixels(), z);
 				}
 			});
 		}

@@ -256,21 +256,17 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-
-					for (int i = ai.getAndIncrement(); i < l; i = ai.getAndIncrement()) {
-						IJ.showStatus("Calculating filling effiency...");
-						IJ.showProgress(i, l);
-						final int[] idSlice = maxIDs[i];
-						for (final int val : idSlice) {
-							if (val >= -1) {
-								foregroundCount[i]++;
-							}
-							if (val >= 0) {
-								filledCount[i]++;
-							}
+			threads[thread] = new Thread(() -> {
+				for (int i = ai.getAndIncrement(); i < l; i = ai.getAndIncrement()) {
+					IJ.showStatus("Calculating filling effiency...");
+					IJ.showProgress(i, l);
+					final int[] idSlice = maxIDs[i];
+					for (final int val : idSlice) {
+						if (val >= -1) {
+							foregroundCount[i]++;
+						}
+						if (val >= 0) {
+							filledCount[i]++;
 						}
 					}
 				}
@@ -344,40 +340,36 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						IJ.showStatus("Generating Flinn Diagram");
-						IJ.showProgress(z, d);
-						final int[] idSlice = maxIDs[z];
-						int l = 0;
-						for (int y = 0; y < h; y++) {
-							final int offset = y * w;
-							for (int x = 0; x < w; x++)
-								if (idSlice[offset + x] >= 0)
-									l++;
-						}
-						final float[] abl = new float[l];
-						final float[] bcl = new float[l];
-						int j = 0;
-						for (int y = 0; y < h; y++) {
-							final int offset = y * w;
-							for (int x = 0; x < w; x++) {
-								final int i = offset + x;
-								final int id = idSlice[i];
-								if (id >= 0) {
-									final double[] radii = ellipsoids[id].getSortedRadii();
-									abl[j] = (float) (radii[0] / radii[1]);
-									bcl[j] = (float) (radii[1] / radii[2]);
-									j++;
-								}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Generating Flinn Diagram");
+					IJ.showProgress(z, d);
+					final int[] idSlice = maxIDs[z];
+					int l = 0;
+					for (int y = 0; y < h; y++) {
+						final int offset = y * w;
+						for (int x = 0; x < w; x++)
+							if (idSlice[offset + x] >= 0)
+								l++;
+					}
+					final float[] abl = new float[l];
+					final float[] bcl = new float[l];
+					int j = 0;
+					for (int y = 0; y < h; y++) {
+						final int offset = y * w;
+						for (int x = 0; x < w; x++) {
+							final int i = offset + x;
+							final int id = idSlice[i];
+							if (id >= 0) {
+								final double[] radii = ellipsoids[id].getSortedRadii();
+								abl[j] = (float) (radii[0] / radii[1]);
+								bcl[j] = (float) (radii[1] / radii[2]);
+								j++;
 							}
 						}
-						ab[z - 1] = abl;
-						bc[z - 1] = bcl;
 					}
+					ab[z - 1] = abl;
+					bc[z - 1] = bcl;
 				}
 			});
 		}
@@ -442,25 +434,22 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						IJ.showStatus("Generating EF image");
-						IJ.showProgress(z, d);
-						final int[] idSlice = maxIDs[z];
-						final float[] pixels = stackPixels[z];
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Generating EF image");
+					IJ.showProgress(z, d);
+					final int[] idSlice = maxIDs[z];
+					final float[] pixels = stackPixels[z];
 
-						for (int y = 0; y < h; y++) {
-							final int offset = y * w;
-							for (int x = 0; x < w; x++) {
-								final int i = offset + x;
-								final int id = idSlice[i];
-								if (id >= 0)
-									pixels[i] = (float) ellipsoidFactor(ellipsoids[id]);
-								else
-									pixels[i] = Float.NaN;
-							}
+					for (int y = 0; y < h; y++) {
+						final int offset = y * w;
+						for (int x = 0; x < w; x++) {
+							final int i = offset + x;
+							final int id = idSlice[i];
+							if (id >= 0)
+								pixels[i] = (float) ellipsoidFactor(ellipsoids[id]);
+							else
+								pixels[i] = Float.NaN;
 						}
 					}
 				}
@@ -489,25 +478,22 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						IJ.showStatus("Generating short/middle axis image");
-						IJ.showProgress(z, d);
-						final int[] idSlice = maxIDs[z];
-						final float[] pixels = stackPixels[z];
-						for (int y = 0; y < h; y++) {
-							final int offset = y * w;
-							for (int x = 0; x < w; x++) {
-								final int i = offset + x;
-								final int id = idSlice[i];
-								if (id >= 0) {
-									final double[] radii = ellipsoids[id].getSortedRadii();
-									pixels[i] = (float) (radii[0] / radii[1]);
-								} else
-									pixels[i] = Float.NaN;
-							}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Generating short/middle axis image");
+					IJ.showProgress(z, d);
+					final int[] idSlice = maxIDs[z];
+					final float[] pixels = stackPixels[z];
+					for (int y = 0; y < h; y++) {
+						final int offset = y * w;
+						for (int x = 0; x < w; x++) {
+							final int i = offset + x;
+							final int id = idSlice[i];
+							if (id >= 0) {
+								final double[] radii = ellipsoids[id].getSortedRadii();
+								pixels[i] = (float) (radii[0] / radii[1]);
+							} else
+								pixels[i] = Float.NaN;
 						}
 					}
 				}
@@ -536,25 +522,22 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						IJ.showStatus("Generating volume image");
-						IJ.showProgress(z, d);
-						final int[] idSlice = maxIDs[z];
-						final float[] pixels = stackPixels[z];
-						for (int y = 0; y < h; y++) {
-							final int offset = y * w;
-							for (int x = 0; x < w; x++) {
-								final int i = offset + x;
-								final int id = idSlice[i];
-								if (id >= 0) {
-									final double[] radii = ellipsoids[id].getSortedRadii();
-									pixels[i] = (float) (radii[1] / radii[2]);
-								} else
-									pixels[i] = Float.NaN;
-							}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Generating volume image");
+					IJ.showProgress(z, d);
+					final int[] idSlice = maxIDs[z];
+					final float[] pixels = stackPixels[z];
+					for (int y = 0; y < h; y++) {
+						final int offset = y * w;
+						for (int x = 0; x < w; x++) {
+							final int i = offset + x;
+							final int id = idSlice[i];
+							if (id >= 0) {
+								final double[] radii = ellipsoids[id].getSortedRadii();
+								pixels[i] = (float) (radii[1] / radii[2]);
+							} else
+								pixels[i] = Float.NaN;
 						}
 					}
 				}
@@ -583,24 +566,21 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						IJ.showStatus("Generating volume image");
-						IJ.showProgress(z, d);
-						final int[] idSlice = maxIDs[z];
-						final float[] pixels = stackPixels[z];
-						for (int y = 0; y < h; y++) {
-							final int offset = y * w;
-							for (int x = 0; x < w; x++) {
-								final int i = offset + x;
-								final int id = idSlice[i];
-								if (id >= 0) {
-									pixels[i] = (float) ellipsoids[id].getVolume();
-								} else
-									pixels[i] = Float.NaN;
-							}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Generating volume image");
+					IJ.showProgress(z, d);
+					final int[] idSlice = maxIDs[z];
+					final float[] pixels = stackPixels[z];
+					for (int y = 0; y < h; y++) {
+						final int offset = y * w;
+						for (int x = 0; x < w; x++) {
+							final int i = offset + x;
+							final int id = idSlice[i];
+							if (id >= 0) {
+								pixels[i] = (float) ellipsoids[id].getVolume();
+							} else
+								pixels[i] = Float.NaN;
 						}
 					}
 				}
@@ -660,63 +640,60 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						IJ.showStatus("Finding biggest ellipsoid");
-						IJ.showProgress(z, d);
-						final byte[] slicePixels = (byte[]) stack.getPixels(z);
-						final int[] bigSlice = biggest[z];
-						Arrays.fill(bigSlice, -ellipsoids.length);
-						final double zvD = z * vD;
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Finding biggest ellipsoid");
+					IJ.showProgress(z, d);
+					final byte[] slicePixels = (byte[]) stack.getPixels(z);
+					final int[] bigSlice = biggest[z];
+					Arrays.fill(bigSlice, -ellipsoids.length);
+					final double zvD = z * vD;
 
-						// find the subset of ellipsoids whose bounding box
-						// intersects with z
-						final ArrayList<Ellipsoid> nearEllipsoids = new ArrayList<>();
-						final int n = ellipsoids.length;
-						for (int i = 0; i < n; i++) {
-							final Ellipsoid e = ellipsoids[i];
-							final double[] zMinMax = e.getZMinAndMax();
-							if (zvD >= zMinMax[0] && zvD <= zMinMax[1]) {
-								final Ellipsoid f = e.copy();
-								f.id = i;
-								nearEllipsoids.add(f);
-							}
+					// find the subset of ellipsoids whose bounding box
+					// intersects with z
+					final ArrayList<Ellipsoid> nearEllipsoids = new ArrayList<>();
+					final int n = ellipsoids.length;
+					for (int i = 0; i < n; i++) {
+						final Ellipsoid e = ellipsoids[i];
+						final double[] zMinMax = e.getZMinAndMax();
+						if (zvD >= zMinMax[0] && zvD <= zMinMax[1]) {
+							final Ellipsoid f = e.copy();
+							f.id = i;
+							nearEllipsoids.add(f);
 						}
-						final int o = nearEllipsoids.size();
-						final Ellipsoid[] ellipsoidSubSet = new Ellipsoid[o];
-						for (int i = 0; i < o; i++) {
-							ellipsoidSubSet[i] = nearEllipsoids.get(i);
-						}
-
-						for (int y = 0; y < h; y++) {
-							final double yvH = y * vH;
-							// find the subset of ellipsoids whose bounding box
-							// intersects with y
-							final ArrayList<Ellipsoid> yEllipsoids = new ArrayList<>();
-							for (final Ellipsoid e : ellipsoidSubSet) {
-								final double[] yMinMax = e.getYMinAndMax();
-								if (yvH >= yMinMax[0] && yvH <= yMinMax[1]) {
-									yEllipsoids.add(e);
-								}
-							}
-
-							final int r = yEllipsoids.size();
-							final Ellipsoid[] ellipsoidSubSubSet = new Ellipsoid[r];
-							for (int i = 0; i < r; i++) {
-								ellipsoidSubSubSet[i] = yEllipsoids.get(i);
-							}
-
-							final int offset = y * w;
-							for (int x = 0; x < w; x++) {
-								if (slicePixels[offset + x] == -1) {
-									bigSlice[offset + x] = biggestEllipsoid(ellipsoidSubSubSet, x * vW, yvH, zvD);
-								}
-							}
-						}
-
 					}
+					final int o = nearEllipsoids.size();
+					final Ellipsoid[] ellipsoidSubSet = new Ellipsoid[o];
+					for (int i = 0; i < o; i++) {
+						ellipsoidSubSet[i] = nearEllipsoids.get(i);
+					}
+
+					for (int y = 0; y < h; y++) {
+						final double yvH = y * vH;
+						// find the subset of ellipsoids whose bounding box
+						// intersects with y
+						final ArrayList<Ellipsoid> yEllipsoids = new ArrayList<>();
+						for (final Ellipsoid e : ellipsoidSubSet) {
+							final double[] yMinMax = e.getYMinAndMax();
+							if (yvH >= yMinMax[0] && yvH <= yMinMax[1]) {
+								yEllipsoids.add(e);
+							}
+						}
+
+						final int r = yEllipsoids.size();
+						final Ellipsoid[] ellipsoidSubSubSet = new Ellipsoid[r];
+						for (int i = 0; i < r; i++) {
+							ellipsoidSubSubSet[i] = yEllipsoids.get(i);
+						}
+
+						final int offset = y * w;
+						for (int x = 0; x < w; x++) {
+							if (slicePixels[offset + x] == -1) {
+								bigSlice[offset + x] = biggestEllipsoid(ellipsoidSubSubSet, x * vW, yvH, zvD);
+							}
+						}
+					}
+
 				}
 			});
 		}
@@ -770,14 +747,11 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger counter = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int i = ai.getAndAdd(skipRatio); i < nPoints; i = ai.getAndAdd(skipRatio)) {
-						ellipsoids[i] = optimiseEllipsoid(imp, skeletonPoints[i]);
-						IJ.showProgress(counter.getAndAdd(skipRatio), nPoints);
-						IJ.showStatus("Optimising ellipsoids...");
-					}
+			threads[thread] = new Thread(() -> {
+				for (int i = ai.getAndAdd(skipRatio); i < nPoints; i = ai.getAndAdd(skipRatio)) {
+					ellipsoids[i] = optimiseEllipsoid(imp, skeletonPoints[i]);
+					IJ.showProgress(counter.getAndAdd(skipRatio), nPoints);
+					IJ.showStatus("Optimising ellipsoids...");
 				}
 			});
 		}
@@ -1444,8 +1418,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	private ArrayList<double[]> findContactPoints(final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints,
 			final byte[][] pixels, final double pW, final double pH, final double pD, final int w, final int h,
 			final int d) {
-		// final double[][] unitVectors = Vectors.regularVectors(nVectors);
-		// final double[][] unitVectors = regularVectors;
 		return findContactPoints(ellipsoid, contactPoints, regularVectors.clone(), pixels, pW, pH, pD, w, h, d);
 	}
 
@@ -1512,18 +1484,15 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z);
-						for (int y = 0; y < h; y++) {
-							final int offset = y * w;
-							for (int x = 0; x < w; x++) {
-								if (slicePixels[offset + x] == -1) {
-									final int[] array = { x, y, z - 1 };
-									list.add(array);
-								}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z);
+					for (int y = 0; y < h; y++) {
+						final int offset = y * w;
+						for (int x = 0; x < w; x++) {
+							if (slicePixels[offset + x] == -1) {
+								final int[] array = { x, y, z - 1 };
+								list.add(array);
 							}
 						}
 					}

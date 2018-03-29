@@ -297,37 +297,34 @@ public class Purify implements PlugIn, DialogListener {
 		final AtomicInteger ai = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					if (phase == fg) {
-						// go through work array and turn all
-						// smaller foreground particles into background (0)
-						for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
-							for (int i = 0; i < wh; i++) {
-								if (workArray[z][i] == fg) {
-									if (particleSizes[particleLabels[z][i]] < maxVoxCount) {
-										workArray[z][i] = bg;
-									}
+			threads[thread] = new Thread(() -> {
+				if (phase == fg) {
+					// go through work array and turn all
+					// smaller foreground particles into background (0)
+					for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+						for (int i = 0; i < wh; i++) {
+							if (workArray[z][i] == fg) {
+								if (particleSizes[particleLabels[z][i]] < maxVoxCount) {
+									workArray[z][i] = bg;
 								}
 							}
-							IJ.showStatus("Removing foreground particles");
-							IJ.showProgress(z, d);
 						}
-					} else if (phase == bg) {
-						// go through work array and turn all
-						// smaller background particles into foreground
-						for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
-							for (int i = 0; i < wh; i++) {
-								if (workArray[z][i] == bg) {
-									if (particleSizes[particleLabels[z][i]] < maxVoxCount) {
-										workArray[z][i] = fg;
-									}
+						IJ.showStatus("Removing foreground particles");
+						IJ.showProgress(z, d);
+					}
+				} else if (phase == bg) {
+					// go through work array and turn all
+					// smaller background particles into foreground
+					for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+						for (int i = 0; i < wh; i++) {
+							if (workArray[z][i] == bg) {
+								if (particleSizes[particleLabels[z][i]] < maxVoxCount) {
+									workArray[z][i] = fg;
 								}
 							}
-							IJ.showStatus("Removing background particles");
-							IJ.showProgress(z, d);
 						}
+						IJ.showStatus("Removing background particles");
+						IJ.showProgress(z, d);
 					}
 				}
 			});

@@ -1112,11 +1112,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), pL[z]);
 		}
-		final int nValues = values.length;
-		double max = 0;
-		for (final double value : values) {
-			max = Math.max(max, value);
-		}
+		final double max = Arrays.stream(values).max().orElse(0.0);
 		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + "volume", stack);
 		impOut.setCalibration(imp.getCalibration());
 		impOut.getProcessor().setMinAndMax(0, max);
@@ -2540,15 +2536,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final AtomicInteger ai = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
 		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z < endZ; z = ai.getAndIncrement()) {
-						for (int i = 0; i < s; i++)
-							if (particleLabels[z][i] == m) {
-								particleLabels[z][i] = n;
-							}
-					}
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < endZ; z = ai.getAndIncrement()) {
+					for (int i = 0; i < s; i++)
+						if (particleLabels[z][i] == m) {
+							particleLabels[z][i] = n;
+						}
 				}
 			});
 		}
