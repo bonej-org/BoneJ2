@@ -9,7 +9,7 @@
         <version>5.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>bonejLegacyPlugins_</artifactId>
+    <artifactId>bonej-legacy-plugins_</artifactId>
     <version>4.0.0-SNAPSHOT</version>
 
     <name>BoneJ legacy plugins</name>
@@ -114,7 +114,7 @@
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>bonejLegacyUtil_</artifactId>
+            <artifactId>bonej-legacy-util_</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->

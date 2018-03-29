@@ -10,7 +10,7 @@
         <version>5.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>bonejLegacyUtil_</artifactId>
+    <artifactId>bonej-legacy-util_</artifactId>
     <version>4.0.0-SNAPSHOT</version>
 
     <name>BoneJ legacy utilities</name>

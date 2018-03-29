@@ -10,7 +10,7 @@
         <version>0.4.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>ops</artifactId>
+    <artifactId>bonej-ops</artifactId>
     <version>0.4.0-SNAPSHOT</version>
 
     <name>BoneJ2 Ops</name>
@@ -119,7 +119,7 @@
     <dependencies>
         <dependency>
             <groupId>org.bonej</groupId>
-            <artifactId>utilities</artifactId>
+            <artifactId>bonej-utilities</artifactId>
         </dependency>
 
         <!-- ImageJ dependencies -->

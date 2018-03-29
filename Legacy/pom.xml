@@ -93,12 +93,12 @@
             <!-- BoneJ modules -->
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>bonejLegacyPlugins_</artifactId>
+                <artifactId>bonej-legacy-plugins_</artifactId>
                 <version>${legacy-plugins.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>bonejLegacyUtil_</artifactId>
+                <artifactId>bonej-legacy-util_</artifactId>
                 <version>${legacy-util.version}</version>
             </dependency>
         </dependencies>

@@ -115,17 +115,17 @@
         <dependencies>
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>wrapperPlugins</artifactId>
+                <artifactId>bonej-plugins</artifactId>
                 <version>${wrapperPlugins.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>utilities</artifactId>
+                <artifactId>bonej-utilities</artifactId>
                 <version>${utilities.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
-                <artifactId>ops</artifactId>
+                <artifactId>bonej-ops</artifactId>
                 <version>${ops.version}</version>
             </dependency>
         </dependencies>
