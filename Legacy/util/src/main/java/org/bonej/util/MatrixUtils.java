@@ -68,7 +68,6 @@ public class MatrixUtils {
 			IJ.log(row);
 		}
 		IJ.log("");
-		return;
 	}
 
 	/**
@@ -100,10 +99,7 @@ public class MatrixUtils {
 
 		final double dot = c0 * z0 + c1 * z1 + c2 * z2;
 
-		if (dot > 0)
-			return true;
-
-		return false;
+		return dot > 0;
 	}
 
 	/**
@@ -120,10 +116,7 @@ public class MatrixUtils {
 
 		final double dot = x2 + y2 + z2;
 
-		if (dot < 0)
-			return true;
-
-		return false;
+		return dot < 0;
 	}
 
 	/**

@@ -48,7 +48,7 @@ public class BoneList {
 	 *
 	 * @return array of bone names
 	 */
-	public final static String[] get() {
+	public static String[] get() {
 		return boneList;
 	}
 
@@ -78,7 +78,6 @@ public class BoneList {
 			final Matcher m = p.matcher(boneString);
 			if (m.find()) {
 				boneID = n;
-				continue;
 			}
 		}
 		return boneID;

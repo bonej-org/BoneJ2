@@ -80,9 +80,7 @@ public class ImageCheck {
 			return false;
 		}
 
-		if (imp.getStackSize() < 2)
-			return false;
-		return true;
+		return imp.getStackSize() >= 2;
 	}
 
 	/**
@@ -143,7 +141,7 @@ public class ImageCheck {
 			return -1;
 		}
 		String[] xyz = position.split("\\\\");
-		double first = 0;
+		double first;
 
 		if (xyz.length == 3) // we have 3 values
 			first = Double.parseDouble(xyz[2]);
@@ -152,7 +150,7 @@ public class ImageCheck {
 
 		position = getDicomAttribute(imp, stackSize, "0020,0032");
 		xyz = position.split("\\\\");
-		double last = 0;
+		double last;
 
 		if (xyz.length == 3) // we have 3 values
 			last = Double.parseDouble(xyz[2]);
@@ -193,19 +191,14 @@ public class ImageCheck {
 		if (header == null) {
 			return null;
 		}
-		String attribute = " ";
 		String value = " ";
 		final int idx1 = header.indexOf(tag);
 		final int idx2 = header.indexOf(":", idx1);
 		final int idx3 = header.indexOf("\n", idx2);
 		if (idx1 >= 0 && idx2 >= 0 && idx3 >= 0) {
 			try {
-				attribute = header.substring(idx1 + 9, idx2);
-				attribute = attribute.trim();
 				value = header.substring(idx2 + 1, idx3);
 				value = value.trim();
-				// IJ.log("tag = " + tag + ", attribute = " + attribute
-				// + ", value = " + value);
 			} catch (final Throwable e) {
 				return " ";
 			}
@@ -258,12 +251,12 @@ public class ImageCheck {
 	 */
 	public static boolean huCalibrated(final ImagePlus imp) {
 		final Calibration cal = imp.getCalibration();
-		final double[] coeff = cal.getCoefficients();
-		if (!cal.calibrated() || cal == null || (cal.getCValue(0) == 0 && coeff[1] == 1)
-				|| (cal.getCValue(0) == Short.MIN_VALUE && coeff[1] == 1))
+		if (!cal.calibrated()) {
 			return false;
-
-		return true;
+		}
+		final double[] coeff = cal.getCoefficients();
+		final double value = cal.getCValue(0);
+		return (value != 0 && value != Short.MIN_VALUE) || coeff[1] != 1;
 	}
 
 	/**

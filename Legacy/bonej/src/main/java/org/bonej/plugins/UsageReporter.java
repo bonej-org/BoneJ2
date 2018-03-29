@@ -29,33 +29,32 @@ import java.awt.Toolkit;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
 
+import ij.IJ;
+import ij.Prefs;
+
 /**
  * UsageReporter class
  * Copyright 2012 Michael Doube
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-import ij.IJ;
-import ij.Prefs;
 
 /**
  * Prepare and send a report to be logged by Google Analytics event tracking
@@ -176,7 +175,7 @@ public class UsageReporter {
 			lastTime = time;
 		thisTime = time;
 
-		if (utmcnr == "")
+		if ("".equals(utmcnr))
 			utmcnr = "utmcn=1&";
 		else
 			utmcnr = "utmcr=1&";
@@ -209,16 +208,11 @@ public class UsageReporter {
 		cookie = Prefs.get(ReporterOptions.COOKIE, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
 		cookie2 = Prefs.get(ReporterOptions.COOKIE2, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
 		firstTime = Prefs.get(ReporterOptions.FIRSTTIMEKEY, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
-		final String cc = "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." + lastTime + "." + thisTime
-				+ "." + bonejSession + "%3B%2B__utmz%3D" + cookie + "." + thisTime // not
-																					// correct,
-																					// but
-																					// a
-																					// best
-																					// guess
+		// thisTime is not correct, but a best guess
+		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." + lastTime + "." + thisTime
+				+ "." + bonejSession + "%3B%2B__utmz%3D" + cookie + "." + thisTime
 				+ ".79.42.utmcsr%3Dgoogle%7Cutmccn%3D(organic)%7C"
 				+ "utmcmd%3Dorganic%7Cutmctr%3DBoneJ%20Usage%20Reporter%3B";
-		return cc;
 	}
 
 	/**
@@ -242,12 +236,10 @@ public class UsageReporter {
 			while ((inputLine = in.readLine()) != null) {
 				if (IJ.debugMode)
 					IJ.log(inputLine);
+				// TODO Why is this hanging here?
 				inputLine.length();
 			}
 			in.close();
-		} catch (final MalformedURLException e) {
-			if (IJ.debugMode)
-				e.printStackTrace();
 		} catch (final IOException e) {
 			if (IJ.debugMode)
 				e.printStackTrace();
@@ -255,32 +247,30 @@ public class UsageReporter {
 	}
 
 	private String userAgentString() {
-		String os = "";
-
-		// Handle Mac OSes on PPC and Intel
+		final String os;
 		if (IJ.isMacintosh()) {
+			// Handle Mac OSes on PPC and Intel
 			String arch = System.getProperty("os.arch");
-			if (arch.contains("x86") || arch.contains("i386"))
-				arch = "Intel";
-			else if (arch.contains("ppc"))
-				arch = arch.toUpperCase();
-			os = "Macintosh; " + arch + " " + System.getProperty("os.name") + " " + System.getProperty("os.version");
+			if (arch.contains("x86") || arch.contains("i386")) arch = "Intel";
+			else if (arch.contains("ppc")) arch = arch.toUpperCase();
+			os = "Macintosh; " + arch + " " + System.getProperty("os.name") + " " +
+				System.getProperty("os.version");
+		}
+		else if (IJ.isWindows()) {
 			// Handle Windows using the NT version number
-		} else if (IJ.isWindows()) {
 			os = "Windows NT " + System.getProperty("os.version");
+		}
+		else {
 			// Handle Linux and everything else
-		} else {
-			os = System.getProperty("os.name") + " " + System.getProperty("os.version") + " "
-					+ System.getProperty("os.arch");
+			os = System.getProperty("os.name") + " " + System.getProperty(
+				"os.version") + " " + System.getProperty("os.arch");
 		}
 
 		final String browser = "Java/" + System.getProperty("java.version");
 		final String vendor = System.getProperty("java.vendor");
 		final String locale = getLocaleString();
 
-		final String ua = browser + " (" + os + "; " + locale + ") " + vendor;
-
-		return ua;
+		return browser + " (" + os + "; " + locale + ") " + vendor;
 	}
 
 	private static String getLocaleString() {

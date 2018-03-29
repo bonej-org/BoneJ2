@@ -89,7 +89,7 @@ public class RoiMan {
 	 *         number is out of bounds
 	 */
 	public static ArrayList<Roi> getSliceRoi(final RoiManager roiMan, final ImageStack stack, final int sliceNumber) {
-		final ArrayList<Roi> roiList = new ArrayList<Roi>();
+		final ArrayList<Roi> roiList = new ArrayList<>();
 
 		if (roiMan == null || stack == null) {
 			return roiList;
@@ -135,13 +135,12 @@ public class RoiMan {
 
 		final int LAST_SLIDE = stack.getSize();
 		final int DEFAULT_Z_MIN = 1;
-		final int DEFAULT_Z_MAX = LAST_SLIDE;
 
 		int xMin = Integer.MAX_VALUE;
 		int xMax = 0;
 		int yMin = Integer.MAX_VALUE;
 		int yMax = 0;
-		int zMin = DEFAULT_Z_MAX;
+		int zMin = LAST_SLIDE;
 		int zMax = DEFAULT_Z_MIN;
 		boolean noZRoi = false;
 		boolean noValidRois = true;
@@ -176,12 +175,10 @@ public class RoiMan {
 		}
 
 		if (noZRoi) {
-			final int[] limits = { xMin, xMax, yMin, yMax, DEFAULT_Z_MIN, DEFAULT_Z_MAX };
-			return limits;
+			return new int[]{ xMin, xMax, yMin, yMax, DEFAULT_Z_MIN, LAST_SLIDE};
 		}
 
-		final int[] limits = { xMin, xMax, yMin, yMax, zMin, zMax };
-		return limits;
+		return new int[]{ xMin, xMax, yMin, yMax, zMin, zMax };
 	}
 
 	/**

@@ -33,11 +33,8 @@ public class VoxelDepthChecker implements PlugIn {
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp)
 			return;
-
-		final ImageCheck ic = new ImageCheck();
 		ImageCheck.dicomVoxelDepth(imp);
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
 }

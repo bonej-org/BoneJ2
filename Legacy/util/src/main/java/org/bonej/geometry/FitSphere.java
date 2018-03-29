@@ -56,7 +56,6 @@ public class FitSphere {
 		double y = centroid[1];
 		double z = centroid[2];
 
-		final double[] radii = new double[nPoints];
 		double g_new = 100.0;
 		double g_old = 1.0;
 		double r = 0;
@@ -82,7 +81,6 @@ public class FitSphere {
 				Jp[i][1] = -pY / ri;
 				Jp[i][2] = -pZ / ri;
 				Jp[i][3] = -1;
-				radii[i] = ri;
 			}
 			D = D.times(-1);
 			final Matrix J1 = J;
@@ -102,7 +100,6 @@ public class FitSphere {
 			for (int i = 0; i < 4; i++)
 				g_new += Gp[i][0];
 		}
-		final double[] centreRadius = { x, y, z, r };
-		return centreRadius;
+		return new double[]{ x, y, z, r };
 	}
 }

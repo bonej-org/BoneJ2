@@ -88,13 +88,13 @@ public class Orienteer extends PlugInFrame
 	private Point p;
 
 	private Integer activeImpID;
-	private final Hashtable<Integer, Double> thetaHash = new Hashtable<Integer, Double>();
-	private final Hashtable<Integer, Integer> lengthHash = new Hashtable<Integer, Integer>();
-	private final Hashtable<Integer, Point> centreHash = new Hashtable<Integer, Point>();
-	private final Hashtable<Integer, GeneralPath> pathHash = new Hashtable<Integer, GeneralPath>();
-	private final Hashtable<Integer, int[]> axisHash = new Hashtable<Integer, int[]>();
-	private final Hashtable<Integer, boolean[]> reflectHash = new Hashtable<Integer, boolean[]>();
-	private final Hashtable<Integer, boolean[]> unitHash = new Hashtable<Integer, boolean[]>();
+	private final Hashtable<Integer, Double> thetaHash = new Hashtable<>();
+	private final Hashtable<Integer, Integer> lengthHash = new Hashtable<>();
+	private final Hashtable<Integer, Point> centreHash = new Hashtable<>();
+	private final Hashtable<Integer, GeneralPath> pathHash = new Hashtable<>();
+	private final Hashtable<Integer, int[]> axisHash = new Hashtable<>();
+	private final Hashtable<Integer, boolean[]> reflectHash = new Hashtable<>();
+	private final Hashtable<Integer, boolean[]> unitHash = new Hashtable<>();
 
 	private final Overlay overlay = new Overlay();
 	private final int fontSize = 12;
@@ -199,7 +199,7 @@ public class Orienteer extends PlugInFrame
 		panel1.add(reflect1);
 
 		c.gridx = 0;
-		c.gridy = y++;
+		c.gridy = y;
 		c.gridwidth = 2;
 		c.insets = new Insets(5, 5, 0, 5);
 		c.anchor = GridBagConstraints.EAST;
@@ -207,7 +207,7 @@ public class Orienteer extends PlugInFrame
 		add(degRadPanel, c);
 
 		c.gridx = 0;
-		c.gridy = y++;
+		c.gridy = y+1;
 		c.gridwidth = 2;
 		c.insets = new Insets(5, 5, 0, 5);
 		c.anchor = GridBagConstraints.EAST;
@@ -215,7 +215,7 @@ public class Orienteer extends PlugInFrame
 		add(panel0, c);
 
 		c.gridx = 0;
-		c.gridy = y++;
+		c.gridy = y + 2;
 		c.gridwidth = 2;
 		c.insets = new Insets(5, 5, 0, 5);
 		c.anchor = GridBagConstraints.EAST;
@@ -244,16 +244,16 @@ public class Orienteer extends PlugInFrame
 			IJ.log("Image has already been set up");
 			return;
 		}
-		final Integer id = new Integer(imp.getID());
+		final Integer id = imp.getID();
 		activeImpID = id;
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		this.theta = 0;
 		slider.setValue((int) (theta * 180 / Math.PI));
 		this.isReflected0 = false;
-		reflect0.setState(isReflected0);
+		reflect0.setState(false);
 		this.isReflected1 = false;
-		reflect1.setState(isReflected1);
+		reflect1.setState(false);
 		this.length = Math.min(w, h) / 4;
 		this.p = new Point(w / 2, h / 2);
 		path = new GeneralPath();
@@ -265,11 +265,11 @@ public class Orienteer extends PlugInFrame
 		imp.setOverlay(path, Color.BLUE, stroke);
 		rotateTo(theta);
 		centreHash.put(id, new Point(p));
-		thetaHash.put(id, new Double(theta));
+		thetaHash.put(id, theta);
 		pathHash.put(id, new GeneralPath(path));
 		final int[] axes = { axis0, axis1 };
 		axisHash.put(id, axes.clone());
-		lengthHash.put(id, new Integer(this.length));
+		lengthHash.put(id, this.length);
 		final boolean[] reflectors = { isReflected0, isReflected1 };
 		reflectHash.put(id, reflectors.clone());
 		deg.setState(true);
@@ -287,7 +287,7 @@ public class Orienteer extends PlugInFrame
 			return;
 		}
 		final ImagePlus imp = WindowManager.getCurrentImage();
-		activeImpID = new Integer(imp.getID());
+		activeImpID = imp.getID();
 		instance.setTitle("Orientation - " + imp.getTitle());
 		if (!checkHash(imp)) {
 			setup(imp);
@@ -322,7 +322,7 @@ public class Orienteer extends PlugInFrame
 	private void checkHash() {
 		final Set<Integer> idset = thetaHash.keySet();
 		for (final Integer i : idset) {
-			if (WindowManager.getImage(i.intValue()) == null)
+			if (WindowManager.getImage(i) == null)
 				clearHashes(i);
 		}
 	}
@@ -360,7 +360,7 @@ public class Orienteer extends PlugInFrame
 	 * @return true if this image is already handled by Orientation
 	 */
 	private boolean checkHash(final ImagePlus imp) {
-		final Integer i = new Integer(imp.getID());
+		final Integer i = imp.getID();
 		return thetaHash.containsKey(i);
 	}
 
@@ -381,7 +381,7 @@ public class Orienteer extends PlugInFrame
 	public String[] getDirections(final ImagePlus imp) {
 		if (!checkHash(imp))
 			return null;
-		final Integer id = new Integer(imp.getID());
+		final Integer id = imp.getID();
 		final int[] axes = axisHash.get(id);
 		final boolean[] ref = reflectHash.get(id);
 		final String[] dirs = new String[4];
@@ -425,8 +425,7 @@ public class Orienteer extends PlugInFrame
 	 *         12 o'clock
 	 */
 	public double getOrientation() {
-		final double orientation = this.theta;
-		return orientation;
+		return this.theta;
 	}
 
 	/**
@@ -434,17 +433,11 @@ public class Orienteer extends PlugInFrame
 	 *
 	 * @param imp an image.
 	 * @return Orientation in radians clockwise from 12 o'clock
-	 * @throws IllegalArgumentException if imp has not been activated by
-	 *           Orientation
 	 */
 	public double getOrientation(final ImagePlus imp)
-		throws IllegalArgumentException
 	{
-		final Integer id = new Integer(imp.getID());
-		final Double o = thetaHash.get(id);
-		if (o == null) throw new IllegalArgumentException();
-
-		return o.doubleValue();
+		final Integer id = imp.getID();
+		return thetaHash.get(id);
 	}
 
 	public double getOrientation(final ImagePlus imp, final String direction) {
@@ -504,8 +497,7 @@ public class Orienteer extends PlugInFrame
 			yMin = Math.min(yMin, yr);
 			yMax = Math.max(yMax, yr);
 		}
-		final double[] result = { yMax - yMin, xMax - xMin };
-		return result;
+		return new double[]{ yMax - yMin, xMax - xMin };
 	}
 
 	/**
@@ -518,7 +510,7 @@ public class Orienteer extends PlugInFrame
 		if (WindowManager.getImageCount() == 0)
 			return;
 		final ImagePlus imp = WindowManager.getCurrentImage();
-		this.activeImpID = new Integer(imp.getID());
+		this.activeImpID = imp.getID();
 		final AffineTransform transform = new AffineTransform();
 		transform.rotate(deltaTheta, p.x, p.y);
 		this.theta += deltaTheta;
@@ -527,7 +519,7 @@ public class Orienteer extends PlugInFrame
 		addPath(path, Color.BLUE, stroke);
 		addLabels();
 		imp.setOverlay(overlay);
-		thetaHash.put(activeImpID, new Double(theta));
+		thetaHash.put(activeImpID, theta);
 		pathHash.put(activeImpID, new GeneralPath(path));
 	}
 

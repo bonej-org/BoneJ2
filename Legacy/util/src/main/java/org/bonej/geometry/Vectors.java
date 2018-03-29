@@ -65,8 +65,7 @@ public class Vectors {
 		final double x = y1 * z2 - z1 * y2;
 		final double y = z1 * x2 - x1 * z2;
 		final double z = x1 * y2 - y1 * x2;
-		final double[] crossVector = { x, y, z };
-		return crossVector;
+		return new double[]{ x, y, z };
 	}
 
 	/**
@@ -176,7 +175,6 @@ public class Vectors {
 
 	public static Point3f normalise(final Point3f n) {
 		final double d = Trig.distance3D(n.x, n.y, n.z);
-		final Point3f o = new Point3f((float) (n.x / d), (float) (n.y / d), (float) (n.z / d));
-		return o;
+		return new Point3f((float) (n.x / d), (float) (n.y / d), (float) (n.z / d));
 	}
 }

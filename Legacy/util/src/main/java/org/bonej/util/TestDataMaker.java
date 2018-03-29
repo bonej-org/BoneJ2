@@ -96,8 +96,7 @@ public class TestDataMaker {
 			ip.fillOval((int) Math.floor(diameter / 2), (int) Math.floor(diameter / 2), diameter, diameter);
 			stack.addSlice("" + i, ip);
 		}
-		final ImagePlus imp = new ImagePlus("rod", stack);
-		return imp;
+		return new ImagePlus("rod", stack);
 	}
 
 	/**
@@ -121,8 +120,7 @@ public class TestDataMaker {
 		}
 		final ImageProcessor ipe = new ByteProcessor(side, side);
 		stack.addSlice("", ipe); // padding
-		final ImagePlus imp = new ImagePlus("sphere", stack);
-		return imp;
+		return new ImagePlus("sphere", stack);
 	}
 
 	/**
@@ -147,8 +145,7 @@ public class TestDataMaker {
 		}
 		final ImageProcessor ip3 = new ByteProcessor(width + 2, height + 2);
 		stack.addSlice("", ip3);
-		final ImagePlus imp = new ImagePlus("brick", stack);
-		return imp;
+		return new ImagePlus("brick", stack);
 	}
 
 	/**
@@ -198,8 +195,7 @@ public class TestDataMaker {
 			ip.drawPixel(31 + width, 32);
 			ip.drawPixel(31 + width, 31 + height);
 		}
-		final ImagePlus imp = new ImagePlus("box-frame", stack);
-		return imp;
+		return new ImagePlus("box-frame", stack);
 	}
 
 	/**
@@ -227,8 +223,7 @@ public class TestDataMaker {
 			}
 			stack.addSlice(bp);
 		}
-		final ImagePlus imp = new ImagePlus("binary-noise", stack);
-		return imp;
+		return new ImagePlus("binary-noise", stack);
 	}
 
     /**
@@ -249,7 +244,6 @@ public class TestDataMaker {
 			final ByteProcessor bp = (ByteProcessor) stack.getProcessor(i);
 			bp.add(255);
 		}
-		final ImagePlus imp = new ImagePlus("plates", stack);
-		return imp;
+		return new ImagePlus("plates", stack);
 	}
 }

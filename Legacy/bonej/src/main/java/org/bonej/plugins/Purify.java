@@ -68,7 +68,6 @@ public class Purify implements PlugIn, DialogListener {
 		if (!ImageCheck.checkEnvironment())
 			return;
 		final ImagePlus imp = IJ.getImage();
-		final ImageCheck ic = new ImageCheck();
 		if (!ImageCheck.isBinary(imp)) {
 			IJ.error("Purify requires a binary image");
 			return;
@@ -113,7 +112,6 @@ public class Purify implements PlugIn, DialogListener {
 		if (showPerformance)
 			showResults(duration, imp, slicesPerChunk, labelMethod);
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
 	/**
@@ -226,7 +224,6 @@ public class Purify implements PlugIn, DialogListener {
 		}
 
 		// left
-		x = 0;
 		for (z = 0; z < d; z++) {
 			IJ.showStatus(status + "left");
 			IJ.showProgress(z, d);
@@ -239,12 +236,11 @@ public class Purify implements PlugIn, DialogListener {
 		}
 
 		// right
-		x = w - 1;
 		for (z = 0; z < d; z++) {
 			IJ.showStatus(status + "right");
 			IJ.showProgress(z, d);
 			for (y = 0; y < h; y++) {
-				final int offset = y * w + x;
+				final int offset = y * w + w - 1;
 				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
 					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, 0, d, true);
 				}
@@ -252,8 +248,7 @@ public class Purify implements PlugIn, DialogListener {
 		}
 
 		// front
-		y = h - 1;
-		final int rowOffset = y * w;
+		final int rowOffset = (h - 1) * w;
 		for (z = 0; z < d; z++) {
 			IJ.showStatus(status + "front");
 			IJ.showProgress(z, d);
@@ -266,18 +261,15 @@ public class Purify implements PlugIn, DialogListener {
 		}
 
 		// back
-		y = 0;
 		for (z = 0; z < d; z++) {
 			IJ.showStatus(status + "back");
 			IJ.showProgress(z, d);
 			for (x = 0; x < w; x++) {
-				final int offset = x;
-				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, 0, d, true);
+				if (workArray[z][x] == phase && particleLabels[z][x] != biggestParticle) {
+					pc.replaceLabel(particleLabels, particleLabels[z][x], biggestParticle, 0, d, true);
 				}
 			}
 		}
-		return;
 	}
 
 	/**
@@ -341,7 +333,6 @@ public class Purify implements PlugIn, DialogListener {
 			});
 		}
 		Multithreader.startAndJoin(threads);
-		return;
 	}
 
 	/**
@@ -369,7 +360,6 @@ public class Purify implements PlugIn, DialogListener {
 		rt.addValue("Last chunk size", chunkRanges[1][nChunks - 1] - chunkRanges[0][nChunks - 1]);
 		rt.addValue("Duration (s)", duration);
 		rt.show("Results");
-		return;
 	}
 
 	@Override

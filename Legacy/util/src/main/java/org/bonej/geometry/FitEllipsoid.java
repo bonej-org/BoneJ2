@@ -112,9 +112,7 @@ public class FitEllipsoid {
 		}
 		final double[] centre = (double[]) matrices[0];
 		final double[][] eigenVectors = (double[][]) matrices[2];
-		final double[] equation = v;
-		final Object[] ellipsoid = { centre, radii, eigenVectors, equation, E };
-		return ellipsoid;
+		return new Object[]{ centre, radii, eigenVectors, v, E };
 	}
 
 	/**

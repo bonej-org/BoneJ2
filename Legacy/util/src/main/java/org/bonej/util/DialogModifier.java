@@ -21,7 +21,12 @@
  */
 package org.bonej.util;
 
-import java.awt.*;
+import java.awt.Checkbox;
+import java.awt.Choice;
+import java.awt.Component;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.TextField;
 import java.util.Vector;
 
 import ij.IJ;
@@ -62,27 +67,30 @@ public class DialogModifier {
 	public static void registerMacroValues(final GenericDialog gd, final Component[] comps) {
 		try {
 			for (final Component c : comps) {
-				if (c instanceof Checkbox)
+				if (c instanceof Checkbox) {
 					gd.getNextBoolean();
-				else if (c instanceof Choice)
+				}
+				else if (c instanceof Choice) {
 					gd.getNextChoice();
+				}
 				else if (c instanceof TextField) {
 					final String text = ((TextField) c).getText();
 					try {
 						Double.parseDouble(text);
 						gd.getNextNumber();
-					} catch (final NumberFormatException e) {
+					}
+					catch (final NumberFormatException e) {
 						gd.getNextString();
 					}
-				} else if (c instanceof Panel)
+				}
+				else if (c instanceof Panel) {
+					// TODO Loop continues, even if recursive call(s) throw an exception
 					registerMacroValues(gd, ((Panel) c).getComponents());
-				else
-					continue;
+				}
 			}
-		} catch (final Exception e) {
-			IJ.log("This plugin causes an exception\n" + e.toString());
+		} catch (final ArrayIndexOutOfBoundsException e) {
+			IJ.log("Dialog has no more components\n" + e.toString());
 		}
-		return;
 	}
 
 	/**
@@ -97,8 +105,6 @@ public class DialogModifier {
 	public static boolean allNumbersValid(final Vector<?> textFields) {
 		for (final Object text : textFields) {
 			final String string = ((TextField) text).getText();
-			if (string.length() == 0)
-				return false;
 			try {
 				Double.parseDouble(string);
 			} catch (final NumberFormatException e) {

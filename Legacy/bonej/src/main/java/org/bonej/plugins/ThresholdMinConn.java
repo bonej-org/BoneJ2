@@ -76,7 +76,6 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 			return;
 		final ImagePlus imp = IJ.getImage();
 		final ImageProcessor ip = imp.getProcessor();
-		final ImageCheck ic = new ImageCheck();
 		if (ImageCheck.isBinary(imp)) {
 			IJ.error("Can't threshold a binary image");
 			return;
@@ -117,7 +116,6 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		}
 		IJ.showStatus("");
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
 	private ImageStack thresholdStack(final ImagePlus imp, final double threshold) {
@@ -222,8 +220,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		cf.doFit(CurveFitter.POLY2);
 		final double[] params = cf.getParams();
 		final double b = params[1], c = params[2];
-		final double xmin = -b / (2 * c);
-		return xmin;
+		return -b / (2 * c);
 	}
 
 	/**

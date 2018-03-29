@@ -63,13 +63,12 @@ public class SphereFitter implements PlugIn, DialogListener {
 			IJ.noImage();
 			return;
 		}
-		final ImageCheck ic = new ImageCheck();
 		if (!ImageCheck.isMultiSlice(imp)) {
 			IJ.error("Stack required");
 			return;
 		}
 		final RoiManager roiMan = RoiManager.getInstance();
-		if (roiMan == null && imp != null) {
+		if (roiMan == null) {
 			IJ.error("Please populate ROI Manager with point ROIs");
 			IJ.run("ROI Manager...");
 			return;
@@ -113,7 +112,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 			return;
 		}
 
-		double[] sphereDim = new double[4];
+		final double[] sphereDim;
 		try {
 			sphereDim = FitSphere.fitSphere(points);
 		} catch (final IllegalArgumentException ia) {
@@ -143,7 +142,6 @@ public class SphereFitter implements PlugIn, DialogListener {
 			addToRoiManager(imp, roiMan, sphereDim, clearRois);
 		}
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
 	public ImagePlus copySphere(final ImagePlus imp, final int padding, final double cropFactor,

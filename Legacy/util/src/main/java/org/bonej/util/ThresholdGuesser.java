@@ -37,8 +37,8 @@ public class ThresholdGuesser {
 	 */
 	public static double[] setDefaultThreshold(final ImagePlus imp) {
 		final Calibration cal = imp.getCalibration();
-		double min = 0;
-		double max = 0;
+		double min;
+		double max;
 		if (!ImageCheck.huCalibrated(imp)) {
 			// set some sensible thresholding defaults
 			final int[] histogram = StackStats.getStackHistogram(imp);
@@ -61,7 +61,6 @@ public class ThresholdGuesser {
 			min = airHU + 1000;
 			max = airHU + 5000;
 		}
-		final double[] thresholds = { min, max };
-		return thresholds;
+		return new double[]{ min, max };
 	}
 }

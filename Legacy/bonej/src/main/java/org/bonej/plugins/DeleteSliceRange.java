@@ -86,7 +86,6 @@ public class DeleteSliceRange implements PlugIn {
 		for (int s = first; s <= last; s++) {
 			stack.deleteSlice(first);
 		}
-		return;
 	}
 
 	/**
@@ -100,6 +99,5 @@ public class DeleteSliceRange implements PlugIn {
 		for (int s = first; s <= last; s++) {
 			stack.deleteSlice(first);
 		}
-		return;
 	}
 }

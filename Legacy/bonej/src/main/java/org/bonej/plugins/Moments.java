@@ -160,7 +160,6 @@ public class Moments implements PlugIn, DialogListener {
 		if (doAxes3D)
 			show3DAxes(imp, E.getV(), centroid, startSlice, endSlice, min, max);
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
 	// cortical bone apparent density (material density * volume fraction) from
@@ -187,7 +186,7 @@ public class Moments implements PlugIn, DialogListener {
 		if (voxelDensity < 0)
 			voxelDensity = 0;
 		return voxelDensity;
-	}/* end voxelDensity */
+	}
 
 	/**
 	 * Get a scale factor because density is in g / cm<sup>3</sup> but our units are mm so
@@ -198,7 +197,7 @@ public class Moments implements PlugIn, DialogListener {
 	 */
 	private double getDensityFactor(final ImagePlus imp) {
 		final String units = imp.getCalibration().getUnits();
-		double factor = 1;
+		double factor;
 		if (units.contains("mm")) {
 			factor = 1000;
 		} else {
@@ -218,18 +217,16 @@ public class Moments implements PlugIn, DialogListener {
 	 * @return Object containing an array of the type needed for an image with
 	 *         bitDepth
 	 */
+	// TODO throw exception when unexpected bit depth
 	public static Object getEmptyPixels(final int w, final int h, final int bitDepth) {
 
 		Object emptyPixels = new Object();
 		if (bitDepth == 8) {
-			final byte[] bytePixels = new byte[w * h];
-			emptyPixels = bytePixels;
+			emptyPixels = new byte[w * h];
 		} else if (bitDepth == 16) {
-			final short[] shortPixels = new short[w * h];
-			emptyPixels = shortPixels;
+			emptyPixels = new short[w * h];
 		} else if (bitDepth == 32) {
-			final float[] floatPixels = new float[w * h];
-			emptyPixels = floatPixels;
+			emptyPixels = new float[w * h];
 		}
 		return emptyPixels;
 	}
@@ -292,8 +289,7 @@ public class Moments implements PlugIn, DialogListener {
 			centZ = -1;
 		}
 		// centroid in real units
-		final double[] centroid = { centX * vW, centY * vH, centZ * vD };
-		return centroid;
+		return new double[]{ centX * vW, centY * vH, centZ * vD };
 	}/* end findCentroid3D */
 
 	private Object[] calculateMoments(final ImagePlus imp, final int startSlice, final int endSlice,
@@ -369,9 +365,8 @@ public class Moments implements PlugIn, DialogListener {
 		MatrixUtils.printToIJLog(E.getV(), "Eigenvectors");
 
 		final double[] moments = { sumVoxVol, sumVoxMass, Icxx, Icyy, Iczz, Icxy, Icxz, Icyz };
-		final Object[] result = { E, moments };
 
-		return result;
+		return new Object[]{ E, moments };
 	}
 
 	/**
@@ -422,7 +417,7 @@ public class Moments implements PlugIn, DialogListener {
 		final int di = sides[2];
 
 		MatrixUtils.printToIJLog(E, "Original Rotation Matrix (Source -> Target)");
-		Matrix rotation = new Matrix(new double[3][3]);
+		Matrix rotation;
 
 		// put long axis in z, middle axis in y and short axis in x
 		if (wi <= hi && hi <= di) {
@@ -554,7 +549,6 @@ public class Moments implements PlugIn, DialogListener {
     private class AlignThread extends Thread {
 		private final int thread, nThreads, wT, hT, dT, startSlice, endSlice;
 		private final ImagePlus impT;
-		private final ImageStack stackT;
 		private final ImageProcessor[] sliceProcessors, targetProcessors;
 		private final double[][] eigenVecInv;
 		private final double[] centroid;
@@ -564,7 +558,6 @@ public class Moments implements PlugIn, DialogListener {
                 final double[][] eigenVecInv, final double[] centroid, final int wT, final int hT, final int dT,
                 final int startSlice, final int endSlice) {
 			this.impT = imp;
-			this.stackT = this.impT.getStack();
 			this.thread = thread;
 			this.nThreads = nThreads;
 			this.sliceProcessors = sliceProcessors;
@@ -733,8 +726,7 @@ public class Moments implements PlugIn, DialogListener {
 		final int tH = (int) Math.floor(2 * yTmax / vS) + 5;
 		final int tD = (int) Math.floor(2 * zTmax / vS) + 5;
 
-		final int[] size = { tW, tH, tD };
-		return size;
+		return new int[]{ tW, tH, tD };
 	}
 
 	/**
@@ -755,8 +747,7 @@ public class Moments implements PlugIn, DialogListener {
 	public ImagePlus alignImage(final ImagePlus imp, final Matrix E, final boolean doAxes, final int startSlice,
 			final int endSlice, final double min, final double max, final double m, final double c) {
 		final double[] centroid = getCentroid3D(imp, startSlice, endSlice, min, max, m, c);
-		final ImagePlus alignedImp = alignToPrincipalAxes(imp, E, centroid, startSlice, endSlice, min, max, doAxes);
-		return alignedImp;
+		return alignToPrincipalAxes(imp, E, centroid, startSlice, endSlice, min, max, doAxes);
 	}
 
 	/**
@@ -796,7 +787,7 @@ public class Moments implements PlugIn, DialogListener {
 		univ.show();
 
 		// show the centroid
-		final ArrayList<Point3f> point = new ArrayList<Point3f>();
+		final ArrayList<Point3f> point = new ArrayList<>();
 		point.add(cent);
 		final CustomPointMesh mesh = new CustomPointMesh(point);
 		mesh.setPointSize(5.0f);
@@ -818,7 +809,7 @@ public class Moments implements PlugIn, DialogListener {
 		final double l1 = sideLengths[0] * vS;
 		final double l2 = sideLengths[1] * vS;
 		final double l3 = sideLengths[2] * vS;
-		final List<Point3f> axes = new ArrayList<Point3f>();
+		final List<Point3f> axes = new ArrayList<>();
 		final Point3f start1 = new Point3f();
 		start1.x = (float) (cX - E.get(0, 0) * l1);
 		start1.y = (float) (cY - E.get(1, 0) * l1);
@@ -870,9 +861,7 @@ public class Moments implements PlugIn, DialogListener {
 			c.setLocked(true);
 		} catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
-			return;
 		}
-		return;
 	}
 
 	@Override

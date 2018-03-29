@@ -198,10 +198,7 @@ public class Ellipsoid {
 
 		final double dot = dot0 * vx + dot1 * vy + dot2 * vz;
 
-		if (dot <= 1)
-			return true;
-
-		return false;
+		return dot <= 1;
 	}
 
 	/**
@@ -211,11 +208,11 @@ public class Ellipsoid {
 	 * @return radii in ascending order
 	 */
 	public double[] getSortedRadii() {
-
+		// TODO use Arrays.sort
 		double a = this.ra;
 		double b = this.rb;
 		double c = this.rc;
-		double temp = 0;
+		double temp;
 
 		if (a > b) {
 			temp = a;
@@ -233,9 +230,7 @@ public class Ellipsoid {
 			b = temp;
 		}
 
-		final double[] sortedRadii = { a, b, c };
-
-		return sortedRadii;
+		return new double[]{ a, b, c };
 	}
 
 	public double[] getCentre() {
@@ -389,8 +384,7 @@ public class Ellipsoid {
 		final double m12 = ev[0][1] * rb;
 		final double m13 = ev[0][2] * rc;
 		final double d = Math.sqrt(m11 * m11 + m12 * m12 + m13 * m13);
-		final double[] minMax = { cx - d, cx + d };
-		return minMax;
+		return new double[]{ cx - d, cx + d };
 	}
 
 	/**
@@ -403,8 +397,7 @@ public class Ellipsoid {
 		final double m22 = ev[1][1] * rb;
 		final double m23 = ev[1][2] * rc;
 		final double d = Math.sqrt(m21 * m21 + m22 * m22 + m23 * m23);
-		final double[] minMax = { cy - d, cy + d };
-		return minMax;
+		return new double[]{ cy - d, cy + d };
 	}
 
 	/**
@@ -417,8 +410,7 @@ public class Ellipsoid {
 		final double m32 = ev[2][1] * rb;
 		final double m33 = ev[2][2] * rc;
 		final double d = Math.sqrt(m31 * m31 + m32 * m32 + m33 * m33);
-		final double[] minMax = { cz - d, cz + d };
-		return minMax;
+		return new double[]{ cz - d, cz + d };
 	}
 
 	/**
@@ -435,8 +427,7 @@ public class Ellipsoid {
 		final double[] x = getXMinAndMax();
 		final double[] y = getYMinAndMax();
 		final double[] z = getZMinAndMax();
-		final double[] boundingBox = { x[0], x[1], y[0], y[1], z[0], z[1] };
-		return boundingBox;
+		return new double[]{ x[0], x[1], y[0], y[1], z[0], z[1] };
 	}
 
 	/**
@@ -465,14 +456,13 @@ public class Ellipsoid {
 		final double b20 = b[2][0];
 		final double b21 = b[2][1];
 		final double b22 = b[2][2];
-		final double[][] c = {
+		return new double[][]{
 				{ a00 * b00 + a01 * b10 + a02 * b20, a00 * b01 + a01 * b11 + a02 * b21,
 						a00 * b02 + a01 * b12 + a02 * b22 },
 				{ a10 * b00 + a11 * b10 + a12 * b20, a10 * b01 + a11 * b11 + a12 * b21,
 						a10 * b02 + a11 * b12 + a12 * b22 },
 				{ a20 * b00 + a21 * b10 + a22 * b20, a20 * b01 + a21 * b11 + a22 * b21,
 						a20 * b02 + a21 * b12 + a22 * b22 }, };
-		return c;
 	}
 
 	/**
@@ -540,8 +530,7 @@ public class Ellipsoid {
 		final double[] centre = C.getColumnPackedCopy();
 		final double[][] eigenVectors = E.getV().getArrayCopy();
 		final double[][] eigenValues = E.getD().getArrayCopy();
-		final Object[] result = { centre, eigenValues, eigenVectors, E };
-		return result;
+		return new Object[]{ centre, eigenValues, eigenVectors, E };
 	}
 
 	/**
@@ -550,7 +539,7 @@ public class Ellipsoid {
 	 * @return a copy of the instance.
 	 */
 	public Ellipsoid copy() {
-		final Ellipsoid copy = new Ellipsoid(this.ra, this.rb, this.rc, this.cx, this.cy, this.cz, this.ev.clone());
-		return copy;
+		// TODO Fix shallow copy of ev matrix
+		return new Ellipsoid(this.ra, this.rb, this.rc, this.cx, this.cy, this.cz, this.ev.clone());
 	}
 }

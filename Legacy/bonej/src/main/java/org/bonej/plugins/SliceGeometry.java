@@ -102,18 +102,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private double[] maxCortThick2D;
 	/** Standard deviation of 2D local thickness in slice */
 	private double[] stdevCortThick2D;
-	/** normal x distance from parallel axis summed over pixels */
-	// private double[] Sx;
-	/** normal y distance from parallel axis summed over pixels */
-	// private double[] Sy;
-	/** squared normal distances from parallel axis (Iz) */
-	// private double[] Sxx;
-	/** squared normal distances from parallel axis (Iz) */
-	// private double[] Syy;
-	// private double[] Sxy;
-	// private double[] Myy;
-	// private double[] Mxx;
-	// private double[] Mxy;
 	/** Angle of principal axes */
 	private double[] theta;
 	/**
@@ -156,8 +144,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private boolean fieldUpdated = false;
 	/** List of perimeter lengths */
 	private double[] perimeter;
-	/** List of maximal distances from centroid */
-	// private double[] maxRadCentre;
 	/** List of polar section moduli */
 	private double[] Zpol;
 	private boolean do3DAnnotation;
@@ -361,7 +347,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		if (this.do3DAnnotation)
 			show3DAxes(imp);
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
 	/**
@@ -437,10 +422,10 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 
 		// list of centroids
-		final List<Point3f> centroids = new ArrayList<Point3f>();
+		final List<Point3f> centroids = new ArrayList<>();
 		// list of axes
-		final List<Point3f> minAxes = new ArrayList<Point3f>();
-		final List<Point3f> maxAxes = new ArrayList<Point3f>();
+		final List<Point3f> minAxes = new ArrayList<>();
+		final List<Point3f> maxAxes = new ArrayList<>();
 		for (int s = 1; s <= roiImp.getImageStackSize(); s++) {
 			if (((Double) this.cortArea[s]).equals(Double.NaN) || this.cortArea[s] == 0)
 				continue;
@@ -529,9 +514,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			c.setLocked(true);
 		} catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
-			return;
 		}
-		return;
 	}
 
 	/**
@@ -789,9 +772,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			}
 		}
 
-		final double[][] result = { I1, I2, Ip, r1, r2, maxRad2, maxRad1, Z1, Z2, Zp, };
-
-		return result;
+		return new double[][]{ I1, I2, Ip, r1, r2, maxRad2, maxRad1, Z1, Z2, Zp, };
 	}
 
 	/**
@@ -850,7 +831,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			}
 			this.stdevCortThick3D[s] = Math.sqrt(sumSquares / pixCount);
 		}
-		return;
 	}
 
 	/**
@@ -877,7 +857,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		} catch (final InterruptedException ie) {
 			IJ.error("A thread was interrupted.");
 		}
-		return;
 	}
 
 	class SliceThread extends Thread {
@@ -960,7 +939,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				}
 				this.stdevThick[s] = Math.sqrt(sumSquares / pixCount);
 			}
-			return;
 		}
 	}
 
@@ -992,7 +970,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private void roiMeasurements(final ImagePlus imp, final double min, final double max) {
 		final Roi initialRoi = imp.getRoi();
 		final int xMin = imp.getImageStack().getRoi().x;
-		double[] feretValues = new double[3];
+		double[] feretValues;
 		this.feretAngle = new double[this.al];
 		this.feretMax = new double[this.al];
 		this.feretMin = new double[this.al];
@@ -1033,11 +1011,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				this.principalDiameter[s] = diameters[0];
 				this.secondaryDiameter[s] = diameters[1];
 			}
-			feretValues = null;
 		}
 		IJ.setSlice(initialSlice);
 		imp.setRoi(initialRoi);
-		return;
 	}
 
 	@Override

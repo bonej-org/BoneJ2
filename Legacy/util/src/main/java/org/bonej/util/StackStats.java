@@ -74,8 +74,7 @@ public class StackStats {
 			}
 		}
 		final double stDev = Math.sqrt(sumSquares / pixCount);
-		final double[] stats = { meanThick, stDev, maxThick };
-		return stats;
+		return new double[]{ meanThick, stDev, maxThick };
 	}
 
 	/**

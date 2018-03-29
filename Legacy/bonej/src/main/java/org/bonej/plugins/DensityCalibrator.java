@@ -40,10 +40,7 @@ public class DensityCalibrator implements PlugIn {
 		if (arg.equals("scanco"))
 			try {
 				scanco(imp);
-			} catch (final NumberFormatException e) {
-				IJ.error("Calibration data missing from DICOM header");
-				return;
-			} catch (final NullPointerException e) {
+			} catch (final NumberFormatException | NullPointerException e) {
 				IJ.error("Calibration data missing from DICOM header");
 				return;
 			} catch (final IllegalArgumentException e) {

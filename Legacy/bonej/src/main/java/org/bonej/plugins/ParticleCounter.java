@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 import org.bonej.geometry.FitEllipsoid;
 import org.bonej.geometry.Vectors;
@@ -130,7 +131,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			IJ.noImage();
 			return;
 		}
-		final ImageCheck ic = new ImageCheck();
 		if (!ImageCheck.isBinary(imp)) {
 			IJ.error("Binary image required");
 			return;
@@ -248,7 +248,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int[][] limits = getParticleLimits(imp, particleLabels, nParticles);
 
 		// set up resources for analysis
-		ArrayList<List<Point3f>> surfacePoints = new ArrayList<List<Point3f>>();
+		ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
 		if (doSurfaceArea || doSurfaceVolume || doSurfaceImage || doEllipsoids || doFeret) {
 			surfacePoints = getSurfacePoints(imp, particleLabels, limits, resampling, nParticles);
 		}
@@ -343,14 +343,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					rt.addValue("Max Thickness (" + units + ")", thick[i][2]);
 				}
 				if (doEllipsoids) {
-					double[] rad = new double[3];
-					double[][] unitV = new double[3][3];
+					double[] rad;
+					double[][] unitV;
 					if (ellipsoids[i] == null) {
-						final double[] r = { Double.NaN, Double.NaN, Double.NaN };
-						rad = r;
-						final double[][] u = { { Double.NaN, Double.NaN, Double.NaN },
+						rad = new double[]{ Double.NaN, Double.NaN, Double.NaN };
+						unitV = new double[][]{ { Double.NaN, Double.NaN, Double.NaN },
 								{ Double.NaN, Double.NaN, Double.NaN }, { Double.NaN, Double.NaN, Double.NaN } };
-						unitV = u;
 					} else {
 						final Object[] el = ellipsoids[i];
 						rad = (double[]) el[1];
@@ -410,29 +408,28 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		IJ.showProgress(1.0);
 		IJ.showStatus("Particle Analysis Complete");
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
 	private void displayEllipsoids(final Object[][] ellipsoids, final Image3DUniverse univ) {
 		final int nEllipsoids = ellipsoids.length;
-		ellipsoidLoop: for (int el = 1; el < nEllipsoids; el++) {
+		for (int el = 1; el < nEllipsoids; el++) {
 			IJ.showStatus("Rendering ellipsoids...");
 			IJ.showProgress(el, nEllipsoids);
-			if (ellipsoids[el] == null)
-				continue ellipsoidLoop;
-			final double[] centre = (double[]) ellipsoids[el][0];
-			final double[] radii = (double[]) ellipsoids[el][1];
-			final double[][] eV = (double[][]) ellipsoids[el][2];
-			for (int r = 0; r < 3; r++) {
-				final Double s = radii[r];
-				if (s.equals(Double.NaN))
-					continue ellipsoidLoop;
+			if (ellipsoids[el] == null) {
+				continue;
 			}
+			final double[] radii = (double[]) ellipsoids[el][1];
+			if (!isRadiiValid(radii)) {
+				continue;
+			}
+			final double[] centre = (double[]) ellipsoids[el][0];
+			final double[][] eV = (double[][]) ellipsoids[el][2];
 			final double a = radii[0]; // longest
 			final double b = radii[1]; // middle
 			final double c = radii[2]; // shortest
-			if (a < b || b < c || a < c)
+			if (a < b || b < c || a < c) {
 				IJ.log("Error: Bad ellipsoid radius ordering! Surface: " + el);
+			}
 			final double[][] ellipsoid = FitEllipsoid.testEllipsoid(a, b, c, 0, 0, 0, 0, 0, 1000, false);
 			final int nPoints = ellipsoid.length;
 			// rotate points by eigenvector matrix
@@ -446,7 +443,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				ellipsoid[p][2] = x * eV[2][0] + y * eV[2][1] + z * eV[2][2] + centre[2];
 			}
 
-			final List<Point3f> points = new ArrayList<Point3f>();
+			final List<Point3f> points = new ArrayList<>();
 			for (int p = 0; p < nPoints; p++) {
 				final Point3f e = new Point3f();
 				e.x = (float) ellipsoid[p][0];
@@ -470,6 +467,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			// Add some axes
 			displayAxes(univ, centre, eV, radii, 1.0f, 1.0f, 0.0f, "Ellipsoid Axes " + el);
 		}
+	}
+
+	private boolean isRadiiValid(final double[] radii) {
+		for (int r = 0; r < 3; r++) {
+			if (Double.isNaN(radii[r])) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private Object[][] getEllipsoids(final ArrayList<List<Point3f>> surfacePoints) {
@@ -587,8 +593,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final Object[] result = getParticles(imp, 4, BACK);
 		final long[] particleSizes = (long[]) result[2];
 		final int nParticles = particleSizes.length;
-		final int nCavities = nParticles - 2; // 1 particle is the background
-		return nCavities;
+		return nParticles - 2;
 	}
 
 	/**
@@ -741,8 +746,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 			maxDt[p] = temp.clone();
 		}
-		final Object[] maxDistances = { maxD, maxDt };
-		return maxDistances;
+		return new Object[]{ maxD, maxDt };
 	}
 
 	private void display3DOriginal(final ImagePlus imp, final int resampling, final Image3DUniverse univ) {
@@ -753,7 +757,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		} catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
 		}
-		return;
 	}
 
 	private void displayPrincipalAxes(final Image3DUniverse univ, final EigenvalueDecomposition[] eigens,
@@ -765,7 +768,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			final Matrix eVec = eigens[p].getV();
 			displayAxes(univ, centroids[p], eVec.getArray(), lengths[p], 1.0f, 0.0f, 0.0f, "Principal Axes " + p);
 		}
-		return;
 	}
 
 	/**
@@ -799,7 +801,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final double l2 = lengths[1];
 		final double l3 = lengths[2];
 
-		final List<Point3f> mesh = new ArrayList<Point3f>();
+		final List<Point3f> mesh = new ArrayList<>();
 		final Point3f start1 = new Point3f();
 		start1.x = (float) (cX - eVec1x * l1);
 		start1.y = (float) (cY - eVec1y * l1);
@@ -841,7 +843,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			univ.addLineMesh(mesh, aColour, title, false).setLocked(true);
 		} catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
-			return;
 		}
 	}
 
@@ -860,7 +861,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			centroid.x = (float) centroids[p][0];
 			centroid.y = (float) centroids[p][1];
 			centroid.z = (float) centroids[p][2];
-			final List<Point3f> point = new ArrayList<Point3f>();
+			final List<Point3f> point = new ArrayList<>();
 			point.add(centroid);
 			final CustomPointMesh mesh = new CustomPointMesh(point);
 			mesh.setPointSize(5.0f);
@@ -876,7 +877,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				return;
 			}
 		}
-		return;
 	}
 
 	/**
@@ -978,7 +978,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp, final int[][] particleLabels,
 			final int[][] limits, final int resampling, final int nParticles) {
 		final Calibration cal = imp.getCalibration();
-		final ArrayList<List<Point3f>> surfacePoints = new ArrayList<List<Point3f>>();
+		final ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
 		final boolean[] channels = { true, false, false };
 		for (int p = 0; p < nParticles; p++) {
 			IJ.showStatus("Getting surface meshes...");
@@ -1083,7 +1083,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				final int sourceIndex = y * w;
 				for (int x = xMin; x <= xMax; x++) {
 					if (particleLabels[z][sourceIndex + x] == p) {
-						slice[i] = (byte) (255 & 0xFF);
+						slice[i] = (byte) 0xFF;
 					}
 					i++;
 				}
@@ -1244,6 +1244,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		} else if (phase == BACK) {
 			this.sPhase = "background";
 		} else {
+			// TODO Make phase an enum
 			throw new IllegalArgumentException();
 		}
 		if (slicesPerChunk < 1) {
@@ -1289,8 +1290,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			excludeOnEdges(imp, particleLabels, workArray);
 		minimiseLabels(particleLabels);
 		final long[] particleSizes = getParticleSizes(particleLabels);
-		final Object[] result = { workArray, particleLabels, particleSizes };
-		return result;
+		return new Object[]{ workArray, particleLabels, particleSizes };
 
 	}
 
@@ -1312,7 +1312,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int wh = workArray[0].length;
 		final long[] particleSizes = getParticleSizes(particleLabels);
 		final double[] particleVolumes = getVolumes(imp, particleSizes);
-		byte flip = 0;
+		byte flip;
 		if (phase == FORE) {
 			flip = (byte) 0;
 		} else {
@@ -1369,7 +1369,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				}
 			}
 		}
-		return;
 	}
 
 	/**
@@ -1440,7 +1439,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 		}
 
-		return;
 	}
 
 	/**
@@ -1519,7 +1517,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				}
 				IJ.showProgress(z, d);
 			}
-			ID++;
 		} else if (phase == BACK) {
 			for (int z = 0; z < d; z++) {
 				for (int y = 0; y < h; y++) {
@@ -1579,7 +1576,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				}
 				IJ.showProgress(z, d);
 			}
-			ID++;
 		}
 		return particleLabels;
 	}
@@ -1746,7 +1742,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				}
 			}
 		}
-		return;
 	}
 
 	class ConnectStructuresThread extends Thread {
@@ -1882,18 +1877,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 		}
 		}
-		return;
 	}
 
 	private ArrayList<ArrayList<short[]>> getParticleLists(final int[][] particleLabels, final int nBlobs, final int w,
             final int h, final int d) {
-		final ArrayList<ArrayList<short[]>> pL = new ArrayList<ArrayList<short[]>>(nBlobs);
+		final ArrayList<ArrayList<short[]>> pL = new ArrayList<>(nBlobs);
+		pL.add(new ArrayList<>());
 		final long[] particleSizes = getParticleSizes(particleLabels);
-		final ArrayList<short[]> background = new ArrayList<short[]>(0);
-		pL.add(0, background);
 		for (int b = 1; b < nBlobs; b++) {
-			final ArrayList<short[]> a = new ArrayList<short[]>((int) particleSizes[b]);
-			pL.add(b, a);
+			pL.add(new ArrayList<>((int) particleSizes[b]));
 		}
 		// add all the particle coordinates to the appropriate list
 		for (short z = 0; z < d; z++) {
@@ -1942,16 +1934,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 
-		final ArrayList<HashSet<Integer>> map = new ArrayList<HashSet<Integer>>(nParticles + 1);
+		final ArrayList<HashSet<Integer>> map = new ArrayList<>(nParticles + 1);
 
 		final int[] lut = new int[nParticles + 1];
 		// set each label to be its own root
 		final int initialCapacity = 1;
 		for (int i = 0; i < nParticles + 1; i++) {
 			lut[i] = i;
-			final Integer root = Integer.valueOf(i);
-			final HashSet<Integer> set = new HashSet<Integer>(initialCapacity);
-			set.add(root);
+			final HashSet<Integer> set = new HashSet<>(initialCapacity);
+			set.add(i);
 			map.add(set);
 		}
 
@@ -1989,19 +1980,18 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// place to map lut values and targets
 		// lutList lists the indexes which point to each transformed lutvalue
 		// for quick updating
-		final ArrayList<HashSet<Integer>> lutList = new ArrayList<HashSet<Integer>>(nParticles);
+		final ArrayList<HashSet<Integer>> lutList = new ArrayList<>(nParticles);
 
 		// initialise the lutList
 		for (int i = 0; i <= nParticles; i++) {
-			final HashSet<Integer> set = new HashSet<Integer>(2);
-			lutList.add(set);
+			lutList.add(new HashSet<>(2));
 		}
 
 		// set it up. ArrayList index is now the transformed value
 		// list contains the lut indices that have the transformed value
 		for (int i = 1; i < nParticles; i++) {
 			final HashSet<Integer> list = lutList.get(lut[i]);
-			list.add(Integer.valueOf(i));
+			list.add(i);
 		}
 
 		// initialise LUT with minimal label in set
@@ -2046,10 +2036,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	private boolean checkConsistence(final int[] lut, final ArrayList<HashSet<Integer>> map) {
 		final int l = lut.length;
-		Integer val = null;
 		for (int i = 1; i < l; i++) {
-			val = Integer.valueOf(i);
-			if (!map.get(lut[i]).contains(val))
+			if (!map.get(lut[i]).contains(i))
 				return false;
 		}
 		return true;
@@ -2064,9 +2052,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				// if the current lut value is greater
 				// than the current position
 				// update lut with current position
-				final int v = val.intValue();
-				if (lut[v] > i) {
-					lut[v] = i;
+				if (lut[val] > i) {
+					lut[val] = i;
 					changed = true;
 				}
 			}
@@ -2086,9 +2073,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			int min = Integer.MAX_VALUE;
 			int minLut = Integer.MAX_VALUE;
 			for (final Integer val : set) {
-				final int v = val.intValue();
-				min = Math.min(min, v);
-				minLut = Math.min(minLut, lut[v]);
+				min = Math.min(min, val);
+				minLut = Math.min(minLut, lut[val]);
 			}
 			// min now contains the smaller of the neighbours or their LUT
 			// values
@@ -2097,9 +2083,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			final HashSet<Integer> target = map.get(min);
 			for (final Integer val : set) {
 				target.add(val);
-				final int v = val.intValue();
-				if (lut[v] > min)
-					lut[v] = min;
+				if (lut[val] > min)
+					lut[val] = min;
 			}
 			set.clear();
 			updateLUT(i, min, lut, lutList);
@@ -2135,7 +2120,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				if (lutValue == i)
 					continue;
 				// otherwise check to see if the non-lut set contains our dup
-				if (set.contains(Integer.valueOf(d))) {
+				if (set.contains(d)) {
 					// we found a dup, merge whole set back to lut
 					changed = true;
 					final Iterator<Integer> iter = set.iterator();
@@ -2146,7 +2131,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					while (iter.hasNext()) {
 						final Integer val = iter.next();
 						target.add(val);
-						lut[val.intValue()] = lutValue;
+						lut[val] = lutValue;
 					}
 					// empty the set
 					set.clear();
@@ -2185,7 +2170,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				// IJ.log("merging with empty target " + lutValue);
 				for (final Integer n : set) {
 					target.add(n);
-					lut[n.intValue()] = lutValue;
+					lut[n] = lutValue;
 				}
 				// set is made empty
 				// if later tests come across empty sets, then
@@ -2232,9 +2217,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// reset to 0 the counter array
 		final int l = counter.length;
 		counter = new int[l];
-		HashSet<Integer> set = null;
 		for (int i = 1; i < map.size(); i++) {
-			set = map.get(i);
+			final HashSet<Integer> set = map.get(i);
 			for (final Integer val : set) {
 				final int v = val;
 				// every time a value is seen, log it
@@ -2681,7 +2665,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			throw new IllegalArgumentException();
 		}
 		labelMethod = label;
-		return;
 	}
 
 	@Override
