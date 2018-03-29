@@ -173,8 +173,4 @@
         <license.licenseName>BSD-2-Clause</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
     </properties>
-
-    <build>
-        <finalName>BoneJ2Util</finalName>
-    </build>
 </project>

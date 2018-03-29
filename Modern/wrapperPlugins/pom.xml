@@ -268,8 +268,4 @@
             </build>
         </profile>
     </profiles>
-
-    <build>
-        <finalName>BoneJ2DPL</finalName>
-    </build>
 </project>
