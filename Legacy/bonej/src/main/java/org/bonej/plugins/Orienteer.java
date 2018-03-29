@@ -58,7 +58,7 @@ import ij.plugin.frame.PlugInFrame;
 public class Orienteer extends PlugInFrame
 		implements AdjustmentListener, ItemListener, TextListener, MouseWheelListener {
 
-	public static final String LOC_KEY = "aa.loc";
+	private static final String LOC_KEY = "aa.loc";
 	private static final String[][] axisLabels = { { "medial", "lateral", "M", "L" },
 			{ "cranial", "caudal", "Cr", "Ca" }, { "rostral", "caudal", "Ro", "Ca" }, { "dorsal", "ventral", "D", "V" },
 			{ "anterior", "posterior", "A", "P" }, { "superior", "inferior", "Sup", "Inf" },
@@ -102,11 +102,8 @@ public class Orienteer extends PlugInFrame
 	private GeneralPath path;
 	private BasicStroke stroke;
 
-	GridBagLayout gridbag;
 	GridBagConstraints c;
 	private Scrollbar slider;
-	private Panel panel0;
-	private Panel panel1;
 	private Choice axis0Choice;
 	private Choice axis1Choice;
 	private Checkbox reflect0;
@@ -114,7 +111,6 @@ public class Orienteer extends PlugInFrame
 	private boolean isReflected0 = false;
 	private boolean isReflected1 = false;
 	private TextField text;
-	private Panel degRadPanel;
 	private Checkbox deg;
 	private Checkbox rad;
 
@@ -134,7 +130,7 @@ public class Orienteer extends PlugInFrame
 		IJ.register(Orienteer.class);
 		WindowManager.addWindow(this);
 
-		gridbag = new GridBagLayout();
+		final GridBagLayout gridbag = new GridBagLayout();
 		c = new GridBagConstraints();
 		setLayout(gridbag);
 
@@ -150,7 +146,7 @@ public class Orienteer extends PlugInFrame
 		slider.setPreferredSize(new Dimension(360, 16));
 		slider.addMouseWheelListener(this);
 
-		degRadPanel = new Panel();
+		final Panel degRadPanel = new Panel();
 		final Label degRadLabel = new Label("Orientation");
 		degRadPanel.add(degRadLabel);
 		text = new TextField(IJ.d2s(theta * 180 / Math.PI, 3), 7);
@@ -165,7 +161,7 @@ public class Orienteer extends PlugInFrame
 		deg.addItemListener(this);
 		rad.addItemListener(this);
 
-		panel0 = new Panel();
+		final Panel panel0 = new Panel();
 
 		final Label label0 = new Label("Principal direction");
 		panel0.add(label0);
@@ -182,7 +178,7 @@ public class Orienteer extends PlugInFrame
 		reflect0.addItemListener(this);
 		panel0.add(reflect0);
 
-		panel1 = new Panel();
+		final Panel panel1 = new Panel();
 		final Label label1 = new Label("Secondary direction");
 		panel1.add(label1);
 
@@ -364,7 +360,7 @@ public class Orienteer extends PlugInFrame
 		return thetaHash.containsKey(i);
 	}
 
-	public static Orienteer getInstance() {
+	static Orienteer getInstance() {
 		return instance;
 	}
 
@@ -378,7 +374,7 @@ public class Orienteer extends PlugInFrame
 	 *         secondary head in the 2nd position and the secondary tail in the
 	 *         3rd position.
 	 */
-	public String[] getDirections(final ImagePlus imp) {
+	String[] getDirections(final ImagePlus imp) {
 		if (!checkHash(imp))
 			return null;
 		final Integer id = imp.getID();
@@ -409,7 +405,7 @@ public class Orienteer extends PlugInFrame
 	 * @return orientation of the principal direction in radians clockwise from
 	 *         12 o'clock
 	 */
-	public double getOrientation() {
+	double getOrientation() {
 		return this.theta;
 	}
 
@@ -419,13 +415,13 @@ public class Orienteer extends PlugInFrame
 	 * @param imp an image.
 	 * @return Orientation in radians clockwise from 12 o'clock
 	 */
-	public double getOrientation(final ImagePlus imp)
+	private double getOrientation(final ImagePlus imp)
 	{
 		final Integer id = imp.getID();
 		return thetaHash.get(id);
 	}
 
-	public double getOrientation(final ImagePlus imp, final String direction) {
+	double getOrientation(final ImagePlus imp, final String direction) {
 		double orientation = getOrientation(imp);
 		final String[] dir = getDirections(imp);
 
@@ -466,7 +462,7 @@ public class Orienteer extends PlugInFrame
 	 * @return caliper diameters across the principal and secondary axes (zeroth
 	 *         and first elements respectively)
 	 */
-	public double[] getDiameters(final double[][] points) {
+	double[] getDiameters(final double[][] points) {
 		double xMin = Double.POSITIVE_INFINITY;
 		double xMax = Double.NEGATIVE_INFINITY;
 		double yMin = Double.POSITIVE_INFINITY;
@@ -491,7 +487,7 @@ public class Orienteer extends PlugInFrame
 	 * @param deltaTheta number of radians to rotate by (+ve is clockwise, -ve is
 	 *          anti-clockwise)
 	 */
-	public void rotate(final double deltaTheta) {
+	private void rotate(final double deltaTheta) {
 		if (WindowManager.getImageCount() == 0)
 			return;
 		final ImagePlus imp = WindowManager.getCurrentImage();
@@ -550,7 +546,7 @@ public class Orienteer extends PlugInFrame
 			text.setText(IJ.d2s(this.theta, 5));
 	}
 
-	void addPath(final Shape shape, final Color color, final BasicStroke stroke) {
+	private void addPath(final Shape shape, final Color color, final BasicStroke stroke) {
 		final Roi roi = new ShapeRoi(shape);
 		roi.setStrokeColor(color);
 		roi.setStroke(stroke);
@@ -558,7 +554,7 @@ public class Orienteer extends PlugInFrame
 		overlay.add(roi);
 	}
 
-	void addString(final String text, final int x, final int y, final Color color, final Font font) {
+	private void addString(final String text, final int x, final int y, final Color color, final Font font) {
 		final TextRoi roi = new TextRoi(x, y, text, font);
 		roi.setLocation(x - text.length() * (int) (fontSize / scale) / 4, y - (int) (fontSize / scale) / 2);
 		roi.setStrokeColor(color);

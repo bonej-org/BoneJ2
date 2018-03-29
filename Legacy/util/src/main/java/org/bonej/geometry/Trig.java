@@ -41,7 +41,7 @@ public class Trig {
 	 *            another 3 element array
 	 * @return distance between <i>p</i> and <i>q</i>
 	 */
-	public static double distance3D(final double[] p, final double[] q) {
+	static double distance3D(final double[] p, final double[] q) {
 		return distance3D(p[0], p[1], p[2], q[0], q[1], q[2]);
 	}
 
@@ -77,7 +77,7 @@ public class Trig {
 		return Math.sqrt(x * x + y * y + z * z);
 	}
 
-	public static double distance3D(final double[] v) {
+	static double distance3D(final double[] v) {
 		return distance3D(v[0], v[1], v[2]);
 	}
 

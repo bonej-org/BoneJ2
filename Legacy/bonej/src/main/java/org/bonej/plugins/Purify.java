@@ -123,7 +123,7 @@ public class Purify implements PlugIn, DialogListener {
 	 * @param labelMethod number of labelling method
 	 * @return purified image
 	 */
-	public ImagePlus purify(final ImagePlus imp, final int slicesPerChunk, final int labelMethod) {
+	ImagePlus purify(final ImagePlus imp, final int slicesPerChunk, final int labelMethod) {
 
 		final ParticleCounter pc = new ParticleCounter();
 		pc.setLabelMethod(labelMethod);

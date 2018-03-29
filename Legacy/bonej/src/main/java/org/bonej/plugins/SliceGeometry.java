@@ -72,20 +72,10 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private Calibration cal;
 	private int al, startSlice, endSlice;
 	private double vW, vH;// , min, max;
-	/** Linear unit of measure */
-	private String units;
-	/** Do local thickness measurement in 3D */
-	private boolean doThickness3D;
-	/** Do local thickness measurement in 2D */
-	private boolean doThickness2D;
 	/** Show slice centroid */
 	private boolean doCentroids;
 	/** Show principal axes */
 	private boolean doAxes;
-	/** if true, show annotation in a new window */
-	private boolean doCopy;
-	/** If true, process the whole stack */
-	private boolean doStack;
 	/** Number of thresholded pixels in each slice */
 	private double[] cslice;
 	/** Cross-sectional area */
@@ -136,7 +126,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private boolean[] emptySlices;
 	/** List of slice centroids */
 	private double[][] sliceCentroids;
-	private double[] integratedDensity;
 	private double[] meanDensity;
 	private double m;
 	private double c;
@@ -146,7 +135,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private double[] perimeter;
 	/** List of polar section moduli */
 	private double[] Zpol;
-	private boolean do3DAnnotation;
 	private Orienteer orienteer;
 	/** Flag to use anatomic orientation */
 	private boolean doOriented;
@@ -168,8 +156,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	// private double[] Zp;
 	private double[] principalDiameter;
 	private double[] secondaryDiameter;
-	/** Flag to clear the results table or concatenate */
-	private boolean clearResults;
 	/** Use the masked version of thickness, which trims the 1px overhang */
 	private boolean doMask;
 
@@ -185,7 +171,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		this.cal = imp.getCalibration();
 		this.vW = cal.pixelWidth;
 		this.vH = cal.pixelHeight;
-		this.units = cal.getUnits();
+		/* Linear unit of measure */
+		final String units = cal.getUnits();
 		this.al = imp.getStackSize() + 1;
 
 		String pixUnits;
@@ -217,8 +204,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		gd.addCheckbox("Process_Stack", false);
 		gd.addCheckbox("Clear_results", false);
 		gd.addCheckbox("Use_Orientation", (orienteer != null));
-		// String[] analyses = { "Weighted", "Unweighted", "Both" };
-		// gd.addChoice("Calculate: ", analyses, analyses[1]);
 		gd.addCheckbox("HU_Calibrated", ImageCheck.huCalibrated(imp));
 		gd.addNumericField("Bone_Min:", min, 1, 6, pixUnits + " ");
 		gd.addNumericField("Bone_Max:", max, 1, 6, pixUnits + " ");
@@ -231,17 +216,20 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		gd.showDialog();
 		final String bone = gd.getNextChoice();
 		boneID = BoneList.guessBone(bone);
-		this.doThickness2D = gd.getNextBoolean();
-		this.doThickness3D = gd.getNextBoolean();
+		final boolean doThickness2D = gd.getNextBoolean();
+		final boolean doThickness3D = gd.getNextBoolean();
 		this.doMask = gd.getNextBoolean();
 		this.doAxes = gd.getNextBoolean();
 		this.doCentroids = gd.getNextBoolean();
-		this.doCopy = gd.getNextBoolean();
-		this.do3DAnnotation = gd.getNextBoolean();
-		this.doStack = gd.getNextBoolean();
-		this.clearResults = gd.getNextBoolean();
+		// if true, show annotation in a new window
+		final boolean doCopy = gd.getNextBoolean();
+		final boolean do3DAnnotation = gd.getNextBoolean();
+		// If true, process the whole stack
+		final boolean doStack = gd.getNextBoolean();
+		/* Flag to clear the results table or concatenate */
+		final boolean clearResults = gd.getNextBoolean();
 		this.doOriented = gd.getNextBoolean();
-		if (this.doStack) {
+		if (doStack) {
 			this.startSlice = 1;
 			this.endSlice = imp.getImageStackSize();
 		} else {
@@ -272,9 +260,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 
 		calculateMoments(imp, min, max);
-		if (this.doThickness3D)
+		if (doThickness3D)
 			calculateThickness3D(imp, min, max);
-		if (this.doThickness2D)
+		if (doThickness2D)
 			calculateThickness2D(imp, min, max);
 
 		roiMeasurements(imp, min, max);
@@ -310,12 +298,12 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			rt.addValue("Feret Max (" + units + ")", this.feretMax[s]);
 			rt.addValue("Feret Angle (rad)", this.feretAngle[s]);
 			rt.addValue("Perimeter (" + units + ")", this.perimeter[s]);
-			if (this.doThickness3D) {
+			if (doThickness3D) {
 				rt.addValue("Max Thick 3D (" + units + ")", this.maxCortThick3D[s]);
 				rt.addValue("Mean Thick 3D (" + units + ")", this.meanCortThick3D[s]);
 				rt.addValue("SD Thick 3D (" + units + ")", this.stdevCortThick3D[s]);
 			}
-			if (this.doThickness2D) {
+			if (doThickness2D) {
 				rt.addValue("Max Thick 2D (" + units + ")", this.maxCortThick2D[s]);
 				rt.addValue("Mean Thick 2D (" + units + ")", this.meanCortThick2D[s]);
 				rt.addValue("SD Thick 2D (" + units + ")", this.stdevCortThick2D[s]);
@@ -337,14 +325,14 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		rt.show("Results");
 
 		if (this.doAxes || this.doCentroids) {
-			if (!this.doCopy) {
+			if (!doCopy) {
 				final ImagePlus annImp = annotateImage(imp);
 				imp.setStack(null, annImp.getImageStack());
 			} else {
 				annotateImage(imp).show();
 			}
 		}
-		if (this.do3DAnnotation)
+		if (do3DAnnotation)
 			show3DAxes(imp);
 		UsageReporter.reportEvent(this).send();
 	}
@@ -534,7 +522,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		this.emptySlices = new boolean[this.al];
 		this.cslice = new double[this.al];
 		this.cortArea = new double[this.al];
-		this.integratedDensity = new double[this.al];
 		this.meanDensity = new double[this.al];
 		this.weightedCentroids = new double[2][this.al];
 		final double pixelArea = this.vW * this.vH;
@@ -569,7 +556,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			if (count > 0) {
 				this.sliceCentroids[0][s] = sumX * this.vW / count;
 				this.sliceCentroids[1][s] = sumY * this.vH / count;
-				this.integratedDensity[s] = sumD;
 				this.meanDensity[s] = sumD / count;
 				this.weightedCentroids[0][s] = wSumX * this.vW / sumD;
 				this.weightedCentroids[1][s] = wSumY * this.vH / sumD;
@@ -870,9 +856,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 
 		final ImagePlus impT;
 
-		public SliceThread(final int thread, final int nThreads, final ImagePlus imp, final double min,
-				final double max, final double[] meanThick, final double[] maxThick, final double[] stdevThick,
-				final int startSlice, final int endSlice, final boolean[] emptySlices) {
+		SliceThread(final int thread, final int nThreads, final ImagePlus imp, final double min,
+					final double max, final double[] meanThick, final double[] maxThick, final double[] stdevThick,
+					final int startSlice, final int endSlice, final boolean[] emptySlices) {
 			this.impT = imp;
 			this.min = min;
 			this.max = max;

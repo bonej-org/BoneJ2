@@ -105,13 +105,16 @@ import marchingcubes.MCTriangulator;
 public class ParticleCounter implements PlugIn, DialogListener {
 
 	/** Foreground value */
-	public final static int FORE = -1;
+	final static int FORE = -1;
 
 	/** Background value */
-	public final static int BACK = 0;
+	final static int BACK = 0;
 
+	// TODO Convert to enum
 	/** Particle joining method */
-	public final static int MULTI = 0, LINEAR = 1, MAPPED = 2;
+	final static int MULTI = 0;
+	final static int LINEAR = 1;
+	final static int MAPPED = 2;
 
 	/** Surface colour style */
 	private final static int GRADIENT = 0, SPLIT = 1;
@@ -1184,27 +1187,27 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return Object[] {byte[][], int[][]} containing a binary workArray and
 	 *         particle labels.
 	 */
-	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final double minVol,
-			final double maxVol, final int phase, final boolean doExclude) {
+	private Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final double minVol,
+								  final double maxVol, final int phase, final boolean doExclude) {
 		final byte[][] workArray = makeWorkArray(imp);
 		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, doExclude);
 	}
 
-	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk,
-								 final double maxVol, final int phase) {
+	Object[] getParticles(final ImagePlus imp, final int slicesPerChunk,
+						  final double maxVol, final int phase) {
 		final byte[][] workArray = makeWorkArray(imp);
 		return getParticles(imp, workArray, slicesPerChunk, 0.0, maxVol, phase, false);
 	}
 
-	public Object[] getParticles(final ImagePlus imp, final int phase) {
+	private Object[] getParticles(final ImagePlus imp, final int phase) {
 		final byte[][] workArray = makeWorkArray(imp);
 		final double minVol = 0;
 		final double maxVol = Double.POSITIVE_INFINITY;
 		return getParticles(imp, workArray, 4, minVol, maxVol, phase, false);
 	}
 
-	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-								 final double maxVol, final int phase) {
+	Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
+						  final double maxVol, final int phase) {
 		return getParticles(imp, workArray, slicesPerChunk, 0.0, maxVol, phase, false);
 	}
 
@@ -1222,8 +1225,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return Object[] array containing a binary workArray, particle labels and
 	 *         particle sizes
 	 */
-	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-			final double minVol, final double maxVol, final int phase, final boolean doExclude) {
+	private Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
+								  final double minVol, final double maxVol, final int phase, final boolean doExclude) {
 		if (phase == FORE) {
 			this.sPhase = "foreground";
 		} else if (phase == BACK) {
@@ -1434,7 +1437,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param slicesPerChunk number of slices per chunk
 	 * @return number of chunks
 	 */
-	public int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
+	int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
 		final int d = imp.getImageStackSize();
 		int nChunks = (int) Math.floor((double) d / (double) slicesPerChunk);
 
@@ -1740,9 +1743,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 		final int[][] chunkRanges;
 
-		public ConnectStructuresThread(final int thread, final int nThreads, final ImagePlus imp,
-				final byte[][] workArray, final int[][] particleLabels, final int phase, final int nChunks,
-				final int[][] chunkRanges) {
+		ConnectStructuresThread(final int thread, final int nThreads, final ImagePlus imp,
+								final byte[][] workArray, final int[][] particleLabels, final int phase, final int nChunks,
+								final int[][] chunkRanges) {
 			this.imp = imp;
 			this.thread = thread;
 			this.nThreads = nThreads;
@@ -1900,8 +1903,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param particleLists list of particle voxel coordinates
 	 * @param w stack width
 	 */
-	public void joinBlobs(final int b, final int p, final int[][] particleLabels,
-			final ArrayList<ArrayList<short[]>> particleLists, final int w) {
+	private void joinBlobs(final int b, final int p, final int[][] particleLabels,
+						   final ArrayList<ArrayList<short[]>> particleLists, final int w) {
 		final ListIterator<short[]> iterB = particleLists.get(p).listIterator();
 		while (iterB.hasNext()) {
 			final short[] voxelB = iterB.next();
@@ -2397,7 +2400,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *         for; int[1][] end of outer for; int[3][] start of inner for; int[4]
 	 *         end of inner 4. Second dimension is chunk number.
 	 */
-	public int[][] getChunkRanges(final ImagePlus imp, final int nC, final int slicesPerChunk) {
+	int[][] getChunkRanges(final ImagePlus imp, final int nC, final int slicesPerChunk) {
 		final int nSlices = imp.getImageStackSize();
 		final int[][] scanRanges = new int[4][nC];
 		scanRanges[0][0] = 0; // the first chunk starts at the first (zeroth)
@@ -2522,7 +2525,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param startZ first z coordinate to check
 	 * @param endZ last+1 z coordinate to check
 	 */
-	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int startZ, final int endZ) {
+	private void replaceLabel(final int[][] particleLabels, final int m, final int n, final int startZ, final int endZ) {
 		final int s = particleLabels[0].length;
 		for (int z = startZ; z < endZ; z++) {
 			for (int i = 0; i < s; i++)
@@ -2540,7 +2543,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param n new value
 	 * @param endZ last+1 z coordinate to check
 	 */
-	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int endZ) {
+	void replaceLabel(final int[][] particleLabels, final int m, final int n, final int endZ) {
 		final int s = particleLabels[0].length;
 		final AtomicInteger ai = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
@@ -2566,7 +2569,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param particleLabels particles in the image.
 	 * @return particleSizes sizes of the particles.
 	 */
-	public long[] getParticleSizes(final int[][] particleLabels) {
+	long[] getParticleSizes(final int[][] particleLabels) {
 		IJ.showStatus("Getting " + sPhase + " particle sizes");
 		final int d = particleLabels.length;
 		final int wh = particleLabels[0].length;
@@ -2627,7 +2630,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *
 	 * @param label one of ParticleCounter.MULTI or .LINEAR
 	 */
-	public void setLabelMethod(final int label) {
+	void setLabelMethod(final int label) {
 		if (label != MULTI && label != LINEAR && label != MAPPED) {
 			throw new IllegalArgumentException();
 		}

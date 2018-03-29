@@ -144,8 +144,8 @@ public class SphereFitter implements PlugIn, DialogListener {
 		UsageReporter.reportEvent(this).send();
 	}
 
-	public ImagePlus copySphere(final ImagePlus imp, final int padding, final double cropFactor,
-			final double[] sphereDim) {
+	private ImagePlus copySphere(final ImagePlus imp, final int padding, final double cropFactor,
+								 final double[] sphereDim) {
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
 		final double vH = cal.pixelHeight;
@@ -208,7 +208,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return target;
 	}
 
-	public ImagePlus copyInnerCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
+	private ImagePlus copyInnerCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
 		final double vH = cal.pixelHeight;
@@ -263,7 +263,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return target;
 	}
 
-	public ImagePlus copyOuterCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
+	private ImagePlus copyOuterCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
 		final double vH = cal.pixelHeight;
@@ -329,8 +329,8 @@ public class SphereFitter implements PlugIn, DialogListener {
 	 * @throws IllegalArgumentException if roiMan is null, rather than
 	 *           instantiating RoiManager.
 	 */
-	public static void addToRoiManager(final ImagePlus imp, final RoiManager roiMan, final double[] sphereDim,
-			final boolean clearRois) throws IllegalArgumentException {
+	private static void addToRoiManager(final ImagePlus imp, final RoiManager roiMan, final double[] sphereDim,
+										final boolean clearRois) throws IllegalArgumentException {
 		if (roiMan == null)
 			throw new IllegalArgumentException("ROI Manager has not been instantiated");
 		if (clearRois) {

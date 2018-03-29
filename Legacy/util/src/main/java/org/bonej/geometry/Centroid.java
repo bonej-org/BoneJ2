@@ -30,7 +30,7 @@ public class Centroid {
 	 * @param points a set of points in N-dimensions.
 	 * @return array containing centroid in i dimensions
 	 */
-	public static double[] getCentroid(final double[][] points) {
+	static double[] getCentroid(final double[][] points) {
 		final int nDimensions = points[0].length;
 
 		switch (nDimensions) {

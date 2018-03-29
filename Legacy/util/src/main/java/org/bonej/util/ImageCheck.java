@@ -37,13 +37,13 @@ public class ImageCheck {
 	/**
 	 * Minimal ImageJ version required by BoneJ
 	 */
-	public static final String requiredIJVersion = "1.49u";
+	private static final String requiredIJVersion = "1.49u";
 
 	/**
 	 * ImageJ releases known to produce errors or bugs with BoneJ. Daily builds
 	 * are not included.
 	 */
-	public static final String[] blacklistedIJVersions = {
+	private static final String[] blacklistedIJVersions = {
 			// introduced bug where ROIs added to the ROI Manager
 			// lost their z-position information
 			"1.48a" };
@@ -211,7 +211,7 @@ public class ImageCheck {
 	 *
 	 * @return false if the IJ version is too old or blacklisted
 	 */
-	public static boolean checkIJVersion() {
+	private static boolean checkIJVersion() {
 		if (isIJVersionBlacklisted()) {
 			IJ.error("Bad ImageJ version",
 					"The version of ImageJ you are using (v" + IJ.getVersion()
@@ -264,7 +264,7 @@ public class ImageCheck {
 	 *
 	 * @return true if the IJ version is blacklisted, false otherwise
 	 */
-	public static boolean isIJVersionBlacklisted() {
+	private static boolean isIJVersionBlacklisted() {
 		for (final String version : blacklistedIJVersions) {
 			if (version.equals(IJ.getVersion()))
 				return true;

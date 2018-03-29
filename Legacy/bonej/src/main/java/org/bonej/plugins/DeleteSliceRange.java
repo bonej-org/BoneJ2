@@ -82,7 +82,7 @@ public class DeleteSliceRange implements PlugIn {
 	 * @param first the first slice to remove
 	 * @param last the last slice to remove
 	 */
-	public void deleteSliceRange(final ImageStack stack, final int first, final int last) {
+	private void deleteSliceRange(final ImageStack stack, final int first, final int last) {
 		for (int s = first; s <= last; s++) {
 			stack.deleteSlice(first);
 		}
@@ -95,7 +95,7 @@ public class DeleteSliceRange implements PlugIn {
 	 * @param first the first slice to remove
 	 * @param last the last slice to remove
 	 */
-	public void deleteSliceRange(final VirtualStack stack, final int first, final int last) {
+	private void deleteSliceRange(final VirtualStack stack, final int first, final int last) {
 		for (int s = first; s <= last; s++) {
 			stack.deleteSlice(first);
 		}

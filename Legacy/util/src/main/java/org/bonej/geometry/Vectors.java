@@ -76,7 +76,7 @@ public class Vectors {
 	 * @param b second vector
 	 * @return resulting vector in double[3][1] format
 	 */
-	public static double[][] crossProduct(final double[][] a, final double[][] b) {
+	static double[][] crossProduct(final double[][] a, final double[][] b) {
 		final double[][] c = new double[3][1];
 		c[0][0] = a[1][0] * b[2][0] - a[2][0] * b[1][0];
 		c[1][0] = a[2][0] * b[0][0] - a[0][0] * b[2][0];

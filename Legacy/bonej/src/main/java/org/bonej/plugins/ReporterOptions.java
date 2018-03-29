@@ -29,14 +29,14 @@ import ij.plugin.PlugIn;
 
 public class ReporterOptions implements PlugIn {
 
-	public static final String OPTOUTSET = "bonej.report.option.set";
+	static final String OPTOUTSET = "bonej.report.option.set";
 	/** Set to false if reporting is not allowed */
-	public static final String OPTOUTKEY = "bonej.allow.reporter";
-	public static final String COOKIE = "bonej.report.cookie";
-	public static final String COOKIE2 = "bonej.report.cookie2";
-	public static final String FIRSTTIMEKEY = "bonej.report.firstvisit";
-	public static final String SESSIONKEY = "bonej.report.bonejsession";
-	public static final String IJSESSIONKEY = "bonej.report.ijsession";
+	static final String OPTOUTKEY = "bonej.allow.reporter";
+	static final String COOKIE = "bonej.report.cookie";
+	static final String COOKIE2 = "bonej.report.cookie2";
+	static final String FIRSTTIMEKEY = "bonej.report.firstvisit";
+	static final String SESSIONKEY = "bonej.report.bonejsession";
+	private static final String IJSESSIONKEY = "bonej.report.ijsession";
 
 	@Override
 	public void run(final String arg) {

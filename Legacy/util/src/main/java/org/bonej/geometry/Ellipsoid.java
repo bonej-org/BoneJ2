@@ -270,7 +270,7 @@ public class Ellipsoid {
 	 *
 	 * @param increment scaling factor.
 	 */
-	public void dilate(final double increment) {
+	void dilate(final double increment) {
 		dilate(this.ra * increment, this.rb * increment, this.rc * increment);
 	}
 
@@ -346,8 +346,9 @@ public class Ellipsoid {
 	 * @param c 3rd radius of the ellipsoid.
 	 * @throws IllegalArgumentException if radii are non-positive.
 	 */
-	public void setRadii(final double a, final double b, final double c) throws IllegalArgumentException {
+	private void setRadii(final double a, final double b, final double c) throws IllegalArgumentException {
 		if (a <= 0 || b <= 0 || c <= 0) {
+			// TODO throw from dilate()
 			throw new IllegalArgumentException("Ellipsoid cannot have semiaxis <= 0");
 		}
 		this.ra = a;
@@ -379,7 +380,7 @@ public class Ellipsoid {
 	 *
 	 * @return array containing minimal and maximal x values
 	 */
-	public double[] getXMinAndMax() {
+	private double[] getXMinAndMax() {
 		final double m11 = ev[0][0] * ra;
 		final double m12 = ev[0][1] * rb;
 		final double m13 = ev[0][2] * rc;
@@ -504,8 +505,8 @@ public class Ellipsoid {
 	 *         (double[3][3]), eigenvectors (double[3][3]), and the
 	 *         EigenvalueDecomposition
 	 */
-	public static Object[] matrixFromEquation(final double a, final double b, final double c, final double d,
-			final double e, final double f, final double g, final double h, final double i) {
+	static Object[] matrixFromEquation(final double a, final double b, final double c, final double d,
+									   final double e, final double f, final double g, final double h, final double i) {
 
 		// the fitted equation
 		final double[][] v = { { a }, { b }, { c }, { d }, { e }, { f }, { g }, { h }, { i } };

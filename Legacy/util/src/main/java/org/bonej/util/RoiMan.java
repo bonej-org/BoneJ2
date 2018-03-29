@@ -37,7 +37,7 @@ import ij.process.ImageProcessor;
  * @author Michael Doube
  */
 public class RoiMan {
-	public static final int NO_SLICE_NUMBER = -1;
+	private static final int NO_SLICE_NUMBER = -1;
 
 	/**
 	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
@@ -88,7 +88,7 @@ public class RoiMan {
 	 *         roiMan == null or stack == null Returns an empty list if slice
 	 *         number is out of bounds
 	 */
-	public static ArrayList<Roi> getSliceRoi(final RoiManager roiMan, final ImageStack stack, final int sliceNumber) {
+	static ArrayList<Roi> getSliceRoi(final RoiManager roiMan, final ImageStack stack, final int sliceNumber) {
 		final ArrayList<Roi> roiList = new ArrayList<>();
 
 		if (roiMan == null || stack == null) {
@@ -124,7 +124,7 @@ public class RoiMan {
 	 *         null if stack == null If any of the ROIs contains no slice
 	 *         information, z min is set to 1 and z max is set to stack.getSize()
 	 */
-	public static int[] getLimits(final RoiManager roiMan, final ImageStack stack) {
+	static int[] getLimits(final RoiManager roiMan, final ImageStack stack) {
 		if (roiMan == null || roiMan.getCount() == 0) {
 			return null;
 		}
@@ -190,7 +190,7 @@ public class RoiMan {
 	 * @return false if the height or width of the fitted rectangle is 0 (Couldn't
 	 *         be cropped inside the area).
 	 */
-	public static boolean getSafeRoiBounds(final Rectangle bounds, final int width, final int height) {
+	private static boolean getSafeRoiBounds(final Rectangle bounds, final int width, final int height) {
 		final int xMin = clampToNonNegative(bounds.x, width);
 		final int xMax = clampToNonNegative(bounds.x + bounds.width, width);
 		final int yMin = clampToNonNegative(bounds.y, height);
@@ -299,8 +299,8 @@ public class RoiMan {
 	 * @param maxY Vertical end of the copy area 0 &le; maxY &le; height
 	 * @param padding Number pixels added to each side of the copy target
 	 */
-	public static void copyRoiWithMask(final ImageProcessor sourceProcessor, final ImageProcessor targetProcessor,
-			final int minX, final int minY, final int maxX, final int maxY, final int padding) {
+	static void copyRoiWithMask(final ImageProcessor sourceProcessor, final ImageProcessor targetProcessor,
+								final int minX, final int minY, final int maxX, final int maxY, final int padding) {
 		final ImageProcessor mask = sourceProcessor.getMask();
 		if (mask == null) {
 			copyRoi(sourceProcessor, targetProcessor, minX, minY, maxX, maxY, padding);

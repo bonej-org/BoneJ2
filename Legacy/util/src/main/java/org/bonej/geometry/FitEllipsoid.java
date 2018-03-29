@@ -45,7 +45,7 @@ public class FitEllipsoid {
 	 *            in double[n][3] format
 	 * @return Object representing the best-fit ellipsoid
 	 */
-	public static Ellipsoid fitTo(final double[][] coordinates) {
+	static Ellipsoid fitTo(final double[][] coordinates) {
 		return new Ellipsoid(yuryPetrov(coordinates));
 	}
 

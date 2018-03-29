@@ -221,7 +221,7 @@ public class Moments implements PlugIn, DialogListener {
 	 *         bitDepth
 	 */
 	// TODO throw exception when unexpected bit depth
-	public static Object getEmptyPixels(final int w, final int h, final int bitDepth) {
+	static Object getEmptyPixels(final int w, final int h, final int bitDepth) {
 
 		Object emptyPixels = new Object();
 		if (bitDepth == 8) {
@@ -247,8 +247,8 @@ public class Moments implements PlugIn, DialogListener {
 	 * @param c constant in density equation
 	 * @return double[] containing (x,y,z) centroid in scaled units
 	 */
-	public double[] getCentroid3D(final ImagePlus imp, final int startSlice, final int endSlice, final double min,
-			final double max, final double m, final double c) {
+	private double[] getCentroid3D(final ImagePlus imp, final int startSlice, final int endSlice, final double min,
+								   final double max, final double m, final double c) {
 		final ImageStack stack = imp.getImageStack();
 		final Rectangle r = imp.getProcessor().getRoi();
 		final int rW = r.x + r.width;
