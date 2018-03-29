@@ -132,7 +132,6 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 				@Override
 				public void run() {
 					for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-						// byte[] slice = new byte[nPixels];
 						final ImageProcessor ip = stack.getProcessor(z);
 						final ByteProcessor bp = new ByteProcessor(w, h);
 						for (int y = 0; y < h; y++) {
@@ -404,16 +403,16 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 			doPlot = false;
 			// grey out fields
 			final Vector<?> numbers = gd.getNumericFields();
-			for (int i = 0; i < numbers.size(); i++) {
-				final TextField n = (TextField) numbers.get(i);
+			for (Object number : numbers) {
+				final TextField n = (TextField) number;
 				n.setEnabled(false);
 			}
 		}
 		if (!thresholdOnly) {
 			// un-grey out fields
 			final Vector<?> numbers = gd.getNumericFields();
-			for (int i = 0; i < numbers.size(); i++) {
-				final TextField n = (TextField) numbers.get(i);
+			for (Object number : numbers) {
+				final TextField n = (TextField) number;
 				n.setEnabled(true);
 			}
 			// enable show plot

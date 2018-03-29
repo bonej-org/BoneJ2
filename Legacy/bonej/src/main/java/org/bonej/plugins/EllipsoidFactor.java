@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -263,13 +264,13 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 						IJ.showStatus("Calculating filling effiency...");
 						IJ.showProgress(i, l);
 						final int[] idSlice = maxIDs[i];
-						final int len = idSlice.length;
-						for (int j = 0; j < len; j++) {
-							final int val = idSlice[j];
-							if (val >= -1)
+						for (final int val : idSlice) {
+							if (val >= -1) {
 								foregroundCount[i]++;
-							if (val >= 0)
+							}
+							if (val >= 0) {
 								filledCount[i]++;
+							}
 						}
 					}
 				}
@@ -689,14 +690,12 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 							ellipsoidSubSet[i] = nearEllipsoids.get(i);
 						}
 
-						final int q = ellipsoidSubSet.length;
 						for (int y = 0; y < h; y++) {
 							final double yvH = y * vH;
 							// find the subset of ellipsoids whose bounding box
 							// intersects with y
 							final ArrayList<Ellipsoid> yEllipsoids = new ArrayList<>();
-							for (int i = 0; i < q; i++) {
-								final Ellipsoid e = ellipsoidSubSet[i];
+							for (final Ellipsoid e : ellipsoidSubSet) {
 								final double[] yMinMax = e.getYMinAndMax();
 								if (yvH >= yMinMax[0] && yvH <= yMinMax[1]) {
 									yEllipsoids.add(e);
@@ -743,10 +742,10 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 *         if none of the ellipsoids contain the point
 	 */
 	private int biggestEllipsoid(final Ellipsoid[] ellipsoids, final double x, final double y, final double z) {
-		final int l = ellipsoids.length;
-		for (int i = 0; i < l; i++) {
-			if (ellipsoids[i].contains(x, y, z))
-				return ellipsoids[i].id;
+		for (final Ellipsoid ellipsoid : ellipsoids) {
+			if (ellipsoid.contains(x, y, z)) {
+				return ellipsoid.id;
+			}
 		}
 		return -1;
 	}
@@ -793,24 +792,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	}
 
 	private static Ellipsoid[] removeNulls(Ellipsoid[] ellipsoids) {
-        final int l = ellipsoids.length;
-        int nullCount = 0;
-        for (int i = 0; i < l; i++)
-            if (ellipsoids[i] == null)
-                nullCount++;
-        if (nullCount == 0)
-            return ellipsoids;
-        final int nonNulls = l - nullCount;
-        Ellipsoid[] array = new Ellipsoid[nonNulls];
-
-        int j = 0;
-        for (int i = 0; i < l; i++) {
-            if (ellipsoids[i] != null) {
-                array[j] = ellipsoids[i];
-                j++;
-            }
-        }
-        return array;
+        return Arrays.stream(ellipsoids).filter(Objects::nonNull).toArray(Ellipsoid[]::new);
 	}
 
 	/**
@@ -1094,13 +1076,14 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final double[][] pointCloud = ellipsoid.getSurfacePoints(100);
 
 		final List<Point3f> pointList = new ArrayList<>();
-		for (int p = 0; p < pointCloud.length; p++) {
-			if (pointCloud[p] == null)
+		for (final double[] aPointCloud : pointCloud) {
+			if (aPointCloud == null) {
 				continue;
+			}
 			final Point3f e = new Point3f();
-			e.x = (float) pointCloud[p][0];
-			e.y = (float) pointCloud[p][1];
-			e.z = (float) pointCloud[p][2];
+			e.x = (float) aPointCloud[0];
+			e.y = (float) aPointCloud[1];
+			e.z = (float) aPointCloud[2];
 			pointList.add(e);
 		}
 		final CustomPointMesh mesh = new CustomPointMesh(pointList);
@@ -1223,8 +1206,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		double xSum = 0;
 		double ySum = 0;
 		double zSum = 0;
-		for (int i = 0; i < nPoints; i++) {
-			final double[] p = contactPoints.get(i);
+		for (final double[] p : contactPoints) {
 			final double x = p[0] - cx;
 			final double y = p[1] - cy;
 			final double z = p[2] - cz;
@@ -1273,11 +1255,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		double t1 = 0;
 		double t2 = 0;
 
-		final int n = contactPoints.size();
-
-		for (int i = 0; i < n; i++) {
-			final double[] p = contactPoints.get(i);
-
+		for (final double[] p : contactPoints) {
 			// translate point to centre on origin
 			final double px = p[0] - cx;
 			final double py = p[1] - cy;
@@ -1476,16 +1454,16 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 			final int w, final int h, final int d) {
 		contactPoints.clear();
 		final double[][] points = ellipsoid.getSurfacePoints(unitVectors);
-		final int nPoints = points.length;
-		for (int i = 0; i < nPoints; i++) {
-			final double[] p = points[i];
+		for (final double[] p : points) {
 			final int x = (int) Math.floor(p[0] / pW);
 			final int y = (int) Math.floor(p[1] / pH);
 			final int z = (int) Math.floor(p[2] / pD);
-			if (isOutOfBounds(x, y, z, w, h, d))
+			if (isOutOfBounds(x, y, z, w, h, d)) {
 				continue;
-			if (pixels[z][y * w + x] != -1)
+			}
+			if (pixels[z][y * w + x] != -1) {
 				contactPoints.add(p);
+			}
 		}
 		return contactPoints;
 	}

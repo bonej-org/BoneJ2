@@ -60,8 +60,8 @@ public class FitSphere {
 		double g_old = 1.0;
 		double r = 0;
 
-		for (int i = 0; i < nPoints; i++) {
-			r += Trig.distance3D(points[i], centroid);
+		for (final double[] point : points) {
+			r += Trig.distance3D(point, centroid);
 		}
 		r /= nPoints;
 

@@ -447,11 +447,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 
 			final List<Point3f> points = new ArrayList<>();
-			for (int p = 0; p < nPoints; p++) {
+			for (final double[] anEllipsoid : ellipsoid) {
 				final Point3f e = new Point3f();
-				e.x = (float) ellipsoid[p][0];
-				e.y = (float) ellipsoid[p][1];
-				e.z = (float) ellipsoid[p][2];
+				e.x = (float) anEllipsoid[0];
+				e.y = (float) anEllipsoid[1];
+				e.z = (float) anEllipsoid[2];
 				points.add(e);
 			}
 			final CustomPointMesh mesh = new CustomPointMesh(points);
@@ -484,9 +484,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private Object[][] getEllipsoids(final ArrayList<List<Point3f>> surfacePoints) {
 		final Object[][] ellipsoids = new Object[surfacePoints.size()][];
 		int p = 0;
-		final Iterator<List<Point3f>> partIter = surfacePoints.iterator();
-		while (partIter.hasNext()) {
-			final List<Point3f> points = partIter.next();
+		for (final List<Point3f> points : surfacePoints) {
 			if (points == null) {
 				p++;
 				continue;
@@ -888,12 +886,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			final int colourMode, final double[] volumes, final double splitValue) {
 		int p = 0;
 		final int nParticles = surfacePoints.size();
-		final Iterator<List<Point3f>> iter = surfacePoints.iterator();
-		while (iter.hasNext()) {
+		for (final List<Point3f> surfacePoint : surfacePoints) {
 			IJ.showStatus("Rendering surfaces...");
 			IJ.showProgress(p, nParticles);
-			final List<Point3f> points = iter.next();
-			if (p > 0 && points.size() > 0) {
+			if (p > 0 && surfacePoint.size() > 0) {
 				Color3f pColour = new Color3f(0, 0, 0);
 				if (colourMode == GRADIENT) {
 					final float red = 1.0f - (float) p / (float) nParticles;
@@ -911,7 +907,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				}
 				// Add the mesh
 				try {
-					univ.addTriangleMesh(points, pColour, "Surface " + p).setLocked(true);
+					univ.addTriangleMesh(surfacePoint, pColour, "Surface " + p).setLocked(true);
 				} catch (final NullPointerException npe) {
 					IJ.log("3D Viewer was closed before rendering completed.");
 					return;
@@ -989,9 +985,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				final double xOffset = (limits[p][0] - 1) * cal.pixelWidth;
 				final double yOffset = (limits[p][2] - 1) * cal.pixelHeight;
 				final double zOffset = (limits[p][4] - 1) * cal.pixelDepth;
-				final Iterator<Point3f> iter = points.iterator();
-				while (iter.hasNext()) {
-					final Point3f point = iter.next();
+				for (final Point3f point : points) {
 					point.x += xOffset;
 					point.y += yOffset;
 					point.z += zOffset;
@@ -1120,8 +1114,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		final int nValues = values.length;
 		double max = 0;
-		for (int i = 0; i < nValues; i++) {
-			max = Math.max(max, values[i]);
+		for (final double value : values) {
+			max = Math.max(max, value);
 		}
 		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + "volume", stack);
 		impOut.setCalibration(imp.getCalibration());
@@ -1905,9 +1899,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 */
 	private void joinBlobs(final int b, final int p, final int[][] particleLabels,
 						   final ArrayList<ArrayList<short[]>> particleLists, final int w) {
-		final ListIterator<short[]> iterB = particleLists.get(p).listIterator();
-		while (iterB.hasNext()) {
-			final short[] voxelB = iterB.next();
+		for (final short[] voxelB : particleLists.get(p)) {
 			particleLists.get(b).add(voxelB);
 			final int iB = voxelB[1] * w + voxelB[0];
 			particleLabels[voxelB[2]][iB] = b;
@@ -2575,8 +2567,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int wh = particleLabels[0].length;
 		// find the highest value particleLabel
 		int maxParticle = 0;
-        for (int z = 0; z < d; z++) {
-			final int[] slice = particleLabels[z];
+		for (final int[] slice : particleLabels) {
 			for (int i = 0; i < wh; i++) {
 				maxParticle = Math.max(maxParticle, slice[i]);
 			}

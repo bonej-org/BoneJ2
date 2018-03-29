@@ -56,8 +56,8 @@ public class Centroid {
 		double sumX = 0;
 		final int nPoints = points.length;
 
-		for (int n = 0; n < nPoints; n++) {
-			sumX += points[n][0];
+		for (final double[] point : points) {
+			sumX += point[0];
 		}
 
 		centroid[0] = sumX / nPoints;
@@ -77,9 +77,9 @@ public class Centroid {
 		double sumY = 0;
 		final int nPoints = points.length;
 
-		for (int n = 0; n < nPoints; n++) {
-			sumX += points[n][0];
-			sumY += points[n][1];
+		for (final double[] point : points) {
+			sumX += point[0];
+			sumY += point[1];
 		}
 
 		centroid[0] = sumX / nPoints;
@@ -101,10 +101,10 @@ public class Centroid {
 		double sumZ = 0;
 		final int nPoints = points.length;
 
-		for (int n = 0; n < nPoints; n++) {
-			sumX += points[n][0];
-			sumY += points[n][1];
-			sumZ += points[n][2];
+		for (final double[] point : points) {
+			sumX += point[0];
+			sumY += point[1];
+			sumZ += point[2];
 		}
 
 		centroid[0] = sumX / nPoints;
@@ -126,11 +126,12 @@ public class Centroid {
 		final double[] centroid = new double[nDimensions];
 		final double[] sums = new double[nDimensions];
 
-		for (int n = 0; n < nPoints; n++) {
-			if (points[n].length != nDimensions)
+		for (final double[] point : points) {
+			if (point.length != nDimensions) {
 				throw new IllegalArgumentException("Number of dimensions must be equal");
+			}
 			for (int i = 0; i < nDimensions; i++) {
-				sums[i] += points[n][i];
+				sums[i] += point[i];
 			}
 		}
 

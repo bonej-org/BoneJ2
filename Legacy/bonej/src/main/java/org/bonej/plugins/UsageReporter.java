@@ -48,14 +48,14 @@ import ij.Prefs;
  * @author Michael Doube
  */
 public class UsageReporter {
-	public static final UsageReporter INSTANCE = new UsageReporter();
+	private static final UsageReporter INSTANCE = new UsageReporter();
 	/**
 	 * BoneJ version
 	 *
 	 * FIXME: it is fragile to have the version hard-coded here. Create a
 	 * BoneJApp instead.
 	 */
-	public static final String BONEJ_VERSION = "1.5.0";
+	private static final String BONEJ_VERSION = "1.5.0";
 
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
@@ -80,9 +80,6 @@ public class UsageReporter {
 	private static String utmsc;
 	private static int session;
 	private static String utmcc;
-	private static String cookie;
-	private static String cookie2;
-	private static String firstTime;
 	private static long lastTime = 0;
 	private static long thisTime = 0;
 
@@ -111,8 +108,8 @@ public class UsageReporter {
 		int height = 0;
 		if (!ge.isHeadlessInstance()) {
 			final GraphicsDevice[] screens = ge.getScreenDevices();
-			for (int i = 0; i < screens.length; i++) {
-				final GraphicsConfiguration[] gc = screens[i].getConfigurations();
+			for (final GraphicsDevice screen : screens) {
+				final GraphicsConfiguration[] gc = screen.getConfigurations();
 				for (final GraphicsConfiguration g : gc) {
 					width = Math.max(g.getBounds().x + g.getBounds().width, width);
 					height = Math.max(g.getBounds().y + g.getBounds().height, height);
@@ -187,9 +184,9 @@ public class UsageReporter {
 	private static String getCookieString() {
 		// seems to be a bug in Prefs.getInt, so are Strings wrapped in
 		// Integer.toString()
-		cookie = Prefs.get(ReporterOptions.COOKIE, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
-		cookie2 = Prefs.get(ReporterOptions.COOKIE2, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
-		firstTime = Prefs.get(ReporterOptions.FIRSTTIMEKEY, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
+		final String cookie = Prefs.get(ReporterOptions.COOKIE, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
+		final String cookie2 = Prefs.get(ReporterOptions.COOKIE2, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
+		final String firstTime = Prefs.get(ReporterOptions.FIRSTTIMEKEY, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." + lastTime + "." + thisTime
 				+ "." + bonejSession + "%3B%2B__utmz%3D" + cookie + "." + thisTime

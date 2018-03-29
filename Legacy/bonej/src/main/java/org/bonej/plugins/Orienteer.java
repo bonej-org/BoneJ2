@@ -167,8 +167,9 @@ public class Orienteer extends PlugInFrame
 		panel0.add(label0);
 
 		axis0Choice = new Choice();
-		for (int i = 0; i < axisLabels.length; i++)
-			axis0Choice.addItem(axisLabels[i][0] + " - " + axisLabels[i][1]);
+		for (final String[] axisLabel : axisLabels) {
+			axis0Choice.addItem(axisLabel[0] + " - " + axisLabel[1]);
+		}
 		axis0Choice.select(axis0);
 		axis0Choice.addItemListener(this);
 		panel0.add(axis0Choice);
@@ -183,8 +184,9 @@ public class Orienteer extends PlugInFrame
 		panel1.add(label1);
 
 		axis1Choice = new Choice();
-		for (int i = 0; i < axisLabels.length; i++)
-			axis1Choice.addItem(axisLabels[i][0] + " - " + axisLabels[i][1]);
+		for (final String[] axisLabel : axisLabels) {
+			axis1Choice.addItem(axisLabel[0] + " - " + axisLabel[1]);
+		}
 		axis1Choice.select(axis1);
 		axis1Choice.addItemListener(this);
 		panel1.add(axis1Choice);
@@ -467,10 +469,9 @@ public class Orienteer extends PlugInFrame
 		double xMax = Double.NEGATIVE_INFINITY;
 		double yMin = Double.POSITIVE_INFINITY;
 		double yMax = Double.NEGATIVE_INFINITY;
-		final int nPoints = points.length;
-		for (int i = 0; i < nPoints; i++) {
-			final double x = points[i][0];
-			final double y = points[i][1];
+		for (final double[] point : points) {
+			final double x = point[0];
+			final double y = point[1];
 			final double xr = x * Math.cos(-theta) - y * Math.sin(-theta);
 			final double yr = x * Math.sin(-theta) + y * Math.cos(-theta);
 			xMin = Math.min(xMin, xr);

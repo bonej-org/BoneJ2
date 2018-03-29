@@ -41,14 +41,15 @@ public class Multithreader {
 	}
 
 	public static void startAndJoin(final Thread[] threads) {
-		for (int ithread = 0; ithread < threads.length; ++ithread) {
-			threads[ithread].setPriority(Thread.NORM_PRIORITY);
-			threads[ithread].start();
+		for (final Thread thread : threads) {
+			thread.setPriority(Thread.NORM_PRIORITY);
+			thread.start();
 		}
 
 		try {
-			for (int ithread = 0; ithread < threads.length; ++ithread)
-				threads[ithread].join();
+			for (final Thread thread : threads) {
+				thread.join();
+			}
 		} catch (final InterruptedException ie) {
 			throw new RuntimeException(ie);
 		}
