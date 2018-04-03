@@ -899,7 +899,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 
 			// bump a little away from the sides
 			contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
-			if (contactPoints.size() > 0)
+			if (!contactPoints.isEmpty())
 				ellipsoid = bump(ellipsoid, contactPoints, px, py, pz);
 			// if can't bump then do a wiggle
 			else
@@ -1153,7 +1153,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 						   final int d) {
 
 		contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
-		if (contactPoints.size() > 0) {
+		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
 			ellipsoid = rotateAboutAxis(ellipsoid, Vectors.norm(torque));
 		}
@@ -1313,7 +1313,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 
 		// contract until no contact
 		int safety = 0;
-		while (contactPoints.size() > 0 && safety < maxIterations) {
+		while (!contactPoints.isEmpty() && safety < maxIterations) {
 			ellipsoid.contract(0.01);
 			contactPoints = findContactPoints(ellipsoid, contactPoints, unitVectors, pixels, pW, pH, pD, w, h, d);
 			safety++;

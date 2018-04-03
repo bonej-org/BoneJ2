@@ -891,7 +891,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		for (final List<Point3f> surfacePoint : surfacePoints) {
 			IJ.showStatus("Rendering surfaces...");
 			IJ.showProgress(p, nParticles);
-			if (p > 0 && surfacePoint.size() > 0) {
+			if (p > 0 && !surfacePoint.isEmpty()) {
 				Color3f pColour = new Color3f(0, 0, 0);
 				if (colourMode == GRADIENT) {
 					final float red = 1.0f - p / (float) nParticles;
@@ -974,7 +974,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					point.z += zOffset;
 				}
 				surfacePoints.add(points);
-				if (points.size() == 0) {
+				if (points.isEmpty()) {
 					IJ.log("Particle " + p + " resulted in 0 surface points");
 				}
 			} else {

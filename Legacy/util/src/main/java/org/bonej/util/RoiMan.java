@@ -242,7 +242,7 @@ public class RoiMan {
 
 		for (int sourceZ = zMin; sourceZ <= zMax; sourceZ++) {
 			sliceRois = getSliceRoi(roiMan, sourceStack, sourceZ);
-			if (sliceRois.size() == 0) {
+			if (sliceRois.isEmpty()) {
 				continue;
 			}
 
