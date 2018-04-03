@@ -25,7 +25,6 @@ import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.TextField;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.DialogModifier;

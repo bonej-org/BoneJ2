@@ -29,7 +29,6 @@ import java.awt.Label;
 import java.awt.Panel;
 import java.awt.TextComponent;
 import java.awt.TextField;
-import java.util.Vector;
 
 import ij.IJ;
 import ij.gui.GenericDialog;
