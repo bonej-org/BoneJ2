@@ -1218,9 +1218,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
 								  final double minVol, final double maxVol, final int phase, final boolean doExclude) {
 		if (phase == FORE) {
-			this.sPhase = "foreground";
+            sPhase = "foreground";
 		} else if (phase == BACK) {
-			this.sPhase = "background";
+            sPhase = "background";
 		} else {
 			// TODO Make phase an enum
 			throw new IllegalArgumentException();
@@ -1748,14 +1748,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 		@Override
 		public void run() {
-			for (int k = this.thread; k < this.nChunks; k += this.nThreads) {
+			for (int k = thread; k < nChunks; k += nThreads) {
 				// assign singleChunkRange for chunk k from chunkRanges
 				final int[][] singleChunkRange = new int[4][1];
 				for (int i = 0; i < 4; i++) {
-					singleChunkRange[i][0] = this.chunkRanges[i][k];
+					singleChunkRange[i][0] = chunkRanges[i][k];
 				}
 				chunkString = ": chunk " + (k + 1) + "/" + nChunks;
-				connectStructures(this.imp, this.workArray, this.particleLabels, this.phase, singleChunkRange);
+				connectStructures(imp, workArray, particleLabels, phase, singleChunkRange);
 			}
 		}
 	}// ConnectStructuresThread

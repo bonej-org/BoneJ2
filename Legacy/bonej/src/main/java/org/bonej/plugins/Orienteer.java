@@ -246,14 +246,14 @@ public class Orienteer extends PlugInFrame
 		activeImpID = id;
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
-		this.theta = 0;
+        theta = 0;
 		slider.setValue((int) (theta * 180 / Math.PI));
-		this.isReflected0 = false;
+        isReflected0 = false;
 		reflect0.setState(false);
-		this.isReflected1 = false;
+        isReflected1 = false;
 		reflect1.setState(false);
-		this.length = Math.min(w, h) / 4;
-		this.p = new Point(w / 2, h / 2);
+        length = Math.min(w, h) / 4;
+        p = new Point(w / 2, h / 2);
 		path = new GeneralPath();
 		path.moveTo(p.x - length, p.y);
 		path.lineTo(p.x + length, p.y);
@@ -267,7 +267,7 @@ public class Orienteer extends PlugInFrame
 		pathHash.put(id, new GeneralPath(path));
 		final int[] axes = { axis0, axis1 };
 		axisHash.put(id, axes.clone());
-		lengthHash.put(id, this.length);
+		lengthHash.put(id, length);
 		final boolean[] reflectors = { isReflected0, isReflected1 };
 		reflectHash.put(id, reflectors.clone());
 		deg.setState(true);
@@ -292,16 +292,16 @@ public class Orienteer extends PlugInFrame
 			return;
 		}
 		checkHash();
-		this.p = centreHash.get(activeImpID);
-		this.theta = thetaHash.get(activeImpID);
+        p = centreHash.get(activeImpID);
+        theta = thetaHash.get(activeImpID);
 		final int[] axes = axisHash.get(activeImpID);
-		this.axis0 = axes[0];
-		this.axis1 = axes[1];
-		this.path = pathHash.get(activeImpID);
-		this.length = lengthHash.get(activeImpID);
+        axis0 = axes[0];
+        axis1 = axes[1];
+        path = pathHash.get(activeImpID);
+        length = lengthHash.get(activeImpID);
 		final boolean[] reflectors = reflectHash.get(activeImpID);
-		this.isReflected0 = reflectors[0];
-		this.isReflected1 = reflectors[1];
+        isReflected0 = reflectors[0];
+        isReflected1 = reflectors[1];
 		axis0Choice.select(axis0);
 		axis1Choice.select(axis1);
 		slider.setValue((int) (theta * 180 / Math.PI));
@@ -408,7 +408,7 @@ public class Orienteer extends PlugInFrame
 	 *         12 o'clock
 	 */
 	double getOrientation() {
-		return this.theta;
+		return theta;
 	}
 
 	/**
@@ -492,10 +492,10 @@ public class Orienteer extends PlugInFrame
 		if (WindowManager.getImageCount() == 0)
 			return;
 		final ImagePlus imp = WindowManager.getCurrentImage();
-		this.activeImpID = imp.getID();
+        activeImpID = imp.getID();
 		final AffineTransform transform = new AffineTransform();
 		transform.rotate(deltaTheta, p.x, p.y);
-		this.theta += deltaTheta;
+        theta += deltaTheta;
 		path.transform(transform);
 		overlay.clear();
 		addPath(path, Color.BLUE, stroke);
@@ -512,8 +512,8 @@ public class Orienteer extends PlugInFrame
 	 *          the principal direction
 	 */
     private void rotateTo(final double newTheta) {
-		rotate(newTheta - this.theta);
-		this.theta = newTheta;
+		rotate(newTheta - theta);
+        theta = newTheta;
 		if (WindowManager.getImageCount() == 0)
 			return;
 		thetaHash.put(activeImpID, newTheta);
@@ -542,9 +542,9 @@ public class Orienteer extends PlugInFrame
 
 	private void updateTextbox() {
 		if (deg.getState())
-			text.setText(IJ.d2s(this.theta * 180 / Math.PI, 3));
+			text.setText(IJ.d2s(theta * 180 / Math.PI, 3));
 		else
-			text.setText(IJ.d2s(this.theta, 5));
+			text.setText(IJ.d2s(theta, 5));
 	}
 
 	private void addPath(final Shape shape, final Color color, final BasicStroke stroke) {

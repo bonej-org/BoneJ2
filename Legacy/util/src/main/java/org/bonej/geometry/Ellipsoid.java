@@ -73,14 +73,14 @@ public class Ellipsoid {
 	 */
 	public Ellipsoid(final Object[] ellipsoid) {
 		final double[] centre = (double[]) ellipsoid[0];
-		this.cx = centre[0];
-		this.cy = centre[1];
-		this.cz = centre[2];
+        cx = centre[0];
+        cy = centre[1];
+        cz = centre[2];
 
 		final double[] radii = (double[]) ellipsoid[1];
-		this.ra = radii[0];
-		this.rb = radii[1];
-		this.rc = radii[2];
+        ra = radii[0];
+        rb = radii[1];
+        rc = radii[2];
 
 		if (Double.isNaN(ra) || Double.isNaN(rb) || Double.isNaN(rc))
 			throw new IllegalArgumentException("Radius is NaN");
@@ -88,9 +88,9 @@ public class Ellipsoid {
 		if (ra <= 0 || rb <= 0 || rc <= 0)
 			throw new IllegalArgumentException("Radius cannot be <= 0");
 
-		this.ev = new double[3][3];
-		this.ed = new double[3][3];
-		this.eh = new double[3][3];
+        ev = new double[3][3];
+        ed = new double[3][3];
+        eh = new double[3][3];
 		setRotation((double[][]) ellipsoid[2]);
 		setEigenvalues();
 		setVolume();
@@ -111,15 +111,15 @@ public class Ellipsoid {
 	public Ellipsoid(final double a, final double b, final double c, final double cx, final double cy, final double cz,
 			final double[][] eigenVectors) {
 
-		this.ra = a;
-		this.rb = b;
-		this.rc = c;
+        ra = a;
+        rb = b;
+        rc = c;
 		this.cx = cx;
 		this.cy = cy;
 		this.cz = cz;
-		this.ev = new double[3][3];
-		this.ed = new double[3][3];
-		this.eh = new double[3][3];
+        ev = new double[3][3];
+        ed = new double[3][3];
+        eh = new double[3][3];
 		setRotation(eigenVectors);
 		setEigenvalues();
 		setVolume();
@@ -131,7 +131,7 @@ public class Ellipsoid {
 	 * @return copy of the stored volume value.
 	 */
 	public double getVolume() {
-        return this.volume;
+        return volume;
 	}
 
 	private void setVolume() {
@@ -209,9 +209,9 @@ public class Ellipsoid {
 	 */
 	public double[] getSortedRadii() {
 		// TODO use Arrays.sort
-		double a = this.ra;
-		double b = this.rb;
-		double c = this.rc;
+		double a = ra;
+		double b = rb;
+		double c = rc;
 		double temp;
 
 		if (a > b) {
@@ -271,7 +271,7 @@ public class Ellipsoid {
 	 * @param increment scaling factor.
 	 */
 	void dilate(final double increment) {
-		dilate(this.ra * increment, this.rb * increment, this.rc * increment);
+		dilate(ra * increment, rb * increment, rc * increment);
 	}
 
 	/**
@@ -292,7 +292,7 @@ public class Ellipsoid {
 	 * @param dc value added to the 3rd radius.
 	 */
 	public void dilate(final double da, final double db, final double dc) {
-		setRadii(this.ra + da, this.rb + db, this.rc + dc);
+		setRadii(ra + da, rb + db, rc + dc);
 	}
 
 	/**
@@ -303,9 +303,9 @@ public class Ellipsoid {
 	 * @param z new centroid z-coordinate
 	 */
 	public void setCentroid(final double x, final double y, final double z) {
-		this.cx = x;
-		this.cy = y;
-		this.cz = z;
+        cx = x;
+        cy = y;
+        cz = z;
 	}
 
 	/**
@@ -314,7 +314,7 @@ public class Ellipsoid {
 	 * @param rotation a 3x3 rotation matrix
 	 */
 	public void rotate(final double[][] rotation) {
-		setRotation(times(this.ev, rotation));
+		setRotation(times(ev, rotation));
 	}
 
 	/**
@@ -323,7 +323,7 @@ public class Ellipsoid {
      * @param rotation a 3x3 rotation matrix
 	 */
 	public void setRotation(final double[][] rotation) {
-		this.ev = rotation.clone();
+        ev = rotation.clone();
 		update3x3Matrix();
 	}
 
@@ -351,9 +351,9 @@ public class Ellipsoid {
 			// TODO throw from dilate()
 			throw new IllegalArgumentException("Ellipsoid cannot have semiaxis <= 0");
 		}
-		this.ra = a;
-		this.rb = b;
-		this.rc = c;
+        ra = a;
+        rb = b;
+        rc = c;
 		setEigenvalues();
 		setVolume();
 	}
@@ -362,9 +362,9 @@ public class Ellipsoid {
 	 * Calculates eigenvalues from current radii
 	 */
 	private void setEigenvalues() {
-		this.ed[0][0] = 1 / (this.ra * this.ra);
-		this.ed[1][1] = 1 / (this.rb * this.rb);
-		this.ed[2][2] = 1 / (this.rc * this.rc);
+        ed[0][0] = 1 / (ra * ra);
+        ed[1][1] = 1 / (rb * rb);
+        ed[2][2] = 1 / (rc * rc);
 		update3x3Matrix();
 	}
 
@@ -372,7 +372,7 @@ public class Ellipsoid {
 	 * Needs to be run any time the eigenvalues or eigenvectors change
 	 */
 	private void update3x3Matrix() {
-		this.eh = times(times(ev, ed), transpose(ev));
+        eh = times(times(ev, ed), transpose(ev));
 	}
 
 	/**
@@ -541,6 +541,6 @@ public class Ellipsoid {
 	 */
 	public Ellipsoid copy() {
 		// TODO Fix shallow copy of ev matrix
-		return new Ellipsoid(this.ra, this.rb, this.rc, this.cx, this.cy, this.cz, this.ev.clone());
+		return new Ellipsoid(ra, rb, rc, cx, cy, cz, ev.clone());
 	}
 }
