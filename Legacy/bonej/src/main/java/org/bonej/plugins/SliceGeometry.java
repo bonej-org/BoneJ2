@@ -29,7 +29,6 @@ import java.awt.Rectangle;
 import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.BoneList;
@@ -995,8 +994,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
 		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
 			return false;
-		final Vector<?> checkboxes = gd.getCheckboxes();
-		final Vector<?> nFields = gd.getNumericFields();
+		final List<?> checkboxes = gd.getCheckboxes();
+		final List<?> nFields = gd.getNumericFields();
 		final Checkbox calibration = (Checkbox) checkboxes.get(10);
 		final boolean isHUCalibrated = calibration.getState();
 		final TextField minT = (TextField) nFields.get(0);

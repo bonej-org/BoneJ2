@@ -21,8 +21,11 @@
  */
 package org.bonej.plugins;
 
-import java.awt.*;
-import java.util.Vector;
+import java.awt.AWTEvent;
+import java.awt.Checkbox;
+
+import java.awt.TextField;
+import java.util.List;
 
 import org.bonej.geometry.FitSphere;
 import org.bonej.util.DialogModifier;
@@ -361,8 +364,8 @@ public class SphereFitter implements PlugIn, DialogListener {
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
 		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
 			return false;
-		final Vector<?> checkboxes = gd.getCheckboxes();
-		final Vector<?> numbers = gd.getNumericFields();
+		final List<?> checkboxes = gd.getCheckboxes();
+		final List<?> numbers = gd.getNumericFields();
 		final Checkbox box = (Checkbox) checkboxes.get(0);
 		final TextField num = (TextField) numbers.get(0);
 		if (box.getState()) {

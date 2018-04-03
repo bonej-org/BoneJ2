@@ -868,8 +868,8 @@ public class Moments implements PlugIn, DialogListener {
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
 		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
 			return false;
-		final Vector<?> checkboxes = gd.getCheckboxes();
-		final Vector<?> nFields = gd.getNumericFields();
+		final List<?> checkboxes = gd.getCheckboxes();
+		final List<?> nFields = gd.getNumericFields();
 		final Checkbox box0 = (Checkbox) checkboxes.get(0);
 		final boolean isHUCalibrated = box0.getState();
 		final TextField minT = (TextField) nFields.get(2);

@@ -21,7 +21,22 @@
  */
 package org.bonej.plugins;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Checkbox;
+import java.awt.CheckboxGroup;
+import java.awt.Choice;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.Point;
+import java.awt.Scrollbar;
+import java.awt.Shape;
+import java.awt.TextField;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.ItemEvent;
@@ -33,6 +48,7 @@ import java.awt.event.TextListener;
 import java.awt.event.WindowEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
@@ -89,13 +105,13 @@ public class Orienteer extends PlugInFrame
 	private Point p;
 
 	private Integer activeImpID;
-	private final Hashtable<Integer, Double> thetaHash = new Hashtable<>();
-	private final Hashtable<Integer, Integer> lengthHash = new Hashtable<>();
-	private final Map<Integer, Point> centreHash = new Hashtable<>();
-	private final Map<Integer, GeneralPath> pathHash = new Hashtable<>();
-	private final Hashtable<Integer, int[]> axisHash = new Hashtable<>();
-	private final Hashtable<Integer, boolean[]> reflectHash = new Hashtable<>();
-	private final Hashtable<Integer, boolean[]> unitHash = new Hashtable<>();
+	private final Map<Integer, Double> thetaHash = new HashMap<>();
+	private final Map<Integer, Integer> lengthHash = new HashMap<>();
+	private final Map<Integer, Point> centreHash = new HashMap<>();
+	private final Map<Integer, GeneralPath> pathHash = new HashMap<>();
+	private final Map<Integer, int[]> axisHash = new HashMap<>();
+	private final Map<Integer, boolean[]> reflectHash = new HashMap<>();
+	private final Map<Integer, boolean[]> unitHash = new HashMap<>();
 
 	private final Overlay overlay = new Overlay();
 	private final int fontSize = 12;

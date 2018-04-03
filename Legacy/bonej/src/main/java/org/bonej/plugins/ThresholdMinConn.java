@@ -24,6 +24,7 @@ package org.bonej.plugins;
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.TextField;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -389,7 +390,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
 		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
 			return false;
-		final Vector<?> checkboxes = gd.getCheckboxes();
+		final List<?> checkboxes = gd.getCheckboxes();
 		final Checkbox to = (Checkbox) checkboxes.get(0);
 		thresholdOnly = to.getState();
 		if (thresholdOnly) {
@@ -399,7 +400,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 			t.setEnabled(false);
 			doPlot = false;
 			// grey out fields
-			final Vector<?> numbers = gd.getNumericFields();
+			final List<?> numbers = gd.getNumericFields();
 			for (final Object number : numbers) {
 				final TextField n = (TextField) number;
 				n.setEnabled(false);
@@ -407,7 +408,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		}
 		if (!thresholdOnly) {
 			// un-grey out fields
-			final Vector<?> numbers = gd.getNumericFields();
+			final List<?> numbers = gd.getNumericFields();
 			for (final Object number : numbers) {
 				final TextField n = (TextField) number;
 				n.setEnabled(true);

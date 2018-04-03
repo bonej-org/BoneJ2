@@ -811,7 +811,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		Ellipsoid ellipsoid = new Ellipsoid(vectorIncrement, vectorIncrement, vectorIncrement, px, py, pz,
 				orthogonalVectors);
 
-		final Vector<Double> volumeHistory = new Vector<>();
+		final List<Double> volumeHistory = new ArrayList<>();
 		volumeHistory.add(ellipsoid.getVolume());
 
 		// dilate the sphere until it hits the background

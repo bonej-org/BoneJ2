@@ -33,10 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
-import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import isosurface.Triangulator;
 import org.bonej.geometry.FitEllipsoid;
 import org.bonej.geometry.Vectors;
 import org.bonej.menuWrappers.LocalThickness;
@@ -60,6 +58,7 @@ import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
 import ij.process.ImageProcessor;
 import ij3d.Image3DUniverse;
+import isosurface.Triangulator;
 import marchingcubes.MCTriangulator;
 
 /**
@@ -1272,7 +1271,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int wh = workArray[0].length;
 		final long[] particleSizes = getParticleSizes(particleLabels);
 		final double[] particleVolumes = getVolumes(imp, particleSizes);
-		byte flip;
+		final byte flip;
 		if (phase == FORE) {
 			flip = 0;
 		} else {
@@ -2607,9 +2606,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
 		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
 			return false;
-		final Vector<?> choices = gd.getChoices();
-		final Vector<?> checkboxes = gd.getCheckboxes();
-		final Vector<?> numbers = gd.getNumericFields();
+		final List<?> choices = gd.getChoices();
+		final List<?> checkboxes = gd.getCheckboxes();
+		final List<?> numbers = gd.getNumericFields();
 		// link algorithm choice to chunk size field
 		final Choice choice = (Choice) choices.get(1);
 		final TextField num = (TextField) numbers.get(5);
