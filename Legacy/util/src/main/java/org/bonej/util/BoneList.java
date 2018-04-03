@@ -70,7 +70,7 @@ public class BoneList {
 	 * @param boneString a String with a name of a bone
 	 * @return index of the corresponding bone in {@link #boneList}
 	 */
-	public static int guessBone(final String boneString) {
+	public static int guessBone(final CharSequence boneString) {
 	    // TODO Return -1 if none match
 		int boneID = 0;
 		for (int n = 0; n < boneList.length; n++) {

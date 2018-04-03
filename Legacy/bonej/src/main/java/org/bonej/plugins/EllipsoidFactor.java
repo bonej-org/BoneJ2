@@ -651,7 +651,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 
 					// find the subset of ellipsoids whose bounding box
 					// intersects with z
-					final ArrayList<Ellipsoid> nearEllipsoids = new ArrayList<>();
+					final List<Ellipsoid> nearEllipsoids = new ArrayList<>();
 					final int n = ellipsoids.length;
 					for (int i = 0; i < n; i++) {
 						final Ellipsoid e = ellipsoids[i];
@@ -672,7 +672,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 						final double yvH = y * vH;
 						// find the subset of ellipsoids whose bounding box
 						// intersects with y
-						final ArrayList<Ellipsoid> yEllipsoids = new ArrayList<>();
+						final List<Ellipsoid> yEllipsoids = new ArrayList<>();
 						for (final Ellipsoid e : ellipsoidSubSet) {
 							final double[] yMinMax = e.getYMinAndMax();
 							if (yvH >= yMinMax[0] && yvH <= yMinMax[1]) {
@@ -680,6 +680,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 							}
 						}
 
+						// TODO Remove unnecessary duplication
 						final int r = yEllipsoids.size();
 						final Ellipsoid[] ellipsoidSubSubSet = new Ellipsoid[r];
 						for (int i = 0; i < r; i++) {
@@ -1166,7 +1167,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * @param contactPoints
 	 * @return
 	 */
-	private double[] contactPointUnitVector(final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints) {
+	private double[] contactPointUnitVector(final Ellipsoid ellipsoid, final List<double[]> contactPoints) {
 
 		final int nPoints = contactPoints.size();
 
@@ -1206,7 +1207,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * @param contactPoints
 	 * @return
 	 */
-	private double[] calculateTorque(final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints) {
+	private double[] calculateTorque(final Ellipsoid ellipsoid, final Iterable<double[]> contactPoints) {
 
 		final double[] pc = ellipsoid.getCentre();
 		final double cx = pc[0];
@@ -1365,7 +1366,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		return ellipsoid;
 	}
 
-	private Ellipsoid bump(final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints, final double px,
+	private Ellipsoid bump(final Ellipsoid ellipsoid, final List<double[]> contactPoints, final double px,
 			final double py, final double pz) {
 
 		final double displacement = vectorIncrement / 2;

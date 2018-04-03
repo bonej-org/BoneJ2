@@ -21,6 +21,7 @@
  */
 package org.bonej.util;
 
+import ij.plugin.filter.PlugInFilter;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 import ij.ImagePlus;
 
@@ -31,7 +32,7 @@ import ij.ImagePlus;
  * @author Mark Hiner
  */
 public class SkeletonUtils {
-	private static final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+	private static final PlugInFilter skeletoniser = new Skeletonize3D_();
 
 	/**
 	 * Gets a medial axis skeleton from a binary imp using a topology-preserving

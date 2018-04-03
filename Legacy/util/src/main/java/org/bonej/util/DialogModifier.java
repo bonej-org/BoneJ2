@@ -24,8 +24,10 @@ package org.bonej.util;
 import java.awt.Checkbox;
 import java.awt.Choice;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Label;
 import java.awt.Panel;
+import java.awt.TextComponent;
 import java.awt.TextField;
 import java.util.Vector;
 
@@ -42,7 +44,9 @@ public class DialogModifier {
 	 * @param oldUnits original unit string
 	 * @param newUnits new unit string
 	 */
-	public static void replaceUnitString(final GenericDialog gd, final String oldUnits, final String newUnits) {
+	public static void replaceUnitString(final GenericDialog gd,
+		final CharSequence oldUnits, final CharSequence newUnits)
+	{
 		for (int n = 0; n < gd.getComponentCount(); n++) {
 			if (gd.getComponent(n) instanceof Panel) {
 				final Panel panel = (Panel) gd.getComponent(n);
@@ -74,7 +78,7 @@ public class DialogModifier {
 					gd.getNextChoice();
 				}
 				else if (c instanceof TextField) {
-					final String text = ((TextField) c).getText();
+					final String text = ((TextComponent) c).getText();
 					try {
 						Double.parseDouble(text);
 						gd.getNextNumber();
@@ -85,7 +89,7 @@ public class DialogModifier {
 				}
 				else if (c instanceof Panel) {
 					// TODO Loop continues, even if recursive call(s) throw an exception
-					registerMacroValues(gd, ((Panel) c).getComponents());
+					registerMacroValues(gd, ((Container) c).getComponents());
 				}
 			}
 		} catch (final ArrayIndexOutOfBoundsException e) {
@@ -102,9 +106,9 @@ public class DialogModifier {
 	 * @param textFields e.g. result of GenericDialog.getNumericFields();
 	 * @return true if all numeric text fields contain a valid number
 	 */
-	public static boolean allNumbersValid(final Vector<?> textFields) {
+	public static boolean allNumbersValid(final Iterable<?> textFields) {
 		for (final Object text : textFields) {
-			final String string = ((TextField) text).getText();
+			final String string = ((TextComponent) text).getText();
 			try {
 				Double.parseDouble(string);
 			} catch (final NumberFormatException e) {

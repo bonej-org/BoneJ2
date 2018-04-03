@@ -560,7 +560,7 @@ public class Moments implements PlugIn, DialogListener {
                 final ImageProcessor[] sliceProcessors, final ImageProcessor[] targetProcessors,
                 final double[][] eigenVecInv, final double[] centroid, final int wT, final int hT, final int dT,
                 final int startSlice, final int endSlice) {
-			this.impT = imp;
+            impT = imp;
 			this.thread = thread;
 			this.nThreads = nThreads;
 			this.sliceProcessors = sliceProcessors;
@@ -576,12 +576,12 @@ public class Moments implements PlugIn, DialogListener {
 
 		@Override
 		public void run() {
-			final Rectangle r = this.impT.getProcessor().getRoi();
+			final Rectangle r = impT.getProcessor().getRoi();
 			final int rW = r.x + r.width;
 			final int rH = r.y + r.height;
 			final int rX = r.x;
 			final int rY = r.y;
-			final Calibration cal = this.impT.getCalibration();
+			final Calibration cal = impT.getCalibration();
 			final double vW = cal.pixelWidth;
 			final double vH = cal.pixelHeight;
 			final double vD = cal.pixelDepth;
@@ -604,22 +604,20 @@ public class Moments implements PlugIn, DialogListener {
 			final double eVI02 = eigenVecInv[0][2];
 			final double eVI12 = eigenVecInv[1][2];
 			final double eVI22 = eigenVecInv[2][2];
-			for (int z = this.thread + 1; z <= this.dT; z += this.nThreads) {
+			for (int z = thread + 1; z <= dT; z += nThreads) {
 				IJ.showStatus("Aligning image stack...");
-				IJ.showProgress(z, this.dT);
-				// this.targetStack.setPixels(getEmptyPixels(this.wT, this.hT,
-				// this.impT.getBitDepth()), z);
+				IJ.showProgress(z, dT);
 				final ImageProcessor targetIP = targetProcessors[z];
 				final double zD = z * vS - zTc;
 				final double zDeVI00 = zD * eVI20;
 				final double zDeVI01 = zD * eVI21;
 				final double zDeVI02 = zD * eVI22;
-				for (int y = 0; y < this.hT; y++) {
+				for (int y = 0; y < hT; y++) {
 					final double yD = y * vS - yTc;
 					final double yDeVI10 = yD * eVI10;
 					final double yDeVI11 = yD * eVI11;
 					final double yDeVI12 = yD * eVI12;
-					for (int x = 0; x < this.wT; x++) {
+					for (int x = 0; x < wT; x++) {
 						final double xD = x * vS - xTc;
 						final double xAlign = xD * eVI00 + yDeVI10 + zDeVI00 + xTc;
 						final double yAlign = xD * eVI01 + yDeVI11 + zDeVI01 + yTc;
@@ -630,10 +628,10 @@ public class Moments implements PlugIn, DialogListener {
 						final int yA = (int) Math.floor((yAlign + dYc) / vH);
 						final int zA = (int) Math.floor((zAlign + dZc) / vD);
 
-                        if (xA < rX || xA >= rW || yA < rY || yA >= rH || zA < this.startSlice || zA > this.endSlice) {
+                        if (xA < rX || xA >= rW || yA < rY || yA >= rH || zA < startSlice || zA > endSlice) {
                             continue;
                         }
-						targetIP.set(x, y, this.sliceProcessors[zA].get(xA, yA));
+						targetIP.set(x, y, sliceProcessors[zA].get(xA, yA));
 					}
 				}
 			}
