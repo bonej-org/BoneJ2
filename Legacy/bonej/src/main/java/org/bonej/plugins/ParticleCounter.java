@@ -119,7 +119,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	static final int MAPPED = 2;
 
 	/** Surface colour style */
-    private static final int GRADIENT = 0, SPLIT = 1;
+    private static final int GRADIENT = 0;
+    private static final int SPLIT = 1;
 
 	private String sPhase = "";
 
@@ -1487,8 +1488,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 							int minTag = ID;
 							// Find the minimum particleLabel in the
 							// neighbouring pixels
-							int nX = x, nY = y, nZ = z;
-							for (int n = 0; n < 7; n++) {
+							int nX = x;
+                            int nY = y;
+                            int nZ = z;
+                            for (int n = 0; n < 7; n++) {
 								switch (n) {
 								case 0:
 									break;
@@ -1618,8 +1621,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 								int minTag = particleLabels[z][arrayIndex];
 								// Find the minimum particleLabel in the
 								// neighbours' pixels
-								int nX = x, nY = y, nZ = z;
-								for (int n = 0; n < 7; n++) {
+								int nX = x;
+                                int nY = y;
+                                int nZ = z;
+                                for (int n = 0; n < 7; n++) {
 									switch (n) {
 									case 0:
 										break;

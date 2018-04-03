@@ -550,7 +550,13 @@ public class Moments implements PlugIn, DialogListener {
 	 *
 	 */
     private static final class AlignThread extends Thread {
-		private final int thread, nThreads, wT, hT, dT, startSlice, endSlice;
+		private final int thread;
+        private final int nThreads;
+        private final int wT;
+        private final int hT;
+        private final int dT;
+        private final int startSlice;
+        private final int endSlice;
 		private final ImagePlus impT;
 		private final ImageProcessor[] sliceProcessors, targetProcessors;
 		private final double[][] eigenVecInv;

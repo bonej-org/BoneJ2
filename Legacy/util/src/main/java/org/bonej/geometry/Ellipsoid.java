@@ -36,14 +36,18 @@ import Jama.Matrix;
 public class Ellipsoid {
 
 	/** Centroid of ellipsoid (cx, cy, cz) */
-	private double cx, cy, cz;
+	private double cx;
+    private double cy;
+    private double cz;
 
 	/**
 	 * Radii (semiaxis lengths) of ellipsoid. Size-based ordering (e.g. a > b >
 	 * c) is not performed. They are in the same order as the eigenvalues and
 	 * eigenvectors.
 	 */
-	private double ra, rb, rc;
+	private double ra;
+    private double rb;
+    private double rc;
 
 	/** Volume of ellipsoid, calculated as 4 * PI * ra * rb * rc / 3 */
 	private double volume;

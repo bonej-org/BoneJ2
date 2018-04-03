@@ -192,9 +192,11 @@ public class Purify implements PlugIn, DialogListener {
 		// check each face of the stack for pixels that are touching edges and
 		// replace that particle's label in particleLabels with
 		// the label of the biggest particle
-		int x, y, z;
+		int x;
+        int y;
+        int z;
 
-		final ParticleCounter pc = new ParticleCounter();
+        final ParticleCounter pc = new ParticleCounter();
 		// up
 		z = 0;
 		for (y = 0; y < h; y++) {

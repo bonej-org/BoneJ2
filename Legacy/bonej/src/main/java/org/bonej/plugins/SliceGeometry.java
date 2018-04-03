@@ -69,8 +69,11 @@ import ij3d.Image3DUniverse;
 
 public class SliceGeometry implements PlugIn, DialogListener {
 	private Calibration cal;
-	private int al, startSlice, endSlice;
-	private double vW, vH;// , min, max;
+	private int al;
+    private int startSlice;
+    private int endSlice;
+	private double vW;
+    private double vH;
 	/** Show slice centroid */
 	private boolean doCentroids;
 	/** Show principal axes */

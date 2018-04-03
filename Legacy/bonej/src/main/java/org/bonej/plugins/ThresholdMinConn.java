@@ -50,7 +50,8 @@ import process3d.Erode_;
 public class ThresholdMinConn implements PlugIn, DialogListener {
 
 	// private ImagePlus imp;
-	private int testCount = 11, subVolume = 256;
+	private int testCount = 11;
+    private int subVolume = 256;
 	private double testRange = 0.2;
 
 	/** Show a plot of connectivity vs. threshold */
@@ -216,8 +217,9 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		final CurveFitter cf = new CurveFitter(testThreshold, conns);
 		cf.doFit(CurveFitter.POLY2);
 		final double[] params = cf.getParams();
-		final double b = params[1], c = params[2];
-		return -b / (2 * c);
+		final double b = params[1];
+        final double c = params[2];
+        return -b / (2 * c);
 	}
 
 	/**
