@@ -103,8 +103,7 @@ public class Orienteer extends PlugInFrame
 	private GeneralPath path;
 	private BasicStroke stroke;
 
-	GridBagConstraints c;
-	private Scrollbar slider;
+    private Scrollbar slider;
 	private Choice axis0Choice;
 	private Choice axis1Choice;
 	private Checkbox reflect0;
@@ -132,12 +131,11 @@ public class Orienteer extends PlugInFrame
 		WindowManager.addWindow(this);
 
 		final GridBagLayout gridbag = new GridBagLayout();
-		c = new GridBagConstraints();
+        final GridBagConstraints c = new GridBagConstraints();
 		setLayout(gridbag);
 
-		slider = new Scrollbar(Scrollbar.HORIZONTAL, (int) (theta * 180 / Math.PI), 1, 0, 360);
-		int y = 0;
-		c.gridy = y++;
+		slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0, 360);
+		c.gridy = 0;
 		c.insets = new Insets(2, 10, 0, 10);
 		gridbag.setConstraints(slider, c);
 		add(slider);
@@ -150,7 +148,7 @@ public class Orienteer extends PlugInFrame
 		final Panel degRadPanel = new Panel();
 		final Label degRadLabel = new Label("Orientation");
 		degRadPanel.add(degRadLabel);
-		text = new TextField(IJ.d2s(theta * 180 / Math.PI, 3), 7);
+		text = new TextField(IJ.d2s(0.0, 3), 7);
 		degRadPanel.add(text);
 		text.addTextListener(this);
 
@@ -176,7 +174,7 @@ public class Orienteer extends PlugInFrame
 		panel0.add(axis0Choice);
 
 		reflect0 = new Checkbox("Reflect");
-		reflect0.setState(isReflected0);
+		reflect0.setState(false);
 		reflect0.addItemListener(this);
 		panel0.add(reflect0);
 
@@ -188,17 +186,17 @@ public class Orienteer extends PlugInFrame
 		for (final String[] axisLabel : axisLabels) {
 			axis1Choice.addItem(axisLabel[0] + " - " + axisLabel[1]);
 		}
-		axis1Choice.select(axis1);
+		axis1Choice.select(0);
 		axis1Choice.addItemListener(this);
 		panel1.add(axis1Choice);
 
 		reflect1 = new Checkbox("Reflect");
-		reflect1.setState(isReflected1);
+		reflect1.setState(false);
 		reflect1.addItemListener(this);
 		panel1.add(reflect1);
 
 		c.gridx = 0;
-		c.gridy = y;
+		c.gridy = 1;
 		c.gridwidth = 2;
 		c.insets = new Insets(5, 5, 0, 5);
 		c.anchor = GridBagConstraints.EAST;
@@ -206,7 +204,7 @@ public class Orienteer extends PlugInFrame
 		add(degRadPanel, c);
 
 		c.gridx = 0;
-		c.gridy = y+1;
+		c.gridy = 2;
 		c.gridwidth = 2;
 		c.insets = new Insets(5, 5, 0, 5);
 		c.anchor = GridBagConstraints.EAST;
@@ -214,7 +212,7 @@ public class Orienteer extends PlugInFrame
 		add(panel0, c);
 
 		c.gridx = 0;
-		c.gridy = y + 2;
+		c.gridy = 3;
 		c.gridwidth = 2;
 		c.insets = new Insets(5, 5, 0, 5);
 		c.anchor = GridBagConstraints.EAST;
@@ -266,7 +264,7 @@ public class Orienteer extends PlugInFrame
 		centreHash.put(id, new Point(p));
 		thetaHash.put(id, theta);
 		pathHash.put(id, new GeneralPath(path));
-		final int[] axes = { axis0, axis1 };
+		final int[] axes = { axis0, 0 };
 		axisHash.put(id, axes.clone());
 		lengthHash.put(id, length);
 		final boolean[] reflectors = { isReflected0, isReflected1 };

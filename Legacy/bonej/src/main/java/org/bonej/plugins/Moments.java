@@ -81,7 +81,7 @@ public class Moments implements PlugIn, DialogListener {
 		final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
 		double min = thresholds[0];
 		double max = thresholds[1];
-		String pixUnits;
+		final String pixUnits;
 		if (ImageCheck.huCalibrated(imp)) {
 			pixUnits = "HU";
 			fieldUpdated = true;
@@ -184,7 +184,7 @@ public class Moments implements PlugIn, DialogListener {
 	 * @return voxelDensity
      * @see #getDensityFactor(ImagePlus)
 	 */
-	private double voxelDensity(final double pixelValue, final double m, final double c, final double factor) {
+	private static double voxelDensity(final double pixelValue, final double m, final double c, final double factor) {
 		double voxelDensity = (m * pixelValue + c) / factor;
 		if (voxelDensity < 0)
 			voxelDensity = 0;
@@ -198,9 +198,9 @@ public class Moments implements PlugIn, DialogListener {
 	 * @param imp an image.
 	 * @return divisor to convert calibration values to g / cm<sup>3</sup>
 	 */
-	private double getDensityFactor(final ImagePlus imp) {
+	private static double getDensityFactor(final ImagePlus imp) {
 		final String units = imp.getCalibration().getUnits();
-		double factor;
+		final double factor;
 		if (units.contains("mm")) {
 			factor = 1000;
 		} else {
@@ -247,7 +247,7 @@ public class Moments implements PlugIn, DialogListener {
 	 * @param c constant in density equation
 	 * @return double[] containing (x,y,z) centroid in scaled units
 	 */
-	private double[] getCentroid3D(final ImagePlus imp, final int startSlice, final int endSlice, final double min,
+	private static double[] getCentroid3D(final ImagePlus imp, final int startSlice, final int endSlice, final double min,
 								   final double max, final double m, final double c) {
 		final ImageStack stack = imp.getImageStack();
 		final Rectangle r = imp.getProcessor().getRoi();
@@ -295,7 +295,7 @@ public class Moments implements PlugIn, DialogListener {
 		return new double[]{ centX * vW, centY * vH, centZ * vD };
 	}/* end findCentroid3D */
 
-	private Object[] calculateMoments(final ImagePlus imp, final int startSlice, final int endSlice,
+	private static Object[] calculateMoments(final ImagePlus imp, final int startSlice, final int endSlice,
             final double[] centroid, final double min, final double max, final double m, final double c) {
 		// START OF 3D MOMENT CALCULATIONS
 		final Calibration cal = imp.getCalibration();
@@ -383,7 +383,7 @@ public class Moments implements PlugIn, DialogListener {
 	 * @param doAxes if true, draw axes on the aligned copy
 	 * @return ImagePlus copy of the input image
 	 */
-    private ImagePlus alignToPrincipalAxes(final ImagePlus imp, final Matrix E, final double[] centroid,
+    private static ImagePlus alignToPrincipalAxes(final ImagePlus imp, final Matrix E, final double[] centroid,
             final int startSlice, final int endSlice, final double min, final double max, final boolean doAxes) {
 		final ImageStack sourceStack = imp.getImageStack();
 		final Calibration cal = imp.getCalibration();
@@ -549,7 +549,7 @@ public class Moments implements PlugIn, DialogListener {
 	 * @author Michael Doube
 	 *
 	 */
-    private class AlignThread extends Thread {
+    private static final class AlignThread extends Thread {
 		private final int thread, nThreads, wT, hT, dT, startSlice, endSlice;
 		private final ImagePlus impT;
 		private final ImageProcessor[] sliceProcessors, targetProcessors;
@@ -651,7 +651,7 @@ public class Moments implements PlugIn, DialogListener {
 	 * @return Width, height and depth of a stack that will 'just fit' the aligned
 	 *         image
 	 */
-	private int[] getRotatedSize(final Matrix E, final ImagePlus imp, final double[] centroid, final int startSlice,
+	private static int[] getRotatedSize(final Matrix E, final ImagePlus imp, final double[] centroid, final int startSlice,
 			final int endSlice, final double min, final double max) {
 		final ImageStack stack = imp.getImageStack();
 		final Calibration cal = imp.getCalibration();
@@ -761,7 +761,7 @@ public class Moments implements PlugIn, DialogListener {
 	 * @param min lower threshold
 	 * @param max upper threshold
 	 */
-	private void show3DAxes(final ImagePlus imp, final Matrix E, final double[] centroid, final int startSlice,
+	private static void show3DAxes(final ImagePlus imp, final Matrix E, final double[] centroid, final int startSlice,
 			final int endSlice, final double min, final double max) {
 		final Calibration cal = imp.getCalibration();
 		// copy the data from inside the ROI and convert it to 8-bit

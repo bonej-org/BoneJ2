@@ -767,7 +767,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		return sortedEllipsoids;
 	}
 
-	private static Ellipsoid[] removeNulls(Ellipsoid[] ellipsoids) {
+	private static Ellipsoid[] removeNulls(final Ellipsoid[] ellipsoids) {
         return Arrays.stream(ellipsoids).filter(Objects::nonNull).toArray(Ellipsoid[]::new);
 	}
 

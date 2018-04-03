@@ -400,7 +400,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 			doPlot = false;
 			// grey out fields
 			final Vector<?> numbers = gd.getNumericFields();
-			for (Object number : numbers) {
+			for (final Object number : numbers) {
 				final TextField n = (TextField) number;
 				n.setEnabled(false);
 			}
@@ -408,7 +408,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		if (!thresholdOnly) {
 			// un-grey out fields
 			final Vector<?> numbers = gd.getNumericFields();
-			for (Object number : numbers) {
+			for (final Object number : numbers) {
 				final TextField n = (TextField) number;
 				n.setEnabled(true);
 			}

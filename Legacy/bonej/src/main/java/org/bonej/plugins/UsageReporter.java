@@ -47,7 +47,7 @@ import ij.Prefs;
  * 
  * @author Michael Doube
  */
-public class UsageReporter {
+public final class UsageReporter {
 	private static final UsageReporter INSTANCE = new UsageReporter();
 	/**
 	 * BoneJ version
@@ -102,9 +102,8 @@ public class UsageReporter {
 		Prefs.set(ReporterOptions.SESSIONKEY, inc);
 
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		GraphicsEnvironment ge;
-		ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		int width = 0;
+		final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        int width = 0;
 		int height = 0;
 		if (!ge.isHeadlessInstance()) {
 			final GraphicsDevice[] screens = ge.getScreenDevices();

@@ -108,19 +108,19 @@ import marchingcubes.MCTriangulator;
 public class ParticleCounter implements PlugIn, DialogListener {
 
 	/** Foreground value */
-	final static int FORE = -1;
+    static final int FORE = -1;
 
 	/** Background value */
-	final static int BACK = 0;
+    static final int BACK = 0;
 
 	// TODO Convert to enum
 	/** Particle joining method */
-	final static int MULTI = 0;
-	final static int LINEAR = 1;
-	final static int MAPPED = 2;
+    static final int MULTI = 0;
+	static final int LINEAR = 1;
+	static final int MAPPED = 2;
 
 	/** Surface colour style */
-	private final static int GRADIENT = 0, SPLIT = 1;
+    private static final int GRADIENT = 0, SPLIT = 1;
 
 	private String sPhase = "";
 
@@ -349,8 +349,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					rt.addValue("Max Thickness (" + units + ")", thick[i][2]);
 				}
 				if (doEllipsoids) {
-					double[] rad;
-					double[][] unitV;
+					final double[] rad;
+					final double[][] unitV;
 					if (ellipsoids[i] == null) {
 						rad = new double[]{ Double.NaN, Double.NaN, Double.NaN };
 						unitV = new double[][]{ { Double.NaN, Double.NaN, Double.NaN },
@@ -1235,8 +1235,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			} catch (final InterruptedException ie) {
 				IJ.error("A thread was interrupted.");
 			}
-
-			// connect particles between chunks
+            // connect particles between chunks
 			if (nChunks > 1) {
 				chunkString = ": stitching...";
 				connectStructures(imp, workArray, particleLabels, phase, stitchRanges);
@@ -1577,7 +1576,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 										for (int vX = x - 1; vX <= x + 1; vX++) {
 											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
 												final int offset = getOffset(vX, vY, w);
-												if (workArray[vZ][offset] == phase) {
+												if (workArray[vZ][offset] == FORE) {
 													final int tagv = particleLabels[vZ][offset];
 													if (tagv != 0 && tagv < minTag) {
 														minTag = tagv;
@@ -1594,7 +1593,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 										for (int vX = x - 1; vX <= x + 1; vX++) {
 											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
 												final int offset = getOffset(vX, vY, w);
-												if (workArray[vZ][offset] == phase) {
+												if (workArray[vZ][offset] == FORE) {
 													final int tagv = particleLabels[vZ][offset];
 													if (tagv != 0 && tagv != minTag) {
 														replaceLabel(particleLabels, tagv, minTag, sR2, sR3);
@@ -1648,7 +1647,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 									}
 									if (withinBounds(nX, nY, nZ, w, h, sR2, sR3)) {
 										final int offset = getOffset(nX, nY, w);
-										if (workArray[nZ][offset] == phase) {
+										if (workArray[nZ][offset] == BACK) {
 											final int tagv = particleLabels[nZ][offset];
 											if (tagv != 0 && tagv < minTag) {
 												minTag = tagv;
@@ -1687,7 +1686,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 									}
 									if (withinBounds(nX, nY, nZ, w, h, sR2, sR3)) {
 										final int offset = getOffset(nX, nY, w);
-										if (workArray[nZ][offset] == phase) {
+										if (workArray[nZ][offset] == BACK) {
 											final int tagv = particleLabels[nZ][offset];
 											if (tagv != 0 && tagv != minTag) {
 												replaceLabel(particleLabels, tagv, minTag, sR2, sR3);
@@ -1705,20 +1704,19 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	class ConnectStructuresThread extends Thread {
-		final ImagePlus imp;
+	private final class ConnectStructuresThread extends Thread {
+		private final ImagePlus imp;
+		private final int thread;
+        private final int nThreads;
+        private final int nChunks;
+        private final int phase;
+		private final byte[][] workArray;
+        private final int[][] particleLabels;
+        private final int[][] chunkRanges;
 
-		final int thread, nThreads, nChunks, phase;
-
-		final byte[][] workArray;
-
-		final int[][] particleLabels;
-
-		final int[][] chunkRanges;
-
-		ConnectStructuresThread(final int thread, final int nThreads, final ImagePlus imp,
-								final byte[][] workArray, final int[][] particleLabels, final int phase, final int nChunks,
-								final int[][] chunkRanges) {
+		private ConnectStructuresThread(final int thread, final int nThreads, final ImagePlus imp,
+                final byte[][] workArray, final int[][] particleLabels, final int phase, final int nChunks,
+                final int[][] chunkRanges) {
 			this.imp = imp;
 			this.thread = thread;
 			this.nThreads = nThreads;

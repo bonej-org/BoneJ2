@@ -84,7 +84,7 @@ public class Purify implements PlugIn, DialogListener {
 		if (gd.wasCanceled())
 			return;
 		final String choice = gd.getNextChoice();
-		int labelMethod;
+		final int labelMethod;
 		if (choice.equals(items[0]))
 			labelMethod = ParticleCounter.MULTI;
 		else if (choice.equals(items[1]))
@@ -107,7 +107,7 @@ public class Purify implements PlugIn, DialogListener {
 					IJ.run("Invert LUT");
 			}
 		}
-		final double duration = ((double) System.currentTimeMillis() - (double) startTime) / 1000;
+		final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
 
 		if (showPerformance)
 			showResults(duration, imp, slicesPerChunk, labelMethod);
@@ -141,7 +141,7 @@ public class Purify implements PlugIn, DialogListener {
                 bg);
 		particleLabels = (int[][]) backgroundParticles[1];
 		particleSizes = pc.getParticleSizes(particleLabels);
-		touchEdges(imp, workArray, particleLabels, particleSizes, bg);
+		touchEdges(imp, workArray, particleLabels, particleSizes);
 		particleSizes = pc.getParticleSizes(particleLabels);
 		removeSmallParticles(workArray, particleLabels, particleSizes, bg);
 
@@ -165,14 +165,12 @@ public class Purify implements PlugIn, DialogListener {
 	 * isolated background particles touching the sides should be assigned to the
 	 * single background particle.
 	 * </p>
-	 *
-	 * @param workArray a work array
+	 *  @param workArray a work array
 	 * @param particleLabels particle labels.
-	 * @param particleSizes sizes of the particles.
-	 * @param phase foreground or background.
-	 */
+     * @param particleSizes sizes of the particles.
+     */
 	private void touchEdges(final ImagePlus imp, final byte[][] workArray, final int[][] particleLabels,
-			final long[] particleSizes, final int phase) {
+            final long[] particleSizes) {
 		final String status = "Background particles touching ";
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
@@ -203,7 +201,7 @@ public class Purify implements PlugIn, DialogListener {
 			final int rowOffset = y * w;
 			for (x = 0; x < w; x++) {
 				final int offset = rowOffset + x;
-				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
+				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
 					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
@@ -217,7 +215,7 @@ public class Purify implements PlugIn, DialogListener {
 			final int rowOffset = y * w;
 			for (x = 0; x < w; x++) {
 				final int offset = rowOffset + x;
-				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
+				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
 					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
@@ -229,7 +227,7 @@ public class Purify implements PlugIn, DialogListener {
 			IJ.showProgress(z, d);
 			for (y = 0; y < h; y++) {
 				final int offset = y * w;
-				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
+				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
 					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
@@ -241,7 +239,7 @@ public class Purify implements PlugIn, DialogListener {
 			IJ.showProgress(z, d);
 			for (y = 0; y < h; y++) {
 				final int offset = y * w + w - 1;
-				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
+				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
 					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
@@ -254,7 +252,7 @@ public class Purify implements PlugIn, DialogListener {
 			IJ.showProgress(z, d);
 			for (x = 0; x < w; x++) {
 				final int offset = rowOffset + x;
-				if (workArray[z][offset] == phase && particleLabels[z][offset] != biggestParticle) {
+				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
 					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
 				}
 			}
@@ -265,7 +263,7 @@ public class Purify implements PlugIn, DialogListener {
 			IJ.showStatus(status + "back");
 			IJ.showProgress(z, d);
 			for (x = 0; x < w; x++) {
-				if (workArray[z][x] == phase && particleLabels[z][x] != biggestParticle) {
+				if (workArray[z][x] == 0 && particleLabels[z][x] != biggestParticle) {
 					pc.replaceLabel(particleLabels, particleLabels[z][x], biggestParticle, d);
 				}
 			}

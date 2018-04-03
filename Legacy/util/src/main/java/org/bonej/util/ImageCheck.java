@@ -141,7 +141,7 @@ public class ImageCheck {
 			return -1;
 		}
 		String[] xyz = position.split("\\\\");
-		double first;
+		final double first;
 
 		if (xyz.length == 3) // we have 3 values
 			first = Double.parseDouble(xyz[2]);
@@ -149,8 +149,12 @@ public class ImageCheck {
 			return -1;
 
 		position = getDicomAttribute(imp, stackSize);
+        if (position == null) {
+            IJ.log("No DICOM slice position data");
+            return -1;
+        }
 		xyz = position.split("\\\\");
-		double last;
+		final double last;
 
 		if (xyz.length == 3) // we have 3 values
 			last = Double.parseDouble(xyz[2]);

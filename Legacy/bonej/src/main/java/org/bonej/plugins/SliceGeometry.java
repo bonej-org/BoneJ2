@@ -175,7 +175,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		final String units = cal.getUnits();
         al = imp.getStackSize() + 1;
 
-		String pixUnits;
+		final String pixUnits;
 		if (ImageCheck.huCalibrated(imp)) {
 			pixUnits = "HU";
 			fieldUpdated = true;
@@ -664,8 +664,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			final double[] angles) {
 		final ImageStack stack = imp.getImageStack();
 		final Rectangle r = stack.getRoi();
-		// END OF Ix and Iy CALCULATION
-		// START OF Imax AND Imin CALCULATION
 		final double[] I1 = new double[al];
 		final double[] I2 = new double[al];
 		final double[] Ip = new double[al];
@@ -836,25 +834,25 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 	}
 
-	class SliceThread extends Thread {
-		final int thread, nThreads, width, height, startSlice, endSlice;
+	private final class SliceThread extends Thread {
+		private final int thread;
+        private final int nThreads;
+        private final int startSlice;
+        private final int endSlice;
+		private final double min;
+        private final double max;
+		private final double[] meanThick;
+        private final double[] maxThick;
+        private final double[] stdevThick;
+		private final boolean[] emptySlices;
+		private final ImagePlus impT;
 
-		double min, max;
-
-		double[] meanThick, maxThick, stdevThick;
-
-		boolean[] emptySlices;
-
-		final ImagePlus impT;
-
-		SliceThread(final int thread, final int nThreads, final ImagePlus imp, final double min,
-					final double max, final double[] meanThick, final double[] maxThick, final double[] stdevThick,
-					final int startSlice, final int endSlice, final boolean[] emptySlices) {
+		private SliceThread(final int thread, final int nThreads, final ImagePlus imp, final double min,
+                final double max, final double[] meanThick, final double[] maxThick, final double[] stdevThick,
+                final int startSlice, final int endSlice, final boolean[] emptySlices) {
             impT = imp;
 			this.min = min;
 			this.max = max;
-            width = impT.getWidth();
-            height = impT.getHeight();
 			this.thread = thread;
 			this.nThreads = nThreads;
 			this.meanThick = meanThick;

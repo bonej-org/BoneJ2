@@ -39,7 +39,7 @@ public class BoneList {
 	 * List of bone names
 	 */
 	// Only add new bone names to the END of this list
-	private final static String[] boneList = { "unknown", "scapula", "humerus", "radius", "ulna", "metacarpal",
+    private static final String[] boneList = { "unknown", "scapula", "humerus", "radius", "ulna", "metacarpal",
 			"pelvis", "femur", "tibia", "fibula", "metatarsal", "calcaneus", "tibiotarsus", "tarsometatarsal",
 			"sacrum" };
 
