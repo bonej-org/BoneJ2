@@ -125,10 +125,10 @@ public class ImageCheck {
 	 * @return voxel thickness based on DICOM header information. Returns -1 if
 	 *         there is no DICOM slice position information.
 	 */
-	public static double dicomVoxelDepth(final ImagePlus imp) {
+	public static void dicomVoxelDepth(final ImagePlus imp) {
 		if (imp == null) {
 			IJ.error("Cannot check DICOM header of a null image");
-			return -1;
+			return;
 		}
 
 		final Calibration cal = imp.getCalibration();
@@ -138,7 +138,7 @@ public class ImageCheck {
 		String position = getDicomAttribute(imp, 1);
 		if (position == null) {
 			IJ.log("No DICOM slice position data");
-			return -1;
+			return;
 		}
 		String[] xyz = position.split("\\\\");
 		final double first;
@@ -146,12 +146,12 @@ public class ImageCheck {
 		if (xyz.length == 3) // we have 3 values
 			first = Double.parseDouble(xyz[2]);
 		else
-			return -1;
+			return;
 
 		position = getDicomAttribute(imp, stackSize);
         if (position == null) {
             IJ.log("No DICOM slice position data");
-            return -1;
+            return;
         }
 		xyz = position.split("\\\\");
 		final double last;
@@ -159,7 +159,7 @@ public class ImageCheck {
 		if (xyz.length == 3) // we have 3 values
 			last = Double.parseDouble(xyz[2]);
 		else
-			return -1;
+			return;
 
 		final double sliceSpacing = (Math.abs(last - first) + 1) / stackSize;
 		final String units = cal.getUnits();
@@ -174,8 +174,7 @@ public class ImageCheck {
 			imp.setCalibration(cal);
 		} else
 			IJ.log(imp.getTitle() + ": Voxel depth agrees with DICOM header.\n");
-		return sliceSpacing;
-	}
+    }
 
 	/**
 	 * Get the value associated with a DICOM tag from an ImagePlus header
@@ -194,20 +193,15 @@ public class ImageCheck {
 		if (header == null) {
 			return null;
 		}
-		String value = " ";
 		final String tag = "0020,0032";
 		final int idx1 = header.indexOf(tag);
 		final int idx2 = header.indexOf(":", idx1);
 		final int idx3 = header.indexOf("\n", idx2);
-		if (idx1 >= 0 && idx2 >= 0 && idx3 >= 0) {
-			try {
-				value = header.substring(idx2 + 1, idx3);
-				value = value.trim();
-			} catch (final Throwable e) {
-				return " ";
-			}
+		if (idx1 >= 0 && idx2 >= 0 && idx3 > idx2) {
+			final String value = header.substring(idx2 + 1, idx3);
+			return value.trim();
 		}
-		return value;
+		return " ";
 	}
 
 	/**

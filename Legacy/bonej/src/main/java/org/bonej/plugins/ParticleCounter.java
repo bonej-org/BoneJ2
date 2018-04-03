@@ -1805,8 +1805,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					final int y = voxel[1];
 					final int z = voxel[2];
 					// find any neighbours with bigger labels
-					int xN = x, yN = y, zN = z;
-					for (int n = 1; n < 7; n++) {
+					int xN = x;
+                    int yN = y;
+                    int zN = z;
+                    for (int n = 1; n < 7; n++) {
 						switch (n) {
 						case 1:
 							xN = x - 1;

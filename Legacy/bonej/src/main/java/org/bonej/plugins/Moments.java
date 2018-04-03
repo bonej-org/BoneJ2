@@ -185,10 +185,7 @@ public class Moments implements PlugIn, DialogListener {
      * @see #getDensityFactor(ImagePlus)
 	 */
 	private static double voxelDensity(final double pixelValue, final double m, final double c, final double factor) {
-		double voxelDensity = (m * pixelValue + c) / factor;
-		if (voxelDensity < 0)
-			voxelDensity = 0;
-		return voxelDensity;
+		return Math.max(0.0, (m * pixelValue + c) / factor);
 	}
 
 	/**
@@ -200,14 +197,12 @@ public class Moments implements PlugIn, DialogListener {
 	 */
 	private static double getDensityFactor(final ImagePlus imp) {
 		final String units = imp.getCalibration().getUnits();
-		final double factor;
-		if (units.contains("mm")) {
-			factor = 1000;
+        if (units.contains("mm")) {
+            return 1000;
 		} else {
-			factor = 1;
+            return 1;
 		}
-		return factor;
-	}
+    }
 
 	/**
 	 * Return an empty pixel array of the type appropriate for the bit depth
@@ -222,16 +217,14 @@ public class Moments implements PlugIn, DialogListener {
 	 */
 	// TODO throw exception when unexpected bit depth
 	static Object getEmptyPixels(final int w, final int h, final int bitDepth) {
-
-		Object emptyPixels = new Object();
-		if (bitDepth == 8) {
-			emptyPixels = new byte[w * h];
+	    if (bitDepth == 8) {
+            return new byte[w * h];
 		} else if (bitDepth == 16) {
-			emptyPixels = new short[w * h];
+            return new short[w * h];
 		} else if (bitDepth == 32) {
-			emptyPixels = new float[w * h];
+            return new float[w * h];
 		}
-		return emptyPixels;
+        return new Object();
 	}
 
 	/**
@@ -558,7 +551,8 @@ public class Moments implements PlugIn, DialogListener {
         private final int startSlice;
         private final int endSlice;
 		private final ImagePlus impT;
-		private final ImageProcessor[] sliceProcessors, targetProcessors;
+		private final ImageProcessor[] sliceProcessors;
+        private final ImageProcessor[] targetProcessors;
 		private final double[][] eigenVecInv;
 		private final double[] centroid;
 
