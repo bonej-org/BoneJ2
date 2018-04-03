@@ -130,7 +130,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private double m;
 	private double c;
 	private double[][] weightedCentroids;
-	private boolean fieldUpdated = false;
+	private boolean fieldUpdated;
 	/** List of perimeter lengths */
 	private double[] perimeter;
 	/** List of polar section moduli */

@@ -129,7 +129,7 @@ public class Purify implements PlugIn, DialogListener {
 		pc.setLabelMethod(labelMethod);
 
 		final int fg = ParticleCounter.FORE;
-		final Object[] foregroundParticles = pc.getParticles(imp, slicesPerChunk, Double.POSITIVE_INFINITY, fg);
+		final Object[] foregroundParticles = pc.getParticles(imp, slicesPerChunk, fg);
 		final byte[][] workArray = (byte[][]) foregroundParticles[0];
 		int[][] particleLabels = (int[][]) foregroundParticles[1];
 		// index 0 is background particle's size...
@@ -138,7 +138,7 @@ public class Purify implements PlugIn, DialogListener {
 
 		final int bg = ParticleCounter.BACK;
 		final Object[] backgroundParticles = pc.getParticles(imp, workArray, slicesPerChunk,
-				Double.POSITIVE_INFINITY, bg);
+                bg);
 		particleLabels = (int[][]) backgroundParticles[1];
 		particleSizes = pc.getParticleSizes(particleLabels);
 		touchEdges(imp, workArray, particleLabels, particleSizes, bg);

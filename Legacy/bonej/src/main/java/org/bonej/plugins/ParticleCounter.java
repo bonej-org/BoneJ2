@@ -484,7 +484,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return true;
 	}
 
-	private Object[][] getEllipsoids(final List<List<Point3f>> surfacePoints) {
+	private Object[][] getEllipsoids(final Collection<List<Point3f>> surfacePoints) {
 		final Object[][] ellipsoids = new Object[surfacePoints.size()][];
 		int p = 0;
 		for (final List<Point3f> points : surfacePoints) {
@@ -506,7 +506,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				ellipsoids[p] = FitEllipsoid.yuryPetrov(coOrdinates);
 			} catch (final RuntimeException re) {
 				IJ.log("Could not fit ellipsoid to surface " + p);
-				ellipsoids[p] = null;
 			}
 			p++;
 		}
@@ -895,7 +894,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			if (p > 0 && surfacePoint.size() > 0) {
 				Color3f pColour = new Color3f(0, 0, 0);
 				if (colourMode == GRADIENT) {
-					final float red = 1.0f - (float) p / (float) nParticles;
+					final float red = 1.0f - p / (float) nParticles;
 					final float green = 1.0f - red;
 					final float blue = p / (2.0f * nParticles);
 					pColour = new Color3f(red, green, blue);
@@ -1168,9 +1167,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	Object[] getParticles(final ImagePlus imp, final int slicesPerChunk,
-						  final double maxVol, final int phase) {
+            final int phase) {
 		final byte[][] workArray = makeWorkArray(imp);
-		return getParticles(imp, workArray, slicesPerChunk, 0.0, maxVol, phase, false);
+		return getParticles(imp, workArray, slicesPerChunk, 0.0, Double.POSITIVE_INFINITY, phase, false);
 	}
 
 	private Object[] getParticles(final ImagePlus imp, final int phase) {
@@ -1181,8 +1180,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-						  final double maxVol, final int phase) {
-		return getParticles(imp, workArray, slicesPerChunk, 0.0, maxVol, phase, false);
+            final int phase) {
+		return getParticles(imp, workArray, slicesPerChunk, 0.0, Double.POSITIVE_INFINITY, phase, false);
 	}
 
 	/**
@@ -1276,7 +1275,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final double[] particleVolumes = getVolumes(imp, particleSizes);
 		byte flip;
 		if (phase == FORE) {
-			flip = (byte) 0;
+			flip = 0;
 		} else {
 			flip = (byte) 255;
 		}
@@ -1396,7 +1395,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				final int nL = newLabel[p];
 				if (nL == 0) {
 					particleLabels[z][i] = 0;
-					workArray[z][i] = (byte) 0;
+					workArray[z][i] = 0;
 				}
 			}
 		}
@@ -1413,7 +1412,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 */
 	int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
 		final int d = imp.getImageStackSize();
-		int nChunks = (int) Math.floor((double) d / (double) slicesPerChunk);
+		int nChunks = d / slicesPerChunk;
 
 		final int remainder = d % slicesPerChunk;
 
@@ -1447,7 +1446,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					final int rowIndex = y * w;
 					for (int x = 0; x < w; x++) {
 						final int arrayIndex = rowIndex + x;
-						if (workArray[z][arrayIndex] == phase) {
+						if (workArray[z][arrayIndex] == FORE) {
 							particleLabels[z][arrayIndex] = ID;
 							int minTag = ID;
 							// Find the minimum particleLabel in the
@@ -1457,7 +1456,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 									for (int vX = x - 1; vX <= x + 1; vX++) {
 										if (withinBounds(vX, vY, vZ, w, h, 0, d)) {
 											final int offset = getOffset(vX, vY, w);
-											if (workArray[vZ][offset] == phase) {
+											if (workArray[vZ][offset] == FORE) {
 												final int tagv = particleLabels[vZ][offset];
 												if (tagv != 0 && tagv < minTag) {
 													minTag = tagv;
@@ -1485,7 +1484,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					final int rowIndex = y * w;
 					for (int x = 0; x < w; x++) {
 						final int arrayIndex = rowIndex + x;
-						if (workArray[z][arrayIndex] == phase) {
+						if (workArray[z][arrayIndex] == BACK) {
 							particleLabels[z][arrayIndex] = ID;
 							int minTag = ID;
 							// Find the minimum particleLabel in the
@@ -1518,7 +1517,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 								}
 								if (withinBounds(nX, nY, nZ, w, h, 0, d)) {
 									final int offset = getOffset(nX, nY, w);
-									if (workArray[nZ][offset] == phase) {
+									if (workArray[nZ][offset] == BACK) {
 										final int tagv = particleLabels[nZ][offset];
 										if (tagv != 0 && tagv < minTag) {
 											minTag = tagv;
@@ -1569,7 +1568,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						final int rowIndex = y * w;
 						for (int x = 0; x < w; x++) {
 							final int arrayIndex = rowIndex + x;
-							if (workArray[z][arrayIndex] == phase && particleLabels[z][arrayIndex] > 1) {
+							if (workArray[z][arrayIndex] == FORE && particleLabels[z][arrayIndex] > 1) {
 								int minTag = particleLabels[z][arrayIndex];
 								// Find the minimum particleLabel in the
 								// neighbours' pixels
@@ -1617,7 +1616,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						final int rowIndex = y * w;
 						for (int x = 0; x < w; x++) {
 							final int arrayIndex = rowIndex + x;
-							if (workArray[z][arrayIndex] == phase) {
+							if (workArray[z][arrayIndex] == BACK) {
 								int minTag = particleLabels[z][arrayIndex];
 								// Find the minimum particleLabel in the
 								// neighbours' pixels
@@ -1790,6 +1789,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				}
 			}
 		}
+		// TODO break; missing?!
 		case BACK: {
 			for (int b = 1; b < nBlobs; b++) {
 				IJ.showStatus("Joining substructures...");

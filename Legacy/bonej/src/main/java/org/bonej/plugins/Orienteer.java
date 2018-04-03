@@ -34,6 +34,7 @@ import java.awt.event.WindowEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 
 import ij.IJ;
@@ -71,7 +72,7 @@ public class Orienteer extends PlugInFrame
 	private int axis0 = 1;
 
 	/** Current secondary direction choice */
-	private int axis1 = 0;
+	private int axis1;
 
 	/** Direction labels */
 	private String[] directions = { axisLabels[axis0][2], axisLabels[axis0][3], axisLabels[axis1][2],
@@ -79,7 +80,7 @@ public class Orienteer extends PlugInFrame
 	private static Orienteer instance;
 
 	/** Current orientation in radians */
-	private double theta = 0;
+	private double theta;
 
 	/** Axis length */
 	private int length;
@@ -90,8 +91,8 @@ public class Orienteer extends PlugInFrame
 	private Integer activeImpID;
 	private final Hashtable<Integer, Double> thetaHash = new Hashtable<>();
 	private final Hashtable<Integer, Integer> lengthHash = new Hashtable<>();
-	private final Hashtable<Integer, Point> centreHash = new Hashtable<>();
-	private final Hashtable<Integer, GeneralPath> pathHash = new Hashtable<>();
+	private final Map<Integer, Point> centreHash = new Hashtable<>();
+	private final Map<Integer, GeneralPath> pathHash = new Hashtable<>();
 	private final Hashtable<Integer, int[]> axisHash = new Hashtable<>();
 	private final Hashtable<Integer, boolean[]> reflectHash = new Hashtable<>();
 	private final Hashtable<Integer, boolean[]> unitHash = new Hashtable<>();
@@ -108,8 +109,8 @@ public class Orienteer extends PlugInFrame
 	private Choice axis1Choice;
 	private Checkbox reflect0;
 	private Checkbox reflect1;
-	private boolean isReflected0 = false;
-	private boolean isReflected1 = false;
+	private boolean isReflected0;
+	private boolean isReflected1;
 	private TextField text;
 	private Checkbox deg;
 	private Checkbox rad;
@@ -498,7 +499,7 @@ public class Orienteer extends PlugInFrame
         theta += deltaTheta;
 		path.transform(transform);
 		overlay.clear();
-		addPath(path, Color.BLUE, stroke);
+		addPath(path, stroke);
 		addLabels();
 		imp.setOverlay(overlay);
 		thetaHash.put(activeImpID, theta);
@@ -547,9 +548,9 @@ public class Orienteer extends PlugInFrame
 			text.setText(IJ.d2s(theta, 5));
 	}
 
-	private void addPath(final Shape shape, final Color color, final BasicStroke stroke) {
+	private void addPath(final Shape shape, final BasicStroke stroke) {
 		final Roi roi = new ShapeRoi(shape);
-		roi.setStrokeColor(color);
+		roi.setStrokeColor(Color.BLUE);
 		roi.setStroke(stroke);
 		roi.setStrokeWidth(roi.getStrokeWidth() / (float) scale);
 		overlay.add(roi);

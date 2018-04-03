@@ -65,7 +65,7 @@ import ij3d.Image3DUniverse;
  */
 public class Moments implements PlugIn, DialogListener {
 
-	private boolean fieldUpdated = false;
+	private boolean fieldUpdated;
 	private Calibration cal;
 
 	@Override
@@ -435,10 +435,10 @@ public class Moments implements PlugIn, DialogListener {
 		} else if (di <= hi && hi <= wi) {
 			IJ.log("Case 3");
 			rotation = E.times(RotY);
-		} else if (hi <= di && di <= wi) {
+		} else if (hi <= di) {
 			IJ.log("Case 4");
 			rotation = E.times(RotY).times(RotZ);
-		} else if (di <= wi && wi <= hi) {
+		} else if (wi <= hi) {
 			IJ.log("Case 5");
 			rotation = E.times(RotX).times(RotZ);
 		} else {

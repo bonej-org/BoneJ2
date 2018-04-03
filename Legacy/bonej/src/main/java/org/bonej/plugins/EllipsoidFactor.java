@@ -23,6 +23,7 @@ package org.bonej.plugins;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -285,7 +286,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final long unfilled = sumForegroundCount - sumFilledCount;
 		IJ.log(unfilled + " pixels unfilled with ellipsoids out of " + sumForegroundCount + " total foreground pixels");
 
-		return (double) sumFilledCount / (double) sumForegroundCount;
+		return sumFilledCount / (double) sumForegroundCount;
 	}
 
 	/**
@@ -1078,7 +1079,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		torqueList.add(new Point3f((float) c[0], (float) c[1], (float) c[2]));
 		torqueList.add(new Point3f((float) (torque[0] + c[0]), (float) (torque[1] + c[1]), (float) (torque[2] + c[2])));
 		final CustomLineMesh torqueLine = new CustomLineMesh(torqueList);
-		final Color3f blue = new Color3f((float) 0.0, (float) 0.0, (float) 1.0);
+		final Color3f blue = new Color3f(0.0f, 0.0f, 1.0f);
 		torqueLine.setColor(blue);
 
 		// Axis-aligned bounding box
@@ -1167,7 +1168,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * @param contactPoints
 	 * @return
 	 */
-	private double[] contactPointUnitVector(final Ellipsoid ellipsoid, final List<double[]> contactPoints) {
+	private double[] contactPointUnitVector(final Ellipsoid ellipsoid, final Collection<double[]> contactPoints) {
 
 		final int nPoints = contactPoints.size();
 
@@ -1366,7 +1367,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		return ellipsoid;
 	}
 
-	private Ellipsoid bump(final Ellipsoid ellipsoid, final List<double[]> contactPoints, final double px,
+	private Ellipsoid bump(final Ellipsoid ellipsoid, final Collection<double[]> contactPoints, final double px,
 			final double py, final double pz) {
 
 		final double displacement = vectorIncrement / 2;
@@ -1480,7 +1481,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final int w = imp.getWidth();
 
 		// Bare ArrayList is not thread safe for concurrent add() operations.
-		final List<int[]> list = Collections.synchronizedList(new ArrayList<int[]>());
+		final List<int[]> list = Collections.synchronizedList(new ArrayList<>());
 
 		final AtomicInteger ai = new AtomicInteger(1);
 		final Thread[] threads = Multithreader.newThreads();

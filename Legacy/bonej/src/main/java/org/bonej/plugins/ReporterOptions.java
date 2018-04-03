@@ -51,17 +51,17 @@ public class ReporterOptions implements PlugIn {
 		dialog.showDialog();
 		if (dialog.wasCanceled()) {
 			Prefs.set(OPTOUTKEY, false);
-			Prefs.set(ReporterOptions.COOKIE, "");
-			Prefs.set(ReporterOptions.COOKIE2, "");
-			Prefs.set(ReporterOptions.FIRSTTIMEKEY, "");
-			Prefs.set(ReporterOptions.SESSIONKEY, "");
-			Prefs.set(ReporterOptions.IJSESSIONKEY, "");
+			Prefs.set(COOKIE, "");
+			Prefs.set(COOKIE2, "");
+			Prefs.set(FIRSTTIMEKEY, "");
+			Prefs.set(SESSIONKEY, "");
+			Prefs.set(IJSESSIONKEY, "");
 		} else {
 			Prefs.set(OPTOUTKEY, true);
-			Prefs.set(ReporterOptions.COOKIE, new Random().nextInt(Integer.MAX_VALUE));
-			Prefs.set(ReporterOptions.COOKIE2, new Random().nextInt(Integer.MAX_VALUE));
+			Prefs.set(COOKIE, new Random().nextInt(Integer.MAX_VALUE));
+			Prefs.set(COOKIE2, new Random().nextInt(Integer.MAX_VALUE));
 			final long time = System.currentTimeMillis() / 1000;
-			Prefs.set(ReporterOptions.FIRSTTIMEKEY, Long.toString(time));
+			Prefs.set(FIRSTTIMEKEY, Long.toString(time));
 			Prefs.set(SESSIONKEY, 1);
 		}
 

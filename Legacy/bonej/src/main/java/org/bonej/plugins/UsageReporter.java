@@ -80,8 +80,8 @@ public class UsageReporter {
 	private static String utmsc;
 	private static int session;
 	private static String utmcc;
-	private static long lastTime = 0;
-	private static long thisTime = 0;
+	private static long lastTime;
+	private static long thisTime;
 
 	private static Random random;
 
@@ -143,7 +143,7 @@ public class UsageReporter {
 			return INSTANCE;
 		utms = "utms=" + session + "&";
 		session++;
-		final String val = (value == null) ? "" : "(" + value.toString() + ")";
+		final String val = (value == null) ? "" : "(" + value + ")";
 		utme = "utme=5(" + category + "*" + action + "*" + label + ")" + val + "&";
 		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
 		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
@@ -202,24 +202,22 @@ public class UsageReporter {
 		if (!isAllowed())
 			return;
 		try {
-			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs + utmsr + utmvp + utmsc
-					+ utmul + utmje + utmfl + utmcnr + utmdt + utmhid + utmr + utmp + utmac + utmcc);
-			if (IJ.debugMode)
-				IJ.log(url.toString());
+			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
+				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
+				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			if (IJ.debugMode)
-				IJ.log(uc.getRequestProperty("User-Agent"));
-			final BufferedReader in = new BufferedReader(new InputStreamReader(uc.getInputStream()));
-			String inputLine;
-			while ((inputLine = in.readLine()) != null) {
-				if (IJ.debugMode)
-					IJ.log(inputLine);
-				// TODO Why is this hanging here?
-				inputLine.length();
+			if (!IJ.debugMode) {
+				return;
 			}
-			in.close();
-		} catch (final IOException e) {
+            IJ.log(url.toString());
+			IJ.log(uc.getRequestProperty("User-Agent"));
+			try (final BufferedReader reader = new BufferedReader(
+				new InputStreamReader(uc.getInputStream())))
+			{
+				reader.lines().forEach(IJ::log);
+			}
+        } catch (final IOException e) {
 			if (IJ.debugMode)
 				e.printStackTrace();
 		}

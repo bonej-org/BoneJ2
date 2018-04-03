@@ -53,22 +53,22 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 	private double testRange = 0.2;
 
 	/** Show a plot of connectivity vs. threshold */
-	private boolean doPlot = false;
+	private boolean doPlot;
 
 	/** Apply the threshold to the stack once it is found */
-	private boolean applyThreshold = false;
+	private boolean applyThreshold;
 
 	/**
 	 * Return the autothreshold for the stack histogram without doing
 	 * connectivity analysis
 	 */
-	private boolean thresholdOnly = false;
+	private boolean thresholdOnly;
 
 	/** Number of cycles of erosion to apply */
-	private int nErodes = 0;
+	private int nErodes;
 
 	/** Number of cycles of dilation to apply */
-	private int nDilates = 0;
+	private int nDilates;
 
 	@Override
 	public void run(final String arg) {
