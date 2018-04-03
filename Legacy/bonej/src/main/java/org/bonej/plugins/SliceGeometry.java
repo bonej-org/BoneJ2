@@ -310,20 +310,28 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				rt.addValue("Mean Thick 2D (" + units + ")", meanCortThick2D[s]);
 				rt.addValue("SD Thick 2D (" + units + ")", stdevCortThick2D[s]);
 			}
-			if (doOriented && orienteer != null && orienteer.getDirections(imp) != null) {
-				final String[] dirs = orienteer.getDirections(imp);
-				rt.addValue(dirs[0] + " (rad)", orienteer.getOrientation(imp, dirs[0]));
-				rt.addValue(dirs[2] + " (rad)", orienteer.getOrientation(imp, dirs[2]));
-				rt.addValue("I" + dirs[0] + dirs[1] + "(" + units + "^4)", I1[s]);
-				rt.addValue("I" + dirs[2] + dirs[3] + "(" + units + "^4)", I2[s]);
-				rt.addValue("Z" + dirs[0] + dirs[1] + "(" + units + "³)", Z1[s]);
-				rt.addValue("Z" + dirs[2] + dirs[3] + "(" + units + "³)", Z2[s]);
-				rt.addValue("R" + dirs[0] + dirs[1] + "(" + units + ")", maxRad2[s]);
-				rt.addValue("R" + dirs[2] + dirs[3] + "(" + units + ")", maxRad1[s]);
-				rt.addValue("D" + dirs[0] + dirs[1] + "(" + units + ")", principalDiameter[s]);
-				rt.addValue("D" + dirs[2] + dirs[3] + "(" + units + ")", secondaryDiameter[s]);
+            if (!doOriented || orienteer == null) {
+			    continue;
 			}
-		}
+            final String[] dirs = orienteer.getDirections(imp);
+            if (dirs == null) {
+                continue;
+            }
+            rt.addValue(dirs[0] + " (rad)", orienteer.getOrientation(imp,
+                dirs[0]));
+            rt.addValue(dirs[2] + " (rad)", orienteer.getOrientation(imp,
+                dirs[2]));
+            rt.addValue("I" + dirs[0] + dirs[1] + "(" + units + "^4)", I1[s]);
+            rt.addValue("I" + dirs[2] + dirs[3] + "(" + units + "^4)", I2[s]);
+            rt.addValue("Z" + dirs[0] + dirs[1] + "(" + units + "³)", Z1[s]);
+            rt.addValue("Z" + dirs[2] + dirs[3] + "(" + units + "³)", Z2[s]);
+            rt.addValue("R" + dirs[0] + dirs[1] + "(" + units + ")", maxRad2[s]);
+            rt.addValue("R" + dirs[2] + dirs[3] + "(" + units + ")", maxRad1[s]);
+            rt.addValue("D" + dirs[0] + dirs[1] + "(" + units + ")",
+                principalDiameter[s]);
+            rt.addValue("D" + dirs[2] + dirs[3] + "(" + units + ")",
+                secondaryDiameter[s]);
+        }
 		rt.show("Results");
 
 		if (doAxes || doCentroids) {

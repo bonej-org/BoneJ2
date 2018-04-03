@@ -70,8 +70,9 @@ import ij.plugin.frame.PlugInFrame;
  * @author Wayne Rasband
  *
  */
+// TODO Figure out if class should be singleton or not. Design is broken.
 @SuppressWarnings("serial")
-public class Orienteer extends PlugInFrame
+public final class Orienteer extends PlugInFrame
 		implements AdjustmentListener, ItemListener, TextListener, MouseWheelListener {
 
 	private static final String LOC_KEY = "aa.loc";
@@ -92,7 +93,7 @@ public class Orienteer extends PlugInFrame
 	/** Direction labels */
 	private String[] directions = { axisLabels[axis0][2], axisLabels[axis0][3], axisLabels[axis1][2],
 			axisLabels[axis1][3] };
-	private static Orienteer instance;
+	private static Orienteer instance = new Orienteer();
 
 	/** Current orientation in radians */
 	private double theta;
@@ -118,18 +119,18 @@ public class Orienteer extends PlugInFrame
 	private GeneralPath path;
 	private BasicStroke stroke;
 
-    private Scrollbar slider;
-	private Choice axis0Choice;
-	private Choice axis1Choice;
-	private Checkbox reflect0;
-	private Checkbox reflect1;
+    private final Scrollbar slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0, 360);
+	private final Choice axis0Choice = new Choice();
+	private final Choice axis1Choice = new Choice();
+	private final Checkbox reflect0 = new Checkbox("Reflect");
+	private final Checkbox reflect1 = new Checkbox("Reflect");
 	private boolean isReflected0;
 	private boolean isReflected1;
-	private TextField text;
-	private Checkbox deg;
-	private Checkbox rad;
+	private final TextField text = new TextField(IJ.d2s(0.0, 3), 7);
+	private final Checkbox deg = new Checkbox("deg", true);
+	private final Checkbox rad = new Checkbox("rad", false);
 
-	public Orienteer() {
+	private Orienteer() {
 		super("Orientation");
 		if (instance != null) {
 			if (!instance.getTitle().equals(getTitle())) {
@@ -149,7 +150,6 @@ public class Orienteer extends PlugInFrame
         final GridBagConstraints c = new GridBagConstraints();
 		setLayout(gridbag);
 
-		slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0, 360);
 		c.gridy = 0;
 		c.insets = new Insets(2, 10, 0, 10);
 		gridbag.setConstraints(slider, c);
@@ -163,13 +163,12 @@ public class Orienteer extends PlugInFrame
 		final Panel degRadPanel = new Panel();
 		final Label degRadLabel = new Label("Orientation");
 		degRadPanel.add(degRadLabel);
-		text = new TextField(IJ.d2s(0.0, 3), 7);
 		degRadPanel.add(text);
 		text.addTextListener(this);
 
 		final CheckboxGroup degRad = new CheckboxGroup();
-		deg = new Checkbox("deg", degRad, true);
-		rad = new Checkbox("rad", degRad, false);
+		deg.setCheckboxGroup(degRad);
+		rad.setCheckboxGroup(degRad);
 		degRadPanel.add(deg);
 		degRadPanel.add(rad);
 		deg.addItemListener(this);
@@ -180,7 +179,6 @@ public class Orienteer extends PlugInFrame
 		final Label label0 = new Label("Principal direction");
 		panel0.add(label0);
 
-		axis0Choice = new Choice();
 		for (final String[] axisLabel : axisLabels) {
 			axis0Choice.addItem(axisLabel[0] + " - " + axisLabel[1]);
 		}
@@ -188,7 +186,6 @@ public class Orienteer extends PlugInFrame
 		axis0Choice.addItemListener(this);
 		panel0.add(axis0Choice);
 
-		reflect0 = new Checkbox("Reflect");
 		reflect0.setState(false);
 		reflect0.addItemListener(this);
 		panel0.add(reflect0);
@@ -197,7 +194,6 @@ public class Orienteer extends PlugInFrame
 		final Label label1 = new Label("Secondary direction");
 		panel1.add(label1);
 
-		axis1Choice = new Choice();
 		for (final String[] axisLabel : axisLabels) {
 			axis1Choice.addItem(axisLabel[0] + " - " + axisLabel[1]);
 		}
@@ -205,7 +201,6 @@ public class Orienteer extends PlugInFrame
 		axis1Choice.addItemListener(this);
 		panel1.add(axis1Choice);
 
-		reflect1 = new Checkbox("Reflect");
 		reflect1.setState(false);
 		reflect1.addItemListener(this);
 		panel1.add(reflect1);
@@ -381,8 +376,7 @@ public class Orienteer extends PlugInFrame
 	}
 
 	/**
-	 * Gets the labels associated with an ImagePlus. Returns null if the image
-	 * isn't being tracked by Orienteer.
+	 * Gets the labels associated with an ImagePlus.
 	 *
      * @param imp an image.
 	 * @return an array of axis labels, with the principal direction in the
@@ -434,13 +428,16 @@ public class Orienteer extends PlugInFrame
 	private double getOrientation(final ImagePlus imp)
 	{
 		final Integer id = imp.getID();
-		return thetaHash.get(id);
+        return thetaHash.get(id);
 	}
 
-	double getOrientation(final ImagePlus imp, final String direction) {
-		double orientation = getOrientation(imp);
+	double getOrientation(final ImagePlus imp, final String direction)
+		throws NullPointerException
+	{
 		final String[] dir = getDirections(imp);
-
+		if (dir == null) {
+			throw new NullPointerException("Image not tracked by Orienteer");
+		}
 		int quadrant = 0;
 		for (int i = 0; i < 4; i++) {
 			if (dir[i].equals(direction)) {
@@ -448,6 +445,7 @@ public class Orienteer extends PlugInFrame
 				break;
 			}
 		}
+        double orientation = getOrientation(imp);
 
 		switch (quadrant) {
 		case 0:
@@ -462,11 +460,9 @@ public class Orienteer extends PlugInFrame
 			orientation += 3 * Math.PI / 2;
 			break;
 		}
-
-		if (orientation > 2 * Math.PI)
-
-			return orientation - 2 * Math.PI;
-
+		if (orientation > 2 * Math.PI) {
+            return orientation - 2 * Math.PI;
+        }
 		return orientation;
 	}
 
@@ -579,7 +575,6 @@ public class Orienteer extends PlugInFrame
 	@Override
 	public void close() {
 		super.close();
-		instance = null;
 		if (WindowManager.getImageCount() == 0)
 			return;
 		// clear the orientation overlay from open images

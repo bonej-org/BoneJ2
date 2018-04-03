@@ -47,6 +47,7 @@ import ij.Prefs;
  * 
  * @author Michael Doube
  */
+// TODO Fix class design: decide if singleton or not!
 public final class UsageReporter {
 	private static final UsageReporter INSTANCE = new UsageReporter();
 	/**
@@ -55,7 +56,7 @@ public final class UsageReporter {
 	 * FIXME: it is fragile to have the version hard-coded here. Create a
 	 * BoneJApp instead.
 	 */
-	private static final String BONEJ_VERSION = "1.5.0";
+	private static final String BONEJ_VERSION = "LEGACY";
 
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
@@ -70,20 +71,20 @@ public final class UsageReporter {
 	private static final String utmr = "utmr=-&";
 	private static final String utmp = "utmp=%2Fstats&";
 
-	private static String bonejSession;
 	private static String utmcnr = "";
 	private static String utme;
 	private static String utmn;
-	private static String utms;
 	private static String utmsr;
 	private static String utmvp;
 	private static String utmsc;
-	private static int session;
+	private static int session = 0;
+    private static String utms = "utms=" + session + "&";
 	private static String utmcc;
-	private static long lastTime;
-	private static long thisTime;
+	private static long thisTime = 0;
+    private static long lastTime = 0;
 
-	private static Random random;
+	private static final Random random = new Random();
+    private static String bonejSession = Prefs.get(ReporterOptions.SESSIONKEY, Integer.toString(new Random().nextInt(1000)));
 
 	private static String utmhid;
 
@@ -92,7 +93,6 @@ public final class UsageReporter {
 	 * single sessions are set here
 	 */
 	private UsageReporter() {
-		random = new Random();
 		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false))
 			return;
 		bonejSession = Prefs.get(ReporterOptions.SESSIONKEY, Integer.toString(new Random().nextInt(1000)));
@@ -222,7 +222,7 @@ public final class UsageReporter {
 		}
 	}
 
-	private String userAgentString() {
+	private static String userAgentString() {
 		final String os;
 		if (IJ.isMacintosh()) {
 			// Handle Mac OSes on PPC and Intel
