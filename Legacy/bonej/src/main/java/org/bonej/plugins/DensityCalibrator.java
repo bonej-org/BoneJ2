@@ -37,7 +37,7 @@ public class DensityCalibrator implements PlugIn {
 			IJ.noImage();
 			return;
 		}
-		if (arg.equals("scanco"))
+		if ("scanco".equals(arg))
 			try {
 				scanco(imp);
 			} catch (final NumberFormatException | NullPointerException e) {
