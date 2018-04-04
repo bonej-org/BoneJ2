@@ -16,6 +16,7 @@ import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -155,7 +156,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 
 	// region -- Helper methods --
 	private static <B extends BooleanType<B>> long countPhaseChanges(
-		final RandomAccessibleInterval<B> interval, final Vector3d start,
+		final RandomAccessible<B> interval, final Vector3d start,
 		final Tuple3d gap, final long samples)
 	{
 		final RandomAccess<B> access = interval.randomAccess();
@@ -179,7 +180,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	}
 
 	private Stream<Section> findIntersectingSections(final LinePlane plane,
-		final RandomAccessibleInterval<B> interval)
+		final Interval interval)
 	{
 		final Vector3d direction = plane.getDirection();
 		return plane.getOrigins(bins).map(origin -> intersectInterval(origin,
@@ -212,7 +213,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	}
 
 	private ValuePair<Double, Long> mILValues(
-		final RandomAccessibleInterval<B> interval, final Section section,
+		final RandomAccessible<B> interval, final Section section,
 		final Vector3d direction, final double increment)
 	{
 		final long intercepts = sampleSection(interval, section, direction,
@@ -232,7 +233,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 			Optional.class, ValuePair.class, interval);
 	}
 
-	private Vector3d sampleMILVector(final RandomAccessibleInterval<B> interval,
+	private Vector3d sampleMILVector(final RandomAccessible<B> interval,
 		final Stream<Section> sections, final Vector3d direction)
 	{
 		final DoubleType totalLength = new DoubleType();
@@ -248,7 +249,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 		return milVector;
 	}
 
-	private long sampleSection(final RandomAccessibleInterval<B> interval,
+	private long sampleSection(final RandomAccessible<B> interval,
 		final Section section, final Vector3d direction, final double increment)
 	{
 		// Add a random offset so that sampling doesn't always start from the same
