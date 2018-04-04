@@ -5,6 +5,7 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imglib2.Interval;
@@ -42,9 +43,9 @@ class LinePlane {
 	<I extends Interval> LinePlane(final I interval, final AxisAngle4d rotation,
 		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp)
 	{
-		this.size = findPlaneSize(interval);
-		this.translation.set(-size * 0.5, -size * 0.5, 0.0);
-		this.centroid = findCentroid(interval);
+        size = findPlaneSize(interval);
+        translation.set(-size * 0.5, -size * 0.5, 0.0);
+        centroid = findCentroid(interval);
 		this.rotateOp = rotateOp;
 		this.rotation = rotation;
 		direction = createDirection();
@@ -72,7 +73,7 @@ class LinePlane {
 	 * @return a finite stream of origin points on the plane.
 	 */
 	Stream<Point3d> getOrigins(final Long bins) {
-		final Stream.Builder<Point3d> builder = Stream.builder();
+		final Builder<Point3d> builder = Stream.builder();
 		final double step = 1.0 / bins;
 		final double uOffset = random.nextDouble() * step;
 		final double tOffset = random.nextDouble() * step;
