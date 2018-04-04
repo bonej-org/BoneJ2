@@ -24,7 +24,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
@@ -58,7 +57,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.DialogPrompt;
+import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Matrix4d;
@@ -82,11 +81,11 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * Default directions is 2_000 since that's roughly the number of points in
 	 * Poisson distributed sampling that'd give points about 5 degrees apart).
 	 */
-	private static int DEFAULT_DIRECTIONS = 2_000;
+	private static final int DEFAULT_DIRECTIONS = 2_000;
 	// The default number of lines was found to be sensible after experimenting
 	// with data at hand. Other data may need a different number.
-	private static int DEFAULT_LINES = 100;
-	private static double DEFAULT_INCREMENT = 1.0;
+	private static final int DEFAULT_LINES = 100;
+	private static final double DEFAULT_INCREMENT = 1.0;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")
@@ -229,7 +228,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		try {
 			pointCloud = runDirectionsInParallel(subspace.interval);
 		}
-		catch (ExecutionException | InterruptedException e) {
+		catch (final ExecutionException | InterruptedException e) {
 			logService.trace(e.getMessage());
 			cancel("The plug-in was interrupted");
 			return false;
@@ -263,7 +262,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
 			RotateAboutAxis.randomAxisAngle());
-		final List<Future<Vector3d>> futures = Stream.generate(() -> milTask).limit(
+		final List<Future<Vector3d>> futures = generate(() -> milTask).limit(
 			directions).map(executor::submit).collect(toList());
 		final List<Vector3d> pointCloud = Collections.synchronizedList(
 			new ArrayList<>(directions));
@@ -279,7 +278,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	// Shuts down an ExecutorService as per recommended by Oracle
-	private void shutdownAndAwaitTermination(ExecutorService executor) {
+	private void shutdownAndAwaitTermination(final ExecutorService executor) {
 		executor.shutdown(); // Disable new tasks from being submitted
 		try {
 			// Wait a while for existing tasks to terminate
@@ -291,7 +290,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				}
 			}
 		}
-		catch (InterruptedException ie) {
+		catch (final InterruptedException ie) {
 			// (Re-)Cancel if current thread also interrupted
 			executor.shutdownNow();
 			// Preserve interrupt status
@@ -314,7 +313,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			return;
 		}
 		if (!isCalibrationIsotropic() && !calibrationWarned) {
-			final DialogPrompt.Result result = uiService.showDialog(
+			final Result result = uiService.showDialog(
 				"The voxels in the image are anisotropic, which may affect results. Continue anyway?",
 				WARNING_MESSAGE, OK_CANCEL_OPTION);
 			// Avoid showing warning more than once (validator gets called before and

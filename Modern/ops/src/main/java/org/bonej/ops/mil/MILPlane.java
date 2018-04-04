@@ -277,7 +277,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	 * The direction comes from the {@link LinePlane} used in the op.
 	 * </p>
 	 */
-	private static class Section {
+	private static final class Section {
 
 		private final double tMin;
 		private final double tMax;
