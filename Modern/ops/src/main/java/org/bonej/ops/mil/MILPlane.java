@@ -44,7 +44,7 @@ import org.scijava.vecmath.Vector3d;
  * <p>
  * For example MIL vectors can be used to estimate the anisotropy of the
  * "texture" in an image. It's best suited for images that are completely
- * filled, and a part of a larger whole, e.g. a section of trabecular bone.
+ * filled, and a part of a larger whole, e.g. a volume of trabecular bone.
  * </p>
  * <p>
  * For more details, see:
@@ -123,7 +123,9 @@ public class MILPlane<B extends BooleanType<B>> extends
 	 *
 	 * @param interval a 3D interval.
 	 * @param rotation direction of the MIL lines in the interval.
-	 * @return total length / total phase changes of vectors sampled in interval.
+	 * @return a vector <b>v</b> parallel to the MIL lines, whose magnitude
+	 *         ||<b>v</b>|| = total length of lines / total phase changes from
+	 *         background to foreground
 	 */
 	@Override
 	public Vector3d calculate(final RandomAccessibleInterval<B> interval,

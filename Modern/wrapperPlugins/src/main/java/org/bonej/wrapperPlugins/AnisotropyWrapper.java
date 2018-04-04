@@ -83,8 +83,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * Poisson distributed sampling that'd give points about 5 degrees apart).
 	 */
 	private static int DEFAULT_DIRECTIONS = 2_000;
-	// Magic number, there are no good guesses what might be the right number of
-	// lines. Selected by fiddling around with the tool
+	// The default number of lines was found to be sensible after experimenting
+	// with data at hand. Other data may need a different number.
 	private static int DEFAULT_LINES = 100;
 	private static double DEFAULT_INCREMENT = 1.0;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
@@ -256,9 +256,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final int cores = Runtime.getRuntime().availableProcessors();
 		// The parallellization of the the MILPlane algorithm is a memory bound
 		// problem, which is why speed gains start to drop after 5 cores. With much
-		// larger 'nThreads' it slows down due overhead. Of course '5' here is a bit
-		// of a magic number, which might not hold true for all environment, but we
-		// need some kind of upper bound
+		// larger 'nThreads' it slows down due to overhead. Of course '5' here is a
+		// bit of a magic number, which might not hold true for all environments,
+		// but we need some kind of upper bound
 		final int nThreads = Math.max(5, cores);
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
