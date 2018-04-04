@@ -544,7 +544,10 @@ public class Ellipsoid {
 	 * @return a copy of the instance.
 	 */
 	public Ellipsoid copy() {
-		// TODO Fix shallow copy of ev matrix
-		return new Ellipsoid(ra, rb, rc, cx, cy, cz, ev.clone());
+		final double[][] clone = new double[ev.length][];
+		for (int i = 0; i < ev.length; i++) {
+			clone[i] = ev[i].clone();
+		}
+		return new Ellipsoid(ra, rb, rc, cx, cy, cz, clone);
 	}
 }
