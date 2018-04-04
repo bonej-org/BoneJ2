@@ -24,6 +24,11 @@ package org.bonej.geometry;
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
+
+import static java.util.stream.DoubleStream.of;
+
 /**
  * <p>
  * Represents an ellipsoid defined by its centroid, eigenvalues and 3x3
@@ -212,29 +217,7 @@ public class Ellipsoid {
 	 * @return radii in ascending order
 	 */
 	public double[] getSortedRadii() {
-		// TODO use Arrays.sort
-		double a = ra;
-		double b = rb;
-		double c = rc;
-		double temp;
-
-		if (a > b) {
-			temp = a;
-			a = b;
-			b = temp;
-		}
-		if (b > c) {
-			temp = b;
-			b = c;
-			c = temp;
-		}
-		if (a > b) {
-			temp = a;
-			a = b;
-			b = temp;
-		}
-
-		return new double[]{ a, b, c };
+        return of(ra, rb, rc).sorted().toArray();
 	}
 
 	public double[] getCentre() {
