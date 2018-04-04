@@ -21,13 +21,10 @@
  */
 package org.bonej.geometry;
 
+import static java.util.stream.DoubleStream.of;
+
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
-
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
-
-import static java.util.stream.DoubleStream.of;
 
 /**
  * <p>
@@ -155,8 +152,7 @@ public class Ellipsoid {
 	 *         of the rotation matrix respectively.
 	 */
 	public double[] getRadii() {
-		final double[] radii = { ra, rb, rc };
-		return radii.clone();
+		return new double[] { ra, rb, rc };
 	}
 
 	/**
@@ -221,8 +217,7 @@ public class Ellipsoid {
 	}
 
 	public double[] getCentre() {
-		final double[] centre = { cx, cy, cz };
-		return centre.clone();
+		return new double[]{ cx, cy, cz };
 	}
 
 	public double[][] getSurfacePoints(final int nPoints) {
