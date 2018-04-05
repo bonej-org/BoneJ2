@@ -16,17 +16,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
@@ -39,10 +38,11 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
+import org.bonej.ops.RotateAboutAxis;
 import org.bonej.ops.SolveQuadricEq;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
-import org.bonej.ops.mil.MILGrid;
+import org.bonej.ops.mil.MILPlane;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
@@ -57,7 +57,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.DialogPrompt;
+import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Matrix4d;
@@ -74,49 +74,51 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
-	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, List<Vector3d>> milOp;
+	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
-	private static int ROTATIONS = 1_000;
-	private static int DEFAULT_LINES = 50;
-	private static double DEFAULT_INCREMENT = 1.0;
-	/** Assumes that the longest radius of the ellipsoid is 1.0 */
+	/**
+	 * Default directions is 2_000 since that's roughly the number of points in
+	 * Poisson distributed sampling that'd give points about 5 degrees apart).
+	 */
+	private static final int DEFAULT_DIRECTIONS = 2_000;
+	// The default number of lines was found to be sensible after experimenting
+	// with data at hand. Other data may need a different number.
+	private static final int DEFAULT_LINES = 100;
+	private static final double DEFAULT_INCREMENT = 1.0;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
-	@Parameter(label = "Auto parameters", required = false, persist = false,
-		callback = "setAutoParam")
-	private boolean autoParameters = false;
-	@Parameter(label = "Rotations",
+	@Parameter(label = "Directions",
 		description = "The number of times sampling is performed from different directions",
+		min = "9", style = NumberWidget.SPINNER_STYLE, required = false,
+		callback = "applyMinimum")
+	private Integer directions = DEFAULT_DIRECTIONS;
+	@Parameter(label = "Lines per dimension",
+		description = "How many sampling lines are projected in both 2D directions (this number squared)",
 		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
-		callback = "setAutoParam")
-	private Integer rotations = ROTATIONS;
-	@Parameter(label = "Sampling lines",
-		description = "Number of sampling lines drawn. The number is squared and multiplied by three",
-		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
-		callback = "setAutoParam")
+		callback = "applyMinimum")
 	private Integer lines = DEFAULT_LINES;
 	@Parameter(label = "Sampling increment", min = "0.01",
-		description = "Distance between sampling points (in pixels)",
-		style = NumberWidget.SPINNER_STYLE, required = false,
-		callback = "setAutoParam", stepSize = "0.1")
+		description = "Distance between sampling points (in voxels)",
+		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1",
+		callback = "applyMinimum")
 	private Double samplingIncrement = DEFAULT_INCREMENT;
+	@Parameter(label = "Recommended minimum",
+		description = "Apply minimum recommended values to directions, lines, and increment",
+		persist = false, required = false, callback = "applyMinimum")
+	private boolean recommendedMin = false;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
 		"NB parameter values can affect results significantly";
+	private boolean calibrationWarned;
+	@Parameter(label = "Show radii",
+		description = "Show the radii of the fitted ellipsoid in the results",
+		required = false)
+	private boolean printRadii;
 
-	// TODO add @Parameter to print eigenvectors & -values of the ellipsoid
-
-	// TODO add @Parameter to align the image to the ellipsoid
-	// Create a rotated view from the ImgPlus and pop that into an output
-	// @Parameter
-
-	// TODO add help button
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String divider = "- - -";
 	/**
 	 * The anisotropy results in a {@link Table}.
 	 * <p>
@@ -147,26 +149,11 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		// TODO Does it make more sense to collect all the results we can (without
 		// cancelling) and then report errors at the end?
 		for (int i = 0; i < subspaces.size(); i++) {
-			final Subspace<BitType> subspace = subspaces.get(i);
 			statusService.showStatus("Anisotropy: sampling subspace #" + (i + 1));
-			final List<Vector3d> pointCloud;
-			try {
-				pointCloud = runRotationsInParallel(subspace.interval);
-			}
-			catch (ExecutionException | InterruptedException e) {
-				logService.trace(e.getMessage());
-				cancel("Parallel execution got interrupted");
+			final Subspace<BitType> subspace = subspaces.get(i);
+			if (!processSubspace(subspace)) {
 				return;
 			}
-			applyCalibration(pointCloud);
-			final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
-			if (ellipsoid == null) {
-				cancel(
-					"Anisotropy could not be calculated - try adding more rotations");
-				return;
-			}
-			final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
-			addResult(subspace, anisotropy);
 		}
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
@@ -175,39 +162,40 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	// region -- Helper methods --
 
-	private void addResult(final Subspace<BitType> subspace,
-		final double anisotropy)
+	private void addResults(final Subspace<BitType> subspace,
+		final double anisotropy, final Ellipsoid ellipsoid)
 	{
 		final String imageName = inputImage.getName();
 		final String suffix = subspace.toString();
 		final String label = suffix.isEmpty() ? imageName : imageName + " " +
 			suffix;
 		SharedTable.add(label, "Degree of anisotropy", anisotropy);
+		if (printRadii) {
+			SharedTable.add(label, "Radius a", String.format("%.2f", ellipsoid
+				.getA()));
+			SharedTable.add(label, "Radius b", String.format("%.2f", ellipsoid
+				.getB()));
+			SharedTable.add(label, "Radius c", String.format("%.2f", ellipsoid
+				.getC()));
+		}
 	}
 
-	private void applyCalibration(final List<Vector3d> pointCloud) {
-		final double[] scales = spatialAxisStream(inputImage).mapToDouble(
-			axis -> axis.averageScale(0, 1)).toArray();
-		final String[] units = spatialAxisStream(inputImage).map(
-			CalibratedAxis::unit).toArray(String[]::new);
-		final double yxConversion = unitService.value(1.0, units[1], units[0]);
-		final double zxConversion = unitService.value(1.0, units[2], units[0]);
-		final double xScale = scales[0];
-		final double yScale = scales[1] * yxConversion;
-		final double zScale = scales[2] * zxConversion;
-		pointCloud.forEach(p -> {
-			p.setX(p.x * xScale);
-			p.setY(p.y * yScale);
-			p.setZ(p.z * zScale);
-		});
+	@SuppressWarnings("unused")
+	private void applyMinimum() {
+		if (recommendedMin) {
+			lines = DEFAULT_LINES;
+			directions = DEFAULT_DIRECTIONS;
+			samplingIncrement = DEFAULT_INCREMENT;
+		}
 	}
 
 	private Ellipsoid fitEllipsoid(final List<Vector3d> pointCloud) {
-		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
+		statusService.showStatus("Anisotropy: solving quadric equation");
+		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
+		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
 			return null;
 		}
-
-		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
+		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
@@ -222,11 +210,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			.averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void matchOps(final Subspace<BitType> subspace) {
-		milOp = (BinaryFunctionOp) Functions.binary(opService, MILGrid.class,
-			List.class, subspace.interval, new AxisAngle4d(), lines,
-			samplingIncrement, new Random());
+		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
+			subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
 		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
 			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
@@ -237,35 +223,79 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			Ellipsoid.class, matchingMock);
 	}
 
-	private List<Vector3d> runRotationsInParallel(
+	private boolean processSubspace(final Subspace<BitType> subspace) {
+		final List<Vector3d> pointCloud;
+		try {
+			pointCloud = runDirectionsInParallel(subspace.interval);
+		}
+		catch (final ExecutionException | InterruptedException e) {
+			logService.trace(e.getMessage());
+			cancel("The plug-in was interrupted");
+			return false;
+		}
+		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
+			cancel("Anisotropy could not be calculated - too few points");
+			return false;
+		}
+		final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
+		if (ellipsoid == null) {
+			cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+			return false;
+		}
+		statusService.showStatus("Determining anisotropy");
+		final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
+		addResults(subspace, anisotropy, ellipsoid);
+		return true;
+	}
+
+	private List<Vector3d> runDirectionsInParallel(
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
 	{
-		final ExecutorService executor = Executors.newFixedThreadPool(5);
-		final Callable<List<Vector3d>> milTask = () -> milOp.calculate(interval);
-		final List<Future<List<Vector3d>>> futures = Stream.generate(() -> milTask)
-			.limit(rotations).map(executor::submit).collect(toList());
+		final int cores = Runtime.getRuntime().availableProcessors();
+		// The parallellization of the the MILPlane algorithm is a memory bound
+		// problem, which is why speed gains start to drop after 5 cores. With much
+		// larger 'nThreads' it slows down due to overhead. Of course '5' here is a
+		// bit of a magic number, which might not hold true for all environments,
+		// but we need some kind of upper bound
+		final int nThreads = Math.max(5, cores);
+		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
+			RotateAboutAxis.randomAxisAngle());
+		final List<Future<Vector3d>> futures = generate(() -> milTask).limit(
+			directions).map(executor::submit).collect(toList());
 		final List<Vector3d> pointCloud = Collections.synchronizedList(
-			new ArrayList<>(rotations * 3));
+			new ArrayList<>(directions));
 		final int futuresSize = futures.size();
-		for (int j = 0; j < futuresSize; j++) {
-			statusService.showProgress(j, futuresSize);
-			final List<Vector3d> points = futures.get(j).get();
-			pointCloud.addAll(points);
-
+		final AtomicInteger progress = new AtomicInteger();
+		for (final Future<Vector3d> future : futures) {
+			statusService.showProgress(progress.getAndIncrement(), futuresSize);
+			final Vector3d milVector = future.get();
+			pointCloud.add(milVector);
 		}
-		executor.shutdown();
+		shutdownAndAwaitTermination(executor);
 		return pointCloud;
 	}
 
-	@SuppressWarnings("unused")
-	private void setAutoParam() {
-		if (!autoParameters) {
-			return;
+	// Shuts down an ExecutorService as per recommended by Oracle
+	private void shutdownAndAwaitTermination(final ExecutorService executor) {
+		executor.shutdown(); // Disable new tasks from being submitted
+		try {
+			// Wait a while for existing tasks to terminate
+			if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+				executor.shutdownNow(); // Cancel currently executing tasks
+				// Wait a while for tasks to respond to being cancelled
+				if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+					logService.trace("Pool did not terminate");
+				}
+			}
 		}
-		rotations = ROTATIONS;
-		lines = DEFAULT_LINES;
-		samplingIncrement = DEFAULT_INCREMENT;
+		catch (final InterruptedException ie) {
+			// (Re-)Cancel if current thread also interrupted
+			executor.shutdownNow();
+			// Preserve interrupt status
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	@SuppressWarnings("unused")
@@ -282,15 +312,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_BINARY);
 			return;
 		}
-		if (!isCalibrationIsotropic()) {
-			final DialogPrompt.Result result = uiService.showDialog(
-				"The image calibration is anisotropic and may affect results. Continue anyway?",
+		if (!isCalibrationIsotropic() && !calibrationWarned) {
+			final Result result = uiService.showDialog(
+				"The voxels in the image are anisotropic, which may affect results. Continue anyway?",
 				WARNING_MESSAGE, OK_CANCEL_OPTION);
+			// Avoid showing warning more than once (validator gets called before and
+			// after dialog pops up..?)
+			calibrationWarned = true;
 			if (result != OK_OPTION) {
 				cancel(null);
 			}
 		}
-		// TODO Is the 5 slice minimum necessary?
 	}
 	// endregion
 }

@@ -1,65 +1,112 @@
 Manual integration tests for the Anisotropy command.
+They complement the automated wrapper tests in AnisotropyWrapperTest
 
 
 Case 1
-=======================================================================
-Checking "Auto parameters" sets parameters to default values
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Run File > Open samples > Bat Cochlea Volume
-2. Run plugin BoneJ > Anisotropy
-3. Set the "Rotations" to 1, "Lines" to 1 and "Increment" to 10.0
-4. Check "Auto parameters"
-
-
-Expected result
------------------------------------------------------------------------
-All three values change when check box is ticked
-
-Completed Month Day Year Name Surname
------------------------------------------------------------------------
-
-
-Case 2
-=======================================================================
-Parameter values cannot be changed when "Auto parameters"
-is checked
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Run File > Open samples > Bat Cochlea Volume
-2. Run plugin BoneJ > Anisotropy
-3. Check "Auto parameters"
-
-Expected result
------------------------------------------------------------------------
-"Rotations", "Lines" and "Increment" revert to default value
-when focus leaves their corresponding widget.
-
-Completed Month Day Year Name Surname
------------------------------------------------------------------------
-
-
-Case 3
 =======================================================================
 Clicking "Cancel" on the anisotropic calibration warning dialog
 stops the command.
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Run File > Open samples > Bat Cochlea Volume
-2. Run Analyze > Set Scale
-3. Set "Distance in pixels" to "1", "Known distance" to "0.5",
-   "Pixel aspect ratio" to "1" and "Unit of length" to "mm"
-4. Run plugin BoneJ > Anisotropy
-5. Check "Auto parameters"
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Analyze > Set Scale
+4. Set "Distance in pixels" to "1", "Known distance" to "1",
+   "Pixel aspect ratio" to "0.5" and "Unit of length" to "mm"
+5. Run plugin BoneJ > Anisotropy
 6. Click "OK"
 7. Click "Cancel" on the warning dialog
 
-Expected result
+Expected results
 -----------------------------------------------------------------------
 Warning dialog pops open, and command stops when user cancels.
 
-Completed Month Day Year Name Surname
+Completed March 12 2018 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+Test hyperstack results
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Anisotropy >
+4. Check "Recommended minimum", and uncheck "Show radii"
+5. Click "OK" (Execution takes a while)
+
+Expected results
+-----------------------------------------------------------------------
+- Six (new) result rows in the table
+- Two (new) columns: "Label" and "Degree of anisotropy"
+- Anisotropy for "Channel 1, Time 1" and "Channel 3, Time 2"
+  is high (about 0.98) 
+- Anisotropy for "Channel 1, Time 2", "Channel 2, Time 1",
+  "Channel 2, Time 2" and "Channel 3, Time 1" is low (< 0.01)
+
+Notes
+-----------------------------------------------------------------------
+If fitting fails, run again, or add directions.
+
+Completed March 12 2018 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+Test radii results
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Anisotropy >
+4. Check "Recommended minimum" and "Show radii"
+5. Click "OK" (Execution takes a while)
+
+Expected results
+-----------------------------------------------------------------------
+- Six (new) result rows in the table
+- Five (new) columns: "Label" and "Degree of anisotropy", "Radius a",
+  "Radius b" and "Radius c"
+- "Radius a" < "Radius b" < "Radius c" (ascending order)
+- "Channel 1, Time 1" and "Channel 3, Time 2": "Radius C" much greater
+  than "Radius a"
+- "Channel 1, Time 2", "Channel 2, Time 1", "Channel 2, Time 2"
+   and "Channel 3: Radii relatively close to each other
+
+Notes
+-----------------------------------------------------------------------
+If fitting fails, run again, or add directions.
+
+Completed March 12 2018 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 4
+=======================================================================
+Recommended minimum locks parameters
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Anisotropy >
+4. Uncheck "Recommended minimum", set "Directions" to "10",
+   "Lines per dimension" to "10", and "Sampling increment" to "10",
+5. Check "Recommended minimum"
+6. Try to change "Directions", "Lines per dimension",
+   and "Sampling increment"
+
+Expected results
+-----------------------------------------------------------------------
+- When "Recommended minimum" is checked, "Directions",
+  "Lines per dimension" and "Sampling increment" revert to
+   "2000", "100" and "1.0" respectively
+- When "Recommended minimum" is checked, the values cannot be changed
+
+Completed March 12 2018 Richard Domander
 -----------------------------------------------------------------------

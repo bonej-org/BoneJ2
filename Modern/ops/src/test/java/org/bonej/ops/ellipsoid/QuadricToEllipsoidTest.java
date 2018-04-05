@@ -2,6 +2,7 @@
 package org.bonej.ops.ellipsoid;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
@@ -170,6 +171,21 @@ public class QuadricToEllipsoidTest {
 			1e-12));
 		assertTrue(expectedOrientation.epsilonEquals(unitSphere.getOrientation(),
 			1e-12));
+	}
+
+	@Test
+	public void testNanRadiusIsNotEllipsoid() {
+		// This quadric looks like an ellipsoid (3x3 diagonals positive), but it has
+		// a NaN radius (negative eigenvalue). These typically result from quadrics
+		// solved from sparse data.
+		final Matrix4d nanRadiusEllipsoid = new Matrix4d(new double[] {
+			0.01085019421630129, -0.026230819423660012, -0.0012390257941481408,
+			0.016336103119147793, -0.026230819423660012, 0.02043899336863353,
+			0.01731688607718951, 0.03182508790873584, -0.0012390257941481408,
+			0.01731688607718951, 0.2516413880666182, 0.0022183414533909485,
+			0.016336103119147793, 0.03182508790873584, 0.0022183414533909485, -1.0 });
+
+		assertFalse(QuadricToEllipsoid.isEllipsoid(nanRadiusEllipsoid));
 	}
 
 	@BeforeClass
