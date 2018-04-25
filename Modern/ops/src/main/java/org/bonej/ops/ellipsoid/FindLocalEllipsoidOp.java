@@ -68,7 +68,7 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
 
         Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
         q1PlusAlphaQ2plusBetaQ3.mul(sAndBeta.getB());
-        q1PlusAlphaQ2.add(q1PlusAlphaQ2plusBetaQ3);
+        //q1PlusAlphaQ2.add(q1PlusAlphaQ2plusBetaQ3);
 
         return quadricToEllipsoid.calculate(q1PlusAlphaQ2);
     }

@@ -15,9 +15,11 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.IntType;
+import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
@@ -106,6 +108,24 @@ public class EllipsoidFactorWrapperTest {
 
         // VERIFY
         assertEquals(6, 5);
+    }
+
+    @Test
+    public void testInsideEllipsoidEasy() throws Exception {
+        //SETUP
+        Ellipsoid axisAligned = new Ellipsoid(1,2,3);
+        long[] origin = {0,0,0};
+        long[] definitelyOutside = {4,4,4};
+        long[] justInside = {0,0,2};
+        long[] justOutside = {0,2,0};
+
+
+        //EXECUTE AND VERIFY
+        assertTrue(EllipsoidFactorWrapper.insideEllipsoid(origin,axisAligned));
+        assertTrue(!EllipsoidFactorWrapper.insideEllipsoid(definitelyOutside,axisAligned));
+        assertTrue(EllipsoidFactorWrapper.insideEllipsoid(justInside,axisAligned));
+        assertTrue(!EllipsoidFactorWrapper.insideEllipsoid(justOutside,axisAligned));
+
     }
 
 }
