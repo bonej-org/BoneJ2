@@ -3,7 +3,9 @@ package org.bonej.wrapperPlugins;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import net.imagej.ImgPlus;
 import net.imglib2.Cursor;
@@ -11,21 +13,19 @@ import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.edge.Edgel;
 import net.imglib2.algorithm.edge.SubpixelEdgelDetection;
 import net.imglib2.img.Img;
-import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.ValuePair;
 
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindLocalEllipsoidOp;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.Matrix3d;
-import org.scijava.vecmath.Matrix4d;
 import org.scijava.vecmath.Vector3d;
 
 /**
@@ -40,9 +40,12 @@ import org.scijava.vecmath.Vector3d;
 @Plugin(type = Command.class, menuPath = "Plugins>Ellipsoid Decomposition")
 public class EllipsoidFactorWrapper extends ContextCommand {
 
-    FindLocalEllipsoidOp findLocalEllipsoidOp = new FindLocalEllipsoidOp();
+    private final FindLocalEllipsoidOp findLocalEllipsoidOp = new FindLocalEllipsoidOp();
     @Parameter(validater = "imageValidater")
-    private ImgPlus inputImage;
+    private ImgPlus<IntegerType> inputImage;
+
+    @Parameter(label = "EF image", type = ItemIO.OUTPUT)
+    private ImgPlus<DoubleType> efImage;
 
     @Override
     public void run() {
@@ -50,24 +53,22 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         ArrayList<Edgel> edgels = SubpixelEdgelDetection.getEdgels(inputImage.getImg(), inputImage.getImg().factory(), 0);
 
         final List<Vector3d> boundaryPoints = new ArrayList<>();
-        edgels.forEach(e ->{
-            boundaryPoints.add(new Vector3d(e.getDoublePosition(0), e.getDoublePosition(1), e.getDoublePosition(2)));
-        });
+        edgels.forEach(e -> boundaryPoints.add(new Vector3d(e.getDoublePosition(0), e.getDoublePosition(1), e.getDoublePosition(2))));
 
         final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
 
-        edgels.stream().forEachOrdered( edgel -> {
+        edgels.forEach(edgel -> {
                     Vector3d start = new Vector3d(edgel.getDoublePosition(0), edgel.getDoublePosition(1), edgel.getDoublePosition(2));
 
                     Vector3d sum = new Vector3d();
-                    for (int i = 0; i < edgels.size(); i++) {
+                    IntStream.range(0, edgels.size()).forEach(i -> {
                         double d = distanceBetweenEdgels(edgels.get(i), edgel);
                         if (d < 1.74 && d > 1.0e-12) {
                             Vector3d g = new Vector3d(edgels.get(i).getGradient());
                             g.scale(1.0 / d);
                             sum.add(g);
                         }
-                    }
+                    });
                     sum.add(new Vector3d(edgel.getGradient()));
                     sum.normalize();
                     seedPoints.add(new ValuePair<>(start, new Vector3d(sum)));
@@ -89,7 +90,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
             int currentEllipsoidCounter = 0;
 
             //ignore background voxels
-            if(cursor.get().getInteger()==0) continue;
+            if(cursor.get().getInteger()==0)
+            {
+                RandomAccess<DoubleType> randomAccess = ellipsoidFactorImage.randomAccess();
+                randomAccess.setPosition(coordinates);
+                randomAccess.get().set(Double.NaN);
+                continue;
+            }
 
             //find largest ellipsoid containing current position
             while(!insideEllipsoid(coordinates, ellipsoids.get(currentEllipsoidCounter)))
@@ -102,16 +109,14 @@ public class EllipsoidFactorWrapper extends ContextCommand {
             randomAccess.setPosition(coordinates);
             randomAccess.get().set(computeEllipsoidFactor(ellipsoids.get(currentEllipsoidCounter)));
         }
-
-        ImgPlus<DoubleType> ellipsoidFactorImagePlus = new ImgPlus<DoubleType>(ellipsoidFactorImage, "EF");
-
+        efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
     }
 
     private static Double computeEllipsoidFactor(final Ellipsoid ellipsoid) {
         return (ellipsoid.getA()/ellipsoid.getB() - ellipsoid.getB()/ellipsoid.getC());
     }
 
-    public static boolean insideEllipsoid(final long[] coordinates, final Ellipsoid ellipsoid) {
+    static boolean insideEllipsoid(final long[] coordinates, final Ellipsoid ellipsoid) {
         Vector3d x = new Vector3d(coordinates[0],coordinates[1],coordinates[2]);
         Vector3d centroid = ellipsoid.getCentroid();
         x.sub(centroid);
@@ -134,7 +139,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     }
 
     private List<Ellipsoid> getLocalEllipsoids(final List<ValuePair<Vector3d, Vector3d>> seedPoints, final List<Vector3d> boundaryPoints){
-        return seedPoints.stream().map(s -> findLocalEllipsoidOp.calculate(boundaryPoints.stream().collect(Collectors.toList()), s)).filter(opt -> opt.isPresent()).map(e -> e.get()).collect(Collectors.toList());
+        return seedPoints.stream().map(s -> findLocalEllipsoidOp.calculate(new ArrayList<Vector3d>(boundaryPoints), s)).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
     }
 
     private static double distanceBetweenEdgels(Edgel e1, Edgel e2)

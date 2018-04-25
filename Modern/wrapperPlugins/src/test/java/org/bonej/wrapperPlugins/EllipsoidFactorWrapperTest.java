@@ -15,6 +15,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
@@ -75,7 +76,7 @@ public class EllipsoidFactorWrapperTest {
     }
 
     @Test
-    public void testSphereHasEFOne() throws Exception {
+    public void testSphereHasEFZero() throws Exception {
         // SETUP
         final UserInterface mockUI = mock(UserInterface.class);
         doNothing().when(mockUI).show(any(ImgPlus.class));
@@ -107,7 +108,19 @@ public class EllipsoidFactorWrapperTest {
                 EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
 
         // VERIFY
-        assertEquals(6, 5);
+        final ImgPlus<DoubleType> efImage = (ImgPlus) module.getOutput("efImage");
+        Cursor<DoubleType> efCursor = efImage.getImg().localizingCursor();
+        while (cursor.hasNext())
+        {
+            cursor.fwd();
+            long [] coordinates = new long[3];
+            cursor.localize(coordinates);
+
+            if(efCursor.get().get()!=Double.NaN)
+            {
+                assertEquals(0.0, efCursor.get().get(),1e-12);
+            }
+        }
     }
 
     @Test
