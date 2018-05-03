@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import net.imagej.ImgPlus;
+import net.imagej.ops.filter.derivative.PartialDerivativesRAI;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.edge.Edgel;
@@ -17,6 +18,8 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.ValuePair;
+import net.imglib2.view.composite.CompositeIntervalView;
+import net.imglib2.view.composite.CompositeView;
 
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindLocalEllipsoidOp;
@@ -28,6 +31,7 @@ import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
 
+
 /**
  * Ellipsoid Factor
  * <p>
@@ -37,7 +41,7 @@ import org.scijava.vecmath.Vector3d;
  * @author Alessandro Felder
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>Ellipsoid Decomposition")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Decomposition")
 public class EllipsoidFactorWrapper extends ContextCommand {
 
     private final FindLocalEllipsoidOp findLocalEllipsoidOp = new FindLocalEllipsoidOp();
@@ -49,7 +53,30 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
     @Override
     public void run() {
-        //understand input
+        Img<DoubleType> inputAsDoubles = ArrayImgs.doubles(inputImage.getImg().dimension(0), inputImage.getImg().dimension(1), inputImage.getImg().dimension(2));
+        final Cursor<IntegerType> inputImageCursor = inputImage.localizingCursor();
+
+        while (inputImageCursor.hasNext()) {
+            inputImageCursor.fwd();
+
+            //find current position
+            long[] coordinates = new long[3];
+            inputImageCursor.localize(coordinates);
+            double castedInt = (double) inputImageCursor.get().getInteger();
+
+            RandomAccess<DoubleType> randomAccess = inputAsDoubles.randomAccess();
+            randomAccess.setPosition(coordinates);
+            randomAccess.get().set(castedInt);
+        }
+
+        PartialDerivativesRAI<DoubleType> gradientCalculatorOp = new PartialDerivativesRAI<>();
+        gradientCalculatorOp.initialize();
+        final CompositeIntervalView gradients = gradientCalculatorOp.calculate(inputAsDoubles);
+
+        final CompositeView.CompositeRandomAccess gradientRandomAccess = gradients.randomAccess();
+        gradientRandomAccess.get().get(0);
+        gradientRandomAccess.get().get(1);
+
         ArrayList<Edgel> edgels = SubpixelEdgelDetection.getEdgels(inputImage.getImg(), inputImage.getImg().factory(), 0);
 
         final List<Vector3d> boundaryPoints = new ArrayList<>();
@@ -79,18 +106,18 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
         //find EF values
         final Img<DoubleType> ellipsoidFactorImage = ArrayImgs.doubles(inputImage.dimension(0),inputImage.dimension(1),inputImage.dimension(2));
-        final Cursor<IntegerType> cursor = inputImage.localizingCursor();
+        inputImageCursor.reset();
 
-        while (cursor.hasNext()) {
-            cursor.fwd();
+        while (inputImageCursor.hasNext()) {
+            inputImageCursor.fwd();
 
             //find current position
             long[] coordinates = new long[3];
-            cursor.localize(coordinates);
+            inputImageCursor.localize(coordinates);
             int currentEllipsoidCounter = 0;
 
             //ignore background voxels
-            if(cursor.get().getInteger()==0)
+            if(inputImageCursor.get().getInteger()==0)
             {
                 RandomAccess<DoubleType> randomAccess = ellipsoidFactorImage.randomAccess();
                 randomAccess.setPosition(coordinates);
@@ -99,9 +126,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
             }
 
             //find largest ellipsoid containing current position
-            while(!insideEllipsoid(coordinates, ellipsoids.get(currentEllipsoidCounter)))
+            while(currentEllipsoidCounter<ellipsoids.size()&&!insideEllipsoid(coordinates, ellipsoids.get(currentEllipsoidCounter)))
             {
                 currentEllipsoidCounter++;
+            }
+
+            //current voxel not contained in any ellipsoid
+            if(currentEllipsoidCounter==ellipsoids.size())
+            {
+                continue;
             }
 
             //make an ellipsoid factor image with EF value at those coordinates

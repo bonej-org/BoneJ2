@@ -27,6 +27,7 @@ import org.scijava.ui.UserInterface;
 
 import ij.IJ;
 import ij.ImagePlus;
+import org.scijava.ui.awt.AWTUI;
 import org.scijava.vecmath.Vector3d;
 
 public class EllipsoidFactorWrapperTest {
@@ -139,6 +140,10 @@ public class EllipsoidFactorWrapperTest {
         assertTrue(EllipsoidFactorWrapper.insideEllipsoid(justInside,axisAligned));
         assertTrue(!EllipsoidFactorWrapper.insideEllipsoid(justOutside,axisAligned));
 
+    }
+
+    // main method for manual visual testing
+    public static void main(String[] args) {
     }
 
 }
