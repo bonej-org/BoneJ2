@@ -66,7 +66,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 			IJ.noImage();
 			return;
 		}
-		if (!ImageCheck.isMultiSlice(imp)) {
+		if (ImageCheck.isSingleSlice(imp)) {
 			IJ.error("Stack required");
 			return;
 		}
@@ -362,7 +362,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields()))
 			return false;
 		final List<?> checkboxes = gd.getCheckboxes();
 		final List<?> numbers = gd.getNumericFields();

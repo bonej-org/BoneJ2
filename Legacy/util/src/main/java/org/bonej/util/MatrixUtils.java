@@ -30,7 +30,9 @@ import ij.IJ;
  * @author Michael Doube
  * @author Mark Hiner
  */
-public class MatrixUtils {
+public final class MatrixUtils {
+
+	private MatrixUtils() {}
 
 	/**
 	 * Get the diagonal of the matrix as a column vector
@@ -60,12 +62,12 @@ public class MatrixUtils {
 		final int nRows = matrix.getRowDimension();
 		final double[][] eVal = matrix.getArrayCopy();
 		for (int r = 0; r < nRows; r++) {
-			String row = "||";
+			StringBuilder row = new StringBuilder("||");
 			for (int c = 0; c < nCols; c++) {
-				row = row + IJ.d2s(eVal[r][c], 3) + "|";
+				row.append(IJ.d2s(eVal[r][c], 3)).append("|");
 			}
-			row = row + "|";
-			IJ.log(row);
+			row.append("|");
+			IJ.log(row.toString());
 		}
 		IJ.log("");
 	}
@@ -78,6 +80,7 @@ public class MatrixUtils {
      * @param matrix a JAMA matrix.
 	 * @return true if the Matrix is right handed, false if it is left handed
 	 */
+	// TODO Move to Moments
 	public static boolean isRightHanded(final Matrix matrix) {
 		if (matrix.getColumnDimension() != 3 || matrix.getRowDimension() != 3) {
 			throw new IllegalArgumentException();
@@ -109,6 +112,7 @@ public class MatrixUtils {
      * @param matrix a JAMA matrix.
 	 * @return true if the rotation matrix will cause z-flipping
 	 */
+	// TODO Move to Moments
 	public static boolean isZFlipped(final Matrix matrix) {
 		final double x2 = matrix.get(2, 0);
 		final double y2 = matrix.get(2, 1);
@@ -126,6 +130,7 @@ public class MatrixUtils {
 	 * @param n number of columns
 	 * @return m * n Matrix filled with 1
 	 */
+	// TODO Move to FitEllipsoid
 	public static Matrix ones(final int m, final int n) {
 		final double[][] ones = new double[m][n];
 		for (int i = 0; i < m; i++) {

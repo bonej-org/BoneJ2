@@ -24,8 +24,10 @@ package org.bonej.util;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 
-public class ThresholdGuesser {
+public final class ThresholdGuesser {
 	private static final double airHU = -1000;
+
+	private ThresholdGuesser() {}
 
 	/**
 	 * Set up default thresholds and report them to the user as HU values if the
@@ -39,27 +41,27 @@ public class ThresholdGuesser {
 		final Calibration cal = imp.getCalibration();
 		double min;
 		double max;
-		if (!ImageCheck.huCalibrated(imp)) {
-			// set some sensible thresholding defaults
-			final int[] histogram = StackStats.getStackHistogram(imp);
-			final int histoLength = histogram.length;
-			int histoMax = histoLength - 1;
-			for (int i = histoLength - 1; i >= 0; i--) {
-				if (histogram[i] > 0) {
-					histoMax = i;
-					break;
-				}
-			}
-			min = imp.getProcessor().getAutoThreshold(histogram);
-			max = histoMax;
-			if (cal.isSigned16Bit() && cal.getCValue(0) == 0) {
-				min += Short.MIN_VALUE;
-				max += Short.MIN_VALUE;
-			}
-		} else {
+		if (ImageCheck.huCalibrated(imp)) {
 			// default bone thresholds are 0 and 4000 HU
 			min = airHU + 1000;
 			max = airHU + 5000;
+			return new double[]{ min, max };
+		}
+		// set some sensible thresholding defaults
+		final int[] histogram = StackStats.getStackHistogram(imp);
+		final int histoLength = histogram.length;
+		int histoMax = histoLength - 1;
+		for (int i = histoLength - 1; i >= 0; i--) {
+			if (histogram[i] > 0) {
+				histoMax = i;
+				break;
+			}
+		}
+		min = imp.getProcessor().getAutoThreshold(histogram);
+		max = histoMax;
+		if (cal.isSigned16Bit() && cal.getCValue(0) == 0) {
+			min += Short.MIN_VALUE;
+			max += Short.MIN_VALUE;
 		}
 		return new double[]{ min, max };
 	}

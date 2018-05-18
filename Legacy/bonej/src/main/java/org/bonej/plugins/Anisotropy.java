@@ -99,7 +99,7 @@ public class Anisotropy implements PlugIn, DialogListener {
 			IJ.error("8-bit binary (black and white only) image required.");
 			return;
 		}
-		if (!ImageCheck.isMultiSlice(imp) || imp.getStackSize() < 5) {
+		if (ImageCheck.isSingleSlice(imp) || imp.getStackSize() < 5) {
 			IJ.error("Stack with at least 5 slices required");
 			return;
 		}

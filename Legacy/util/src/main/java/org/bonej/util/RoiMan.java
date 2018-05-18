@@ -21,7 +21,7 @@
  */
 package org.bonej.util;
 
-import java.awt.*;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 
 import ij.ImagePlus;
@@ -36,8 +36,10 @@ import ij.process.ImageProcessor;
  *
  * @author Michael Doube
  */
-public class RoiMan {
+public final class RoiMan {
 	private static final int NO_SLICE_NUMBER = -1;
+
+	private RoiMan() {}
 
 	/**
 	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
@@ -47,6 +49,7 @@ public class RoiMan {
 	 * @return double[n][3] containing n (x, y, z) coordinates or null if there
 	 *         are no points
 	 */
+	// TODO Move to SphereFitter
 	public static double[][] getRoiManPoints(final ImagePlus imp, final RoiManager roiMan) {
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
@@ -148,9 +151,9 @@ public class RoiMan {
 
 		for (final Roi roi : rois) {
 			final Rectangle r = roi.getBounds();
-			final boolean valid = getSafeRoiBounds(r, stack.getWidth(), stack.getHeight());
+			final boolean invalid = !getSafeRoiBounds(r, stack.getWidth(), stack.getHeight());
 
-			if (!valid) {
+			if (invalid) {
 				continue;
 			}
 
@@ -277,6 +280,7 @@ public class RoiMan {
      *
      * @param roiMan an instance of {@link RoiManager}.
 	 */
+	// TODO Move to SphereFitter
 	public static void deleteAll(final RoiManager roiMan) {
 		final Roi[] rois = roiMan.getRoisAsArray();
 		for (int i = 0; i < rois.length; i++) {
@@ -348,9 +352,9 @@ public class RoiMan {
 			final Iterable<Roi> sliceRois, final int padding) {
 		for (final Roi sliceRoi : sliceRois) {
 			final Rectangle rectangle = sliceRoi.getBounds();
-			final boolean valid = getSafeRoiBounds(rectangle, sourceProcessor.getWidth(), sourceProcessor.getHeight());
+			final boolean invalid = !getSafeRoiBounds(rectangle, sourceProcessor.getWidth(), sourceProcessor.getHeight());
 
-			if (!valid) {
+			if (invalid) {
 				continue;
 			}
 

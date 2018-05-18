@@ -559,7 +559,7 @@ public class Moments implements PlugIn, DialogListener {
                 final ImageProcessor[] sliceProcessors, final ImageProcessor[] targetProcessors,
                 final double[][] eigenVecInv, final double[] centroid, final int wT, final int hT, final int dT,
                 final int startSlice, final int endSlice) {
-            impT = imp;
+			impT = imp;
 			this.thread = thread;
 			this.nThreads = nThreads;
 			this.sliceProcessors = sliceProcessors;
@@ -865,7 +865,7 @@ public class Moments implements PlugIn, DialogListener {
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields()))
 			return false;
 		final List<?> checkboxes = gd.getCheckboxes();
 		final List<?> nFields = gd.getNumericFields();

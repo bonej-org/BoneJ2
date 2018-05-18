@@ -26,7 +26,9 @@ package org.bonej.geometry;
  *
  * @author Michael Doube
  */
-public class Trig {
+public final class Trig {
+
+	private Trig() {}
 
 	/**
 	 * <p>

@@ -34,7 +34,9 @@ import Jama.Matrix;
  * @author Michael Doube and Angelo Tardugno
  * @version 0.1
  */
-public class FitSphere {
+public final class FitSphere {
+
+	private FitSphere() {}
 
 	/**
 	 * Fit a sphere to 3D coordinates

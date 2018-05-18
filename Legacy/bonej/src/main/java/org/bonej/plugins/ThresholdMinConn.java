@@ -389,7 +389,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields()))
 			return false;
 		final List<?> checkboxes = gd.getCheckboxes();
 		final Checkbox to = (Checkbox) checkboxes.get(0);

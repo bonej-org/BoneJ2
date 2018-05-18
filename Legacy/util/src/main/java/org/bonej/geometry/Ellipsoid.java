@@ -487,6 +487,7 @@ public class Ellipsoid {
 	 *         (double[3][3]), eigenvectors (double[3][3]), and the
 	 *         EigenvalueDecomposition
 	 */
+	// TODO Move to FitEllipsoid
 	static Object[] matrixFromEquation(final double a, final double b, final double c, final double d,
 									   final double e, final double f, final double g, final double h, final double i) {
 

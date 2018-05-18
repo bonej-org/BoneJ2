@@ -33,7 +33,9 @@ import ij.Prefs;
  *      >http://repo.or.cz/w/trakem2.git?a=blob;f=mpi/fruitfly/general/
  *      MultiThreading.java;hb=HEAD</a>
  */
-public class Multithreader {
+public final class Multithreader {
+
+	private Multithreader() {}
 
 	public static Thread[] newThreads() {
 		final int nthread = Prefs.getThreads();

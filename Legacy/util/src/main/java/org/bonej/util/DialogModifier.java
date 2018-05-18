@@ -33,8 +33,10 @@ import java.awt.TextField;
 import ij.IJ;
 import ij.gui.GenericDialog;
 
-public class DialogModifier {
-	
+public final class DialogModifier {
+
+	private DialogModifier() {}
+
 	/**
 	 * Replace the unit string to the right of all numeric textboxes in a
 	 * GenericDialog
@@ -92,7 +94,7 @@ public class DialogModifier {
 				}
 			}
 		} catch (final ArrayIndexOutOfBoundsException e) {
-			IJ.log("Dialog has no more components\n" + e.toString());
+			IJ.log("Dialog has no more components\n" + e);
 		}
 	}
 
@@ -105,15 +107,15 @@ public class DialogModifier {
 	 * @param textFields e.g. result of GenericDialog.getNumericFields();
 	 * @return true if all numeric text fields contain a valid number
 	 */
-	public static boolean allNumbersValid(final Iterable<?> textFields) {
+	public static boolean hasInvalidNumber(final Iterable<?> textFields) {
 		for (final Object text : textFields) {
 			final String string = ((TextComponent) text).getText();
 			try {
 				Double.parseDouble(string);
 			} catch (final NumberFormatException e) {
-				return false;
+				return true;
 			}
 		}
-		return true;
+		return false;
 	}
 }

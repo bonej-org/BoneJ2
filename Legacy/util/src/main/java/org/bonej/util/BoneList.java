@@ -33,7 +33,9 @@ import ij.ImagePlus;
  * @author Michael Doube
  *
  */
-public class BoneList {
+public final class BoneList {
+
+	private BoneList() {}
 
 	/**
 	 * List of bone names
@@ -59,6 +61,7 @@ public class BoneList {
 	 * @return integer code relating to the position of the bone's name in the
 	 *         bone list
 	 */
+	// TODO remove
 	public static int guessBone(final ImagePlus imp) {
 		final String boneString = imp.getTitle();
 		return guessBone(boneString);

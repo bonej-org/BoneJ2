@@ -21,7 +21,9 @@
  */
 package org.bonej.geometry;
 
-public class Centroid {
+public final class Centroid {
+
+	private Centroid() {}
 
 	/**
 	 * Find the centroid of an array in double[n][i] format, where n = number of

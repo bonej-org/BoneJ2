@@ -114,7 +114,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 			IJ.noImage();
 			return;
 		}
-		if (!ImageCheck.isBinary(imp) || !ImageCheck.isMultiSlice(imp) || !ImageCheck.isVoxelIsotropic(imp, 0.001)) {
+		if (!ImageCheck.isBinary(imp) || ImageCheck.isSingleSlice(imp) || !ImageCheck.isVoxelIsotropic(imp, 0.001)) {
 			IJ.error("8-bit binary stack with isotropic pixel spacing required.");
 			return;
 		}
@@ -226,7 +226,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		if (doEllipsoidIDImage) {
 			final ImagePlus maxID = displayMaximumIDs(maxIDs, imp);
 			maxID.show();
-			maxID.setDisplayRange(-ellipsoids.length / 2, ellipsoids.length);
+			maxID.setDisplayRange(-ellipsoids.length / 2.0, ellipsoids.length);
 		}
 
 		if (doFlinnPlot) {
@@ -240,10 +240,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 			flinnPeaks.show();
 		}
 
-		// ResultInserter ri = ResultInserter.getInstance();
-		// ri.updateTable();
-		// if (IJ.debugMode)
-		// rt.show("Ellipsoid volumes");
 		UsageReporter.reportEvent(this).send();
 		IJ.showStatus("Ellipsoid Factor completed");
 	}

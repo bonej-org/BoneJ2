@@ -133,13 +133,13 @@ public final class Orienteer extends PlugInFrame
 	private Orienteer() {
 		super("Orientation");
 		if (instance != null) {
-			if (!instance.getTitle().equals(getTitle())) {
+			if (instance.getTitle().equals(getTitle())) {
+				instance.toFront();
+				return;
+			} else {
 				final Orienteer aa = instance;
 				Prefs.saveLocation(LOC_KEY, aa.getLocation());
 				aa.close();
-			} else {
-				instance.toFront();
-				return;
 			}
 		}
 		instance = this;
@@ -392,19 +392,19 @@ public final class Orienteer extends PlugInFrame
 		final boolean[] ref = reflectHash.get(id);
 		final String[] dirs = new String[4];
 
-		if (!ref[0]) {
-			dirs[0] = axisLabels[axes[0]][2];
-			dirs[1] = axisLabels[axes[0]][3];
-		} else {
+		if (ref[0]) {
 			dirs[0] = axisLabels[axes[0]][3];
 			dirs[1] = axisLabels[axes[0]][2];
-		}
-		if (!ref[1]) {
-			dirs[2] = axisLabels[axes[1]][2];
-			dirs[3] = axisLabels[axes[1]][3];
 		} else {
+			dirs[0] = axisLabels[axes[0]][2];
+			dirs[1] = axisLabels[axes[0]][3];
+		}
+		if (ref[1]) {
 			dirs[2] = axisLabels[axes[1]][3];
 			dirs[3] = axisLabels[axes[1]][2];
+		} else {
+			dirs[2] = axisLabels[axes[1]][2];
+			dirs[3] = axisLabels[axes[1]][3];
 		}
 		return dirs;
 	}
@@ -448,17 +448,19 @@ public final class Orienteer extends PlugInFrame
         double orientation = getOrientation(imp);
 
 		switch (quadrant) {
-		case 0:
-			return orientation;
-		case 1:
-			orientation += Math.PI;
-			break;
-		case 2:
-			orientation += Math.PI / 2;
-			break;
-		case 3:
-			orientation += 3 * Math.PI / 2;
-			break;
+			case 0:
+				return orientation;
+			case 1:
+				orientation += Math.PI;
+				break;
+			case 2:
+				orientation += Math.PI / 2;
+				break;
+			case 3:
+				orientation += 3 * Math.PI / 2;
+				break;
+			default:
+				throw new RuntimeException("Unexpected quadrant!");
 		}
 		if (orientation > 2 * Math.PI) {
             return orientation - 2 * Math.PI;

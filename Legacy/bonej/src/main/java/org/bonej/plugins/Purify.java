@@ -110,9 +110,15 @@ public class Purify implements PlugIn, DialogListener {
 			}
 		}
 		final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
-
-		if (showPerformance)
-			showResults(duration, imp, slicesPerChunk, labelMethod);
+		if (showPerformance) {
+			if (labelMethod == ParticleCounter.LINEAR) {
+				showResults(duration, imp, imp.getImageStackSize(),
+					ParticleCounter.LINEAR);
+			}
+			else {
+				showResults(duration, imp, slicesPerChunk, labelMethod);
+			}
+		}
 		UsageReporter.reportEvent(this).send();
 	}
 
@@ -342,9 +348,7 @@ public class Purify implements PlugIn, DialogListener {
      * @param slicesPerChunk slices processed by each chunk.
      * @param labelMethod labelling method used.
 	 */
-	private void showResults(final double duration, final ImagePlus imp, int slicesPerChunk, final int labelMethod) {
-		if (labelMethod == ParticleCounter.LINEAR)
-			slicesPerChunk = imp.getImageStackSize();
+	private void showResults(final double duration, final ImagePlus imp, final int slicesPerChunk, final int labelMethod) {
 		final ParticleCounter pc = new ParticleCounter();
 		final int nChunks = pc.getNChunks(imp, slicesPerChunk);
 		final int[][] chunkRanges = pc.getChunkRanges(imp, nChunks, slicesPerChunk);
@@ -363,7 +367,7 @@ public class Purify implements PlugIn, DialogListener {
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields()))
 			return false;
 		final List<?> choices = gd.getChoices();
 		final List<?> numbers = gd.getNumericFields();

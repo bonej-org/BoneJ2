@@ -36,7 +36,9 @@ import Jama.Matrix;
  * @author Michael Doube
  *
  */
-public class FitEllipsoid {
+public final class FitEllipsoid {
+
+	private FitEllipsoid() {}
 
 	/**
 	 * Find the best-fit ellipsoid using the default method (yuryPetrov)
@@ -45,6 +47,7 @@ public class FitEllipsoid {
 	 *            in double[n][3] format
 	 * @return Object representing the best-fit ellipsoid
 	 */
+	// TODO Move to test class
 	static Ellipsoid fitTo(final double[][] coordinates) {
 		return new Ellipsoid(yuryPetrov(coordinates));
 	}
@@ -146,40 +149,38 @@ public class FitEllipsoid {
 			final double xCentre, final double yCentre, final double zCentre, final double noise, final int nPoints,
 			final boolean random) {
 
-		final int n = (int) Math.floor(-3 / 4 + Math.sqrt(1 + 8 * nPoints) / 4);
+		final int n = (int) Math.floor(-0.75 + Math.sqrt(1.0 + 8.0 * nPoints) / 4.0);
 		final int h = 2 * n + 2;
 		final int w = n + 1;
 		final double[][] s = new double[h][w];
 		final double[][] t = new double[h][w];
-		double value = -Math.PI / 2;
-		// Random points
+		final double theta = -Math.PI / 2.0;
 		if (random) {
+			// Random points
 			for (int j = 0; j < w; j++) {
 				for (int i = 0; i < h; i++) {
-					s[i][j] = value + Math.random() * 2 * Math.PI;
+					s[i][j] = theta + Math.random() * 2 * Math.PI;
 				}
 			}
 			for (int i = 0; i < h; i++) {
 				for (int j = 0; j < w; j++) {
-					t[i][j] = value + Math.random() * 2 * Math.PI;
+					t[i][j] = theta + Math.random() * 2 * Math.PI;
 				}
 			}
-			// Regular points
 		} else {
+			// Regular points
 			final double increment = Math.PI / (n - 1);
-
 			for (int j = 0; j < w; j++) {
+				final double alpha = theta + j * increment;
 				for (int i = 0; i < h; i++) {
-					s[i][j] = value;
+					s[i][j] = alpha;
 				}
-				value += increment;
 			}
-			value = -Math.PI / 2;
 			for (int i = 0; i < h; i++) {
+				final double alpha = theta + i * increment;
 				for (int j = 0; j < w; j++) {
-					t[i][j] = value;
+					t[i][j] = alpha;
 				}
-				value += increment;
 			}
 
 		}

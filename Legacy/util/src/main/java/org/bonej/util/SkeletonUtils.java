@@ -31,8 +31,10 @@ import ij.ImagePlus;
  * @author Michael Doube
  * @author Mark Hiner
  */
-public class SkeletonUtils {
+public final class SkeletonUtils {
 	private static final PlugInFilter skeletoniser = new Skeletonize3D_();
+
+	private SkeletonUtils() {}
 
 	/**
 	 * Gets a medial axis skeleton from a binary imp using a topology-preserving

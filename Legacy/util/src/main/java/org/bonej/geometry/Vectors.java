@@ -23,8 +23,10 @@ package org.bonej.geometry;
 
 import org.scijava.vecmath.Point3f;
 
-public class Vectors {
-	
+public final class Vectors {
+
+	private Vectors() {}
+
 	/**
 	 * Calculate the cross product of 3 Point3f's, which describe two vectors
 	 * joined at the tails. Can be used to find the plane / surface normal of a
@@ -76,6 +78,7 @@ public class Vectors {
 	 * @param b second vector
 	 * @return resulting vector in double[3][1] format
 	 */
+	// TODO move to test class
 	static double[][] crossProduct(final double[][] a, final double[][] b) {
 		final double[][] c = new double[3][1];
 		c[0][0] = a[1][0] * b[2][0] - a[2][0] * b[1][0];
@@ -102,6 +105,7 @@ public class Vectors {
 	 * @param a a 3D vector.
 	 * @return Unit vector in direction of a
 	 */
+	// TODO move to EllipsoidFactor
 	public static double[] norm(final double[] a) {
 		final double a0 = a[0];
 		final double a1 = a[1];

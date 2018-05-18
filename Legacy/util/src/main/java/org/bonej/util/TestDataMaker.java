@@ -33,7 +33,9 @@ import ij.process.ImageProcessor;
  *
  * @author Michael Doube
  */
-public class TestDataMaker {
+public final class TestDataMaker {
+
+	private TestDataMaker() {}
 
 	/**
 	 * Generate a rod of circular cross-section. The rod is oriented with its
@@ -44,12 +46,13 @@ public class TestDataMaker {
 	 *
 	 * @return an image containing the rod.
 	 */
+	//TODO Move to LocalThicknessTest
 	public static ImagePlus rod(final int length, final int diameter) {
 		final ImageStack stack = new ImageStack(2 * diameter, 2 * diameter);
 		for (int i = 0; i < length; i++) {
 			final ImageProcessor ip = new ByteProcessor(2 * diameter, 2 * diameter);
 			ip.setColor(255);
-			ip.fillOval((int) Math.floor(diameter / 2), (int) Math.floor(diameter / 2), diameter, diameter);
+			ip.fillOval((int) Math.floor(diameter / 2.0), (int) Math.floor(diameter / 2.0), diameter, diameter);
 			stack.addSlice("" + i, ip);
 		}
 		return new ImagePlus("rod", stack);
@@ -110,6 +113,7 @@ public class TestDataMaker {
 	 * @param size width and height of the image, circle diameter is size/2
 	 * @return image containing a white (255) circle on black (0) background
 	 */
+	//TODO Move to ConnectivityTest
 	public static ImagePlus crossedCircle(final int size) {
 		final ImageProcessor ip = new ByteProcessor(size, size);
 		ip.setColor(0);
@@ -129,6 +133,7 @@ public class TestDataMaker {
 	 * @param depth Depth of the box frame in pixels
 	 * @return Image containing a 1-pixel wide outline of a 3D box
 	 */
+	//TODO Move to ConnectivityTest
 	public static ImagePlus boxFrame(final int width, final int height, final int depth) {
 		final ImageStack stack = new ImageStack(width + 64, height + 64);
 		for (int s = 1; s <= depth + 64; s++) {
@@ -162,6 +167,7 @@ public class TestDataMaker {
 	 *          of this method repeatable
 	 * @return an image with binary noise.
 	 */
+	//TODO Move to AnisotropyTest
 	public static ImagePlus binaryNoise(final Random generator) {
 		final int size = 256;
 		final int npixels = size * size;
@@ -183,6 +189,7 @@ public class TestDataMaker {
      *
      * @return an image with xy-plates.
      */
+	//TODO Move to AnisotropyTest
     public static ImagePlus plates() {
 		final int size = 256;
 		final int spacing = 8;

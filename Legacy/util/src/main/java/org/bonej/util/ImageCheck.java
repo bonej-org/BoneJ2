@@ -32,7 +32,9 @@ import ij.process.ImageStatistics;
  *
  * @author Michael Doube
  */
-public class ImageCheck {
+public final class ImageCheck {
+
+	private ImageCheck() {}
 
 	/**
 	 * Minimal ImageJ version required by BoneJ
@@ -69,18 +71,13 @@ public class ImageCheck {
 	}
 
 	/**
-	 * Check if an image is a multi-slice image stack
+	 * Checks if an image is a single slice image.
 	 *
 	 * @param imp an image.
-	 * @return true if the image has &ge; 2 slices
+	 * @return true if the image has only 1 slice.
 	 */
-	public static boolean isMultiSlice(final ImagePlus imp) {
-		if (imp == null) {
-			IJ.noImage();
-			return false;
-		}
-
-		return imp.getStackSize() >= 2;
+	public static boolean isSingleSlice(final ImagePlus imp) {
+		return imp.getStackSize() < 2;
 	}
 
 	/**
@@ -102,13 +99,12 @@ public class ImageCheck {
 		final double tLow = 1 - tolerance;
 		final double tHigh = 1 + tolerance;
 		final double widthHeightRatio = vW > vH ? vW / vH : vH / vW;
-		final boolean isStack = (imp.getStackSize() > 1);
 
 		if (widthHeightRatio < tLow || widthHeightRatio > tHigh) {
 			return false;
 		}
 
-		if (!isStack) {
+		if (isSingleSlice(imp)) {
 			return true;
 		}
 
@@ -119,11 +115,9 @@ public class ImageCheck {
 	}
 
 	/**
-	 * Check that the voxel thickness is correct
+	 * Check that the voxel thickness is correct in the DICOM image metadata.
 	 *
 	 * @param imp an image.
-	 * @return voxel thickness based on DICOM header information. Returns -1 if
-	 *         there is no DICOM slice position information.
 	 */
 	public static void dicomVoxelDepth(final ImagePlus imp) {
 		if (imp == null) {
@@ -165,16 +159,18 @@ public class ImageCheck {
 		final String units = cal.getUnits();
 		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100.0;
 
-		if (Double.compare(vD, sliceSpacing) != 0) {
-			IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " + error
-						   + "% with DICOM header slice spacing.\n" + "Current voxel depth: " + IJ.d2s(vD, 6) + " " + units
-						   + "\n" + "DICOM slice spacing: " + IJ.d2s(sliceSpacing, 6) + " " + units + "\n"
-						   + "Updating image properties...");
-			cal.pixelDepth = sliceSpacing;
-			imp.setCalibration(cal);
-		} else
+		if (Double.compare(vD, sliceSpacing) == 0) {
 			IJ.log(imp.getTitle() + ": Voxel depth agrees with DICOM header.\n");
-    }
+			return;
+		}
+
+		IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " + error
+				+ "% with DICOM header slice spacing.\n" + "Current voxel depth: " + IJ.d2s(vD, 6) + " " + units
+				+ "\n" + "DICOM slice spacing: " + IJ.d2s(sliceSpacing, 6) + " " + units + "\n"
+				+ "Updating image properties...");
+		cal.pixelDepth = sliceSpacing;
+		imp.setCalibration(cal);
+	}
 
 	/**
 	 * Get the value associated with a DICOM tag from an ImagePlus header

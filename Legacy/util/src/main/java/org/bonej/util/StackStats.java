@@ -30,7 +30,9 @@ import ij.gui.Roi;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 
-public class StackStats {
+public final class StackStats {
+
+	private StackStats() {}
 
 	/**
 	 * Work out some summary stats
@@ -39,6 +41,7 @@ public class StackStats {
 	 * @return double[] containing mean, standard deviation and maximum as its 0th
 	 *         and 1st and 2nd elements respectively
 	 */
+	//TODO Move to LocalThicknessTest
 	public static double[] meanStdDev(final ImagePlus imp) {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
