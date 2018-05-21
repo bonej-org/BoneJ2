@@ -138,7 +138,6 @@ public class EllipsoidTest {
 			final double x = p[0] * rand;
 			final double y = p[1] * rand;
 			final double z = p[2] * rand;
-			System.out.println("Testing inside (" + x + ", " + y + ", " + z + ") with random scaling = " + rand);
 			assertTrue(rotated.contains(x, y, z));
 		}
 
@@ -149,7 +148,6 @@ public class EllipsoidTest {
 			final double x = p[0] / rand;
 			final double y = p[1] / rand;
 			final double z = p[2] / rand;
-			System.out.println("Testing outside (" + x + ", " + y + ", " + z + ") with random scaling = " + 1 / rand);
 			assertTrue(!rotated.contains(x, y, z));
 		}
 
@@ -162,7 +160,6 @@ public class EllipsoidTest {
 			final double x = p[0] * rand;
 			final double y = p[1] * rand;
 			final double z = p[2] * rand;
-			System.out.println("Testing inside (" + x + ", " + y + ", " + z + ") with random scaling = " + rand);
 			assertTrue(seventeenFiveThree.contains(x, y, z));
 		}
 
@@ -173,7 +170,6 @@ public class EllipsoidTest {
 			final double x = p[0] / rand;
 			final double y = p[1] / rand;
 			final double z = p[2] / rand;
-			System.out.println("Testing outside (" + x + ", " + y + ", " + z + ") with random scaling = " + 1 / rand);
 			assertTrue(!seventeenFiveThree.contains(x, y, z));
 		}
 
@@ -186,7 +182,6 @@ public class EllipsoidTest {
 			final double x = p[0] * rand;
 			final double y = p[1] * rand;
 			final double z = p[2] * rand;
-			System.out.println("Testing inside (" + x + ", " + y + ", " + z + ")");
 			assertTrue(threeFiveSeventeen.contains(x, y, z));
 		}
 
@@ -197,7 +192,6 @@ public class EllipsoidTest {
 			final double x = p[0] / rand;
 			final double y = p[1] / rand;
 			final double z = p[2] / rand;
-			System.out.println("Testing (" + x + ", " + y + ", " + z + ")");
 			assertTrue(!threeFiveSeventeen.contains(x, y, z));
 		}
 	}
@@ -239,10 +233,9 @@ public class EllipsoidTest {
 	public void testGetSortedRadii() {
 		final int t = 1000;
 		final Ellipsoid e = unitSphere.copy();
-		double[] r = new double[3];
 		for (int i = 0; i < t; i++) {
 			e.dilate(Math.random(), Math.random(), Math.random());
-			r = e.getSortedRadii();
+			final double[] r = e.getSortedRadii();
 			assertTrue(r[0] < r[1]);
 			assertTrue(r[1] < r[2]);
 		}

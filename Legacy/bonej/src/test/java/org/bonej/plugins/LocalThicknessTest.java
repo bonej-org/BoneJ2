@@ -39,7 +39,6 @@ public class LocalThicknessTest {
 			final ImagePlus rod = TestDataMaker.rod(d * 100, d);
 			final ImagePlus imp = th.getLocalThickness(rod, false);
 			final double[] stats = StackStats.meanStdDev(imp);
-			System.out.print(d + ", " + stats[0] + "\n");
 			assertEquals(d, stats[0], 1.5);
 		}
 	}
@@ -52,7 +51,6 @@ public class LocalThicknessTest {
 			final ImagePlus imp = th.getLocalThickness(sphere, false);
 			final double[] stats = StackStats.meanStdDev(imp);
 			final double regression = r * 1.9441872882 - 1.218936;
-			System.out.print(r * 2 + ", " + stats[0] + "\n");
 			assertEquals(regression, stats[0], regression * 0.1);
 		}
 	}
@@ -68,7 +66,6 @@ public class LocalThicknessTest {
 			// pixelation and *2 (radius to diameter conversion) weirdness
 			if (t % 2 != 0)
 				expected++;
-			System.out.print(t + ", " + stats[0] + "\n");
 			assertEquals(expected, stats[0], expected * 0.05);
 		}
 	}
