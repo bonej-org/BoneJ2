@@ -42,24 +42,6 @@ public final class FitEllipsoid {
 	private FitEllipsoid() {}
 
 	/**
-	 * Create an m * n Matrix filled with 1
-	 *
-	 * @param m number of rows
-	 * @param n number of columns
-	 * @return m * n Matrix filled with 1
-	 */
-	// TODO drop 2nd parameter
-	private static Matrix ones(final int m, final int n) {
-		final double[][] ones = new double[m][n];
-		for (int i = 0; i < m; i++) {
-			for (int j = 0; j < n; j++) {
-				ones[i][j] = 1;
-			}
-		}
-		return new Matrix(ones);
-	}
-
-	/**
 	 * Return points on an ellipsoid with optional noise. Point density is not
 	 * uniform, becoming more dense at the poles.
 	 *
@@ -209,7 +191,7 @@ public final class FitEllipsoid {
 
 		// do the fitting
 		final Matrix D = new Matrix(d);
-		final Matrix ones = ones(nPoints, 1);
+		final Matrix ones = new Matrix(nPoints, 1, 1.0);
 		final Matrix V = ((D.transpose().times(D)).inverse()).times(D.transpose()
 			.times(ones));
 
