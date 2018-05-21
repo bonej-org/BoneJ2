@@ -19,128 +19,37 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.geometry;
+
+import java.util.Arrays;
 
 public final class Centroid {
 
 	private Centroid() {}
 
 	/**
-	 * Find the centroid of an array in double[n][i] format, where n = number of
-	 * points and i = number of dimensions
+	 * Find the centroid of an array in double[i][n] format, where i = number of
+	 * points and n = number of dimensions
 	 *
 	 * @param points a set of points in N-dimensions.
-	 * @return array containing centroid in i dimensions
+	 * @return array containing centroid in N-dimensions
 	 */
 	static double[] getCentroid(final double[][] points) {
-		final int nDimensions = points[0].length;
-
-		switch (nDimensions) {
-		case 1:
-			return getCentroid1D(points);
-		case 2:
-			return getCentroid2D(points);
-		case 3:
-			return getCentroid3D(points);
-		default:
-			return getCentroidND(points);
+		if (Arrays.stream(points).mapToInt(p -> p.length).distinct().count() != 1) {
+			throw new IllegalArgumentException(
+				"Points must have the same dimensionality");
 		}
-	}
-
-	/**
-	 * Find the centroid of a set of points in double[n][1] format
-	 *
-	 * @param points
-	 * @return
-	 */
-	private static double[] getCentroid1D(final double[][] points) {
-		final double[] centroid = new double[1];
-		double sumX = 0;
-		final int nPoints = points.length;
-
-		for (final double[] point : points) {
-			sumX += point[0];
-		}
-
-		centroid[0] = sumX / nPoints;
-
-		return centroid;
-	}
-
-	/**
-	 * Find the centroid of a set of points in double[n][2] format
-	 *
-	 * @param points
-	 * @return
-	 */
-	private static double[] getCentroid2D(final double[][] points) {
-		final double[] centroid = new double[2];
-		double sumX = 0;
-		double sumY = 0;
-		final int nPoints = points.length;
-
-		for (final double[] point : points) {
-			sumX += point[0];
-			sumY += point[1];
-		}
-
-		centroid[0] = sumX / nPoints;
-		centroid[1] = sumY / nPoints;
-
-		return centroid;
-	}
-
-	/**
-	 * Find the centroid of a set of points in double[n][3] format
-	 *
-	 * @param points
-	 * @return
-	 */
-	private static double[] getCentroid3D(final double[][] points) {
-		final double[] centroid = new double[3];
-		double sumX = 0;
-		double sumY = 0;
-		double sumZ = 0;
-		final int nPoints = points.length;
-
-		for (final double[] point : points) {
-			sumX += point[0];
-			sumY += point[1];
-			sumZ += point[2];
-		}
-
-		centroid[0] = sumX / nPoints;
-		centroid[1] = sumY / nPoints;
-		centroid[2] = sumZ / nPoints;
-
-		return centroid;
-	}
-
-	/**
-	 * Find the centroid of a set of points in double[n][i] format
-	 *
-	 * @param points
-	 * @return
-	 */
-	private static double[] getCentroidND(final double[][] points) {
-		final int nPoints = points.length;
 		final int nDimensions = points[0].length;
 		final double[] centroid = new double[nDimensions];
-		final double[] sums = new double[nDimensions];
-
 		for (final double[] point : points) {
-			if (point.length != nDimensions) {
-				throw new IllegalArgumentException("Number of dimensions must be equal");
-			}
-			for (int i = 0; i < nDimensions; i++) {
-				sums[i] += point[i];
+			for (int d = 0; d < nDimensions; d++) {
+				centroid[d] += point[d];
 			}
 		}
-
-		for (int i = 0; i < nDimensions; i++) {
-			centroid[i] = sums[i] / nPoints;
+		for (int i = 0; i < centroid.length; i++) {
+			centroid[i] /= points.length;
 		}
-
 		return centroid;
 	}
 }
