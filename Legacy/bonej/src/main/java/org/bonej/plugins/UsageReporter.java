@@ -217,8 +217,9 @@ public final class UsageReporter {
 				reader.lines().forEach(IJ::log);
 			}
         } catch (final IOException e) {
-			if (IJ.debugMode)
-				e.printStackTrace();
+			if (IJ.debugMode) {
+				IJ.error(e.getMessage());
+			}
 		}
 	}
 

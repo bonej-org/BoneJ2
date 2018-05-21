@@ -55,10 +55,12 @@ public class DeleteSliceRange implements PlugIn {
 		if (first < 1) {
 			IJ.error("First slice cannot be less than 1.");
 			return;
-		} else if (last > imp.getStackSize()) {
+		}
+		if (last > imp.getStackSize()) {
 			IJ.error("Last slice cannot be greater than the number of slices.");
 			return;
-		} else if (first > last) {
+		}
+		if (first > last) {
 			IJ.error("First slice cannot be after last slice");
 			return;
 		}

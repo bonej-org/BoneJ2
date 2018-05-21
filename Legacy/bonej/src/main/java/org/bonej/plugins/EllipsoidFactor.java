@@ -53,10 +53,6 @@ import ij.process.ImageProcessor;
 import ij3d.Image3DUniverse;
 
 /**
- * <p>
- * <b>Ellipsoid Factor</b>
- * </p>
- * <p>
  * ImageJ plugin to describe the local geometry of a binary image in an
  * oblate/prolate spheroid space. Uses Skeletonize3D to generate a 3D skeleton,
  * the points of which are used as centres for maximally inscribed ellipsoids.
@@ -67,7 +63,6 @@ import ij3d.Image3DUniverse;
  * interest, and ranges from −1 for strongly oblate (discus-shaped) ellipsoids,
  * to +1 for strongly prolate (javelin-shaped) ellipsoids. For an ellipsoid with
  * axes a ≤ b ≤ c, EF = a/b − b/c.
- * </p>
  *
  * @see <a href="http://dx.doi.org/10.3389/fendo.2015.00015">
  *      "The ellipsoid factor for quantification of rods, plates, and intermediate forms in 3D geometries"
@@ -98,7 +93,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * diagonal length
 	 */
 	private double maxDrift = Math.sqrt(3);
-	// private ResultsTable rt;
 	private Image3DUniverse universe;
 
 	private double stackVolume;
@@ -152,7 +146,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		if (gd.wasCanceled())
 			return;
 
-		// if (!Interpreter.isBatchMode()) {
 		vectorIncrement = gd.getNextNumber();
 		nVectors = (int) Math.round(gd.getNextNumber());
 		skipRatio = (int) Math.round(gd.getNextNumber());
@@ -167,8 +160,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final boolean doFlinnPeakPlot = gd.getNextBoolean();
 		final double gaussianSigma = gd.getNextNumber();
 		final boolean doFlinnPlot = gd.getNextBoolean();
-
-		// }
 
 		final double[][] unitVectors = Vectors.regularVectors(nVectors);
 		regularVectors = unitVectors.clone();
@@ -676,7 +667,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 							}
 						}
 
-						// TODO Remove unnecessary duplication
 						final int r = yEllipsoids.size();
 						final Ellipsoid[] ellipsoidSubSubSet = new Ellipsoid[r];
 						for (int i = 0; i < r; i++) {
@@ -754,16 +744,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		}
 		Multithreader.startAndJoin(threads);
 
-		final Ellipsoid[] sortedEllipsoids = removeNulls(ellipsoids);
-
-		// Sort using this class' compare method
-		Arrays.sort(sortedEllipsoids, this);
-
-		return sortedEllipsoids;
-	}
-
-	private static Ellipsoid[] removeNulls(final Ellipsoid[] ellipsoids) {
-        return Arrays.stream(ellipsoids).filter(Objects::nonNull).toArray(Ellipsoid[]::new);
+		return Arrays.stream(ellipsoids).filter(Objects::nonNull).sorted(this).toArray(Ellipsoid[]::new);
 	}
 
 	/**
@@ -894,11 +875,12 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 
 			// bump a little away from the sides
 			contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
-			if (!contactPoints.isEmpty())
-				ellipsoid = bump(ellipsoid, contactPoints, px, py, pz);
 			// if can't bump then do a wiggle
-			else
+			if (contactPoints.isEmpty()) {
 				ellipsoid = wiggle(ellipsoid);
+			} else {
+				ellipsoid = bump(ellipsoid, contactPoints, px, py, pz);
+			}
 
 			// contract
 			ellipsoid = shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
@@ -1530,6 +1512,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * <b>descending</b> volume.
 	 *
 	 */
+	// TODO Move to Ellipsoid class
 	@Override
 	public int compare(final Ellipsoid o1, final Ellipsoid o2) {
 		return Double.compare(o2.getVolume(), o1.getVolume());

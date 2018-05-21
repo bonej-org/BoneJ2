@@ -62,7 +62,7 @@ public final class MatrixUtils {
 		final int nRows = matrix.getRowDimension();
 		final double[][] eVal = matrix.getArrayCopy();
 		for (int r = 0; r < nRows; r++) {
-			StringBuilder row = new StringBuilder("||");
+			final StringBuilder row = new StringBuilder("||");
 			for (int c = 0; c < nCols; c++) {
 				row.append(IJ.d2s(eVal[r][c], 3)).append("|");
 			}

@@ -188,6 +188,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 			final int tZ = z - startZ + 1;
 			final double dZ = z * vD - zC;
 			final double dZ2 = dZ * dZ;
+			// TODO Crashes with 24-bits (RGB stack)
 			targetStack.setPixels(Moments.getEmptyPixels(roiWidth, roiHeight, imp.getBitDepth()), tZ);
 			targetStack.setSliceLabel(sourceStack.getShortSliceLabel(z), tZ);
 			final ImageProcessor ip = sourceStack.getProcessor(z);

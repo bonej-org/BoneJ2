@@ -48,7 +48,6 @@ import process3d.Erode_;
 
 public class ThresholdMinConn implements PlugIn, DialogListener {
 
-	// private ImagePlus imp;
 	private int testCount = 11;
     private int subVolume = 256;
 	private double testRange = 0.2;
@@ -123,7 +122,6 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getStackSize();
-		// final int nPixels = w * h;
 		final ImageStack stack = imp.getImageStack();
 		final ImageStack stack2 = new ImageStack(w, h, d);
 		final AtomicInteger ai = new AtomicInteger(1);
@@ -184,12 +182,6 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		return threshold;
 	}
 
-	/**
-	 *
-	 * @param imp2
-	 * @param histogram
-	 * @return
-	 */
 	private double[] getTestThreshold(final ImagePlus imp2, final int[] histogram) {
 		final ImageProcessor ip = imp2.getProcessor();
 		final int startThreshold = ip.getAutoThreshold(histogram);

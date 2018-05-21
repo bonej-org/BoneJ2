@@ -1410,15 +1410,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return number of chunks
 	 */
 	int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
-		final int d = imp.getImageStackSize();
-		int nChunks = d / slicesPerChunk;
-
-		final int remainder = d % slicesPerChunk;
-
-		if (remainder > 0) {
-			nChunks++;
-		}
-		return nChunks;
+		final double d = imp.getImageStackSize();
+		return (int) Math.ceil(d / slicesPerChunk);
 	}
 
 	/**
@@ -1743,7 +1736,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				connectStructures(imp, workArray, particleLabels, phase, singleChunkRange);
 			}
 		}
-	}// ConnectStructuresThread
+	}
 
 	/**
 	 * Joins semi-labelled particles using a non-recursive algorithm
@@ -1973,8 +1966,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		boolean update = true;
 		boolean find = true;
 		boolean minimise = true;
-		boolean consistent = false;
-		while ((duplicates > 0) && snowball && merge && update && find && minimise && !consistent) {
+		boolean inconsistent = true;
+		while ((duplicates > 0) && snowball && merge && update && find && minimise && inconsistent) {
 			snowball = snowballLUT(lut, map, lutList);
 
 			duplicates = countDuplicates(counter, map, lut);
@@ -1990,7 +1983,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			// minimise the LUT
 			minimise = minimiseLutArray(lut);
 
-			consistent = checkConsistence(lut, map);
+			inconsistent = !checkConsistence(lut, map);
 		}
 
 		// replace all labels with LUT values
@@ -2070,10 +2063,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 
 		// find duplicates hiding in sets which are greater than the lut
-		// HashSet<Integer> set = null;
-		// HashSet<Integer> target = null;
-		// Iterator<Integer> iter = null;
-		// Integer val = null;
 		for (int i = 1; i < l; i++) {
 			final HashSet<Integer> set = map.get(i);
 			if (set.isEmpty())
@@ -2089,9 +2078,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					changed = true;
 					final Iterator<Integer> iter = set.iterator();
 					final HashSet<Integer> target = map.get(lutValue);
-					// if (target.isEmpty())
-					// IJ.log("attempting to merge with empty target"
-					// + lutValue);
 					while (iter.hasNext()) {
 						final Integer val = iter.next();
 						target.add(val);
@@ -2102,7 +2088,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					updateLUT(i, lutValue, lut, lutList);
 					// move to the next set
 					break;
-
 				}
 			}
 		}
@@ -2119,8 +2104,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 */
 	private boolean snowballLUT(final int[] lut, final List<HashSet<Integer>> map,
 			final List<HashSet<Integer>> lutList) {
-		// HashSet<Integer> set = null;
-		// HashSet<Integer> target = null;
 		boolean changed = false;
 		for (int i = lut.length - 1; i > 0; i--) {
 			IJ.showStatus("Snowballing labels...");
@@ -2130,8 +2113,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				changed = true;
 				final HashSet<Integer> set = map.get(i);
 				final HashSet<Integer> target = map.get(lutValue);
-				// if (target.isEmpty())
-				// IJ.log("merging with empty target " + lutValue);
 				for (final Integer n : set) {
 					target.add(n);
 					lut[n] = lutValue;
@@ -2270,9 +2251,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 */
 	private void get26Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y, final int z,
 			final int w, final int h, final int d) {
-		// if (phase == FORE) {
-		// int[] neighborhood = new int[26];
-
 		neighborhood[0] = getPixel(image, x - 1, y - 1, z - 1, w, h, d);
 		neighborhood[1] = getPixel(image, x, y - 1, z - 1, w, h, d);
 		neighborhood[2] = getPixel(image, x + 1, y - 1, z - 1, w, h, d);
@@ -2290,7 +2268,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[11] = getPixel(image, x + 1, y - 1, z, w, h, d);
 
 		neighborhood[12] = getPixel(image, x - 1, y, z, w, h, d);
-		// neighborhood[13] = getPixel(image, x, y, z, w, h, d);
 		neighborhood[13] = getPixel(image, x + 1, y, z, w, h, d);
 
 		neighborhood[14] = getPixel(image, x - 1, y + 1, z, w, h, d);
@@ -2308,13 +2285,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[23] = getPixel(image, x - 1, y + 1, z + 1, w, h, d);
 		neighborhood[24] = getPixel(image, x, y + 1, z + 1, w, h, d);
 		neighborhood[25] = getPixel(image, x + 1, y + 1, z + 1, w, h, d);
-
-		// return neighborhood;
 	}
 
 	private void get6Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y, final int z,
 			final int w, final int h, final int d) {
-		// int[] neighborhood = new int[6];
 		neighborhood[0] = getPixel(image, x - 1, y, z, w, h, d);
 		neighborhood[1] = getPixel(image, x, y - 1, z, w, h, d);
 		neighborhood[2] = getPixel(image, x, y, z - 1, w, h, d);
@@ -2322,7 +2296,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[3] = getPixel(image, x + 1, y, z, w, h, d);
 		neighborhood[4] = getPixel(image, x, y + 1, z, w, h, d);
 		neighborhood[5] = getPixel(image, x, y, z + 1, w, h, d);
-		// return neighborhood;
 	}
 
 	/**
@@ -2343,7 +2316,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			return image[z][x + y * w];
 
 		return 0;
-	} /* end getPixel */
+	}
 
 	/**
 	 * Create a work array
@@ -2619,43 +2592,22 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// link algorithm choice to chunk size field
 		final Choice choice = (Choice) choices.get(1);
 		final TextField num = (TextField) numbers.get(5);
-		if (choice.getSelectedItem().contentEquals("Multithreaded")) {
-			num.setEnabled(true);
-		} else {
-			num.setEnabled(false);
-		}
+		num.setEnabled(choice.getSelectedItem().contentEquals("Multithreaded"));
 		// link moments and ellipsoid choice to unit vector choice
 		final Checkbox momBox = (Checkbox) checkboxes.get(4);
 		final Checkbox elBox = (Checkbox) checkboxes.get(8);
 		final Checkbox vvvBox = (Checkbox) checkboxes.get(9);
-		if (elBox.getState() || momBox.getState())
-			vvvBox.setEnabled(true);
-		else
-			vvvBox.setEnabled(false);
-
+		vvvBox.setEnabled(elBox.getState() || momBox.getState());
 		// link show stack 3d to volume resampling
 		final Checkbox box = (Checkbox) checkboxes.get(16);
 		final TextField numb = (TextField) numbers.get(4);
-		if (box.getState()) {
-			numb.setEnabled(true);
-		} else {
-			numb.setEnabled(false);
-		}
+		numb.setEnabled(box.getState());
 		// link show surfaces, gradient choice and split value
 		final Checkbox surfbox = (Checkbox) checkboxes.get(12);
 		final Choice col = (Choice) choices.get(0);
 		final TextField split = (TextField) numbers.get(3);
-		if (!surfbox.getState()) {
-			col.setEnabled(false);
-			split.setEnabled(false);
-		} else {
-			col.setEnabled(true);
-			if (col.getSelectedIndex() == 1) {
-				split.setEnabled(true);
-			} else {
-				split.setEnabled(false);
-			}
-		}
+		col.setEnabled(surfbox.getState());
+		split.setEnabled(surfbox.getState() && col.getSelectedIndex() == 1);
 		DialogModifier.registerMacroValues(gd, gd.getComponents());
 		return true;
 	}

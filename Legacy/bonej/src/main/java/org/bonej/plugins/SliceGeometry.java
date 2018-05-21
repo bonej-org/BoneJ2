@@ -144,9 +144,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private double[] I1;
 	/** Second moment of area around secondary axis */
 	private double[] I2;
-	// private double[] Ip;
-	// private double[] r1;
-	// private double[] r2;
 	/** Chord length from principal axis */
 	private double[] maxRad2;
 	/** Chord length from secondary axis */
@@ -155,7 +152,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private double[] Z1;
 	/** Section modulus around secondary axis */
 	private double[] Z2;
-	// private double[] Zp;
 	private double[] principalDiameter;
 	private double[] secondaryDiameter;
 	/** Use the masked version of thickness, which trims the 1px overhang */
@@ -173,7 +169,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
         cal = imp.getCalibration();
         vW = cal.pixelWidth;
         vH = cal.pixelHeight;
-		/* Linear unit of measure */
+		// Linear unit of measure
 		final String units = cal.getUnits();
         al = imp.getStackSize() + 1;
 
@@ -185,8 +181,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			pixUnits = "grey";
 
 		final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
-		double min = thresholds[0];
-		double max = thresholds[1];
 		orienteer = Orienteer.getInstance();
 
 		final GenericDialog gd = new GenericDialog("Options");
@@ -207,8 +201,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		gd.addCheckbox("Clear_results", false);
 		gd.addCheckbox("Use_Orientation", (orienteer != null));
 		gd.addCheckbox("HU_Calibrated", ImageCheck.huCalibrated(imp));
-		gd.addNumericField("Bone_Min:", min, 1, 6, pixUnits + " ");
-		gd.addNumericField("Bone_Max:", max, 1, 6, pixUnits + " ");
+		gd.addNumericField("Bone_Min:", thresholds[0], 1, 6, pixUnits + " ");
+		gd.addNumericField("Bone_Max:", thresholds[1], 1, 6, pixUnits + " ");
 		gd.addMessage("Only pixels >= bone min\n" + "and <= bone max are used.");
 		gd.addMessage("Density calibration coefficients");
 		gd.addNumericField("Slope", 0, 4, 6, "g.cm^-3 / " + pixUnits + " ");
@@ -228,7 +222,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		final boolean do3DAnnotation = gd.getNextBoolean();
 		// If true, process the whole stack
 		final boolean doStack = gd.getNextBoolean();
-		/* Flag to clear the results table or concatenate */
+		// Flag to clear the results table or concatenate
 		final boolean clearResults = gd.getNextBoolean();
         doOriented = gd.getNextBoolean();
 		if (doStack) {
@@ -240,8 +234,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 
 		final boolean isHUCalibrated = gd.getNextBoolean();
-		min = gd.getNextNumber();
-		max = gd.getNextNumber();
+		double min = gd.getNextNumber();
+		double max = gd.getNextNumber();
         m = gd.getNextNumber();
         c = gd.getNextNumber();
 		if (isHUCalibrated) {
@@ -471,10 +465,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		// show the centroids
 		final CustomPointMesh mesh = new CustomPointMesh(centroids);
 		mesh.setPointSize(5.0f);
-		float red = 0.0f;
-		float green = 0.5f;
-		float blue = 1.0f;
-		final Color3f cColour = new Color3f(red, green, blue);
+		final Color3f cColour = new Color3f(0.0f, 0.5f, 1.0f);
 		mesh.setColor(cColour);
 		try {
 			univ.addCustomMesh(mesh, "Centroid").setLocked(true);
@@ -484,20 +475,14 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 
 		// show the axes
-		red = 1.0f;
-		green = 0.0f;
-		blue = 0.0f;
-		final Color3f minColour = new Color3f(red, green, blue);
+		final Color3f minColour = new Color3f(1.0f, 0.0f, 0.0f);
 		try {
 			univ.addLineMesh(minAxes, minColour, "Minimum axis", false).setLocked(true);
 		} catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
 			return;
 		}
-		red = 0.0f;
-		green = 0.0f;
-		blue = 1.0f;
-		final Color3f maxColour = new Color3f(red, green, blue);
+		final Color3f maxColour = new Color3f(0.0f, 0.0f, 1.0f);
 		try {
 			univ.addLineMesh(maxAxes, maxColour, "Maximum axis", false).setLocked(true);
 		} catch (final NullPointerException npe) {
@@ -601,39 +586,34 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			double sxys = 0;
 			final int roiXEnd = r.x + r.width;
 			final int roiYEnd = r.y + r.height;
-			if (!emptySlices[s]) {
-				final ImageProcessor ip = stack.getProcessor(s);
-				for (int y = r.y; y < roiYEnd; y++) {
-					for (int x = r.x; x < roiXEnd; x++) {
-						final double pixel = ip.get(x, y);
-						if (pixel >= min && pixel <= max) {
-							final double xVw = x * vW;
-							final double yVh = y * vH;
-							sxs += xVw;
-							sys += yVh;
-							sxxs += xVw * xVw;
-							syys += yVh * yVh;
-							sxys += xVw * yVh;
-						}
+			if (emptySlices[s]) {
+				theta[s] = Double.NaN;
+				continue;
+			}
+			final ImageProcessor ip = stack.getProcessor(s);
+			for (int y = r.y; y < roiYEnd; y++) {
+				for (int x = r.x; x < roiXEnd; x++) {
+					final double pixel = ip.get(x, y);
+					if (pixel >= min && pixel <= max) {
+						final double xVw = x * vW;
+						final double yVh = y * vH;
+						sxs += xVw;
+						sys += yVh;
+						sxxs += xVw * xVw;
+						syys += yVh * yVh;
+						sxys += xVw * yVh;
 					}
 				}
-				// this.Sx[s] = sxs;
-				// this.Sy[s] = sys;
-				// this.Sxx[s] = sxxs;
-				// this.Syy[s] = syys;
-				// this.Sxy[s] = sxys;
-				final double Myys = sxxs - (sxs * sxs / cslice[s]) + cslice[s] * vW * vW / 12;
-				// this.cslice[]/12 is for each pixel's own moment
-				final double Mxxs = syys - (sys * sys / cslice[s]) + cslice[s] * vH * vH / 12;
-				final double Mxys = sxys - (sxs * sys / cslice[s]) + cslice[s] * vH * vW / 12;
-				if (Mxys == 0)
-                    theta[s] = 0;
-				else {
-                    theta[s] = Math.atan(
-							(Mxxs - Myys + Math.sqrt((Mxxs - Myys) * (Mxxs - Myys) + 4 * Mxys * Mxys)) / (2 * Mxys));
-				}
+			}
+			// this.cslice[]/12 is for each pixel's own moment
+			final double Myys = sxxs - (sxs * sxs / cslice[s]) + cslice[s] * vW * vW / 12;
+			final double Mxxs = syys - (sys * sys / cslice[s]) + cslice[s] * vH * vH / 12;
+			final double Mxys = sxys - (sxs * sys / cslice[s]) + cslice[s] * vH * vW / 12;
+			if (Mxys == 0) {
+				theta[s] = 0;
 			} else {
-                theta[s] = Double.NaN;
+				theta[s] = Math.atan(
+						(Mxxs - Myys + Math.sqrt((Mxxs - Myys) * (Mxxs - Myys) + 4 * Mxys * Mxys)) / (2 * Mxys));
 			}
 		}
 		// Get I and Z around the principal axes
@@ -659,14 +639,10 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			final double[][] result2 = calculateAngleMoments(imp, min, max, angles);
             I1 = result2[0];
             I2 = result2[1];
-			// this.Ip = result2[2];
-			// this.r1 = result2[3];
-			// this.r2 = result2[4];
             maxRad2 = result2[5];
             maxRad1 = result2[6];
             Z1 = result2[7];
             Z2 = result2[8];
-			// this.Zp = result2[9];
 		}
 	}
 
@@ -688,7 +664,18 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		for (int s = startSlice; s <= endSlice; s++) {
 			IJ.showStatus("Calculating Imin and Imax...");
 			IJ.showProgress(s, endSlice);
-			if (!emptySlices[s]) {
+			if (emptySlices[s]) {
+				I1[s] = Double.NaN;
+				I2[s] = Double.NaN;
+				Ip[s] = Double.NaN;
+				r1[s] = Double.NaN;
+				r2[s] = Double.NaN;
+				maxRad2[s] = Double.NaN;
+				maxRad1[s] = Double.NaN;
+				Z1[s] = Double.NaN;
+				Z2[s] = Double.NaN;
+				Zp[s] = Double.NaN;
+			} else {
 				final ImageProcessor ip = stack.getProcessor(s);
 				double sxs = 0;
 				double sys = 0;
@@ -726,11 +713,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 						}
 					}
 				}
-				// this.Sx[s] = sxs;
-				// this.Sy[s] = sys;
-				// this.Sxx[s] = sxxs;
-				// this.Syy[s] = syys;
-				// this.Sxy[s] = sxys;
 				maxRad2[s] = maxRadMinS;
 				maxRad1[s] = maxRadMaxS;
 				maxRadC[s] = maxRadCentreS;
@@ -743,17 +725,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				Z1[s] = I1[s] / maxRad2[s];
 				Z2[s] = I2[s] / maxRad1[s];
 				Zp[s] = (I1[s] + I2[s]) / maxRadC[s];
-			} else {
-				I1[s] = Double.NaN;
-				I2[s] = Double.NaN;
-				Ip[s] = Double.NaN;
-				r1[s] = Double.NaN;
-				r2[s] = Double.NaN;
-				maxRad2[s] = Double.NaN;
-				maxRad1[s] = Double.NaN;
-				Z1[s] = Double.NaN;
-				Z2[s] = Double.NaN;
-				Zp[s] = Double.NaN;
 			}
 		}
 
@@ -940,8 +911,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				for (int x = 0; x < w; x++) {
 					if (sliceIp.get(x, y) >= min && sliceIp.get(x, y) <= max) {
 						binaryIp.set(x, y, 255);
-					} else {
-						binaryIp.set(x, y, 0);
 					}
 				}
 			}

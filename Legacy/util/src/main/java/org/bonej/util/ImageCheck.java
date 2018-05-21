@@ -142,6 +142,7 @@ public final class ImageCheck {
 		else
 			return;
 
+		// TODO Create method
 		position = getDicomAttribute(imp, stackSize);
         if (position == null) {
             IJ.log("No DICOM slice position data");
@@ -181,11 +182,10 @@ public final class ImageCheck {
 	 */
 	private static String getDicomAttribute(final ImagePlus imp, final int slice) {
 		final ImageStack stack = imp.getImageStack();
-		final String header = stack.getSliceLabel(slice);
-		// tag must be in format 0000,0000
 		if (slice < 1 || slice > stack.getSize()) {
 			return null;
 		}
+		final String header = stack.getSliceLabel(slice);
 		if (header == null) {
 			return null;
 		}
@@ -226,6 +226,7 @@ public final class ImageCheck {
      * Checks if BoneJ can run on the current installation.
      *
      * @return true if environment is set up correctly. */
+	// TODO Fix calls to checkEnvironment (only when really necessary)
 	public static boolean checkEnvironment() {
 		try {
 			Class.forName("ij3d.ImageJ3DViewer");

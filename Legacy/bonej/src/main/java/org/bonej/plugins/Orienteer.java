@@ -136,11 +136,10 @@ public final class Orienteer extends PlugInFrame
 			if (instance.getTitle().equals(getTitle())) {
 				instance.toFront();
 				return;
-			} else {
-				final Orienteer aa = instance;
-				Prefs.saveLocation(LOC_KEY, aa.getLocation());
-				aa.close();
 			}
+			final Orienteer aa = instance;
+			Prefs.saveLocation(LOC_KEY, aa.getLocation());
+			aa.close();
 		}
 		instance = this;
 		IJ.register(Orienteer.class);

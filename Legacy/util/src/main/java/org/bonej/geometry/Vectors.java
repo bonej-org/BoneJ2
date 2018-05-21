@@ -23,6 +23,8 @@ package org.bonej.geometry;
 
 import org.scijava.vecmath.Point3f;
 
+import java.util.stream.Stream;
+
 public final class Vectors {
 
 	private Vectors() {}
@@ -127,12 +129,7 @@ public final class Vectors {
 	 * @return 2D array (nVectors x 3) containing unit vectors
 	 */
 	public static double[][] randomVectors(final int nVectors) {
-		final double[][] randomVectors = new double[nVectors][3];
-
-		for (int n = 0; n < nVectors; n++)
-			randomVectors[n] = randomVector();
-
-		return randomVectors;
+		return Stream.generate(Vectors::randomVector).limit(nVectors).toArray(double[][]::new);
 	}
 
 	/**

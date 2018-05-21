@@ -78,8 +78,6 @@ public class Moments implements PlugIn, DialogListener {
 		}
 		cal = imp.getCalibration();
 		final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
-		double min = thresholds[0];
-		double max = thresholds[1];
 		final String pixUnits;
 		if (ImageCheck.huCalibrated(imp)) {
 			pixUnits = "HU";
@@ -91,8 +89,8 @@ public class Moments implements PlugIn, DialogListener {
 		gd.addNumericField("End Slice:", imp.getStackSize(), 0);
 
 		gd.addCheckbox("HU Calibrated", ImageCheck.huCalibrated(imp));
-		gd.addNumericField("Bone_Min:", min, 1, 6, pixUnits + " ");
-		gd.addNumericField("Bone_Max:", max, 1, 6, pixUnits + " ");
+		gd.addNumericField("Bone_Min:", thresholds[0], 1, 6, pixUnits + " ");
+		gd.addNumericField("Bone_Max:", thresholds[1], 1, 6, pixUnits + " ");
 		gd.addMessage("Only pixels >= bone min\n" + "and <= bone max are used.");
 		gd.addMessage("Density calibration coefficients");
 		gd.addNumericField("Slope", 0, 4, 6, "g.cm^-3 / " + pixUnits + " ");
@@ -109,8 +107,8 @@ public class Moments implements PlugIn, DialogListener {
 		final int startSlice = (int) gd.getNextNumber();
 		final int endSlice = (int) gd.getNextNumber();
 		final boolean isHUCalibrated = gd.getNextBoolean();
-		min = gd.getNextNumber();
-		max = gd.getNextNumber();
+		double min = gd.getNextNumber();
+		double max = gd.getNextNumber();
 
 		double m = gd.getNextNumber();
 		double c = gd.getNextNumber();
@@ -198,10 +196,9 @@ public class Moments implements PlugIn, DialogListener {
 		final String units = imp.getCalibration().getUnits();
         if (units.contains("mm")) {
             return 1000;
-		} else {
-            return 1;
 		}
-    }
+		return 1;
+	}
 
 	/**
 	 * Return an empty pixel array of the type appropriate for the bit depth
@@ -214,16 +211,19 @@ public class Moments implements PlugIn, DialogListener {
 	 * @return Object containing an array of the type needed for an image with
 	 *         bitDepth
 	 */
+	// TODO Add support for 24-bits (int[])
 	// TODO throw exception when unexpected bit depth
 	static Object getEmptyPixels(final int w, final int h, final int bitDepth) {
 	    if (bitDepth == 8) {
             return new byte[w * h];
-		} else if (bitDepth == 16) {
+		}
+		if (bitDepth == 16) {
             return new short[w * h];
-		} else if (bitDepth == 32) {
+		}
+		if (bitDepth == 32) {
             return new float[w * h];
 		}
-        return new Object();
+		return new Object();
 	}
 
 	/**
@@ -537,9 +537,6 @@ public class Moments implements PlugIn, DialogListener {
 	/**
      * Multithreading class to look up aligned voxel values, processing each
 	 * slice in its own thread
-	 *
-	 * @author Michael Doube
-	 *
 	 */
     private static final class AlignThread extends Thread {
 		private final int thread;
