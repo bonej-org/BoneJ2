@@ -37,6 +37,7 @@ public class DeleteSliceRange implements PlugIn {
 			return;
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp) {
+			IJ.noImage();
 			return;
 		}
 		final GenericDialog gd = new GenericDialog("Delete slices");
@@ -62,15 +63,10 @@ public class DeleteSliceRange implements PlugIn {
 			return;
 		}
 
-		if (imp.getStack().isVirtual()) {
-			final VirtualStack stack = (VirtualStack) imp.getStack();
-			deleteSliceRange(stack, first, last);
-			imp.setStack(null, stack);
-		} else {
-			final ImageStack stack = imp.getStack();
-			deleteSliceRange(stack, first, last);
-			imp.setStack(null, stack);
-		}
+		final ImageStack stack = imp.getStack();
+		deleteSliceRange(stack, first, last);
+		imp.setStack(null, stack);
+
 		imp.show();
 		UsageReporter.reportEvent(this).send();
 	}
@@ -83,19 +79,6 @@ public class DeleteSliceRange implements PlugIn {
 	 * @param last the last slice to remove
 	 */
 	private void deleteSliceRange(final ImageStack stack, final int first, final int last) {
-		for (int s = first; s <= last; s++) {
-			stack.deleteSlice(first);
-		}
-	}
-
-	/**
-	 * Delete a range of slices from a virtual stack
-	 *
-	 * @param stack an image stack.
-	 * @param first the first slice to remove
-	 * @param last the last slice to remove
-	 */
-	private void deleteSliceRange(final VirtualStack stack, final int first, final int last) {
 		for (int s = first; s <= last; s++) {
 			stack.deleteSlice(first);
 		}
