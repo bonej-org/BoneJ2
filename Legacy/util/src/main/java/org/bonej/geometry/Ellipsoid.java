@@ -25,9 +25,6 @@ package org.bonej.geometry;
 
 import static java.util.stream.DoubleStream.of;
 
-import Jama.EigenvalueDecomposition;
-import Jama.Matrix;
-
 /**
  * <p>
  * Represents an ellipsoid defined by its centroid, eigenvalues and 3x3
@@ -468,60 +465,5 @@ public class Ellipsoid {
 	 */
 	void dilate(final double increment) {
 		dilate(ra * increment, rb * increment, rc * increment);
-	}
-
-	/**
-	 * Calculate the matrix representation of the ellipsoid (centre, eigenvalues,
-	 * eigenvectors) from the equation <i>ax</i> <sup>2</sup> +
-	 * <i>by</i><sup>2</sup> + <i>cz</i><sup>2</sup> + 2 <i>dxy</i> + 2<i>exz</i>
-	 * + 2<i>fyz</i> + 2<i>gx</i> + 2<i>hy</i> + 2 <i>iz</i> = 1
-	 *
-	 * @param a coefficient of <em>x<sup>2</sup></em>
-	 * @param b coefficient of <em>y<sup>2</sup></em>
-	 * @param c coefficient of <em>z<sup>2</sup></em>.
-	 * @param d coefficient of <em>x</em><em>y</em>.
-	 * @param e coefficient of <em>x</em><em>z</em>.
-	 * @param f coefficient of <em>y</em><em>z</em>.
-	 * @param g coefficient of 2<em>x</em>.
-	 * @param h coefficient of 2<em>y</em>.
-	 * @param i coefficient of 2<em>z</em>.
-	 * @return Object[] array containing centre (double[3]), eigenvalues
-	 *         (double[3][3]), eigenvectors (double[3][3]), and the
-	 *         EigenvalueDecomposition
-	 */
-	// TODO Move to FitEllipsoid
-	static Object[] matrixFromEquation(final double a, final double b,
-		final double c, final double d, final double e, final double f,
-		final double g, final double h, final double i)
-	{
-
-		// the fitted equation
-		final double[][] v = { { a }, { b }, { c }, { d }, { e }, { f }, { g }, {
-			h }, { i } };
-		final Matrix V = new Matrix(v);
-
-		// 4x4 based on equation variables
-		final double[][] aa = { { a, d, e, g }, { d, b, f, h }, { e, f, c, i }, { g,
-			h, i, -1 }, };
-		final Matrix A = new Matrix(aa);
-
-		// find the centre
-		final Matrix C = (A.getMatrix(0, 2, 0, 2).times(-1).inverse()).times(V
-			.getMatrix(6, 8, 0, 0));
-
-		// using the centre and 4x4 calculate the
-		// eigendecomposition
-		final Matrix T = Matrix.identity(4, 4);
-		T.setMatrix(3, 3, 0, 2, C.transpose());
-		final Matrix R = T.times(A.times(T.transpose()));
-		final double r33 = R.get(3, 3);
-		final Matrix R02 = R.getMatrix(0, 2, 0, 2);
-		final EigenvalueDecomposition E = new EigenvalueDecomposition(R02.times(-1 /
-			r33));
-
-		final double[] centre = C.getColumnPackedCopy();
-		final double[][] eigenVectors = E.getV().getArrayCopy();
-		final double[][] eigenValues = E.getD().getArrayCopy();
-		return new Object[] { centre, eigenValues, eigenVectors, E };
 	}
 }

@@ -89,27 +89,6 @@ public final class Vectors {
 	}
 
 	/**
-	 * Normalise a vector to have a length of 1 and the same orientation as the
-	 * input vector a
-	 *
-	 * @param a a 3D vector.
-	 * @return Unit vector in direction of a
-	 */
-	// TODO move to EllipsoidFactor
-	public static double[] norm(final double[] a) {
-		final double a0 = a[0];
-		final double a1 = a[1];
-		final double a2 = a[2];
-		final double length = Math.sqrt(a0 * a0 + a1 * a1 + a2 * a2);
-
-		final double[] normed = new double[3];
-		normed[0] = a0 / length;
-		normed[1] = a1 / length;
-		normed[2] = a2 / length;
-		return normed;
-	}
-
-	/**
 	 * Generate a single randomly-oriented vector on the unit sphere
 	 *
 	 * @return 3-element double array containing [x y z]^T
@@ -158,22 +137,5 @@ public final class Vectors {
 			vectors[k] = vector;
 		}
 		return vectors;
-	}
-
-	/**
-	 * Calculate the cross product of 2 column vectors, both in double[3][1]
-	 * format
-	 *
-	 * @param a first vector
-	 * @param b second vector
-	 * @return resulting vector in double[3][1] format
-	 */
-	// TODO move to test class
-	static double[][] crossProduct(final double[][] a, final double[][] b) {
-		final double[][] c = new double[3][1];
-		c[0][0] = a[1][0] * b[2][0] - a[2][0] * b[1][0];
-		c[1][0] = a[2][0] * b[0][0] - a[0][0] * b[2][0];
-		c[2][0] = a[0][0] * b[1][0] - a[1][0] * b[0][0];
-		return c;
 	}
 }

@@ -105,7 +105,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	 * Compare Ellipsoids by volume. Sorting based on this method will result in
 	 * Ellipsoids sorted in order of <b>descending</b> volume.
 	 */
-	// TODO Move to Ellipsoid class
+	// TODO Replace with lambda
 	@Override
 	public int compare(final Ellipsoid o1, final Ellipsoid o2) {
 		return Double.compare(o2.getVolume(), o1.getVolume());
@@ -253,6 +253,26 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 
 		UsageReporter.reportEvent(this).send();
 		IJ.showStatus("Ellipsoid Factor completed");
+	}
+
+	/**
+	 * Normalise a vector to have a length of 1 and the same orientation as the
+	 * input vector a
+	 *
+	 * @param a a 3D vector.
+	 * @return Unit vector in direction of a
+	 */
+	private static double[] norm(final double[] a) {
+		final double a0 = a[0];
+		final double a1 = a[1];
+		final double a2 = a[2];
+		final double length = Math.sqrt(a0 * a0 + a1 * a1 + a2 * a2);
+
+		final double[] normed = new double[3];
+		normed[0] = a0 / length;
+		normed[1] = a1 / length;
+		normed[2] = a2 / length;
+		return normed;
 	}
 
 	/**
@@ -1267,11 +1287,11 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		// find an orthogonal axis
 		final double[] xAxis = { 1, 0, 0 };
 		double[] middleAxis = Vectors.crossProduct(shortAxis, xAxis);
-		middleAxis = Vectors.norm(middleAxis);
+		middleAxis = norm(middleAxis);
 
 		// find a mutually orthogonal axis by forming the cross product
 		double[] longAxis = Vectors.crossProduct(shortAxis, middleAxis);
-		longAxis = Vectors.norm(longAxis);
+		longAxis = norm(longAxis);
 
 		// construct a rotation matrix
 		double[][] rotation = { shortAxis, middleAxis, longAxis };
@@ -1559,7 +1579,7 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 			pD, w, h, d);
 		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
-			ellipsoid = rotateAboutAxis(ellipsoid, Vectors.norm(torque));
+			ellipsoid = rotateAboutAxis(ellipsoid, norm(torque));
 		}
 		return ellipsoid;
 	}
@@ -1582,11 +1602,11 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 		final double[] vector = Vectors.randomVector();
 
 		// first column, should be very close to [0, 1, 0]^T
-		final double[] firstColumn = Vectors.norm(Vectors.crossProduct(zerothColumn,
+		final double[] firstColumn = norm(Vectors.crossProduct(zerothColumn,
 			vector));
 
 		// second column, should be very close to [0, 0, 1]^T
-		final double[] secondColumn = Vectors.norm(Vectors.crossProduct(
+		final double[] secondColumn = norm(Vectors.crossProduct(
 			zerothColumn, firstColumn));
 
 		double[][] rotation = { zerothColumn, firstColumn, secondColumn };

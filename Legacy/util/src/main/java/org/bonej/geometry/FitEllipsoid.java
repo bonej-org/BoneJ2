@@ -42,6 +42,24 @@ public final class FitEllipsoid {
 	private FitEllipsoid() {}
 
 	/**
+	 * Create an m * n Matrix filled with 1
+	 *
+	 * @param m number of rows
+	 * @param n number of columns
+	 * @return m * n Matrix filled with 1
+	 */
+	// TODO drop 2nd parameter
+	private static Matrix ones(final int m, final int n) {
+		final double[][] ones = new double[m][n];
+		for (int i = 0; i < m; i++) {
+			for (int j = 0; j < n; j++) {
+				ones[i][j] = 1;
+			}
+		}
+		return new Matrix(ones);
+	}
+
+	/**
 	 * Return points on an ellipsoid with optional noise. Point density is not
 	 * uniform, becoming more dense at the poles.
 	 *
@@ -191,14 +209,14 @@ public final class FitEllipsoid {
 
 		// do the fitting
 		final Matrix D = new Matrix(d);
-		final Matrix ones = MatrixUtils.ones(nPoints, 1);
+		final Matrix ones = ones(nPoints, 1);
 		final Matrix V = ((D.transpose().times(D)).inverse()).times(D.transpose()
 			.times(ones));
 
 		// the fitted equation
 		final double[] v = V.getColumnPackedCopy();
 
-		final Object[] matrices = Ellipsoid.matrixFromEquation(v[0], v[1], v[2],
+		final Object[] matrices = matrixFromEquation(v[0], v[1], v[2],
 			v[3], v[4], v[5], v[6], v[7], v[8]);
 
 		// pack data up for returning
@@ -216,14 +234,56 @@ public final class FitEllipsoid {
 	}
 
 	/**
-	 * Find the best-fit ellipsoid using the default method (yuryPetrov)
+	 * Calculate the matrix representation of the ellipsoid (centre, eigenvalues,
+	 * eigenvectors) from the equation <i>ax</i> <sup>2</sup> +
+	 * <i>by</i><sup>2</sup> + <i>cz</i><sup>2</sup> + 2 <i>dxy</i> + 2<i>exz</i>
+	 * + 2<i>fyz</i> + 2<i>gx</i> + 2<i>hy</i> + 2 <i>iz</i> = 1
 	 *
-	 * @param coordinates in double[n][3] format
-	 * @return Object representing the best-fit ellipsoid
+	 * @param a coefficient of <em>x<sup>2</sup></em>
+	 * @param b coefficient of <em>y<sup>2</sup></em>
+	 * @param c coefficient of <em>z<sup>2</sup></em>.
+	 * @param d coefficient of <em>x</em><em>y</em>.
+	 * @param e coefficient of <em>x</em><em>z</em>.
+	 * @param f coefficient of <em>y</em><em>z</em>.
+	 * @param g coefficient of 2<em>x</em>.
+	 * @param h coefficient of 2<em>y</em>.
+	 * @param i coefficient of 2<em>z</em>.
+	 * @return Object[] array containing centre (double[3]), eigenvalues
+	 *         (double[3][3]), eigenvectors (double[3][3]), and the
+	 *         EigenvalueDecomposition
 	 */
-	// TODO Move to test class
-	static Ellipsoid fitTo(final double[][] coordinates) {
-		return new Ellipsoid(yuryPetrov(coordinates));
-	}
+	private static Object[] matrixFromEquation(final double a, final double b,
+		final double c, final double d, final double e, final double f,
+		final double g, final double h, final double i)
+	{
 
+		// the fitted equation
+		final double[][] v = { { a }, { b }, { c }, { d }, { e }, { f }, { g }, {
+			h }, { i } };
+		final Matrix V = new Matrix(v);
+
+		// 4x4 based on equation variables
+		final double[][] aa = { { a, d, e, g }, { d, b, f, h }, { e, f, c, i }, { g,
+			h, i, -1 }, };
+		final Matrix A = new Matrix(aa);
+
+		// find the centre
+		final Matrix C = (A.getMatrix(0, 2, 0, 2).times(-1).inverse()).times(V
+			.getMatrix(6, 8, 0, 0));
+
+		// using the centre and 4x4 calculate the
+		// eigendecomposition
+		final Matrix T = Matrix.identity(4, 4);
+		T.setMatrix(3, 3, 0, 2, C.transpose());
+		final Matrix R = T.times(A.times(T.transpose()));
+		final double r33 = R.get(3, 3);
+		final Matrix R02 = R.getMatrix(0, 2, 0, 2);
+		final EigenvalueDecomposition E = new EigenvalueDecomposition(R02.times(-1 /
+			r33));
+
+		final double[] centre = C.getColumnPackedCopy();
+		final double[][] eigenVectors = E.getV().getArrayCopy();
+		final double[][] eigenValues = E.getD().getArrayCopy();
+		return new Object[] { centre, eigenValues, eigenVectors, E };
+	}
 }

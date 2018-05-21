@@ -23,7 +23,8 @@ package org.bonej.plugins;
 
 import static org.junit.Assert.assertEquals;
 
-import org.bonej.util.TestDataMaker;
+import ij.ImageStack;
+import ij.process.ByteProcessor;
 import org.junit.Test;
 
 import ij.ImagePlus;
@@ -36,7 +37,7 @@ public class AnisotropyTest {
 	@Test
 	public void testRunToStableResultIsotropy() {
 		final Random random = new Random(1234);
-		final ImagePlus imp = TestDataMaker.binaryNoise(random);
+		final ImagePlus imp = binaryNoise(random);
 		final Object[] result = anisotropy.runToStableResult(imp, 100, 2000, 50000, 256 / 4, 2.3, 0.005, false);
 		final double da = ((double[]) result[0])[0];
 		assertEquals(0, da, 1e-2);
@@ -44,7 +45,7 @@ public class AnisotropyTest {
 
 	@Test
 	public void testRunToStableResultAnisotropy() {
-		final ImagePlus imp = TestDataMaker.plates();
+		final ImagePlus imp = plates();
 		final Object[] result = anisotropy.runToStableResult(imp, 100, 2000, 50000, 256 / 4, 2.3, 0.005, false);
 		final double da = ((double[]) result[0])[0];
 		assertEquals(1, da, 1e-12);
@@ -53,7 +54,7 @@ public class AnisotropyTest {
 	@Test
 	public void testCalculateSingleSphereIsotropy() {
 		final Random random = new Random(12345);
-		final ImagePlus imp = TestDataMaker.binaryNoise(random);
+		final ImagePlus imp = binaryNoise(random);
 		final double[] centroid = { 128, 128, 128 };
 		final Object[] result = anisotropy.calculateSingleSphere(imp, centroid, 127, 2.3, 50000, false);
 		final double da = ((double[]) result[0])[0];
@@ -62,11 +63,52 @@ public class AnisotropyTest {
 
 	@Test
 	public void testCalculateSingleSphereAnisotropy() {
-		final ImagePlus imp = TestDataMaker.plates();
+		final ImagePlus imp = plates();
 		final double[] centroid = { 128, 128, 128 };
 		final Object[] result = anisotropy.calculateSingleSphere(imp, centroid, 127, 2.3, 50000, false);
 		final double da = ((double[]) result[0])[0];
 		assertEquals(1, da, 1e-2);
 	}
 
+	/**
+	 * Creates an ImagePlus with black (0x00) &amp; white (0xFF) noise
+	 *
+	 * @param generator A random generator for the noise. Using a generator with
+	 *          predetermined {@link Random#Random(long)} seed} makes the result
+	 *          of this method repeatable
+	 * @return an image with binary noise.
+	 */
+	private static ImagePlus binaryNoise(final Random generator) {
+		final int size = 256;
+		final int npixels = size * size;
+		final ImageStack stack = new ImageStack(size, size);
+		for (int i = 0; i < size; i++) {
+			final ByteProcessor bp = new ByteProcessor(size, size);
+			for (int index = 0; index < npixels; index++) {
+				final double random = generator.nextDouble();
+				if (random > 0.25) bp.set(index, 255);
+			}
+			stack.addSlice(bp);
+		}
+		return new ImagePlus("binary-noise", stack);
+	}
+
+	/**
+	 * Creates and image with "plates" or "sheets".
+	 *
+	 * @return an image with xy-plates.
+	 */
+	private static ImagePlus plates() {
+		final int size = 256;
+		final int spacing = 8;
+		final ImageStack stack = new ImageStack(size, size);
+		for (int i = 0; i < size; i++)
+			stack.addSlice(new ByteProcessor(size, size));
+
+		for (int i = 1; i <= size; i += spacing) {
+			final ByteProcessor bp = (ByteProcessor) stack.getProcessor(i);
+			bp.add(255);
+		}
+		return new ImagePlus("plates", stack);
+	}
 }

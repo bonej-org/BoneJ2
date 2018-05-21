@@ -220,6 +220,53 @@ public class Moments implements PlugIn, DialogListener {
 	}
 
 	/**
+	 * Check if a 3 x 3 Matrix is right handed. If the matrix is a rotation
+	 * matrix, then right-handedness implies rotation only, while left-handedness
+	 * implies a reflection will be performed.
+	 *
+	 * @param matrix a JAMA matrix.
+	 * @return true if the Matrix is right handed, false if it is left handed
+	 */
+	private static boolean isRightHanded(final Matrix matrix) {
+		if (matrix.getColumnDimension() != 3 || matrix.getRowDimension() != 3) {
+			throw new IllegalArgumentException();
+		}
+
+		final double x0 = matrix.get(0, 0);
+		final double x1 = matrix.get(1, 0);
+		final double x2 = matrix.get(2, 0);
+		final double y0 = matrix.get(0, 1);
+		final double y1 = matrix.get(1, 1);
+		final double y2 = matrix.get(2, 1);
+		final double z0 = matrix.get(0, 2);
+		final double z1 = matrix.get(1, 2);
+		final double z2 = matrix.get(2, 2);
+
+		final double c0 = x1 * y2 - x2 * y1;
+		final double c1 = x2 * y0 - x0 * y2;
+		final double c2 = x0 * y1 - x1 * y0;
+
+		final double dot = c0 * z0 + c1 * z1 + c2 * z2;
+
+		return dot > 0;
+	}
+
+	/**
+	 * Check if a rotation matrix will flip the direction of the z component of
+	 * the original
+	 *
+	 * @param matrix a JAMA matrix.
+	 * @return true if the rotation matrix will cause z-flipping
+	 */
+	private static boolean isZFlipped(final Matrix matrix) {
+		final double x2 = matrix.get(2, 0);
+		final double y2 = matrix.get(2, 1);
+		final double z2 = matrix.get(2, 2);
+		final double dot = x2 + y2 + z2;
+		return dot < 0;
+	}
+
+	/**
 	 * Draw a copy of the original image aligned to its principal axes
 	 *
 	 * @param imp Input image
@@ -303,13 +350,13 @@ public class Moments implements PlugIn, DialogListener {
 			rotation = E;
 		}
 		// Check for z-flipping
-		if (MatrixUtils.isZFlipped(rotation)) {
+		if (isZFlipped(rotation)) {
 			rotation = rotation.times(RotX).times(RotX);
 			IJ.log("Corrected Z-flipping");
 		}
 
 		// Check for reflection
-		if (!MatrixUtils.isRightHanded(rotation)) {
+		if (!isRightHanded(rotation)) {
 			final double[][] reflectY = new double[3][3];
 			reflectY[0][0] = -1;
 			reflectY[1][1] = 1;

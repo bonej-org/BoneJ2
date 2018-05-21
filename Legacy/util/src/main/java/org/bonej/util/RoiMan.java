@@ -117,61 +117,6 @@ public final class RoiMan {
 		return targetStack;
 	}
 
-	/**
-	 * Remove all ROIs from the ROI manager
-	 *
-	 * @param roiMan an instance of {@link RoiManager}.
-	 */
-	// TODO Move to SphereFitter
-	public static void deleteAll(final RoiManager roiMan) {
-		final Roi[] rois = roiMan.getRoisAsArray();
-		for (int i = 0; i < rois.length; i++) {
-			if (roiMan.getCount() == 0) break;
-			roiMan.select(i);
-			roiMan.runCommand("delete");
-		}
-	}
-
-	/**
-	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
-	 *
-	 * @param imp an image.
-	 * @param roiMan an instance of {@link RoiManager}
-	 * @return double[n][3] containing n (x, y, z) coordinates or null if there
-	 *         are no points
-	 */
-	// TODO Move to SphereFitter
-	public static double[][] getRoiManPoints(final ImagePlus imp,
-		final RoiManager roiMan)
-	{
-		final Calibration cal = imp.getCalibration();
-		final double vW = cal.pixelWidth;
-		final double vH = cal.pixelHeight;
-		final double vD = cal.pixelDepth;
-		int nPoints = 0;
-		final Roi[] roiList = roiMan.getRoisAsArray();
-		for (int i = 0; i < roiMan.getCount(); i++) {
-			final Roi roi = roiList[i];
-			if (roi.getType() == 10) {
-				nPoints++;
-			}
-		}
-		if (nPoints == 0) return null;
-		final double[][] dataPoints = new double[nPoints][3];
-		int j = 0;
-		for (int i = 0; i < roiMan.getCount(); i++) {
-			final Roi roi = roiList[i];
-			if (roi.getType() == 10) {
-				final Rectangle xy = roi.getBounds();
-				dataPoints[j][0] = xy.getX() * vW;
-				dataPoints[j][1] = xy.getY() * vH;
-				dataPoints[j][2] = roi.getPosition() * vD;
-				j++;
-			}
-		}
-		return dataPoints;
-	}
-
 	private static int clampToNonNegative(final int value, final int max) {
 		if (value < 0) {
 			return 0;

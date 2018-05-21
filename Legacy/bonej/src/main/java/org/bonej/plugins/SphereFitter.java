@@ -25,14 +25,15 @@ package org.bonej.plugins;
 
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
+import java.awt.Rectangle;
 import java.awt.TextField;
 import java.util.List;
 
+import ij.gui.Roi;
 import org.bonej.geometry.FitSphere;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.ResultInserter;
-import org.bonej.util.RoiMan;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -44,8 +45,6 @@ import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-
-//import ij.WindowManager;
 
 /**
  * <p>
@@ -115,7 +114,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 		final boolean doRoiMan = gd.getNextBoolean();
 		final boolean clearRois = gd.getNextBoolean();
 
-		final double[][] points = RoiMan.getRoiManPoints(imp, roiMan);
+		final double[][] points = getRoiManPoints(imp, roiMan);
 		if (points == null) {
 			IJ.showMessage("Can't fit sphere to points.\n" +
 				"No usable points in the ROI Manager.");
@@ -165,6 +164,59 @@ public class SphereFitter implements PlugIn, DialogListener {
 	}
 
 	/**
+	 * Remove all ROIs from the ROI manager
+	 *
+	 * @param roiMan an instance of {@link RoiManager}.
+	 */
+	private static void deleteAll(final RoiManager roiMan) {
+		final Roi[] rois = roiMan.getRoisAsArray();
+		for (int i = 0; i < rois.length; i++) {
+			if (roiMan.getCount() == 0) break;
+			roiMan.select(i);
+			roiMan.runCommand("delete");
+		}
+	}
+
+	/**
+	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
+	 *
+	 * @param imp an image.
+	 * @param roiMan an instance of {@link RoiManager}
+	 * @return double[n][3] containing n (x, y, z) coordinates or null if there
+	 *         are no points
+	 */
+	private static double[][] getRoiManPoints(final ImagePlus imp,
+											  final RoiManager roiMan)
+	{
+		final Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		int nPoints = 0;
+		final Roi[] roiList = roiMan.getRoisAsArray();
+		for (int i = 0; i < roiMan.getCount(); i++) {
+			final Roi roi = roiList[i];
+			if (roi.getType() == 10) {
+				nPoints++;
+			}
+		}
+		if (nPoints == 0) return null;
+		final double[][] dataPoints = new double[nPoints][3];
+		int j = 0;
+		for (int i = 0; i < roiMan.getCount(); i++) {
+			final Roi roi = roiList[i];
+			if (roi.getType() == 10) {
+				final Rectangle xy = roi.getBounds();
+				dataPoints[j][0] = xy.getX() * vW;
+				dataPoints[j][1] = xy.getY() * vH;
+				dataPoints[j][2] = roi.getPosition() * vD;
+				j++;
+			}
+		}
+		return dataPoints;
+	}
+
+	/**
 	 * Add series of circular ROIs to the ROI Manager based on the centre and
 	 * radius of a sphere
 	 *
@@ -182,7 +234,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 		if (roiMan == null) throw new IllegalArgumentException(
 			"ROI Manager has not been instantiated");
 		if (clearRois) {
-			RoiMan.deleteAll(roiMan);
+			deleteAll(roiMan);
 		}
 		final Calibration cal = imp.getCalibration();
 		final double xs = sphereDim[0];

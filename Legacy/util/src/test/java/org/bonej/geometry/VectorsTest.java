@@ -21,51 +21,11 @@
  */
 package org.bonej.geometry;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
-import org.scijava.vecmath.Point3f;
-
-//import org.doube.jama.Matrix;
 
 public class VectorsTest {
-	Point3f p0 = new Point3f(1.0f, 2.0f, 3.0f);
-	Point3f p1 = new Point3f(6.0f, 5.0f, 4.0f);
-	Point3f p2 = new Point3f(9.0f, 8.0f, 7.0f);
-
-	double[] point0 = { 1, 2, 3 };
-	double[] point1 = { 6, 5, 4 };
-	double[] point2 = { 9, 8, 7 };
-
-	double[][] pa0 = { { 5 }, { 3 }, { 1 } };
-	double[][] pa1 = { { 8 }, { 6 }, { 4 } };
-
-	double[] a = { 5, 3, 1 };
-	double[] b = { 8, 6, 4 };
-
-	@Test
-	public void testCrossProductPoint3fPoint3fPoint3f() {
-		final Point3f result = Vectors.crossProduct(p0, p1, p2);
-		final Point3f expected = new Point3f(6.0f, -12.0f, 6.0f);
-		assertEquals(expected, result);
-	}
-
-	@Test
-	public void testCrossProductDoubleArrayArrayDoubleArrayArray() {
-		final double[][] result = Vectors.crossProduct(pa0, pa1);
-		final double[][] expected = { { 6 }, { -12 }, { 6 } };
-		assertEquals(expected[0][0], result[0][0], 1e-12);
-		assertEquals(expected[1][0], result[1][0], 1e-12);
-		assertEquals(expected[2][0], result[2][0], 1e-12);
-	}
-
-	@Test
-	public void testCrossProductDoubleArrayDoubleArray() {
-		final double[] result = Vectors.crossProduct(a, b);
-		final double[] expected = { 6, -12, 6 };
-		assertArrayEquals(expected, result, 1e-12);
-	}
 
 	@Test
 	public void testRandomVectors() {
@@ -94,46 +54,4 @@ public class VectorsTest {
 			assertEquals(1, length, 1e-9);
 		}
 	}
-
-	/*
-	 * @Test public void TestInv3() { final int n = 1000;
-	 *
-	 * for (int j = 0; j < n; j++) { final double nudge = 0.4;
-	 *
-	 * double b = Math.random() * (nudge + nudge) - nudge; double c =
-	 * Math.random() * (nudge + nudge) - nudge; double a = Math.sqrt(1 - b * b -
-	 * c * c);
-	 *
-	 * // zeroth column, should be very close to [1, 0, 0]^T (mostly x) double[]
-	 * zerothColumn = { a, b, c };
-	 *
-	 * // form triangle in random plane double[] vector =
-	 * Vectors.randomVectors(1)[0];
-	 *
-	 * // first column, should be very close to [0, 1, 0]^T double[] firstColumn
-	 * = Vectors.norm(Vectors.crossProduct( zerothColumn, vector));
-	 *
-	 * // second column, should be very close to [0, 0, 1]^T double[]
-	 * secondColumn = Vectors.norm(Vectors.crossProduct( zerothColumn,
-	 * firstColumn));
-	 *
-	 * double[][] rotation = { zerothColumn, firstColumn, secondColumn };
-	 *
-	 * // array has subarrays as rows, need them as columns // matrix to invert
-	 * rotation = Ellipsoid.transpose(rotation);
-	 *
-	 * // the method under test should calculate the matrix inverse double[][]
-	 * invRotation = Vectors.inv3(rotation);
-	 *
-	 * // get a reference inverted matrix to test against Matrix R = new
-	 * Matrix(rotation); double[][] arrayRinv = R.inverse().getArray();
-	 *
-	 * //TODO alternatively use the un-transposed rotation array because //the
-	 * inverse of a rotation matrix is its transpose
-	 *
-	 * for (int i = 0; i < 3; i++) assertArrayEquals(arrayRinv[i],
-	 * invRotation[i], 1E-12); }
-	 *
-	 * }
-	 */
 }

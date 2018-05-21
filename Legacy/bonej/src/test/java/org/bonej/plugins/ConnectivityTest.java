@@ -23,11 +23,13 @@ package org.bonej.plugins;
 
 import static org.junit.Assert.assertEquals;
 
-import org.bonej.util.TestDataMaker;
 import org.junit.Test;
 
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.measure.Calibration;
+import ij.process.ByteProcessor;
+import ij.process.ImageProcessor;
 
 public class ConnectivityTest {
 
@@ -35,7 +37,7 @@ public class ConnectivityTest {
 
 	@Test
 	public void testGetConnDensity() {
-		final ImagePlus imp = TestDataMaker.boxFrame(32, 64, 128);
+		final ImagePlus imp = boxFrame(32, 64, 128);
 		final Calibration cal = imp.getCalibration();
 		cal.pixelDepth = 0.2;
 		cal.pixelHeight = 0.2;
@@ -52,7 +54,7 @@ public class ConnectivityTest {
 	@Test
 	public void testGetSumEulerCrossedCircle() {
 		for (int size = 16; size < 1024; size *= 2) {
-			final ImagePlus imp = TestDataMaker.crossedCircle(size);
+			final ImagePlus imp = crossedCircle(size);
 			final double sumEuler = conn.getSumEuler(imp);
 			assertEquals(-3, sumEuler, 1e-12);
 		}
@@ -61,9 +63,61 @@ public class ConnectivityTest {
 	@Test
 	public void testGetSumEulerBoxFrame() {
 		for (int size = 16; size < 256; size *= 2) {
-			final ImagePlus imp = TestDataMaker.boxFrame(size, size, size);
+			final ImagePlus imp = boxFrame(size, size, size);
 			final double sumEuler = conn.getSumEuler(imp);
 			assertEquals(-4, sumEuler, 1e-12);
 		}
+	}
+
+	/**
+	 * Draw the edges of a brick with 32 pixels of padding on all faces
+	 *
+	 * @param width Width of the box frame in pixels
+	 * @param height Height of the box frame in pixels
+	 * @param depth Depth of the box frame in pixels
+	 * @return Image containing a 1-pixel wide outline of a 3D box
+	 */
+	private static ImagePlus boxFrame(final int width, final int height,
+		final int depth)
+	{
+		final ImageStack stack = new ImageStack(width + 64, height + 64);
+		for (int s = 1; s <= depth + 64; s++) {
+			final ImageProcessor ip = new ByteProcessor(width + 64, height + 64);
+			ip.setColor(0);
+			ip.fill();
+			stack.addSlice(ip);
+		}
+		ImageProcessor ip = stack.getProcessor(32);
+		ip.setColor(255);
+		ip.drawRect(32, 32, width, height);
+		ip = stack.getProcessor(32 + depth);
+		ip.setColor(255);
+		ip.drawRect(32, 32, width, height);
+		for (int s = 33; s < 32 + depth; s++) {
+			ip = stack.getProcessor(s);
+			ip.setColor(255);
+			ip.drawPixel(32, 32);
+			ip.drawPixel(32, 31 + height);
+			ip.drawPixel(31 + width, 32);
+			ip.drawPixel(31 + width, 31 + height);
+		}
+		return new ImagePlus("box-frame", stack);
+	}
+
+	/**
+	 * Draw a circle with vertical and horizontal crossing, then skeletonize it
+	 *
+	 * @param size width and height of the image, circle diameter is size/2
+	 * @return image containing a white (255) circle on black (0) background
+	 */
+	private static ImagePlus crossedCircle(final int size) {
+		final ImageProcessor ip = new ByteProcessor(size, size);
+		ip.setColor(0);
+		ip.fill();
+		ip.setColor(255);
+		ip.drawOval(size / 4, size / 4, size / 2, size / 2);
+		ip.drawLine(size / 2, size / 4, size / 2, 3 * size / 4);
+		ip.drawLine(size / 4, size / 2, 3 * size / 4, size / 2);
+		return new ImagePlus("crossed-circle", ip);
 	}
 }
