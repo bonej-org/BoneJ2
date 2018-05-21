@@ -1,13 +1,12 @@
 package org.bonej.wrapperPlugins;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import net.imagej.ImgPlus;
+import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
 import net.imagej.ops.filter.derivative.PartialDerivativesRAI;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
@@ -21,13 +20,17 @@ import net.imglib2.util.ValuePair;
 import net.imglib2.view.composite.CompositeIntervalView;
 import net.imglib2.view.composite.CompositeView;
 
+import net.imglib2.view.composite.RealComposite;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindLocalEllipsoidOp;
 import org.scijava.ItemIO;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.prefs.PrefService;
+import org.scijava.ui.UIService;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
 
@@ -51,89 +54,80 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     @Parameter(label = "EF image", type = ItemIO.OUTPUT)
     private ImgPlus<DoubleType> efImage;
 
+    @SuppressWarnings("unused")
+    @Parameter
+    private OpService opService;
+
+    @SuppressWarnings("unused")
+    @Parameter
+    private StatusService statusService;
+
+    @SuppressWarnings("unused")
+    @Parameter
+    private UIService uiService;
+
+    @SuppressWarnings("unused")
+    @Parameter
+    private PrefService prefService;
+
     @Override
     public void run() {
-        Img<DoubleType> inputAsDoubles = ArrayImgs.doubles(inputImage.getImg().dimension(0), inputImage.getImg().dimension(1), inputImage.getImg().dimension(2));
-        final Cursor<IntegerType> inputImageCursor = inputImage.localizingCursor();
-
-        while (inputImageCursor.hasNext()) {
-            inputImageCursor.fwd();
-
-            //find current position
-            long[] coordinates = new long[3];
-            inputImageCursor.localize(coordinates);
-            double castedInt = (double) inputImageCursor.get().getInteger();
-
-            RandomAccess<DoubleType> randomAccess = inputAsDoubles.randomAccess();
-            randomAccess.setPosition(coordinates);
-            randomAccess.get().set(castedInt);
-        }
-
-        PartialDerivativesRAI<DoubleType> gradientCalculatorOp = new PartialDerivativesRAI<>();
-        gradientCalculatorOp.initialize();
-        final CompositeIntervalView gradients = gradientCalculatorOp.calculate(inputAsDoubles);
-
-        final CompositeView.CompositeRandomAccess gradientRandomAccess = gradients.randomAccess();
-        gradientRandomAccess.get().get(0);
-        gradientRandomAccess.get().get(1);
-
-        ArrayList<Edgel> edgels = SubpixelEdgelDetection.getEdgels(inputImage.getImg(), inputImage.getImg().factory(), 0);
-
-        final List<Vector3d> boundaryPoints = new ArrayList<>();
-        edgels.forEach(e -> boundaryPoints.add(new Vector3d(e.getDoublePosition(0), e.getDoublePosition(1), e.getDoublePosition(2))));
+        Img<DoubleType> inputAsDoubles = opService.convert().float64(inputImage);
+        CompositeIntervalView<DoubleType, RealComposite<DoubleType>> derivatives = opService.filter().allPartialDerivatives(inputAsDoubles);
+        CompositeView<DoubleType, RealComposite<DoubleType>>.CompositeRandomAccess derivativeRandomAccess = derivatives.randomAccess();
 
         final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
+        final Random random = new Random();
+        double chanceOfBeingSeeded = 0.1;
 
-        edgels.forEach(edgel -> {
-                    Vector3d start = new Vector3d(edgel.getDoublePosition(0), edgel.getDoublePosition(1), edgel.getDoublePosition(2));
+        final List<Vector3d> boundaryPoints = new ArrayList<>();
 
-                    Vector3d sum = new Vector3d();
-                    IntStream.range(0, edgels.size()).forEach(i -> {
-                        double d = distanceBetweenEdgels(edgels.get(i), edgel);
-                        if (d < 1.74 && d > 1.0e-12) {
-                            Vector3d g = new Vector3d(edgels.get(i).getGradient());
-                            g.scale(1.0 / d);
-                            sum.add(g);
-                        }
-                    });
-                    sum.add(new Vector3d(edgel.getGradient()));
-                    sum.normalize();
-                    seedPoints.add(new ValuePair<>(start, new Vector3d(sum)));
-                });
+        Cursor<IntegerType> inputCursor = inputImage.localizingCursor();
+        while(inputCursor.hasNext())
+        {
+            inputCursor.fwd();
+            long[] position = new long[3];
+            inputCursor.localize(position);
+            if(inputCursor.get().getInteger()!=0) {
+                derivativeRandomAccess.setPosition(position);
+                Vector3d derivative = new Vector3d(derivativeRandomAccess.get().get(0).getRealDouble(),derivativeRandomAccess.get().get(1).getRealDouble(),derivativeRandomAccess.get().get(2).getRealDouble());
+                if(derivative.length()!=0.0){
+                    Vector3d point = new Vector3d(position[0]-0.5,position[1]-0.5,position[2]-0.5);//watch out for calibration issues later on here!!
+                    boundaryPoints.add(point);
+                    if(random.nextDouble()<=chanceOfBeingSeeded){
+                        seedPoints.add(new ValuePair<>(point,derivative));
+                    }
+                }
+            }
+        }
 
         List<Ellipsoid> ellipsoids = getLocalEllipsoids(seedPoints, boundaryPoints);
         ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
 
         //find EF values
         final Img<DoubleType> ellipsoidFactorImage = ArrayImgs.doubles(inputImage.dimension(0),inputImage.dimension(1),inputImage.dimension(2));
-        inputImageCursor.reset();
+        inputCursor.reset();
 
-        while (inputImageCursor.hasNext()) {
-            inputImageCursor.fwd();
+        while (inputCursor.hasNext()) {
+            inputCursor.fwd();
 
             //find current position
             long[] coordinates = new long[3];
-            inputImageCursor.localize(coordinates);
-            int currentEllipsoidCounter = 0;
-
-            //ignore background voxels
-            if(inputImageCursor.get().getInteger()==0)
-            {
-                RandomAccess<DoubleType> randomAccess = ellipsoidFactorImage.randomAccess();
-                randomAccess.setPosition(coordinates);
-                randomAccess.get().set(Double.NaN);
-                continue;
-            }
+            inputCursor.localize(coordinates);
 
             //find largest ellipsoid containing current position
+            int currentEllipsoidCounter = 0;
             while(currentEllipsoidCounter<ellipsoids.size()&&!insideEllipsoid(coordinates, ellipsoids.get(currentEllipsoidCounter)))
             {
                 currentEllipsoidCounter++;
             }
 
-            //current voxel not contained in any ellipsoid
-            if(currentEllipsoidCounter==ellipsoids.size())
+            //ignore background voxels and voxels not contained in any ellipsoid
+            if(inputCursor.get().getInteger()==0 || currentEllipsoidCounter==ellipsoids.size())
             {
+                RandomAccess<DoubleType> randomAccess = ellipsoidFactorImage.randomAccess();
+                randomAccess.setPosition(coordinates);
+                randomAccess.get().set(Double.NaN);
                 continue;
             }
 

@@ -32,13 +32,13 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
     private static EllipsoidPlaneIntersectionOp intersectionOp = new EllipsoidPlaneIntersectionOp();
 
     @Override
-    public Optional<Ellipsoid> calculate(List<Vector3d> otherVertices, final ValuePair<Vector3d,Vector3d> startingVertexWithNormal) {
+    public Optional<Ellipsoid> calculate(List<Vector3d> otherVertices, final ValuePair<Vector3d, Vector3d> startingVertexWithNormal) {
 
         VertexWithNormal p = new VertexWithNormal(startingVertexWithNormal);
         otherVertices.remove(p.getVertex());
 
-        ValuePair<VertexWithNormal,Double> qAndRadius = calculateQ(otherVertices, p);
-        if(qAndRadius==null) return Optional.empty();
+        ValuePair<VertexWithNormal, Double> qAndRadius = calculateQ(otherVertices, p);
+        if (qAndRadius == null) return Optional.empty();
         otherVertices.remove(qAndRadius.getA().getVertex());
 
         Vector3d np = new Vector3d(p.getNormal());
@@ -47,11 +47,11 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
 
         Vector3d c = new Vector3d(p.getNormal());
         c.add(p.getVertex());
-        Matrix4d q1 = getQ1(c,qAndRadius.getB());
-        Matrix4d q2 = getQ2(p,qAndRadius.getA());
+        Matrix4d q1 = getQ1(c, qAndRadius.getB());
+        Matrix4d q2 = getQ2(p, qAndRadius.getA());
 
-        ValuePair<Vector3d,Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, otherVertices);
-        if(rAndAlpha==null) return Optional.empty();
+        ValuePair<Vector3d, Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, otherVertices);
+        if (rAndAlpha == null) return Optional.empty();
         otherVertices.remove(rAndAlpha.getA());
 
         Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
@@ -59,43 +59,45 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
         q1PlusAlphaQ2.add(q1);
 
         Optional<Ellipsoid> ellipsoid = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
-        if(!ellipsoid.isPresent()) return Optional.empty();
+        if (!ellipsoid.isPresent()) return Optional.empty();
 
-        Matrix4d q3 = getQ3(Stream.of(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()).collect(Collectors.toList()),ellipsoid.get());
+        Matrix4d q3 = getQ3(Stream.of(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()).collect(Collectors.toList()), ellipsoid.get());
 
-        ValuePair<Vector3d,Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, otherVertices);
-        if(sAndBeta==null) return Optional.empty();
+        ValuePair<Vector3d, Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, otherVertices);
+        if (sAndBeta == null) return Optional.empty();
 
         Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
         q1PlusAlphaQ2plusBetaQ3.mul(sAndBeta.getB());
-        //q1PlusAlphaQ2.add(q1PlusAlphaQ2plusBetaQ3);
+        q1PlusAlphaQ2.add(q1PlusAlphaQ2plusBetaQ3);
 
         return quadricToEllipsoid.calculate(q1PlusAlphaQ2);
     }
 
     /**
      * calculates the quadric denoted by Q_1 in the original paper
+     *
      * @param sphereCentre centre of the sphere touching p and q
-     * @param radius radius of the sphere touching p and q
+     * @param radius       radius of the sphere touching p and q
      * @return Q_1
      */
-    static Matrix4d getQ1(Vector3d sphereCentre, double radius){
+    static Matrix4d getQ1(Vector3d sphereCentre, double radius) {
         Matrix3d identity = new Matrix3d();
         identity.setIdentity();
         Vector3d minusSphereCentre = new Vector3d(-sphereCentre.getX(), -sphereCentre.getY(), -sphereCentre.getZ());
-        Matrix4d q1 = new Matrix4d(identity,minusSphereCentre, 1.0);
+        Matrix4d q1 = new Matrix4d(identity, minusSphereCentre, 1.0);
         q1.setRow(3, new Vector4d(minusSphereCentre));
-        q1.m33 = sphereCentre.lengthSquared()-radius*radius;
+        q1.m33 = sphereCentre.lengthSquared() - radius * radius;
         return q1;
     }
 
     /**
      * Calculates the quadric denoted by Q_2 in the original paper
+     *
      * @param pnp p and normal at p
      * @param qnq q and normal at q
      * @return the 4x4 matrix Q_2
      */
-    static Matrix4d getQ2(final VertexWithNormal pnp, final VertexWithNormal qnq){
+    static Matrix4d getQ2(final VertexWithNormal pnp, final VertexWithNormal qnq) {
         Vector3d p = pnp.getVertex();
         Vector3d np = pnp.getNormal();
         Vector3d q = qnq.getVertex();
@@ -103,17 +105,17 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
 
         Matrix3d NRotation = new Matrix3d();
 
-        NRotation.m00 = -np.getX()*nq.getX();
-        NRotation.m01 = -np.getX()*nq.getY();
-        NRotation.m02 = -np.getX()*nq.getZ();
+        NRotation.m00 = -np.getX() * nq.getX();
+        NRotation.m01 = -np.getX() * nq.getY();
+        NRotation.m02 = -np.getX() * nq.getZ();
 
-        NRotation.m10 = -np.getY()*nq.getX();
-        NRotation.m11 = -np.getY()*nq.getY();
-        NRotation.m12 = -np.getY()*nq.getZ();
+        NRotation.m10 = -np.getY() * nq.getX();
+        NRotation.m11 = -np.getY() * nq.getY();
+        NRotation.m12 = -np.getY() * nq.getZ();
 
-        NRotation.m20 = -np.getZ()*nq.getX();
-        NRotation.m21 = -np.getZ()*nq.getY();
-        NRotation.m22 = -np.getZ()*nq.getZ();
+        NRotation.m20 = -np.getZ() * nq.getX();
+        NRotation.m21 = -np.getZ() * nq.getY();
+        NRotation.m22 = -np.getZ() * nq.getZ();
 
         Matrix3d NRotationTransposed = new Matrix3d();
         NRotationTransposed.transpose(NRotation);
@@ -121,39 +123,39 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
         q2Rotation.add(NRotationTransposed);
         q2Rotation.mul(0.5);
 
-        double nqDotqHalf = nq.dot(q)/2.0;
-        double npDotpHalf = np.dot(p)/2.0;
+        double nqDotqHalf = nq.dot(q) / 2.0;
+        double npDotpHalf = np.dot(p) / 2.0;
 
-        Vector3d q2Translation = new Vector3d(np.getX()*nqDotqHalf+nq.getX()*npDotpHalf,np.getY()*nqDotqHalf+nq.getY()*npDotpHalf,np.getZ()*nqDotqHalf+nq.getZ()*npDotpHalf);
+        Vector3d q2Translation = new Vector3d(np.getX() * nqDotqHalf + nq.getX() * npDotpHalf, np.getY() * nqDotqHalf + nq.getY() * npDotpHalf, np.getZ() * nqDotqHalf + nq.getZ() * npDotpHalf);
 
-        Matrix4d quadric2 = new Matrix4d(q2Rotation,q2Translation, 1.0);
+        Matrix4d quadric2 = new Matrix4d(q2Rotation, q2Translation, 1.0);
         quadric2.setRow(3, new Vector4d(q2Translation));
-        quadric2.m33 = -np.dot(p)*nq.dot(q);
+        quadric2.m33 = -np.dot(p) * nq.dot(q);
         return quadric2;
     }
 
 
     /**
      * Calculates the elliptic cylinder denoted by Q_3 in the original paper
-     * @param pqr three non-collinear points defining a plane
+     *
+     * @param pqr       three non-collinear points defining a plane
      * @param ellipsoid ellipsoid through p,q, and r
      * @return a 4x4 matrix representation of the elliptic cylinder defined by the intersection ellipse of pqr and qBar
      */
-    private static Matrix4d getQ3(final List<Vector3d> pqr, Ellipsoid ellipsoid)
-    {
+    private static Matrix4d getQ3(final List<Vector3d> pqr, Ellipsoid ellipsoid) {
         final Vector3d p = new Vector3d(pqr.get(0));
         final Vector3d q = new Vector3d(pqr.get(1));
         final Vector3d r = new Vector3d(pqr.get(2));
 
         Vector3d interiorPoint = new Vector3d(p);
-        interiorPoint.scaleAdd(-1.0,q);
+        interiorPoint.scaleAdd(-1.0, q);
         interiorPoint.scale(0.5);
         interiorPoint.add(p);
 
         Vector3d planeNormal = new Vector3d();
         q.scaleAdd(-1.0, p);
         r.scaleAdd(-1.0, p);
-        planeNormal.cross(q,r);
+        planeNormal.cross(q, r);
         List<Vector3d> ellipse = intersectionOp.calculate(ellipsoid, new ValuePair<>(interiorPoint, planeNormal));
 
         Vector3d a0 = ellipse.get(0);
@@ -175,6 +177,8 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
         quadric.setRow(3, translationVector2);
         quadric.setColumn(3, translationVector2);
 
+        quadric.setM33(getConstantContribution(a0,a1)+getConstantContribution(a0,a2)-1.0);
+
         return quadric;
     }
 
@@ -187,23 +191,30 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
 
         Vector4d translationVector = new Vector4d();
 
-        translationVector.setX(-unitAxis.x*centre.dot(unitAxis));
-        translationVector.setY(-unitAxis.y*centre.dot(unitAxis));
-        translationVector.setZ(-unitAxis.z*centre.dot(unitAxis));
+        translationVector.setX(-unitAxis.x * centre.dot(unitAxis));
+        translationVector.setY(-unitAxis.y * centre.dot(unitAxis));
+        translationVector.setZ(-unitAxis.z * centre.dot(unitAxis));
 
-        double constantComponent = centre.x*centre.x*unitAxis.x*unitAxis.x;
-        constantComponent += centre.y*centre.y*unitAxis.y*unitAxis.y;
-        constantComponent += centre.z*centre.z*unitAxis.z*unitAxis.z;
+        translationVector.scale(1.0 / (radius * radius));
 
-        constantComponent += 2.0*centre.x*centre.y*unitAxis.x*unitAxis.y;
-        constantComponent += 2.0*centre.x*centre.z*unitAxis.x*unitAxis.z;
-        constantComponent += 2.0*centre.y*centre.z*unitAxis.y*unitAxis.z;
-
-        translationVector.setW(constantComponent);
-        translationVector.scale(1.0/(radius*radius));
-
-        translationVector.add(new Vector4d(0,0,0,-0.5));
         return translationVector;
+    }
+
+    private static double getConstantContribution(final Vector3d centre, final Vector3d axis) {
+        double radius = axis.length();
+
+        Vector3d unitAxis = new Vector3d(axis);
+        unitAxis.normalize();
+
+        double constantComponent = centre.x * centre.x * unitAxis.x * unitAxis.x;
+        constantComponent +=centre.y*centre.y*unitAxis.y*unitAxis.y;
+        constantComponent +=centre.z*centre.z*unitAxis.z*unitAxis.z;
+
+        constantComponent +=2.0*centre.x*centre.y*unitAxis.x*unitAxis.y;
+        constantComponent +=2.0*centre.x*centre.z*unitAxis.x*unitAxis.z;
+        constantComponent +=2.0*centre.y*centre.z*unitAxis.y*unitAxis.z;
+
+        return constantComponent/(radius*radius);
     }
 
     private static Matrix3d getAxisContribution(final Vector3d axis) {
