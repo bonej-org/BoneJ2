@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
 import java.util.regex.Matcher;
@@ -31,19 +32,18 @@ import ij.ImagePlus;
  * image
  *
  * @author Michael Doube
- *
  */
 public final class BoneList {
-
-	private BoneList() {}
 
 	/**
 	 * List of bone names
 	 */
 	// Only add new bone names to the END of this list
-    private static final String[] boneList = { "unknown", "scapula", "humerus", "radius", "ulna", "metacarpal",
-			"pelvis", "femur", "tibia", "fibula", "metatarsal", "calcaneus", "tibiotarsus", "tarsometatarsal",
-			"sacrum" };
+	private static final String[] boneList = { "unknown", "scapula", "humerus",
+		"radius", "ulna", "metacarpal", "pelvis", "femur", "tibia", "fibula",
+		"metatarsal", "calcaneus", "tibiotarsus", "tarsometatarsal", "sacrum" };
+
+	private BoneList() {}
 
 	/**
 	 * Return the array of bone names
@@ -74,7 +74,7 @@ public final class BoneList {
 	 * @return index of the corresponding bone in {@link #boneList}
 	 */
 	public static int guessBone(final CharSequence boneString) {
-	    // TODO Return -1 if none match
+		// TODO Return -1 if none match
 		int boneID = 0;
 		for (int n = 0; n < boneList.length; n++) {
 			final Pattern p = Pattern.compile(boneList[n], Pattern.CASE_INSENSITIVE);

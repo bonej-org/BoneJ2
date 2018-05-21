@@ -19,20 +19,21 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.plugins;
+
+import org.bonej.util.ImageCheck;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.plugin.PlugIn;
-import org.bonej.util.ImageCheck;
 
 public class VoxelDepthChecker implements PlugIn {
 
 	@Override
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
-		if (null == imp)
-			return;
+		if (null == imp) return;
 		ImageCheck.dicomVoxelDepth(imp);
 		UsageReporter.reportEvent(this).send();
 	}

@@ -64,16 +64,16 @@ import ij3d.Image3DUniverse;
  * </p>
  *
  * @author Michael Doube
- *
  */
 
 public class SliceGeometry implements PlugIn, DialogListener {
+
 	private Calibration cal;
 	private int al;
-    private int startSlice;
-    private int endSlice;
+	private int startSlice;
+	private int endSlice;
 	private double vW;
-    private double vH;
+	private double vH;
 	/** Show slice centroid */
 	private boolean doCentroids;
 	/** Show principal axes */
@@ -158,27 +158,62 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private boolean doMask;
 
 	@Override
+	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
+		final List<?> checkboxes = gd.getCheckboxes();
+		final List<?> nFields = gd.getNumericFields();
+		final Checkbox calibration = (Checkbox) checkboxes.get(10);
+		final boolean isHUCalibrated = calibration.getState();
+		final TextField minT = (TextField) nFields.get(0);
+		final TextField maxT = (TextField) nFields.get(1);
+
+		final double min = Double.parseDouble(minT.getText());
+		final double max = Double.parseDouble(maxT.getText());
+		if (isHUCalibrated && !fieldUpdated) {
+			minT.setText("" + cal.getCValue(min));
+			maxT.setText("" + cal.getCValue(max));
+			fieldUpdated = true;
+		}
+		if (!isHUCalibrated && fieldUpdated) {
+			minT.setText("" + cal.getRawValue(min));
+			maxT.setText("" + cal.getRawValue(max));
+			fieldUpdated = false;
+		}
+		if (isHUCalibrated) DialogModifier.replaceUnitString(gd, "grey", "HU");
+		else DialogModifier.replaceUnitString(gd, "HU", "grey");
+
+		final Checkbox oriented = (Checkbox) checkboxes.get(9);
+		if (orienteer == null) {
+			oriented.setState(false);
+			oriented.setEnabled(false);
+		}
+		else oriented.setEnabled(true);
+
+		DialogModifier.registerMacroValues(gd, gd.getComponents());
+		return true;
+	}
+
+	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment())
-			return;
+		if (!ImageCheck.checkEnvironment()) return;
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp) {
 			IJ.noImage();
 			return;
 		}
-        cal = imp.getCalibration();
-        vW = cal.pixelWidth;
-        vH = cal.pixelHeight;
+		cal = imp.getCalibration();
+		vW = cal.pixelWidth;
+		vH = cal.pixelHeight;
 		// Linear unit of measure
 		final String units = cal.getUnits();
-        al = imp.getStackSize() + 1;
+		al = imp.getStackSize() + 1;
 
 		final String pixUnits;
 		if (ImageCheck.huCalibrated(imp)) {
 			pixUnits = "HU";
 			fieldUpdated = true;
-		} else
-			pixUnits = "grey";
+		}
+		else pixUnits = "grey";
 
 		final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
 		orienteer = Orienteer.getInstance();
@@ -214,9 +249,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		boneID = BoneList.guessBone(bone);
 		final boolean doThickness2D = gd.getNextBoolean();
 		final boolean doThickness3D = gd.getNextBoolean();
-        doMask = gd.getNextBoolean();
-        doAxes = gd.getNextBoolean();
-        doCentroids = gd.getNextBoolean();
+		doMask = gd.getNextBoolean();
+		doAxes = gd.getNextBoolean();
+		doCentroids = gd.getNextBoolean();
 		// if true, show annotation in a new window
 		final boolean doCopy = gd.getNextBoolean();
 		final boolean do3DAnnotation = gd.getNextBoolean();
@@ -224,50 +259,48 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		final boolean doStack = gd.getNextBoolean();
 		// Flag to clear the results table or concatenate
 		final boolean clearResults = gd.getNextBoolean();
-        doOriented = gd.getNextBoolean();
+		doOriented = gd.getNextBoolean();
 		if (doStack) {
-            startSlice = 1;
-            endSlice = imp.getImageStackSize();
-		} else {
-            startSlice = imp.getCurrentSlice();
-            endSlice = imp.getCurrentSlice();
+			startSlice = 1;
+			endSlice = imp.getImageStackSize();
+		}
+		else {
+			startSlice = imp.getCurrentSlice();
+			endSlice = imp.getCurrentSlice();
 		}
 
 		final boolean isHUCalibrated = gd.getNextBoolean();
 		double min = gd.getNextNumber();
 		double max = gd.getNextNumber();
-        m = gd.getNextNumber();
-        c = gd.getNextNumber();
+		m = gd.getNextNumber();
+		c = gd.getNextNumber();
 		if (isHUCalibrated) {
 			min = cal.getRawValue(min);
 			max = cal.getRawValue(max);
 
 			// convert HU->density user input into raw->density coefficients
 			// for use in later calculations
-            c = m * cal.getCoefficients()[0] + c;
-            m = m * cal.getCoefficients()[1];
+			c = m * cal.getCoefficients()[0] + c;
+			m = m * cal.getCoefficients()[1];
 		}
-		if (gd.wasCanceled())
-			return;
+		if (gd.wasCanceled()) return;
 
 		if (calculateCentroids(imp, min, max) == 0) {
-			IJ.error("No pixels available to calculate.\n" + "Please check the threshold and ROI.");
+			IJ.error("No pixels available to calculate.\n" +
+				"Please check the threshold and ROI.");
 			return;
 		}
 
 		calculateMoments(imp, min, max);
-		if (doThickness3D)
-			calculateThickness3D(imp, min, max);
-		if (doThickness2D)
-			calculateThickness2D(imp, min, max);
+		if (doThickness3D) calculateThickness3D(imp, min, max);
+		if (doThickness2D) calculateThickness2D(imp, min, max);
 
 		roiMeasurements(imp, min, max);
 
 		// TODO locate centroids of multiple sections in a single plane
 
 		final ResultsTable rt = ResultsTable.getResultsTable();
-		if (clearResults)
-			rt.reset();
+		if (clearResults) rt.reset();
 
 		final String title = imp.getTitle();
 		for (int s = startSlice; s <= endSlice; s++) {
@@ -304,40 +337,38 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				rt.addValue("Mean Thick 2D (" + units + ")", meanCortThick2D[s]);
 				rt.addValue("SD Thick 2D (" + units + ")", stdevCortThick2D[s]);
 			}
-            if (!doOriented || orienteer == null) {
-			    continue;
+			if (!doOriented || orienteer == null) {
+				continue;
 			}
-            final String[] dirs = orienteer.getDirections(imp);
-            if (dirs == null) {
-                continue;
-            }
-            rt.addValue(dirs[0] + " (rad)", orienteer.getOrientation(imp,
-                dirs[0]));
-            rt.addValue(dirs[2] + " (rad)", orienteer.getOrientation(imp,
-                dirs[2]));
-            rt.addValue("I" + dirs[0] + dirs[1] + "(" + units + "^4)", I1[s]);
-            rt.addValue("I" + dirs[2] + dirs[3] + "(" + units + "^4)", I2[s]);
-            rt.addValue("Z" + dirs[0] + dirs[1] + "(" + units + "³)", Z1[s]);
-            rt.addValue("Z" + dirs[2] + dirs[3] + "(" + units + "³)", Z2[s]);
-            rt.addValue("R" + dirs[0] + dirs[1] + "(" + units + ")", maxRad2[s]);
-            rt.addValue("R" + dirs[2] + dirs[3] + "(" + units + ")", maxRad1[s]);
-            rt.addValue("D" + dirs[0] + dirs[1] + "(" + units + ")",
-                principalDiameter[s]);
-            rt.addValue("D" + dirs[2] + dirs[3] + "(" + units + ")",
-                secondaryDiameter[s]);
-        }
+			final String[] dirs = orienteer.getDirections(imp);
+			if (dirs == null) {
+				continue;
+			}
+			rt.addValue(dirs[0] + " (rad)", orienteer.getOrientation(imp, dirs[0]));
+			rt.addValue(dirs[2] + " (rad)", orienteer.getOrientation(imp, dirs[2]));
+			rt.addValue("I" + dirs[0] + dirs[1] + "(" + units + "^4)", I1[s]);
+			rt.addValue("I" + dirs[2] + dirs[3] + "(" + units + "^4)", I2[s]);
+			rt.addValue("Z" + dirs[0] + dirs[1] + "(" + units + "³)", Z1[s]);
+			rt.addValue("Z" + dirs[2] + dirs[3] + "(" + units + "³)", Z2[s]);
+			rt.addValue("R" + dirs[0] + dirs[1] + "(" + units + ")", maxRad2[s]);
+			rt.addValue("R" + dirs[2] + dirs[3] + "(" + units + ")", maxRad1[s]);
+			rt.addValue("D" + dirs[0] + dirs[1] + "(" + units + ")",
+				principalDiameter[s]);
+			rt.addValue("D" + dirs[2] + dirs[3] + "(" + units + ")",
+				secondaryDiameter[s]);
+		}
 		rt.show("Results");
 
 		if (doAxes || doCentroids) {
 			if (!doCopy) {
 				final ImagePlus annImp = annotateImage(imp);
 				imp.setStack(null, annImp.getImageStack());
-			} else {
+			}
+			else {
 				annotateImage(imp).show();
 			}
 		}
-		if (do3DAnnotation)
-			show3DAxes(imp);
+		if (do3DAnnotation) show3DAxes(imp);
 		UsageReporter.reportEvent(this).send();
 	}
 
@@ -359,7 +390,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			final double cY = sliceCentroids[1][s] / vH;
 
 			if (doCentroids && !emptySlices[s]) {
-				annIP.drawOval((int) Math.floor(cX - 4), (int) Math.floor(cY - 4), 8, 8);
+				annIP.drawOval((int) Math.floor(cX - 4), (int) Math.floor(cY - 4), 8,
+					8);
 			}
 
 			if (doAxes && !emptySlices[s]) {
@@ -382,18 +414,431 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			}
 			annStack.addSlice(stack.getSliceLabel(s), annIP);
 		}
-		final ImagePlus ann = new ImagePlus("Annotated_" + imp.getTitle(), annStack);
+		final ImagePlus ann = new ImagePlus("Annotated_" + imp.getTitle(),
+			annStack);
 		ann.setCalibration(imp.getCalibration());
-		if (ann.getImageStackSize() == 1)
-			ann.setProperty("Info", stack.getSliceLabel(startSlice));
+		if (ann.getImageStackSize() == 1) ann.setProperty("Info", stack
+			.getSliceLabel(startSlice));
 		return ann;
+	}
+
+	private double[][] calculateAngleMoments(final ImagePlus imp,
+		final double min, final double max, final double[] angles)
+	{
+		final ImageStack stack = imp.getImageStack();
+		final Rectangle r = stack.getRoi();
+		final double[] I1 = new double[al];
+		final double[] I2 = new double[al];
+		final double[] Ip = new double[al];
+		final double[] r1 = new double[al];
+		final double[] r2 = new double[al];
+		final double[] maxRad2 = new double[al];
+		final double[] maxRad1 = new double[al];
+		final double[] maxRadC = new double[al];
+		final double[] Z1 = new double[al];
+		final double[] Z2 = new double[al];
+		final double[] Zp = new double[al];
+		for (int s = startSlice; s <= endSlice; s++) {
+			IJ.showStatus("Calculating Imin and Imax...");
+			IJ.showProgress(s, endSlice);
+			if (emptySlices[s]) {
+				I1[s] = Double.NaN;
+				I2[s] = Double.NaN;
+				Ip[s] = Double.NaN;
+				r1[s] = Double.NaN;
+				r2[s] = Double.NaN;
+				maxRad2[s] = Double.NaN;
+				maxRad1[s] = Double.NaN;
+				Z1[s] = Double.NaN;
+				Z2[s] = Double.NaN;
+				Zp[s] = Double.NaN;
+			}
+			else {
+				final ImageProcessor ip = stack.getProcessor(s);
+				double sxs = 0;
+				double sys = 0;
+				double sxxs = 0;
+				double syys = 0;
+				double sxys = 0;
+				double maxRadMinS = 0;
+				double maxRadMaxS = 0;
+				double maxRadCentreS = 0;
+				final double cosTheta = Math.cos(angles[s]);
+				final double sinTheta = Math.sin(angles[s]);
+				final int roiYEnd = r.y + r.height;
+				final int roiXEnd = r.x + r.width;
+				final double xC = sliceCentroids[0][s];
+				final double yC = sliceCentroids[1][s];
+				final double cS = cslice[s];
+				for (int y = r.y; y < roiYEnd; y++) {
+					final double yYc = y * vH - yC;
+					for (int x = r.x; x < roiXEnd; x++) {
+						final double pixel = ip.get(x, y);
+						if (pixel >= min && pixel <= max) {
+							final double xXc = x * vW - xC;
+							final double xCosTheta = x * vW * cosTheta;
+							final double yCosTheta = y * vH * cosTheta;
+							final double xSinTheta = x * vW * sinTheta;
+							final double ySinTheta = y * vH * sinTheta;
+							sxs += xCosTheta + ySinTheta;
+							sys += yCosTheta - xSinTheta;
+							sxxs += (xCosTheta + ySinTheta) * (xCosTheta + ySinTheta);
+							syys += (yCosTheta - xSinTheta) * (yCosTheta - xSinTheta);
+							sxys += (yCosTheta - xSinTheta) * (xCosTheta + ySinTheta);
+							maxRadMinS = Math.max(maxRadMinS, Math.abs(xXc * cosTheta + yYc *
+								sinTheta));
+							maxRadMaxS = Math.max(maxRadMaxS, Math.abs(yYc * cosTheta - xXc *
+								sinTheta));
+							maxRadCentreS = Math.max(maxRadCentreS, Math.sqrt(xXc * xXc +
+								yYc * yYc));
+						}
+					}
+				}
+				maxRad2[s] = maxRadMinS;
+				maxRad1[s] = maxRadMaxS;
+				maxRadC[s] = maxRadCentreS;
+				final double pixelMoments = cS * vW * vH * (cosTheta * cosTheta +
+					sinTheta * sinTheta) / 12;
+				I1[s] = vW * vH * (sxxs - (sxs * sxs / cS) + pixelMoments);
+				I2[s] = vW * vH * (syys - (sys * sys / cS) + pixelMoments);
+				Ip[s] = sxys - (sys * sxs / cS) + pixelMoments;
+				r1[s] = Math.sqrt(I2[s] / (cS * vW * vH * vW * vH));
+				r2[s] = Math.sqrt(I1[s] / (cS * vW * vH * vW * vH));
+				Z1[s] = I1[s] / maxRad2[s];
+				Z2[s] = I2[s] / maxRad1[s];
+				Zp[s] = (I1[s] + I2[s]) / maxRadC[s];
+			}
+		}
+
+		return new double[][] { I1, I2, Ip, r1, r2, maxRad2, maxRad1, Z1, Z2, Zp, };
+	}
+
+	/**
+	 * Calculate the centroid of each slice
+	 *
+	 * @param imp Input image
+	 * @return double containing sum of pixel count
+	 */
+	private double calculateCentroids(final ImagePlus imp, final double min,
+		final double max)
+	{
+		final ImageStack stack = imp.getImageStack();
+		final Rectangle r = stack.getRoi();
+		// 2D centroids
+		sliceCentroids = new double[2][al];
+		// pixel counters
+		double cstack = 0;
+		emptySlices = new boolean[al];
+		cslice = new double[al];
+		cortArea = new double[al];
+		meanDensity = new double[al];
+		weightedCentroids = new double[2][al];
+		final double pixelArea = vW * vH;
+		final int roiXEnd = r.x + r.width;
+		final int roiYEnd = r.y + r.height;
+		for (int s = startSlice; s <= endSlice; s++) {
+			IJ.showStatus("Calculating centroids...");
+			IJ.showProgress(s - startSlice, endSlice);
+			double sumX = 0;
+			double sumY = 0;
+			int count = 0;
+			double sumD = 0;
+			double wSumX = 0;
+			double wSumY = 0;
+			final ImageProcessor ip = stack.getProcessor(s);
+			for (int y = r.y; y < roiYEnd; y++) {
+				for (int x = r.x; x < roiXEnd; x++) {
+					final double pixel = ip.get(x, y);
+					if (pixel >= min && pixel <= max) {
+						count++;
+						sumX += x;
+						sumY += y;
+						final double wP = pixel * m + c;
+						sumD += wP;
+						wSumX += x * wP;
+						wSumY += y * wP;
+					}
+				}
+			}
+			cslice[s] = count;
+			cortArea[s] = count * pixelArea;
+			if (count > 0) {
+				sliceCentroids[0][s] = sumX * vW / count;
+				sliceCentroids[1][s] = sumY * vH / count;
+				meanDensity[s] = sumD / count;
+				weightedCentroids[0][s] = wSumX * vW / sumD;
+				weightedCentroids[1][s] = wSumY * vH / sumD;
+				cstack += count;
+				emptySlices[s] = false;
+			}
+			else {
+				emptySlices[s] = true;
+				cortArea[s] = Double.NaN;
+				sliceCentroids[0][s] = Double.NaN;
+				sliceCentroids[1][s] = Double.NaN;
+				cslice[s] = Double.NaN;
+			}
+		}
+		return cstack;
+	}
+
+	/**
+	 * Calculate second moments of area, length and angle of principal axes
+	 *
+	 * @param imp
+	 */
+	private void calculateMoments(final ImagePlus imp, final double min,
+		final double max)
+	{
+		final ImageStack stack = imp.getImageStack();
+		final Rectangle r = stack.getRoi();
+		theta = new double[al];
+		for (int s = startSlice; s <= endSlice; s++) {
+			IJ.showStatus("Calculating Ix and Iy...");
+			IJ.showProgress(s, endSlice);
+			double sxs = 0;
+			double sys = 0;
+			double sxxs = 0;
+			double syys = 0;
+			double sxys = 0;
+			final int roiXEnd = r.x + r.width;
+			final int roiYEnd = r.y + r.height;
+			if (emptySlices[s]) {
+				theta[s] = Double.NaN;
+				continue;
+			}
+			final ImageProcessor ip = stack.getProcessor(s);
+			for (int y = r.y; y < roiYEnd; y++) {
+				for (int x = r.x; x < roiXEnd; x++) {
+					final double pixel = ip.get(x, y);
+					if (pixel >= min && pixel <= max) {
+						final double xVw = x * vW;
+						final double yVh = y * vH;
+						sxs += xVw;
+						sys += yVh;
+						sxxs += xVw * xVw;
+						syys += yVh * yVh;
+						sxys += xVw * yVh;
+					}
+				}
+			}
+			// this.cslice[]/12 is for each pixel's own moment
+			final double Myys = sxxs - (sxs * sxs / cslice[s]) + cslice[s] * vW * vW /
+				12;
+			final double Mxxs = syys - (sys * sys / cslice[s]) + cslice[s] * vH * vH /
+				12;
+			final double Mxys = sxys - (sxs * sys / cslice[s]) + cslice[s] * vH * vW /
+				12;
+			if (Mxys == 0) {
+				theta[s] = 0;
+			}
+			else {
+				theta[s] = Math.atan((Mxxs - Myys + Math.sqrt((Mxxs - Myys) * (Mxxs -
+					Myys) + 4 * Mxys * Mxys)) / (2 * Mxys));
+			}
+		}
+		// Get I and Z around the principal axes
+		final double[][] result = calculateAngleMoments(imp, min, max, theta);
+		Imax = result[0];
+		Imin = result[1];
+		Ipm = result[2];
+		R1 = result[3];
+		R2 = result[4];
+		maxRadMin = result[5];
+		maxRadMax = result[6];
+		Zmax = result[7];
+		Zmin = result[8];
+		Zpol = result[9];
+
+		// optionally get I and Z around some user-defined axes
+		if (doOriented && orienteer != null) {
+			final double angle = orienteer.getOrientation();
+			final double[] angles = new double[al];
+			for (int i = 0; i < al; i++) {
+				angles[i] = angle;
+			}
+			final double[][] result2 = calculateAngleMoments(imp, min, max, angles);
+			I1 = result2[0];
+			I2 = result2[1];
+			maxRad2 = result2[5];
+			maxRad1 = result2[6];
+			Z1 = result2[7];
+			Z2 = result2[8];
+		}
+	}
+
+	/**
+	 * Calculate thickness on individual slices using local thickness
+	 *
+	 * @param imp
+	 */
+	private void calculateThickness2D(final ImagePlus imp, final double min,
+		final double max)
+	{
+		maxCortThick2D = new double[al];
+		meanCortThick2D = new double[al];
+		stdevCortThick2D = new double[al];
+
+		final int nThreads = Runtime.getRuntime().availableProcessors();
+		final SliceThread[] sliceThread = new SliceThread[nThreads];
+		for (int thread = 0; thread < nThreads; thread++) {
+			sliceThread[thread] = new SliceThread(thread, nThreads, imp, min, max,
+				meanCortThick2D, maxCortThick2D, stdevCortThick2D, startSlice, endSlice,
+				emptySlices);
+			sliceThread[thread].start();
+		}
+		try {
+			for (int thread = 0; thread < nThreads; thread++) {
+				sliceThread[thread].join();
+			}
+		}
+		catch (final InterruptedException ie) {
+			IJ.error("A thread was interrupted.");
+		}
+	}
+
+	/**
+	 * Calculate 3D Local Thickness and determine thickness statistics for the
+	 * slice
+	 */
+	private void calculateThickness3D(final ImagePlus imp, final double min,
+		final double max)
+	{
+		maxCortThick3D = new double[al];
+		meanCortThick3D = new double[al];
+		stdevCortThick3D = new double[al];
+		final Rectangle r = imp.getProcessor().getRoi();
+		final LocalThickness th = new LocalThickness();
+
+		// convert to binary
+		final ImagePlus binaryImp = convertToBinary(imp, min, max);
+
+		final ImagePlus thickImp = th.getLocalThickness(binaryImp, false, doMask);
+
+		for (int s = startSlice; s <= endSlice; s++) {
+			if (emptySlices[s]) {
+				maxCortThick3D[s] = Double.NaN;
+				meanCortThick3D[s] = Double.NaN;
+				stdevCortThick3D[s] = Double.NaN;
+				continue;
+			}
+			final FloatProcessor ip = (FloatProcessor) thickImp.getStack()
+				.getProcessor(s);
+			double sumPix = 0;
+			double sliceMax = 0;
+			double pixCount = 0;
+			final int roiXEnd = r.x + r.width;
+			final int roiYEnd = r.y + r.height;
+			for (int y = r.y; y < roiYEnd; y++) {
+				for (int x = r.x; x < roiXEnd; x++) {
+					final float pixel = Float.intBitsToFloat(ip.get(x, y));
+					if (pixel > 0) {
+						pixCount++;
+						sumPix += pixel;
+						sliceMax = Math.max(sliceMax, pixel);
+					}
+				}
+			}
+			final double sliceMean = sumPix / pixCount;
+			meanCortThick3D[s] = sliceMean;
+			maxCortThick3D[s] = sliceMax;
+
+			double sumSquares = 0;
+			for (int y = r.y; y < roiYEnd; y++) {
+				for (int x = r.x; x < roiXEnd; x++) {
+					final float pixel = Float.intBitsToFloat(ip.get(x, y));
+					if (pixel > 0) {
+						final double d = sliceMean - pixel;
+						sumSquares += d * d;
+					}
+				}
+			}
+			stdevCortThick3D[s] = Math.sqrt(sumSquares / pixCount);
+		}
+	}
+
+	private ImagePlus convertToBinary(final ImagePlus imp, final double min,
+		final double max)
+	{
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getStackSize();
+		final ImageStack sourceStack = imp.getImageStack();
+		final ImageStack binaryStack = new ImageStack(w, h);
+		for (int s = 1; s <= d; s++) {
+			final ImageProcessor sliceIp = sourceStack.getProcessor(s);
+			final ByteProcessor binaryIp = new ByteProcessor(w, h);
+			for (int y = 0; y < h; y++) {
+				for (int x = 0; x < w; x++) {
+					if (sliceIp.get(x, y) >= min && sliceIp.get(x, y) <= max) {
+						binaryIp.set(x, y, 255);
+					}
+				}
+			}
+			binaryStack.addSlice(sourceStack.getSliceLabel(s), binaryIp);
+		}
+		final ImagePlus binaryImp = new ImagePlus("binaryImp", binaryStack);
+		binaryImp.setCalibration(imp.getCalibration());
+		return binaryImp;
+	}
+
+	private void roiMeasurements(final ImagePlus imp, final double min,
+		final double max)
+	{
+		final Roi initialRoi = imp.getRoi();
+		final int xMin = imp.getImageStack().getRoi().x;
+		double[] feretValues;
+		feretAngle = new double[al];
+		feretMax = new double[al];
+		feretMin = new double[al];
+		perimeter = new double[al];
+		principalDiameter = new double[al];
+		secondaryDiameter = new double[al];
+		final int initialSlice = imp.getCurrentSlice();
+		// for the required slices...
+		for (int s = startSlice; s <= endSlice; s++) {
+			final ImageProcessor ip = imp.getImageStack().getProcessor(s);
+			final Wand w = new Wand(ip);
+			w.autoOutline(xMin, (int) Math.round(sliceCentroids[1][s] / vH), min, max,
+				Wand.EIGHT_CONNECTED);
+			if (emptySlices[s] || w.npoints == 0) {
+				feretMin[s] = Double.NaN;
+				feretAngle[s] = Double.NaN;
+				feretMax[s] = Double.NaN;
+				perimeter[s] = Double.NaN;
+				principalDiameter[s] = Double.NaN;
+				secondaryDiameter[s] = Double.NaN;
+				continue;
+			}
+
+			final int type = Wand.allPoints() ? Roi.FREEROI : Roi.TRACED_ROI;
+			final PolygonRoi roi = new PolygonRoi(w.xpoints, w.ypoints, w.npoints,
+				type);
+			feretValues = roi.getFeretValues();
+			feretMin[s] = feretValues[2] * vW;
+			feretAngle[s] = feretValues[1] * Math.PI / 180;
+			feretMax[s] = feretValues[0] * vW;
+			perimeter[s] = roi.getLength() * vW;
+
+			if (doOriented && orienteer != null) {
+				final double[][] points = new double[w.npoints][2];
+				for (int i = 0; i < w.npoints; i++) {
+					points[i][0] = w.xpoints[i] * vW;
+					points[i][1] = w.ypoints[i] * vH;
+				}
+				final double[] diameters = orienteer.getDiameters(points);
+				principalDiameter[s] = diameters[0];
+				secondaryDiameter[s] = diameters[1];
+			}
+		}
+		IJ.setSlice(initialSlice);
+		imp.setRoi(initialRoi);
 	}
 
 	/**
 	 * Display principal axes on a 3D rendered version of the image
 	 *
-	 * @param imp
-	 *            Original image
+	 * @param imp Original image
 	 */
 	private void show3DAxes(final ImagePlus imp) {
 		final Calibration cal = imp.getCalibration();
@@ -469,7 +914,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		mesh.setColor(cColour);
 		try {
 			univ.addCustomMesh(mesh, "Centroid").setLocked(true);
-		} catch (final NullPointerException npe) {
+		}
+		catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
 			return;
 		}
@@ -477,15 +923,19 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		// show the axes
 		final Color3f minColour = new Color3f(1.0f, 0.0f, 0.0f);
 		try {
-			univ.addLineMesh(minAxes, minColour, "Minimum axis", false).setLocked(true);
-		} catch (final NullPointerException npe) {
+			univ.addLineMesh(minAxes, minColour, "Minimum axis", false).setLocked(
+				true);
+		}
+		catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
 			return;
 		}
 		final Color3f maxColour = new Color3f(0.0f, 0.0f, 1.0f);
 		try {
-			univ.addLineMesh(maxAxes, maxColour, "Maximum axis", false).setLocked(true);
-		} catch (final NullPointerException npe) {
+			univ.addLineMesh(maxAxes, maxColour, "Maximum axis", false).setLocked(
+				true);
+		}
+		catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
 			return;
 		}
@@ -495,343 +945,33 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			new StackConverter(roiImp).convertToGray8();
 			final Content c = univ.addVoltex(roiImp);
 			c.setLocked(true);
-		} catch (final NullPointerException npe) {
+		}
+		catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
 		}
 	}
 
-	/**
-	 * Calculate the centroid of each slice
-	 *
-	 * @param imp
-	 *            Input image
-	 * @return double containing sum of pixel count
-	 */
-	private double calculateCentroids(final ImagePlus imp, final double min, final double max) {
-		final ImageStack stack = imp.getImageStack();
-		final Rectangle r = stack.getRoi();
-		// 2D centroids
-        sliceCentroids = new double[2][al];
-		// pixel counters
-		double cstack = 0;
-        emptySlices = new boolean[al];
-        cslice = new double[al];
-        cortArea = new double[al];
-        meanDensity = new double[al];
-        weightedCentroids = new double[2][al];
-		final double pixelArea = vW * vH;
-		final int roiXEnd = r.x + r.width;
-		final int roiYEnd = r.y + r.height;
-		for (int s = startSlice; s <= endSlice; s++) {
-			IJ.showStatus("Calculating centroids...");
-			IJ.showProgress(s - startSlice, endSlice);
-			double sumX = 0;
-			double sumY = 0;
-			int count = 0;
-			double sumD = 0;
-			double wSumX = 0;
-			double wSumY = 0;
-			final ImageProcessor ip = stack.getProcessor(s);
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
-					final double pixel = ip.get(x, y);
-					if (pixel >= min && pixel <= max) {
-						count++;
-						sumX += x;
-						sumY += y;
-						final double wP = pixel * m + c;
-						sumD += wP;
-						wSumX += x * wP;
-						wSumY += y * wP;
-					}
-				}
-			}
-            cslice[s] = count;
-            cortArea[s] = count * pixelArea;
-			if (count > 0) {
-                sliceCentroids[0][s] = sumX * vW / count;
-                sliceCentroids[1][s] = sumY * vH / count;
-                meanDensity[s] = sumD / count;
-                weightedCentroids[0][s] = wSumX * vW / sumD;
-                weightedCentroids[1][s] = wSumY * vH / sumD;
-				cstack += count;
-                emptySlices[s] = false;
-			} else {
-                emptySlices[s] = true;
-                cortArea[s] = Double.NaN;
-                sliceCentroids[0][s] = Double.NaN;
-                sliceCentroids[1][s] = Double.NaN;
-                cslice[s] = Double.NaN;
-			}
-		}
-		return cstack;
-	}
-
-	/**
-	 * Calculate second moments of area, length and angle of principal axes
-	 *
-	 * @param imp
-	 */
-	private void calculateMoments(final ImagePlus imp, final double min, final double max) {
-		final ImageStack stack = imp.getImageStack();
-		final Rectangle r = stack.getRoi();
-        theta = new double[al];
-		for (int s = startSlice; s <= endSlice; s++) {
-			IJ.showStatus("Calculating Ix and Iy...");
-			IJ.showProgress(s, endSlice);
-			double sxs = 0;
-			double sys = 0;
-			double sxxs = 0;
-			double syys = 0;
-			double sxys = 0;
-			final int roiXEnd = r.x + r.width;
-			final int roiYEnd = r.y + r.height;
-			if (emptySlices[s]) {
-				theta[s] = Double.NaN;
-				continue;
-			}
-			final ImageProcessor ip = stack.getProcessor(s);
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
-					final double pixel = ip.get(x, y);
-					if (pixel >= min && pixel <= max) {
-						final double xVw = x * vW;
-						final double yVh = y * vH;
-						sxs += xVw;
-						sys += yVh;
-						sxxs += xVw * xVw;
-						syys += yVh * yVh;
-						sxys += xVw * yVh;
-					}
-				}
-			}
-			// this.cslice[]/12 is for each pixel's own moment
-			final double Myys = sxxs - (sxs * sxs / cslice[s]) + cslice[s] * vW * vW / 12;
-			final double Mxxs = syys - (sys * sys / cslice[s]) + cslice[s] * vH * vH / 12;
-			final double Mxys = sxys - (sxs * sys / cslice[s]) + cslice[s] * vH * vW / 12;
-			if (Mxys == 0) {
-				theta[s] = 0;
-			} else {
-				theta[s] = Math.atan(
-						(Mxxs - Myys + Math.sqrt((Mxxs - Myys) * (Mxxs - Myys) + 4 * Mxys * Mxys)) / (2 * Mxys));
-			}
-		}
-		// Get I and Z around the principal axes
-		final double[][] result = calculateAngleMoments(imp, min, max, theta);
-        Imax = result[0];
-        Imin = result[1];
-        Ipm = result[2];
-        R1 = result[3];
-        R2 = result[4];
-        maxRadMin = result[5];
-        maxRadMax = result[6];
-        Zmax = result[7];
-        Zmin = result[8];
-        Zpol = result[9];
-
-		// optionally get I and Z around some user-defined axes
-		if (doOriented && orienteer != null) {
-			final double angle = orienteer.getOrientation();
-			final double[] angles = new double[al];
-			for (int i = 0; i < al; i++) {
-				angles[i] = angle;
-			}
-			final double[][] result2 = calculateAngleMoments(imp, min, max, angles);
-            I1 = result2[0];
-            I2 = result2[1];
-            maxRad2 = result2[5];
-            maxRad1 = result2[6];
-            Z1 = result2[7];
-            Z2 = result2[8];
-		}
-	}
-
-	private double[][] calculateAngleMoments(final ImagePlus imp, final double min, final double max,
-			final double[] angles) {
-		final ImageStack stack = imp.getImageStack();
-		final Rectangle r = stack.getRoi();
-		final double[] I1 = new double[al];
-		final double[] I2 = new double[al];
-		final double[] Ip = new double[al];
-		final double[] r1 = new double[al];
-		final double[] r2 = new double[al];
-		final double[] maxRad2 = new double[al];
-		final double[] maxRad1 = new double[al];
-		final double[] maxRadC = new double[al];
-		final double[] Z1 = new double[al];
-		final double[] Z2 = new double[al];
-		final double[] Zp = new double[al];
-		for (int s = startSlice; s <= endSlice; s++) {
-			IJ.showStatus("Calculating Imin and Imax...");
-			IJ.showProgress(s, endSlice);
-			if (emptySlices[s]) {
-				I1[s] = Double.NaN;
-				I2[s] = Double.NaN;
-				Ip[s] = Double.NaN;
-				r1[s] = Double.NaN;
-				r2[s] = Double.NaN;
-				maxRad2[s] = Double.NaN;
-				maxRad1[s] = Double.NaN;
-				Z1[s] = Double.NaN;
-				Z2[s] = Double.NaN;
-				Zp[s] = Double.NaN;
-			} else {
-				final ImageProcessor ip = stack.getProcessor(s);
-				double sxs = 0;
-				double sys = 0;
-				double sxxs = 0;
-				double syys = 0;
-				double sxys = 0;
-				double maxRadMinS = 0;
-				double maxRadMaxS = 0;
-				double maxRadCentreS = 0;
-				final double cosTheta = Math.cos(angles[s]);
-				final double sinTheta = Math.sin(angles[s]);
-				final int roiYEnd = r.y + r.height;
-				final int roiXEnd = r.x + r.width;
-				final double xC = sliceCentroids[0][s];
-				final double yC = sliceCentroids[1][s];
-				final double cS = cslice[s];
-				for (int y = r.y; y < roiYEnd; y++) {
-					final double yYc = y * vH - yC;
-					for (int x = r.x; x < roiXEnd; x++) {
-						final double pixel = ip.get(x, y);
-						if (pixel >= min && pixel <= max) {
-							final double xXc = x * vW - xC;
-							final double xCosTheta = x * vW * cosTheta;
-							final double yCosTheta = y * vH * cosTheta;
-							final double xSinTheta = x * vW * sinTheta;
-							final double ySinTheta = y * vH * sinTheta;
-							sxs += xCosTheta + ySinTheta;
-							sys += yCosTheta - xSinTheta;
-							sxxs += (xCosTheta + ySinTheta) * (xCosTheta + ySinTheta);
-							syys += (yCosTheta - xSinTheta) * (yCosTheta - xSinTheta);
-							sxys += (yCosTheta - xSinTheta) * (xCosTheta + ySinTheta);
-							maxRadMinS = Math.max(maxRadMinS, Math.abs(xXc * cosTheta + yYc * sinTheta));
-							maxRadMaxS = Math.max(maxRadMaxS, Math.abs(yYc * cosTheta - xXc * sinTheta));
-							maxRadCentreS = Math.max(maxRadCentreS, Math.sqrt(xXc * xXc + yYc * yYc));
-						}
-					}
-				}
-				maxRad2[s] = maxRadMinS;
-				maxRad1[s] = maxRadMaxS;
-				maxRadC[s] = maxRadCentreS;
-				final double pixelMoments = cS * vW * vH * (cosTheta * cosTheta + sinTheta * sinTheta) / 12;
-				I1[s] = vW * vH * (sxxs - (sxs * sxs / cS) + pixelMoments);
-				I2[s] = vW * vH * (syys - (sys * sys / cS) + pixelMoments);
-				Ip[s] = sxys - (sys * sxs / cS) + pixelMoments;
-				r1[s] = Math.sqrt(I2[s] / (cS * vW * vH * vW * vH));
-				r2[s] = Math.sqrt(I1[s] / (cS * vW * vH * vW * vH));
-				Z1[s] = I1[s] / maxRad2[s];
-				Z2[s] = I2[s] / maxRad1[s];
-				Zp[s] = (I1[s] + I2[s]) / maxRadC[s];
-			}
-		}
-
-		return new double[][]{ I1, I2, Ip, r1, r2, maxRad2, maxRad1, Z1, Z2, Zp, };
-	}
-
-	/**
-	 * Calculate 3D Local Thickness and determine thickness statistics for the
-	 * slice
-	 *
-	 */
-	private void calculateThickness3D(final ImagePlus imp, final double min, final double max) {
-        maxCortThick3D = new double[al];
-        meanCortThick3D = new double[al];
-        stdevCortThick3D = new double[al];
-		final Rectangle r = imp.getProcessor().getRoi();
-		final LocalThickness th = new LocalThickness();
-
-		// convert to binary
-		final ImagePlus binaryImp = convertToBinary(imp, min, max);
-
-		final ImagePlus thickImp = th.getLocalThickness(binaryImp, false, doMask);
-
-		for (int s = startSlice; s <= endSlice; s++) {
-			if (emptySlices[s]) {
-                maxCortThick3D[s] = Double.NaN;
-                meanCortThick3D[s] = Double.NaN;
-                stdevCortThick3D[s] = Double.NaN;
-				continue;
-			}
-			final FloatProcessor ip = (FloatProcessor) thickImp.getStack().getProcessor(s);
-			double sumPix = 0;
-			double sliceMax = 0;
-			double pixCount = 0;
-			final int roiXEnd = r.x + r.width;
-			final int roiYEnd = r.y + r.height;
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
-					final float pixel = Float.intBitsToFloat(ip.get(x, y));
-					if (pixel > 0) {
-						pixCount++;
-						sumPix += pixel;
-						sliceMax = Math.max(sliceMax, pixel);
-					}
-				}
-			}
-			final double sliceMean = sumPix / pixCount;
-            meanCortThick3D[s] = sliceMean;
-            maxCortThick3D[s] = sliceMax;
-
-			double sumSquares = 0;
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
-					final float pixel = Float.intBitsToFloat(ip.get(x, y));
-					if (pixel > 0) {
-						final double d = sliceMean - pixel;
-						sumSquares += d * d;
-					}
-				}
-			}
-            stdevCortThick3D[s] = Math.sqrt(sumSquares / pixCount);
-		}
-	}
-
-	/**
-	 * Calculate thickness on individual slices using local thickness
-	 *
-	 * @param imp
-	 */
-	private void calculateThickness2D(final ImagePlus imp, final double min, final double max) {
-        maxCortThick2D = new double[al];
-        meanCortThick2D = new double[al];
-        stdevCortThick2D = new double[al];
-
-		final int nThreads = Runtime.getRuntime().availableProcessors();
-		final SliceThread[] sliceThread = new SliceThread[nThreads];
-		for (int thread = 0; thread < nThreads; thread++) {
-			sliceThread[thread] = new SliceThread(thread, nThreads, imp, min, max, meanCortThick2D,
-                    maxCortThick2D, stdevCortThick2D, startSlice, endSlice, emptySlices);
-			sliceThread[thread].start();
-		}
-		try {
-			for (int thread = 0; thread < nThreads; thread++) {
-				sliceThread[thread].join();
-			}
-		} catch (final InterruptedException ie) {
-			IJ.error("A thread was interrupted.");
-		}
-	}
-
 	private final class SliceThread extends Thread {
+
 		private final int thread;
-        private final int nThreads;
-        private final int startSlice;
-        private final int endSlice;
+		private final int nThreads;
+		private final int startSlice;
+		private final int endSlice;
 		private final double min;
-        private final double max;
+		private final double max;
 		private final double[] meanThick;
-        private final double[] maxThick;
-        private final double[] stdevThick;
+		private final double[] maxThick;
+		private final double[] stdevThick;
 		private final boolean[] emptySlices;
 		private final ImagePlus impT;
 
-		private SliceThread(final int thread, final int nThreads, final ImagePlus imp, final double min,
-                final double max, final double[] meanThick, final double[] maxThick, final double[] stdevThick,
-                final int startSlice, final int endSlice, final boolean[] emptySlices) {
-            impT = imp;
+		private SliceThread(final int thread, final int nThreads,
+			final ImagePlus imp, final double min, final double max,
+			final double[] meanThick, final double[] maxThick,
+			final double[] stdevThick, final int startSlice, final int endSlice,
+			final boolean[] emptySlices)
+		{
+			impT = imp;
 			this.min = min;
 			this.max = max;
 			this.thread = thread;
@@ -848,9 +988,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		public void run() {
 			for (int s = thread + startSlice; s <= endSlice; s += nThreads) {
 				if (emptySlices[s]) {
-                    meanThick[s] = Double.NaN;
-                    maxThick[s] = Double.NaN;
-                    stdevThick[s] = Double.NaN;
+					meanThick[s] = Double.NaN;
+					maxThick[s] = Double.NaN;
+					stdevThick[s] = Double.NaN;
 					continue;
 				}
 				final ImageProcessor ip = impT.getImageStack().getProcessor(s);
@@ -862,7 +1002,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				binaryImp.setCalibration(cal);
 				// calculate thickness
 				final LocalThickness th = new LocalThickness();
-				final ImagePlus thickImp = th.getLocalThickness(binaryImp, false, doMask);
+				final ImagePlus thickImp = th.getLocalThickness(binaryImp, false,
+					doMask);
 				final FloatProcessor thickIp = (FloatProcessor) thickImp.getProcessor();
 				double sumPix = 0;
 				double sliceMax = 0;
@@ -880,8 +1021,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 					}
 				}
 				final double sliceMean = sumPix / pixCount;
-                meanThick[s] = sliceMean;
-                maxThick[s] = sliceMax;
+				meanThick[s] = sliceMean;
+				maxThick[s] = sliceMax;
 
 				double sumSquares = 0;
 				for (int y = r.y; y < roiYEnd; y++) {
@@ -893,119 +1034,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 						}
 					}
 				}
-                stdevThick[s] = Math.sqrt(sumSquares / pixCount);
+				stdevThick[s] = Math.sqrt(sumSquares / pixCount);
 			}
 		}
-	}
-
-	private ImagePlus convertToBinary(final ImagePlus imp, final double min, final double max) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getStackSize();
-		final ImageStack sourceStack = imp.getImageStack();
-		final ImageStack binaryStack = new ImageStack(w, h);
-		for (int s = 1; s <= d; s++) {
-			final ImageProcessor sliceIp = sourceStack.getProcessor(s);
-			final ByteProcessor binaryIp = new ByteProcessor(w, h);
-			for (int y = 0; y < h; y++) {
-				for (int x = 0; x < w; x++) {
-					if (sliceIp.get(x, y) >= min && sliceIp.get(x, y) <= max) {
-						binaryIp.set(x, y, 255);
-					}
-				}
-			}
-			binaryStack.addSlice(sourceStack.getSliceLabel(s), binaryIp);
-		}
-		final ImagePlus binaryImp = new ImagePlus("binaryImp", binaryStack);
-		binaryImp.setCalibration(imp.getCalibration());
-		return binaryImp;
-	}
-
-	private void roiMeasurements(final ImagePlus imp, final double min, final double max) {
-		final Roi initialRoi = imp.getRoi();
-		final int xMin = imp.getImageStack().getRoi().x;
-		double[] feretValues;
-        feretAngle = new double[al];
-        feretMax = new double[al];
-        feretMin = new double[al];
-        perimeter = new double[al];
-        principalDiameter = new double[al];
-        secondaryDiameter = new double[al];
-		final int initialSlice = imp.getCurrentSlice();
-		// for the required slices...
-		for (int s = startSlice; s <= endSlice; s++) {
-			final ImageProcessor ip = imp.getImageStack().getProcessor(s);
-			final Wand w = new Wand(ip);
-			w.autoOutline(xMin, (int) Math.round(sliceCentroids[1][s] / vH), min, max, Wand.EIGHT_CONNECTED);
-			if (emptySlices[s] || w.npoints == 0) {
-                feretMin[s] = Double.NaN;
-                feretAngle[s] = Double.NaN;
-                feretMax[s] = Double.NaN;
-                perimeter[s] = Double.NaN;
-                principalDiameter[s] = Double.NaN;
-                secondaryDiameter[s] = Double.NaN;
-				continue;
-			}
-
-			final int type = Wand.allPoints() ? Roi.FREEROI : Roi.TRACED_ROI;
-			final PolygonRoi roi = new PolygonRoi(w.xpoints, w.ypoints, w.npoints, type);
-			feretValues = roi.getFeretValues();
-            feretMin[s] = feretValues[2] * vW;
-            feretAngle[s] = feretValues[1] * Math.PI / 180;
-            feretMax[s] = feretValues[0] * vW;
-            perimeter[s] = roi.getLength() * vW;
-
-			if (doOriented && orienteer != null) {
-				final double[][] points = new double[w.npoints][2];
-				for (int i = 0; i < w.npoints; i++) {
-					points[i][0] = w.xpoints[i] * vW;
-					points[i][1] = w.ypoints[i] * vH;
-				}
-				final double[] diameters = orienteer.getDiameters(points);
-                principalDiameter[s] = diameters[0];
-                secondaryDiameter[s] = diameters[1];
-			}
-		}
-		IJ.setSlice(initialSlice);
-		imp.setRoi(initialRoi);
-	}
-
-	@Override
-	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (DialogModifier.hasInvalidNumber(gd.getNumericFields()))
-			return false;
-		final List<?> checkboxes = gd.getCheckboxes();
-		final List<?> nFields = gd.getNumericFields();
-		final Checkbox calibration = (Checkbox) checkboxes.get(10);
-		final boolean isHUCalibrated = calibration.getState();
-		final TextField minT = (TextField) nFields.get(0);
-		final TextField maxT = (TextField) nFields.get(1);
-
-		final double min = Double.parseDouble(minT.getText());
-		final double max = Double.parseDouble(maxT.getText());
-		if (isHUCalibrated && !fieldUpdated) {
-			minT.setText("" + cal.getCValue(min));
-			maxT.setText("" + cal.getCValue(max));
-			fieldUpdated = true;
-		}
-		if (!isHUCalibrated && fieldUpdated) {
-			minT.setText("" + cal.getRawValue(min));
-			maxT.setText("" + cal.getRawValue(max));
-			fieldUpdated = false;
-		}
-		if (isHUCalibrated)
-			DialogModifier.replaceUnitString(gd, "grey", "HU");
-		else
-			DialogModifier.replaceUnitString(gd, "HU", "grey");
-
-		final Checkbox oriented = (Checkbox) checkboxes.get(9);
-		if (orienteer == null) {
-			oriented.setState(false);
-			oriented.setEnabled(false);
-		} else
-			oriented.setEnabled(true);
-
-		DialogModifier.registerMacroValues(gd, gd.getComponents());
-		return true;
 	}
 }

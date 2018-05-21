@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
 import ij.IJ;
@@ -34,21 +35,112 @@ import ij.process.ImageStatistics;
  */
 public final class ImageCheck {
 
-	private ImageCheck() {}
-
 	/**
 	 * Minimal ImageJ version required by BoneJ
 	 */
 	private static final String requiredIJVersion = "1.49u";
-
 	/**
 	 * ImageJ releases known to produce errors or bugs with BoneJ. Daily builds
 	 * are not included.
 	 */
 	private static final String[] blacklistedIJVersions = {
-			// introduced bug where ROIs added to the ROI Manager
-			// lost their z-position information
-			"1.48a" };
+		// introduced bug where ROIs added to the ROI Manager
+		// lost their z-position information
+		"1.48a" };
+
+	private ImageCheck() {}
+
+	/**
+	 * Checks if BoneJ can run on the current installation.
+	 *
+	 * @return true if environment is set up correctly.
+	 */
+	// TODO Fix calls to checkEnvironment (only when really necessary)
+	public static boolean checkEnvironment() {
+		try {
+			Class.forName("ij3d.ImageJ3DViewer");
+		}
+		catch (final ClassNotFoundException e) {
+			IJ.showMessage("ImageJ 3D Viewer is not installed.\n" +
+				"Please install and run the ImageJ 3D Viewer.");
+			return false;
+		}
+
+		return checkIJVersion();
+	}
+
+	/**
+	 * Check that the voxel thickness is correct in the DICOM image metadata.
+	 *
+	 * @param imp an image.
+	 */
+	public static void dicomVoxelDepth(final ImagePlus imp) {
+		if (imp == null) {
+			IJ.error("Cannot check DICOM header of a null image");
+			return;
+		}
+
+		final Calibration cal = imp.getCalibration();
+		final double vD = cal.pixelDepth;
+		final int stackSize = imp.getStackSize();
+
+		String position = getDicomAttribute(imp, 1);
+		if (position == null) {
+			IJ.log("No DICOM slice position data");
+			return;
+		}
+		String[] xyz = position.split("\\\\");
+		final double first;
+
+		if (xyz.length == 3) // we have 3 values
+			first = Double.parseDouble(xyz[2]);
+		else return;
+
+		// TODO Create method
+		position = getDicomAttribute(imp, stackSize);
+		if (position == null) {
+			IJ.log("No DICOM slice position data");
+			return;
+		}
+		xyz = position.split("\\\\");
+		final double last;
+
+		if (xyz.length == 3) // we have 3 values
+			last = Double.parseDouble(xyz[2]);
+		else return;
+
+		final double sliceSpacing = (Math.abs(last - first) + 1) / stackSize;
+		final String units = cal.getUnits();
+		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100.0;
+
+		if (Double.compare(vD, sliceSpacing) == 0) {
+			IJ.log(imp.getTitle() + ": Voxel depth agrees with DICOM header.\n");
+			return;
+		}
+
+		IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " +
+			error + "% with DICOM header slice spacing.\n" + "Current voxel depth: " +
+			IJ.d2s(vD, 6) + " " + units + "\n" + "DICOM slice spacing: " + IJ.d2s(
+				sliceSpacing, 6) + " " + units + "\n" + "Updating image properties...");
+		cal.pixelDepth = sliceSpacing;
+		imp.setCalibration(cal);
+	}
+
+	/**
+	 * Guess whether an image is Hounsfield unit calibrated
+	 *
+	 * @param imp an image.
+	 * @return true if the image might be HU calibrated
+	 */
+	public static boolean huCalibrated(final ImagePlus imp) {
+		final Calibration cal = imp.getCalibration();
+		if (!cal.calibrated()) {
+			return false;
+		}
+		final double[] coeff = cal.getCoefficients();
+		final double value = cal.getCValue(0);
+		return (value != 0 && value != Short.MIN_VALUE) || coeff[1] != 1;
+	}
 
 	/**
 	 * Check if image is binary
@@ -88,7 +180,9 @@ public final class ImageCheck {
 	 * @param tolerance tolerated fractional deviation from equal length
 	 * @return true if voxel width == height == depth
 	 */
-	public static boolean isVoxelIsotropic(final ImagePlus imp, final double tolerance) {
+	public static boolean isVoxelIsotropic(final ImagePlus imp,
+		final double tolerance)
+	{
 		if (imp == null) {
 			IJ.error("No image", "Image is null");
 			return false;
@@ -115,62 +209,25 @@ public final class ImageCheck {
 	}
 
 	/**
-	 * Check that the voxel thickness is correct in the DICOM image metadata.
+	 * Checks if the version of ImageJ is compatible with BoneJ
 	 *
-	 * @param imp an image.
+	 * @return false if the IJ version is too old or blacklisted
 	 */
-	public static void dicomVoxelDepth(final ImagePlus imp) {
-		if (imp == null) {
-			IJ.error("Cannot check DICOM header of a null image");
-			return;
+	private static boolean checkIJVersion() {
+		if (isIJVersionBlacklisted()) {
+			IJ.error("Bad ImageJ version", "The version of ImageJ you are using (v" +
+				IJ.getVersion() + ") is known to run BoneJ incorrectly.\n" +
+				"Please up- or downgrade your ImageJ using Help-Update ImageJ.");
+			return false;
 		}
 
-		final Calibration cal = imp.getCalibration();
-		final double vD = cal.pixelDepth;
-		final int stackSize = imp.getStackSize();
-
-		String position = getDicomAttribute(imp, 1);
-		if (position == null) {
-			IJ.log("No DICOM slice position data");
-			return;
+		if (requiredIJVersion.compareTo(IJ.getVersion()) > 0) {
+			IJ.error("Update ImageJ", "You are using an old version of ImageJ, v" + IJ
+				.getVersion() + ".\n" + "Please update to at least ImageJ v" +
+				requiredIJVersion + " using Help-Update ImageJ.");
+			return false;
 		}
-		String[] xyz = position.split("\\\\");
-		final double first;
-
-		if (xyz.length == 3) // we have 3 values
-			first = Double.parseDouble(xyz[2]);
-		else
-			return;
-
-		// TODO Create method
-		position = getDicomAttribute(imp, stackSize);
-        if (position == null) {
-            IJ.log("No DICOM slice position data");
-            return;
-        }
-		xyz = position.split("\\\\");
-		final double last;
-
-		if (xyz.length == 3) // we have 3 values
-			last = Double.parseDouble(xyz[2]);
-		else
-			return;
-
-		final double sliceSpacing = (Math.abs(last - first) + 1) / stackSize;
-		final String units = cal.getUnits();
-		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100.0;
-
-		if (Double.compare(vD, sliceSpacing) == 0) {
-			IJ.log(imp.getTitle() + ": Voxel depth agrees with DICOM header.\n");
-			return;
-		}
-
-		IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " + error
-				+ "% with DICOM header slice spacing.\n" + "Current voxel depth: " + IJ.d2s(vD, 6) + " " + units
-				+ "\n" + "DICOM slice spacing: " + IJ.d2s(sliceSpacing, 6) + " " + units + "\n"
-				+ "Updating image properties...");
-		cal.pixelDepth = sliceSpacing;
-		imp.setCalibration(cal);
+		return true;
 	}
 
 	/**
@@ -180,7 +237,9 @@ public final class ImageCheck {
 	 * @param slice number of slice in image.
 	 * @return the value associated with the tag
 	 */
-	private static String getDicomAttribute(final ImagePlus imp, final int slice) {
+	private static String getDicomAttribute(final ImagePlus imp,
+		final int slice)
+	{
 		final ImageStack stack = imp.getImageStack();
 		if (slice < 1 || slice > stack.getSize()) {
 			return null;
@@ -201,68 +260,13 @@ public final class ImageCheck {
 	}
 
 	/**
-	 * Checks if the version of ImageJ is compatible with BoneJ
-	 *
-	 * @return false if the IJ version is too old or blacklisted
-	 */
-	private static boolean checkIJVersion() {
-		if (isIJVersionBlacklisted()) {
-			IJ.error("Bad ImageJ version",
-					"The version of ImageJ you are using (v" + IJ.getVersion()
-							+ ") is known to run BoneJ incorrectly.\n"
-							+ "Please up- or downgrade your ImageJ using Help-Update ImageJ.");
-			return false;
-		}
-
-		if (requiredIJVersion.compareTo(IJ.getVersion()) > 0) {
-			IJ.error("Update ImageJ", "You are using an old version of ImageJ, v" + IJ.getVersion() + ".\n"
-					+ "Please update to at least ImageJ v" + requiredIJVersion + " using Help-Update ImageJ.");
-			return false;
-		}
-		return true;
-	}
-
-	/**
-     * Checks if BoneJ can run on the current installation.
-     *
-     * @return true if environment is set up correctly. */
-	// TODO Fix calls to checkEnvironment (only when really necessary)
-	public static boolean checkEnvironment() {
-		try {
-			Class.forName("ij3d.ImageJ3DViewer");
-		} catch (final ClassNotFoundException e) {
-			IJ.showMessage("ImageJ 3D Viewer is not installed.\n" + "Please install and run the ImageJ 3D Viewer.");
-			return false;
-		}
-
-		return checkIJVersion();
-	}
-
-	/**
-	 * Guess whether an image is Hounsfield unit calibrated
-	 *
-	 * @param imp an image.
-	 * @return true if the image might be HU calibrated
-	 */
-	public static boolean huCalibrated(final ImagePlus imp) {
-		final Calibration cal = imp.getCalibration();
-		if (!cal.calibrated()) {
-			return false;
-		}
-		final double[] coeff = cal.getCoefficients();
-		final double value = cal.getCValue(0);
-		return (value != 0 && value != Short.MIN_VALUE) || coeff[1] != 1;
-	}
-
-	/**
 	 * Check if the version of IJ has been blacklisted as a known broken release
 	 *
 	 * @return true if the IJ version is blacklisted, false otherwise
 	 */
 	private static boolean isIJVersionBlacklisted() {
 		for (final String version : blacklistedIJVersions) {
-			if (version.equals(IJ.getVersion()))
-				return true;
+			if (version.equals(IJ.getVersion())) return true;
 		}
 		return false;
 	}

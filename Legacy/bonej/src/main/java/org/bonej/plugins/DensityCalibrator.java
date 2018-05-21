@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.plugins;
 
 import ij.IJ;
@@ -37,19 +38,21 @@ public class DensityCalibrator implements PlugIn {
 			IJ.noImage();
 			return;
 		}
-		if ("scanco".equals(arg))
-			try {
-				scanco(imp);
-			} catch (final NumberFormatException | NullPointerException e) {
-				IJ.error("Calibration data missing from DICOM header");
-				return;
-			} catch (final IllegalArgumentException e) {
-				IJ.error(e.getMessage());
-				return;
-			} catch (final Exception e) {
-				IJ.error("Can't calibrate image\n" + e.getMessage());
-				return;
-			}
+		if ("scanco".equals(arg)) try {
+			scanco(imp);
+		}
+		catch (final NumberFormatException | NullPointerException e) {
+			IJ.error("Calibration data missing from DICOM header");
+			return;
+		}
+		catch (final IllegalArgumentException e) {
+			IJ.error(e.getMessage());
+			return;
+		}
+		catch (final Exception e) {
+			IJ.error("Can't calibrate image\n" + e.getMessage());
+			return;
+		}
 		UsageReporter.reportEvent(this).send();
 	}
 
@@ -58,9 +61,12 @@ public class DensityCalibrator implements PlugIn {
 		if (manufacturer == null || !manufacturer.contains("SCANCO")) {
 			throw new IllegalArgumentException("File is not a SCANCO Medical DICOM");
 		}
-		final double slope = Double.parseDouble(DicomTools.getTag(imp, "0029,1004"));
-		final double intercept = Double.parseDouble(DicomTools.getTag(imp, "0029,1005"));
-		final double scaling = Double.parseDouble(DicomTools.getTag(imp, "0029,1000"));
+		final double slope = Double.parseDouble(DicomTools.getTag(imp,
+			"0029,1004"));
+		final double intercept = Double.parseDouble(DicomTools.getTag(imp,
+			"0029,1005"));
+		final double scaling = Double.parseDouble(DicomTools.getTag(imp,
+			"0029,1000"));
 		final double c = intercept - 32768 * slope / scaling;
 		final double m = slope / scaling;
 		final double[] coef = { c, m };

@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
 import Jama.Matrix;
@@ -37,11 +38,12 @@ public final class MatrixUtils {
 	/**
 	 * Get the diagonal of the matrix as a column vector
 	 *
-     * @param matrix a JAMA matrix.
+	 * @param matrix a JAMA matrix.
 	 * @return Column vector containing diagonal
 	 */
 	public static Matrix diag(final Matrix matrix) {
-		final int min = Math.min(matrix.getRowDimension(), matrix.getColumnDimension());
+		final int min = Math.min(matrix.getRowDimension(), matrix
+			.getColumnDimension());
 		final double[][] diag = new double[min][1];
 		for (int i = 0; i < min; i++) {
 			diag[i][0] = matrix.get(i, i);
@@ -50,34 +52,11 @@ public final class MatrixUtils {
 	}
 
 	/**
-	 * Print the Matrix to the ImageJ log
-	 *
-     * @param matrix a JAMA matrix.
-	 * @param title Title of the Matrix
-	 */
-	public static void printToIJLog(final Matrix matrix, final String title) {
-		if (!title.isEmpty())
-			IJ.log(title);
-		final int nCols = matrix.getColumnDimension();
-		final int nRows = matrix.getRowDimension();
-		final double[][] eVal = matrix.getArrayCopy();
-		for (int r = 0; r < nRows; r++) {
-			final StringBuilder row = new StringBuilder("||");
-			for (int c = 0; c < nCols; c++) {
-				row.append(IJ.d2s(eVal[r][c], 3)).append("|");
-			}
-			row.append("|");
-			IJ.log(row.toString());
-		}
-		IJ.log("");
-	}
-
-	/**
 	 * Check if a 3 x 3 Matrix is right handed. If the matrix is a rotation
-	 * matrix, then right-handedness implies rotation only, while
-	 * left-handedness implies a reflection will be performed.
+	 * matrix, then right-handedness implies rotation only, while left-handedness
+	 * implies a reflection will be performed.
 	 *
-     * @param matrix a JAMA matrix.
+	 * @param matrix a JAMA matrix.
 	 * @return true if the Matrix is right handed, false if it is left handed
 	 */
 	// TODO Move to Moments
@@ -109,7 +88,7 @@ public final class MatrixUtils {
 	 * Check if a rotation matrix will flip the direction of the z component of
 	 * the original
 	 *
-     * @param matrix a JAMA matrix.
+	 * @param matrix a JAMA matrix.
 	 * @return true if the rotation matrix will cause z-flipping
 	 */
 	// TODO Move to Moments
@@ -139,5 +118,27 @@ public final class MatrixUtils {
 			}
 		}
 		return new Matrix(ones);
+	}
+
+	/**
+	 * Print the Matrix to the ImageJ log
+	 *
+	 * @param matrix a JAMA matrix.
+	 * @param title Title of the Matrix
+	 */
+	public static void printToIJLog(final Matrix matrix, final String title) {
+		if (!title.isEmpty()) IJ.log(title);
+		final int nCols = matrix.getColumnDimension();
+		final int nRows = matrix.getRowDimension();
+		final double[][] eVal = matrix.getArrayCopy();
+		for (int r = 0; r < nRows; r++) {
+			final StringBuilder row = new StringBuilder("||");
+			for (int c = 0; c < nCols; c++) {
+				row.append(IJ.d2s(eVal[r][c], 3)).append("|");
+			}
+			row.append("|");
+			IJ.log(row.toString());
+		}
+		IJ.log("");
 	}
 }

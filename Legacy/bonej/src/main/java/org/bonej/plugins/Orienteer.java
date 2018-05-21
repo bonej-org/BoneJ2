@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.plugins;
 
 import java.awt.BasicStroke;
@@ -68,43 +69,24 @@ import ij.plugin.frame.PlugInFrame;
  *
  * @author Michael Doube
  * @author Wayne Rasband
- *
  */
 // TODO Figure out if class should be singleton or not. Design is broken.
 @SuppressWarnings("serial")
-public final class Orienteer extends PlugInFrame
-		implements AdjustmentListener, ItemListener, TextListener, MouseWheelListener {
+public final class Orienteer extends PlugInFrame implements AdjustmentListener,
+	ItemListener, TextListener, MouseWheelListener
+{
 
 	private static final String LOC_KEY = "aa.loc";
-	private static final String[][] axisLabels = { { "medial", "lateral", "M", "L" },
-			{ "cranial", "caudal", "Cr", "Ca" }, { "rostral", "caudal", "Ro", "Ca" }, { "dorsal", "ventral", "D", "V" },
-			{ "anterior", "posterior", "A", "P" }, { "superior", "inferior", "Sup", "Inf" },
-			{ "proximal", "distal", "Pr", "Di" }, { "dorsal", "palmar", "Do", "Pa" },
-			{ "dorsal", "plantar", "Do", "Pl" }, { "dorsal", "volar", "Do", "Vo" }, { "axial", "abaxial", "Ax", "Ab" },
-			{ "north", "south", "N", "S" }, { "east", "west", "E", "W" }, { "up", "down", "Up", "D" },
-			{ "right", "left", "R", "L" } };
-
-	/** Current principal direction choice */
-	private int axis0 = 1;
-
-	/** Current secondary direction choice */
-	private int axis1;
-
-	/** Direction labels */
-	private String[] directions = { axisLabels[axis0][2], axisLabels[axis0][3], axisLabels[axis1][2],
-			axisLabels[axis1][3] };
+	private static final String[][] axisLabels = { { "medial", "lateral", "M",
+		"L" }, { "cranial", "caudal", "Cr", "Ca" }, { "rostral", "caudal", "Ro",
+			"Ca" }, { "dorsal", "ventral", "D", "V" }, { "anterior", "posterior", "A",
+				"P" }, { "superior", "inferior", "Sup", "Inf" }, { "proximal", "distal",
+					"Pr", "Di" }, { "dorsal", "palmar", "Do", "Pa" }, { "dorsal",
+						"plantar", "Do", "Pl" }, { "dorsal", "volar", "Do", "Vo" }, {
+							"axial", "abaxial", "Ax", "Ab" }, { "north", "south", "N", "S" },
+		{ "east", "west", "E", "W" }, { "up", "down", "Up", "D" }, { "right",
+			"left", "R", "L" } };
 	private static Orienteer instance = new Orienteer();
-
-	/** Current orientation in radians */
-	private double theta;
-
-	/** Axis length */
-	private int length;
-
-	/** Compass centre coordinates */
-	private Point p;
-
-	private Integer activeImpID;
 	private final Map<Integer, Double> thetaHash = new HashMap<>();
 	private final Map<Integer, Integer> lengthHash = new HashMap<>();
 	private final Map<Integer, Point> centreHash = new HashMap<>();
@@ -112,23 +94,36 @@ public final class Orienteer extends PlugInFrame
 	private final Map<Integer, int[]> axisHash = new HashMap<>();
 	private final Map<Integer, boolean[]> reflectHash = new HashMap<>();
 	private final Map<Integer, boolean[]> unitHash = new HashMap<>();
-
 	private final Overlay overlay = new Overlay();
 	private final int fontSize = 12;
-	private double scale = 1;
-	private GeneralPath path;
-	private BasicStroke stroke;
-
-    private final Scrollbar slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0, 360);
+	private final Scrollbar slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0,
+		360);
 	private final Choice axis0Choice = new Choice();
 	private final Choice axis1Choice = new Choice();
 	private final Checkbox reflect0 = new Checkbox("Reflect");
 	private final Checkbox reflect1 = new Checkbox("Reflect");
-	private boolean isReflected0;
-	private boolean isReflected1;
 	private final TextField text = new TextField(IJ.d2s(0.0, 3), 7);
 	private final Checkbox deg = new Checkbox("deg", true);
 	private final Checkbox rad = new Checkbox("rad", false);
+	/** Current principal direction choice */
+	private int axis0 = 1;
+	/** Current secondary direction choice */
+	private int axis1;
+	/** Direction labels */
+	private String[] directions = { axisLabels[axis0][2], axisLabels[axis0][3],
+		axisLabels[axis1][2], axisLabels[axis1][3] };
+	/** Current orientation in radians */
+	private double theta;
+	/** Axis length */
+	private int length;
+	/** Compass centre coordinates */
+	private Point p;
+	private Integer activeImpID;
+	private double scale = 1;
+	private GeneralPath path;
+	private BasicStroke stroke;
+	private boolean isReflected0;
+	private boolean isReflected1;
 
 	private Orienteer() {
 		super("Orientation");
@@ -146,7 +141,7 @@ public final class Orienteer extends PlugInFrame
 		WindowManager.addWindow(this);
 
 		final GridBagLayout gridbag = new GridBagLayout();
-        final GridBagConstraints c = new GridBagConstraints();
+		final GridBagConstraints c = new GridBagConstraints();
 		setLayout(gridbag);
 
 		c.gridy = 0;
@@ -230,22 +225,247 @@ public final class Orienteer extends PlugInFrame
 
 		pack();
 		final Point loc = Prefs.getLocation(LOC_KEY);
-		if (loc != null)
-			setLocation(loc);
-		else
-			GUI.center(this);
-		if (IJ.isMacOSX())
-			setResizable(false);
+		if (loc != null) setLocation(loc);
+		else GUI.center(this);
+		if (IJ.isMacOSX()) setResizable(false);
 		setVisible(true);
-		if (WindowManager.getImageCount() == 0)
-			return;
+		if (WindowManager.getImageCount() == 0) return;
 		final ImagePlus imp = WindowManager.getCurrentImage();
 		setup(imp);
 	}
 
+	@Override
+	public void adjustmentValueChanged(final AdjustmentEvent e) {
+		if (e.getSource().equals(slider)) {
+			rotateTo(slider.getValue() * Math.PI / 180);
+			updateTextbox();
+		}
+	}
+
+	@Override
+	public void close() {
+		super.close();
+		if (WindowManager.getImageCount() == 0) return;
+		// clear the orientation overlay from open images
+		for (final Integer i : thetaHash.keySet()) {
+			WindowManager.getImage(i).setOverlay(null);
+		}
+	}
+
+	@Override
+	public void itemStateChanged(final ItemEvent e) {
+		boolean isImageOpen = true;
+		if (WindowManager.getImageCount() == 0) isImageOpen = false;
+		final Object source = e.getSource();
+		if (source.equals(axis0Choice)) {
+			final int i = axis0Choice.getSelectedIndex();
+			if (i == axis1Choice.getSelectedIndex()) {
+				axis0Choice.select(axis0);
+				IJ.error("Both axes cannot indicate the same direction");
+				return;
+			}
+			axis0 = i;
+			final int[] axes = { axis0, axis1 };
+			if (isImageOpen) axisHash.put(activeImpID, axes.clone());
+			updateDirections();
+		}
+		else if (source.equals(axis1Choice)) {
+			final int i = axis1Choice.getSelectedIndex();
+			if (i == axis0Choice.getSelectedIndex()) {
+				axis1Choice.select(axis1);
+				IJ.error("Both axes cannot indicate the same direction");
+				return;
+			}
+			axis1 = i;
+			final int[] axes = { axis0, axis1 };
+			if (isImageOpen) axisHash.put(activeImpID, axes.clone());
+			updateDirections();
+		}
+		else if (source.equals(reflect0)) {
+			isReflected0 = reflect0.getState();
+			final boolean[] reflectors = { isReflected0, isReflected1 };
+			if (isImageOpen) reflectHash.put(activeImpID, reflectors.clone());
+			updateDirections();
+		}
+		else if (source.equals(reflect1)) {
+			isReflected1 = reflect1.getState();
+			final boolean[] reflectors = { isReflected0, isReflected1 };
+			if (isImageOpen) reflectHash.put(activeImpID, reflectors.clone());
+			updateDirections();
+		}
+		else if (source.equals(deg) || source.equals(rad)) {
+			final boolean[] units = { deg.getState(), rad.getState() };
+			if (isImageOpen) unitHash.put(activeImpID, units);
+			updateTextbox();
+		}
+	}
+
+	@Override
+	public void mouseWheelMoved(final MouseWheelEvent e) {
+		final int oldPos = slider.getValue();
+		int newPos = oldPos + e.getWheelRotation();
+		if (newPos < 0) newPos += 360;
+		else if (newPos >= 360) newPos -= 360;
+		rotateTo(newPos * Math.PI / 180);
+		updateTextbox();
+		slider.setValue(newPos);
+	}
+
+	@Override
+	public void textValueChanged(final TextEvent e) {
+		final TextField field = (TextField) e.getSource();
+		double value = Double.parseDouble(field.getText());
+		if (deg.getState()) value *= Math.PI / 180;
+		value = value % (2 * Math.PI);
+		if (value < 0) value += 2 * Math.PI;
+		slider.setValue((int) Math.round((value * 180 / Math.PI)));
+		rotateTo(value);
+	}
+
+	@Override
+	public void windowActivated(final WindowEvent e) {
+		super.windowActivated(e);
+		update();
+		WindowManager.setWindow(this);
+	}
+
+	@Override
+	public void windowClosing(final WindowEvent e) {
+		close();
+		Prefs.saveLocation(LOC_KEY, getLocation());
+	}
+
+	private void addLabels() {
+		if (WindowManager.getImageCount() == 0) return;
+		final ImagePlus imp = WindowManager.getImage(activeImpID);
+		scale = imp.getCanvas().getMagnification();
+		final Font font = new Font("SansSerif", Font.PLAIN, (int) (fontSize /
+			scale));
+		final double lsinTheta = (length + (fontSize / scale)) * Math.sin(theta);
+		final double lcosTheta = (length + (fontSize / scale)) * Math.cos(theta);
+		addString(directions[0], (int) (p.x + lsinTheta), (int) (p.y - lcosTheta),
+			Color.RED, font);
+		addString(directions[1], (int) (p.x - lsinTheta), (int) (p.y + lcosTheta),
+			Color.BLUE, font);
+		addString(directions[2], (int) (p.x + lcosTheta), (int) (p.y + lsinTheta),
+			Color.BLUE, font);
+		addString(directions[3], (int) (p.x - lcosTheta), (int) (p.y - lsinTheta),
+			Color.BLUE, font);
+	}
+
+	private void addPath(final Shape shape, final BasicStroke stroke) {
+		final Roi roi = new ShapeRoi(shape);
+		roi.setStrokeColor(Color.BLUE);
+		roi.setStroke(stroke);
+		roi.setStrokeWidth(roi.getStrokeWidth() / (float) scale);
+		overlay.add(roi);
+	}
+
+	private void addString(final String text, final int x, final int y,
+		final Color color, final Font font)
+	{
+		final TextRoi roi = new TextRoi(x, y, text, font);
+		roi.setLocation(x - text.length() * (int) (fontSize / scale) / 4, y -
+			(int) (fontSize / scale) / 2);
+		roi.setStrokeColor(color);
+		overlay.add(roi);
+	}
+
+	/**
+	 * Keep hash lists up to date by removing keys of closed windows
+	 */
+	private void checkHash() {
+		final Set<Integer> idset = thetaHash.keySet();
+		for (final Integer i : idset) {
+			if (WindowManager.getImage(i) == null) clearHashes(i);
+		}
+	}
+
+	/**
+	 * Check if an image is already handled by Orientation
+	 *
+	 * @param imp an image.
+	 * @return true if this image is already handled by Orientation
+	 */
+	private boolean checkHash(final ImagePlus imp) {
+		final Integer i = imp.getID();
+		return thetaHash.containsKey(i);
+	}
+
+	/**
+	 * Remove all image IDs from the hashes.
+	 */
+	private void clearHashes() {
+		thetaHash.clear();
+		reflectHash.clear();
+		pathHash.clear();
+		unitHash.clear();
+		axisHash.clear();
+		centreHash.clear();
+		lengthHash.clear();
+	}
+
+	/**
+	 * Remove a single image ID from the hashes.
+	 */
+	private void clearHashes(final Integer i) {
+		thetaHash.remove(i);
+		reflectHash.remove(i);
+		pathHash.remove(i);
+		unitHash.remove(i);
+		axisHash.remove(i);
+		centreHash.remove(i);
+		lengthHash.remove(i);
+	}
+
+	/**
+	 * Get the orientation of the principal direction
+	 *
+	 * @param imp an image.
+	 * @return Orientation in radians clockwise from 12 o'clock
+	 */
+	private double getOrientation(final ImagePlus imp) {
+		final Integer id = imp.getID();
+		return thetaHash.get(id);
+	}
+
+	/**
+	 * Rotate the direction indicator by a given angle
+	 *
+	 * @param deltaTheta number of radians to rotate by (+ve is clockwise, -ve is
+	 *          anti-clockwise)
+	 */
+	private void rotate(final double deltaTheta) {
+		if (WindowManager.getImageCount() == 0) return;
+		final ImagePlus imp = WindowManager.getCurrentImage();
+		activeImpID = imp.getID();
+		final AffineTransform transform = new AffineTransform();
+		transform.rotate(deltaTheta, p.x, p.y);
+		theta += deltaTheta;
+		path.transform(transform);
+		overlay.clear();
+		addPath(path, stroke);
+		addLabels();
+		imp.setOverlay(overlay);
+		thetaHash.put(activeImpID, theta);
+		pathHash.put(activeImpID, new GeneralPath(path));
+	}
+
+	/**
+	 * Rotate the principal direction to a new angle
+	 *
+	 * @param newTheta desired orientation in radians clockwise from 12 o'clock of
+	 *          the principal direction
+	 */
+	private void rotateTo(final double newTheta) {
+		rotate(newTheta - theta);
+		theta = newTheta;
+		if (WindowManager.getImageCount() == 0) return;
+		thetaHash.put(activeImpID, newTheta);
+	}
+
 	private void setup(final ImagePlus imp) {
-		if (imp == null)
-			return;
+		if (imp == null) return;
 		if (checkHash(imp)) {
 			IJ.log("Image has already been set up");
 			return;
@@ -254,14 +474,14 @@ public final class Orienteer extends PlugInFrame
 		activeImpID = id;
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
-        theta = 0;
+		theta = 0;
 		slider.setValue((int) (theta * 180 / Math.PI));
-        isReflected0 = false;
+		isReflected0 = false;
 		reflect0.setState(false);
-        isReflected1 = false;
+		isReflected1 = false;
 		reflect1.setState(false);
-        length = Math.min(w, h) / 4;
-        p = new Point(w / 2, h / 2);
+		length = Math.min(w, h) / 4;
+		p = new Point(w / 2, h / 2);
 		path = new GeneralPath();
 		path.moveTo(p.x - length, p.y);
 		path.lineTo(p.x + length, p.y);
@@ -300,16 +520,16 @@ public final class Orienteer extends PlugInFrame
 			return;
 		}
 		checkHash();
-        p = centreHash.get(activeImpID);
-        theta = thetaHash.get(activeImpID);
+		p = centreHash.get(activeImpID);
+		theta = thetaHash.get(activeImpID);
 		final int[] axes = axisHash.get(activeImpID);
-        axis0 = axes[0];
-        axis1 = axes[1];
-        path = pathHash.get(activeImpID);
-        length = lengthHash.get(activeImpID);
+		axis0 = axes[0];
+		axis1 = axes[1];
+		path = pathHash.get(activeImpID);
+		length = lengthHash.get(activeImpID);
 		final boolean[] reflectors = reflectHash.get(activeImpID);
-        isReflected0 = reflectors[0];
-        isReflected1 = reflectors[1];
+		isReflected0 = reflectors[0];
+		isReflected1 = reflectors[1];
 		axis0Choice.select(axis0);
 		axis1Choice.select(axis1);
 		slider.setValue((int) (theta * 180 / Math.PI));
@@ -322,52 +542,15 @@ public final class Orienteer extends PlugInFrame
 		updateDirections();
 	}
 
-	/**
-	 * Keep hash lists up to date by removing keys of closed windows
-	 */
-	private void checkHash() {
-		final Set<Integer> idset = thetaHash.keySet();
-		for (final Integer i : idset) {
-			if (WindowManager.getImage(i) == null)
-				clearHashes(i);
-		}
+	private void updateDirections() {
+		if (WindowManager.getImageCount() == 0) return;
+		directions = getDirections(WindowManager.getImage(activeImpID));
+		rotate(0);
 	}
 
-	/**
-	 * Remove all image IDs from the hashes.
-	 */
-	private void clearHashes() {
-		thetaHash.clear();
-		reflectHash.clear();
-		pathHash.clear();
-		unitHash.clear();
-		axisHash.clear();
-		centreHash.clear();
-		lengthHash.clear();
-	}
-
-	/**
-	 * Remove a single image ID from the hashes.
-	 */
-	private void clearHashes(final Integer i) {
-		thetaHash.remove(i);
-		reflectHash.remove(i);
-		pathHash.remove(i);
-		unitHash.remove(i);
-		axisHash.remove(i);
-		centreHash.remove(i);
-		lengthHash.remove(i);
-	}
-
-	/**
-	 * Check if an image is already handled by Orientation
-	 *
-	 * @param imp an image.
-	 * @return true if this image is already handled by Orientation
-	 */
-	private boolean checkHash(final ImagePlus imp) {
-		final Integer i = imp.getID();
-		return thetaHash.containsKey(i);
+	private void updateTextbox() {
+		if (deg.getState()) text.setText(IJ.d2s(theta * 180 / Math.PI, 3));
+		else text.setText(IJ.d2s(theta, 5));
 	}
 
 	static Orienteer getInstance() {
@@ -377,15 +560,14 @@ public final class Orienteer extends PlugInFrame
 	/**
 	 * Gets the labels associated with an ImagePlus.
 	 *
-     * @param imp an image.
-	 * @return an array of axis labels, with the principal direction in the
-	 *         zeroth position, the principal tail in the 1st position, the
-	 *         secondary head in the 2nd position and the secondary tail in the
-	 *         3rd position.
+	 * @param imp an image.
+	 * @return an array of axis labels, with the principal direction in the zeroth
+	 *         position, the principal tail in the 1st position, the secondary
+	 *         head in the 2nd position and the secondary tail in the 3rd
+	 *         position.
 	 */
 	String[] getDirections(final ImagePlus imp) {
-		if (!checkHash(imp))
-			return null;
+		if (!checkHash(imp)) return null;
 		final Integer id = imp.getID();
 		final int[] axes = axisHash.get(id);
 		final boolean[] ref = reflectHash.get(id);
@@ -394,14 +576,16 @@ public final class Orienteer extends PlugInFrame
 		if (ref[0]) {
 			dirs[0] = axisLabels[axes[0]][3];
 			dirs[1] = axisLabels[axes[0]][2];
-		} else {
+		}
+		else {
 			dirs[0] = axisLabels[axes[0]][2];
 			dirs[1] = axisLabels[axes[0]][3];
 		}
 		if (ref[1]) {
 			dirs[2] = axisLabels[axes[1]][3];
 			dirs[3] = axisLabels[axes[1]][2];
-		} else {
+		}
+		else {
 			dirs[2] = axisLabels[axes[1]][2];
 			dirs[3] = axisLabels[axes[1]][3];
 		}
@@ -411,23 +595,11 @@ public final class Orienteer extends PlugInFrame
 	/**
 	 * Gets the principal orientation
 	 *
-	 * @return orientation of the principal direction in radians clockwise from
-	 *         12 o'clock
+	 * @return orientation of the principal direction in radians clockwise from 12
+	 *         o'clock
 	 */
 	double getOrientation() {
 		return theta;
-	}
-
-	/**
-	 * Get the orientation of the principal direction
-	 *
-	 * @param imp an image.
-	 * @return Orientation in radians clockwise from 12 o'clock
-	 */
-	private double getOrientation(final ImagePlus imp)
-	{
-		final Integer id = imp.getID();
-        return thetaHash.get(id);
 	}
 
 	double getOrientation(final ImagePlus imp, final String direction)
@@ -444,7 +616,7 @@ public final class Orienteer extends PlugInFrame
 				break;
 			}
 		}
-        double orientation = getOrientation(imp);
+		double orientation = getOrientation(imp);
 
 		switch (quadrant) {
 			case 0:
@@ -462,8 +634,8 @@ public final class Orienteer extends PlugInFrame
 				throw new RuntimeException("Unexpected quadrant!");
 		}
 		if (orientation > 2 * Math.PI) {
-            return orientation - 2 * Math.PI;
-        }
+			return orientation - 2 * Math.PI;
+		}
 		return orientation;
 	}
 
@@ -490,194 +662,6 @@ public final class Orienteer extends PlugInFrame
 			yMin = Math.min(yMin, yr);
 			yMax = Math.max(yMax, yr);
 		}
-		return new double[]{ yMax - yMin, xMax - xMin };
-	}
-
-	/**
-	 * Rotate the direction indicator by a given angle
-	 *
-	 * @param deltaTheta number of radians to rotate by (+ve is clockwise, -ve is
-	 *          anti-clockwise)
-	 */
-	private void rotate(final double deltaTheta) {
-		if (WindowManager.getImageCount() == 0)
-			return;
-		final ImagePlus imp = WindowManager.getCurrentImage();
-        activeImpID = imp.getID();
-		final AffineTransform transform = new AffineTransform();
-		transform.rotate(deltaTheta, p.x, p.y);
-        theta += deltaTheta;
-		path.transform(transform);
-		overlay.clear();
-		addPath(path, stroke);
-		addLabels();
-		imp.setOverlay(overlay);
-		thetaHash.put(activeImpID, theta);
-		pathHash.put(activeImpID, new GeneralPath(path));
-	}
-
-	/**
-	 * Rotate the principal direction to a new angle
-	 *
-	 * @param newTheta desired orientation in radians clockwise from 12 o'clock of
-	 *          the principal direction
-	 */
-    private void rotateTo(final double newTheta) {
-		rotate(newTheta - theta);
-        theta = newTheta;
-		if (WindowManager.getImageCount() == 0)
-			return;
-		thetaHash.put(activeImpID, newTheta);
-	}
-
-	private void addLabels() {
-		if (WindowManager.getImageCount() == 0)
-			return;
-		final ImagePlus imp = WindowManager.getImage(activeImpID);
-		scale = imp.getCanvas().getMagnification();
-		final Font font = new Font("SansSerif", Font.PLAIN, (int) (fontSize / scale));
-		final double lsinTheta = (length + (fontSize / scale)) * Math.sin(theta);
-		final double lcosTheta = (length + (fontSize / scale)) * Math.cos(theta);
-		addString(directions[0], (int) (p.x + lsinTheta), (int) (p.y - lcosTheta), Color.RED, font);
-		addString(directions[1], (int) (p.x - lsinTheta), (int) (p.y + lcosTheta), Color.BLUE, font);
-		addString(directions[2], (int) (p.x + lcosTheta), (int) (p.y + lsinTheta), Color.BLUE, font);
-		addString(directions[3], (int) (p.x - lcosTheta), (int) (p.y - lsinTheta), Color.BLUE, font);
-	}
-
-	private void updateDirections() {
-		if (WindowManager.getImageCount() == 0)
-			return;
-		directions = getDirections(WindowManager.getImage(activeImpID));
-		rotate(0);
-	}
-
-	private void updateTextbox() {
-		if (deg.getState())
-			text.setText(IJ.d2s(theta * 180 / Math.PI, 3));
-		else
-			text.setText(IJ.d2s(theta, 5));
-	}
-
-	private void addPath(final Shape shape, final BasicStroke stroke) {
-		final Roi roi = new ShapeRoi(shape);
-		roi.setStrokeColor(Color.BLUE);
-		roi.setStroke(stroke);
-		roi.setStrokeWidth(roi.getStrokeWidth() / (float) scale);
-		overlay.add(roi);
-	}
-
-	private void addString(final String text, final int x, final int y, final Color color, final Font font) {
-		final TextRoi roi = new TextRoi(x, y, text, font);
-		roi.setLocation(x - text.length() * (int) (fontSize / scale) / 4, y - (int) (fontSize / scale) / 2);
-		roi.setStrokeColor(color);
-		overlay.add(roi);
-	}
-
-	@Override
-	public void close() {
-		super.close();
-		if (WindowManager.getImageCount() == 0)
-			return;
-		// clear the orientation overlay from open images
-		for (final Integer i : thetaHash.keySet()) {
-			WindowManager.getImage(i).setOverlay(null);
-		}
-	}
-
-	@Override
-	public void windowActivated(final WindowEvent e) {
-		super.windowActivated(e);
-		update();
-		WindowManager.setWindow(this);
-	}
-
-	@Override
-	public void windowClosing(final WindowEvent e) {
-		close();
-		Prefs.saveLocation(LOC_KEY, getLocation());
-	}
-
-	@Override
-	public void adjustmentValueChanged(final AdjustmentEvent e) {
-		if (e.getSource().equals(slider)) {
-			rotateTo(slider.getValue() * Math.PI / 180);
-			updateTextbox();
-		}
-	}
-
-	@Override
-	public void itemStateChanged(final ItemEvent e) {
-		boolean isImageOpen = true;
-		if (WindowManager.getImageCount() == 0)
-			isImageOpen = false;
-		final Object source = e.getSource();
-		if (source.equals(axis0Choice)) {
-			final int i = axis0Choice.getSelectedIndex();
-			if (i == axis1Choice.getSelectedIndex()) {
-				axis0Choice.select(axis0);
-				IJ.error("Both axes cannot indicate the same direction");
-				return;
-			}
-			axis0 = i;
-			final int[] axes = { axis0, axis1 };
-			if (isImageOpen)
-				axisHash.put(activeImpID, axes.clone());
-			updateDirections();
-		} else if (source.equals(axis1Choice)) {
-			final int i = axis1Choice.getSelectedIndex();
-			if (i == axis0Choice.getSelectedIndex()) {
-				axis1Choice.select(axis1);
-				IJ.error("Both axes cannot indicate the same direction");
-				return;
-			}
-			axis1 = i;
-			final int[] axes = { axis0, axis1 };
-			if (isImageOpen)
-				axisHash.put(activeImpID, axes.clone());
-			updateDirections();
-		} else if (source.equals(reflect0)) {
-			isReflected0 = reflect0.getState();
-			final boolean[] reflectors = { isReflected0, isReflected1 };
-			if (isImageOpen)
-				reflectHash.put(activeImpID, reflectors.clone());
-			updateDirections();
-		} else if (source.equals(reflect1)) {
-			isReflected1 = reflect1.getState();
-			final boolean[] reflectors = { isReflected0, isReflected1 };
-			if (isImageOpen)
-				reflectHash.put(activeImpID, reflectors.clone());
-			updateDirections();
-		} else if (source.equals(deg) || source.equals(rad)) {
-			final boolean[] units = { deg.getState(), rad.getState() };
-			if (isImageOpen)
-				unitHash.put(activeImpID, units);
-			updateTextbox();
-		}
-	}
-
-	@Override
-	public void textValueChanged(final TextEvent e) {
-		final TextField field = (TextField) e.getSource();
-		double value = Double.parseDouble(field.getText());
-		if (deg.getState())
-			value *= Math.PI / 180;
-		value = value % (2 * Math.PI);
-		if (value < 0)
-			value += 2 * Math.PI;
-		slider.setValue((int) Math.round((value * 180 / Math.PI)));
-		rotateTo(value);
-	}
-
-	@Override
-	public void mouseWheelMoved(final MouseWheelEvent e) {
-		final int oldPos = slider.getValue();
-		int newPos = oldPos + e.getWheelRotation();
-		if (newPos < 0)
-			newPos += 360;
-		else if (newPos >= 360)
-			newPos -= 360;
-		rotateTo(newPos * Math.PI / 180);
-		updateTextbox();
-		slider.setValue(newPos);
+		return new double[] { yMax - yMin, xMax - xMin };
 	}
 }

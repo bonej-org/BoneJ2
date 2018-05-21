@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,13 +36,56 @@ public final class StackStats {
 	private StackStats() {}
 
 	/**
+	 * Get a histogram of stack's pixel values
+	 *
+	 * @param imp an image
+	 * @return a histogram of the image.
+	 */
+	public static int[] getStackHistogram(final ImagePlus imp) {
+		final int d = imp.getStackSize();
+		final ImageStack stack = imp.getStack();
+		if (stack.getProcessor(1) instanceof FloatProcessor)
+			throw new IllegalArgumentException(
+				"32-bit images not supported by this histogram method");
+		final int[][] sliceHistograms = new int[d + 1][];
+		final Roi roi = imp.getRoi();
+		if (stack.getSize() == 1) {
+			return imp.getProcessor().getHistogram();
+		}
+
+		final AtomicInteger ai = new AtomicInteger(1);
+		final Thread[] threads = Multithreader.newThreads();
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
+					IJ.showStatus("Getting stack histogram...");
+					final ImageProcessor ip = stack.getProcessor(z);
+					ip.setRoi(roi);
+					sliceHistograms[z] = ip.getHistogram();
+				}
+			});
+		}
+		Multithreader.startAndJoin(threads);
+
+		final int l = sliceHistograms[1].length;
+		final int[] histogram = new int[l];
+
+		for (int z = 1; z <= d; z++) {
+			final int[] slice = sliceHistograms[z];
+			for (int i = 0; i < l; i++)
+				histogram[i] += slice[i];
+		}
+		return histogram;
+	}
+
+	/**
 	 * Work out some summary stats
 	 *
 	 * @param imp 32-bit thickness image
 	 * @return double[] containing mean, standard deviation and maximum as its 0th
 	 *         and 1st and 2nd elements respectively
 	 */
-	//TODO Move to LocalThicknessTest
+	// TODO Move to LocalThicknessTest
 	public static double[] meanStdDev(final ImagePlus imp) {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
@@ -77,49 +121,7 @@ public final class StackStats {
 			}
 		}
 		final double stDev = Math.sqrt(sumSquares / pixCount);
-		return new double[]{ meanThick, stDev, maxThick };
-	}
-
-	/**
-	 * Get a histogram of stack's pixel values
-	 *
-	 * @param imp an image
-	 * @return a histogram of the image.
-	 */
-	public static int[] getStackHistogram(final ImagePlus imp) {
-		final int d = imp.getStackSize();
-		final ImageStack stack = imp.getStack();
-		if (stack.getProcessor(1) instanceof FloatProcessor)
-			throw new IllegalArgumentException("32-bit images not supported by this histogram method");
-		final int[][] sliceHistograms = new int[d + 1][];
-		final Roi roi = imp.getRoi();
-		if (stack.getSize() == 1) {
-			return imp.getProcessor().getHistogram();
-		}
-
-		final AtomicInteger ai = new AtomicInteger(1);
-		final Thread[] threads = Multithreader.newThreads();
-		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(() -> {
-				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-					IJ.showStatus("Getting stack histogram...");
-					final ImageProcessor ip = stack.getProcessor(z);
-					ip.setRoi(roi);
-					sliceHistograms[z] = ip.getHistogram();
-				}
-			});
-		}
-		Multithreader.startAndJoin(threads);
-
-		final int l = sliceHistograms[1].length;
-		final int[] histogram = new int[l];
-
-		for (int z = 1; z <= d; z++) {
-			final int[] slice = sliceHistograms[z];
-			for (int i = 0; i < l; i++)
-				histogram[i] += slice[i];
-		}
-		return histogram;
+		return new double[] { meanThick, stDev, maxThick };
 	}
 
 }

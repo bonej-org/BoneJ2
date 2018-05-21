@@ -19,11 +19,12 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.geometry;
 
-import org.scijava.vecmath.Point3f;
-
 import java.util.stream.Stream;
+
+import org.scijava.vecmath.Point3f;
 
 public final class Vectors {
 
@@ -39,7 +40,9 @@ public final class Vectors {
 	 * @param point2 vector 2's head
 	 * @return cross product vector
 	 */
-	public static Point3f crossProduct(final Point3f point0, final Point3f point1, final Point3f point2) {
+	public static Point3f crossProduct(final Point3f point0, final Point3f point1,
+		final Point3f point2)
+	{
 		final double x1 = point1.x - point0.x;
 		final double y1 = point1.y - point0.y;
 		final double z1 = point1.z - point0.z;
@@ -64,29 +67,13 @@ public final class Vectors {
 	 * @param z2 z-coordinate of the 2nd vector.
 	 * @return cross product in {x, y, z} format
 	 */
-	public static double[] crossProduct(final double x1, final double y1, final double z1, final double x2,
-			final double y2, final double z2) {
+	public static double[] crossProduct(final double x1, final double y1,
+		final double z1, final double x2, final double y2, final double z2)
+	{
 		final double x = y1 * z2 - z1 * y2;
 		final double y = z1 * x2 - x1 * z2;
 		final double z = x1 * y2 - y1 * x2;
-		return new double[]{ x, y, z };
-	}
-
-	/**
-	 * Calculate the cross product of 2 column vectors, both in double[3][1]
-	 * format
-	 *
-	 * @param a first vector
-	 * @param b second vector
-	 * @return resulting vector in double[3][1] format
-	 */
-	// TODO move to test class
-	static double[][] crossProduct(final double[][] a, final double[][] b) {
-		final double[][] c = new double[3][1];
-		c[0][0] = a[1][0] * b[2][0] - a[2][0] * b[1][0];
-		c[1][0] = a[2][0] * b[0][0] - a[0][0] * b[2][0];
-		c[2][0] = a[0][0] * b[1][0] - a[1][0] * b[0][0];
-		return c;
+		return new double[] { x, y, z };
 	}
 
 	/**
@@ -122,17 +109,6 @@ public final class Vectors {
 	}
 
 	/**
-	 * Generate an array of randomly-oriented 3D unit vectors
-	 *
-	 * @param nVectors
-	 *            number of vectors to generate
-	 * @return 2D array (nVectors x 3) containing unit vectors
-	 */
-	public static double[][] randomVectors(final int nVectors) {
-		return Stream.generate(Vectors::randomVector).limit(nVectors).toArray(double[][]::new);
-	}
-
-	/**
 	 * Generate a single randomly-oriented vector on the unit sphere
 	 *
 	 * @return 3-element double array containing [x y z]^T
@@ -147,13 +123,22 @@ public final class Vectors {
 	}
 
 	/**
+	 * Generate an array of randomly-oriented 3D unit vectors
+	 *
+	 * @param nVectors number of vectors to generate
+	 * @return 2D array (nVectors x 3) containing unit vectors
+	 */
+	public static double[][] randomVectors(final int nVectors) {
+		return Stream.generate(Vectors::randomVector).limit(nVectors).toArray(
+			double[][]::new);
+	}
+
+	/**
 	 * Generate an array of regularly-spaced 3D unit vectors. The vectors aren't
 	 * equally spaced in all directions, but there is no clustering around the
 	 * sphere's poles.
 	 *
-	 * @param nVectors
-	 *            number of vectors to generate
-	 *
+	 * @param nVectors number of vectors to generate
 	 * @return 2D array (nVectors x 3) containing unit vectors
 	 */
 	public static double[][] regularVectors(final int nVectors) {
@@ -172,5 +157,22 @@ public final class Vectors {
 			vectors[k] = vector;
 		}
 		return vectors;
+	}
+
+	/**
+	 * Calculate the cross product of 2 column vectors, both in double[3][1]
+	 * format
+	 *
+	 * @param a first vector
+	 * @param b second vector
+	 * @return resulting vector in double[3][1] format
+	 */
+	// TODO move to test class
+	static double[][] crossProduct(final double[][] a, final double[][] b) {
+		final double[][] c = new double[3][1];
+		c[0][0] = a[1][0] * b[2][0] - a[2][0] * b[1][0];
+		c[1][0] = a[2][0] * b[0][0] - a[0][0] * b[2][0];
+		c[2][0] = a[0][0] * b[1][0] - a[1][0] * b[0][0];
+		return c;
 	}
 }

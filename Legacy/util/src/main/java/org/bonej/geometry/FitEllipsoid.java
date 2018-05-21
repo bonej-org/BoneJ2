@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.geometry;
 
 import org.bonej.util.MatrixUtils;
@@ -34,122 +35,36 @@ import Jama.Matrix;
  * ellipsoid.
  *
  * @author Michael Doube
- *
  */
 public final class FitEllipsoid {
 
 	private FitEllipsoid() {}
 
 	/**
-	 * Find the best-fit ellipsoid using the default method (yuryPetrov)
-	 *
-	 * @param coordinates
-	 *            in double[n][3] format
-	 * @return Object representing the best-fit ellipsoid
-	 */
-	// TODO Move to test class
-	static Ellipsoid fitTo(final double[][] coordinates) {
-		return new Ellipsoid(yuryPetrov(coordinates));
-	}
-
-	/**
-	 * Ellipsoid fitting method by Yury Petrov.
-	 * <p>
-	 * Fits an ellipsoid in the form <i>Ax</i><sup>2</sup> + <i>By</i>
-	 * <sup>2</sup> + <i>Cz</i><sup>2</sup> + 2<i>Dxy</i> + 2<i>Exz</i> + 2
-	 * <i>Fyz</i> + 2<i>Gx</i> + 2<i>Hy</i> + 2<i>Iz</i> = 1
-	 * To an n * 3 array of coordinates.
-	 * </p>
-	 * <p>
-	 * See <a href=
-	 * "http://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
-	 * >MATLAB script</a>
-	 * </p>
-	 * 
-	 * @param points array[n][3] where n &gt; 8
-	 * @return Object[] array containing the centre, radii, eigenvectors of the
-	 *         axes, the 9 variables of the ellipsoid equation and the EVD
-	 * @throws IllegalArgumentException if number of coordinates is less than 9
-	 */
-	public static Object[] yuryPetrov(final double[][] points) {
-
-		final int nPoints = points.length;
-		if (nPoints < 9) {
-			throw new IllegalArgumentException("Too few points; need at least 9 to calculate a unique ellipsoid");
-		}
-
-		final double[][] d = new double[nPoints][9];
-		for (int i = 0; i < nPoints; i++) {
-			final double x = points[i][0];
-			final double y = points[i][1];
-			final double z = points[i][2];
-			d[i][0] = x * x;
-			d[i][1] = y * y;
-			d[i][2] = z * z;
-			d[i][3] = 2 * x * y;
-			d[i][4] = 2 * x * z;
-			d[i][5] = 2 * y * z;
-			d[i][6] = 2 * x;
-			d[i][7] = 2 * y;
-			d[i][8] = 2 * z;
-		}
-
-		// do the fitting
-		final Matrix D = new Matrix(d);
-		final Matrix ones = MatrixUtils.ones(nPoints, 1);
-		final Matrix V = ((D.transpose().times(D)).inverse()).times(D.transpose().times(ones));
-
-		// the fitted equation
-		final double[] v = V.getColumnPackedCopy();
-
-		final Object[] matrices = Ellipsoid.matrixFromEquation(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]);
-
-		// pack data up for returning
-		final EigenvalueDecomposition E = (EigenvalueDecomposition) matrices[3];
-		final Matrix eVal = E.getD();
-		final Matrix diagonal = MatrixUtils.diag(eVal);
-		final int nEvals = diagonal.getRowDimension();
-		final double[] radii = new double[nEvals];
-		for (int i = 0; i < nEvals; i++) {
-			radii[i] = Math.sqrt(1 / diagonal.get(i, 0));
-		}
-		final double[] centre = (double[]) matrices[0];
-		final double[][] eigenVectors = (double[][]) matrices[2];
-		return new Object[]{ centre, radii, eigenVectors, v, E };
-	}
-
-	/**
 	 * Return points on an ellipsoid with optional noise. Point density is not
 	 * uniform, becoming more dense at the poles.
 	 *
-	 * @param a
-	 *            First axis length
-	 * @param b
-	 *            Second axis length
-	 * @param c
-	 *            Third axis length
-	 * @param angle
-	 *            angle of axis (rad)
-	 * @param xCentre
-	 *            x coordinate of centre
-	 * @param yCentre
-	 *            y coordinate of centre
-	 * @param zCentre
-	 *            z coordinate of centre
-	 * @param noise
-	 *            Intensity of noise to add to the points
-	 * @param nPoints
-	 *            number of points to generate
-	 * @param random
-	 *            if true, use a random grid to generate points, else use a
-	 *            regular grid
+	 * @param a First axis length
+	 * @param b Second axis length
+	 * @param c Third axis length
+	 * @param angle angle of axis (rad)
+	 * @param xCentre x coordinate of centre
+	 * @param yCentre y coordinate of centre
+	 * @param zCentre z coordinate of centre
+	 * @param noise Intensity of noise to add to the points
+	 * @param nPoints number of points to generate
+	 * @param random if true, use a random grid to generate points, else use a
+	 *          regular grid
 	 * @return array of (x,y,z) coordinates
 	 */
-	public static double[][] testEllipsoid(final double a, final double b, final double c, final double angle,
-			final double xCentre, final double yCentre, final double zCentre, final double noise, final int nPoints,
-			final boolean random) {
+	public static double[][] testEllipsoid(final double a, final double b,
+		final double c, final double angle, final double xCentre,
+		final double yCentre, final double zCentre, final double noise,
+		final int nPoints, final boolean random)
+	{
 
-		final int n = (int) Math.floor(-0.75 + Math.sqrt(1.0 + 8.0 * nPoints) / 4.0);
+		final int n = (int) Math.floor(-0.75 + Math.sqrt(1.0 + 8.0 * nPoints) /
+			4.0);
 		final int h = 2 * n + 2;
 		final int w = n + 1;
 		final double[][] s = new double[h][w];
@@ -167,7 +82,8 @@ public final class FitEllipsoid {
 					t[i][j] = theta + Math.random() * 2 * Math.PI;
 				}
 			}
-		} else {
+		}
+		else {
 			// Regular points
 			final double increment = Math.PI / (n - 1);
 			for (int j = 0; j < w; j++) {
@@ -227,6 +143,86 @@ public final class FitEllipsoid {
 			}
 		}
 		return ellipsoidPoints;
+	}
+
+	/**
+	 * Ellipsoid fitting method by Yury Petrov.
+	 * <p>
+	 * Fits an ellipsoid in the form <i>Ax</i><sup>2</sup> + <i>By</i>
+	 * <sup>2</sup> + <i>Cz</i><sup>2</sup> + 2<i>Dxy</i> + 2<i>Exz</i> + 2
+	 * <i>Fyz</i> + 2<i>Gx</i> + 2<i>Hy</i> + 2<i>Iz</i> = 1 To an n * 3 array of
+	 * coordinates.
+	 * </p>
+	 * <p>
+	 * See <a href=
+	 * "http://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
+	 * >MATLAB script</a>
+	 * </p>
+	 * 
+	 * @param points array[n][3] where n &gt; 8
+	 * @return Object[] array containing the centre, radii, eigenvectors of the
+	 *         axes, the 9 variables of the ellipsoid equation and the EVD
+	 * @throws IllegalArgumentException if number of coordinates is less than 9
+	 */
+	public static Object[] yuryPetrov(final double[][] points) {
+
+		final int nPoints = points.length;
+		if (nPoints < 9) {
+			throw new IllegalArgumentException(
+				"Too few points; need at least 9 to calculate a unique ellipsoid");
+		}
+
+		final double[][] d = new double[nPoints][9];
+		for (int i = 0; i < nPoints; i++) {
+			final double x = points[i][0];
+			final double y = points[i][1];
+			final double z = points[i][2];
+			d[i][0] = x * x;
+			d[i][1] = y * y;
+			d[i][2] = z * z;
+			d[i][3] = 2 * x * y;
+			d[i][4] = 2 * x * z;
+			d[i][5] = 2 * y * z;
+			d[i][6] = 2 * x;
+			d[i][7] = 2 * y;
+			d[i][8] = 2 * z;
+		}
+
+		// do the fitting
+		final Matrix D = new Matrix(d);
+		final Matrix ones = MatrixUtils.ones(nPoints, 1);
+		final Matrix V = ((D.transpose().times(D)).inverse()).times(D.transpose()
+			.times(ones));
+
+		// the fitted equation
+		final double[] v = V.getColumnPackedCopy();
+
+		final Object[] matrices = Ellipsoid.matrixFromEquation(v[0], v[1], v[2],
+			v[3], v[4], v[5], v[6], v[7], v[8]);
+
+		// pack data up for returning
+		final EigenvalueDecomposition E = (EigenvalueDecomposition) matrices[3];
+		final Matrix eVal = E.getD();
+		final Matrix diagonal = MatrixUtils.diag(eVal);
+		final int nEvals = diagonal.getRowDimension();
+		final double[] radii = new double[nEvals];
+		for (int i = 0; i < nEvals; i++) {
+			radii[i] = Math.sqrt(1 / diagonal.get(i, 0));
+		}
+		final double[] centre = (double[]) matrices[0];
+		final double[][] eigenVectors = (double[][]) matrices[2];
+		return new Object[] { centre, radii, eigenVectors, v, E };
+	}
+
+	/**
+	 * Find the best-fit ellipsoid using the default method (yuryPetrov)
+	 *
+	 * @param coordinates in double[n][3] format
+	 * @return Object representing the best-fit ellipsoid
+	 */
+	// TODO Move to test class
+	static Ellipsoid fitTo(final double[][] coordinates) {
+		return new Ellipsoid(yuryPetrov(coordinates));
 	}
 
 }

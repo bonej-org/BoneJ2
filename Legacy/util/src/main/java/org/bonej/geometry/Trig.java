@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.geometry;
 
 /**
@@ -29,23 +30,6 @@ package org.bonej.geometry;
 public final class Trig {
 
 	private Trig() {}
-
-	/**
-	 * <p>
-	 * Calculate the distance between 2 3D points p and q using Pythagoras'
-	 * theorem, <i>a</i><sup>2</sup> = <i>b</i><sup>2</sup> + <i>c</i>
-	 * <sup>2</sup>
-	 * </p>
-	 *
-	 * @param p
-	 *            a 3 element array
-	 * @param q
-	 *            another 3 element array
-	 * @return distance between <i>p</i> and <i>q</i>
-	 */
-	static double distance3D(final double[] p, final double[] q) {
-		return distance3D(p[0], p[1], p[2], q[0], q[1], q[2]);
-	}
 
 	/**
 	 * Calculate the distance between 2 3D points <i>p</i>(x, y, z) and <i>q</i>
@@ -59,15 +43,16 @@ public final class Trig {
 	 * @param qz z-coordinate of second point
 	 * @return distance between points.
 	 */
-	public static double distance3D(final double px, final double py, final double pz, final double qx, final double qy,
-			final double qz) {
+	public static double distance3D(final double px, final double py,
+		final double pz, final double qx, final double qy, final double qz)
+	{
 		return distance3D(px - qx, py - qy, pz - qz);
 	}
 
 	/**
 	 * <p>
-	 * Calculate the distance to the origin, (0,0,0). Given 3 orthogonal
-	 * vectors, calculates the vector sum
+	 * Calculate the distance to the origin, (0,0,0). Given 3 orthogonal vectors,
+	 * calculates the vector sum
 	 * </p>
 	 *
 	 * @param x x-coordinate of the point.
@@ -75,8 +60,25 @@ public final class Trig {
 	 * @param z z-coordinate of the point.
 	 * @return distance of the point to the origin.
 	 */
-	public static double distance3D(final double x, final double y, final double z) {
+	public static double distance3D(final double x, final double y,
+		final double z)
+	{
 		return Math.sqrt(x * x + y * y + z * z);
+	}
+
+	/**
+	 * <p>
+	 * Calculate the distance between 2 3D points p and q using Pythagoras'
+	 * theorem, <i>a</i><sup>2</sup> = <i>b</i><sup>2</sup> + <i>c</i>
+	 * <sup>2</sup>
+	 * </p>
+	 *
+	 * @param p a 3 element array
+	 * @param q another 3 element array
+	 * @return distance between <i>p</i> and <i>q</i>
+	 */
+	static double distance3D(final double[] p, final double[] q) {
+		return distance3D(p[0], p[1], p[2], q[0], q[1], q[2]);
 	}
 
 	static double distance3D(final double[] v) {

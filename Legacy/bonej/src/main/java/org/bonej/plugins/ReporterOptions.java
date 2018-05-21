@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.plugins;
 
 import java.util.Random;
@@ -43,10 +44,11 @@ public class ReporterOptions implements PlugIn {
 
 		final GenericDialog dialog = new GenericDialog("BoneJ");
 		dialog.addMessage("Allow usage data collection?");
-		dialog.addMessage("BoneJ would like to collect data on \n"
-				+ "which plugins are being used, to direct development\n" + "and promote BoneJ to funders.");
-		dialog.addMessage(
-				"If you agree to participate please hit OK\n" + "otherwise, cancel. For more information click Help.");
+		dialog.addMessage("BoneJ would like to collect data on \n" +
+			"which plugins are being used, to direct development\n" +
+			"and promote BoneJ to funders.");
+		dialog.addMessage("If you agree to participate please hit OK\n" +
+			"otherwise, cancel. For more information click Help.");
 		dialog.addHelp("http://bonej.org/stats");
 		dialog.showDialog();
 		if (dialog.wasCanceled()) {
@@ -56,7 +58,8 @@ public class ReporterOptions implements PlugIn {
 			Prefs.set(FIRSTTIMEKEY, "");
 			Prefs.set(SESSIONKEY, "");
 			Prefs.set(IJSESSIONKEY, "");
-		} else {
+		}
+		else {
 			Prefs.set(OPTOUTKEY, true);
 			Prefs.set(COOKIE, new Random().nextInt(Integer.MAX_VALUE));
 			Prefs.set(COOKIE2, new Random().nextInt(Integer.MAX_VALUE));

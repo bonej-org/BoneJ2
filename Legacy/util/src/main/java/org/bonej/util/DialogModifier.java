@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
 import java.awt.Checkbox;
@@ -38,26 +39,25 @@ public final class DialogModifier {
 	private DialogModifier() {}
 
 	/**
-	 * Replace the unit string to the right of all numeric textboxes in a
-	 * GenericDialog
+	 * Check all the numeric text fields in a dialog and return false if any of
+	 * them cannot be parsed into a number. Accepts any decimal number, "Infinity"
+	 * and "NaN". Rejects strings of 0 length or that contain any non-decimal
+	 * characters.
 	 *
-	 * @param gd the dialog window
-	 * @param oldUnits original unit string
-	 * @param newUnits new unit string
+	 * @param textFields e.g. result of GenericDialog.getNumericFields();
+	 * @return true if all numeric text fields contain a valid number
 	 */
-	public static void replaceUnitString(final GenericDialog gd,
-		final CharSequence oldUnits, final CharSequence newUnits)
-	{
-		for (int n = 0; n < gd.getComponentCount(); n++) {
-			if (gd.getComponent(n) instanceof Panel) {
-				final Panel panel = (Panel) gd.getComponent(n);
-				if (panel.getComponent(1) instanceof Label) {
-					final Label u = (Label) panel.getComponent(1);
-					final String unitString = u.getText();
-					u.setText(unitString.replace(oldUnits, newUnits));
-				}
+	public static boolean hasInvalidNumber(final Iterable<?> textFields) {
+		for (final Object text : textFields) {
+			final String string = ((TextComponent) text).getText();
+			try {
+				Double.parseDouble(string);
+			}
+			catch (final NumberFormatException e) {
+				return true;
 			}
 		}
+		return false;
 	}
 
 	/**
@@ -69,7 +69,9 @@ public final class DialogModifier {
 	 * @param gd the dialog window
 	 * @param comps a list of components in the dialog.
 	 */
-	public static void registerMacroValues(final GenericDialog gd, final Component[] comps) {
+	public static void registerMacroValues(final GenericDialog gd,
+		final Component[] comps)
+	{
 		try {
 			for (final Component c : comps) {
 				if (c instanceof Checkbox) {
@@ -93,29 +95,32 @@ public final class DialogModifier {
 					registerMacroValues(gd, ((Container) c).getComponents());
 				}
 			}
-		} catch (final ArrayIndexOutOfBoundsException e) {
+		}
+		catch (final ArrayIndexOutOfBoundsException e) {
 			IJ.log("Dialog has no more components\n" + e);
 		}
 	}
 
 	/**
-	 * Check all the numeric text fields in a dialog and return false if any of
-	 * them cannot be parsed into a number. Accepts any decimal number, "Infinity"
-	 * and "NaN". Rejects strings of 0 length or that contain any non-decimal
-	 * characters.
+	 * Replace the unit string to the right of all numeric textboxes in a
+	 * GenericDialog
 	 *
-	 * @param textFields e.g. result of GenericDialog.getNumericFields();
-	 * @return true if all numeric text fields contain a valid number
+	 * @param gd the dialog window
+	 * @param oldUnits original unit string
+	 * @param newUnits new unit string
 	 */
-	public static boolean hasInvalidNumber(final Iterable<?> textFields) {
-		for (final Object text : textFields) {
-			final String string = ((TextComponent) text).getText();
-			try {
-				Double.parseDouble(string);
-			} catch (final NumberFormatException e) {
-				return true;
+	public static void replaceUnitString(final GenericDialog gd,
+		final CharSequence oldUnits, final CharSequence newUnits)
+	{
+		for (int n = 0; n < gd.getComponentCount(); n++) {
+			if (gd.getComponent(n) instanceof Panel) {
+				final Panel panel = (Panel) gd.getComponent(n);
+				if (panel.getComponent(1) instanceof Label) {
+					final Label u = (Label) panel.getComponent(1);
+					final String unitString = u.getText();
+					u.setText(unitString.replace(oldUnits, newUnits));
+				}
 			}
 		}
-		return false;
 	}
 }

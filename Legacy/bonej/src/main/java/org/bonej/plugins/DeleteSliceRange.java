@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.plugins;
 
 import org.bonej.util.ImageCheck;
@@ -26,15 +27,14 @@ import org.bonej.util.ImageCheck;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.VirtualStack;
 import ij.gui.GenericDialog;
 import ij.plugin.PlugIn;
 
 public class DeleteSliceRange implements PlugIn {
+
 	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment())
-			return;
+		if (!ImageCheck.checkEnvironment()) return;
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp) {
 			IJ.noImage();
@@ -80,7 +80,9 @@ public class DeleteSliceRange implements PlugIn {
 	 * @param first the first slice to remove
 	 * @param last the last slice to remove
 	 */
-	private void deleteSliceRange(final ImageStack stack, final int first, final int last) {
+	private void deleteSliceRange(final ImageStack stack, final int first,
+		final int last)
+	{
 		for (int s = first; s <= last; s++) {
 			stack.deleteSlice(first);
 		}

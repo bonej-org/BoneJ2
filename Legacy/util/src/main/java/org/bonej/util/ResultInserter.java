@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
 import ij.ImagePlus;
@@ -27,7 +28,6 @@ import ij.measure.ResultsTable;
 /**
  * Receive results from analytic methods and insert them into the Results table
  * in a sensible way.
- *
  * <p>
  * Each image gets a line; measurements of different types are added to the same
  * line; repeat measurements on same image go on a new line.
@@ -36,31 +36,24 @@ import ij.measure.ResultsTable;
  * @author Michael Doube
  */
 public final class ResultInserter {
+
 	private static final ResultInserter INSTANCE = new ResultInserter();
 	private static ResultsTable rt;
 
-	private ResultInserter() {
-	}
-
-	public static ResultInserter getInstance() {
-		rt = ResultsTable.getResultsTable();
-		rt.setNaNEmptyCells(true);
-		return INSTANCE;
-	}
+	private ResultInserter() {}
 
 	/**
-	 * Finds the first available space for a result, avoiding lots of empty
-	 * space when measurements of different types are made on the same image
+	 * Finds the first available space for a result, avoiding lots of empty space
+	 * when measurements of different types are made on the same image
 	 *
-	 * @param imp
-	 *            ImagePlus
-	 * @param colHeading
-	 *            column heading
-	 * @param value
-	 *            value to insert
+	 * @param imp ImagePlus
+	 * @param colHeading column heading
+	 * @param value value to insert
 	 */
 	// TODO use a table other than the system Results table
-	public void setResultInRow(final ImagePlus imp, final String colHeading, final double value) {
+	public void setResultInRow(final ImagePlus imp, final String colHeading,
+		final double value)
+	{
 		final String title = imp.getTitle();
 
 		// search for the first row that contains the image title
@@ -97,5 +90,11 @@ public final class ResultInserter {
 	public void updateTable() {
 		final String table = "Results";
 		rt.show(table);
+	}
+
+	public static ResultInserter getInstance() {
+		rt = ResultsTable.getResultsTable();
+		rt.setNaNEmptyCells(true);
+		return INSTANCE;
 	}
 }

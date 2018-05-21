@@ -19,11 +19,12 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
+import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
-import ij.ImagePlus;
 
 /**
  * Utility methods for working with the {@link Skeletonize3D_} plugin
@@ -32,6 +33,7 @@ import ij.ImagePlus;
  * @author Mark Hiner
  */
 public final class SkeletonUtils {
+
 	private static final PlugInFilter skeletoniser = new Skeletonize3D_();
 
 	private SkeletonUtils() {}
@@ -40,13 +42,13 @@ public final class SkeletonUtils {
 	 * Gets a medial axis skeleton from a binary imp using a topology-preserving
 	 * iterative algorithm
 	 *
-	 * @param imp
-	 *            input image
+	 * @param imp input image
 	 * @return skeletonised image
 	 */
 
 	public static ImagePlus getSkeleton(final ImagePlus imp) {
-		// TODO Duplicate so that ROIs don't affect the result (side effect of duplicate())
+		// TODO Duplicate so that ROIs don't affect the result (side effect of
+		// duplicate())
 		final ImagePlus skeleton = imp.duplicate();
 
 		skeletoniser.setup("", skeleton);

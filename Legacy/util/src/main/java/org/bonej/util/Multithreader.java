@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.util;
 
 import ij.Prefs;
@@ -52,7 +53,8 @@ public final class Multithreader {
 			for (final Thread thread : threads) {
 				thread.join();
 			}
-		} catch (final InterruptedException ie) {
+		}
+		catch (final InterruptedException ie) {
 			throw new RuntimeException(ie);
 		}
 	}

@@ -66,9 +66,25 @@ import ij.plugin.PlugIn;
 public class Purify implements PlugIn, DialogListener {
 
 	@Override
+	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
+		final List<?> choices = gd.getChoices();
+		final List<?> numbers = gd.getNumericFields();
+		final Choice choice = (Choice) choices.get(0);
+		final TextField num = (TextField) numbers.get(0);
+		if (choice.getSelectedItem().contentEquals("Multithreaded")) {
+			num.setEnabled(true);
+		}
+		else {
+			num.setEnabled(false);
+		}
+		DialogModifier.registerMacroValues(gd, gd.getComponents());
+		return true;
+	}
+
+	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment())
-			return;
+		if (!ImageCheck.checkEnvironment()) return;
 		final ImagePlus imp = IJ.getImage();
 		if (!ImageCheck.isBinary(imp)) {
 			IJ.error("Purify requires a binary image");
@@ -83,16 +99,12 @@ public class Purify implements PlugIn, DialogListener {
 		gd.addHelp("http://bonej.org/purify");
 		gd.addDialogListener(this);
 		gd.showDialog();
-		if (gd.wasCanceled())
-			return;
+		if (gd.wasCanceled()) return;
 		final String choice = gd.getNextChoice();
 		final int labelMethod;
-		if (choice.equals(items[0]))
-			labelMethod = ParticleCounter.MULTI;
-		else if (choice.equals(items[1]))
-			labelMethod = ParticleCounter.LINEAR;
-		else
-			labelMethod = ParticleCounter.MAPPED;
+		if (choice.equals(items[0])) labelMethod = ParticleCounter.MULTI;
+		else if (choice.equals(items[1])) labelMethod = ParticleCounter.LINEAR;
+		else labelMethod = ParticleCounter.MAPPED;
 		final int slicesPerChunk = (int) Math.floor(gd.getNextNumber());
 		final boolean showPerformance = gd.getNextBoolean();
 		final boolean doCopy = gd.getNextBoolean();
@@ -101,12 +113,12 @@ public class Purify implements PlugIn, DialogListener {
 		if (null != purified) {
 			if (doCopy) {
 				purified.show();
-				if (imp.isInvertedLut() && !purified.isInvertedLut())
-					IJ.run("Invert LUT");
-			} else {
+				if (imp.isInvertedLut() && !purified.isInvertedLut()) IJ.run(
+					"Invert LUT");
+			}
+			else {
 				imp.setStack(null, purified.getStack());
-				if (!imp.isInvertedLut())
-					IJ.run("Invert LUT");
+				if (!imp.isInvertedLut()) IJ.run("Invert LUT");
 			}
 		}
 		final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
@@ -123,164 +135,6 @@ public class Purify implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Find all foreground and particles in an image and remove all but the
-	 * largest. Foreground is 26-connected and background is 8-connected.
-	 *
-	 * @param imp input image
-	 * @param slicesPerChunk number of slices to send to each CPU core as a chunk
-	 * @param labelMethod number of labelling method
-	 * @return purified image
-	 */
-	ImagePlus purify(final ImagePlus imp, final int slicesPerChunk, final int labelMethod) {
-
-		final ParticleCounter pc = new ParticleCounter();
-		pc.setLabelMethod(labelMethod);
-
-		final int fg = ParticleCounter.FORE;
-		final Object[] foregroundParticles = pc.getParticles(imp, slicesPerChunk, fg);
-		final byte[][] workArray = (byte[][]) foregroundParticles[0];
-		int[][] particleLabels = (int[][]) foregroundParticles[1];
-		// index 0 is background particle's size...
-		long[] particleSizes = pc.getParticleSizes(particleLabels);
-		removeSmallParticles(workArray, particleLabels, particleSizes, fg);
-
-		final int bg = ParticleCounter.BACK;
-		final Object[] backgroundParticles = pc.getParticles(imp, workArray, slicesPerChunk,
-                bg);
-		particleLabels = (int[][]) backgroundParticles[1];
-		particleSizes = pc.getParticleSizes(particleLabels);
-		touchEdges(imp, workArray, particleLabels, particleSizes);
-		particleSizes = pc.getParticleSizes(particleLabels);
-		removeSmallParticles(workArray, particleLabels, particleSizes, bg);
-
-		final ImageStack stack = new ImageStack(imp.getWidth(), imp.getHeight());
-		final int nSlices = workArray.length;
-		for (int z = 0; z < nSlices; z++) {
-			stack.addSlice(imp.getStack().getSliceLabel(z + 1), workArray[z]);
-		}
-		final ImagePlus purified = new ImagePlus("Purified", stack);
-		purified.setCalibration(imp.getCalibration());
-		IJ.showStatus("Image Purified");
-		IJ.showProgress(1.0);
-		return purified;
-	}
-
-	/**
-	 * <p>
-	 * Find particles of phase that touch the stack sides and assign them the ID
-	 * of the biggest particle of phase. Euler number calculation assumes that the
-	 * background phase is connected outside the image stack, so apparently
-	 * isolated background particles touching the sides should be assigned to the
-	 * single background particle.
-	 * </p>
-	 *  @param workArray a work array
-	 * @param particleLabels particle labels.
-     * @param particleSizes sizes of the particles.
-     */
-	private void touchEdges(final ImagePlus imp, final byte[][] workArray, final int[][] particleLabels,
-            final long[] particleSizes) {
-		final String status = "Background particles touching ";
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		// find the label associated with the biggest
-		// particle in phase
-		long maxVoxCount = 0;
-		int bigP = 0;
-		final int nPartSizes = particleSizes.length;
-		for (int i = 0; i < nPartSizes; i++) {
-			if (particleSizes[i] > maxVoxCount) {
-				maxVoxCount = particleSizes[i];
-				bigP = i;
-			}
-		}
-		final int biggestParticle = bigP;
-		// check each face of the stack for pixels that are touching edges and
-		// replace that particle's label in particleLabels with
-		// the label of the biggest particle
-		int x;
-        int y;
-        int z;
-
-        final ParticleCounter pc = new ParticleCounter();
-		// up
-		z = 0;
-		for (y = 0; y < h; y++) {
-			IJ.showStatus(status + "top");
-			IJ.showProgress(y, h);
-			final int rowOffset = y * w;
-			for (x = 0; x < w; x++) {
-				final int offset = rowOffset + x;
-				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
-				}
-			}
-		}
-
-		// down
-		z = d - 1;
-		for (y = 0; y < h; y++) {
-			IJ.showStatus(status + "bottom");
-			IJ.showProgress(y, h);
-			final int rowOffset = y * w;
-			for (x = 0; x < w; x++) {
-				final int offset = rowOffset + x;
-				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
-				}
-			}
-		}
-
-		// left
-		for (z = 0; z < d; z++) {
-			IJ.showStatus(status + "left");
-			IJ.showProgress(z, d);
-			for (y = 0; y < h; y++) {
-				final int offset = y * w;
-				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
-				}
-			}
-		}
-
-		// right
-		for (z = 0; z < d; z++) {
-			IJ.showStatus(status + "right");
-			IJ.showProgress(z, d);
-			for (y = 0; y < h; y++) {
-				final int offset = y * w + w - 1;
-				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
-				}
-			}
-		}
-
-		// front
-		final int rowOffset = (h - 1) * w;
-		for (z = 0; z < d; z++) {
-			IJ.showStatus(status + "front");
-			IJ.showProgress(z, d);
-			for (x = 0; x < w; x++) {
-				final int offset = rowOffset + x;
-				if (workArray[z][offset] == 0 && particleLabels[z][offset] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][offset], biggestParticle, d);
-				}
-			}
-		}
-
-		// back
-		for (z = 0; z < d; z++) {
-			IJ.showStatus(status + "back");
-			IJ.showProgress(z, d);
-			for (x = 0; x < w; x++) {
-				if (workArray[z][x] == 0 && particleLabels[z][x] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][x], biggestParticle, d);
-				}
-			}
-		}
-	}
-
-	/**
 	 * Remove all but the largest phase particle from workArray
 	 *
 	 * @param workArray a work array
@@ -288,8 +142,9 @@ public class Purify implements PlugIn, DialogListener {
 	 * @param particleSizes sizes of the particles.
 	 * @param phase foreground or background.
 	 */
-	private void removeSmallParticles(final byte[][] workArray, final int[][] particleLabels,
-			final long[] particleSizes, final int phase) {
+	private void removeSmallParticles(final byte[][] workArray,
+		final int[][] particleLabels, final long[] particleSizes, final int phase)
+	{
 		final int d = workArray.length;
 		final int wh = workArray[0].length;
 		final int fg = ParticleCounter.FORE;
@@ -320,7 +175,8 @@ public class Purify implements PlugIn, DialogListener {
 						IJ.showStatus("Removing foreground particles");
 						IJ.showProgress(z, d);
 					}
-				} else if (phase == bg) {
+				}
+				else if (phase == bg) {
 					// go through work array and turn all
 					// smaller background particles into foreground
 					for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
@@ -344,11 +200,13 @@ public class Purify implements PlugIn, DialogListener {
 	 * Show a Results table containing some performance information
 	 *
 	 * @param duration time elapsed in purifying.
-     * @param imp the purified image.
-     * @param slicesPerChunk slices processed by each chunk.
-     * @param labelMethod labelling method used.
+	 * @param imp the purified image.
+	 * @param slicesPerChunk slices processed by each chunk.
+	 * @param labelMethod labelling method used.
 	 */
-	private void showResults(final double duration, final ImagePlus imp, final int slicesPerChunk, final int labelMethod) {
+	private void showResults(final double duration, final ImagePlus imp,
+		final int slicesPerChunk, final int labelMethod)
+	{
 		final ParticleCounter pc = new ParticleCounter();
 		final int nChunks = pc.getNChunks(imp, slicesPerChunk);
 		final int[][] chunkRanges = pc.getChunkRanges(imp, nChunks, slicesPerChunk);
@@ -360,25 +218,188 @@ public class Purify implements PlugIn, DialogListener {
 		rt.addValue("Slices", imp.getImageStackSize());
 		rt.addValue("Chunks", nChunks);
 		rt.addValue("Chunk size", slicesPerChunk);
-		rt.addValue("Last chunk size", chunkRanges[1][nChunks - 1] - chunkRanges[0][nChunks - 1]);
+		rt.addValue("Last chunk size", chunkRanges[1][nChunks - 1] -
+			chunkRanges[0][nChunks - 1]);
 		rt.addValue("Duration (s)", duration);
 		rt.show("Results");
 	}
 
-	@Override
-	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (DialogModifier.hasInvalidNumber(gd.getNumericFields()))
-			return false;
-		final List<?> choices = gd.getChoices();
-		final List<?> numbers = gd.getNumericFields();
-		final Choice choice = (Choice) choices.get(0);
-		final TextField num = (TextField) numbers.get(0);
-		if (choice.getSelectedItem().contentEquals("Multithreaded")) {
-			num.setEnabled(true);
-		} else {
-			num.setEnabled(false);
+	/**
+	 * <p>
+	 * Find particles of phase that touch the stack sides and assign them the ID
+	 * of the biggest particle of phase. Euler number calculation assumes that the
+	 * background phase is connected outside the image stack, so apparently
+	 * isolated background particles touching the sides should be assigned to the
+	 * single background particle.
+	 * </p>
+	 *
+	 * @param workArray a work array
+	 * @param particleLabels particle labels.
+	 * @param particleSizes sizes of the particles.
+	 */
+	private void touchEdges(final ImagePlus imp, final byte[][] workArray,
+		final int[][] particleLabels, final long[] particleSizes)
+	{
+		final String status = "Background particles touching ";
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		// find the label associated with the biggest
+		// particle in phase
+		long maxVoxCount = 0;
+		int bigP = 0;
+		final int nPartSizes = particleSizes.length;
+		for (int i = 0; i < nPartSizes; i++) {
+			if (particleSizes[i] > maxVoxCount) {
+				maxVoxCount = particleSizes[i];
+				bigP = i;
+			}
 		}
-		DialogModifier.registerMacroValues(gd, gd.getComponents());
-		return true;
+		final int biggestParticle = bigP;
+		// check each face of the stack for pixels that are touching edges and
+		// replace that particle's label in particleLabels with
+		// the label of the biggest particle
+		int x;
+		int y;
+		int z;
+
+		final ParticleCounter pc = new ParticleCounter();
+		// up
+		z = 0;
+		for (y = 0; y < h; y++) {
+			IJ.showStatus(status + "top");
+			IJ.showProgress(y, h);
+			final int rowOffset = y * w;
+			for (x = 0; x < w; x++) {
+				final int offset = rowOffset + x;
+				if (workArray[z][offset] == 0 &&
+					particleLabels[z][offset] != biggestParticle)
+				{
+					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+						biggestParticle, d);
+				}
+			}
+		}
+
+		// down
+		z = d - 1;
+		for (y = 0; y < h; y++) {
+			IJ.showStatus(status + "bottom");
+			IJ.showProgress(y, h);
+			final int rowOffset = y * w;
+			for (x = 0; x < w; x++) {
+				final int offset = rowOffset + x;
+				if (workArray[z][offset] == 0 &&
+					particleLabels[z][offset] != biggestParticle)
+				{
+					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+						biggestParticle, d);
+				}
+			}
+		}
+
+		// left
+		for (z = 0; z < d; z++) {
+			IJ.showStatus(status + "left");
+			IJ.showProgress(z, d);
+			for (y = 0; y < h; y++) {
+				final int offset = y * w;
+				if (workArray[z][offset] == 0 &&
+					particleLabels[z][offset] != biggestParticle)
+				{
+					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+						biggestParticle, d);
+				}
+			}
+		}
+
+		// right
+		for (z = 0; z < d; z++) {
+			IJ.showStatus(status + "right");
+			IJ.showProgress(z, d);
+			for (y = 0; y < h; y++) {
+				final int offset = y * w + w - 1;
+				if (workArray[z][offset] == 0 &&
+					particleLabels[z][offset] != biggestParticle)
+				{
+					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+						biggestParticle, d);
+				}
+			}
+		}
+
+		// front
+		final int rowOffset = (h - 1) * w;
+		for (z = 0; z < d; z++) {
+			IJ.showStatus(status + "front");
+			IJ.showProgress(z, d);
+			for (x = 0; x < w; x++) {
+				final int offset = rowOffset + x;
+				if (workArray[z][offset] == 0 &&
+					particleLabels[z][offset] != biggestParticle)
+				{
+					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+						biggestParticle, d);
+				}
+			}
+		}
+
+		// back
+		for (z = 0; z < d; z++) {
+			IJ.showStatus(status + "back");
+			IJ.showProgress(z, d);
+			for (x = 0; x < w; x++) {
+				if (workArray[z][x] == 0 && particleLabels[z][x] != biggestParticle) {
+					pc.replaceLabel(particleLabels, particleLabels[z][x], biggestParticle,
+						d);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Find all foreground and particles in an image and remove all but the
+	 * largest. Foreground is 26-connected and background is 8-connected.
+	 *
+	 * @param imp input image
+	 * @param slicesPerChunk number of slices to send to each CPU core as a chunk
+	 * @param labelMethod number of labelling method
+	 * @return purified image
+	 */
+	ImagePlus purify(final ImagePlus imp, final int slicesPerChunk,
+		final int labelMethod)
+	{
+
+		final ParticleCounter pc = new ParticleCounter();
+		pc.setLabelMethod(labelMethod);
+
+		final int fg = ParticleCounter.FORE;
+		final Object[] foregroundParticles = pc.getParticles(imp, slicesPerChunk,
+			fg);
+		final byte[][] workArray = (byte[][]) foregroundParticles[0];
+		int[][] particleLabels = (int[][]) foregroundParticles[1];
+		// index 0 is background particle's size...
+		long[] particleSizes = pc.getParticleSizes(particleLabels);
+		removeSmallParticles(workArray, particleLabels, particleSizes, fg);
+
+		final int bg = ParticleCounter.BACK;
+		final Object[] backgroundParticles = pc.getParticles(imp, workArray,
+			slicesPerChunk, bg);
+		particleLabels = (int[][]) backgroundParticles[1];
+		particleSizes = pc.getParticleSizes(particleLabels);
+		touchEdges(imp, workArray, particleLabels, particleSizes);
+		particleSizes = pc.getParticleSizes(particleLabels);
+		removeSmallParticles(workArray, particleLabels, particleSizes, bg);
+
+		final ImageStack stack = new ImageStack(imp.getWidth(), imp.getHeight());
+		final int nSlices = workArray.length;
+		for (int z = 0; z < nSlices; z++) {
+			stack.addSlice(imp.getStack().getSliceLabel(z + 1), workArray[z]);
+		}
+		final ImagePlus purified = new ImagePlus("Purified", stack);
+		purified.setCalibration(imp.getCalibration());
+		IJ.showStatus("Image Purified");
+		IJ.showProgress(1.0);
+		return purified;
 	}
 }

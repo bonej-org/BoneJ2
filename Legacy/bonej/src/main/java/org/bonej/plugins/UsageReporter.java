@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.plugins;
 
 import java.awt.Dimension;
@@ -49,12 +50,11 @@ import ij.Prefs;
  */
 // TODO Fix class design: decide if singleton or not!
 public final class UsageReporter {
+
 	private static final UsageReporter INSTANCE = new UsageReporter();
 	/**
-	 * BoneJ version
-	 *
-	 * FIXME: it is fragile to have the version hard-coded here. Create a
-	 * BoneJApp instead.
+	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
+	 * Create a BoneJApp instead.
 	 */
 	private static final String BONEJ_VERSION = "LEGACY";
 
@@ -70,7 +70,7 @@ public final class UsageReporter {
 	private static final String utmfl = "utmfl=11.1%20r102&";
 	private static final String utmr = "utmr=-&";
 	private static final String utmp = "utmp=%2Fstats&";
-
+	private static final Random random = new Random();
 	private static String utmcnr = "";
 	private static String utme;
 	private static String utmn;
@@ -78,13 +78,12 @@ public final class UsageReporter {
 	private static String utmvp;
 	private static String utmsc;
 	private static int session = 0;
-    private static String utms = "utms=" + session + "&";
+	private static String utms = "utms=" + session + "&";
 	private static String utmcc;
 	private static long thisTime = 0;
-    private static long lastTime = 0;
-
-	private static final Random random = new Random();
-    private static String bonejSession = Prefs.get(ReporterOptions.SESSIONKEY, Integer.toString(new Random().nextInt(1000)));
+	private static long lastTime = 0;
+	private static String bonejSession = Prefs.get(ReporterOptions.SESSIONKEY,
+		Integer.toString(new Random().nextInt(1000)));
 
 	private static String utmhid;
 
@@ -93,17 +92,18 @@ public final class UsageReporter {
 	 * single sessions are set here
 	 */
 	private UsageReporter() {
-		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false))
-			return;
-		bonejSession = Prefs.get(ReporterOptions.SESSIONKEY, Integer.toString(new Random().nextInt(1000)));
+		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false)) return;
+		bonejSession = Prefs.get(ReporterOptions.SESSIONKEY, Integer.toString(
+			new Random().nextInt(1000)));
 		int inc = Integer.parseInt(bonejSession);
 		inc++;
 		bonejSession = Integer.toString(inc);
 		Prefs.set(ReporterOptions.SESSIONKEY, inc);
 
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        int width = 0;
+		final GraphicsEnvironment ge = GraphicsEnvironment
+			.getLocalGraphicsEnvironment();
+		int width = 0;
 		int height = 0;
 		if (!ge.isHeadlessInstance()) {
 			final GraphicsDevice[] screens = ge.getScreenDevices();
@@ -122,24 +122,50 @@ public final class UsageReporter {
 	}
 
 	/**
+	 * Send the report to Google Analytics in the form of an HTTP request for a
+	 * 1-pixel GIF with lots of parameters set
+	 */
+	public void send() {
+		if (!isAllowed()) return;
+		try {
+			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
+				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
+				utmhid + utmr + utmp + utmac + utmcc);
+			final URLConnection uc = url.openConnection();
+			uc.setRequestProperty("User-Agent", userAgentString());
+			if (!IJ.debugMode) {
+				return;
+			}
+			IJ.log(url.toString());
+			IJ.log(uc.getRequestProperty("User-Agent"));
+			try (final BufferedReader reader = new BufferedReader(
+				new InputStreamReader(uc.getInputStream())))
+			{
+				reader.lines().forEach(IJ::log);
+			}
+		}
+		catch (final IOException e) {
+			if (IJ.debugMode) {
+				IJ.error(e.getMessage());
+			}
+		}
+	}
+
+	/**
 	 * Sets the instance variables to appropriate values based on the system
 	 * parameters and method arguments.
 	 *
-	 * @param category
-	 *            Google Analytics event category classification
-	 * @param action
-	 *            Google Analytics event action classification
-	 * @param label
-	 *            Google Analytics event label classification
-	 * @param value
-	 *            Google Analytics event value - an integer used for sum and
-	 *            average statistics
+	 * @param category Google Analytics event category classification
+	 * @param action Google Analytics event action classification
+	 * @param label Google Analytics event label classification
+	 * @param value Google Analytics event value - an integer used for sum and
+	 *          average statistics
 	 * @return The instance of UsageReporter ready to send() a report
 	 */
-	public static UsageReporter reportEvent(final String category, final String action, final String label,
-			final Integer value) {
-		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false))
-			return INSTANCE;
+	public static UsageReporter reportEvent(final String category,
+		final String action, final String label, final Integer value)
+	{
+		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false)) return INSTANCE;
 		utms = "utms=" + session + "&";
 		session++;
 		final String val = (value == null) ? "" : "(" + value + ")";
@@ -149,14 +175,11 @@ public final class UsageReporter {
 
 		final long time = System.currentTimeMillis() / 1000;
 		lastTime = thisTime;
-		if (lastTime == 0)
-			lastTime = time;
+		if (lastTime == 0) lastTime = time;
 		thisTime = time;
 
-		if ("".equals(utmcnr))
-			utmcnr = "utmcn=1&";
-		else
-			utmcnr = "utmcr=1&";
+		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
+		else utmcnr = "utmcr=1&";
 
 		utmcc = getCookieString();
 		return INSTANCE;
@@ -167,12 +190,12 @@ public final class UsageReporter {
 	 * (.getClass().getName()) is added to the 'action' field of the report,
 	 * category is "Plugin Usage" and label is the BoneJ version string
 	 *
-	 * @param o
-	 *            Class to report on
+	 * @param o Class to report on
 	 * @return The instance of UsageReporter ready to send() a report
 	 */
 	public static UsageReporter reportEvent(final Object o) {
-		return reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION, null);
+		return reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION,
+			null);
 	}
 
 	/**
@@ -183,44 +206,31 @@ public final class UsageReporter {
 	private static String getCookieString() {
 		// seems to be a bug in Prefs.getInt, so are Strings wrapped in
 		// Integer.toString()
-		final String cookie = Prefs.get(ReporterOptions.COOKIE, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
-		final String cookie2 = Prefs.get(ReporterOptions.COOKIE2, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
-		final String firstTime = Prefs.get(ReporterOptions.FIRSTTIMEKEY, Integer.toString(random.nextInt(Integer.MAX_VALUE)));
+		final String cookie = Prefs.get(ReporterOptions.COOKIE, Integer.toString(
+			random.nextInt(Integer.MAX_VALUE)));
+		final String cookie2 = Prefs.get(ReporterOptions.COOKIE2, Integer.toString(
+			random.nextInt(Integer.MAX_VALUE)));
+		final String firstTime = Prefs.get(ReporterOptions.FIRSTTIMEKEY, Integer
+			.toString(random.nextInt(Integer.MAX_VALUE)));
 		// thisTime is not correct, but a best guess
-		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." + lastTime + "." + thisTime
-				+ "." + bonejSession + "%3B%2B__utmz%3D" + cookie + "." + thisTime
-				+ ".79.42.utmcsr%3Dgoogle%7Cutmccn%3D(organic)%7C"
-				+ "utmcmd%3Dorganic%7Cutmctr%3DBoneJ%20Usage%20Reporter%3B";
+		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
+			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +
+			cookie + "." + thisTime +
+			".79.42.utmcsr%3Dgoogle%7Cutmccn%3D(organic)%7C" +
+			"utmcmd%3Dorganic%7Cutmctr%3DBoneJ%20Usage%20Reporter%3B";
 	}
 
-	/**
-	 * Send the report to Google Analytics in the form of an HTTP request for a
-	 * 1-pixel GIF with lots of parameters set
-	 */
-	public void send() {
-		if (!isAllowed())
-			return;
-		try {
-			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
-				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
-				utmhid + utmr + utmp + utmac + utmcc);
-			final URLConnection uc = url.openConnection();
-			uc.setRequestProperty("User-Agent", userAgentString());
-			if (!IJ.debugMode) {
-				return;
-			}
-            IJ.log(url.toString());
-			IJ.log(uc.getRequestProperty("User-Agent"));
-			try (final BufferedReader reader = new BufferedReader(
-				new InputStreamReader(uc.getInputStream())))
-			{
-				reader.lines().forEach(IJ::log);
-			}
-        } catch (final IOException e) {
-			if (IJ.debugMode) {
-				IJ.error(e.getMessage());
-			}
-		}
+	private static String getLocaleString() {
+		String locale = Locale.getDefault().toString();
+		locale = locale.replace("_", "-");
+		locale = locale.toLowerCase(Locale.ENGLISH);
+		return locale;
+	}
+
+	private boolean isAllowed() {
+		if (!Prefs.get(ReporterOptions.OPTOUTSET, false)) new ReporterOptions().run(
+			"");
+		return Prefs.get(ReporterOptions.OPTOUTKEY, true);
 	}
 
 	private static String userAgentString() {
@@ -248,18 +258,5 @@ public final class UsageReporter {
 		final String locale = getLocaleString();
 
 		return browser + " (" + os + "; " + locale + ") " + vendor;
-	}
-
-	private static String getLocaleString() {
-		String locale = Locale.getDefault().toString();
-		locale = locale.replace("_", "-");
-		locale = locale.toLowerCase(Locale.ENGLISH);
-		return locale;
-	}
-
-	private boolean isAllowed() {
-		if (!Prefs.get(ReporterOptions.OPTOUTSET, false))
-			new ReporterOptions().run("");
-		return Prefs.get(ReporterOptions.OPTOUTKEY, true);
 	}
 }

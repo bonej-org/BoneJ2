@@ -19,17 +19,15 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package org.bonej.geometry;
 
 import Jama.Matrix;
 
 /**
  * <p>
- * Find the best fitting sphere
- *
- * Ported from Angelo Tardugno's C++
+ * Find the best fitting sphere Ported from Angelo Tardugno's C++
  * </p>
- *
  *
  * @author Michael Doube and Angelo Tardugno
  * @version 0.1
@@ -41,16 +39,15 @@ public final class FitSphere {
 	/**
 	 * Fit a sphere to 3D coordinates
 	 *
-	 * @param points
-	 *            double[n][3] containing n (x, y, z) coordinates
+	 * @param points double[n][3] containing n (x, y, z) coordinates
 	 * @return double[4] containing (x, y, z) centre and radius
-	 * @throws IllegalArgumentException
-	 *             if n &lt; 5
+	 * @throws IllegalArgumentException if n &lt; 5
 	 */
 	public static double[] fitSphere(final double[][] points) {
 		final int nPoints = points.length;
 		if (nPoints < 5) {
-			throw new IllegalArgumentException("Too few points to fit sphere; n = " + nPoints);
+			throw new IllegalArgumentException("Too few points to fit sphere; n = " +
+				nPoints);
 		}
 		final double[] centroid = Centroid.getCentroid(points);
 
@@ -102,6 +99,6 @@ public final class FitSphere {
 			for (int i = 0; i < 4; i++)
 				g_new += Gp[i][0];
 		}
-		return new double[]{ x, y, z, r };
+		return new double[] { x, y, z, r };
 	}
 }
