@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +70,7 @@ import ij3d.Image3DUniverse;
  *      Frontiers in Endocrinology (2015)</a>
  * @author Michael Doube
  */
-public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
+public class EllipsoidFactor implements PlugIn {
 
 	private int nVectors = 100;
 
@@ -100,16 +99,6 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 	private double stackVolume;
 
 	private double[][] regularVectors;
-
-	/**
-	 * Compare Ellipsoids by volume. Sorting based on this method will result in
-	 * Ellipsoids sorted in order of <b>descending</b> volume.
-	 */
-	// TODO Replace with lambda
-	@Override
-	public int compare(final Ellipsoid o1, final Ellipsoid o2) {
-		return Double.compare(o2.getVolume(), o1.getVolume());
-	}
 
 	@Override
 	public void run(final String arg) {
@@ -1037,9 +1026,9 @@ public class EllipsoidFactor implements PlugIn, Comparator<Ellipsoid> {
 			});
 		}
 		Multithreader.startAndJoin(threads);
-
-		return Arrays.stream(ellipsoids).filter(Objects::nonNull).sorted(this)
-			.toArray(Ellipsoid[]::new);
+		return Arrays.stream(ellipsoids).filter(Objects::nonNull).sorted((a,
+			b) -> Double.compare(b.getVolume(), a.getVolume())).toArray(
+				Ellipsoid[]::new);
 	}
 
 	/**
