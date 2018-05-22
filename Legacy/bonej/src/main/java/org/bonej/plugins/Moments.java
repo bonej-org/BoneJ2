@@ -960,7 +960,6 @@ public class Moments implements PlugIn, DialogListener {
 	 * @return Object containing an array of the type needed for an image with
 	 *         bitDepth
 	 */
-	// TODO Add support for 24-bits (int[])
 	// TODO throw exception when unexpected bit depth
 	static Object getEmptyPixels(final int w, final int h, final int bitDepth) {
 		if (bitDepth == 8) {
@@ -969,10 +968,12 @@ public class Moments implements PlugIn, DialogListener {
 		if (bitDepth == 16) {
 			return new short[w * h];
 		}
+		if (bitDepth == 24) {
+			return new int[w * h];
+		}
 		if (bitDepth == 32) {
 			return new float[w * h];
 		}
 		return new Object();
 	}
-
 }
