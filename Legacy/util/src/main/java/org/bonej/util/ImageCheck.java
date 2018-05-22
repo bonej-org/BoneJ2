@@ -80,45 +80,22 @@ public final class ImageCheck {
 			IJ.error("Cannot check DICOM header of a null image");
 			return;
 		}
-
 		final Calibration cal = imp.getCalibration();
 		final double vD = cal.pixelDepth;
 		final int stackSize = imp.getStackSize();
-
-		String position = getDicomAttribute(imp, 1);
-		if (position == null) {
-			IJ.log("No DICOM slice position data");
+		final double first = getDicomSlicePosition(imp, 1);
+		final double last = getDicomSlicePosition(imp, stackSize);
+		if (first < 0 || last < 0) {
+			IJ.error("No DICOM slice position data");
 			return;
 		}
-		String[] xyz = position.split("\\\\");
-		final double first;
-
-		if (xyz.length == 3) // we have 3 values
-			first = Double.parseDouble(xyz[2]);
-		else return;
-
-		// TODO Create method
-		position = getDicomAttribute(imp, stackSize);
-		if (position == null) {
-			IJ.log("No DICOM slice position data");
-			return;
-		}
-		xyz = position.split("\\\\");
-		final double last;
-
-		if (xyz.length == 3) // we have 3 values
-			last = Double.parseDouble(xyz[2]);
-		else return;
-
 		final double sliceSpacing = (Math.abs(last - first) + 1) / stackSize;
 		final String units = cal.getUnits();
 		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100.0;
-
 		if (Double.compare(vD, sliceSpacing) == 0) {
 			IJ.log(imp.getTitle() + ": Voxel depth agrees with DICOM header.\n");
 			return;
 		}
-
 		IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " +
 			error + "% with DICOM header slice spacing.\n" + "Current voxel depth: " +
 			IJ.d2s(vD, 6) + " " + units + "\n" + "DICOM slice spacing: " + IJ.d2s(
@@ -258,6 +235,20 @@ public final class ImageCheck {
 			return value.trim();
 		}
 		return " ";
+	}
+
+	private static double getDicomSlicePosition(final ImagePlus imp,
+		final int slice)
+	{
+		final String position = getDicomAttribute(imp, slice);
+		if (position == null) {
+			return -1;
+		}
+		final String[] xyz = position.split("\\\\");
+		if (xyz.length == 3) {
+			return Double.parseDouble(xyz[2]);
+		}
+		return -1;
 	}
 
 	/**
