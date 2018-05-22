@@ -4,14 +4,13 @@ Plugin produces valid STL-files
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Create a cuboid (Test Images>Cuboid)
-   - Set options: w: 10, h: 10, d: 10, frames: 2, channels: 2, padding: 5,
-     unit: "mm"
-2. Run Isosurface (Plugins>BoneJ>Isosurface)
-3. Check "Save STL file", and click "OK"
-4. Choose a directory and save file as "Mesh"
-5. Verify that plugin writes 4 .stl files to the specified folder
-6. Check that the files can be opened with http://www.viewstl.com/
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/hyperCube.zip
+3. Run Plugins >BoneJ > Surface area
+4. Check "Export STL file(s)", and click "OK"
+5. Choose a directory and save file as "Mesh"
+6. Verify that plugin writes 4 .stl files to the specified folder
+7. Check that the files can be opened with http://www.viewstl.com/
    (Should see a similar cube in each)
 
 Expected result
@@ -19,8 +18,7 @@ Expected result
 Plugin writes four files with the extension ".stl" to the chosen directory.
 All files can be opened with the stl renderer above.
 
-//TODO Redo when STL saving is an IOPlugin in SciJava
-Completed August 8 2016 Richard Domander
+Completed 13 March 2018 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -31,8 +29,8 @@ Pressing cancel in the file dialog stops the plugin
 Steps
 -----------------------------------------------------------------------
 1. Create a cuboid (Test Images>Cuboid)
-2. Run Isosurface (Plugins>BoneJ>Isosurface)
-3. Check "Save STL file", and click "OK"
+2. Run Plugins >BoneJ > Surface area
+3. Check "Export STL file(s)", and click "OK"
 4. Click cancel on the file dialog
 
 Expected result
