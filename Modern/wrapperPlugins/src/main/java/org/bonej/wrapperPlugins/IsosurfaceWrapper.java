@@ -49,13 +49,10 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
-import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import org.scijava.util.StringUtils;
-import org.scijava.widget.Button;
 import org.scijava.widget.FileWidget;
 
 /**
@@ -92,18 +89,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		required = false)
 	private boolean exportSTL;
 
-	@Parameter(label = "Help", description = "Open help web page",
-		callback = "openHelpPage")
-	private Button helpButton;
-
-	@Parameter
-	private LogService logService;
-
 	@Parameter
 	private OpService ops;
-
-	@Parameter
-	private PlatformService platformService;
 
 	@Parameter
 	private UIService uiService;
@@ -111,8 +98,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter
 	private UnitService unitService;
 
-    @Parameter
-    private StatusService statusService;
+	@Parameter
+	private StatusService statusService;
 
 	private String path = "";
 	private String extension = "";
@@ -122,7 +109,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Override
 	public void run() {
-	    statusService.showStatus("Surface area: initialising");
+		statusService.showStatus("Surface area: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops,
 			inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
@@ -133,7 +120,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		final Map<String, Mesh> meshes = processViews(subspaces);
 		if (exportSTL) {
 			getFileName();
-            statusService.showStatus("Surface area: saving files");
+			statusService.showStatus("Surface area: saving files");
 			saveMeshes(meshes);
 		}
 		if (SharedTable.hasData()) {
@@ -141,147 +128,32 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private void prepareResults() {
-		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
+	/**
+	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
+	 * same scaling.
+	 * <p>
+	 * NB: Public and static for testing purposes.
+	 * </p>
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <T> type of the space
+	 * @return true if all spatial axes have matching calibration. Also returns
+	 *         true if none of them have a unit
+	 */
+	// TODO make into a utility method or remove if mesh area considers
+	// calibration in the future
+	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
+		isAxesMatchingSpatialCalibration(T space)
+	{
+		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
+			.allMatch(StringUtils::isNullOrEmpty);
+		final boolean matchingUnit = spatialAxisStream(space).map(
+			CalibratedAxis::unit).distinct().count() == 1;
+		final boolean matchingScale = spatialAxisStream(space).map(a -> a
+			.averageScale(0, 1)).distinct().count() == 1;
 
-		if (!isAxesMatchingSpatialCalibration(inputImage)) {
-			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
-			areaScale = 1.0;
-		}
-		else {
-			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
-			areaScale = scale * scale;
-		}
+		return (matchingUnit || noUnits) && matchingScale;
 	}
-
-	// -- Helper methods --
-	private static void writeSTLFacet(ByteBuffer buffer, TriangularFacet facet) {
-		writeSTLVector(buffer, facet.getNormal());
-		writeSTLVector(buffer, facet.getP0());
-		writeSTLVector(buffer, facet.getP1());
-		writeSTLVector(buffer, facet.getP2());
-		buffer.putShort((short) 0); // Attribute byte count
-	}
-
-	private static void writeSTLVector(ByteBuffer buffer, Vector3D v) {
-		buffer.putFloat((float) v.getX());
-		buffer.putFloat((float) v.getY());
-		buffer.putFloat((float) v.getZ());
-	}
-
-	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
-		marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class,
-			Mesh.class, interval);
-	}
-
-	private Map<String, Mesh> processViews(List<Subspace<BitType>> subspaces) {
-		final String name = inputImage.getName();
-		final Map<String, Mesh> meshes = new HashMap<>();
-		for (Subspace<BitType> subspace : subspaces) {
-			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
-			final double area = mesh.getSurfaceArea();
-			final String suffix = subspace.toString();
-			final String label = suffix.isEmpty() ? name : name + " " + suffix;
-			addResult(label, area);
-			meshes.put(subspace.toString(), mesh);
-		}
-		return meshes;
-	}
-
-	private void saveMeshes(final Map<String, Mesh> meshes) {
-		final Map<String, String> savingErrors = new HashMap<>();
-		meshes.forEach((key, subspaceMesh) -> {
-            final String subspaceId = key.replace(' ', '_');
-            final String filePath = path + "_" + subspaceId + extension;
-            try {
-                writeBinarySTLFile(filePath, subspaceMesh);
-            } catch (IOException e) {
-                savingErrors.put(filePath, e.getMessage());
-            }
-        });
-		if (!savingErrors.isEmpty()) {
-			showSavingErrorsDialog(savingErrors);
-		}
-	}
-
-	private void showSavingErrorsDialog(final Map<String, String> savingErrors) {
-		StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
-		savingErrors.forEach((k, v) -> msgBuilder.append(k).append(": ").append(v));
-		uiService.showDialog(msgBuilder.toString(), ERROR_MESSAGE);
-	}
-
-	private void getFileName() {
-		path = choosePath();
-		if (path == null) {
-			return;
-		}
-
-		final String fileName = path.substring(path.lastIndexOf(File.separator) +
-			1);
-		final int dot = fileName.lastIndexOf(".");
-		if (dot >= 0) {
-			extension = fileName.substring(dot);
-			// TODO Verify extension if not .stl, when DialogPrompt YES/NO options
-			// work correctly
-			path = stripFileExtension(path);
-		}
-		else {
-			extension = ".stl";
-		}
-	}
-
-	private String choosePath() {
-		String initialName = stripFileExtension(inputImage.getName());
-
-		// The file dialog won't allow empty filenames, and it prompts when file
-		// already exists
-		File file = uiService.chooseFile(new File(initialName),
-			FileWidget.SAVE_STYLE);
-		if (file == null) {
-			// User pressed cancel on file dialog
-			return null;
-		}
-
-		return file.getAbsolutePath();
-	}
-
-	// TODO make into a utility method
-	private static String stripFileExtension(String path) {
-		final int dot = path.lastIndexOf('.');
-
-		return dot == -1 ? path : path.substring(0, dot);
-	}
-
-	private void addResult(final String label, final double area) {
-		SharedTable.add(label, "Surface area " + unitHeader, area * areaScale);
-	}
-
-	@SuppressWarnings("unused")
-	private void validateImage() {
-		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
-			return;
-		}
-
-		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
-			cancel(NOT_3D_IMAGE);
-		}
-
-		if (!ElementUtil.isColorsBinary(inputImage)) {
-			cancel(NOT_BINARY);
-		}
-	}
-
-	@SuppressWarnings("unused")
-	private void openHelpPage() {
-		Help.openHelpPage("http://bonej.org/isosurface", platformService, uiService,
-			logService);
-	}
-
-	// -- Utility methods --
 
 	/**
 	 * Writes the surface mesh as a binary, little endian STL file
@@ -331,30 +203,140 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	/**
-	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
-	 * same scaling.
-	 * <p>
-	 * NB: Public and static for testing purposes.
-	 * </p>
-	 * 
-	 * @param space an N-dimensional space.
-	 * @param <T> type of the space
-	 * @return true if all spatial axes have matching calibration. Also returns
-	 *         true if none of them have a unit
-	 */
-	// TODO make into a utility method or remove if mesh area considers
-	// calibration in the future
-	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isAxesMatchingSpatialCalibration(T space)
-	{
-		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.allMatch(StringUtils::isNullOrEmpty);
-		final boolean matchingUnit = spatialAxisStream(space).map(
-			CalibratedAxis::unit).distinct().count() == 1;
-		final boolean matchingScale = spatialAxisStream(space).map(a -> a
-			.averageScale(0, 1)).distinct().count() == 1;
+	private void addResult(final String label, final double area) {
+		SharedTable.add(label, "Surface area " + unitHeader, area * areaScale);
+	}
 
-		return (matchingUnit || noUnits) && matchingScale;
+	private String choosePath() {
+		String initialName = stripFileExtension(inputImage.getName());
+
+		// The file dialog won't allow empty filenames, and it prompts when file
+		// already exists
+		File file = uiService.chooseFile(new File(initialName),
+			FileWidget.SAVE_STYLE);
+		if (file == null) {
+			// User pressed cancel on file dialog
+			return null;
+		}
+
+		return file.getAbsolutePath();
+	}
+
+	private void getFileName() {
+		path = choosePath();
+		if (path == null) {
+			return;
+		}
+
+		final String fileName = path.substring(path.lastIndexOf(File.separator) +
+			1);
+		final int dot = fileName.lastIndexOf(".");
+		if (dot >= 0) {
+			extension = fileName.substring(dot);
+			// TODO Verify extension if not .stl, when DialogPrompt YES/NO options
+			// work correctly
+			path = stripFileExtension(path);
+		}
+		else {
+			extension = ".stl";
+		}
+	}
+
+	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
+		marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class,
+			Mesh.class, interval);
+	}
+
+	private void prepareResults() {
+		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
+		if (unitHeader.isEmpty()) {
+			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+		}
+
+		if (!isAxesMatchingSpatialCalibration(inputImage)) {
+			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
+			areaScale = 1.0;
+		}
+		else {
+			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
+			areaScale = scale * scale;
+		}
+	}
+
+	private Map<String, Mesh> processViews(List<Subspace<BitType>> subspaces) {
+		final String name = inputImage.getName();
+		final Map<String, Mesh> meshes = new HashMap<>();
+		for (Subspace<BitType> subspace : subspaces) {
+			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
+			final double area = mesh.getSurfaceArea();
+			final String suffix = subspace.toString();
+			final String label = suffix.isEmpty() ? name : name + " " + suffix;
+			addResult(label, area);
+			meshes.put(subspace.toString(), mesh);
+		}
+		return meshes;
+	}
+
+	private void saveMeshes(final Map<String, Mesh> meshes) {
+		final Map<String, String> savingErrors = new HashMap<>();
+		meshes.forEach((key, subspaceMesh) -> {
+			final String subspaceId = key.replace(' ', '_');
+			final String filePath = path + "_" + subspaceId + extension;
+			try {
+				writeBinarySTLFile(filePath, subspaceMesh);
+			}
+			catch (IOException e) {
+				savingErrors.put(filePath, e.getMessage());
+			}
+		});
+		if (!savingErrors.isEmpty()) {
+			showSavingErrorsDialog(savingErrors);
+		}
+	}
+
+	private void showSavingErrorsDialog(final Map<String, String> savingErrors) {
+		StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
+		savingErrors.forEach((k, v) -> msgBuilder.append(k).append(": ").append(v));
+		uiService.showDialog(msgBuilder.toString(), ERROR_MESSAGE);
+	}
+
+	// TODO make into a utility method
+	private static String stripFileExtension(String path) {
+		final int dot = path.lastIndexOf('.');
+
+		return dot == -1 ? path : path.substring(0, dot);
+	}
+
+	@SuppressWarnings("unused")
+	private void validateImage() {
+		if (inputImage == null) {
+			cancel(NO_IMAGE_OPEN);
+			return;
+		}
+
+		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+			cancel(NOT_3D_IMAGE);
+		}
+
+		if (!ElementUtil.isColorsBinary(inputImage)) {
+			cancel(NOT_BINARY);
+		}
+	}
+
+	// -- Utility methods --
+
+	// -- Helper methods --
+	private static void writeSTLFacet(ByteBuffer buffer, TriangularFacet facet) {
+		writeSTLVector(buffer, facet.getNormal());
+		writeSTLVector(buffer, facet.getP0());
+		writeSTLVector(buffer, facet.getP1());
+		writeSTLVector(buffer, facet.getP2());
+		buffer.putShort((short) 0); // Attribute byte count
+	}
+
+	private static void writeSTLVector(ByteBuffer buffer, Vector3D v) {
+		buffer.putFloat((float) v.getX());
+		buffer.putFloat((float) v.getY());
+		buffer.putFloat((float) v.getZ());
 	}
 }
