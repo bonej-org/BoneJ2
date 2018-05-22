@@ -1284,51 +1284,29 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *
 	 * @param neighborhood a neighbourhood in the image.
 	 * @param image 3D image (int[][])
-	 * @param x x- coordinate
-	 * @param y y- coordinate
-	 * @param z z- coordinate (in image stacks the indexes start at 1)
+	 * @param x0 x- coordinate
+	 * @param y0 y- coordinate
+	 * @param z0 z- coordinate (in image stacks the indexes start at 1)
 	 * @param w width of the image.
 	 * @param h height of the image.
 	 * @param d depth of the image.
 	 */
 	private void get26Neighborhood(final int[] neighborhood, final int[][] image,
-		final int x, final int y, final int z, final int w, final int h,
+		final int x0, final int y0, final int z0, final int w, final int h,
 		final int d)
 	{
-		neighborhood[0] = getPixel(image, x - 1, y - 1, z - 1, w, h, d);
-		neighborhood[1] = getPixel(image, x, y - 1, z - 1, w, h, d);
-		neighborhood[2] = getPixel(image, x + 1, y - 1, z - 1, w, h, d);
-
-		neighborhood[3] = getPixel(image, x - 1, y, z - 1, w, h, d);
-		neighborhood[4] = getPixel(image, x, y, z - 1, w, h, d);
-		neighborhood[5] = getPixel(image, x + 1, y, z - 1, w, h, d);
-
-		neighborhood[6] = getPixel(image, x - 1, y + 1, z - 1, w, h, d);
-		neighborhood[7] = getPixel(image, x, y + 1, z - 1, w, h, d);
-		neighborhood[8] = getPixel(image, x + 1, y + 1, z - 1, w, h, d);
-
-		neighborhood[9] = getPixel(image, x - 1, y - 1, z, w, h, d);
-		neighborhood[10] = getPixel(image, x, y - 1, z, w, h, d);
-		neighborhood[11] = getPixel(image, x + 1, y - 1, z, w, h, d);
-
-		neighborhood[12] = getPixel(image, x - 1, y, z, w, h, d);
-		neighborhood[13] = getPixel(image, x + 1, y, z, w, h, d);
-
-		neighborhood[14] = getPixel(image, x - 1, y + 1, z, w, h, d);
-		neighborhood[15] = getPixel(image, x, y + 1, z, w, h, d);
-		neighborhood[16] = getPixel(image, x + 1, y + 1, z, w, h, d);
-
-		neighborhood[17] = getPixel(image, x - 1, y - 1, z + 1, w, h, d);
-		neighborhood[18] = getPixel(image, x, y - 1, z + 1, w, h, d);
-		neighborhood[19] = getPixel(image, x + 1, y - 1, z + 1, w, h, d);
-
-		neighborhood[20] = getPixel(image, x - 1, y, z + 1, w, h, d);
-		neighborhood[21] = getPixel(image, x, y, z + 1, w, h, d);
-		neighborhood[22] = getPixel(image, x + 1, y, z + 1, w, h, d);
-
-		neighborhood[23] = getPixel(image, x - 1, y + 1, z + 1, w, h, d);
-		neighborhood[24] = getPixel(image, x, y + 1, z + 1, w, h, d);
-		neighborhood[25] = getPixel(image, x + 1, y + 1, z + 1, w, h, d);
+		int i = 0;
+		for (int z = z0 - 1; z < z0 + 1; z++) {
+			for (int y = y0 - 1; y < y0 + 1; y++) {
+				for (int x = x0 - 1; x < x0 + 1; x++) {
+					if (x == x0 && y == y0 && z == z0) {
+						continue;
+					}
+					neighborhood[i] = getPixel(image, x, y, z, w, h, d);
+					i++;
+				}
+			}
+		}
 	}
 
 	private void get6Neighborhood(final int[] neighborhood, final int[][] image,
@@ -1338,7 +1316,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[0] = getPixel(image, x - 1, y, z, w, h, d);
 		neighborhood[1] = getPixel(image, x, y - 1, z, w, h, d);
 		neighborhood[2] = getPixel(image, x, y, z - 1, w, h, d);
-
 		neighborhood[3] = getPixel(image, x + 1, y, z, w, h, d);
 		neighborhood[4] = getPixel(image, x, y + 1, z, w, h, d);
 		neighborhood[5] = getPixel(image, x, y, z + 1, w, h, d);
@@ -1848,18 +1825,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			throw new IllegalArgumentException();
 		}
 		// Set up the chunks
-		final int nChunks = getNChunks(imp, slicesPerChunk);
-		final int[][] chunkRanges = getChunkRanges(imp, nChunks, slicesPerChunk);
-		final int[][] stitchRanges = getStitchRanges(imp, nChunks, slicesPerChunk);
-
 		final int[][] particleLabels = firstIDAttribution(imp, workArray, phase);
-		final int nParticles = getParticleSizes(particleLabels).length;
-
 		if (labelMethod == JOINING.MULTI) {
 			// connect particles within chunks
+			final int nChunks = getNChunks(imp, slicesPerChunk);
 			final int nThreads = Runtime.getRuntime().availableProcessors();
 			final ConnectStructuresThread[] cptf =
 				new ConnectStructuresThread[nThreads];
+			final int[][] chunkRanges = getChunkRanges(imp, nChunks, slicesPerChunk);
 			for (int thread = 0; thread < nThreads; thread++) {
 				cptf[thread] = new ConnectStructuresThread(thread, nThreads, imp,
 					workArray, particleLabels, phase, nChunks, chunkRanges);
@@ -1876,6 +1849,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			// connect particles between chunks
 			if (nChunks > 1) {
 				chunkString = ": stitching...";
+				final int[][] stitchRanges = getStitchRanges(imp, nChunks, slicesPerChunk);
 				connectStructures(imp, workArray, particleLabels, phase, stitchRanges);
 			}
 		}
@@ -1883,6 +1857,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			joinStructures(imp, particleLabels, phase);
 		}
 		else if (labelMethod == JOINING.MAPPED) {
+			final int nParticles = getParticleSizes(particleLabels).length;
 			joinMappedStructures(imp, particleLabels, nParticles, phase);
 		}
 		filterParticles(imp, workArray, particleLabels, minVol, maxVol, phase);
