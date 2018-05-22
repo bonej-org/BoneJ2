@@ -959,9 +959,12 @@ public class Moments implements PlugIn, DialogListener {
 	 * @param bitDepth bits per pixel.
 	 * @return Object containing an array of the type needed for an image with
 	 *         bitDepth
+	 * @throws IllegalArgumentException if bit depth doesn't fit any known image
+	 *           type.
 	 */
-	// TODO throw exception when unexpected bit depth
-	static Object getEmptyPixels(final int w, final int h, final int bitDepth) {
+	static Object getEmptyPixels(final int w, final int h, final int bitDepth)
+		throws IllegalArgumentException
+	{
 		if (bitDepth == 8) {
 			return new byte[w * h];
 		}
@@ -974,6 +977,6 @@ public class Moments implements PlugIn, DialogListener {
 		if (bitDepth == 32) {
 			return new float[w * h];
 		}
-		return new Object();
+		throw new IllegalArgumentException("Unrecognized bit depth");
 	}
 }
