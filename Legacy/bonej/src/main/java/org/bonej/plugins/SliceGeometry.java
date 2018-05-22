@@ -221,8 +221,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 
 		final GenericDialog gd = new GenericDialog("Options");
 
-		// guess bone from image title
-		int boneID = BoneList.guessBone(imp);
+		int boneID = BoneList.guessBone(imp.getTitle());
 		final String[] bones = BoneList.get();
 		gd.addChoice("Bone: ", bones, bones[boneID]);
 
