@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bonej.geometry.FitEllipsoid;
 import org.bonej.geometry.Vectors;
@@ -2207,88 +2209,50 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int nBlobs = particleSizes.length;
 		final ArrayList<ArrayList<short[]>> particleLists = getParticleLists(
 			particleLabels, nBlobs, w, h, d);
-		switch (phase) {
-			case FORE: {
-				for (int b = 1; b < nBlobs; b++) {
-					IJ.showStatus("Joining substructures...");
-					IJ.showProgress(b, nBlobs);
-					if (particleLists.get(b).isEmpty()) {
-						continue;
-					}
-
-					for (int l = 0; l < particleLists.get(b).size(); l++) {
-						final short[] voxel = particleLists.get(b).get(l);
-						final int x = voxel[0];
-						final int y = voxel[1];
-						final int z = voxel[2];
-						// find any neighbours with bigger labels
-						for (int zN = z - 1; zN <= z + 1; zN++) {
-							for (int yN = y - 1; yN <= y + 1; yN++) {
-								final int index = yN * w;
-								for (int xN = x - 1; xN <= x + 1; xN++) {
-									if (!withinBounds(xN, yN, zN, w, h, d)) continue;
-									final int iN = index + xN;
-									final int p = particleLabels[zN][iN];
-									if (p > b) {
-										joinBlobs(b, p, particleLabels, particleLists, w);
-									}
-								}
-							}
-						}
-					}
-				}
-				break;
+		for (int b = 1; b < nBlobs; b++) {
+			IJ.showStatus("Joining substructures...");
+			IJ.showProgress(b, nBlobs);
+			final ArrayList<short[]> blob = particleLists.get(b);
+			if (blob.isEmpty()) {
+				continue;
 			}
-			case BACK: {
-				for (int b = 1; b < nBlobs; b++) {
-					IJ.showStatus("Joining substructures...");
-					IJ.showProgress(b, nBlobs);
-					if (particleLists.get(b).isEmpty()) {
-						continue;
-					}
-					for (int l = 0; l < particleLists.get(b).size(); l++) {
-						final short[] voxel = particleLists.get(b).get(l);
-						final int x = voxel[0];
-						final int y = voxel[1];
-						final int z = voxel[2];
-						// find any neighbours with bigger labels
-						int xN = x;
-						int yN = y;
-						int zN = z;
-						for (int n = 1; n < 7; n++) {
-							switch (n) {
-								case 1:
-									xN = x - 1;
-									break;
-								case 2:
-									xN = x + 1;
-									break;
-								case 3:
-									yN = y - 1;
-									xN = x;
-									break;
-								case 4:
-									yN = y + 1;
-									break;
-								case 5:
-									zN = z - 1;
-									yN = y;
-									break;
-								case 6:
-									zN = z + 1;
-									break;
-							}
-							if (!withinBounds(xN, yN, zN, w, h, d)) continue;
-							final int iN = yN * w + xN;
-							final int p = particleLabels[zN][iN];
-							if (p > b) {
-								joinBlobs(b, p, particleLabels, particleLists, w);
-							}
-						}
+			for (final short[] voxel : blob) {
+				final List<int[]> coordinates = getNeighbourhoodCoordinates(phase, voxel, w, h, d);
+				for (final int[] coordinate : coordinates) {
+					final int index = coordinate[1] * w + coordinate[0];
+					final int label = particleLabels[coordinate[2]][index];
+					if (label > b) {
+						joinBlobs(b, label, particleLabels, particleLists, w);
 					}
 				}
 			}
 		}
+	}
+
+	private List<int[]> getNeighbourhoodCoordinates(final int phase,
+		final short[] voxel, final int w, final int h, final int d)
+	{
+		final int x0 = voxel[0];
+		final int y0 = voxel[1];
+		final int z0 = voxel[2];
+		if (phase == BACK) {
+			return Stream.of(new int[] { x0 - 1, y0, z0 }, new int[] { x0 + 1, y0,
+				z0 }, new int[] { x0, y0 - 1, z0 }, new int[] { x0, y0 + 1, z0 },
+				new int[] { x0, y0, z0 - 1 }, new int[] { x0, y0, z0 + 1 }).filter(
+					a -> withinBounds(a[0], a[1], a[2], w, h, d)).collect(Collectors
+						.toList());
+		}
+		final List<int[]> coordinates = new ArrayList<>();
+		for (int z = z0 - 1; z <= z0 + 1; z++) {
+			for (int y = y0 - 1; y <= y0 + 1; y++) {
+				for (int x = x0 - 1; x <= x0 + 1; x++) {
+					if (withinBounds(x, y, z, w, h, d)) {
+						coordinates.add(new int[] { x, y, z });
+					}
+				}
+			}
+		}
+		return coordinates;
 	}
 
 	/**
