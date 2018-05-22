@@ -29,6 +29,7 @@ import java.awt.TextField;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.bonej.plugins.ParticleCounter.JOINING;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
@@ -40,6 +41,10 @@ import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
+
+import static org.bonej.plugins.ParticleCounter.JOINING.LINEAR;
+import static org.bonej.plugins.ParticleCounter.JOINING.MAPPED;
+import static org.bonej.plugins.ParticleCounter.JOINING.MULTI;
 
 /**
  * <p>
@@ -102,10 +107,10 @@ public class Purify implements PlugIn, DialogListener {
 		gd.showDialog();
 		if (gd.wasCanceled()) return;
 		final String choice = gd.getNextChoice();
-		final int labelMethod;
-		if (choice.equals(items[0])) labelMethod = ParticleCounter.MULTI;
-		else if (choice.equals(items[1])) labelMethod = ParticleCounter.LINEAR;
-		else labelMethod = ParticleCounter.MAPPED;
+		final JOINING labelMethod;
+		if (choice.equals(items[0])) labelMethod = MULTI;
+		else if (choice.equals(items[1])) labelMethod = LINEAR;
+		else labelMethod = MAPPED;
 		final int slicesPerChunk = (int) Math.floor(gd.getNextNumber());
 		final boolean showPerformance = gd.getNextBoolean();
 		final boolean doCopy = gd.getNextBoolean();
@@ -124,9 +129,8 @@ public class Purify implements PlugIn, DialogListener {
 		}
 		final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
 		if (showPerformance) {
-			if (labelMethod == ParticleCounter.LINEAR) {
-				showResults(duration, imp, imp.getImageStackSize(),
-					ParticleCounter.LINEAR);
+			if (labelMethod == LINEAR) {
+				showResults(duration, imp, imp.getImageStackSize(), LINEAR);
 			}
 			else {
 				showResults(duration, imp, slicesPerChunk, labelMethod);
@@ -206,7 +210,7 @@ public class Purify implements PlugIn, DialogListener {
 	 * @param labelMethod labelling method used.
 	 */
 	private void showResults(final double duration, final ImagePlus imp,
-		final int slicesPerChunk, final int labelMethod)
+		final int slicesPerChunk, final JOINING labelMethod)
 	{
 		final ParticleCounter pc = new ParticleCounter();
 		final int nChunks = pc.getNChunks(imp, slicesPerChunk);
@@ -214,7 +218,7 @@ public class Purify implements PlugIn, DialogListener {
 		final ResultsTable rt = ResultsTable.getResultsTable();
 		rt.incrementCounter();
 		rt.addLabel(imp.getTitle());
-		rt.addValue("Algorithm", labelMethod);
+		rt.addValue("Algorithm", labelMethod.ordinal());
 		rt.addValue("Threads", Runtime.getRuntime().availableProcessors());
 		rt.addValue("Slices", imp.getImageStackSize());
 		rt.addValue("Chunks", nChunks);
@@ -368,7 +372,7 @@ public class Purify implements PlugIn, DialogListener {
 	 * @return purified image
 	 */
 	ImagePlus purify(final ImagePlus imp, final int slicesPerChunk,
-		final int labelMethod)
+		final JOINING labelMethod)
 	{
 
 		final ParticleCounter pc = new ParticleCounter();

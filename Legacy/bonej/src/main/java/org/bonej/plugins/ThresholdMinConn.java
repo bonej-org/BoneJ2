@@ -29,6 +29,7 @@ import java.awt.TextField;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.bonej.plugins.ParticleCounter.JOINING;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
@@ -47,6 +48,8 @@ import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 import process3d.Dilate_;
 import process3d.Erode_;
+
+import static org.bonej.plugins.ParticleCounter.JOINING.MULTI;
 
 public class ThresholdMinConn implements PlugIn, DialogListener {
 
@@ -248,7 +251,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 			final Purify p = new Purify();
 			final Erode_ e = new Erode_();
 			final Dilate_ d = new Dilate_();
-			final int labelMethod = ParticleCounter.MULTI;
+			final JOINING labelMethod = MULTI;
 			replaceImage(imp3, p.purify(imp3, 4, labelMethod));
 			for (int j = 0; j < nErodes; j++)
 				replaceImage(imp3, e.erode(imp3, 255, false));

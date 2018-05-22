@@ -113,11 +113,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/** Background value */
 	static final int BACK = 0;
 
-	// TODO Convert to enum
 	/** Particle joining method */
-	static final int MULTI = 0;
-	static final int LINEAR = 1;
-	static final int MAPPED = 2;
+	public enum JOINING {MULTI, LINEAR, MAPPED}
 
 	/** Surface colour style */
 	private static final int GRADIENT = 0;
@@ -127,7 +124,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	private String chunkString = "";
 
-	private int labelMethod = MAPPED;
+	private JOINING labelMethod = JOINING.MAPPED;
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
@@ -262,9 +259,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean do3DOriginal = gd.getNextBoolean();
 		final int origResampling = (int) Math.floor(gd.getNextNumber());
 		final String choice = gd.getNextChoice();
-		if (choice.equals(items2[0])) labelMethod = MULTI;
-		else if (choice.equals(items2[1])) labelMethod = LINEAR;
-		else labelMethod = MAPPED;
+		if (choice.equals(items2[0])) labelMethod = JOINING.MULTI;
+		else if (choice.equals(items2[1])) labelMethod = JOINING.LINEAR;
+		else labelMethod = JOINING.MAPPED;
 		final int slicesPerChunk = (int) Math.floor(gd.getNextNumber());
 
 		// get the particles and do the analysis
@@ -1857,7 +1854,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int[][] particleLabels = firstIDAttribution(imp, workArray, phase);
 		final int nParticles = getParticleSizes(particleLabels).length;
 
-		if (labelMethod == MULTI) {
+		if (labelMethod == JOINING.MULTI) {
 			// connect particles within chunks
 			final int nThreads = Runtime.getRuntime().availableProcessors();
 			final ConnectStructuresThread[] cptf =
@@ -1881,10 +1878,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				connectStructures(imp, workArray, particleLabels, phase, stitchRanges);
 			}
 		}
-		else if (labelMethod == LINEAR) {
+		else if (labelMethod == JOINING.LINEAR) {
 			joinStructures(imp, particleLabels, phase);
 		}
-		else if (labelMethod == MAPPED) {
+		else if (labelMethod == JOINING.MAPPED) {
 			joinMappedStructures(imp, particleLabels, nParticles, phase);
 		}
 		filterParticles(imp, workArray, particleLabels, minVol, maxVol, phase);
@@ -2721,10 +2718,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *
 	 * @param label one of ParticleCounter.MULTI or .LINEAR
 	 */
-	void setLabelMethod(final int label) {
-		if (label != MULTI && label != LINEAR && label != MAPPED) {
-			throw new IllegalArgumentException();
-		}
+	void setLabelMethod(final JOINING label) {
 		labelMethod = label;
 	}
 }
