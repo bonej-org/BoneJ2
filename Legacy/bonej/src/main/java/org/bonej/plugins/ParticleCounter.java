@@ -1840,7 +1840,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			sPhase = "background";
 		}
 		else {
-			// TODO Make phase an enum
 			throw new IllegalArgumentException();
 		}
 		if (slicesPerChunk < 1) {
@@ -2238,8 +2237,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						}
 					}
 				}
+				break;
 			}
-			// TODO break; missing?!
 			case BACK: {
 				for (int b = 1; b < nBlobs; b++) {
 					IJ.showStatus("Joining substructures...");
