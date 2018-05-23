@@ -113,21 +113,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	/** Foreground value */
 	static final int FORE = -1;
-
 	/** Background value */
 	static final int BACK = 0;
-
-	/** Particle joining method */
-	public enum JOINING {MULTI, LINEAR, MAPPED}
-
 	/** Surface colour style */
 	private static final int GRADIENT = 0;
 	private static final int SPLIT = 1;
-
 	private String sPhase = "";
-
 	private String chunkString = "";
-
 	private JOINING labelMethod = JOINING.MAPPED;
 
 	@Override
@@ -542,7 +534,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						else {
 							continue;
 						}
-						replaceLabelsWithMinimum(coordinates, workArray, particleLabels, w, phase, sR2, sR3);
+						replaceLabelsWithMinimum(coordinates, workArray, particleLabels, w,
+							phase, sR2, sR3);
 					}
 				}
 				if (phase == FORE) {
@@ -557,45 +550,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	private static int findMinimumLabel(final Iterable<int[]> coordinates,
-		final byte[][] workArray, final int[][] particleLabels, final int w,
-		final int phase, final int minStart)
-	{
-		int minLabel = minStart;
-		for (final int[] coordinate : coordinates) {
-			final int z = coordinate[2];
-			final int index = getOffset(coordinate[0], coordinate[1], w);
-			if (workArray[z][index] == phase) {
-				final int label = particleLabels[z][index];
-				if (label != 0 && label < minLabel) {
-					minLabel = label;
-				}
-			}
-		}
-		return minLabel;
-	}
-
-	private static void replaceLabelsWithMinimum(
-		final Iterable<int[]> coordinates, final byte[][] workArray,
-		final int[][] particleLabels, final int w, final int phase, final int minZ,
-		final int maxZ)
-	{
-		final int minimumLabel = findMinimumLabel(coordinates, workArray,
-			particleLabels, w, phase, 0);
-		for (final int[] coordinate : coordinates) {
-			final int vX = coordinate[0];
-			final int vY = coordinate[1];
-			final int vZ = coordinate[2];
-			final int offset = getOffset(vX, vY, w);
-			if (workArray[vZ][offset] == phase) {
-				final int label = particleLabels[vZ][offset];
-				if (label != 0 && label != minimumLabel) {
-					replaceLabel(particleLabels, label, minimumLabel, minZ, maxZ);
-				}
-			}
-		}
-	}
-
 	/**
 	 * Find duplicated values and update the LUT
 	 *
@@ -604,8 +558,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param lut a look-up table.
 	 * @return total number of duplicate values found.
 	 */
-	private long countDuplicates(final int[] counter, final List<HashSet<Integer>> map,
-		final int[] lut)
+	private long countDuplicates(final int[] counter,
+		final List<HashSet<Integer>> map, final int[] lut)
 	{
 		for (int i = 1; i < map.size(); i++) {
 			final Set<Integer> set = map.get(i);
@@ -1072,6 +1026,24 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return changed;
 	}
 
+	private static int findMinimumLabel(final Iterable<int[]> coordinates,
+		final byte[][] workArray, final int[][] particleLabels, final int w,
+		final int phase, final int minStart)
+	{
+		int minLabel = minStart;
+		for (final int[] coordinate : coordinates) {
+			final int z = coordinate[2];
+			final int index = getOffset(coordinate[0], coordinate[1], w);
+			if (workArray[z][index] == phase) {
+				final int label = particleLabels[z][index];
+				if (label != 0 && label < minLabel) {
+					minLabel = label;
+				}
+			}
+		}
+		return minLabel;
+	}
+
 	/**
 	 * Go through all pixels and assign initial particle label
 	 *
@@ -1110,7 +1082,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					particleLabels[z][arrayIndex] = ID;
 					final List<int[]> coordinates = neighbourhoodFinder.apply(new int[] {
 						x, y, z }, bounds);
-					coordinates.add(new int[]{x, y, z});
+					coordinates.add(new int[] { x, y, z });
 					final int minTag = findMinimumLabel(coordinates, workArray,
 						particleLabels, w, phase, ID);
 					particleLabels[z][arrayIndex] = minTag;
@@ -1154,6 +1126,35 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
+	private static List<int[]> get26NeighbourhoodCoordinates(final int[] voxel,
+		final int[] bounds)
+	{
+		final int x0 = voxel[0];
+		final int y0 = voxel[1];
+		final int z0 = voxel[2];
+		return get26NeighbourhoodCoordinates(x0, y0, z0, bounds[0], bounds[1],
+			bounds[2]);
+	}
+
+	private static List<int[]> get26NeighbourhoodCoordinates(final int x0,
+		final int y0, final int z0, final int w, final int h, final int d)
+	{
+		final List<int[]> coordinates = new ArrayList<>();
+		for (int z = z0 - 1; z <= z0 + 1; z++) {
+			for (int y = y0 - 1; y <= y0 + 1; y++) {
+				for (int x = x0 - 1; x <= x0 + 1; x++) {
+					if (z == z0 && y == y0 && x == x0) {
+						continue;
+					}
+					if (withinBounds(x, y, z, w, h, d)) {
+						coordinates.add(new int[] { x, y, z });
+					}
+				}
+			}
+		}
+		return coordinates;
+	}
+
 	private void get6Neighborhood(final int[] neighborhood, final int[][] image,
 		final int x, final int y, final int z, final int w, final int h,
 		final int d)
@@ -1164,6 +1165,26 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[3] = getPixel(image, x + 1, y, z, w, h, d);
 		neighborhood[4] = getPixel(image, x, y + 1, z, w, h, d);
 		neighborhood[5] = getPixel(image, x, y, z + 1, w, h, d);
+	}
+
+	private static List<int[]> get6NeighbourhoodCoordinates(final int[] voxel,
+		final int[] bounds)
+	{
+		final int x0 = voxel[0];
+		final int y0 = voxel[1];
+		final int z0 = voxel[2];
+		return get6NeighbourhoodCoordinates(x0, y0, z0, bounds[0], bounds[1],
+			bounds[2]);
+	}
+
+	private static List<int[]> get6NeighbourhoodCoordinates(final int x0,
+		final int y0, final int z0, final int w, final int h, final int d)
+	{
+		return Stream.of(new int[] { x0 - 1, y0, z0 }, new int[] { x0 + 1, y0, z0 },
+			new int[] { x0, y0 - 1, z0 }, new int[] { x0, y0 + 1, z0 }, new int[] {
+				x0, y0, z0 - 1 }, new int[] { x0, y0, z0 + 1 }).filter(
+					a -> withinBounds(a[0], a[1], a[2], w, h, d)).collect(Collectors
+						.toList());
 	}
 
 	/**
@@ -1694,7 +1715,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			// connect particles between chunks
 			if (nChunks > 1) {
 				chunkString = ": stitching...";
-				final int[][] stitchRanges = getStitchRanges(imp, nChunks, slicesPerChunk);
+				final int[][] stitchRanges = getStitchRanges(imp, nChunks,
+					slicesPerChunk);
 				connectStructures(imp, workArray, particleLabels, phase, stitchRanges);
 			}
 		}
@@ -2043,7 +2065,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				continue;
 			}
 			for (final short[] voxel : blob) {
-				final int[] tmp = {voxel[0], voxel[1], voxel[2]};
+				final int[] tmp = { voxel[0], voxel[1], voxel[2] };
 				final List<int[]> coordinates = neighbourhoodFinder.apply(tmp, bounds);
 				for (final int[] coordinate : coordinates) {
 					final int index = coordinate[1] * w + coordinate[0];
@@ -2054,53 +2076,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				}
 			}
 		}
-	}
-
-	private static List<int[]> get26NeighbourhoodCoordinates(final int[] voxel,
-															final int[] bounds)
-	{
-		final int x0 = voxel[0];
-		final int y0 = voxel[1];
-		final int z0 = voxel[2];
-		return get26NeighbourhoodCoordinates(x0, y0, z0, bounds[0], bounds[1], bounds[2]);
-	}
-
-	private static List<int[]> get26NeighbourhoodCoordinates(final int x0, final int y0,
-		final int z0, final int w, final int h, final int d)
-	{
-		final List<int[]> coordinates = new ArrayList<>();
-		for (int z = z0 - 1; z <= z0 + 1; z++) {
-			for (int y = y0 - 1; y <= y0 + 1; y++) {
-				for (int x = x0 - 1; x <= x0 + 1; x++) {
-					if (z == z0 && y == y0 && x == x0) {
-						continue;
-					}
-					if (withinBounds(x, y, z, w, h, d)) {
-						coordinates.add(new int[] { x, y, z });
-					}
-				}
-			}
-		}
-		return coordinates;
-	}
-
-	private static List<int[]> get6NeighbourhoodCoordinates(final int[] voxel,
-													 final int[] bounds)
-	{
-		final int x0 = voxel[0];
-		final int y0 = voxel[1];
-		final int z0 = voxel[2];
-		return get6NeighbourhoodCoordinates(x0, y0, z0, bounds[0], bounds[1], bounds[2]);
-	}
-
-	private static List<int[]> get6NeighbourhoodCoordinates(final int x0, final int y0,
-		final int z0, final int w, final int h, final int d)
-	{
-		return Stream.of(new int[] { x0 - 1, y0, z0 }, new int[] { x0 + 1, y0, z0 },
-			new int[] { x0, y0 - 1, z0 }, new int[] { x0, y0 + 1, z0 }, new int[] {
-				x0, y0, z0 - 1 }, new int[] { x0, y0, z0 + 1 }).filter(
-					a -> withinBounds(a[0], a[1], a[2], w, h, d)).collect(Collectors
-						.toList());
 	}
 
 	/**
@@ -2245,6 +2220,27 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
+	private static void replaceLabelsWithMinimum(
+		final Iterable<int[]> coordinates, final byte[][] workArray,
+		final int[][] particleLabels, final int w, final int phase, final int minZ,
+		final int maxZ)
+	{
+		final int minimumLabel = findMinimumLabel(coordinates, workArray,
+			particleLabels, w, phase, 0);
+		for (final int[] coordinate : coordinates) {
+			final int vX = coordinate[0];
+			final int vY = coordinate[1];
+			final int vZ = coordinate[2];
+			final int offset = getOffset(vX, vY, w);
+			if (workArray[vZ][offset] == phase) {
+				final int label = particleLabels[vZ][offset];
+				if (label != 0 && label != minimumLabel) {
+					replaceLabel(particleLabels, label, minimumLabel, minZ, maxZ);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Iterate backwards over map entries, moving set values to their new lut
 	 * positions in the map. Updates LUT value of shifted values
@@ -2337,6 +2333,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int w, final int h, final int d)
 	{
 		return (m >= 0 && m < w && n >= 0 && n < h && o >= 0 && o < d);
+	}
+
+	/** Particle joining method */
+	public enum JOINING {
+			MULTI, LINEAR, MAPPED
 	}
 
 	private final class ConnectStructuresThread extends Thread {
