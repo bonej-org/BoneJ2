@@ -559,9 +559,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	private static int findMinimumLabel(final Iterable<int[]> coordinates,
 		final byte[][] workArray, final int[][] particleLabels, final int w,
-		final int phase)
+		final int phase, final int minStart)
 	{
-		int minLabel = 0;
+		int minLabel = minStart;
 		for (final int[] coordinate : coordinates) {
 			final int z = coordinate[2];
 			final int index = getOffset(coordinate[0], coordinate[1], w);
@@ -581,7 +581,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int maxZ)
 	{
 		final int minimumLabel = findMinimumLabel(coordinates, workArray,
-			particleLabels, w, phase);
+			particleLabels, w, phase, 0);
 		for (final int[] coordinate : coordinates) {
 			final int vX = coordinate[0];
 			final int vY = coordinate[1];
@@ -1087,111 +1087,39 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
+		final int[] bounds = { w, h, d };
 		final int wh = w * h;
 		IJ.showStatus("Finding " + sPhase + " structures");
 		final int[][] particleLabels = new int[d][wh];
 		int ID = 1;
-
-		if (phase == FORE) {
-			for (int z = 0; z < d; z++) {
-				for (int y = 0; y < h; y++) {
-					final int rowIndex = y * w;
-					for (int x = 0; x < w; x++) {
-						final int arrayIndex = rowIndex + x;
-						if (workArray[z][arrayIndex] == FORE) {
-							particleLabels[z][arrayIndex] = ID;
-							int minTag = ID;
-							// Find the minimum particleLabel in the
-							// neighbouring pixels
-							for (int vZ = z - 1; vZ <= z + 1; vZ++) {
-								for (int vY = y - 1; vY <= y + 1; vY++) {
-									for (int vX = x - 1; vX <= x + 1; vX++) {
-										if (withinBounds(vX, vY, vZ, w, h, 0, d)) {
-											final int offset = getOffset(vX, vY, w);
-											if (workArray[vZ][offset] == FORE) {
-												final int tagv = particleLabels[vZ][offset];
-												if (tagv != 0 && tagv < minTag) {
-													minTag = tagv;
-												}
-											}
-										}
-									}
-								}
-							}
-							// assign the smallest particle label from the
-							// neighbours to the pixel
-							particleLabels[z][arrayIndex] = minTag;
-							// increment the particle label
-							if (minTag == ID) {
-								ID++;
-							}
-						}
-					}
-				}
-				IJ.showProgress(z, d);
-			}
+		final BiFunction<int[], int[], List<int[]>> neighbourhoodFinder;
+		if (phase == BACK) {
+			neighbourhoodFinder = ParticleCounter::get6NeighbourhoodCoordinates;
 		}
-		else if (phase == BACK) {
-			for (int z = 0; z < d; z++) {
-				for (int y = 0; y < h; y++) {
-					final int rowIndex = y * w;
-					for (int x = 0; x < w; x++) {
-						final int arrayIndex = rowIndex + x;
-						if (workArray[z][arrayIndex] == BACK) {
-							particleLabels[z][arrayIndex] = ID;
-							int minTag = ID;
-							// Find the minimum particleLabel in the
-							// neighbouring pixels
-							int nX = x;
-							int nY = y;
-							int nZ = z;
-							for (int n = 0; n < 7; n++) {
-								switch (n) {
-									case 0:
-										break;
-									case 1:
-										nX = x - 1;
-										break;
-									case 2:
-										nX = x + 1;
-										break;
-									case 3:
-										nY = y - 1;
-										nX = x;
-										break;
-									case 4:
-										nY = y + 1;
-										break;
-									case 5:
-										nZ = z - 1;
-										nY = y;
-										break;
-									case 6:
-										nZ = z + 1;
-										break;
-								}
-								if (withinBounds(nX, nY, nZ, w, h, 0, d)) {
-									final int offset = getOffset(nX, nY, w);
-									if (workArray[nZ][offset] == BACK) {
-										final int tagv = particleLabels[nZ][offset];
-										if (tagv != 0 && tagv < minTag) {
-											minTag = tagv;
-										}
-									}
-								}
-							}
-							// assign the smallest particle label from the
-							// neighbours to the pixel
-							particleLabels[z][arrayIndex] = minTag;
-							// increment the particle label
-							if (minTag == ID) {
-								ID++;
-							}
-						}
+		else {
+			neighbourhoodFinder = ParticleCounter::get26NeighbourhoodCoordinates;
+		}
+		for (int z = 0; z < d; z++) {
+			for (int y = 0; y < h; y++) {
+				final int rowIndex = y * w;
+				for (int x = 0; x < w; x++) {
+					final int arrayIndex = rowIndex + x;
+					if (workArray[z][arrayIndex] != phase) {
+						continue;
+					}
+					particleLabels[z][arrayIndex] = ID;
+					final List<int[]> coordinates = neighbourhoodFinder.apply(new int[] {
+						x, y, z }, bounds);
+					coordinates.add(new int[]{x, y, z});
+					final int minTag = findMinimumLabel(coordinates, workArray,
+						particleLabels, w, phase, ID);
+					particleLabels[z][arrayIndex] = minTag;
+					if (minTag == ID) {
+						ID++;
 					}
 				}
-				IJ.showProgress(z, d);
 			}
+			IJ.showProgress(z, d);
 		}
 		return particleLabels;
 	}
@@ -2100,7 +2028,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int nBlobs = particleSizes.length;
 		final ArrayList<ArrayList<short[]>> particleLists = getParticleLists(
 			particleLabels, nBlobs, w, h, d);
-		final BiFunction<short[], int[], List<int[]>> neighbourhoodFinder;
+		final BiFunction<int[], int[], List<int[]>> neighbourhoodFinder;
 		if (phase == BACK) {
 			neighbourhoodFinder = ParticleCounter::get6NeighbourhoodCoordinates;
 		}
@@ -2115,8 +2043,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				continue;
 			}
 			for (final short[] voxel : blob) {
-				final List<int[]> coordinates;
-				coordinates = neighbourhoodFinder.apply(voxel, bounds);
+				final int[] tmp = {voxel[0], voxel[1], voxel[2]};
+				final List<int[]> coordinates = neighbourhoodFinder.apply(tmp, bounds);
 				for (final int[] coordinate : coordinates) {
 					final int index = coordinate[1] * w + coordinate[0];
 					final int label = particleLabels[coordinate[2]][index];
@@ -2128,7 +2056,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	private static List<int[]> get26NeighbourhoodCoordinates(final short[] voxel,
+	private static List<int[]> get26NeighbourhoodCoordinates(final int[] voxel,
 															final int[] bounds)
 	{
 		final int x0 = voxel[0];
@@ -2156,7 +2084,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return coordinates;
 	}
 
-	private static List<int[]> get6NeighbourhoodCoordinates(final short[] voxel,
+	private static List<int[]> get6NeighbourhoodCoordinates(final int[] voxel,
 													 final int[] bounds)
 	{
 		final int x0 = voxel[0];
