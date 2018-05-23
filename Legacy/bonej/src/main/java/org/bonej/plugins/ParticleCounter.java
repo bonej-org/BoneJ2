@@ -2333,25 +2333,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return changed;
 	}
 
-	/**
-	 * Check to see if the pixel at (m,n,o) is within the bounds of the current
-	 * stack
-	 *
-	 * @param m x co-ordinate
-	 * @param n y co-ordinate
-	 * @param o z co-ordinate
-	 * @param w width of the stack.
-	 * @param h height of the stack.
-	 * @param startZ first Z coordinate to use
-	 * @param endZ last Z coordinate to use
-	 * @return True if the pixel is within the bounds of the current stack
-	 */
-	private static boolean withinBounds(final int m, final int n, final int o,
-		final int w, final int h, final int startZ, final int endZ)
-	{
-		return (m >= 0 && m < w && n >= 0 && n < h && o >= startZ && o < endZ);
-	}
-
 	private static boolean withinBounds(final int m, final int n, final int o,
 		final int w, final int h, final int d)
 	{
