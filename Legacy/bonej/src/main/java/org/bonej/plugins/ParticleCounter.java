@@ -41,7 +41,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bonej.geometry.FitEllipsoid;
-import org.bonej.geometry.Vectors;
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
@@ -575,6 +574,32 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// all values should be seen only once,
 		// count how many >1s there are.
 		return Arrays.stream(counter).filter(i -> i > 1).count();
+	}
+
+	/**
+	 * Calculate the cross product of 3 Point3f's, which describe two vectors
+	 * joined at the tails. Can be used to find the plane / surface normal of a
+	 * triangle. Half of its magnitude is the area of the triangle.
+	 *
+	 * @param point0 both vectors' tails
+	 * @param point1 vector 1's head
+	 * @param point2 vector 2's head
+	 * @return cross product vector
+	 */
+	private static Point3f crossProduct(final Point3f point0,
+		final Point3f point1, final Point3f point2)
+	{
+		final double x1 = point1.x - point0.x;
+		final double y1 = point1.y - point0.y;
+		final double z1 = point1.z - point0.z;
+		final double x2 = point2.x - point0.x;
+		final double y2 = point2.y - point0.y;
+		final double z2 = point2.z - point0.z;
+		final Point3f crossVector = new Point3f();
+		crossVector.x = (float) (y1 * z2 - z1 * y2);
+		crossVector.y = (float) (z1 * x2 - x1 * z2);
+		crossVector.z = (float) (x1 * y2 - y1 * x2);
+		return crossVector;
 	}
 
 	private void display3DOriginal(final ImagePlus imp, final int resampling,
@@ -1825,8 +1850,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final Point3f origin = new Point3f(0.0f, 0.0f, 0.0f);
 		for (int n = 0; n < nPoints; n += 3) {
 			IJ.showStatus("Calculating surface area...");
-			final Point3f cp = Vectors.crossProduct(points.get(n), points.get(n + 1),
-				points.get(n + 2));
+			final Point3f cp = crossProduct(points.get(n), points.get(n + 1), points
+				.get(n + 2));
 			final double deltaArea = 0.5 * cp.distance(origin);
 			sumArea += deltaArea;
 		}
@@ -1836,8 +1861,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private static double[] getSurfaceAreas(
 		final Collection<List<Point3f>> surfacePoints)
 	{
-		return surfacePoints.stream().mapToDouble(
-			ParticleCounter::getSurfaceArea).toArray();
+		return surfacePoints.stream().mapToDouble(ParticleCounter::getSurfaceArea)
+			.toArray();
 	}
 
 	private ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp,
@@ -1853,6 +1878,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			if (p > 0) {
 				final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels,
 					limits, resampling);
+				// noinspection TypeMayBeWeakened
 				final MCTriangulator mct = new MCTriangulator();
 				@SuppressWarnings("unchecked")
 				final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels,

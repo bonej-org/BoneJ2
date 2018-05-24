@@ -244,26 +244,6 @@ public class EllipsoidFactor implements PlugIn {
 	}
 
 	/**
-	 * Normalise a vector to have a length of 1 and the same orientation as the
-	 * input vector a
-	 *
-	 * @param a a 3D vector.
-	 * @return Unit vector in direction of a
-	 */
-	private static double[] norm(final double[] a) {
-		final double a0 = a[0];
-		final double a1 = a[1];
-		final double a2 = a[2];
-		final double length = Math.sqrt(a0 * a0 + a1 * a1 + a2 * a2);
-
-		final double[] normed = new double[3];
-		normed[0] = a0 / length;
-		normed[1] = a1 / length;
-		normed[2] = a2 / length;
-		return normed;
-	}
-
-	/**
 	 * Search the list of ellipsoids and return the index of the largest ellipsoid
 	 * which contains the point x, y, z
 	 *
@@ -406,8 +386,7 @@ public class EllipsoidFactor implements PlugIn {
 			final double ey = rot[1][0] * unx + rot[1][1] * uny + rot[1][2] * unz;
 			final double ez = rot[2][0] * unx + rot[2][1] * uny + rot[2][2] * unz;
 
-			final double[] torqueVector = Vectors.crossProduct(px, py, pz, ex, ey,
-				ez);
+			final double[] torqueVector = crossProduct(px, py, pz, ex, ey, ez);
 
 			t0 += torqueVector[0];
 			t1 += torqueVector[1];
@@ -458,6 +437,37 @@ public class EllipsoidFactor implements PlugIn {
 		final double l = Trig.distance3D(x, y, z);
 
 		return new double[] { x / l, y / l, z / l };
+	}
+
+	/**
+	 * Calculate the cross product of 2 vectors, both in double[3] format
+	 *
+	 * @param a first vector
+	 * @param b second vector
+	 * @return resulting vector in double[3] format
+	 */
+	private static double[] crossProduct(final double[] a, final double[] b) {
+		return crossProduct(a[0], a[1], a[2], b[0], b[1], b[2]);
+	}
+
+	/**
+	 * Calculate the cross product of two vectors (x1, y1, z1) and (x2, y2, z2)
+	 *
+	 * @param x1 x-coordinate of the 1st vector.
+	 * @param y1 y-coordinate of the 1st vector.
+	 * @param z1 z-coordinate of the 1st vector.
+	 * @param x2 x-coordinate of the 2nd vector.
+	 * @param y2 y-coordinate of the 2nd vector.
+	 * @param z2 z-coordinate of the 2nd vector.
+	 * @return cross product in {x, y, z} format
+	 */
+	private static double[] crossProduct(final double x1, final double y1,
+		final double z1, final double x2, final double y2, final double z2)
+	{
+		final double x = y1 * z2 - z1 * y2;
+		final double y = z1 * x2 - x1 * z2;
+		final double z = x1 * y2 - y1 * x2;
+		return new double[] { x, y, z };
 	}
 
 	/**
@@ -1209,6 +1219,26 @@ public class EllipsoidFactor implements PlugIn {
 	}
 
 	/**
+	 * Normalise a vector to have a length of 1 and the same orientation as the
+	 * input vector a
+	 *
+	 * @param a a 3D vector.
+	 * @return Unit vector in direction of a
+	 */
+	private static double[] norm(final double[] a) {
+		final double a0 = a[0];
+		final double a1 = a[1];
+		final double a2 = a[2];
+		final double length = Math.sqrt(a0 * a0 + a1 * a1 + a2 * a2);
+
+		final double[] normed = new double[3];
+		normed[0] = a0 / length;
+		normed[1] = a1 / length;
+		normed[2] = a2 / length;
+		return normed;
+	}
+
+	/**
 	 * given a seed point, find the ellipsoid which best fits the binarised
 	 * structure
 	 *
@@ -1274,11 +1304,11 @@ public class EllipsoidFactor implements PlugIn {
 
 		// find an orthogonal axis
 		final double[] xAxis = { 1, 0, 0 };
-		double[] middleAxis = Vectors.crossProduct(shortAxis, xAxis);
+		double[] middleAxis = crossProduct(shortAxis, xAxis);
 		middleAxis = norm(middleAxis);
 
 		// find a mutually orthogonal axis by forming the cross product
-		double[] longAxis = Vectors.crossProduct(shortAxis, middleAxis);
+		double[] longAxis = crossProduct(shortAxis, middleAxis);
 		longAxis = norm(longAxis);
 
 		// construct a rotation matrix
@@ -1590,12 +1620,10 @@ public class EllipsoidFactor implements PlugIn {
 		final double[] vector = Vectors.randomVector();
 
 		// first column, should be very close to [0, 1, 0]^T
-		final double[] firstColumn = norm(Vectors.crossProduct(zerothColumn,
-			vector));
+		final double[] firstColumn = norm(crossProduct(zerothColumn, vector));
 
 		// second column, should be very close to [0, 0, 1]^T
-		final double[] secondColumn = norm(Vectors.crossProduct(
-			zerothColumn, firstColumn));
+		final double[] secondColumn = norm(crossProduct(zerothColumn, firstColumn));
 
 		double[][] rotation = { zerothColumn, firstColumn, secondColumn };
 
