@@ -57,7 +57,7 @@ public class DensityCalibrator implements PlugIn {
 		UsageReporter.reportEvent(this).send();
 	}
 
-	private void scanco(final ImagePlus imp) throws IllegalArgumentException {
+	private static void scanco(final ImagePlus imp) throws IllegalArgumentException {
 		final String manufacturer = DicomTools.getTag(imp, "0008,0070");
 		if (manufacturer == null || !manufacturer.contains("SCANCO")) {
 			throw new IllegalArgumentException("File is not a SCANCO Medical DICOM");
@@ -76,5 +76,4 @@ public class DensityCalibrator implements PlugIn {
 		imp.setCalibration(cal);
 		imp.updateAndDraw();
 	}
-
 }

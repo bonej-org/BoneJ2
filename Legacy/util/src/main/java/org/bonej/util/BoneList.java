@@ -26,8 +26,6 @@ package org.bonej.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ij.ImagePlus;
-
 /**
  * Utility methods for making lists of bones and guessing which bone is in an
  * image

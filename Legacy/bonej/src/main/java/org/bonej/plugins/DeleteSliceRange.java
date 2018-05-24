@@ -23,8 +23,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.plugins;
 
-import org.bonej.util.ImageCheck;
-
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -80,7 +78,7 @@ public class DeleteSliceRange implements PlugIn {
 	 * @param first the first slice to remove
 	 * @param last the last slice to remove
 	 */
-	private void deleteSliceRange(final ImageStack stack, final int first,
+	private static void deleteSliceRange(final ImageStack stack, final int first,
 		final int last)
 	{
 		for (int s = first; s <= last; s++) {

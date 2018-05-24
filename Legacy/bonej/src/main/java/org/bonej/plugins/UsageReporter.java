@@ -49,7 +49,7 @@ import ij.Prefs;
  * 
  * @author Michael Doube
  */
-// TODO Fix class design: decide if singleton or not!
+// TODO Fix class design: decide if singleton or not! Does anything need to be a non-static method, and do we need to pass instance at all?
 public final class UsageReporter {
 
 	private static final UsageReporter INSTANCE = new UsageReporter();

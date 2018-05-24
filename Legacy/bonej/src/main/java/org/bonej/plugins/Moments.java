@@ -67,33 +67,6 @@ public class Moments implements PlugIn, DialogListener {
 	private boolean fieldUpdated;
 	private Calibration cal;
 
-	/**
-	 * Create a copy of the original image aligned to the tensor defined by a 3x3
-	 * Eigenvector matrix
-	 *
-	 * @param imp input ImagePlus stack
-	 * @param E Eigenvector rotation matrix
-	 * @param endSlice last slice to use
-	 * @deprecated only use from a deprecated class
-	 * @return aligned ImagePlus
-	 */
-	@Deprecated
-	public ImagePlus alignImage(final ImagePlus imp, final Matrix E,
-		final int endSlice)
-	{
-		final double[] centroid = getCentroid3D(imp, 1, endSlice, 128.0, 255.0, 0.0,
-			1.0);
-		return alignToPrincipalAxes(imp, E, centroid, 1, endSlice, 128.0, 255.0,
-			false);
-	}
-
-	// cortical bone apparent density (material density * volume fraction) from
-	// Mow & Huiskes (2005) p.140
-	// using 1.8 g.cm^-3: 1mm³ = 0.0018 g = 0.0000018 kg = 1.8*10^-6 kg; 1mm²
-	// = 10^-6 m²
-	// conversion coefficient from mm^5 to kg.m² = 1.8*10^-12
-	// double cc = 1.8*Math.pow(10, -12);
-
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
 		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
@@ -120,6 +93,13 @@ public class Moments implements PlugIn, DialogListener {
 		DialogModifier.registerMacroValues(gd, gd.getComponents());
 		return true;
 	}
+
+	// cortical bone apparent density (material density * volume fraction) from
+	// Mow & Huiskes (2005) p.140
+	// using 1.8 g.cm^-3: 1mm³ = 0.0018 g = 0.0000018 kg = 1.8*10^-6 kg; 1mm²
+	// = 10^-6 m²
+	// conversion coefficient from mm^5 to kg.m² = 1.8*10^-12
+	// double cc = 1.8*Math.pow(10, -12);
 
 	@Override
 	public void run(final String arg) {
@@ -219,50 +199,23 @@ public class Moments implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Check if a 3 x 3 Matrix is right handed. If the matrix is a rotation
-	 * matrix, then right-handedness implies rotation only, while left-handedness
-	 * implies a reflection will be performed.
+	 * Create a copy of the original image aligned to the tensor defined by a 3x3
+	 * Eigenvector matrix
 	 *
-	 * @param matrix a JAMA matrix.
-	 * @return true if the Matrix is right handed, false if it is left handed
+	 * @param imp input ImagePlus stack
+	 * @param E Eigenvector rotation matrix
+	 * @param endSlice last slice to use
+	 * @deprecated only use from a deprecated class
+	 * @return aligned ImagePlus
 	 */
-	private static boolean isRightHanded(final Matrix matrix) {
-		if (matrix.getColumnDimension() != 3 || matrix.getRowDimension() != 3) {
-			throw new IllegalArgumentException();
-		}
-
-		final double x0 = matrix.get(0, 0);
-		final double x1 = matrix.get(1, 0);
-		final double x2 = matrix.get(2, 0);
-		final double y0 = matrix.get(0, 1);
-		final double y1 = matrix.get(1, 1);
-		final double y2 = matrix.get(2, 1);
-		final double z0 = matrix.get(0, 2);
-		final double z1 = matrix.get(1, 2);
-		final double z2 = matrix.get(2, 2);
-
-		final double c0 = x1 * y2 - x2 * y1;
-		final double c1 = x2 * y0 - x0 * y2;
-		final double c2 = x0 * y1 - x1 * y0;
-
-		final double dot = c0 * z0 + c1 * z1 + c2 * z2;
-
-		return dot > 0;
-	}
-
-	/**
-	 * Check if a rotation matrix will flip the direction of the z component of
-	 * the original
-	 *
-	 * @param matrix a JAMA matrix.
-	 * @return true if the rotation matrix will cause z-flipping
-	 */
-	private static boolean isZFlipped(final Matrix matrix) {
-		final double x2 = matrix.get(2, 0);
-		final double y2 = matrix.get(2, 1);
-		final double z2 = matrix.get(2, 2);
-		final double dot = x2 + y2 + z2;
-		return dot < 0;
+	@Deprecated
+	public static ImagePlus alignImage(final ImagePlus imp, final Matrix E,
+		final int endSlice)
+	{
+		final double[] centroid = getCentroid3D(imp, 1, endSlice, 128.0, 255.0, 0.0,
+			1.0);
+		return alignToPrincipalAxes(imp, E, centroid, 1, endSlice, 128.0, 255.0,
+			false);
 	}
 
 	/**
@@ -702,6 +655,53 @@ public class Moments implements PlugIn, DialogListener {
 		final int tD = (int) Math.floor(2 * zTmax / vS) + 5;
 
 		return new int[] { tW, tH, tD };
+	}
+
+	/**
+	 * Check if a 3 x 3 Matrix is right handed. If the matrix is a rotation
+	 * matrix, then right-handedness implies rotation only, while left-handedness
+	 * implies a reflection will be performed.
+	 *
+	 * @param matrix a JAMA matrix.
+	 * @return true if the Matrix is right handed, false if it is left handed
+	 */
+	private static boolean isRightHanded(final Matrix matrix) {
+		if (matrix.getColumnDimension() != 3 || matrix.getRowDimension() != 3) {
+			throw new IllegalArgumentException();
+		}
+
+		final double x0 = matrix.get(0, 0);
+		final double x1 = matrix.get(1, 0);
+		final double x2 = matrix.get(2, 0);
+		final double y0 = matrix.get(0, 1);
+		final double y1 = matrix.get(1, 1);
+		final double y2 = matrix.get(2, 1);
+		final double z0 = matrix.get(0, 2);
+		final double z1 = matrix.get(1, 2);
+		final double z2 = matrix.get(2, 2);
+
+		final double c0 = x1 * y2 - x2 * y1;
+		final double c1 = x2 * y0 - x0 * y2;
+		final double c2 = x0 * y1 - x1 * y0;
+
+		final double dot = c0 * z0 + c1 * z1 + c2 * z2;
+
+		return dot > 0;
+	}
+
+	/**
+	 * Check if a rotation matrix will flip the direction of the z component of
+	 * the original
+	 *
+	 * @param matrix a JAMA matrix.
+	 * @return true if the rotation matrix will cause z-flipping
+	 */
+	private static boolean isZFlipped(final Matrix matrix) {
+		final double x2 = matrix.get(2, 0);
+		final double y2 = matrix.get(2, 1);
+		final double z2 = matrix.get(2, 2);
+		final double dot = x2 + y2 + z2;
+		return dot < 0;
 	}
 
 	/**

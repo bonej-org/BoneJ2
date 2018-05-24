@@ -23,6 +23,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.plugins;
 
+import static org.bonej.plugins.ParticleCounter.JOINING.MULTI;
+
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.TextField;
@@ -48,8 +50,6 @@ import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 import process3d.Dilate_;
 import process3d.Erode_;
-
-import static org.bonej.plugins.ParticleCounter.JOINING.MULTI;
 
 public class ThresholdMinConn implements PlugIn, DialogListener {
 
@@ -161,7 +161,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 	 * @param histogram
 	 * @return
 	 */
-	private double checkMinimum(final ImagePlus imp, final double minimum,
+	private static double checkMinimum(final ImagePlus imp, final double minimum,
 		final int[] histogram)
 	{
 		double threshold = minimum;
@@ -278,7 +278,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 	 * @param conns
 	 * @return
 	 */
-	private double getMinimum(final double[] testThreshold,
+	private static double getMinimum(final double[] testThreshold,
 		final double[] conns)
 	{
 		final CurveFitter cf = new CurveFitter(testThreshold, conns);
@@ -311,7 +311,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 	 * @param imp
 	 * @param imp2
 	 */
-	private void replaceImage(final ImagePlus imp, final ImagePlus imp2) {
+	private static void replaceImage(final ImagePlus imp, final ImagePlus imp2) {
 		final ImageStack stack2 = imp2.getStack();
 		imp.setStack(null, stack2);
 		imp.show();
@@ -356,7 +356,9 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 	 * @param testThreshold
 	 * @param conns
 	 */
-	private void showPlot(final double[] testThreshold, final double[] conns) {
+	private static void showPlot(final double[] testThreshold,
+		final double[] conns)
+	{
 		// convert arrays to floats
 		final int nPoints = testThreshold.length;
 		final float[] xData = new float[nPoints];

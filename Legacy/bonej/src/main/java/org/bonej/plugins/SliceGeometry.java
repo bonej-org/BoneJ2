@@ -758,8 +758,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 	}
 
-	private ImagePlus convertToBinary(final ImagePlus imp, final double min,
-		final double max)
+	private static ImagePlus convertToBinary(final ImagePlus imp,
+		final double min, final double max)
 	{
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();

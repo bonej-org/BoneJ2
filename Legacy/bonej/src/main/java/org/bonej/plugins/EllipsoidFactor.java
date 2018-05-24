@@ -258,8 +258,8 @@ public class EllipsoidFactor implements PlugIn {
 	 * @return the index of the largest ellipsoid which contains this point, -1 if
 	 *         none of the ellipsoids contain the point
 	 */
-	private int biggestEllipsoid(final Ellipsoid[] ellipsoids, final double x,
-		final double y, final double z)
+	private static int biggestEllipsoid(final Ellipsoid[] ellipsoids,
+		final double x, final double y, final double z)
 	{
 		for (final Ellipsoid ellipsoid : ellipsoids) {
 			if (ellipsoid.contains(x, y, z)) {
@@ -288,7 +288,7 @@ public class EllipsoidFactor implements PlugIn {
 		return ellipsoid;
 	}
 
-	private double calculateFillingEfficiency(final int[][] maxIDs) {
+	private static double calculateFillingEfficiency(final int[][] maxIDs) {
 		final int l = maxIDs.length;
 		final long[] foregroundCount = new long[l];
 		final long[] filledCount = new long[l];
@@ -336,7 +336,7 @@ public class EllipsoidFactor implements PlugIn {
 	 * @param contactPoints
 	 * @return
 	 */
-	private double[] calculateTorque(final Ellipsoid ellipsoid,
+	private static double[] calculateTorque(final Ellipsoid ellipsoid,
 		final Iterable<double[]> contactPoints)
 	{
 
@@ -404,7 +404,7 @@ public class EllipsoidFactor implements PlugIn {
 	 * @param contactPoints
 	 * @return
 	 */
-	private double[] contactPointUnitVector(final Ellipsoid ellipsoid,
+	private static double[] contactPointUnitVector(final Ellipsoid ellipsoid,
 		final Collection<double[]> contactPoints)
 	{
 
@@ -591,7 +591,7 @@ public class EllipsoidFactor implements PlugIn {
 		}
 	}
 
-	private ImagePlus displayEllipsoidFactor(final ImagePlus imp,
+	private static ImagePlus displayEllipsoidFactor(final ImagePlus imp,
 		final int[][] maxIDs, final Ellipsoid[] ellipsoids)
 	{
 		final ImageStack stack = imp.getImageStack();
@@ -655,7 +655,7 @@ public class EllipsoidFactor implements PlugIn {
 		return bigImp;
 	}
 
-	private ImagePlus displayMiddleOverLong(final ImagePlus imp,
+	private static ImagePlus displayMiddleOverLong(final ImagePlus imp,
 		final int[][] maxIDs, final Ellipsoid[] ellipsoids)
 	{
 		final ImageStack stack = imp.getImageStack();
@@ -702,7 +702,7 @@ public class EllipsoidFactor implements PlugIn {
 		return midLong;
 	}
 
-	private ImagePlus displayShortOverMiddle(final ImagePlus imp,
+	private static ImagePlus displayShortOverMiddle(final ImagePlus imp,
 		final int[][] maxIDs, final Ellipsoid[] ellipsoids)
 	{
 		final ImageStack stack = imp.getImageStack();
@@ -749,8 +749,8 @@ public class EllipsoidFactor implements PlugIn {
 		return shortmid;
 	}
 
-	private ImagePlus displayVolumes(final ImagePlus imp, final int[][] maxIDs,
-		final Ellipsoid[] ellipsoids)
+	private static ImagePlus displayVolumes(final ImagePlus imp,
+		final int[][] maxIDs, final Ellipsoid[] ellipsoids)
 	{
 		final ImageStack stack = imp.getImageStack();
 		final int w = stack.getWidth();
@@ -806,8 +806,9 @@ public class EllipsoidFactor implements PlugIn {
 	 * @param sigma
 	 * @return
 	 */
-	private ImagePlus drawFlinnPeakPlot(final String title, final ImagePlus imp,
-		final int[][] maxIDs, final Ellipsoid[] ellipsoids, final double sigma)
+	private static ImagePlus drawFlinnPeakPlot(final String title,
+		final ImagePlus imp, final int[][] maxIDs, final Ellipsoid[] ellipsoids,
+		final double sigma)
 	{
 
 		final ImageStack stack = imp.getImageStack();
@@ -907,7 +908,7 @@ public class EllipsoidFactor implements PlugIn {
 	 * @param ellipsoids
 	 * @return
 	 */
-	private ImagePlus drawFlinnPlot(final String title,
+	private static ImagePlus drawFlinnPlot(final String title,
 		final Ellipsoid[] ellipsoids)
 	{
 
@@ -939,7 +940,7 @@ public class EllipsoidFactor implements PlugIn {
 	 * @param ellipsoid
 	 * @return the ellipsoid factor
 	 */
-	private double ellipsoidFactor(final Ellipsoid ellipsoid) {
+	private static double ellipsoidFactor(final Ellipsoid ellipsoid) {
 		final double[] radii = ellipsoid.getSortedRadii();
 		final double a = radii[0];
 		final double b = radii[1];
@@ -956,10 +957,10 @@ public class EllipsoidFactor implements PlugIn {
 			pixels, pW, pH, pD, w, h, d);
 	}
 
-	private ArrayList<double[]> findContactPoints(final Ellipsoid ellipsoid,
-		final ArrayList<double[]> contactPoints, final double[][] unitVectors,
-		final byte[][] pixels, final double pW, final double pH, final double pD,
-		final int w, final int h, final int d)
+	private static ArrayList<double[]> findContactPoints(
+		final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints,
+		final double[][] unitVectors, final byte[][] pixels, final double pW,
+		final double pH, final double pD, final int w, final int h, final int d)
 	{
 		contactPoints.clear();
 		final double[][] points = ellipsoid.getSurfacePoints(unitVectors);
@@ -977,7 +978,7 @@ public class EllipsoidFactor implements PlugIn {
 		return contactPoints;
 	}
 
-	private double[][] findContactUnitVectors(final Ellipsoid ellipsoid,
+	private static double[][] findContactUnitVectors(final Ellipsoid ellipsoid,
 		final ArrayList<double[]> contactPoints)
 	{
 		final double[][] unitVectors = new double[contactPoints.size()][3];
@@ -1049,7 +1050,9 @@ public class EllipsoidFactor implements PlugIn {
 	 * @return array containing the indexes of the biggest ellipsoids which
 	 *         contain each point
 	 */
-	private int[][] findMaxID(final ImagePlus imp, final Ellipsoid[] ellipsoids) {
+	private static int[][] findMaxID(final ImagePlus imp,
+		final Ellipsoid[] ellipsoids)
+	{
 
 		final ImageStack stack = imp.getImageStack();
 		final int w = stack.getWidth();
@@ -1212,7 +1215,7 @@ public class EllipsoidFactor implements PlugIn {
 	 * @param d
 	 * @return
 	 */
-	private boolean isOutOfBounds(final int x, final int y, final int z,
+	private static boolean isOutOfBounds(final int x, final int y, final int z,
 		final int w, final int h, final int d)
 	{
 		return x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d;
@@ -1474,7 +1477,7 @@ public class EllipsoidFactor implements PlugIn {
 	 *      matrix from axis and angle</a>
 	 * @return
 	 */
-	private Ellipsoid rotateAboutAxis(final Ellipsoid ellipsoid,
+	private static Ellipsoid rotateAboutAxis(final Ellipsoid ellipsoid,
 		final double[] axis)
 	{
 		final double theta = 0.1;
@@ -1529,7 +1532,7 @@ public class EllipsoidFactor implements PlugIn {
 		return ellipsoid;
 	}
 
-	private int[][] skeletonPoints(final ImagePlus imp) {
+	private static int[][] skeletonPoints(final ImagePlus imp) {
 		final ImagePlus skeleton = SkeletonUtils.getSkeleton(imp);
 		final ImageStack skeletonStack = skeleton.getStack();
 
@@ -1566,7 +1569,7 @@ public class EllipsoidFactor implements PlugIn {
 		return list.toArray(new int[list.size()][]);
 	}
 
-	private double[] threeWayShuffle() {
+	private static double[] threeWayShuffle() {
 		final double[] a = { 0, 0, 0 };
 		final double rand = Math.random();
 		if (rand < 1.0 / 3.0) a[0] = 1;
@@ -1607,7 +1610,7 @@ public class EllipsoidFactor implements PlugIn {
 	 *
 	 * @param ellipsoid
 	 */
-	private Ellipsoid wiggle(final Ellipsoid ellipsoid) {
+	private static Ellipsoid wiggle(final Ellipsoid ellipsoid) {
 
 		final double b = Math.random() * 0.2 - 0.1;
 		final double c = Math.random() * 0.2 - 0.1;

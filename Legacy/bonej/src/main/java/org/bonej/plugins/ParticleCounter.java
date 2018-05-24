@@ -35,7 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,7 +43,6 @@ import org.bonej.geometry.FitEllipsoid;
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
-import org.bonej.util.Multithreader;
 import org.scijava.vecmath.Color3f;
 import org.scijava.vecmath.Point3f;
 
@@ -456,14 +454,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param nbh a neighbourhood in the image.
 	 * @param centre current pixel's label
 	 */
-	private void addNeighboursToMap(final List<HashSet<Integer>> map,
+	private static void addNeighboursToMap(final List<HashSet<Integer>> map,
 		final int[] nbh, final int centre)
 	{
 		final HashSet<Integer> set = map.get(centre);
 		Arrays.stream(nbh).filter(n -> n > 0).forEach(set::add);
 	}
 
-	private void applyLUT(final int[][] particleLabels, final int[] lut,
+	private static void applyLUT(final int[][] particleLabels, final int[] lut,
 		final int w, final int h, final int d)
 	{
 		for (int z = 0; z < d; z++) {
@@ -482,7 +480,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	private boolean checkConsistence(final int[] lut,
+	private static boolean checkConsistence(final int[] lut,
 		final List<HashSet<Integer>> map)
 	{
 		final int l = lut.length;
@@ -555,7 +553,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param lut a look-up table.
 	 * @return total number of duplicate values found.
 	 */
-	private long countDuplicates(final int[] counter,
+	private static long countDuplicates(final int[] counter,
 		final List<HashSet<Integer>> map, final int[] lut)
 	{
 		for (int i = 1; i < map.size(); i++) {
@@ -602,8 +600,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return crossVector;
 	}
 
-	private void display3DOriginal(final ImagePlus imp, final int resampling,
-		final Image3DUniverse univ)
+	private static void display3DOriginal(final ImagePlus imp,
+		final int resampling, final Image3DUniverse univ)
 	{
 		final Color3f colour = new Color3f(1.0f, 1.0f, 1.0f);
 		final boolean[] channels = { true, true, true };
@@ -627,9 +625,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param green green component of the axes' color.
 	 * @param title text shown by the axes.
 	 */
-	private void displayAxes(final Image3DUniverse univ, final double[] centroid,
-		final double[][] unitVector, final double[] lengths, final float green,
-		final String title)
+	private static void displayAxes(final Image3DUniverse univ,
+		final double[] centroid, final double[][] unitVector,
+		final double[] lengths, final float green, final String title)
 	{
 		final double cX = centroid[0];
 		final double cY = centroid[1];
@@ -699,7 +697,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param centroids [n][3] centroids of particles.
 	 * @param univ universe where the centroids are displayed.
 	 */
-	private void displayCentroids(final double[][] centroids,
+	private static void displayCentroids(final double[][] centroids,
 		final Image3DUniverse univ)
 	{
 		final int nCentroids = centroids.length;
@@ -729,7 +727,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	private void displayEllipsoids(final Object[][] ellipsoids,
+	private static void displayEllipsoids(final Object[][] ellipsoids,
 		final Image3DUniverse univ)
 	{
 		final int nEllipsoids = ellipsoids.length;
@@ -803,7 +801,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *          titles
 	 * @return an image of the particles.
 	 */
-	private ImagePlus displayParticleLabels(final int[][] particleLabels,
+	private static ImagePlus displayParticleLabels(final int[][] particleLabels,
 		final ImagePlus imp)
 	{
 		final int w = imp.getWidth();
@@ -836,7 +834,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param univ universe where the centroids are displayed.
 	 * @param surfacePoints points of each particle.
 	 */
-	private void displayParticleSurfaces(final Image3DUniverse univ,
+	private static void displayParticleSurfaces(final Image3DUniverse univ,
 		final Collection<List<Point3f>> surfacePoints, final int colourMode,
 		final double[] volumes, final double splitValue)
 	{
@@ -886,7 +884,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *          particlelabels
 	 * @return ImagePlus with particle labels substituted with some value
 	 */
-	private ImagePlus displayParticleValues(final ImagePlus imp,
+	private static ImagePlus displayParticleValues(final ImagePlus imp,
 		final int[][] particleLabels, final double[] values)
 	{
 		final int w = imp.getWidth();
@@ -911,7 +909,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return impOut;
 	}
 
-	private void displayPrincipalAxes(final Image3DUniverse univ,
+	private static void displayPrincipalAxes(final Image3DUniverse univ,
 		final EigenvalueDecomposition[] eigens, final double[][] centroids,
 		final double[][] lengths)
 	{
@@ -1029,7 +1027,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	private boolean findFirstAppearance(final int[] lut,
+	private static boolean findFirstAppearance(final int[] lut,
 		final List<HashSet<Integer>> map)
 	{
 		final int l = map.size();
@@ -1131,9 +1129,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param h height of the image.
 	 * @param d depth of the image.
 	 */
-	private void get26Neighborhood(final int[] neighborhood, final int[][] image,
-		final int x0, final int y0, final int z0, final int w, final int h,
-		final int d)
+	private static void get26Neighborhood(final int[] neighborhood,
+		final int[][] image, final int x0, final int y0, final int z0, final int w,
+		final int h, final int d)
 	{
 		int i = 0;
 		for (int z = z0 - 1; z < z0 + 1; z++) {
@@ -1178,9 +1176,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return coordinates;
 	}
 
-	private void get6Neighborhood(final int[] neighborhood, final int[][] image,
-		final int x, final int y, final int z, final int w, final int h,
-		final int d)
+	private static void get6Neighborhood(final int[] neighborhood,
+		final int[][] image, final int x, final int y, final int z, final int w,
+		final int h, final int d)
 	{
 		neighborhood[0] = getPixel(image, x - 1, y, z, w, h, d);
 		neighborhood[1] = getPixel(image, x, y - 1, z, w, h, d);
@@ -1266,7 +1264,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param particleSizes sizes of the particles
 	 * @return double[][] containing all the particles' centroids
 	 */
-	private double[][] getCentroids(final ImagePlus imp,
+	private static double[][] getCentroids(final ImagePlus imp,
 		final int[][] particleLabels, final long[] particleSizes)
 	{
 		final int nParticles = particleSizes.length;
@@ -1295,7 +1293,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return centroids;
 	}
 
-	private EigenvalueDecomposition[] getEigens(final ImagePlus imp,
+	private static EigenvalueDecomposition[] getEigens(final ImagePlus imp,
 		final int[][] particleLabels, final double[][] centroids)
 	{
 		final Calibration cal = imp.getCalibration();
@@ -1355,7 +1353,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return eigens;
 	}
 
-	private Object[][] getEllipsoids(
+	private static Object[][] getEllipsoids(
 		final Collection<List<Point3f>> surfacePoints)
 	{
 		final Object[][] ellipsoids = new Object[surfacePoints.size()][];
@@ -1422,7 +1420,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param particleSurfaces points of all the particles.
 	 * @return Feret diameters of the surfaces.
 	 */
-	private double[] getFerets(final List<List<Point3f>> particleSurfaces) {
+	private static double[] getFerets(
+		final List<List<Point3f>> particleSurfaces)
+	{
 		final int nParticles = particleSurfaces.size();
 		final double[] ferets = new double[nParticles];
 		final ListIterator<List<Point3f>> it = particleSurfaces.listIterator();
@@ -1466,7 +1466,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return array containing two nPoints * 3 arrays with max and max
 	 *         transformed distances respectively
 	 */
-	private Object[] getMaxDistances(final ImagePlus imp,
+	private static Object[] getMaxDistances(final ImagePlus imp,
 		final int[][] particleLabels, final double[][] centroids,
 		final EigenvalueDecomposition[] E)
 	{
@@ -1524,7 +1524,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return array containing mean, std dev and max pixel values for each
 	 *         particle
 	 */
-	private double[][] getMeanStdDev(final ImagePlus imp,
+	private static double[][] getMeanStdDev(final ImagePlus imp,
 		final int[][] particleLabels, final long[] particleSizes)
 	{
 		final int nParticles = particleSizes.length;
@@ -1594,7 +1594,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param nParticles number of particles in the stack
 	 * @return int[][] containing x, y and z minima and maxima.
 	 */
-	private int[][] getParticleLimits(final ImagePlus imp,
+	private static int[][] getParticleLimits(final ImagePlus imp,
 		final int[][] particleLabels, final int nParticles)
 	{
 		final int w = imp.getWidth();
@@ -1770,7 +1770,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param d depth of the image.
 	 * @return corresponding pixel (0 if out of image)
 	 */
-	private int getPixel(final int[][] image, final int x, final int y,
+	private static int getPixel(final int[][] image, final int x, final int y,
 		final int z, final int w, final int h, final int d)
 	{
 		if (withinBounds(x, y, z, w, h, d)) return image[z][x + y * w];
@@ -1791,7 +1791,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return scanRanges list of scan limits for connectStructures() to stitch
 	 *         chunks back together
 	 */
-	private int[][] getStitchRanges(final ImagePlus imp, final int nC,
+	private static int[][] getStitchRanges(final ImagePlus imp, final int nC,
 		final int slicesPerChunk)
 	{
 		final int nSlices = imp.getImageStackSize();
@@ -1865,7 +1865,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			.toArray();
 	}
 
-	private ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp,
+	private static ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp,
 		final int[][] particleLabels, final int[][] limits, final int resampling,
 		final int nParticles)
 	{
@@ -1904,7 +1904,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return surfacePoints;
 	}
 
-	private double[] getSurfaceVolume(
+	private static double[] getSurfaceVolume(
 		final Collection<List<Point3f>> surfacePoints)
 	{
 		return surfacePoints.stream().mapToDouble(p -> {
@@ -1916,7 +1916,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}).toArray();
 	}
 
-	private double[] getVolumes(final ImagePlus imp, final long[] particleSizes) {
+	private static double[] getVolumes(final ImagePlus imp,
+		final long[] particleSizes)
+	{
 		final Calibration cal = imp.getCalibration();
 		final double voxelVolume = cal.pixelWidth * cal.pixelHeight *
 			cal.pixelDepth;
@@ -1928,7 +1930,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return particleVolumes;
 	}
 
-	private boolean isRadiiValid(final double[] radii) {
+	private static boolean isRadiiValid(final double[] radii) {
 		for (int r = 0; r < 3; r++) {
 			if (Double.isNaN(radii[r])) {
 				return false;
@@ -1946,8 +1948,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param particleLists list of particle voxel coordinates
 	 * @param w stack width
 	 */
-	private void joinBlobs(final int b, final int p, final int[][] particleLabels,
-		final List<ArrayList<short[]>> particleLists, final int w)
+	private static void joinBlobs(final int b, final int p,
+		final int[][] particleLabels, final List<ArrayList<short[]>> particleLists,
+		final int w)
 	{
 		for (final short[] voxelB : particleLists.get(p)) {
 			particleLists.get(b).add(voxelB);
@@ -1957,7 +1960,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		particleLists.get(p).clear();
 	}
 
-	private void joinMappedStructures(final ImagePlus imp,
+	private static void joinMappedStructures(final ImagePlus imp,
 		final int[][] particleLabels, final int nParticles, final int phase)
 	{
 		IJ.showStatus("Mapping structures and joining...");
@@ -2114,7 +2117,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param imp an image.
 	 * @return byte[][] work array
 	 */
-	private byte[][] makeWorkArray(final ImagePlus imp) {
+	private static byte[][] makeWorkArray(final ImagePlus imp) {
 		final int s = imp.getStackSize();
 		final int p = imp.getWidth() * imp.getHeight();
 		final byte[][] workArray = new byte[s][p];
@@ -2128,7 +2131,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return workArray;
 	}
 
-	private boolean mergeDuplicates(final List<HashSet<Integer>> map,
+	private static boolean mergeDuplicates(final List<HashSet<Integer>> map,
 		final int[] counter, final long duplicates, final int[] lut,
 		final List<HashSet<Integer>> lutList)
 	{
@@ -2213,7 +2216,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	private boolean minimiseLutArray(final int[] lutArray) {
+	private static boolean minimiseLutArray(final int[] lutArray) {
 		final int l = lutArray.length;
 		boolean changed = false;
 		for (int key = 1; key < l; key++) {
@@ -2279,8 +2282,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param map a map of LUT values.
 	 * @return false if nothing changed, true if something changed
 	 */
-	private boolean snowballLUT(final int[] lut, final List<HashSet<Integer>> map,
-		final List<HashSet<Integer>> lutList)
+	private static boolean snowballLUT(final int[] lut,
+		final List<HashSet<Integer>> map, final List<HashSet<Integer>> lutList)
 	{
 		boolean changed = false;
 		for (int i = lut.length - 1; i > 0; i--) {
@@ -2316,7 +2319,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param lut a look-up table.
 	 * @param lutlist hash of LUT values.
 	 */
-	private void updateLUT(final int oldValue, final int newValue,
+	private static void updateLUT(final int oldValue, final int newValue,
 		final int[] lut, final List<HashSet<Integer>> lutlist)
 	{
 		final HashSet<Integer> list = lutlist.get(oldValue);
@@ -2329,7 +2332,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		list.clear();
 	}
 
-	private boolean updateLUTwithMinPosition(final int[] lut,
+	private static boolean updateLUTwithMinPosition(final int[] lut,
 		final List<HashSet<Integer>> map, final List<HashSet<Integer>> lutList)
 	{
 		final int l = lut.length;
@@ -2434,7 +2437,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param slicesPerChunk number of slices per chunk
 	 * @return number of chunks
 	 */
-	int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
+	static int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
 		final double d = imp.getImageStackSize();
 		return (int) Math.ceil(d / slicesPerChunk);
 	}
@@ -2450,7 +2453,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *         for; int[1][] end of outer for; int[3][] start of inner for; int[4]
 	 *         end of inner 4. Second dimension is chunk number.
 	 */
-	int[][] getChunkRanges(final ImagePlus imp, final int nC,
+	static int[][] getChunkRanges(final ImagePlus imp, final int nC,
 		final int slicesPerChunk)
 	{
 		final int nSlices = imp.getImageStackSize();
@@ -2478,33 +2481,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			scanRanges[3][nC - 1] = nSlices;
 		}
 		return scanRanges;
-	}
-
-	/**
-	 * Check whole array replacing m with n
-	 *
-	 * @param particleLabels particle labels in the image.
-	 * @param m value to be replaced
-	 * @param n new value
-	 * @param endZ last+1 z coordinate to check
-	 */
-	void replaceLabel(final int[][] particleLabels, final int m, final int n,
-		final int endZ)
-	{
-		final int s = particleLabels[0].length;
-		final AtomicInteger ai = new AtomicInteger(0);
-		final Thread[] threads = Multithreader.newThreads();
-		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(() -> {
-				for (int z = ai.getAndIncrement(); z < endZ; z = ai.getAndIncrement()) {
-					for (int i = 0; i < s; i++)
-						if (particleLabels[z][i] == m) {
-							particleLabels[z][i] = n;
-						}
-				}
-			});
-		}
-		Multithreader.startAndJoin(threads);
 	}
 
 	/**

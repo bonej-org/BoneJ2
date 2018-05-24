@@ -29,7 +29,6 @@ import java.awt.Rectangle;
 import java.awt.TextField;
 import java.util.List;
 
-import ij.gui.Roi;
 import org.bonej.geometry.FitSphere;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
@@ -41,6 +40,7 @@ import ij.ImageStack;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.gui.OvalRoi;
+import ij.gui.Roi;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import ij.plugin.frame.RoiManager;
@@ -163,59 +163,6 @@ public class SphereFitter implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Remove all ROIs from the ROI manager
-	 *
-	 * @param roiMan an instance of {@link RoiManager}.
-	 */
-	private static void deleteAll(final RoiManager roiMan) {
-		final Roi[] rois = roiMan.getRoisAsArray();
-		for (int i = 0; i < rois.length; i++) {
-			if (roiMan.getCount() == 0) break;
-			roiMan.select(i);
-			roiMan.runCommand("delete");
-		}
-	}
-
-	/**
-	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
-	 *
-	 * @param imp an image.
-	 * @param roiMan an instance of {@link RoiManager}
-	 * @return double[n][3] containing n (x, y, z) coordinates or null if there
-	 *         are no points
-	 */
-	private static double[][] getRoiManPoints(final ImagePlus imp,
-											  final RoiManager roiMan)
-	{
-		final Calibration cal = imp.getCalibration();
-		final double vW = cal.pixelWidth;
-		final double vH = cal.pixelHeight;
-		final double vD = cal.pixelDepth;
-		int nPoints = 0;
-		final Roi[] roiList = roiMan.getRoisAsArray();
-		for (int i = 0; i < roiMan.getCount(); i++) {
-			final Roi roi = roiList[i];
-			if (roi.getType() == 10) {
-				nPoints++;
-			}
-		}
-		if (nPoints == 0) return null;
-		final double[][] dataPoints = new double[nPoints][3];
-		int j = 0;
-		for (int i = 0; i < roiMan.getCount(); i++) {
-			final Roi roi = roiList[i];
-			if (roi.getType() == 10) {
-				final Rectangle xy = roi.getBounds();
-				dataPoints[j][0] = xy.getX() * vW;
-				dataPoints[j][1] = xy.getY() * vH;
-				dataPoints[j][2] = roi.getPosition() * vD;
-				j++;
-			}
-		}
-		return dataPoints;
-	}
-
-	/**
 	 * Add series of circular ROIs to the ROI Manager based on the centre and
 	 * radius of a sphere
 	 *
@@ -256,8 +203,8 @@ public class SphereFitter implements PlugIn, DialogListener {
 		}
 	}
 
-	private ImagePlus copyInnerCube(final ImagePlus imp, final double cropFactor,
-		final double[] sphereDim)
+	private static ImagePlus copyInnerCube(final ImagePlus imp,
+		final double cropFactor, final double[] sphereDim)
 	{
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
@@ -311,8 +258,8 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return target;
 	}
 
-	private ImagePlus copyOuterCube(final ImagePlus imp, final double cropFactor,
-		final double[] sphereDim)
+	private static ImagePlus copyOuterCube(final ImagePlus imp,
+		final double cropFactor, final double[] sphereDim)
 	{
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
@@ -366,7 +313,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return target;
 	}
 
-	private ImagePlus copySphere(final ImagePlus imp, final int padding,
+	private static ImagePlus copySphere(final ImagePlus imp, final int padding,
 		final double cropFactor, final double[] sphereDim)
 	{
 		final Calibration cal = imp.getCalibration();
@@ -426,5 +373,58 @@ public class SphereFitter implements PlugIn, DialogListener {
 		target.setCalibration(cal);
 		target.setDisplayRange(imp.getDisplayRangeMin(), imp.getDisplayRangeMax());
 		return target;
+	}
+
+	/**
+	 * Remove all ROIs from the ROI manager
+	 *
+	 * @param roiMan an instance of {@link RoiManager}.
+	 */
+	private static void deleteAll(final RoiManager roiMan) {
+		final Roi[] rois = roiMan.getRoisAsArray();
+		for (int i = 0; i < rois.length; i++) {
+			if (roiMan.getCount() == 0) break;
+			roiMan.select(i);
+			roiMan.runCommand("delete");
+		}
+	}
+
+	/**
+	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
+	 *
+	 * @param imp an image.
+	 * @param roiMan an instance of {@link RoiManager}
+	 * @return double[n][3] containing n (x, y, z) coordinates or null if there
+	 *         are no points
+	 */
+	private static double[][] getRoiManPoints(final ImagePlus imp,
+		final RoiManager roiMan)
+	{
+		final Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		int nPoints = 0;
+		final Roi[] roiList = roiMan.getRoisAsArray();
+		for (int i = 0; i < roiMan.getCount(); i++) {
+			final Roi roi = roiList[i];
+			if (roi.getType() == 10) {
+				nPoints++;
+			}
+		}
+		if (nPoints == 0) return null;
+		final double[][] dataPoints = new double[nPoints][3];
+		int j = 0;
+		for (int i = 0; i < roiMan.getCount(); i++) {
+			final Roi roi = roiList[i];
+			if (roi.getType() == 10) {
+				final Rectangle xy = roi.getBounds();
+				dataPoints[j][0] = xy.getX() * vW;
+				dataPoints[j][1] = xy.getY() * vH;
+				dataPoints[j][2] = roi.getPosition() * vD;
+				j++;
+			}
+		}
+		return dataPoints;
 	}
 }

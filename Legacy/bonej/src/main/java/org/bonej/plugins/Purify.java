@@ -23,6 +23,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.plugins;
 
+import static org.bonej.plugins.ParticleCounter.JOINING.LINEAR;
+import static org.bonej.plugins.ParticleCounter.JOINING.MAPPED;
+import static org.bonej.plugins.ParticleCounter.JOINING.MULTI;
+
 import java.awt.AWTEvent;
 import java.awt.Choice;
 import java.awt.TextField;
@@ -41,10 +45,6 @@ import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
-
-import static org.bonej.plugins.ParticleCounter.JOINING.LINEAR;
-import static org.bonej.plugins.ParticleCounter.JOINING.MAPPED;
-import static org.bonej.plugins.ParticleCounter.JOINING.MULTI;
 
 /**
  * <p>
@@ -146,7 +146,7 @@ public class Purify implements PlugIn, DialogListener {
 	 * @param particleSizes sizes of the particles.
 	 * @param phase foreground or background.
 	 */
-	private void removeSmallParticles(final byte[][] workArray,
+	private static void removeSmallParticles(final byte[][] workArray,
 		final int[][] particleLabels, final long[] particleSizes, final int phase)
 	{
 		final int d = workArray.length;
@@ -201,6 +201,33 @@ public class Purify implements PlugIn, DialogListener {
 	}
 
 	/**
+	 * Check whole array replacing m with n
+	 *
+	 * @param particleLabels particle labels in the image.
+	 * @param m value to be replaced
+	 * @param n new value
+	 * @param endZ last+1 z coordinate to check
+	 */
+	private static void replaceLabel(final int[][] particleLabels, final int m,
+		final int n, final int endZ)
+	{
+		final int s = particleLabels[0].length;
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < endZ; z = ai.getAndIncrement()) {
+					for (int i = 0; i < s; i++)
+						if (particleLabels[z][i] == m) {
+							particleLabels[z][i] = n;
+						}
+				}
+			});
+		}
+		Multithreader.startAndJoin(threads);
+	}
+
+	/**
 	 * Show a Results table containing some performance information
 	 *
 	 * @param duration time elapsed in purifying.
@@ -208,12 +235,12 @@ public class Purify implements PlugIn, DialogListener {
 	 * @param slicesPerChunk slices processed by each chunk.
 	 * @param labelMethod labelling method used.
 	 */
-	private void showResults(final double duration, final ImagePlus imp,
+	private static void showResults(final double duration, final ImagePlus imp,
 		final int slicesPerChunk, final JOINING labelMethod)
 	{
-		final ParticleCounter pc = new ParticleCounter();
-		final int nChunks = pc.getNChunks(imp, slicesPerChunk);
-		final int[][] chunkRanges = pc.getChunkRanges(imp, nChunks, slicesPerChunk);
+		final int nChunks = ParticleCounter.getNChunks(imp, slicesPerChunk);
+		final int[][] chunkRanges = ParticleCounter.getChunkRanges(imp, nChunks,
+			slicesPerChunk);
 		final ResultsTable rt = ResultsTable.getResultsTable();
 		rt.incrementCounter();
 		rt.addLabel(imp.getTitle());
@@ -241,7 +268,7 @@ public class Purify implements PlugIn, DialogListener {
 	 * @param particleLabels particle labels.
 	 * @param particleSizes sizes of the particles.
 	 */
-	private void touchEdges(final ImagePlus imp, final byte[][] workArray,
+	private static void touchEdges(final ImagePlus imp, final byte[][] workArray,
 		final int[][] particleLabels, final long[] particleSizes)
 	{
 		final String status = "Background particles touching ";
@@ -267,7 +294,6 @@ public class Purify implements PlugIn, DialogListener {
 		int y;
 		int z;
 
-		final ParticleCounter pc = new ParticleCounter();
 		// up
 		z = 0;
 		for (y = 0; y < h; y++) {
@@ -279,7 +305,7 @@ public class Purify implements PlugIn, DialogListener {
 				if (workArray[z][offset] == 0 &&
 					particleLabels[z][offset] != biggestParticle)
 				{
-					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+					replaceLabel(particleLabels, particleLabels[z][offset],
 						biggestParticle, d);
 				}
 			}
@@ -296,7 +322,7 @@ public class Purify implements PlugIn, DialogListener {
 				if (workArray[z][offset] == 0 &&
 					particleLabels[z][offset] != biggestParticle)
 				{
-					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+					replaceLabel(particleLabels, particleLabels[z][offset],
 						biggestParticle, d);
 				}
 			}
@@ -311,7 +337,7 @@ public class Purify implements PlugIn, DialogListener {
 				if (workArray[z][offset] == 0 &&
 					particleLabels[z][offset] != biggestParticle)
 				{
-					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+					replaceLabel(particleLabels, particleLabels[z][offset],
 						biggestParticle, d);
 				}
 			}
@@ -326,7 +352,7 @@ public class Purify implements PlugIn, DialogListener {
 				if (workArray[z][offset] == 0 &&
 					particleLabels[z][offset] != biggestParticle)
 				{
-					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+					replaceLabel(particleLabels, particleLabels[z][offset],
 						biggestParticle, d);
 				}
 			}
@@ -342,7 +368,7 @@ public class Purify implements PlugIn, DialogListener {
 				if (workArray[z][offset] == 0 &&
 					particleLabels[z][offset] != biggestParticle)
 				{
-					pc.replaceLabel(particleLabels, particleLabels[z][offset],
+					replaceLabel(particleLabels, particleLabels[z][offset],
 						biggestParticle, d);
 				}
 			}
@@ -354,7 +380,7 @@ public class Purify implements PlugIn, DialogListener {
 			IJ.showProgress(z, d);
 			for (x = 0; x < w; x++) {
 				if (workArray[z][x] == 0 && particleLabels[z][x] != biggestParticle) {
-					pc.replaceLabel(particleLabels, particleLabels[z][x], biggestParticle,
+					replaceLabel(particleLabels, particleLabels[z][x], biggestParticle,
 						d);
 				}
 			}
@@ -370,7 +396,7 @@ public class Purify implements PlugIn, DialogListener {
 	 * @param labelMethod number of labelling method
 	 * @return purified image
 	 */
-	ImagePlus purify(final ImagePlus imp, final int slicesPerChunk,
+	static ImagePlus purify(final ImagePlus imp, final int slicesPerChunk,
 		final JOINING labelMethod)
 	{
 
