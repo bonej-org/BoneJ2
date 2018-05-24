@@ -176,7 +176,6 @@ public class Ellipsoid {
 	 *
 	 * @param increment scaling factor.
 	 */
-	// TODO Shouldn't this divide the radii, or does it call the wrong dilate..?!
 	public void contract(final double increment) {
 		dilate(-increment);
 	}
@@ -200,9 +199,19 @@ public class Ellipsoid {
 	 * @param da value added to the 1st radius.
 	 * @param db value added to the 2nd radius.
 	 * @param dc value added to the 3rd radius.
+	 * @throws IllegalArgumentException if new semi-axes are non-positive.
 	 */
-	public void dilate(final double da, final double db, final double dc) {
-		setRadii(ra + da, rb + db, rc + dc);
+	public void dilate(final double da, final double db, final double dc)
+		throws IllegalArgumentException
+	{
+
+		final double a = ra + da;
+		final double b = rb + db;
+		final double c = rc + dc;
+		if (a <= 0 || b <= 0 || c <= 0) {
+			throw new IllegalArgumentException("Ellipsoid cannot have semiaxis <= 0");
+		}
+		setRadii(a, b, c);
 	}
 
 	/**
@@ -403,10 +412,6 @@ public class Ellipsoid {
 	private void setRadii(final double a, final double b, final double c)
 		throws IllegalArgumentException
 	{
-		if (a <= 0 || b <= 0 || c <= 0) {
-			// TODO throw from dilate()
-			throw new IllegalArgumentException("Ellipsoid cannot have semiaxis <= 0");
-		}
 		ra = a;
 		rb = b;
 		rc = c;
