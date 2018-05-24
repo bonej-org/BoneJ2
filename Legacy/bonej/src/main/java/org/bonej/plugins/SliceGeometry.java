@@ -196,7 +196,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 
 	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment()) return;
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp) {
 			IJ.noImage();
@@ -368,7 +367,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				annotateImage(imp).show();
 			}
 		}
-		if (do3DAnnotation) show3DAxes(imp);
+		if (do3DAnnotation) {
+			show3DAxes(imp);
+		}
 		UsageReporter.reportEvent(this).send();
 	}
 

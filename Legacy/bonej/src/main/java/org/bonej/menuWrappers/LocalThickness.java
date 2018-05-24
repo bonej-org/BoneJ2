@@ -74,12 +74,7 @@ public class LocalThickness implements PlugIn {
 
 	@Override
 	public void run(String arg) {
-		if (!ImageCheck.checkEnvironment()) {
-			return;
-		}
-
 		final ImagePlus inputImage;
-
 		try {
 			inputImage = IJ.getImage();
 		} catch (RuntimeException e) {

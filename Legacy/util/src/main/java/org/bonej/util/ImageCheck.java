@@ -36,39 +36,7 @@ import ij.process.ImageStatistics;
  */
 public final class ImageCheck {
 
-	/**
-	 * Minimal ImageJ version required by BoneJ
-	 */
-	private static final String requiredIJVersion = "1.49u";
-	/**
-	 * ImageJ releases known to produce errors or bugs with BoneJ. Daily builds
-	 * are not included.
-	 */
-	private static final String[] blacklistedIJVersions = {
-		// introduced bug where ROIs added to the ROI Manager
-		// lost their z-position information
-		"1.48a" };
-
 	private ImageCheck() {}
-
-	/**
-	 * Checks if BoneJ can run on the current installation.
-	 *
-	 * @return true if environment is set up correctly.
-	 */
-	// TODO Fix calls to checkEnvironment (only when really necessary)
-	public static boolean checkEnvironment() {
-		try {
-			Class.forName("ij3d.ImageJ3DViewer");
-		}
-		catch (final ClassNotFoundException e) {
-			IJ.showMessage("ImageJ 3D Viewer is not installed.\n" +
-				"Please install and run the ImageJ 3D Viewer.");
-			return false;
-		}
-
-		return checkIJVersion();
-	}
 
 	/**
 	 * Check that the voxel thickness is correct in the DICOM image metadata.
@@ -187,28 +155,6 @@ public final class ImageCheck {
 	}
 
 	/**
-	 * Checks if the version of ImageJ is compatible with BoneJ
-	 *
-	 * @return false if the IJ version is too old or blacklisted
-	 */
-	private static boolean checkIJVersion() {
-		if (isIJVersionBlacklisted()) {
-			IJ.error("Bad ImageJ version", "The version of ImageJ you are using (v" +
-				IJ.getVersion() + ") is known to run BoneJ incorrectly.\n" +
-				"Please up- or downgrade your ImageJ using Help-Update ImageJ.");
-			return false;
-		}
-
-		if (requiredIJVersion.compareTo(IJ.getVersion()) > 0) {
-			IJ.error("Update ImageJ", "You are using an old version of ImageJ, v" + IJ
-				.getVersion() + ".\n" + "Please update to at least ImageJ v" +
-				requiredIJVersion + " using Help-Update ImageJ.");
-			return false;
-		}
-		return true;
-	}
-
-	/**
 	 * Get the value associated with a DICOM tag from an ImagePlus header
 	 *
 	 * @param imp an image.
@@ -249,17 +195,5 @@ public final class ImageCheck {
 			return Double.parseDouble(xyz[2]);
 		}
 		return -1;
-	}
-
-	/**
-	 * Check if the version of IJ has been blacklisted as a known broken release
-	 *
-	 * @return true if the IJ version is blacklisted, false otherwise
-	 */
-	private static boolean isIJVersionBlacklisted() {
-		for (final String version : blacklistedIJVersions) {
-			if (version.equals(IJ.getVersion())) return true;
-		}
-		return false;
 	}
 }

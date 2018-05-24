@@ -90,7 +90,6 @@ public class Purify implements PlugIn, DialogListener {
 
 	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment()) return;
 		final ImagePlus imp = IJ.getImage();
 		if (!ImageCheck.isBinary(imp)) {
 			IJ.error("Purify requires a binary image");

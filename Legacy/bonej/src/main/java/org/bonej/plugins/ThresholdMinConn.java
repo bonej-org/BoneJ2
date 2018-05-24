@@ -111,7 +111,6 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 
 	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment()) return;
 		final ImagePlus imp = IJ.getImage();
 		final ImageProcessor ip = imp.getProcessor();
 		if (ImageCheck.isBinary(imp)) {

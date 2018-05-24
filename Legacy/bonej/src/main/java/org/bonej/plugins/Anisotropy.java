@@ -88,9 +88,6 @@ public class Anisotropy implements PlugIn, DialogListener {
 
 	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment()) {
-			return;
-		}
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp) {
 			IJ.noImage();
