@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -64,7 +63,6 @@ import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
 import ij.process.ImageProcessor;
 import ij3d.Image3DUniverse;
-import isosurface.Triangulator;
 import marchingcubes.MCTriangulator;
 
 /**
@@ -1819,6 +1817,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return surface area
 	 */
 	private static double getSurfaceArea(final List<Point3f> points) {
+		if (points == null) {
+			return 0;
+		}
 		double sumArea = 0;
 		final int nPoints = points.size();
 		final Point3f origin = new Point3f(0.0f, 0.0f, 0.0f);
@@ -1835,7 +1836,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private static double[] getSurfaceAreas(
 		final Collection<List<Point3f>> surfacePoints)
 	{
-		return surfacePoints.stream().filter(Objects::nonNull).mapToDouble(
+		return surfacePoints.stream().mapToDouble(
 			ParticleCounter::getSurfaceArea).toArray();
 	}
 
@@ -1852,7 +1853,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			if (p > 0) {
 				final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels,
 					limits, resampling);
-				final Triangulator mct = new MCTriangulator();
+				final MCTriangulator mct = new MCTriangulator();
 				@SuppressWarnings("unchecked")
 				final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels,
 					resampling);
@@ -1880,10 +1881,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private double[] getSurfaceVolume(
 		final Collection<List<Point3f>> surfacePoints)
 	{
-		return surfacePoints.stream().filter(Objects::nonNull).peek(l -> IJ
-			.showStatus("Calculating enclosed volume...")).map(
-				CustomTriangleMesh::new).mapToDouble(CustomTriangleMesh::getVolume)
-			.toArray();
+		return surfacePoints.stream().mapToDouble(p -> {
+			if (p == null) {
+				return 0;
+			}
+			final CustomTriangleMesh mesh = new CustomTriangleMesh(p);
+			return mesh.getVolume();
+		}).toArray();
 	}
 
 	private double[] getVolumes(final ImagePlus imp, final long[] particleSizes) {
