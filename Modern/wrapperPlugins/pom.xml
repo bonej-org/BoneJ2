@@ -142,6 +142,7 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
+            <version>${ij-ops.version}</version>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
