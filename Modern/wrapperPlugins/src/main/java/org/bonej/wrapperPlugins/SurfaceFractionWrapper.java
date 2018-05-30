@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
+import net.imagej.mesh.Mesh;
+import net.imagej.mesh.naive.NaiveFloatMesh;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops;
-import net.imagej.ops.geom.geom3d.mesh.DefaultMesh;
-import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.table.DefaultColumn;
@@ -123,7 +123,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 			Ops.Geometric.MarchingCubes.class, Mesh.class, subspace);
 		// Create a dummy object to make op matching happy
 		meshVolume = Functions.unary(opService, Ops.Geometric.Size.class,
-			DoubleType.class, new DefaultMesh());
+			DoubleType.class, new NaiveFloatMesh());
 	}
 
 	private void addResults(final String label, final double[] results) {

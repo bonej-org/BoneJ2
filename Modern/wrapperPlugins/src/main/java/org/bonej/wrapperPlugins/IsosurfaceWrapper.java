@@ -15,17 +15,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
+import net.imagej.mesh.Mesh;
+import net.imagej.mesh.Triangle;
+import net.imagej.mesh.naive.NaiveFloatMesh;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops;
-import net.imagej.ops.geom.geom3d.mesh.Facet;
-import net.imagej.ops.geom.geom3d.mesh.Mesh;
-import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.space.AnnotatedSpace;
@@ -36,8 +37,8 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.DoubleType;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
@@ -104,6 +105,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	private String path = "";
 	private String extension = "";
 	private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
+	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
 	private String unitHeader = "";
 
@@ -179,24 +181,20 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (StringUtils.isNullOrEmpty(path)) {
 			throw new IllegalArgumentException("Filename cannot be null or empty");
 		}
-		if (!mesh.triangularFacets()) {
-			throw new IllegalArgumentException(
-				"Cannot write STL file: invalid surface mesh");
-		}
 
-		final List<Facet> facets = mesh.getFacets();
-		final int numFacets = facets.size();
-		try (FileOutputStream writer = new FileOutputStream(path)) {
+		final Iterator<Triangle> triangles = mesh.triangles().iterator();
+		final int numTriangles = (int) mesh.triangles().size();
+		try (final FileOutputStream writer = new FileOutputStream(path)) {
 			final byte[] header = STL_HEADER.getBytes();
 			writer.write(header);
 			final byte[] facetBytes = ByteBuffer.allocate(4).order(
-				ByteOrder.LITTLE_ENDIAN).putInt(numFacets).array();
+				ByteOrder.LITTLE_ENDIAN).putInt(numTriangles).array();
 			writer.write(facetBytes);
 			final ByteBuffer buffer = ByteBuffer.allocate(50);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
-			for (Facet facet : facets) {
-				final TriangularFacet triangularFacet = (TriangularFacet) facet;
-				writeSTLFacet(buffer, triangularFacet);
+			while(triangles.hasNext()) {
+				final Triangle triangle = triangles.next();
+				writeSTLFacet(buffer, triangle);
 				writer.write(buffer.array());
 				buffer.clear();
 			}
@@ -245,6 +243,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
 		marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class,
 			Mesh.class, interval);
+		areaOp = Functions.unary(ops, Ops.Geometric.BoundarySize.class,
+			DoubleType.class, new NaiveFloatMesh());
 	}
 
 	private void prepareResults() {
@@ -268,7 +268,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		final Map<String, Mesh> meshes = new HashMap<>();
 		for (Subspace<BitType> subspace : subspaces) {
 			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
-			final double area = mesh.getSurfaceArea();
+			final double area = areaOp.calculate(mesh).get();
 			final String suffix = subspace.toString();
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			addResult(label, area);
@@ -326,17 +326,24 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	// -- Utility methods --
 
 	// -- Helper methods --
-	private static void writeSTLFacet(ByteBuffer buffer, TriangularFacet facet) {
-		writeSTLVector(buffer, facet.getNormal());
-		writeSTLVector(buffer, facet.getP0());
-		writeSTLVector(buffer, facet.getP1());
-		writeSTLVector(buffer, facet.getP2());
-		buffer.putShort((short) 0); // Attribute byte count
-	}
-
-	private static void writeSTLVector(ByteBuffer buffer, Vector3D v) {
-		buffer.putFloat((float) v.getX());
-		buffer.putFloat((float) v.getY());
-		buffer.putFloat((float) v.getZ());
+	private static void writeSTLFacet(ByteBuffer buffer, Triangle triangle) {
+		// Write normal
+		buffer.putFloat(triangle.nxf());
+		buffer.putFloat(triangle.nyf());
+		buffer.putFloat(triangle.nzf());
+		// Write vertex 0
+		buffer.putFloat(triangle.v0xf());
+		buffer.putFloat(triangle.v0yf());
+		buffer.putFloat(triangle.v0zf());
+		// Write vertex 1
+		buffer.putFloat(triangle.v1xf());
+		buffer.putFloat(triangle.v1yf());
+		buffer.putFloat(triangle.v1zf());
+		// Write vertex 2
+		buffer.putFloat(triangle.v2xf());
+		buffer.putFloat(triangle.v2yf());
+		buffer.putFloat(triangle.v2zf());
+		// Attribute byte count
+		buffer.putShort((short) 0);
 	}
 }
