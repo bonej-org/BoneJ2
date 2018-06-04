@@ -42,3 +42,26 @@ Plugin stops without exceptions and no files are created
 
 Completed --
 -----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+Plug-in doesn't save results if it's cancelled
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/hyperCube.zip
+3. Run Plugins > BoneJ > Surface area
+4. Check "Export STL file(s)", and click "OK"
+5. Click cancel on the file dialog
+6. Run Plugins > BoneJ > Connectivity
+
+
+Expected result
+-----------------------------------------------------------------------
+Results table has only connectivity related results, and none from
+surface area.
+
+Completed --
+-----------------------------------------------------------------------
