@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
@@ -35,7 +36,6 @@ import net.imagej.mesh.Triangle;
 import net.imagej.mesh.Triangles;
 import net.imagej.mesh.naive.NaiveFloatMesh;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -142,8 +142,8 @@ public class IsosurfaceWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 2, table.size());
 		for (int i = 0; i < 1; i++) {
@@ -305,9 +305,7 @@ public class IsosurfaceWrapperTest {
 	}
 
 	@Test
-	public void testIsAxesMatchingSpatialCalibrationDifferentScales()
-		throws Exception
-	{
+	public void testIsAxesMatchingSpatialCalibrationDifferentScales() {
 		// Create a test image with different scales in calibration
 		final String unit = "mm";
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
@@ -325,9 +323,7 @@ public class IsosurfaceWrapperTest {
 	}
 
 	@Test
-	public void testIsAxesMatchingSpatialCalibrationDifferentUnits()
-		throws Exception
-	{
+	public void testIsAxesMatchingSpatialCalibrationDifferentUnits() {
 		// Create a test image with different units in calibration
 		final double scale = 0.75;
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm", scale);
@@ -345,7 +341,7 @@ public class IsosurfaceWrapperTest {
 	}
 
 	@Test
-	public void testIsAxesMatchingSpatialCalibrationNoUnits() throws Exception {
+	public void testIsAxesMatchingSpatialCalibrationNoUnits() {
 		// Create a test image with no calibration units
 		final double scale = 0.75;
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", scale);
@@ -361,7 +357,7 @@ public class IsosurfaceWrapperTest {
 	}
 
 	@Test
-	public void testIsAxesMatchingSpatialCalibration() throws Exception {
+	public void testIsAxesMatchingSpatialCalibration() {
 		// Create a test image with uniform calibration
 		final String unit = "mm";
 		final double scale = 0.75;

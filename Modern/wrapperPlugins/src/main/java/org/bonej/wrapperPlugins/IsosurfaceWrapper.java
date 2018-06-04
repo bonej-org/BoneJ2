@@ -26,7 +26,8 @@ import net.imagej.mesh.Mesh;
 import net.imagej.mesh.Triangle;
 import net.imagej.mesh.naive.NaiveFloatMesh;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Geometric.BoundarySize;
+import net.imagej.ops.Ops.Geometric.MarchingCubes;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.space.AnnotatedSpace;
@@ -66,11 +67,11 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
-	public static final String STL_WRITE_ERROR =
+	static final String STL_WRITE_ERROR =
 		"Failed to write the following STL files:\n\n";
-	public static final String STL_HEADER = StringUtils.padEnd(
+	static final String STL_HEADER = StringUtils.padEnd(
 		"Binary STL created by BoneJ", 80, '.');
-	public static final String BAD_SCALING =
+	static final String BAD_SCALING =
 		"Cannot scale result because axis calibrations don't match";
 
 	@Parameter(validater = "validateImage")
@@ -145,7 +146,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	// TODO make into a utility method or remove if mesh area considers
 	// calibration in the future
 	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isAxesMatchingSpatialCalibration(T space)
+		isAxesMatchingSpatialCalibration(final T space)
 	{
 		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
 			.allMatch(StringUtils::isNullOrEmpty);
@@ -192,7 +193,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			writer.write(facetBytes);
 			final ByteBuffer buffer = ByteBuffer.allocate(50);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
-			while(triangles.hasNext()) {
+			while (triangles.hasNext()) {
 				final Triangle triangle = triangles.next();
 				writeSTLFacet(buffer, triangle);
 				writer.write(buffer.array());
@@ -206,11 +207,10 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private String choosePath() {
-		String initialName = stripFileExtension(inputImage.getName());
-
+		final String initialName = stripFileExtension(inputImage.getName());
 		// The file dialog won't allow empty filenames, and it prompts when file
 		// already exists
-		File file = uiService.chooseFile(new File(initialName),
+		final File file = uiService.chooseFile(new File(initialName),
 			FileWidget.SAVE_STYLE);
 		if (file == null) {
 			// User pressed cancel on file dialog
@@ -241,10 +241,10 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
-		marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class,
-			Mesh.class, interval);
-		areaOp = Functions.unary(ops, Ops.Geometric.BoundarySize.class,
-			DoubleType.class, new NaiveFloatMesh());
+		marchingCubesOp = Functions.unary(ops, MarchingCubes.class, Mesh.class,
+			interval);
+		areaOp = Functions.unary(ops, BoundarySize.class, DoubleType.class,
+			new NaiveFloatMesh());
 	}
 
 	private void prepareResults() {
@@ -253,20 +253,22 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
 		}
 
-		if (!isAxesMatchingSpatialCalibration(inputImage)) {
-			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
-			areaScale = 1.0;
-		}
-		else {
+		if (isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
 			areaScale = scale * scale;
 		}
+		else {
+			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
+			areaScale = 1.0;
+		}
 	}
 
-	private Map<String, Mesh> processViews(List<Subspace<BitType>> subspaces) {
+	private Map<String, Mesh> processViews(
+		final List<Subspace<BitType>> subspaces)
+	{
 		final String name = inputImage.getName();
 		final Map<String, Mesh> meshes = new HashMap<>();
-		for (Subspace<BitType> subspace : subspaces) {
+		for (final Subspace<BitType> subspace : subspaces) {
 			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
 			final double area = areaOp.calculate(mesh).get();
 			final String suffix = subspace.toString();
@@ -295,13 +297,13 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void showSavingErrorsDialog(final Map<String, String> savingErrors) {
-		StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
+		final StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
 		savingErrors.forEach((k, v) -> msgBuilder.append(k).append(": ").append(v));
 		uiService.showDialog(msgBuilder.toString(), ERROR_MESSAGE);
 	}
 
 	// TODO make into a utility method
-	private static String stripFileExtension(String path) {
+	private static String stripFileExtension(final String path) {
 		final int dot = path.lastIndexOf('.');
 
 		return dot == -1 ? path : path.substring(0, dot);
@@ -326,7 +328,9 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	// -- Utility methods --
 
 	// -- Helper methods --
-	private static void writeSTLFacet(ByteBuffer buffer, Triangle triangle) {
+	private static void writeSTLFacet(final ByteBuffer buffer,
+		final Triangle triangle)
+	{
 		// Write normal
 		buffer.putFloat(triangle.nxf());
 		buffer.putFloat(triangle.nyf());

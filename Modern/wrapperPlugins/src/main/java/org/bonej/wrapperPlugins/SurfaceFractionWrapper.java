@@ -14,14 +14,15 @@ import net.imagej.ImgPlus;
 import net.imagej.mesh.Mesh;
 import net.imagej.mesh.naive.NaiveFloatMesh;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Copy.RAI;
+import net.imagej.ops.Ops.Geometric.MarchingCubes;
+import net.imagej.ops.Ops.Geometric.Size;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -83,8 +84,8 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter
 	private UnitService unitService;
 
-    @Parameter
-    private StatusService statusService;
+	@Parameter
+	private StatusService statusService;
 
 	/** Header of the thresholded volume column in the results table */
 	private String bVHeader;
@@ -95,7 +96,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@Override
 	public void run() {
-        statusService.showStatus("Surface fraction: initializing");
+		statusService.showStatus("Surface fraction: initializing");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
@@ -116,20 +117,20 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 	// region -- Helper methods --
 
-	private void matchOps(final RandomAccessibleInterval<BitType> subspace) {
-		raiCopy = Functions.unary(opService, Ops.Copy.RAI.class,
-			RandomAccessibleInterval.class, subspace);
-		marchingCubes = Functions.unary(opService,
-			Ops.Geometric.MarchingCubes.class, Mesh.class, subspace);
-		// Create a dummy object to make op matching happy
-		meshVolume = Functions.unary(opService, Ops.Geometric.Size.class,
-			DoubleType.class, new NaiveFloatMesh());
-	}
-
 	private void addResults(final String label, final double[] results) {
 		SharedTable.add(label, bVHeader, results[0]);
 		SharedTable.add(label, tVHeader, results[1]);
 		SharedTable.add(label, ratioHeader, results[2]);
+	}
+
+	private void matchOps(final RandomAccessibleInterval<BitType> subspace) {
+		raiCopy = Functions.unary(opService, RAI.class,
+			RandomAccessibleInterval.class, subspace);
+		marchingCubes = Functions.unary(opService, MarchingCubes.class, Mesh.class,
+			subspace);
+		// Create a dummy object to make op matching happy
+		meshVolume = Functions.unary(opService, Size.class, DoubleType.class,
+			new NaiveFloatMesh());
 	}
 
 	private void prepareResultDisplay() {
@@ -148,19 +149,19 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	/** Process surface fraction for one 3D subspace in the n-dimensional image */
 	@SuppressWarnings("unchecked")
 	private double[] subSpaceFraction(
-		RandomAccessibleInterval<BitType> subSpace)
+		final RandomAccessibleInterval<BitType> subSpace)
 	{
-        statusService.showStatus("Surface fraction: creating surface");
+		statusService.showStatus("Surface fraction: creating surface");
 		// Create masks for marching cubes
 		final RandomAccessibleInterval totalMask = raiCopy.calculate(subSpace);
 		// Because we want to create a surface from the whole image, set everything
 		// in the mask to foreground
-		((Img<BitType>) totalMask).forEach(BitType::setOne);
+		((Iterable<BitType>) totalMask).forEach(BitType::setOne);
 
 		// Create surface meshes and calculate their volume. If the input interval
 		// wasn't binary, we'd have to threshold it before these calls.
 		final Mesh thresholdMesh = marchingCubes.calculate(subSpace);
-        statusService.showStatus("Surface fraction: calculating volume");
+		statusService.showStatus("Surface fraction: calculating volume");
 		final double rawThresholdVolume = meshVolume.calculate(thresholdMesh).get();
 		final Mesh totalMesh = marchingCubes.calculate(totalMask);
 		final double rawTotalVolume = meshVolume.calculate(totalMesh).get();

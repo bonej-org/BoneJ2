@@ -49,6 +49,7 @@ public class CommonTest {
 		IMAGE_J.context().dispose();
 	}
 
+	// Test ignored, because it fails when executed by Maven (but only then!)
 	@Ignore
     @Test
 	public void testToBitTypeImgPlus() throws AssertionError {
@@ -76,9 +77,7 @@ public class CommonTest {
 
 	@Test
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-	public void testWarnAnisotropyReturnsTrueIfAnisotropicImageAndUserOK()
-		throws Exception
-	{
+	public void testWarnAnisotropyReturnsTrueIfAnisotropicImageAndUserOK() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
 		anisotropicCalibration.pixelWidth = 0.5;
@@ -93,9 +92,7 @@ public class CommonTest {
 	}
 
 	@Test
-	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels()
-		throws Exception
-	{
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
 		anisotropicCalibration.pixelWidth = 0.5;
@@ -111,9 +108,7 @@ public class CommonTest {
 
 	@Test
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses()
-		throws Exception
-	{
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
 		anisotropicCalibration.pixelWidth = 0.5;
@@ -129,7 +124,7 @@ public class CommonTest {
 
 	@Test
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-	public void testWarnAnisotropyReturnsTrueIfIsotropicImage() throws Exception {
+	public void testWarnAnisotropyReturnsTrueIfIsotropicImage() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration calibration = new Calibration();
 		when(imagePlus.getCalibration()).thenReturn(calibration);

@@ -4,12 +4,13 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.List;
+
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -32,19 +33,20 @@ public class SurfaceFractionWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
 	@After
 	public void tearDown() {
 		SharedTable.reset();
 	}
 
 	@Test
-	public void testNullImageCancelsSurfaceFraction() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void test2DImageCancelsConnectivity() throws Exception {
+		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
+			ConnectivityWrapper.class);
+	}
+
+	@Test
+	public void testNoCalibrationShowsWarning() throws Exception {
+		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
 			SurfaceFractionWrapper.class);
 	}
 
@@ -55,15 +57,9 @@ public class SurfaceFractionWrapperTest {
 	}
 
 	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
+	public void testNullImageCancelsSurfaceFraction() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			SurfaceFractionWrapper.class);
-	}
-
-	@Test
-	public void test2DImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
 	}
 
 	/**
@@ -127,8 +123,8 @@ public class SurfaceFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		// Assert results
@@ -143,5 +139,10 @@ public class SurfaceFractionWrapperTest {
 					.parseDouble(column.get(j)), 1e-12);
 			}
 		}
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }
