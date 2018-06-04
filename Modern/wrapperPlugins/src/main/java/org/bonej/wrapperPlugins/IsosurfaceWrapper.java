@@ -119,15 +119,14 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			bitImgPlus).collect(Collectors.toList());
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
-		statusService.showStatus("Surface area: creating meshes");
-		final Map<String, Mesh> meshes = processViews(subspaces);
+		final Map<String, Mesh> meshes = createMeshes(subspaces);
 		if (exportSTL) {
 			if (!getFileName()) {
 				return;
 			}
-			statusService.showStatus("Surface area: saving files");
 			saveMeshes(meshes);
 		}
+		calculateAreas(meshes);
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
@@ -208,6 +207,16 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		SharedTable.add(label, "Surface area " + unitHeader, area * areaScale);
 	}
 
+	private void calculateAreas(final Map<String, Mesh> meshes) {
+		statusService.showStatus("Surface area: calculating areas");
+		final String name = inputImage.getName();
+		meshes.forEach((suffix, mesh) -> {
+			final double area = areaOp.calculate(mesh).get();
+			final String label = suffix.isEmpty() ? name : name + " " + suffix;
+			addResult(label, area);
+		});
+	}
+
 	private String choosePath() {
 		final String initialName = stripFileExtension(inputImage.getName());
 		// The file dialog won't allow empty filenames, and it prompts when file
@@ -220,6 +229,18 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 
 		return file.getAbsolutePath();
+	}
+
+	private Map<String, Mesh> createMeshes(
+		final Iterable<Subspace<BitType>> subspaces)
+	{
+		statusService.showStatus("Surface area: creating meshes");
+		final Map<String, Mesh> meshes = new HashMap<>();
+		for (final Subspace<BitType> subspace : subspaces) {
+			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
+			meshes.put(subspace.toString(), mesh);
+		}
+		return meshes;
 	}
 
 	private boolean getFileName() {
@@ -266,23 +287,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Map<String, Mesh> processViews(
-		final Iterable<Subspace<BitType>> subspaces)
-	{
-		final String name = inputImage.getName();
-		final Map<String, Mesh> meshes = new HashMap<>();
-		for (final Subspace<BitType> subspace : subspaces) {
-			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
-			final double area = areaOp.calculate(mesh).get();
-			final String suffix = subspace.toString();
-			final String label = suffix.isEmpty() ? name : name + " " + suffix;
-			addResult(label, area);
-			meshes.put(subspace.toString(), mesh);
-		}
-		return meshes;
-	}
-
 	private void saveMeshes(final Map<String, Mesh> meshes) {
+		statusService.showStatus("Surface area: saving files");
 		final Map<String, String> savingErrors = new HashMap<>();
 		meshes.forEach((key, subspaceMesh) -> {
 			final String subspaceId = key.replace(' ', '_');
