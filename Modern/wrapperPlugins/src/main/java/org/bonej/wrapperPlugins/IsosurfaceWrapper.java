@@ -122,7 +122,9 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		statusService.showStatus("Surface area: creating meshes");
 		final Map<String, Mesh> meshes = processViews(subspaces);
 		if (exportSTL) {
-			getFileName();
+			if (!getFileName()) {
+				return;
+			}
 			statusService.showStatus("Surface area: saving files");
 			saveMeshes(meshes);
 		}
@@ -220,10 +222,10 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		return file.getAbsolutePath();
 	}
 
-	private void getFileName() {
+	private boolean getFileName() {
 		path = choosePath();
 		if (path == null) {
-			return;
+			return false;
 		}
 
 		final String fileName = path.substring(path.lastIndexOf(File.separator) +
@@ -238,6 +240,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		else {
 			extension = ".stl";
 		}
+		return true;
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
@@ -264,7 +267,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private Map<String, Mesh> processViews(
-		final List<Subspace<BitType>> subspaces)
+		final Iterable<Subspace<BitType>> subspaces)
 	{
 		final String name = inputImage.getName();
 		final Map<String, Mesh> meshes = new HashMap<>();
@@ -287,7 +290,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			try {
 				writeBinarySTLFile(filePath, subspaceMesh);
 			}
-			catch (IOException e) {
+			catch (final IOException e) {
 				savingErrors.put(filePath, e.getMessage());
 			}
 		});
