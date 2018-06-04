@@ -14,8 +14,8 @@ Steps
 
 Expected result
 -----------------------------------------------------------------------
-Plugin writes four files with the extension ".stl" to the chosen directory.
-All files can be viewed.
+Plugin writes four files with the extension ".stl" to the chosen
+directory. All files can be viewed.
 
 Notes
 -----------------------------------------------------------------------
@@ -40,7 +40,7 @@ Expected result
 -----------------------------------------------------------------------
 Plugin stops without exceptions and no files are created
 
-Completed --
+Completed Richard Domander June 4th 2018
 -----------------------------------------------------------------------
 
 
@@ -57,11 +57,10 @@ Steps
 5. Click cancel on the file dialog
 6. Run Plugins > BoneJ > Connectivity
 
-
 Expected result
 -----------------------------------------------------------------------
 Results table has only connectivity related results, and none from
 surface area.
 
-Completed --
+Completed Richard Domander June 4th 2018
 -----------------------------------------------------------------------
