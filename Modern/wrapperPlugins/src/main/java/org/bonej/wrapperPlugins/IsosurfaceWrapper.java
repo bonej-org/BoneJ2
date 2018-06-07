@@ -291,7 +291,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		statusService.showStatus("Surface area: saving files");
 		final Map<String, String> savingErrors = new HashMap<>();
 		meshes.forEach((key, subspaceMesh) -> {
-			final String subspaceId = key.replace(' ', '_');
+			final String subspaceId = key.replace(' ', '_').replaceAll("[,:]", "");
 			final String filePath = path + "_" + subspaceId + extension;
 			try {
 				writeBinarySTLFile(filePath, subspaceMesh);
