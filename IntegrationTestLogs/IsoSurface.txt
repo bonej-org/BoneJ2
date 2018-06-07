@@ -19,8 +19,9 @@ directory. All files can be viewed.
 
 Notes
 -----------------------------------------------------------------------
+Test was performed with Gmsh.
 
-Completed --
+Completed Richard Domander June 7th 2018
 -----------------------------------------------------------------------
 
 
