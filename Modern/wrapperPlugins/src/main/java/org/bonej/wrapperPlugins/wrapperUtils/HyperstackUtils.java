@@ -3,6 +3,7 @@ package org.bonej.wrapperPlugins.wrapperUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,8 @@ import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
+import net.imagej.space.AnnotatedSpace;
+import net.imglib2.EuclideanSpace;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -52,7 +55,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace.HyperAxisM
  * 
  * @author Richard Domander
  */
-public class HyperstackUtils {
+public final class HyperstackUtils {
 
 	private HyperstackUtils() {}
 
@@ -120,8 +123,8 @@ public class HyperstackUtils {
 	 * @return An array of subscripts where [i] is the subscript for axis at
 	 *         splitIndices[i]
 	 */
-	private static <T extends RealType<T> & NativeType<T>> long[]
-		mapTypeSubscripts(final ImgPlus<T> hyperStack, final int[] splitIndices)
+	private static long[] mapTypeSubscripts(
+		final AnnotatedSpace<CalibratedAxis> hyperStack, final int[] splitIndices)
 	{
 		final long[] subscripts = new long[splitIndices.length];
 		final Map<AxisType, Integer> typeCounts = new HashMap<>();
@@ -135,7 +138,7 @@ public class HyperstackUtils {
 	}
 
 	/**
-	 * Recursively calls {@link #applySplit(ImgPlus, List)} to split the
+	 * Recursively calls {@link #applySplit(RandomAccessibleInterval, Iterable)} to split the
 	 * hyperstack into subspaces.
 	 *
 	 * @param hyperstack an n-dimensional image
@@ -180,9 +183,7 @@ public class HyperstackUtils {
 		}
 	}
 
-	private static <T extends RealType<T> & NativeType<T>> boolean
-		isEmptySubspace(final RandomAccessibleInterval<T> hyperSlice)
-	{
+	private static boolean isEmptySubspace(final EuclideanSpace hyperSlice) {
 		return hyperSlice.numDimensions() == 0;
 	}
 
@@ -200,8 +201,8 @@ public class HyperstackUtils {
 	 * @return The subspace interval
 	 */
 	private static <T extends RealType<T> & NativeType<T>>
-		RandomAccessibleInterval<T> applySplit(final ImgPlus<T> hyperstack,
-			final List<ValuePair<IntType, LongType>> splitCoordinates)
+		RandomAccessibleInterval<T> applySplit(final RandomAccessibleInterval<T> hyperstack,
+			final Iterable<ValuePair<IntType, LongType>> splitCoordinates)
 	{
 		final List<ValuePair<IntType, LongType>> workingSplit = createWorkingCopy(
 			splitCoordinates);
@@ -219,12 +220,12 @@ public class HyperstackUtils {
 	 * Clones and sorts the given {@link List}.
 	 * <p>
 	 * It ensures that original ones don't get altered while applying a split (see
-	 * {@link #applySplit(ImgPlus, List)}). Pairs are sorted in the order of
+	 * {@link #applySplit(RandomAccessibleInterval, Iterable)}). Pairs are sorted in the order of
 	 * dimension ({@link ValuePair#a}).
 	 * </p>
 	 */
 	private static List<ValuePair<IntType, LongType>> createWorkingCopy(
-		final List<ValuePair<IntType, LongType>> splitCoordinates)
+		final Iterable<ValuePair<IntType, LongType>> splitCoordinates)
 	{
 		final List<ValuePair<IntType, LongType>> workingSplit = new ArrayList<>();
 		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
@@ -237,7 +238,7 @@ public class HyperstackUtils {
 	}
 
 	/**
-	 * A helper method for {@link #applySplit(ImgPlus, List)} that ensures that it
+	 * A helper method for {@link {@link #applySplit(RandomAccessibleInterval, Iterable)})} that ensures that it
 	 * doesn't throw a {@link IndexOutOfBoundsException}
 	 * <p>
 	 * After calling {@link Views#hyperSlice(RandomAccessibleInterval, int, long)}
@@ -252,7 +253,7 @@ public class HyperstackUtils {
 	 * @param dimension The index of the dimension in the last split
 	 */
 	private static void decrementIndices(
-		final List<ValuePair<IntType, LongType>> splitCoordinates,
+		final Iterable<ValuePair<IntType, LongType>> splitCoordinates,
 		final int dimension)
 	{
 		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
@@ -274,8 +275,8 @@ public class HyperstackUtils {
 	 * @param types The axes that define the subspaces
 	 * @return Indices of the axis used to split the hyperstack
 	 */
-	private static <T extends RealType<T> & NativeType<T>> int[]
-		findSplitAxisIndices(final ImgPlus<T> hyperstack, final List<AxisType> types)
+	private static int[] findSplitAxisIndices(
+		final AnnotatedSpace<CalibratedAxis> hyperstack, final Collection<AxisType> types)
 	{
 		final int n = hyperstack.numDimensions();
 		return IntStream.range(0, n).filter(d -> !isAnyOfTypes(hyperstack.axis(d),
@@ -283,7 +284,7 @@ public class HyperstackUtils {
 	}
 
 	private static boolean isAnyOfTypes(final TypedAxis axis,
-		final List<AxisType> types)
+		final Collection<AxisType> types)
 	{
 		return types.stream().anyMatch(t -> axis.type() == t);
 	}

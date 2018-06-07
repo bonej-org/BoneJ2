@@ -262,11 +262,11 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			}
 			intensityImage = convertService.convert(dataset, ImagePlus.class);
 		}
-		catch (FormatException e) {
+		catch (final FormatException e) {
 			cancel("Image format is not recognized");
 			logService.trace(e);
 		}
-		catch (IOException | NullPointerException e) {
+		catch (final IOException | NullPointerException e) {
 			cancel("An error occurred while opening the image");
 			logService.trace(e);
 		}

@@ -21,7 +21,6 @@ import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -155,7 +154,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final RandomAccessibleInterval totalMask = raiCopy.calculate(subSpace);
 		// Because we want to create a surface from the whole image, set everything
 		// in the mask to foreground
-		((Img<BitType>) totalMask).forEach(BitType::setOne);
+		((Iterable<BitType>) totalMask).forEach(BitType::setOne);
 
 		// Create surface meshes and calculate their volume. If the input interval
 		// wasn't binary, we'd have to threshold it before these calls.

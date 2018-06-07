@@ -24,7 +24,7 @@ public final class GraphUtil {
 
 	private GraphUtil() {}
 
-	public static List<Vector3d> toVector3d(final List<Point> points) {
+	public static List<Vector3d> toVector3d(final Collection<Point> points) {
 		if (points.isEmpty()) {
 			return Collections.singletonList(new Vector3d(Double.NaN, Double.NaN,
 				Double.NaN));
@@ -51,7 +51,7 @@ public final class GraphUtil {
 	}
 
 	private static int doubleToIntCoordinate(final double d) {
-		return !Double.isNaN(d) ? (int) Math.round(d) : Integer.MAX_VALUE;
+		return Double.isNaN(d) ? Integer.MAX_VALUE : (int) Math.round(d);
 	}
 
 	/**
@@ -99,8 +99,8 @@ public final class GraphUtil {
 	 * @param vertices vertices of the graph.
 	 * @return A graph that contains the vertices and the edge.
 	 */
-	public static Graph createGraph(final Collection<Edge> edges,
-		final Collection<Vertex> vertices)
+	public static Graph createGraph(final Iterable<Edge> edges,
+		final Iterable<Vertex> vertices)
 	{
 		final Graph graph = new Graph();
 		edges.forEach(graph::addEdge);

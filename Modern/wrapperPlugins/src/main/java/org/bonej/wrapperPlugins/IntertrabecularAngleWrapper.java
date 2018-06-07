@@ -8,6 +8,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -179,7 +180,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		printCulledEdgePercentages();
 	}
 
-	private void printEdgeCentroids(final List<Edge> edges) {
+	private void printEdgeCentroids(final Collection<Edge> edges) {
 		if (!printCentroids || edges == null || edges.isEmpty()) {
 			return;
 		}
@@ -250,7 +251,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		return radianMap;
 	}
 
-	private List<Vertex> filterBoundaryVertices(final List<Vertex> vertices) {
+	private List<Vertex> filterBoundaryVertices(final Collection<Vertex> vertices) {
 		return vertices.stream().filter(v -> !isCloseToBoundary(v)).collect(toList());
 	}
 

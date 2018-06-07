@@ -20,6 +20,7 @@ import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
+import net.imglib2.IterableRealInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -158,7 +159,7 @@ public class ConnectivityWrapper extends ContextCommand {
 	private double calculateConnectivityDensity(
 		final RandomAccessibleInterval subspace, final double connectivity)
 	{
-		final double elements = ((IterableInterval) subspace).size();
+		final double elements = ((IterableRealInterval) subspace).size();
 		final double elementSize = ElementUtil.calibratedSpatialElementSize(
 			inputImage, unitService);
 		return connectivity / (elements * elementSize);

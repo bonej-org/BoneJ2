@@ -4,6 +4,7 @@ package org.bonej.ops;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.hybrid.AbstractBinaryHybridCFI1;
 
+import org.apache.commons.math3.random.RandomVectorGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.AxisAngle4d;
@@ -31,7 +32,7 @@ public class RotateAboutAxis extends
 	 * unit quaternion. These can be used to create isotropically distributed
 	 * rotations.
 	 */
-	private static final UnitSphereRandomVectorGenerator qGenerator =
+	private static final RandomVectorGenerator qGenerator =
 		new UnitSphereRandomVectorGenerator(4);
 
 	/**

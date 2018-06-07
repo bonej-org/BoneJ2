@@ -6,6 +6,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -143,8 +144,8 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		matchOps(bitImgPlus);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(Collectors.toList());
-		final ArrayList<Double> dimensions = new ArrayList<>();
-		final ArrayList<Double> rSquared = new ArrayList<>();
+		final List<Double> dimensions = new ArrayList<>();
+		final List<Double> rSquared = new ArrayList<>();
 		subspaceTables = new ArrayList<>();
 		subspaces.forEach(subspace -> {
 			final RandomAccessibleInterval<BitType> interval = subspace.interval;
@@ -187,7 +188,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	}
 
 	private boolean allValuesFinite(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
 	{
 		final Stream<Double> xValues = pairs.stream().map(p -> p.a.get());
 		final Stream<Double> yValues = pairs.stream().map(p -> p.b.get());
@@ -237,7 +238,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		return curveFitter.fit(points.toList());
 	}
 
-	private double getRSquared(final List<ValuePair<DoubleType, DoubleType>> pairs) {
+	private double getRSquared(final Iterable<ValuePair<DoubleType, DoubleType>> pairs) {
 		final SimpleRegression regression = new SimpleRegression();
 		pairs.forEach(pair -> regression.addData(pair.a.get(), pair.b.get()));
 		return regression.getRSquare();
@@ -265,7 +266,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	}
 
 	private WeightedObservedPoints toWeightedObservedPoints(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Iterable<ValuePair<DoubleType, DoubleType>> pairs)
 	{
 		final WeightedObservedPoints points = new WeightedObservedPoints();
 		pairs.forEach(pair -> points.add(pair.a.get(), pair.b.get()));

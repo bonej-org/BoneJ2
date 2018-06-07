@@ -262,7 +262,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Map<String, Mesh> processViews(final List<Subspace<BitType>> subspaces) {
+	private Map<String, Mesh> processViews(final Iterable<Subspace<BitType>> subspaces) {
 		final String name = inputImage.getName();
 		final Map<String, Mesh> meshes = new HashMap<>();
 		for (final Subspace<BitType> subspace : subspaces) {

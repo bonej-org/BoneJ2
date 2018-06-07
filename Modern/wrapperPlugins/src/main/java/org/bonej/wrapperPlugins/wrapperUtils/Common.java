@@ -7,6 +7,7 @@ import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
+import net.imagej.ops.OpEnvironment;
 import net.imagej.ops.OpService;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
@@ -37,7 +38,7 @@ public final class Common {
 	 * @return the image converted to bit type.
 	 */
 	public static <C extends ComplexType<C>> ImgPlus<BitType> toBitTypeImgPlus(
-		final OpService ops, final ImgPlus<C> imgPlus)
+		final OpEnvironment ops, final ImgPlus<C> imgPlus)
 	{
 		final Img<BitType> convertedImg = ops.convert().bit(imgPlus.getImg());
 		final ImgPlus<BitType> convertedImgPlus = new ImgPlus<>(convertedImg);

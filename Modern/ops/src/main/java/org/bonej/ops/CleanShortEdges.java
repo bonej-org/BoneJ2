@@ -125,8 +125,8 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	public static int removeParallelEdges(final Graph graph) {
 		final ArrayList<Vertex> vertices = graph.getVertices();
 		final Map<Vertex, Integer> idMap = mapVertexIds(vertices);
-		final Set<Long> connections = new HashSet<>();
-		final List<Edge> parallelEdges = new ArrayList<>();
+		final Collection<Long> connections = new HashSet<>();
+		final Collection<Edge> parallelEdges = new ArrayList<>();
 		graph.getEdges().forEach(edge -> {
 			final long hash = connectionHash(edge, idMap);
 			if (!connections.add(hash)) {
@@ -227,7 +227,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 					.filter(e -> !replacementMap.containsKey(e) && !isClusterEdge(e, clusters)).collect(toList());
 
 			final Graph cleanGraph = new Graph();
-			final Set<Edge> cleanEdges = new HashSet<>();
+			final Collection<Edge> cleanEdges = new HashSet<>();
 			cleanEdges.addAll(nonClusterEdges);
 			cleanEdges.addAll(clusterConnectingEdges);
 			cleanGraph.getEdges().addAll(cleanEdges);
@@ -283,7 +283,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		});
 	}
 
-	private static Edge replaceEdge(final Edge edge, final Set<Vertex> cluster, final Vertex centre) {
+	private static Edge replaceEdge(final Edge edge, final Collection<Vertex> cluster, final Vertex centre) {
 		final Vertex v1 = edge.getV1();
 		final Vertex v2 = edge.getV2();
 		final Edge replacement;
@@ -318,7 +318,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 				+ Math.pow(centre1.z * calibration3d.get(2), 2));
 	}
 
-	private static boolean isClusterEdge(final Edge e, final List<Set<Vertex>> clusters) {
+	private static boolean isClusterEdge(final Edge e, final Collection<Set<Vertex>> clusters) {
 		return clusters.stream().anyMatch(c -> c.contains(e.getV1()) && c.contains(e.getV2()));
 	}
 
@@ -328,13 +328,13 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	 * @param cluster a collection of directly connected vertices.
 	 * @return A vertex at the geometric center of the cluster.
 	 */
-	public Vertex getClusterCentre(final Set<Vertex> cluster) {
+	public Vertex getClusterCentre(final Collection<Vertex> cluster) {
 		final List<Vector3d> clusterVectors = getClusterVectors(cluster);
 		final Vector3d clusterCentroid = centroidOp.calculate(clusterVectors);
 		return GraphUtil.vectorToVertex(clusterCentroid);
 	}
 
-	private static List<Vector3d> getClusterVectors(final Set<Vertex> cluster) {
+	private static List<Vector3d> getClusterVectors(final Collection<Vertex> cluster) {
 		final Stream<Point> clusterPoints = cluster.stream().flatMap(v -> v.getPoints().stream());
 		return clusterPoints.map(GraphUtil::toVector3d).collect(Collectors.toList());
 	}
@@ -422,7 +422,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	 * @param cluster a collection of directly connected vertices.
 	 * @return the edges that originate from the cluster but terminate outside it.
 	 */
-	public static Set<Edge> findEdgesWithOneEndInCluster(final Set<Vertex> cluster) {
+	public static Set<Edge> findEdgesWithOneEndInCluster(final Collection<Vertex> cluster) {
 		final Map<Edge, Long> edgeCounts = cluster.stream().flatMap(v -> v.getBranches().stream())
 				.collect(groupingBy(Function.identity(), Collectors.counting()));
 		return edgeCounts.keySet().stream().filter(e -> edgeCounts.get(e) == 1).collect(toSet());

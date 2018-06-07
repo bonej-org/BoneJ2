@@ -7,6 +7,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
+import ij.plugin.filter.PlugInFilter;
 import net.imagej.patcher.LegacyInjector;
 
 import org.bonej.utilities.ImagePlusUtil;
@@ -52,7 +53,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 	public void run() {
 		skeleton = cleanDuplicate(inputImage);
 		skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+		final PlugInFilter skeletoniser = new Skeletonize3D_();
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);

@@ -300,7 +300,7 @@ public final class RoiManagerUtil {
 	 * @param padding Number of pixels added on each side of the target slide
 	 */
 	private static void copySlice(final ImageProcessor sourceProcessor,
-		final ImageProcessor targetProcessor, final List<Roi> sliceRois,
+		final ImageProcessor targetProcessor, final Iterable<Roi> sliceRois,
 		final int padding)
 	{
 		for (final Roi sliceRoi : sliceRois) {
