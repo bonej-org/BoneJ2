@@ -20,7 +20,7 @@ import sc.fiji.analyzeSkeleton.Vertex;
  *
  * @author Richard Domander
  */
-public class GraphUtil {
+public final class GraphUtil {
 
 	private GraphUtil() {}
 
@@ -50,7 +50,7 @@ public class GraphUtil {
 		return vertex;
 	}
 
-	private static int doubleToIntCoordinate(double d) {
+	private static int doubleToIntCoordinate(final double d) {
 		return !Double.isNaN(d) ? (int) Math.round(d) : Integer.MAX_VALUE;
 	}
 

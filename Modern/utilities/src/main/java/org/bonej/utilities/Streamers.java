@@ -14,7 +14,7 @@ import net.imglib2.type.numeric.RealType;
  *
  * @author Richard Domander
  */
-public class Streamers {
+public final class Streamers {
 
 	private Streamers() {}
 
@@ -52,7 +52,7 @@ public class Streamers {
 	 *         iterable == null.
 	 */
 	public static <T extends RealType<T>> DoubleStream realDoubleStream(
-		Iterable<T> iterable)
+		final Iterable<T> iterable)
 	{
 		if (iterable == null) {
 			return DoubleStream.empty();

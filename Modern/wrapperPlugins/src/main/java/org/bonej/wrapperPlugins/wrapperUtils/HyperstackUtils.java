@@ -89,7 +89,7 @@ public class HyperstackUtils {
 	 * @return a stream of all the subspaces found.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> Stream<Subspace<T>>
-		splitSubspaces(final ImgPlus<T> hyperStack, List<AxisType> subspaceTypes)
+		splitSubspaces(final ImgPlus<T> hyperStack, final List<AxisType> subspaceTypes)
 	{
 		if (subspaceTypes == null || subspaceTypes.isEmpty()) {
 			return Stream.empty();
@@ -227,8 +227,8 @@ public class HyperstackUtils {
 		final List<ValuePair<IntType, LongType>> splitCoordinates)
 	{
 		final List<ValuePair<IntType, LongType>> workingSplit = new ArrayList<>();
-		for (ValuePair<IntType, LongType> pair : splitCoordinates) {
-			ValuePair<IntType, LongType> copy = new ValuePair<>(pair.a.copy(),
+		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
+			final ValuePair<IntType, LongType> copy = new ValuePair<>(pair.a.copy(),
 				pair.b);
 			workingSplit.add(copy);
 		}
@@ -255,8 +255,8 @@ public class HyperstackUtils {
 		final List<ValuePair<IntType, LongType>> splitCoordinates,
 		final int dimension)
 	{
-		for (ValuePair<IntType, LongType> pair : splitCoordinates) {
-			IntType pairDimension = pair.getA();
+		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
+			final IntType pairDimension = pair.getA();
 			if (pairDimension.get() >= dimension) {
 				pairDimension.dec();
 			}
@@ -275,7 +275,7 @@ public class HyperstackUtils {
 	 * @return Indices of the axis used to split the hyperstack
 	 */
 	private static <T extends RealType<T> & NativeType<T>> int[]
-		findSplitAxisIndices(ImgPlus<T> hyperstack, final List<AxisType> types)
+		findSplitAxisIndices(final ImgPlus<T> hyperstack, final List<AxisType> types)
 	{
 		final int n = hyperstack.numDimensions();
 		return IntStream.range(0, n).filter(d -> !isAnyOfTypes(hyperstack.axis(d),

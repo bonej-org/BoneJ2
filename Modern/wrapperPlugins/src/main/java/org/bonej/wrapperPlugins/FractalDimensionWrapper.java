@@ -237,8 +237,8 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		return curveFitter.fit(points.toList());
 	}
 
-	private double getRSquared(List<ValuePair<DoubleType, DoubleType>> pairs) {
-		SimpleRegression regression = new SimpleRegression();
+	private double getRSquared(final List<ValuePair<DoubleType, DoubleType>> pairs) {
+		final SimpleRegression regression = new SimpleRegression();
 		pairs.forEach(pair -> regression.addData(pair.a.get(), pair.b.get()));
 		return regression.getRSquare();
 	}
@@ -267,7 +267,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private WeightedObservedPoints toWeightedObservedPoints(
 		final List<ValuePair<DoubleType, DoubleType>> pairs)
 	{
-		WeightedObservedPoints points = new WeightedObservedPoints();
+		final WeightedObservedPoints points = new WeightedObservedPoints();
 		pairs.forEach(pair -> points.add(pair.a.get(), pair.b.get()));
 		return points;
 	}

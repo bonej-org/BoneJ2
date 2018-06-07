@@ -136,7 +136,7 @@ public class AxisUtils {
 	 * </p>
 	 */
 	private static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isUnitsConvertible(T space, final UnitService unitService)
+		isUnitsConvertible(final T space, final UnitService unitService)
 	{
 		final long spatialDimensions = countSpatialDimensions(space);
 

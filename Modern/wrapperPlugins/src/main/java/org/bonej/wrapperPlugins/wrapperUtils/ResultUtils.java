@@ -29,7 +29,7 @@ import ij.ImagePlus;
  *
  * @author Richard Domander
  */
-public class ResultUtils {
+public final class ResultUtils {
 
 	private ResultUtils() {}
 
@@ -43,7 +43,7 @@ public class ResultUtils {
 	 * @return the noun for the size of the elements.
 	 */
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> String
-		getSizeDescription(S space)
+		getSizeDescription(final S space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
 
@@ -157,7 +157,7 @@ public class ResultUtils {
 	 * @param rows number of rows created.
 	 * @return a column that repeats the label.
 	 */
-	public static GenericColumn createLabelColumn(final String label, int rows) {
+	public static GenericColumn createLabelColumn(final String label, final int rows) {
 		final GenericColumn labelColumn = new GenericColumn("Label");
 		final int n = Math.max(0, rows);
 		final String s = StringUtils.isNullOrEmpty(label) ? "-" : label;

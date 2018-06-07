@@ -143,7 +143,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	// TODO make into a utility method or remove if mesh area considers
 	// calibration in the future
 	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isAxesMatchingSpatialCalibration(T space)
+		isAxesMatchingSpatialCalibration(final T space)
 	{
 		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
 			.allMatch(StringUtils::isNullOrEmpty);
@@ -186,7 +186,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 		final List<Facet> facets = mesh.getFacets();
 		final int numFacets = facets.size();
-		try (FileOutputStream writer = new FileOutputStream(path)) {
+		try (final FileOutputStream writer = new FileOutputStream(path)) {
 			final byte[] header = STL_HEADER.getBytes();
 			writer.write(header);
 			final byte[] facetBytes = ByteBuffer.allocate(4).order(
@@ -194,7 +194,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			writer.write(facetBytes);
 			final ByteBuffer buffer = ByteBuffer.allocate(50);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
-			for (Facet facet : facets) {
+			for (final Facet facet : facets) {
 				final TriangularFacet triangularFacet = (TriangularFacet) facet;
 				writeSTLFacet(buffer, triangularFacet);
 				writer.write(buffer.array());
@@ -208,11 +208,11 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private String choosePath() {
-		String initialName = stripFileExtension(inputImage.getName());
+		final String initialName = stripFileExtension(inputImage.getName());
 
 		// The file dialog won't allow empty filenames, and it prompts when file
 		// already exists
-		File file = uiService.chooseFile(new File(initialName),
+		final File file = uiService.chooseFile(new File(initialName),
 			FileWidget.SAVE_STYLE);
 		if (file == null) {
 			// User pressed cancel on file dialog
@@ -263,10 +263,10 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Map<String, Mesh> processViews(List<Subspace<BitType>> subspaces) {
+	private Map<String, Mesh> processViews(final List<Subspace<BitType>> subspaces) {
 		final String name = inputImage.getName();
 		final Map<String, Mesh> meshes = new HashMap<>();
-		for (Subspace<BitType> subspace : subspaces) {
+		for (final Subspace<BitType> subspace : subspaces) {
 			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
 			final double area = mesh.getSurfaceArea();
 			final String suffix = subspace.toString();
@@ -285,7 +285,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			try {
 				writeBinarySTLFile(filePath, subspaceMesh);
 			}
-			catch (IOException e) {
+			catch (final IOException e) {
 				savingErrors.put(filePath, e.getMessage());
 			}
 		});
@@ -295,13 +295,13 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void showSavingErrorsDialog(final Map<String, String> savingErrors) {
-		StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
+		final StringBuilder msgBuilder = new StringBuilder(STL_WRITE_ERROR);
 		savingErrors.forEach((k, v) -> msgBuilder.append(k).append(": ").append(v));
 		uiService.showDialog(msgBuilder.toString(), ERROR_MESSAGE);
 	}
 
 	// TODO make into a utility method
-	private static String stripFileExtension(String path) {
+	private static String stripFileExtension(final String path) {
 		final int dot = path.lastIndexOf('.');
 
 		return dot == -1 ? path : path.substring(0, dot);
@@ -326,7 +326,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	// -- Utility methods --
 
 	// -- Helper methods --
-	private static void writeSTLFacet(ByteBuffer buffer, TriangularFacet facet) {
+	private static void writeSTLFacet(final ByteBuffer buffer, final TriangularFacet facet) {
 		writeSTLVector(buffer, facet.getNormal());
 		writeSTLVector(buffer, facet.getP0());
 		writeSTLVector(buffer, facet.getP1());
@@ -334,7 +334,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		buffer.putShort((short) 0); // Attribute byte count
 	}
 
-	private static void writeSTLVector(ByteBuffer buffer, Vector3D v) {
+	private static void writeSTLVector(final ByteBuffer buffer, final Vector3D v) {
 		buffer.putFloat((float) v.getX());
 		buffer.putFloat((float) v.getY());
 		buffer.putFloat((float) v.getZ());

@@ -45,13 +45,13 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends AbstractB
     @Override
     public DoubleType calculate(final Ellipsoid ellipsoid, final T point) {
 
-        double a = ellipsoid.getA();
-        double b = ellipsoid.getB();
-        double c = ellipsoid.getC();
+        final double a = ellipsoid.getA();
+        final double b = ellipsoid.getB();
+        final double c = ellipsoid.getC();
 
-        Point3d pointInEllipsoidCoordinates = toEllipsoidCoordinates(point,ellipsoid);
+        final Point3d pointInEllipsoidCoordinates = toEllipsoidCoordinates(point,ellipsoid);
         
-        double rootTerm = Math.sqrt(pointInEllipsoidCoordinates.x*pointInEllipsoidCoordinates.x/(a*a)+pointInEllipsoidCoordinates.y*pointInEllipsoidCoordinates.y/(b*b));
+        final double rootTerm = Math.sqrt(pointInEllipsoidCoordinates.x*pointInEllipsoidCoordinates.x/(a*a)+pointInEllipsoidCoordinates.y*pointInEllipsoidCoordinates.y/(b*b));
         Vector2d anglesK = new Vector2d(Math.atan2(a*pointInEllipsoidCoordinates.y,b*pointInEllipsoidCoordinates.x),Math.atan2(pointInEllipsoidCoordinates.z, c*rootTerm));
         Vector2d anglesKPlus1 = new Vector2d(0.0,0.0);
         long iterations = 0;
@@ -69,7 +69,7 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends AbstractB
             iterations++;
         }
 
-        Vector3d closestPointOnEllipsoidSurface = getCartesianCoordinatesFromAngleParametrization(anglesKPlus1,ellipsoid);
+        final Vector3d closestPointOnEllipsoidSurface = getCartesianCoordinatesFromAngleParametrization(anglesKPlus1,ellipsoid);
         closestPointOnEllipsoidSurface.scaleAdd(-1.0,pointInEllipsoidCoordinates);
         return new DoubleType(closestPointOnEllipsoidSurface.length());
     }
@@ -81,11 +81,11 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends AbstractB
      * @return point in ellipsoid coordinates
      */
     static Point3d toEllipsoidCoordinates (final Tuple3d point, final Ellipsoid ellipsoid)  {
-        Point3d translated = new Point3d(ellipsoid.getCentroid());
+        final Point3d translated = new Point3d(ellipsoid.getCentroid());
         translated.scale(-1.0);
         translated.add(point);
 
-        Matrix4d orientation = ellipsoid.getOrientation();
+        final Matrix4d orientation = ellipsoid.getOrientation();
         final double x = orientation.m00*translated.x+ orientation.m10*translated.y+orientation.m20*translated.z;
         final double y = orientation.m01*translated.x+ orientation.m11*translated.y+orientation.m21*translated.z;
         final double z = orientation.m02*translated.x+ orientation.m12*translated.y+orientation.m22*translated.z;
@@ -101,12 +101,12 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends AbstractB
      * @return x(theta,phi)
      */
     private static Vector3d getCartesianCoordinatesFromAngleParametrization(final Vector2d angles, final Ellipsoid ellipsoid) {
-        double theta = angles.x;
-        double phi = angles.y;
+        final double theta = angles.x;
+        final double phi = angles.y;
 
-        double x = ellipsoid.getA()*Math.cos(phi)*Math.cos(theta);
-        double y = ellipsoid.getB()*Math.cos(phi)*Math.sin(theta);
-        double z = ellipsoid.getC()*Math.sin(phi);
+        final double x = ellipsoid.getA()*Math.cos(phi)*Math.cos(theta);
+        final double y = ellipsoid.getB()*Math.cos(phi)*Math.sin(theta);
+        final double z = ellipsoid.getC()*Math.sin(phi);
 
         return new Vector3d(x,y,z);
     }
@@ -119,37 +119,37 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends AbstractB
      * @return inverse Jacobian matrix DF^{-1} times F(angles)
      */
     static private Vector2d dFInverseTimesF(final Vector2d angles, final Ellipsoid ellipsoid, final Point3d point) {
-        double a = ellipsoid.getA();
-        double b = ellipsoid.getB();
-        double c = ellipsoid.getC();
-        double a2mb2 = (a*a-b*b);
+        final double a = ellipsoid.getA();
+        final double b = ellipsoid.getB();
+        final double c = ellipsoid.getC();
+        final double a2mb2 = (a*a-b*b);
 
-        double x = point.x;
-        double y = point.y;
-        double z = point.z;
+        final double x = point.x;
+        final double y = point.y;
+        final double z = point.z;
 
-        double theta = angles.x;
-        double sinTheta = Math.sin(theta);
-        double sinThetaSq = sinTheta*sinTheta;
-        double cosTheta = Math.cos(theta);
-        double cosThetaSq = cosTheta*cosTheta;
+        final double theta = angles.x;
+        final double sinTheta = Math.sin(theta);
+        final double sinThetaSq = sinTheta*sinTheta;
+        final double cosTheta = Math.cos(theta);
+        final double cosThetaSq = cosTheta*cosTheta;
 
-        double phi = angles.y;
-        double sinPhi = Math.sin(phi);
-        double cosPhi = Math.cos(phi);
+        final double phi = angles.y;
+        final double sinPhi = Math.sin(phi);
+        final double cosPhi = Math.cos(phi);
 
-        double a11 = a2mb2*(cosThetaSq-sinThetaSq)*cosPhi-x*a*cosTheta-y*b*sinTheta;
-        double a12 = -a2mb2*cosTheta*sinTheta*sinPhi;
-        double a21 = -2.0*a2mb2*cosTheta*sinTheta*sinPhi*cosPhi+x*a*sinPhi*sinTheta-y*b*sinPhi*cosTheta;
-        double a22 = (a*a*cosThetaSq+b*b*sinThetaSq-c*c)*(cosThetaSq-sinThetaSq)-x*a*cosPhi*cosTheta-y*b*cosPhi*sinTheta-z*c*sinPhi;
+        final double a11 = a2mb2*(cosThetaSq-sinThetaSq)*cosPhi-x*a*cosTheta-y*b*sinTheta;
+        final double a12 = -a2mb2*cosTheta*sinTheta*sinPhi;
+        final double a21 = -2.0*a2mb2*cosTheta*sinTheta*sinPhi*cosPhi+x*a*sinPhi*sinTheta-y*b*sinPhi*cosTheta;
+        final double a22 = (a*a*cosThetaSq+b*b*sinThetaSq-c*c)*(cosThetaSq-sinThetaSq)-x*a*cosPhi*cosTheta-y*b*cosPhi*sinTheta-z*c*sinPhi;
 
-        double f1 = a2mb2*cosTheta*sinTheta*cosPhi-x*a*sinTheta+y*b*cosTheta;
-        double f2 = (a*a*cosThetaSq+b*b*sinThetaSq-c*c)*sinPhi*cosPhi-x*a*sinPhi*cosTheta-y*b*sinPhi*sinTheta+z*c*cosPhi;
+        final double f1 = a2mb2*cosTheta*sinTheta*cosPhi-x*a*sinTheta+y*b*cosTheta;
+        final double f2 = (a*a*cosThetaSq+b*b*sinThetaSq-c*c)*sinPhi*cosPhi-x*a*sinPhi*cosTheta-y*b*sinPhi*sinTheta+z*c*cosPhi;
 
-        double out1 = a22*f1-a12*f2;
-        double out2 = -a21*f1+a11*f2;
-        
-        double determinant = a11*a22-a12*a21;
+        final double out1 = a22*f1-a12*f2;
+        final double out2 = -a21*f1+a11*f2;
+
+        final double determinant = a11*a22-a12*a21;
 
         if(determinant==0.0)
         {
@@ -159,7 +159,7 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends AbstractB
     }
 
     private static double getDifference(final Vector2d angles1, final Vector2d angles2) {
-        Vector2d difference = new Vector2d(angles1);
+        final Vector2d difference = new Vector2d(angles1);
         difference.sub(angles2);
         return difference.length();
     }

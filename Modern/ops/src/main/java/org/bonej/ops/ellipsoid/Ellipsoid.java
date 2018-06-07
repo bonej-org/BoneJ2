@@ -34,8 +34,8 @@ public class Ellipsoid {
 	private double a;
 	private double b;
 	private double c;
-	private Vector3d centroid = new Vector3d();
-	private Matrix3d orientation = new Matrix3d();
+	private final Vector3d centroid = new Vector3d();
+	private final Matrix3d orientation = new Matrix3d();
 	// TODO Add a way to change the sampling function, either by passing and Op of
 	// certain type, or by creating an enumerator.
 	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;

@@ -140,7 +140,7 @@ public class ConnectivityWrapper extends ContextCommand {
 			connectivityDensity);
 	}
 
-	private void addResults(String label, final double eulerCharacteristic,
+	private void addResults(final String label, final double eulerCharacteristic,
 		final double deltaEuler, final double connectivity,
 		final double connectivityDensity)
 	{

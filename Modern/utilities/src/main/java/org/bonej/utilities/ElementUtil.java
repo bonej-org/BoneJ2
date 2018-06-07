@@ -21,7 +21,7 @@ import net.imglib2.type.numeric.RealType;
  * @author Richard Domander
  */
 // TODO Throw exceptions
-public class ElementUtil {
+public final class ElementUtil {
 
 	private ElementUtil() {}
 
@@ -87,12 +87,12 @@ public class ElementUtil {
 			Collectors.toList());
 		double elementSize = axes.get(0).averageScale(0.0, 1.0);
 		for (int i = 1; i < axes.size(); i++) {
-			double scale = axes.get(i).averageScale(0.0, 1.0);
+			final double scale = axes.get(i).averageScale(0.0, 1.0);
 			final String axisUnit = axes.get(i).unit().replaceFirst("^µ[mM]$", "um");
 			try {
                 final double axisSize = unitService.value(scale, axisUnit, unit);
                 elementSize *= axisSize;
-            } catch (Exception e) {
+            } catch (final Exception e) {
 			    return uncalibratedSize(space);
             }
 		}

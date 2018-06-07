@@ -22,7 +22,7 @@ import ij.ImagePlus;
  *
  * @author Richard Domander
  */
-public class Common {
+public final class Common {
 
     /**
 	 * Converts the {@link ImgPlus} to a new ImgPlus with {@link BitType}
@@ -37,7 +37,7 @@ public class Common {
 	 * @return the image converted to bit type.
 	 */
 	public static <C extends ComplexType<C>> ImgPlus<BitType> toBitTypeImgPlus(
-		OpService ops, final ImgPlus<C> imgPlus)
+		final OpService ops, final ImgPlus<C> imgPlus)
 	{
 		final Img<BitType> convertedImg = ops.convert().bit(imgPlus.getImg());
 		final ImgPlus<BitType> convertedImgPlus = new ImgPlus<>(convertedImg);
@@ -76,7 +76,9 @@ public class Common {
      * @param source source of metadata.
      * @param target target of metadata.
 	 */
-	private static void copyMetadata(ImgPlus<?> source, ImgPlus<?> target) {
+	private static void copyMetadata(final ImgPlus<?> source,
+		final ImgPlus<?> target)
+	{
 		target.setName(source.getName());
 
 		final int dimensions = source.numDimensions();

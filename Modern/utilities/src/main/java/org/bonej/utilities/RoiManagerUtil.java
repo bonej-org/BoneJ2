@@ -1,7 +1,7 @@
 
 package org.bonej.utilities;
 
-import java.awt.*;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,12 +54,12 @@ public class RoiManagerUtil {
 		}
 
 		final Roi[] rois = roiMan.getRoisAsArray();
-		for (Roi roi : rois) {
-			String roiName = roi.getName();
+		for (final Roi roi : rois) {
+			final String roiName = roi.getName();
 			if (roiName == null) {
 				continue;
 			}
-			int roiSliceNumber = roiMan.getSliceNumber(roiName);
+			final int roiSliceNumber = roiMan.getSliceNumber(roiName);
 			if (roiSliceNumber == sliceNumber || roiSliceNumber == NO_SLICE_NUMBER) {
 				roiList.add(roi);
 			}
@@ -102,9 +102,9 @@ public class RoiManagerUtil {
 		boolean allSlices = false;
 		boolean noValidRois = true;
 
-		for (Roi roi : rois) {
-			Rectangle r = roi.getBounds();
-			boolean valid = getSafeRoiBounds(r, stack.getWidth(), stack.getHeight());
+		for (final Roi roi : rois) {
+			final Rectangle r = roi.getBounds();
+			final boolean valid = getSafeRoiBounds(r, stack.getWidth(), stack.getHeight());
 
 			if (!valid) {
 				continue;
@@ -115,7 +115,7 @@ public class RoiManagerUtil {
 			yMin = Math.min(r.y, yMin);
 			yMax = Math.max(r.y + r.height, yMax);
 
-			int sliceNumber = roiMan.getSliceNumber(roi.getName());
+			final int sliceNumber = roiMan.getSliceNumber(roi.getName());
 			if (sliceNumber >= FIRST_SLICE_NUMBER && sliceNumber <= stack.getSize()) {
 				zMin = Math.min(sliceNumber, zMin);
 				zMax = Math.max(sliceNumber, zMax);
@@ -131,7 +131,7 @@ public class RoiManagerUtil {
 			return Optional.empty();
 		}
 
-		int[] limits = { xMin, xMax, yMin, yMax, zMin, zMax };
+		final int[] limits = { xMin, xMax, yMin, yMax, zMin, zMax };
 
 		if (allSlices) {
 			limits[4] = DEFAULT_Z_MIN;
@@ -153,12 +153,12 @@ public class RoiManagerUtil {
 	public static boolean getSafeRoiBounds(final Rectangle bounds,
 		final int width, final int height)
 	{
-		int xMin = clamp(bounds.x, 0, width);
-		int xMax = clamp(bounds.x + bounds.width, 0, width);
-		int yMin = clamp(bounds.y, 0, height);
-		int yMax = clamp(bounds.y + bounds.height, 0, height);
-		int newWidth = xMax - xMin;
-		int newHeight = yMax - yMin;
+		final int xMin = clamp(bounds.x, 0, width);
+		final int xMax = clamp(bounds.x + bounds.width, 0, width);
+		final int yMin = clamp(bounds.y, 0, height);
+		final int yMax = clamp(bounds.y + bounds.height, 0, height);
+		final int newWidth = xMax - xMin;
+		final int newHeight = yMax - yMin;
 
 		bounds.setBounds(xMin, yMin, newWidth, newHeight);
 
@@ -206,7 +206,7 @@ public class RoiManagerUtil {
 			return Optional.empty();
 		}
 
-		Optional<int[]> optionalLimits = getLimits(roiMan, sourceStack);
+		final Optional<int[]> optionalLimits = getLimits(roiMan, sourceStack);
 		if (!optionalLimits.isPresent()) {
 			return Optional.empty();
 		}
@@ -303,21 +303,21 @@ public class RoiManagerUtil {
 		final ImageProcessor targetProcessor, final List<Roi> sliceRois,
 		final int padding)
 	{
-		for (Roi sliceRoi : sliceRois) {
-			Rectangle rectangle = sliceRoi.getBounds();
-			boolean valid = getSafeRoiBounds(rectangle, sourceProcessor.getWidth(),
+		for (final Roi sliceRoi : sliceRois) {
+			final Rectangle rectangle = sliceRoi.getBounds();
+			final boolean valid = getSafeRoiBounds(rectangle, sourceProcessor.getWidth(),
 				sourceProcessor.getHeight());
 
 			if (!valid) {
 				continue;
 			}
 
-			int minY = rectangle.y;
-			int minX = rectangle.x;
-			int maxY = rectangle.y + rectangle.height;
-			int maxX = rectangle.x + rectangle.width;
+			final int minY = rectangle.y;
+			final int minX = rectangle.x;
+			final int maxY = rectangle.y + rectangle.height;
+			final int maxX = rectangle.x + rectangle.width;
 
-			ImageProcessor mask = sourceProcessor.getMask();
+			final ImageProcessor mask = sourceProcessor.getMask();
 			if (mask == null) {
 				copyRoi(sourceProcessor, targetProcessor, minX, minY, maxX, maxY,
 					padding);
@@ -349,15 +349,15 @@ public class RoiManagerUtil {
 		final ImageProcessor targetProcessor, final int minX, final int minY,
 		final int maxX, final int maxY, final int padding)
 	{
-		ImageProcessor mask = sourceProcessor.getMask();
+		final ImageProcessor mask = sourceProcessor.getMask();
 
 		int targetY = padding;
 		for (int sourceY = minY; sourceY < maxY; sourceY++) {
 			int targetX = padding;
 			for (int sourceX = minX; sourceX < maxX; sourceX++) {
-				int maskColor = mask.get(sourceX, sourceY);
+				final int maskColor = mask.get(sourceX, sourceY);
 				if (maskColor > 0) {
-					int sourceColor = sourceProcessor.get(sourceX, sourceY);
+					final int sourceColor = sourceProcessor.get(sourceX, sourceY);
 					targetProcessor.set(targetX, targetY, sourceColor);
 				}
 				targetX++;
@@ -378,15 +378,15 @@ public class RoiManagerUtil {
 	 * @param maxY Vertical end of the copy area 0 &lt;= maxY &lt;= height
 	 * @param padding Number pixels added to each side of the copy target
 	 */
-	private static void copyRoi(ImageProcessor sourceProcessor,
-		ImageProcessor targetProcessor, final int minX, final int minY,
+	private static void copyRoi(final ImageProcessor sourceProcessor,
+		final ImageProcessor targetProcessor, final int minX, final int minY,
 		final int maxX, final int maxY, final int padding)
 	{
 		int targetY = padding;
 		for (int sourceY = minY; sourceY < maxY; sourceY++) {
 			int targetX = padding;
 			for (int sourceX = minX; sourceX < maxX; sourceX++) {
-				int sourceColor = sourceProcessor.get(sourceX, sourceY);
+				final int sourceColor = sourceProcessor.get(sourceX, sourceY);
 				targetProcessor.set(targetX, targetY, sourceColor);
 				targetX++;
 			}
