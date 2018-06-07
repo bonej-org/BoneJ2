@@ -1,11 +1,11 @@
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 
 import net.imagej.patcher.LegacyInjector;
 

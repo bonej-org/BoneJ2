@@ -7,7 +7,6 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
@@ -23,7 +22,7 @@ import org.scijava.util.StringUtils;
  *
  * @author Richard Domander
  */
-public class AxisUtils {
+public final class AxisUtils {
 
 	/**
 	 * Counts the number of spatial dimensions in the given space.

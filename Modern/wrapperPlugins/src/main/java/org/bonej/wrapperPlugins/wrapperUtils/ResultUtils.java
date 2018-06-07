@@ -1,10 +1,7 @@
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.axis.Axes;
@@ -13,13 +10,9 @@ import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.table.GenericColumn;
-import net.imagej.table.LongColumn;
 import net.imagej.units.UnitService;
-import net.imglib2.type.NativeType;
-import net.imglib2.type.numeric.RealType;
 
 import org.bonej.utilities.AxisUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.scijava.util.StringUtils;
 
 import ij.ImagePlus;

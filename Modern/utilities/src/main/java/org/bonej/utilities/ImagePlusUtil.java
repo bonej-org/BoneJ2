@@ -3,11 +3,8 @@ package org.bonej.utilities;
 
 import java.util.Arrays;
 
-import ij.CompositeImage;
 import ij.ImagePlus;
 import ij.measure.Calibration;
-import ij.process.ImageProcessor;
-import ij.process.LUT;
 
 /**
  * Utility methods for checking ImagePlus properties

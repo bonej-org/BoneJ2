@@ -3,9 +3,14 @@ package org.bonej.ops.ellipsoid;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.type.numeric.real.DoubleType;
+
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.vecmath.*;
+import org.scijava.vecmath.Matrix4d;
+import org.scijava.vecmath.Point3d;
+import org.scijava.vecmath.Tuple3d;
+import org.scijava.vecmath.Vector2d;
+import org.scijava.vecmath.Vector3d;
 
 /**
  * An Op that calculates the distance between a point and an ellipsoid surface

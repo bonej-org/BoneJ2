@@ -8,9 +8,9 @@ import net.imagej.ImageJ;
  *
  * @author Richard Domander
  */
-public class BoneJMain {
+public final class BoneJMain {
 
-	public static void main(String... args) {
+	public static void main(final String... args) {
 		final ImageJ imageJ = new ImageJ();
 		imageJ.launch(args);
 	}
