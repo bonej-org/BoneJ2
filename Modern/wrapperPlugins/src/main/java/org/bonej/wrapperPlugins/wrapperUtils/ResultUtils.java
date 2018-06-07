@@ -39,14 +39,12 @@ public final class ResultUtils {
 		getSizeDescription(final S space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
-
 		if (dimensions == 2) {
 			return "Area";
 		}
-		else if (dimensions == 3) {
+		if (dimensions == 3) {
 			return "Volume";
 		}
-
 		return "Size";
 	}
 

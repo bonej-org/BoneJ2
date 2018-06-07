@@ -148,7 +148,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	/** Process surface fraction for one 3D subspace in the n-dimensional image */
 	@SuppressWarnings("unchecked")
 	private double[] subSpaceFraction(
-		RandomAccessibleInterval<BitType> subSpace)
+			final RandomAccessibleInterval<BitType> subSpace)
 	{
         statusService.showStatus("Surface fraction: creating surface");
 		// Create masks for marching cubes

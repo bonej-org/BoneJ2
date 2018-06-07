@@ -154,10 +154,10 @@ public class BoxIntersect extends
 		if (Double.isNaN(a) && Double.isNaN(b)) {
 			return Double.NaN;
 		}
-		else if (Double.isNaN(a)) {
+		if (Double.isNaN(a)) {
 			return b;
 		}
-		else if (Double.isNaN(b)) {
+		if (Double.isNaN(b)) {
 			return a;
 		}
 		return Math.max(a, b);
@@ -167,10 +167,10 @@ public class BoxIntersect extends
 		if (Double.isNaN(a) && Double.isNaN(b)) {
 			return Double.NaN;
 		}
-		else if (Double.isNaN(a)) {
+		if (Double.isNaN(a)) {
 			return b;
 		}
-		else if (Double.isNaN(b)) {
+		if (Double.isNaN(b)) {
 			return a;
 		}
 		return Math.min(a, b);

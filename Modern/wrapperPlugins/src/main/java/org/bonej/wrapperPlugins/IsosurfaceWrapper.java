@@ -253,13 +253,12 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
 		}
 
-		if (!isAxesMatchingSpatialCalibration(inputImage)) {
-			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
-			areaScale = 1.0;
-		}
-		else {
+		if (isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
 			areaScale = scale * scale;
+		} else {
+			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
+			areaScale = 1.0;
 		}
 	}
 

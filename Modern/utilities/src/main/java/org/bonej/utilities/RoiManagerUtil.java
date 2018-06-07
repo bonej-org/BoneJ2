@@ -22,7 +22,7 @@ import ij.process.ImageProcessor;
  * @author Michael Doube
  * @author Richard Domander
  */
-public class RoiManagerUtil {
+public final class RoiManagerUtil {
 
 	private static final int FIRST_SLICE_NUMBER = 1;
 	private static final int NO_SLICE_NUMBER = -1;

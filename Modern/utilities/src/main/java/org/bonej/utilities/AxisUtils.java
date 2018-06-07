@@ -59,11 +59,11 @@ public final class AxisUtils {
 		if (space == null || !hasSpatialDimensions(space))
 		{
 			return Optional.empty();
-		} else if (!isUnitsConvertible(space, unitService)) {
+		}
+		if (!isUnitsConvertible(space, unitService)) {
 		    return Optional.of("");
         }
-
-        final String unit = space.axis(0).unit();
+		final String unit = space.axis(0).unit();
         return unit == null ? Optional.of("") : Optional.of(unit);
 	}
 
@@ -138,21 +138,17 @@ public final class AxisUtils {
 		isUnitsConvertible(final T space, final UnitService unitService)
 	{
 		final long spatialDimensions = countSpatialDimensions(space);
-
 		final long uncalibrated = spatialAxisStream(space).map(CalibratedAxis::unit)
 			.filter(StringUtils::isNullOrEmpty).count();
-
 		if (uncalibrated == spatialDimensions) {
 			return true;
 		}
-		else if (uncalibrated > 0) {
+		if (uncalibrated > 0) {
 			return false;
 		}
-
 		final List<String> units = spatialAxisStream(space).map(
 			CalibratedAxis::unit).distinct().map(s -> s.replaceFirst("^µ[mM]$", "um"))
 			.collect(toList());
-
         for (int i = 0; i < units.size(); i++) {
 			for (int j = i; j < units.size(); j++) {
 				try {
@@ -163,7 +159,6 @@ public final class AxisUtils {
 				}
 			}
 		}
-
 		return true;
 	}
 	// endregion
