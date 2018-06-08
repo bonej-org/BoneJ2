@@ -32,7 +32,7 @@ class LinePlane {
 	private final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 
 	/**
-	 * Creates an instance of {@link LinePlane}, and initializes it for generating
+	 * Creates an instance of LinePlane, and initializes it for generating
 	 * lines.
 	 *
 	 * @param interval a discrete interval through which the lines pass.

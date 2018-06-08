@@ -41,7 +41,7 @@ public class Ellipsoid {
 	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;
 
 	/**
-	 * Constructs an {@link Ellipsoid} object.
+	 * Constructs an Ellipsoid.
 	 * <p>
 	 * The radii will be sorted in the constructor.
 	 * </p>
@@ -60,7 +60,7 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Constructs an {@link Ellipsoid} from semi-axes.
+	 * Constructs an Ellipsoid from semi-axes.
 	 *
 	 * @param u a semi-axis of the ellipsoid.
 	 * @param v a semi-axis of the ellipsoid.

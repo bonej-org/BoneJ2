@@ -253,7 +253,6 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			formatService.getFormat(file.getAbsolutePath());
 			final Dataset dataset = (Dataset) ioService.open(file.getAbsolutePath());
 			if (!isValidIntensityImage(dataset)) {
-				intensityImage = null;
 				return;
 			}
 			if (!convertService.supports(dataset, ImagePlus.class)) {
