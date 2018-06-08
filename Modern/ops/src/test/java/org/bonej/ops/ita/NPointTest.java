@@ -1,10 +1,10 @@
-package org.bonej.ops;
+package org.bonej.ops.ita;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import org.bonej.ops.NPoint.VectorsAngle;
+import org.bonej.ops.ita.NPoint.VectorsAngle;
 import org.junit.Test;
 import org.scijava.vecmath.Vector3d;
 

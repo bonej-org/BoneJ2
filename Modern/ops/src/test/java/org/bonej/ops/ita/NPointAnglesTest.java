@@ -1,4 +1,4 @@
-package org.bonej.ops;
+package org.bonej.ops.ita;
 
 import static org.bonej.ops.TestGraphs.createGBPShapedGraph;
 import static org.junit.Assert.assertEquals;
@@ -14,7 +14,10 @@ import net.imagej.ImageJ;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 
-import org.bonej.ops.NPoint.VectorsAngle;
+import org.bonej.ops.TestGraphs;
+import org.bonej.ops.ita.NPoint;
+import org.bonej.ops.ita.NPoint.VectorsAngle;
+import org.bonej.ops.ita.NPointAngles;
 import org.bonej.utilities.GraphUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

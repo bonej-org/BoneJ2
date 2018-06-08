@@ -29,12 +29,12 @@ import net.imglib2.util.Pair;
 import net.imglib2.util.ValuePair;
 
 import org.bonej.ops.CentroidLinAlg3d;
-import org.bonej.ops.CleanShortEdges;
-import org.bonej.ops.CleanShortEdges.PercentagesOfCulledEdges;
-import org.bonej.ops.NPoint;
-import org.bonej.ops.NPoint.VectorsAngle;
-import org.bonej.ops.NPointAngles;
-import org.bonej.ops.VertexValenceSorter;
+import org.bonej.ops.ita.CleanShortEdges;
+import org.bonej.ops.ita.CleanShortEdges.PercentagesOfCulledEdges;
+import org.bonej.ops.ita.NPoint;
+import org.bonej.ops.ita.NPoint.VectorsAngle;
+import org.bonej.ops.ita.NPointAngles;
+import org.bonej.ops.ita.VertexValenceSorter;
 import org.bonej.utilities.GraphUtil;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;

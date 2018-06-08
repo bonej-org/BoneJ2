@@ -1,4 +1,4 @@
-package org.bonej.ops;
+package org.bonej.ops.ita;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -14,6 +14,8 @@ import net.imagej.ops.special.function.Functions;
 import net.imglib2.util.Pair;
 import net.imglib2.util.ValuePair;
 
+import org.bonej.ops.TestGraphs;
+import org.bonej.ops.ita.VertexValenceSorter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

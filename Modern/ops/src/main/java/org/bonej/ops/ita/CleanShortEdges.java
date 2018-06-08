@@ -1,4 +1,4 @@
-package org.bonej.ops;
+package org.bonej.ops.ita;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -24,6 +24,7 @@ import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 
+import org.bonej.ops.CentroidLinAlg3d;
 import org.bonej.utilities.GraphUtil;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;

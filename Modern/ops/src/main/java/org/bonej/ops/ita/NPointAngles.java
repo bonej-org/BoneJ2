@@ -1,4 +1,4 @@
-package org.bonej.ops;
+package org.bonej.ops.ita;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +8,8 @@ import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 
-import org.bonej.ops.NPoint.VectorsAngle;
+import org.bonej.ops.CentroidLinAlg3d;
+import org.bonej.ops.ita.NPoint.VectorsAngle;
 import org.bonej.utilities.GraphUtil;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.Vector3d;
