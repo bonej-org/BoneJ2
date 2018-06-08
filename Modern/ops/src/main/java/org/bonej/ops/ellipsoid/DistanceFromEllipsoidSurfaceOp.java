@@ -123,7 +123,7 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends AbstractB
      * @param point point for which the closest distance to the ellipsoid surface should be found
      * @return inverse Jacobian matrix DF^{-1} times F(angles)
      */
-    static private Vector2d dFInverseTimesF(final Vector2d angles, final Ellipsoid ellipsoid, final Point3d point) {
+    private static Vector2d dFInverseTimesF(final Vector2d angles, final Ellipsoid ellipsoid, final Point3d point) {
         final double a = ellipsoid.getA();
         final double b = ellipsoid.getB();
         final double c = ellipsoid.getC();
