@@ -31,18 +31,6 @@ public class MILPlaneTest {
 	private static final AxisAngle4d IDENTITY_ROTATION = new AxisAngle4d();
 	private static final Long SEED = 0xc0ffeeL;
 
-	@Test(expected = IllegalArgumentException.class)
-	public void testMatchingFailsIf2DInterval() {
-		final Img<BitType> img = ArrayImgs.bits(5, 5);
-		IMAGE_J.op().run(MILPlane.class, img);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testMatchingFailsIf4DInterval() {
-		final Img<BitType> img = ArrayImgs.bits(5, 5, 5, 5);
-		IMAGE_J.op().run(MILPlane.class, img);
-	}
-
 	/**
 	 * Tests that changing the bins parameter changes the op result.
 	 * <p>
@@ -91,6 +79,18 @@ public class MILPlaneTest {
 		assertTrue(milVector.length() < milVector2.length());
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testMatchingFailsIf2DInterval() {
+		final Img<BitType> img = ArrayImgs.bits(5, 5);
+		IMAGE_J.op().run(MILPlane.class, img);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testMatchingFailsIf4DInterval() {
+		final Img<BitType> img = ArrayImgs.bits(5, 5, 5, 5);
+		IMAGE_J.op().run(MILPlane.class, img);
+	}
+
 	@Test
 	public void testRotationParameter() {
 		final AxisAngle4d rotation = new AxisAngle4d(0, 1, 0, Math.PI / 2.0);
@@ -102,6 +102,29 @@ public class MILPlaneTest {
 
 		assertTrue("Changing the rotation parameter had no effect", isParallel(
 			expectedDirection, milVector));
+	}
+
+	@Test
+	public void testSeedParameter() {
+		// SETUP
+		final long seed2 = 0x70ffee;
+		// Drawing lines in an angle where they're likely to encounter different
+		// number of sheets based on where they start
+		final AxisAngle4d rotation = new AxisAngle4d(1, 1, 0, Math.PI / 3.0);
+
+		// EXECUTE
+		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+			SHEETS, rotation, 4L, 1.0, SEED);
+		final Vector3d milVector2 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+			SHEETS, rotation, 4L, 1.0, SEED);
+		final Vector3d milVector3 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+			SHEETS, rotation, 4L, 1.0, seed2);
+
+		// VERIFY
+		assertEquals("Same seed should produce the same result", milVector.length(),
+			milVector2.length(), 1e-12);
+		assertNotEquals("Different seeds should produce different results",
+			milVector.length(), milVector3.length(), 1e-12);
 	}
 
 	/**
@@ -139,29 +162,6 @@ public class MILPlaneTest {
 
 		// VERIFY
 		assertEquals(SIZE, milVector.length(), 1e-12);
-	}
-
-	@Test
-	public void testSeedParameter() {
-		// SETUP
-		final long seed2 = 0x70ffee;
-		// Drawing lines in an angle where they're likely to encounter different
-		// number of sheets based on where they start
-		final AxisAngle4d rotation = new AxisAngle4d(1, 1, 0, Math.PI / 3.0);
-
-		// EXECUTE
-		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, rotation, 4L, 1.0, SEED);
-		final Vector3d milVector2 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, rotation, 4L, 1.0, SEED);
-		final Vector3d milVector3 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, rotation, 4L, 1.0, seed2);
-
-		// VERIFY
-		assertEquals("Same seed should produce the same result", milVector.length(),
-			milVector2.length(), 1e-12);
-		assertNotEquals("Different seeds should produce different results",
-			milVector.length(), milVector3.length(), 1e-12);
 	}
 
 	@BeforeClass

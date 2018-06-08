@@ -55,17 +55,16 @@ public final class AxisUtils {
 	 *         the calibrations have a unit.
 	 */
 	public static <S extends AnnotatedSpace<CalibratedAxis>> Optional<String>
-		 getSpatialUnit(final S space, final UnitService unitService)
+		getSpatialUnit(final S space, final UnitService unitService)
 	{
-		if (space == null || !hasSpatialDimensions(space))
-		{
+		if (space == null || !hasSpatialDimensions(space)) {
 			return Optional.empty();
 		}
 		if (!isUnitsConvertible(space, unitService)) {
-		    return Optional.of("");
-        }
+			return Optional.of("");
+		}
 		final String unit = space.axis(0).unit();
-        return unit == null ? Optional.of("") : Optional.of(unit);
+		return unit == null ? Optional.of("") : Optional.of(unit);
 	}
 
 	/**
@@ -159,7 +158,7 @@ public final class AxisUtils {
 		final List<String> units = spatialAxisStream(space).map(
 			CalibratedAxis::unit).distinct().map(s -> s.replaceFirst("^µ[mM]$", "um"))
 			.collect(toList());
-        for (int i = 0; i < units.size(); i++) {
+		for (int i = 0; i < units.size(); i++) {
 			for (int j = i; j < units.size(); j++) {
 				try {
 					unitService.value(1.0, units.get(i), units.get(j));

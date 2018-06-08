@@ -107,6 +107,18 @@ public class NPointAnglesTest {
 
 	}
 
+	@SuppressWarnings("unchecked")
+	@BeforeClass
+	public static void setUpBeforeClass() {
+		nPointAnglesOp = (BinaryFunctionOp) Functions.binary(IMAGE_J.op(),
+			NPointAngles.class, List.class, List.class, Integer.class);
+	}
+
+	@AfterClass
+	public static void tearDownAfterClass() {
+		IMAGE_J.context().dispose();
+	}
+
 	/**
 	 * Structure of the frame graph example ("frame" as in "coordinate frame")
 	 *
@@ -166,17 +178,5 @@ public class NPointAnglesTest {
 				3.83));
 
 		return GraphUtil.createGraph(edges, vertices);
-	}
-
-	@SuppressWarnings("unchecked")
-	@BeforeClass
-	public static void setUpBeforeClass() {
-		nPointAnglesOp = (BinaryFunctionOp) Functions.binary(IMAGE_J.op(),
-			NPointAngles.class, List.class, List.class, Integer.class);
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() {
-		IMAGE_J.context().dispose();
 	}
 }

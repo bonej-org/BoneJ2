@@ -74,9 +74,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
-	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
-	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
 	/**
 	 * Default directions is 2_000 since that's roughly the number of points in
 	 * Poisson distributed sampling that'd give points about 5 degrees apart).
@@ -86,6 +83,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	// with data at hand. Other data may need a different number.
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
+	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
+	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")

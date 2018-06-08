@@ -24,54 +24,13 @@ public final class GraphUtil {
 
 	private GraphUtil() {}
 
-	public static List<Vector3d> toVector3d(final Collection<Point> points) {
-		if (points.isEmpty()) {
-			return Collections.singletonList(new Vector3d(Double.NaN, Double.NaN,
-				Double.NaN));
-		}
-
-        return points.stream().map(GraphUtil::toVector3d).collect(toList());
-	}
-
-	public static Vector3d toVector3d(final Point point) {
-		return new Vector3d(point.x, point.y, point.z);
-	}
-
-	public static Vertex vectorToVertex(final Vector3d centroid) {
-        final Vertex vertex = new Vertex();
-	    if (centroid == null) {
-            vertex.addPoint(new Point(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
-        } else {
-            final int x = doubleToIntCoordinate(centroid.x);
-            final int y = doubleToIntCoordinate(centroid.y);
-            final int z = doubleToIntCoordinate(centroid.z);
-            vertex.addPoint(new Point(x, y, z));
-        }
-		return vertex;
-	}
-
-	private static int doubleToIntCoordinate(final double d) {
-		return Double.isNaN(d) ? Integer.MAX_VALUE : (int) Math.round(d);
-	}
-
-	/**
-	 * Checks if the edge forms a loop.
-	 *
-	 * @param edge an edge in a graph.
-	 * @return true if both endpoints of the edge is the same vertex.
-	 */
-	public static boolean isLoop(final Edge edge) {
-		return !(edge.getV1() == null && edge.getV2() == null) && edge
-			.getV1() == edge.getV2();
-	}
-
 	/**
 	 * Creates a {@link Graph} with a single edge.
 	 * <p>
 	 * NB Adds the edge as a branch of its end points. The connections between the
 	 * vertices are defined in the {@link Edge} and {@link Vertex} classes.
 	 * </p>
-	 * 
+	 *
 	 * @see Edge#getV1()
 	 * @see Edge#getV2()
 	 * @see Vertex#getBranches()
@@ -91,7 +50,7 @@ public final class GraphUtil {
 	 * NB Adds edges as branches of their end points. The connections between the
 	 * vertices are defined in the {@link Edge} and {@link Vertex} classes.
 	 * </p>
-	 * 
+	 *
 	 * @see Edge#getV1()
 	 * @see Edge#getV2()
 	 * @see Vertex#getBranches()
@@ -106,5 +65,48 @@ public final class GraphUtil {
 		edges.forEach(graph::addEdge);
 		vertices.forEach(graph::addVertex);
 		return graph;
+	}
+
+	/**
+	 * Checks if the edge forms a loop.
+	 *
+	 * @param edge an edge in a graph.
+	 * @return true if both endpoints of the edge is the same vertex.
+	 */
+	public static boolean isLoop(final Edge edge) {
+		return !(edge.getV1() == null && edge.getV2() == null) && edge
+			.getV1() == edge.getV2();
+	}
+
+	public static Vector3d toVector3d(final Point point) {
+		return new Vector3d(point.x, point.y, point.z);
+	}
+
+	public static List<Vector3d> toVector3d(final Collection<Point> points) {
+		if (points.isEmpty()) {
+			return Collections.singletonList(new Vector3d(Double.NaN, Double.NaN,
+				Double.NaN));
+		}
+
+		return points.stream().map(GraphUtil::toVector3d).collect(toList());
+	}
+
+	public static Vertex vectorToVertex(final Vector3d centroid) {
+		final Vertex vertex = new Vertex();
+		if (centroid == null) {
+			vertex.addPoint(new Point(Integer.MAX_VALUE, Integer.MAX_VALUE,
+				Integer.MAX_VALUE));
+		}
+		else {
+			final int x = doubleToIntCoordinate(centroid.x);
+			final int y = doubleToIntCoordinate(centroid.y);
+			final int z = doubleToIntCoordinate(centroid.z);
+			vertex.addPoint(new Point(x, y, z));
+		}
+		return vertex;
+	}
+
+	private static int doubleToIntCoordinate(final double d) {
+		return Double.isNaN(d) ? Integer.MAX_VALUE : (int) Math.round(d);
 	}
 }

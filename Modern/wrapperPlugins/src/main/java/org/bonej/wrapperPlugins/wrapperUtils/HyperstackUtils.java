@@ -63,9 +63,9 @@ public final class HyperstackUtils {
 	 * Splits the hyperstack into {X, Y, Z} subspaces.
 	 * 
 	 * @see #splitSubspaces(ImgPlus, Collection)
-     * @param hyperStack an N-dimensional image.
-     * @param <T> type of the elements in the image.
-     * @return a stream of all the subspaces found.
+	 * @param hyperStack an N-dimensional image.
+	 * @param <T> type of the elements in the image.
+	 * @return a stream of all the subspaces found.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> Stream<Subspace<T>>
 		split3DSubspaces(final ImgPlus<T> hyperStack)
@@ -92,7 +92,8 @@ public final class HyperstackUtils {
 	 * @return a stream of all the subspaces found.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> Stream<Subspace<T>>
-		splitSubspaces(final ImgPlus<T> hyperStack, final Collection<AxisType> subspaceTypes)
+		splitSubspaces(final ImgPlus<T> hyperStack,
+			final Collection<AxisType> subspaceTypes)
 	{
 		if (subspaceTypes == null || subspaceTypes.isEmpty()) {
 			return Stream.empty();
@@ -111,13 +112,122 @@ public final class HyperstackUtils {
 	// region -- Helper methods --
 
 	/**
+	 * Splits a subspace along the given coordinates
+	 * <p>
+	 * For example, if you have a 5D {X, Y, Z, C, T} hyperstack, and give the
+	 * coordinates {{3, 0}, {4, 1}} you'll get a 3D {X, Y, Z} subspace of the
+	 * first channel, and second time frame
+	 * </p>
+	 *
+	 * @param hyperstack an n-dimensional image
+	 * @param splitCoordinates (dimension, position) pairs describing the
+	 *          hyperstack split
+	 * @return The subspace interval
+	 */
+	private static <T extends RealType<T> & NativeType<T>>
+		RandomAccessibleInterval<T> applySplit(
+			final RandomAccessibleInterval<T> hyperstack,
+			final Iterable<ValuePair<IntType, LongType>> splitCoordinates)
+	{
+		final List<ValuePair<IntType, LongType>> workingSplit = createWorkingCopy(
+			splitCoordinates);
+		RandomAccessibleInterval<T> slice = hyperstack;
+		for (int i = 0; i < workingSplit.size(); i++) {
+			final int dimension = workingSplit.get(i).a.get();
+			final long position = workingSplit.get(i).b.get();
+			slice = Views.hyperSlice(slice, dimension, position);
+			decrementIndices(workingSplit, dimension);
+		}
+		return slice;
+	}
+
+	/**
+	 * Clones and sorts the given {@link List}.
+	 * <p>
+	 * It ensures that original ones don't get altered while applying a split (see
+	 * {@link #applySplit(RandomAccessibleInterval, Iterable)}). Pairs are sorted
+	 * in the order of dimension ({@link ValuePair#a}).
+	 * </p>
+	 */
+	private static List<ValuePair<IntType, LongType>> createWorkingCopy(
+		final Iterable<ValuePair<IntType, LongType>> splitCoordinates)
+	{
+		final List<ValuePair<IntType, LongType>> workingSplit = new ArrayList<>();
+		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
+			final ValuePair<IntType, LongType> copy = new ValuePair<>(pair.a.copy(),
+				pair.b);
+			workingSplit.add(copy);
+		}
+		workingSplit.sort(Comparator.comparingInt(pair -> pair.a.get()));
+		return workingSplit;
+	}
+
+	/**
+	 * A helper method for
+	 * {@link {@link #applySplit(RandomAccessibleInterval, Iterable)})} that
+	 * ensures that it doesn't throw a {@link IndexOutOfBoundsException}
+	 * <p>
+	 * After calling {@link Views#hyperSlice(RandomAccessibleInterval, int, long)}
+	 * on an n-dimensional {@link ImgPlus} the resulting
+	 * {@link RandomAccessibleInterval} will have n-1 dimensions. Thus the
+	 * dimension indices in splitCoordinates need to be decremented if they come
+	 * after the index used in the split.
+	 * </p>
+	 *
+	 * @param splitCoordinates (dimension, position) pairs describing a hyperspace
+	 *          split
+	 * @param dimension The index of the dimension in the last split
+	 */
+	private static void decrementIndices(
+		final Iterable<ValuePair<IntType, LongType>> splitCoordinates,
+		final int dimension)
+	{
+		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
+			final IntType pairDimension = pair.getA();
+			if (pairDimension.get() >= dimension) {
+				pairDimension.dec();
+			}
+		}
+	}
+
+	/**
+	 * Finds the axis used to split the hyperstack
+	 * <p>
+	 * For example, if you want to split a 5D {X, Y, C, Z, T} {@link ImgPlus} into
+	 * 3D {X, Y, Z} subspaces, call with types = {Axes.X, Axes.Y, Axes.Z}
+	 * </p>
+	 *
+	 * @param hyperstack An n-dimensional image
+	 * @param types The axes that define the subspaces
+	 * @return Indices of the axis used to split the hyperstack
+	 */
+	private static int[] findSplitAxisIndices(
+		final AnnotatedSpace<CalibratedAxis> hyperstack,
+		final Collection<AxisType> types)
+	{
+		final int n = hyperstack.numDimensions();
+		return IntStream.range(0, n).filter(d -> !isAnyOfTypes(hyperstack.axis(d),
+			types)).toArray();
+	}
+
+	private static boolean isAnyOfTypes(final TypedAxis axis,
+		final Collection<AxisType> types)
+	{
+		return types.stream().anyMatch(t -> axis.type() == t);
+	}
+
+	private static boolean isEmptySubspace(final EuclideanSpace hyperSlice) {
+		return hyperSlice.numDimensions() == 0;
+	}
+
+	/**
 	 * Maps the type subscripts of axes in the hyperstack.
 	 * <p>
 	 * If the hyperstack has multiple axes of the same type, e.g. more than one
 	 * time-axis, the subscripts are used to tell them apart. The default
 	 * subscript for each axis type is one.
 	 * </p>
-	 * 
+	 *
 	 * @param hyperStack the space to be split.
 	 * @param splitIndices indices of the axes.
 	 * @return An array of subscripts where [i] is the subscript for axis at
@@ -138,8 +248,8 @@ public final class HyperstackUtils {
 	}
 
 	/**
-	 * Recursively calls {@link #applySplit(RandomAccessibleInterval, Iterable)} to split the
-	 * hyperstack into subspaces.
+	 * Recursively calls {@link #applySplit(RandomAccessibleInterval, Iterable)}
+	 * to split the hyperstack into subspaces.
 	 *
 	 * @param hyperstack an n-dimensional image
 	 * @param splitIndices the indices of the axes in the hyperstack used for
@@ -182,112 +292,6 @@ public final class HyperstackUtils {
 			}
 		}
 	}
-
-	private static boolean isEmptySubspace(final EuclideanSpace hyperSlice) {
-		return hyperSlice.numDimensions() == 0;
-	}
-
-	/**
-	 * Splits a subspace along the given coordinates
-	 * <p>
-	 * For example, if you have a 5D {X, Y, Z, C, T} hyperstack, and give the
-	 * coordinates {{3, 0}, {4, 1}} you'll get a 3D {X, Y, Z} subspace of the
-	 * first channel, and second time frame
-	 * </p>
-	 * 
-	 * @param hyperstack an n-dimensional image
-	 * @param splitCoordinates (dimension, position) pairs describing the
-	 *          hyperstack split
-	 * @return The subspace interval
-	 */
-	private static <T extends RealType<T> & NativeType<T>>
-		RandomAccessibleInterval<T> applySplit(final RandomAccessibleInterval<T> hyperstack,
-			final Iterable<ValuePair<IntType, LongType>> splitCoordinates)
-	{
-		final List<ValuePair<IntType, LongType>> workingSplit = createWorkingCopy(
-			splitCoordinates);
-		RandomAccessibleInterval<T> slice = hyperstack;
-		for (int i = 0; i < workingSplit.size(); i++) {
-			final int dimension = workingSplit.get(i).a.get();
-			final long position = workingSplit.get(i).b.get();
-			slice = Views.hyperSlice(slice, dimension, position);
-			decrementIndices(workingSplit, dimension);
-		}
-		return slice;
-	}
-
-	/**
-	 * Clones and sorts the given {@link List}.
-	 * <p>
-	 * It ensures that original ones don't get altered while applying a split (see
-	 * {@link #applySplit(RandomAccessibleInterval, Iterable)}). Pairs are sorted in the order of
-	 * dimension ({@link ValuePair#a}).
-	 * </p>
-	 */
-	private static List<ValuePair<IntType, LongType>> createWorkingCopy(
-		final Iterable<ValuePair<IntType, LongType>> splitCoordinates)
-	{
-		final List<ValuePair<IntType, LongType>> workingSplit = new ArrayList<>();
-		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
-			final ValuePair<IntType, LongType> copy = new ValuePair<>(pair.a.copy(),
-				pair.b);
-			workingSplit.add(copy);
-		}
-		workingSplit.sort(Comparator.comparingInt(pair -> pair.a.get()));
-		return workingSplit;
-	}
-
-	/**
-	 * A helper method for {@link {@link #applySplit(RandomAccessibleInterval, Iterable)})} that ensures that it
-	 * doesn't throw a {@link IndexOutOfBoundsException}
-	 * <p>
-	 * After calling {@link Views#hyperSlice(RandomAccessibleInterval, int, long)}
-	 * on an n-dimensional {@link ImgPlus} the resulting
-	 * {@link RandomAccessibleInterval} will have n-1 dimensions. Thus the
-	 * dimension indices in splitCoordinates need to be decremented if they come
-	 * after the index used in the split.
-	 * </p>
-	 *
-	 * @param splitCoordinates (dimension, position) pairs describing a hyperspace
-	 *          split
-	 * @param dimension The index of the dimension in the last split
-	 */
-	private static void decrementIndices(
-		final Iterable<ValuePair<IntType, LongType>> splitCoordinates,
-		final int dimension)
-	{
-		for (final ValuePair<IntType, LongType> pair : splitCoordinates) {
-			final IntType pairDimension = pair.getA();
-			if (pairDimension.get() >= dimension) {
-				pairDimension.dec();
-			}
-		}
-	}
-
-	/**
-	 * Finds the axis used to split the hyperstack
-	 * <p>
-	 * For example, if you want to split a 5D {X, Y, C, Z, T} {@link ImgPlus} into
-	 * 3D {X, Y, Z} subspaces, call with types = {Axes.X, Axes.Y, Axes.Z}
-	 * </p>
-	 *
-	 * @param hyperstack An n-dimensional image
-	 * @param types The axes that define the subspaces
-	 * @return Indices of the axis used to split the hyperstack
-	 */
-	private static int[] findSplitAxisIndices(
-		final AnnotatedSpace<CalibratedAxis> hyperstack, final Collection<AxisType> types)
-	{
-		final int n = hyperstack.numDimensions();
-		return IntStream.range(0, n).filter(d -> !isAnyOfTypes(hyperstack.axis(d),
-			types)).toArray();
-	}
-
-	private static boolean isAnyOfTypes(final TypedAxis axis,
-		final Collection<AxisType> types)
-	{
-		return types.stream().anyMatch(t -> axis.type() == t);
-	}
 	// endregion
 
 	// region -- Helper classes --
@@ -323,28 +327,29 @@ public final class HyperstackUtils {
 		}
 
 		/**
-		 * Position of the subspace in each additional dimension of the hyperspace.
-		 * <p>
-		 * For example, one 3D {X, Y, Z} subspace of a 5D {X, Y, C, Z, T}
-		 * hyperspace, would have position {0, 1} - 1st channel, 2nd frame.
-		 * </p>
-		 * 
-		 * @return a stream of the positions in order.
-		 */
-		public LongStream getPosition() {
-			return subspaceMeta.stream().mapToLong(HyperAxisMeta::getPosition);
-		}
-
-		/**
 		 * Types of the additional hyperspace dimensions
 		 * <p>
 		 * For example a 3D {X, Y, Z} subspace of a 5D {X, Y, C, Z, T} hyperspace,
 		 * would have types {Axes.CHANNEL, Axes.TIME}.
 		 * </p>
+		 *
 		 * @return a stream of the types in order.
 		 */
 		public Stream<AxisType> getAxisTypes() {
 			return subspaceMeta.stream().map(HyperAxisMeta::getType);
+		}
+
+		/**
+		 * Position of the subspace in each additional dimension of the hyperspace.
+		 * <p>
+		 * For example, one 3D {X, Y, Z} subspace of a 5D {X, Y, C, Z, T}
+		 * hyperspace, would have position {0, 1} - 1st channel, 2nd frame.
+		 * </p>
+		 *
+		 * @return a stream of the positions in order.
+		 */
+		public LongStream getPosition() {
+			return subspaceMeta.stream().mapToLong(HyperAxisMeta::getPosition);
 		}
 
 		/**
@@ -356,7 +361,8 @@ public final class HyperstackUtils {
 		 * For example a 3D {X, Y} subspace of a 6D {X, Y, C, Z, T, T} hyperspace,
 		 * would have subscripts {1, 1, 1, 2}.
 		 * </p>
-         * @return a stream of the positions in order.
+		 * 
+		 * @return a stream of the positions in order.
 		 */
 		public LongStream getSubScripts() {
 			return subspaceMeta.stream().mapToLong(HyperAxisMeta::getSubscript);
@@ -381,8 +387,7 @@ public final class HyperstackUtils {
 			/** An ID number to separate the dimension from others of the same type */
 			private final long subscript;
 			/**
-			 * A number added to the position when it's printed in
-			 * {@link #toString()}
+			 * A number added to the position when it's printed in {@link #toString()}
 			 */
 			private final long stringOffset;
 
@@ -395,8 +400,10 @@ public final class HyperstackUtils {
 				stringOffset = ResultUtils.toConventionalIndex(type, 0);
 			}
 
-			private AxisType getType() {
-				return type;
+			@Override
+			public String toString() {
+				final String typeIndex = subscript > 1 ? "(" + subscript + ")" : "";
+				return type + typeIndex + ": " + (position + stringOffset);
 			}
 
 			private long getPosition() {
@@ -407,10 +414,8 @@ public final class HyperstackUtils {
 				return subscript;
 			}
 
-			@Override
-			public String toString() {
-				final String typeIndex = subscript > 1 ? "(" + subscript + ")" : "";
-				return type + typeIndex + ": " + (position + stringOffset);
+			private AxisType getType() {
+				return type;
 			}
 		}
 	}

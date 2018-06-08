@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
 import net.imagej.ops.Ops.Morphology.Outline;
 import net.imagej.ops.Ops.Topology.BoxCount;
 import net.imagej.ops.special.function.Functions;
@@ -240,7 +239,9 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		return curveFitter.fit(points.toList());
 	}
 
-	private double getRSquared(final Iterable<ValuePair<DoubleType, DoubleType>> pairs) {
+	private double getRSquared(
+		final Iterable<ValuePair<DoubleType, DoubleType>> pairs)
+	{
 		final SimpleRegression regression = new SimpleRegression();
 		pairs.forEach(pair -> regression.addData(pair.a.get(), pair.b.get()));
 		return regression.getRSquare();
@@ -259,12 +260,11 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@SuppressWarnings("unchecked")
 	private void matchOps(final RandomAccessibleInterval<BitType> input) {
-		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService,
-			Outline.class, RandomAccessibleInterval.class, input,
-			true);
-		boxCountOp = (UnaryFunctionOp) Functions.unary(opService,
-			BoxCount.class, List.class, input, startBoxSize,
-			smallestBoxSize, scaleFactor, translations);
+		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService, Outline.class,
+			RandomAccessibleInterval.class, input, true);
+		boxCountOp = (UnaryFunctionOp) Functions.unary(opService, BoxCount.class,
+			List.class, input, startBoxSize, smallestBoxSize, scaleFactor,
+			translations);
 	}
 
 	private WeightedObservedPoints toWeightedObservedPoints(

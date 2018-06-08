@@ -48,11 +48,6 @@ public class FractalDimensionWrapperTest {
 		SharedTable.reset();
 	}
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
 	@Test
 	public void testNonBinaryImageCancelsFractalDimension() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
@@ -63,6 +58,58 @@ public class FractalDimensionWrapperTest {
 	public void testNullImageCancelsFractalDimension() throws Exception {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			FractalDimensionWrapper.class);
+	}
+
+	@Test
+	public void testPointResults() throws Exception {
+		// SETUP
+		final int expectedRows = 2;
+		final double[] expectedSizes = Stream.of(4.0, 2.0).mapToDouble(i -> -Math
+			.log(i)).toArray();
+		final double[] emptyCounts = Stream.of(0.0, 0.0).mapToDouble(Math::log)
+			.toArray();
+		final double[] cubeCounts = Stream.of(1.0, 8.0).mapToDouble(Math::log)
+			.toArray();
+		final double[][] expectedCounts = { emptyCounts, cubeCounts, cubeCounts,
+			emptyCounts };
+		final String[] expectedLabels = { "Test Channel: 1, Time: 1",
+			"Test Channel: 2, Time: 1", "Test Channel: 1, Time: 2",
+			"Test Channel: 2, Time: 2" };
+		final ImgPlus<BitType> imgPlus = createTestHyperStack("Test");
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
+			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
+			"translations", 0L, "showPoints", true).get();
+
+		// VERIFY
+		final Collection<?> tables = (Collection<?>) module.getOutput(
+			"subspaceTables");
+		assertNotNull("Output not found!", tables);
+		assertEquals("Wrong number of tables", 4, tables.size());
+		final List<GenericTable> pointTables = tables.stream().map(
+			t -> (GenericTable) t).collect(Collectors.toList());
+		for (int i = 0; i < pointTables.size(); i++) {
+			final GenericTable table = pointTables.get(i);
+			assertEquals("Table has wrong number of columns", 3, table.size());
+			final Column<String> label = (Column<String>) table.get("Label");
+			assertEquals("Label column has wrong number of rows", expectedRows, label
+				.size());
+			final DoubleColumn sizes = (DoubleColumn) table.get("-log(size)");
+			assertEquals("Size column has wrong number of rows", expectedRows, sizes
+				.size());
+			final DoubleColumn counts = (DoubleColumn) table.get("log(count)");
+			assertEquals("Count column has wrong number of rows", expectedRows, counts
+				.size());
+			for (int j = 0; j < expectedRows; j++) {
+				assertEquals("Incorrect label", expectedLabels[i], label.get(j));
+				assertEquals("Incorrect log(count) value", expectedCounts[i][j], counts
+					.get(j), 1e-12);
+				assertEquals("Incorrect -log(box size) value", expectedSizes[j], sizes
+					.get(j), 1e-12);
+			}
+		}
 	}
 
 	@Test
@@ -104,55 +151,9 @@ public class FractalDimensionWrapperTest {
 			expectedRSquares.next(), Double.parseDouble(r2), 1e-12));
 	}
 
-	@Test
-	public void testPointResults() throws Exception {
-		// SETUP
-		final int expectedRows = 2;
-		final double[] expectedSizes = Stream.of(4.0, 2.0).mapToDouble(i -> -Math
-			.log(i)).toArray();
-		final double[] emptyCounts = Stream.of(0.0, 0.0).mapToDouble(Math::log)
-			.toArray();
-		final double[] cubeCounts = Stream.of(1.0, 8.0).mapToDouble(Math::log)
-			.toArray();
-		final double[][] expectedCounts = { emptyCounts, cubeCounts,
-			cubeCounts, emptyCounts };
-		final String[] expectedLabels = { "Test Channel: 1, Time: 1",
-			"Test Channel: 2, Time: 1", "Test Channel: 1, Time: 2",
-			"Test Channel: 2, Time: 2" };
-		final ImgPlus<BitType> imgPlus = createTestHyperStack("Test");
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
-			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
-			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
-			"translations", 0L, "showPoints", true).get();
-
-		// VERIFY
-		final Collection<?> tables = (Collection<?>) module.getOutput("subspaceTables");
-		assertNotNull("Output not found!", tables);
-		assertEquals("Wrong number of tables", 4, tables.size());
-		final List<GenericTable> pointTables = tables.stream().map(
-			t -> (GenericTable) t).collect(Collectors.toList());
-		for (int i = 0; i < pointTables.size(); i++) {
-			final GenericTable table = pointTables.get(i);
-			assertEquals("Table has wrong number of columns", 3, table.size());
-			final Column<String> label = (Column<String>) table.get("Label");
-			assertEquals("Label column has wrong number of rows", expectedRows, label
-				.size());
-			final DoubleColumn sizes = (DoubleColumn) table.get("-log(size)");
-			assertEquals("Size column has wrong number of rows", expectedRows, sizes
-				.size());
-			final DoubleColumn counts = (DoubleColumn) table.get("log(count)");
-			assertEquals("Count column has wrong number of rows", expectedRows, counts
-				.size());
-			for (int j = 0; j < expectedRows; j++) {
-				assertEquals("Incorrect label", expectedLabels[i], label.get(j));
-				assertEquals("Incorrect log(count) value", expectedCounts[i][j], counts
-					.get(j), 1e-12);
-				assertEquals("Incorrect -log(box size) value", expectedSizes[j], sizes
-					.get(j), 1e-12);
-			}
-		}
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 
 	/** Create a hyperstack with a cuboid in two subspaces */
@@ -164,9 +165,8 @@ public class FractalDimensionWrapperTest {
 		cubeView = Views.offsetInterval(img, new long[] { 1, 1, 1, 0, 1 },
 			new long[] { 2, 2, 2, 1, 1 });
 		cubeView.forEach(BitType::setOne);
-		return new ImgPlus<>(img, imageName,
-			new DefaultLinearAxis(Axes.X), new DefaultLinearAxis(Axes.Y),
-			new DefaultLinearAxis(Axes.Z), new DefaultLinearAxis(Axes.CHANNEL),
-			new DefaultLinearAxis(Axes.TIME));
+		return new ImgPlus<>(img, imageName, new DefaultLinearAxis(Axes.X),
+			new DefaultLinearAxis(Axes.Y), new DefaultLinearAxis(Axes.Z),
+			new DefaultLinearAxis(Axes.CHANNEL), new DefaultLinearAxis(Axes.TIME));
 	}
 }

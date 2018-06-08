@@ -34,19 +34,20 @@ public class SurfaceFractionWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
 	@After
 	public void tearDown() {
 		SharedTable.reset();
 	}
 
 	@Test
-	public void testNullImageCancelsSurfaceFraction() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void test2DImageCancelsConnectivity() throws Exception {
+		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
+			ConnectivityWrapper.class);
+	}
+
+	@Test
+	public void testNoCalibrationShowsWarning() throws Exception {
+		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
 			SurfaceFractionWrapper.class);
 	}
 
@@ -57,15 +58,9 @@ public class SurfaceFractionWrapperTest {
 	}
 
 	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
+	public void testNullImageCancelsSurfaceFraction() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			SurfaceFractionWrapper.class);
-	}
-
-	@Test
-	public void test2DImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
 	}
 
 	/**
@@ -130,7 +125,7 @@ public class SurfaceFractionWrapperTest {
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<String>> table =
-				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		// Assert results
@@ -145,5 +140,10 @@ public class SurfaceFractionWrapperTest {
 					.parseDouble(column.get(j)), 1e-12);
 			}
 		}
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }

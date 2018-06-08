@@ -25,7 +25,7 @@ import ij.ImagePlus;
  */
 public final class Common {
 
-    /**
+	/**
 	 * Converts the {@link ImgPlus} to a new ImgPlus with {@link BitType}
 	 * elements.
 	 * <p>
@@ -73,9 +73,9 @@ public final class Common {
 	/**
 	 * Copies image metadata such as name, axis types and calibrations from source
 	 * to target.
-     *
-     * @param source source of metadata.
-     * @param target target of metadata.
+	 *
+	 * @param source source of metadata.
+	 * @param target target of metadata.
 	 */
 	private static void copyMetadata(final ImgPlus<?> source,
 		final ImgPlus<?> target)

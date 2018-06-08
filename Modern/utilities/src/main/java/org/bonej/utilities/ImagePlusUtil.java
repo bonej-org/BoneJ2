@@ -16,29 +16,6 @@ public final class ImagePlusUtil {
 	private ImagePlusUtil() {}
 
 	/**
-	 * Checks if the image is 3D.
-	 *
-	 * @param image an ImageJ1 style {@link ImagePlus}.
-	 * @return true if the image has more than one slice, false if not, or image
-	 *         is null.
-	 */
-	public static boolean is3D(final ImagePlus image) {
-		return image != null && image.getNSlices() > 1;
-	}
-
-	/**
-	 * Checks if the image has only two different colours.
-	 *
-	 * @param image an ImageJ1 style {@link ImagePlus}.
-	 * @return true if there are only two distinct pixel values present in the
-	 *         image, false if more, or the image is null.
-	 */
-	public static boolean isBinaryColour(final ImagePlus image) {
-		return image != null && Arrays.stream(image.getStatistics().histogram)
-			.filter(p -> p > 0).count() <= 2;
-	}
-
-	/**
 	 * Calculates the degree of anisotropy in the image, i.e. the maximum
 	 * difference in the calibrations of the dimensions.
 	 *
@@ -72,20 +49,43 @@ public final class ImagePlusUtil {
 	}
 
 	/**
-     * Duplicates the image without changing the title of the copy, or cropping it
-     * to the ROI.
-     * <p>
-     * Circumvents the default behaviour of {@link ImagePlus#duplicate()}.
-     * </p>
-     *
-     * @param image an ImageJ1 style ImagePlus.
-     * @return an unchanged copy of the image.
-     */
-    public static ImagePlus cleanDuplicate(final ImagePlus image) {
-        image.killRoi();
-        final ImagePlus copy = image.duplicate();
-        image.restoreRoi();
-        copy.setTitle(image.getTitle());
-        return copy;
-    }
+	 * Duplicates the image without changing the title of the copy, or cropping it
+	 * to the ROI.
+	 * <p>
+	 * Circumvents the default behaviour of {@link ImagePlus#duplicate()}.
+	 * </p>
+	 *
+	 * @param image an ImageJ1 style ImagePlus.
+	 * @return an unchanged copy of the image.
+	 */
+	public static ImagePlus cleanDuplicate(final ImagePlus image) {
+		image.killRoi();
+		final ImagePlus copy = image.duplicate();
+		image.restoreRoi();
+		copy.setTitle(image.getTitle());
+		return copy;
+	}
+
+	/**
+	 * Checks if the image is 3D.
+	 *
+	 * @param image an ImageJ1 style {@link ImagePlus}.
+	 * @return true if the image has more than one slice, false if not, or image
+	 *         is null.
+	 */
+	public static boolean is3D(final ImagePlus image) {
+		return image != null && image.getNSlices() > 1;
+	}
+
+	/**
+	 * Checks if the image has only two different colours.
+	 *
+	 * @param image an ImageJ1 style {@link ImagePlus}.
+	 * @return true if there are only two distinct pixel values present in the
+	 *         image, false if more, or the image is null.
+	 */
+	public static boolean isBinaryColour(final ImagePlus image) {
+		return image != null && Arrays.stream(image.getStatistics().histogram)
+			.filter(p -> p > 0).count() <= 2;
+	}
 }

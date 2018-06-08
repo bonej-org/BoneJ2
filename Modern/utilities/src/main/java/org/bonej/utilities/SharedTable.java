@@ -26,8 +26,8 @@ import org.scijava.util.StringUtils;
  * and add the new value there. If there are no empty cells, then add a new
  * row.</li>
  * <li>Labels and columns are kept in alphabetical order</li>
- * <li>If there are multiple rows with the same labels &amp; non-empty cells, the
- * last inserted value comes last</li>
+ * <li>If there are multiple rows with the same labels &amp; non-empty cells,
+ * the last inserted value comes last</li>
  * </ol>
  *
  * @author Richard Domander
@@ -47,22 +47,8 @@ public final class SharedTable {
 	private SharedTable() {}
 
 	/**
-	 * Gets the shared {@link Table} instance.
-	 *
-	 * @return the singleton table.
-	 */
-	public static Table<DefaultColumn<String>, String> getTable() {
-		return table;
-	}
-
-	public static boolean hasData() {
-		return table.stream().flatMap(Collection::stream).anyMatch(s -> s != null &&
-			!EMPTY_CELL.equals(s));
-	}
-
-	/**
 	 * Adds new value as a {@link String} to the shared table.
-	 * 
+	 *
 	 * @see #add(String, String, String)
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
@@ -76,7 +62,7 @@ public final class SharedTable {
 
 	/**
 	 * Adds new value as a {@link String} to the shared table
-	 * 
+	 *
 	 * @see #add(String, String, String)
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
@@ -119,6 +105,20 @@ public final class SharedTable {
 		insertIntoNextFreeRow(label, columnIndex, value);
 	}
 
+	/**
+	 * Gets the shared {@link Table} instance.
+	 *
+	 * @return the singleton table.
+	 */
+	public static Table<DefaultColumn<String>, String> getTable() {
+		return table;
+	}
+
+	public static boolean hasData() {
+		return table.stream().flatMap(Collection::stream).anyMatch(s -> s != null &&
+			!EMPTY_CELL.equals(s));
+	}
+
 	/** Initializes the table into a new empty table */
 	public static void reset() {
 		table = createTable();
@@ -126,11 +126,10 @@ public final class SharedTable {
 
 	// region -- Helper methods --
 
-	@SuppressWarnings("unchecked")
-	private static Table<DefaultColumn<String>, String> createTable() {
-		final Table newTable = new DefaultGenericTable();
-		newTable.appendColumn(LABEL_HEADER);
-		return newTable;
+	private static int alphabeticalHeaderIndex(final String header) {
+		final int cols = table.getColumnCount();
+		return IntStream.range(1, cols).filter(i -> table.get(i).getHeader().equals(
+			header)).findFirst().orElse(cols);
 	}
 
 	private static void appendEmptyColumn(final String header) {
@@ -139,19 +138,16 @@ public final class SharedTable {
 		fillEmptyColumn(lastColumn);
 	}
 
-	private static void insertEmptyColumn(final int column, final String header) {
-		table.insertColumn(column, header);
-		fillEmptyColumn(column);
+	@SuppressWarnings("unchecked")
+	private static Table<DefaultColumn<String>, String> createTable() {
+		final Table newTable = new DefaultGenericTable();
+		newTable.appendColumn(LABEL_HEADER);
+		return newTable;
 	}
 
 	private static void fillEmptyColumn(final int columnIndex) {
 		final DefaultColumn<String> column = table.get(columnIndex);
 		IntStream.range(0, column.size()).forEach(i -> column.set(i, EMPTY_CELL));
-	}
-
-	private static void insertEmptyRow(final String label, final int rowIndex) {
-		table.insertRow(rowIndex);
-		fillEmptyRow(label, rowIndex);
 	}
 
 	private static void fillEmptyRow(final String label, final int row) {
@@ -161,10 +157,14 @@ public final class SharedTable {
 			EMPTY_CELL));
 	}
 
-	private static int alphabeticalHeaderIndex(final String header) {
-		final int cols = table.getColumnCount();
-		return IntStream.range(1, cols).filter(i -> table.get(i).getHeader().equals(
-			header)).findFirst().orElse(cols);
+	private static void insertEmptyColumn(final int column, final String header) {
+		table.insertColumn(column, header);
+		fillEmptyColumn(column);
+	}
+
+	private static void insertEmptyRow(final String label, final int rowIndex) {
+		table.insertRow(rowIndex);
+		fillEmptyRow(label, rowIndex);
 	}
 
 	private static void insertIntoNextFreeRow(final String label,

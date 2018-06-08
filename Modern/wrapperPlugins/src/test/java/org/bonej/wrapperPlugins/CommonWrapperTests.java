@@ -49,7 +49,7 @@ import ij.process.ImageStatistics;
 public final class CommonWrapperTests {
 
 	static <C extends Command> void testNullImageCancelsPlugin(
-			final Gateway imageJ, final Class<C> commandClass) throws Exception
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -67,8 +67,8 @@ public final class CommonWrapperTests {
 			any());
 	}
 
-	static <C extends Command> void test2DImageCancelsPlugin(
-			final Gateway imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void test2DImageCancelsPlugin(final Gateway imageJ,
+		final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -94,7 +94,7 @@ public final class CommonWrapperTests {
 	}
 
 	static <C extends Command> void testNonBinaryImageCancelsPlugin(
-			final Gateway imageJ, final Class<C> commandClass) throws Exception
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -124,8 +124,8 @@ public final class CommonWrapperTests {
 	}
 
 	static <C extends Command> void testNoCalibrationShowsWarning(
-			final Gateway imageJ, final Class<C> commandClass,
-			final Object... additionalInputs) throws Exception
+		final Gateway imageJ, final Class<C> commandClass,
+		final Object... additionalInputs) throws Exception
 	{
 		// SETUP
 		// Mock UI
@@ -156,7 +156,7 @@ public final class CommonWrapperTests {
 	}
 
 	static <C extends Command> void testNonBinaryImagePlusCancelsPlugin(
-			final Gateway imageJ, final Class<C> commandClass) throws Exception
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -185,7 +185,7 @@ public final class CommonWrapperTests {
 	}
 
 	static <C extends Command> void test2DImagePlusCancelsPlugin(
-			final Gateway imageJ, final Class<C> commandClass) throws Exception
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -218,15 +218,15 @@ public final class CommonWrapperTests {
 	 * Tests that running the given command with an anisotropic {@link ImagePlus}
 	 * shows a warning dialog that can be used to cancel the plugin
 	 */
-	static <C extends Command> void testAnisotropyWarning(
-			final Gateway imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void testAnisotropyWarning(final Gateway imageJ,
+		final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
 		when(mockUI.dialogPrompt(startsWith("The image is anisotropic"),
-				anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
+			anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 		imageJ.ui().setDefaultUI(mockUI);
 		final Calibration calibration = new Calibration();
 		calibration.pixelWidth = 300;
@@ -237,12 +237,12 @@ public final class CommonWrapperTests {
 
 		// EXECUTE
 		final CommandModule module = imageJ.command().run(commandClass, true,
-				"inputImage", imagePlus).get();
+			"inputImage", imagePlus).get();
 
 		// VERIFY
 		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
-				"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
+			"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
 		assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
-				module.isCanceled());
+			module.isCanceled());
 	}
 }

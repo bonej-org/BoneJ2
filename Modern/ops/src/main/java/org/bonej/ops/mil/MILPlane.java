@@ -156,8 +156,8 @@ public class MILPlane<B extends BooleanType<B>> extends
 
 	// region -- Helper methods --
 	private static <B extends BooleanType<B>> long countPhaseChanges(
-		final RandomAccessible<B> interval, final Vector3d start,
-		final Tuple3d gap, final long samples)
+		final RandomAccessible<B> interval, final Vector3d start, final Tuple3d gap,
+		final long samples)
 	{
 		final RandomAccess<B> access = interval.randomAccess();
 		boolean previous = false;
@@ -212,9 +212,8 @@ public class MILPlane<B extends BooleanType<B>> extends
 		return new Section(line.a, tMin, tMax);
 	}
 
-	private ValuePair<Double, Long> mILValues(
-		final RandomAccessible<B> interval, final Section section,
-		final Vector3d direction, final double increment)
+	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
+		final Section section, final Vector3d direction, final double increment)
 	{
 		final long intercepts = sampleSection(interval, section, direction,
 			increment);

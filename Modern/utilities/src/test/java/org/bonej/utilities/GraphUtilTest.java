@@ -24,39 +24,23 @@ import sc.fiji.analyzeSkeleton.Vertex;
  */
 public class GraphUtilTest {
 
-    @Test
-    public void testToVector3dEmptyList() {
-        final List<Vector3d> vectors = GraphUtil.toVector3d(Collections.emptyList());
+	@Test
+	public void testCreateGraph() {
+		final List<Vertex> vertices = Arrays.asList(new Vertex(), new Vertex());
+		final Vertex v0 = vertices.get(0);
+		final Vertex v1 = vertices.get(1);
+		final List<Edge> edges = Arrays.asList(new Edge(v0, v1, null, 0), new Edge(
+			v1, v1, null, 0));
 
-        assertEquals(1, vectors.size());
-        final Vector3d v = vectors.get(0);
-        assertTrue(Double.isNaN(v.x));
-        assertTrue(Double.isNaN(v.y));
-        assertTrue(Double.isNaN(v.z));
-    }
-    
-    @Test
-    public void testToVector3dList() {
-        final List<Point> points = Arrays.asList(new Point(1, 2, 3), new Point(7, 8, 9));
+		final Graph graph = GraphUtil.createGraph(edges, vertices);
 
-        final List<Vector3d> vectors = GraphUtil.toVector3d(points);
+		assertEquals(vertices.size(), graph.getVertices().size());
+		for (int i = 0; i < vertices.size(); i++) {
+			assertEquals(vertices.get(i), graph.getVertices().get(i));
+		}
+	}
 
-        assertEquals(points.size(), vectors.size());
-        for (int i = 0; i < points.size(); i++) {
-            assertVector3d(points.get(i), vectors.get(i));
-        }
-    }
-
-    @Test
-    public void testToVector3d() {
-        final Point p = new Point(1, 2, 3);
-
-        final Vector3d v = GraphUtil.toVector3d(p);
-
-        assertVector3d(p, v);
-    }
-
-    @Test
+	@Test
 	public void testIsLoop() {
 		final List<Vertex> vertices = Arrays.asList(new Vertex(), new Vertex());
 		final Vertex v0 = vertices.get(0);
@@ -69,43 +53,62 @@ public class GraphUtilTest {
 	}
 
 	@Test
-    public void testCreateGraph() {
-        final List<Vertex> vertices = Arrays.asList(new Vertex(), new Vertex());
-        final Vertex v0 = vertices.get(0);
-        final Vertex v1 = vertices.get(1);
-        final List<Edge> edges = Arrays.asList(new Edge(v0, v1, null, 0), new Edge(v1, v1, null, 0));
+	public void testToVector3d() {
+		final Point p = new Point(1, 2, 3);
 
-        final Graph graph = GraphUtil.createGraph(edges, vertices);
+		final Vector3d v = GraphUtil.toVector3d(p);
 
-        assertEquals(vertices.size(), graph.getVertices().size());
-        for (int i = 0; i < vertices.size(); i++) {
-            assertEquals(vertices.get(i), graph.getVertices().get(i));
-        }
-    }
+		assertVector3d(p, v);
+	}
 
-    @Test
-    public void testVectorToVertexNullVector() {
-        final Point point = GraphUtil.vectorToVertex(null).getPoints().get(0);
+	@Test
+	public void testToVector3dEmptyList() {
+		final List<Vector3d> vectors = GraphUtil.toVector3d(Collections
+			.emptyList());
 
-        assertEquals(Integer.MAX_VALUE, point.x);
-        assertEquals(Integer.MAX_VALUE, point.y);
-        assertEquals(Integer.MAX_VALUE, point.z);
-    }
+		assertEquals(1, vectors.size());
+		final Vector3d v = vectors.get(0);
+		assertTrue(Double.isNaN(v.x));
+		assertTrue(Double.isNaN(v.y));
+		assertTrue(Double.isNaN(v.z));
+	}
 
-    @Test
-    public void testVectorToVertex() {
-        final Vector3d vector = new Vector3d(Double.NaN, 1.4, 1.5);
+	@Test
+	public void testToVector3dList() {
+		final List<Point> points = Arrays.asList(new Point(1, 2, 3), new Point(7, 8,
+			9));
 
-        final Point point = GraphUtil.vectorToVertex(vector).getPoints().get(0);
+		final List<Vector3d> vectors = GraphUtil.toVector3d(points);
 
-        assertEquals(Integer.MAX_VALUE, point.x);
-        assertEquals(1, point.y);
-        assertEquals(2, point.z);
-    }
+		assertEquals(points.size(), vectors.size());
+		for (int i = 0; i < points.size(); i++) {
+			assertVector3d(points.get(i), vectors.get(i));
+		}
+	}
 
-    private void assertVector3d(final Point expected, final Vector3d actual) {
-        assertEquals(expected.x, actual.x, 1e-12);
-        assertEquals(expected.y, actual.y, 1e-12);
-        assertEquals(expected.z, actual.z, 1e-12);
-    }
+	@Test
+	public void testVectorToVertex() {
+		final Vector3d vector = new Vector3d(Double.NaN, 1.4, 1.5);
+
+		final Point point = GraphUtil.vectorToVertex(vector).getPoints().get(0);
+
+		assertEquals(Integer.MAX_VALUE, point.x);
+		assertEquals(1, point.y);
+		assertEquals(2, point.z);
+	}
+
+	@Test
+	public void testVectorToVertexNullVector() {
+		final Point point = GraphUtil.vectorToVertex(null).getPoints().get(0);
+
+		assertEquals(Integer.MAX_VALUE, point.x);
+		assertEquals(Integer.MAX_VALUE, point.y);
+		assertEquals(Integer.MAX_VALUE, point.z);
+	}
+
+	private void assertVector3d(final Point expected, final Vector3d actual) {
+		assertEquals(expected.x, actual.x, 1e-12);
+		assertEquals(expected.y, actual.y, 1e-12);
+		assertEquals(expected.z, actual.z, 1e-12);
+	}
 }

@@ -3,6 +3,8 @@ package org.bonej.wrapperPlugins;
 
 import net.imagej.ImageJ;
 
+import org.scijava.Gateway;
+
 /**
  * A main class for quickly testing the wrapper plugins
  *
@@ -11,7 +13,7 @@ import net.imagej.ImageJ;
 public final class BoneJMain {
 
 	public static void main(final String... args) {
-		final ImageJ imageJ = new ImageJ();
+		final Gateway imageJ = new ImageJ();
 		imageJ.launch(args);
 	}
 }

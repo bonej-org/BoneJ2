@@ -41,23 +41,6 @@ public class SkeletoniseWrapperTest {
 		SharedTable.reset();
 	}
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			SkeletoniseWrapper.class);
-	}
-
-	@Test
-	public void testNonBinaryImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
-			SkeletoniseWrapper.class);
-	}
-
 	@Test
 	public void testCompositeImageCancelsPlugin() throws Exception {
 		// SETUP
@@ -77,6 +60,42 @@ public class SkeletoniseWrapperTest {
 			.getCancelReason());
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
+	}
+
+	@Test
+	public void testNonBinaryImageCancelsPlugin() throws Exception {
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+			SkeletoniseWrapper.class);
+	}
+
+	@Test
+	public void testNullImageCancelsPlugin() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+			SkeletoniseWrapper.class);
+	}
+
+	@Test
+	public void testRun() throws Exception {
+		// SETUP
+		final String expectedTitle = "Skeleton of Test";
+		final ImagePlus imagePlus = NewImage.createImage("Test", 5, 5, 5, 8, 1);
+		final Calibration calibration = new Calibration();
+		calibration.setUnit("my unit");
+		imagePlus.setCalibration(calibration);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(SkeletoniseWrapper.class,
+			true, "inputImage", imagePlus).get();
+
+		// VERIFY
+		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeleton");
+		assertNotNull("Skeleton image should not be null", skeleton);
+		assertEquals("Skeleton has wrong title", expectedTitle, skeleton
+			.getTitle());
+		assertEquals("Skeleton should have same calibration", "my unit", skeleton
+			.getCalibration().getUnit());
+		assertNotSame("Original image should not have been overwritten", imagePlus,
+			skeleton);
 	}
 
 	@Test
@@ -100,28 +119,9 @@ public class SkeletoniseWrapperTest {
 			any());
 	}
 
-	@Test
-	public void testRun() throws Exception {
-		// SETUP
-		final String expectedTitle = "Skeleton of Test";
-		final ImagePlus imagePlus = NewImage.createImage("Test", 5, 5, 5, 8, 1);
-		final Calibration calibration = new Calibration();
-		calibration.setUnit("my unit");
-		imagePlus.setCalibration(calibration);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(SkeletoniseWrapper.class,
-			true, "inputImage", imagePlus).get();
-
-		// VERIFY
-		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeleton");
-		assertNotNull("Skeleton image should not be null", skeleton);
-		assertEquals("Skeleton has wrong title", expectedTitle, skeleton
-			.getTitle());
-		assertEquals("Skeleton should have same calibration", "my unit", skeleton
-			.getCalibration().getUnit());
-        assertNotSame("Original image should not have been overwritten",
-			imagePlus, skeleton);
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 
 }

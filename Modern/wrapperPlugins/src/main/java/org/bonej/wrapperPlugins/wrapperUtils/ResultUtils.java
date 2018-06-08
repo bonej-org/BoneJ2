@@ -27,25 +27,21 @@ public final class ResultUtils {
 	private ResultUtils() {}
 
 	/**
-	 * Returns a verbal description of the size of the elements in the given
-	 * space, e.g. "Area" for 2D images.
-	 * 
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-     * @param <A> type of the axes.
-	 * @return the noun for the size of the elements.
+	 * Creates a column for a {@link net.imagej.table.GenericTable} that repeats
+	 * the given label on each row.
+	 *
+	 * @param label the string displayed on each row.
+	 * @param rows number of rows created.
+	 * @return a column that repeats the label.
 	 */
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> String
-		getSizeDescription(final S space)
+	public static GenericColumn createLabelColumn(final String label,
+		final int rows)
 	{
-		final long dimensions = AxisUtils.countSpatialDimensions(space);
-		if (dimensions == 2) {
-			return "Area";
-		}
-		if (dimensions == 3) {
-			return "Volume";
-		}
-		return "Size";
+		final GenericColumn labelColumn = new GenericColumn("Label");
+		final int n = Math.max(0, rows);
+		final String s = StringUtils.isNullOrEmpty(label) ? "-" : label;
+		Stream.generate(() -> s).limit(n).forEach(labelColumn::add);
+		return labelColumn;
 	}
 
 	/**
@@ -54,7 +50,7 @@ public final class ResultUtils {
 	 *
 	 * @param space an N-dimensional space.
 	 * @param <S> type of the space.
-     * @param <A> type of the axes.
+	 * @param <A> type of the axes.
 	 * @return the exponent character if the space has 2 - 9 spatial dimensions.
 	 *         An empty character otherwise.
 	 */
@@ -91,6 +87,28 @@ public final class ResultUtils {
 	}
 
 	/**
+	 * Returns a verbal description of the size of the elements in the given
+	 * space, e.g. "Area" for 2D images.
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of the axes.
+	 * @return the noun for the size of the elements.
+	 */
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> String
+		getSizeDescription(final S space)
+	{
+		final long dimensions = AxisUtils.countSpatialDimensions(space);
+		if (dimensions == 2) {
+			return "Area";
+		}
+		if (dimensions == 3) {
+			return "Volume";
+		}
+		return "Size";
+	}
+
+	/**
 	 * Returns the common unit string, e.g. "mm<sup>3</sup>" that describes the
 	 * elements in the space.
 	 * <p>
@@ -124,19 +142,21 @@ public final class ResultUtils {
 	}
 
 	/**
-	 * Creates a column for a {@link net.imagej.table.GenericTable} that repeats
-	 * the given label on each row.
+	 * Gets the unit of the image calibration, which can be displayed to the user.
 	 *
-	 * @param label the string displayed on each row.
-	 * @param rows number of rows created.
-	 * @return a column that repeats the label.
+	 * @param imagePlus a ImageJ1 style {@link ImagePlus}.
+	 * @return calibration unit, or empty string if there's no unit, or the
+	 *         calibration has a placeholder unit.
 	 */
-	public static GenericColumn createLabelColumn(final String label, final int rows) {
-		final GenericColumn labelColumn = new GenericColumn("Label");
-		final int n = Math.max(0, rows);
-		final String s = StringUtils.isNullOrEmpty(label) ? "-" : label;
-		Stream.generate(() -> s).limit(n).forEach(labelColumn::add);
-		return labelColumn;
+	public static String getUnitHeader(final ImagePlus imagePlus) {
+		final String unit = imagePlus.getCalibration().getUnit();
+		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
+			"unit".equalsIgnoreCase(unit))
+		{
+			return "";
+		}
+
+		return "(" + unit + ")";
 	}
 
 	/**
@@ -155,23 +175,5 @@ public final class ResultUtils {
 			return index + 1;
 		}
 		return index;
-	}
-
-	/**
-	 * Gets the unit of the image calibration, which can be displayed to the user.
-	 *
-	 * @param imagePlus a ImageJ1 style {@link ImagePlus}.
-	 * @return calibration unit, or empty string if there's no unit, or the
-	 *         calibration has a placeholder unit.
-	 */
-	public static String getUnitHeader(final ImagePlus imagePlus) {
-		final String unit = imagePlus.getCalibration().getUnit();
-		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
-			"unit".equalsIgnoreCase(unit))
-		{
-			return "";
-		}
-
-		return "(" + unit + ")";
 	}
 }

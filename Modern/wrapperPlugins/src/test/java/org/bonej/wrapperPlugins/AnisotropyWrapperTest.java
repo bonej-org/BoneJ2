@@ -47,8 +47,13 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 @Category(SlowWrapperTest.class)
 public class AnisotropyWrapperTest {
 
-	private static ImgPlus<BitType> hyperSheets;
 	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImgPlus<BitType> hyperSheets;
+
+	@After
+	public void tearDown() {
+		Mockito.reset(IMAGE_J.ui().getDefaultUI());
+	}
 
 	@Test
 	public void test2DImageCancelsWrapper() throws Exception {
@@ -152,11 +157,6 @@ public class AnisotropyWrapperTest {
 			Views.interval(hyperSheets, new long[] { 0, 0, z, 1, 1 }, new long[] { 99,
 				99, z, 0, 0 }).forEach(BitType::setOne);
 		}
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(IMAGE_J.ui().getDefaultUI());
 	}
 
 	@AfterClass

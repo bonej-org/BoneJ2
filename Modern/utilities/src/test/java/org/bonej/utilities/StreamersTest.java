@@ -30,13 +30,6 @@ import org.junit.Test;
 public class StreamersTest {
 
 	@Test
-	public void testRealDoubleStreamReturnsEmptyIfSpaceNull() {
-		final DoubleStream doubleStream = Streamers.realDoubleStream(null);
-
-		assertEquals("Stream should be empty", doubleStream.count(), 0);
-	}
-
-	@Test
 	public void testRealDoubleStream() {
 		final List<DoubleType> list = Arrays.asList(new DoubleType(2),
 			new DoubleType(3), new DoubleType(11));
@@ -54,11 +47,10 @@ public class StreamersTest {
 	}
 
 	@Test
-	public void testSpatialAxisStreamReturnsEmptyIfSpaceNull() {
-		final Stream<TypedAxis> result = Streamers.spatialAxisStream(null);
+	public void testRealDoubleStreamReturnsEmptyIfSpaceNull() {
+		final DoubleStream doubleStream = Streamers.realDoubleStream(null);
 
-		assertNotNull("Stream should not be null", result);
-		assertFalse("Stream should be empty", result.findAny().isPresent());
+		assertEquals("Stream should be empty", doubleStream.count(), 0);
 	}
 
 	@Test
@@ -81,5 +73,13 @@ public class StreamersTest {
 			0));
 		assertEquals("Axes in the stream are in wrong order", Axes.Y, result.get(
 			1));
+	}
+
+	@Test
+	public void testSpatialAxisStreamReturnsEmptyIfSpaceNull() {
+		final Stream<TypedAxis> result = Streamers.spatialAxisStream(null);
+
+		assertNotNull("Stream should not be null", result);
+		assertFalse("Stream should be empty", result.findAny().isPresent());
 	}
 }

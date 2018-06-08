@@ -11,13 +11,14 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
@@ -32,8 +33,6 @@ import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
-
-import java.util.List;
 
 /**
  * Regression tests for the {@link ElementFractionWrapper} plugin
@@ -104,7 +103,7 @@ public class ElementFractionWrapperTest {
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<String>> table =
-				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		for (int i = 0; i < 3; i++) {

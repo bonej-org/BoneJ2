@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
-import net.imagej.ops.Ops.Topology;
 import net.imagej.ops.Ops.Topology.EulerCharacteristic26NFloating;
 import net.imagej.ops.Ops.Topology.EulerCorrection;
 import net.imagej.ops.special.hybrid.Hybrids;
@@ -22,7 +20,6 @@ import net.imagej.ops.special.hybrid.UnaryHybridCF;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
-import net.imglib2.IterableInterval;
 import net.imglib2.IterableRealInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.logic.BitType;
@@ -79,7 +76,7 @@ public class ConnectivityWrapper extends ContextCommand {
 	private UnitService unitService;
 
 	@Parameter
-    private StatusService statusService;
+	private StatusService statusService;
 
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCharacteristicOp;
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCorrectionOp;
@@ -110,40 +107,6 @@ public class ConnectivityWrapper extends ContextCommand {
 		}
 	}
 
-	// region -- Helper methods --
-	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
-        eulerCharacteristicOp = Hybrids.unaryCF(opService,
-			EulerCharacteristic26NFloating.class, DoubleType.class,
-                interval);
-		eulerCorrectionOp = Hybrids.unaryCF(opService,
-			EulerCorrection.class, DoubleType.class, interval);
-	}
-
-	private void determineResultUnit() {
-		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
-	}
-
-	/** Process connectivity for one 3D subspace */
-	private void subspaceConnectivity(final String label,
-		final RandomAccessibleInterval<BitType> subspace)
-	{
-	    statusService.showStatus("Connectivity: calculating connectivity");
-		final double eulerCharacteristic = eulerCharacteristicOp.calculate(subspace)
-			.get();
-        statusService.showStatus("Connectivity: calculating euler correction");
-		final double edgeCorrection = eulerCorrectionOp.calculate(subspace).get();
-		final double correctedEuler = eulerCharacteristic - edgeCorrection;
-		final double connectivity = 1 - correctedEuler;
-		final double connectivityDensity = calculateConnectivityDensity(subspace,
-			connectivity);
-
-		addResults(label, eulerCharacteristic, correctedEuler, connectivity,
-			connectivityDensity);
-	}
-
 	private void addResults(final String label, final double eulerCharacteristic,
 		final double deltaEuler, final double connectivity,
 		final double connectivityDensity)
@@ -166,6 +129,39 @@ public class ConnectivityWrapper extends ContextCommand {
 		final double elementSize = ElementUtil.calibratedSpatialElementSize(
 			inputImage, unitService);
 		return connectivity / (elements * elementSize);
+	}
+
+	private void determineResultUnit() {
+		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
+		if (unitHeader.isEmpty()) {
+			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
+		}
+	}
+
+	// region -- Helper methods --
+	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
+		eulerCharacteristicOp = Hybrids.unaryCF(opService,
+			EulerCharacteristic26NFloating.class, DoubleType.class, interval);
+		eulerCorrectionOp = Hybrids.unaryCF(opService, EulerCorrection.class,
+			DoubleType.class, interval);
+	}
+
+	/** Process connectivity for one 3D subspace */
+	private void subspaceConnectivity(final String label,
+		final RandomAccessibleInterval<BitType> subspace)
+	{
+		statusService.showStatus("Connectivity: calculating connectivity");
+		final double eulerCharacteristic = eulerCharacteristicOp.calculate(subspace)
+			.get();
+		statusService.showStatus("Connectivity: calculating euler correction");
+		final double edgeCorrection = eulerCorrectionOp.calculate(subspace).get();
+		final double correctedEuler = eulerCharacteristic - edgeCorrection;
+		final double connectivity = 1 - correctedEuler;
+		final double connectivityDensity = calculateConnectivityDensity(subspace,
+			connectivity);
+
+		addResults(label, eulerCharacteristic, correctedEuler, connectivity,
+			connectivityDensity);
 	}
 
 	@SuppressWarnings("unused")

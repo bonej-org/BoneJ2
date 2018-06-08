@@ -22,11 +22,6 @@ public class SharedTableCleanerTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
 	@Test
 	public void testRun() throws Exception {
 		// SETUP
@@ -39,6 +34,11 @@ public class SharedTableCleanerTest {
 
 		// VERIFY
 		assertFalse("Table should have no data", SharedTable.hasData());
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 
 }

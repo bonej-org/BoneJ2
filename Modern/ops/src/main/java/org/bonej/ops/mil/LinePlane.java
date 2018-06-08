@@ -32,8 +32,7 @@ class LinePlane {
 	private final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 
 	/**
-	 * Creates an instance of LinePlane, and initializes it for generating
-	 * lines.
+	 * Creates an instance of LinePlane, and initializes it for generating lines.
 	 *
 	 * @param interval a discrete interval through which the lines pass.
 	 * @param rotation the direction of the lines through the interval.
@@ -43,12 +42,41 @@ class LinePlane {
 	<I extends Interval> LinePlane(final I interval, final AxisAngle4d rotation,
 		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp)
 	{
-        size = findPlaneSize(interval);
-        translation.set(-size * 0.5, -size * 0.5, 0.0);
-        centroid = findCentroid(interval);
+		size = findPlaneSize(interval);
+		translation.set(-size * 0.5, -size * 0.5, 0.0);
+		centroid = findCentroid(interval);
 		this.rotateOp = rotateOp;
 		this.rotation = rotation;
 		direction = createDirection();
+	}
+
+	// region -- Helper methods --
+	private Vector3d createDirection() {
+		final Vector3d newDirection = new Vector3d(0, 0, 1);
+		rotateOp.mutate1(newDirection, rotation);
+		return newDirection;
+	}
+
+	private Point3d createOrigin(final double t, final double u) {
+		final double x = t * size;
+		final double y = u * size;
+		final Point3d origin = new Point3d(x, y, 0);
+		origin.add(translation);
+		rotateOp.mutate1(origin, rotation);
+		origin.add(centroid);
+		return origin;
+	}
+
+	private static <I extends Interval> Point3d findCentroid(final I interval) {
+		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
+			.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
+		return new Point3d(coordinates);
+	}
+
+	private static <I extends Interval> double findPlaneSize(final I interval) {
+		final long sqSum = LongStream.of(interval.dimension(0), interval.dimension(
+			1), interval.dimension(2)).map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
 	}
 
 	/**
@@ -106,35 +134,6 @@ class LinePlane {
 	 */
 	void setSeed(final long seed) {
 		random.setSeed(seed);
-	}
-
-	// region -- Helper methods --
-	private Vector3d createDirection() {
-		final Vector3d newDirection = new Vector3d(0, 0, 1);
-		rotateOp.mutate1(newDirection, rotation);
-		return newDirection;
-	}
-
-	private Point3d createOrigin(final double t, final double u) {
-		final double x = t * size;
-		final double y = u * size;
-		final Point3d origin = new Point3d(x, y, 0);
-		origin.add(translation);
-		rotateOp.mutate1(origin, rotation);
-		origin.add(centroid);
-		return origin;
-	}
-
-	private static <I extends Interval> Point3d findCentroid(final I interval) {
-		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
-			.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
-		return new Point3d(coordinates);
-	}
-
-	private static <I extends Interval> double findPlaneSize(final I interval) {
-		final long sqSum = LongStream.of(interval.dimension(0), interval.dimension(
-			1), interval.dimension(2)).map(x -> x * x).sum();
-		return Math.sqrt(sqSum);
 	}
 
 	// endregion

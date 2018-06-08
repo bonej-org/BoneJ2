@@ -30,16 +30,17 @@ public class CentroidLinAlg3dTest {
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static UnaryFunctionOp<Collection<? extends Tuple3d>, Vector3d> centroidOp;
 
-	@SuppressWarnings("unchecked")
-	@BeforeClass
-	public static void oneTimeSetUp() {
-		centroidOp = (UnaryFunctionOp) Functions.unary(IMAGE_J.op(),
-			CentroidLinAlg3d.class, Tuple3d.class, List.class);
-	}
+	@Test
+	public void testCentroidLinAlg3d() {
+		final Vector3d expected = new Vector3d(0.5, 0.5, 0.5);
+		final List<Vector3d> cubeVectors = asList(new Vector3d(0.0, 0.0, 0.0),
+			new Vector3d(1.0, 0.0, 0.0), new Vector3d(1.0, 1.0, 0.0), new Vector3d(
+				0.0, 1.0, 0.0), new Vector3d(0.0, 0.0, 1.0), new Vector3d(1.0, 0.0,
+					1.0), new Vector3d(1.0, 1.0, 1.0), new Vector3d(0.0, 1.0, 1.0));
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
+		final Tuple3d result = centroidOp.calculate(cubeVectors);
+
+		assertEquals("Incorrect centroid vector", expected, result);
 	}
 
 	@Test
@@ -67,16 +68,15 @@ public class CentroidLinAlg3dTest {
 			result);
 	}
 
-	@Test
-	public void testCentroidLinAlg3d() {
-		final Vector3d expected = new Vector3d(0.5, 0.5, 0.5);
-		final List<Vector3d> cubeVectors = asList(new Vector3d(0.0, 0.0, 0.0),
-			new Vector3d(1.0, 0.0, 0.0), new Vector3d(1.0, 1.0, 0.0), new Vector3d(
-				0.0, 1.0, 0.0), new Vector3d(0.0, 0.0, 1.0), new Vector3d(1.0, 0.0,
-					1.0), new Vector3d(1.0, 1.0, 1.0), new Vector3d(0.0, 1.0, 1.0));
+	@SuppressWarnings("unchecked")
+	@BeforeClass
+	public static void oneTimeSetUp() {
+		centroidOp = (UnaryFunctionOp) Functions.unary(IMAGE_J.op(),
+			CentroidLinAlg3d.class, Tuple3d.class, List.class);
+	}
 
-		final Tuple3d result = centroidOp.calculate(cubeVectors);
-
-		assertEquals("Incorrect centroid vector", expected, result);
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }

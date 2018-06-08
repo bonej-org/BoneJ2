@@ -1,3 +1,4 @@
+
 package org.bonej.wrapperPlugins;
 
 import static java.util.stream.Collectors.toList;
@@ -77,7 +78,8 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular Angle")
 public class IntertrabecularAngleWrapper extends ContextCommand {
 
-	public static final String NO_RESULTS_MSG = "There were no results - try changing valence range or minimum trabecular length";
+	public static final String NO_RESULTS_MSG =
+		"There were no results - try changing valence range or minimum trabecular length";
 
 	static {
 		// NB: Needed if you mix-and-match IJ1 and IJ2 classes.
@@ -88,31 +90,52 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@Parameter(validater = "imageValidater")
 	private ImagePlus inputImage;
 
-	@Parameter(label = "Minimum valence", min = "3", max = "50", stepSize = "1", description = "Minimum number of outgoing branches needed for a trabecular node to be included in analysis", style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_min_valence", callback = "enforceValidRange")
+	@Parameter(label = "Minimum valence", min = "3", max = "50", stepSize = "1",
+		description = "Minimum number of outgoing branches needed for a trabecular node to be included in analysis",
+		style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_min_valence",
+		callback = "enforceValidRange")
 	private int minimumValence = 3;
 
-	@Parameter(label = "Maximum valence", min = "3", max = "50", stepSize = "1", description = "Maximum number of outgoing branches needed for a trabecular node to be included in analysis", style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_max_valence", callback = "enforceValidRange")
+	@Parameter(label = "Maximum valence", min = "3", max = "50", stepSize = "1",
+		description = "Maximum number of outgoing branches needed for a trabecular node to be included in analysis",
+		style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_max_valence",
+		callback = "enforceValidRange")
 	private int maximumValence = 3;
 
-	@Parameter(label = "Minimum trabecular length (px)", min = "0", stepSize = "1", description = "Minimum length for a trabecula to be kept from being fused into a node", style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength", persist = false, initializer = "initRealLength")
+	@Parameter(label = "Minimum trabecular length (px)", min = "0",
+		stepSize = "1",
+		description = "Minimum length for a trabecula to be kept from being fused into a node",
+		style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength",
+		persist = false, initializer = "initRealLength")
 	private int minimumTrabecularLength;
 
-	@Parameter(label = "Margin (px)", min = "0", stepSize = "1", description = "Nodes with centroids closer than this value to any image boundary will not be included in results", style = NumberWidget.SPINNER_STYLE)
+	@Parameter(label = "Margin (px)", min = "0", stepSize = "1",
+		description = "Nodes with centroids closer than this value to any image boundary will not be included in results",
+		style = NumberWidget.SPINNER_STYLE)
 	private int marginCutOff;
 
-	@Parameter(label = "Calibrated minimum length", visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(label = "Calibrated minimum length",
+		visibility = ItemVisibility.MESSAGE, persist = false)
 	private String realLength = "";
 
-	@Parameter(label = "Iterate pruning", description = "If true, iterate pruning as long as short edges remain, or stop after a single pass", required = false, persistKey = "ITA_iterate")
+	@Parameter(label = "Iterate pruning",
+		description = "If true, iterate pruning as long as short edges remain, or stop after a single pass",
+		required = false, persistKey = "ITA_iterate")
 	private boolean iteratePruning;
 
-	@Parameter(label = "Use clusters", description = "If true, considers connected components together as a cluster, otherwise only looks at single short edges (order-dependent!)", required = false, persistKey = "ITA_useClusters")
+	@Parameter(label = "Use clusters",
+		description = "If true, considers connected components together as a cluster, otherwise only looks at single short edges (order-dependent!)",
+		required = false, persistKey = "ITA_useClusters")
 	private boolean useClusters = true;
 
-	@Parameter(label = "Print centroids", description = "Print the centroids of vertices at either end of each edge", required = false, persistKey = "ITA_print_centroids")
+	@Parameter(label = "Print centroids",
+		description = "Print the centroids of vertices at either end of each edge",
+		required = false, persistKey = "ITA_print_centroids")
 	private boolean printCentroids;
 
-	@Parameter(label = "Print % culled edges", description = "Print the percentage of each of the type of edges that were culled after calling analyseSkeleton", required = false, persistKey = "ITA_print_culled_edges")
+	@Parameter(label = "Print % culled edges",
+		description = "Print the percentage of each of the type of edges that were culled after calling analyseSkeleton",
+		required = false, persistKey = "ITA_print_culled_edges")
 	private boolean printCulledEdgePercentages;
 
 	/** The ITA angles in a {@link Table}, null if there are no results */
@@ -167,12 +190,15 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 			return;
 		}
 		warnMultipleGraphs(graphs);
-		final Graph largestGraph = Arrays.stream(graphs).max(Comparator.comparingInt(a -> a.getVertices().size()))
-				.orElse(new Graph());
+		final Graph largestGraph = Arrays.stream(graphs).max(Comparator
+			.comparingInt(a -> a.getVertices().size())).orElse(new Graph());
 		statusService.showStatus("Intertrabecular angles: pruning graph");
-		final Graph cleanGraph = cleanShortEdgesOp.calculate(largestGraph, calibratedMinimumLength);
-		statusService.showStatus("Intertrabecular angles: valence sorting trabeculae");
-		final Map<Integer, List<Vertex>> valenceMap = valenceSorterOp.calculate(cleanGraph, range);
+		final Graph cleanGraph = cleanShortEdgesOp.calculate(largestGraph,
+			calibratedMinimumLength);
+		statusService.showStatus(
+			"Intertrabecular angles: valence sorting trabeculae");
+		final Map<Integer, List<Vertex>> valenceMap = valenceSorterOp.calculate(
+			cleanGraph, range);
 		statusService.showStatus("Intertrabecular angles: calculating angles");
 		final Map<Integer, DoubleStream> radianMap = createRadianMap(valenceMap);
 		addResults(radianMap);
@@ -180,30 +206,134 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		printCulledEdgePercentages();
 	}
 
-	private void printEdgeCentroids(final Collection<Edge> edges) {
-		if (!printCentroids || edges == null || edges.isEmpty()) {
+	private void addResults(final Map<Integer, DoubleStream> anglesMap) {
+		final String label = inputImage.getTitle();
+		anglesMap.forEach((valence, angles) -> {
+			final String heading = valence.toString();
+			angles.forEach(angle -> SharedTable.add(label, heading, angle));
+		});
+		if (SharedTable.hasData()) {
+			anglesTable = SharedTable.getTable();
+		}
+		else {
+			cancel(NO_RESULTS_MSG);
+		}
+	}
+
+	private Graph[] analyzeSkeleton(final ImagePlus skeleton) {
+		// Analyse skeleton
+		final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
+		analyser.setup("", skeleton);
+		analyser.run();
+		return analyser.getGraphs();
+	}
+
+	@SuppressWarnings("unused")
+	private void calculateRealLength() {
+		calibratedMinimumLength = minimumTrabecularLength * coefficients.get(0);
+		final String unit = ResultUtils.getUnitHeader(inputImage);
+		realLength = String.join(" ", String.format("%.2g",
+			calibratedMinimumLength), unit);
+	}
+
+	private TreeMap<Integer, DoubleStream> createRadianMap(
+		final Map<Integer, List<Vertex>> valenceMap)
+	{
+		final TreeMap<Integer, DoubleStream> radianMap = new TreeMap<>();
+		valenceMap.forEach((valence, vertices) -> {
+			final List<Vertex> centreVertices = filterBoundaryVertices(vertices);
+			final List<NPoint> nPoints = nPointAnglesOp.calculate(centreVertices,
+				NPointAngles.VERTEX_TO_VERTEX);
+			final DoubleStream radians = nPoints.stream().flatMap(p -> p.angles
+				.stream()).mapToDouble(VectorsAngle::getAngle);
+			radianMap.put(valence, radians);
+		});
+		return radianMap;
+	}
+
+	@SuppressWarnings("unused")
+	private void enforceValidRange() {
+		if (minimumValence > maximumValence) {
+			minimumValence = maximumValence;
+		}
+	}
+
+	private List<Vertex> filterBoundaryVertices(
+		final Collection<Vertex> vertices)
+	{
+		return vertices.stream().filter(v -> !isCloseToBoundary(v)).collect(
+			toList());
+	}
+
+	@SuppressWarnings("unused")
+	private void imageValidater() {
+		if (inputImage == null) {
+			cancel(CommonMessages.NO_IMAGE_OPEN);
+			return;
+		}
+		if (inputImage.getBitDepth() != 8 || !ImagePlusUtil.isBinaryColour(
+			inputImage))
+		{
+			cancel(NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 
-		final List<DoubleColumn> columns = Arrays.asList(new DoubleColumn("V1x"), new DoubleColumn("V1y"),
-				new DoubleColumn("V1z"), new DoubleColumn("V2x"), new DoubleColumn("V2y"), new DoubleColumn("V2z"));
-
-		final List<Vector3d> v1Centroids = edges.stream().map(e -> e.getV1().getPoints()).map(GraphUtil::toVector3d)
-				.map(centroidOp::calculate).collect(toList());
-		final List<Vector3d> v2Centroids = edges.stream().map(e -> e.getV2().getPoints()).map(GraphUtil::toVector3d)
-				.map(centroidOp::calculate).collect(toList());
-		for (int i = 0; i < v1Centroids.size(); i++) {
-			final Vector3d v1centroid = v1Centroids.get(i);
-			columns.get(0).add(v1centroid.x);
-			columns.get(1).add(v1centroid.y);
-			columns.get(2).add(v1centroid.z);
-			final Vector3d v2centroid = v2Centroids.get(i);
-			columns.get(3).add(v2centroid.x);
-			columns.get(4).add(v2centroid.y);
-			columns.get(5).add(v2centroid.z);
+		if (inputImage.getNChannels() > 1) {
+			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+			return;
 		}
-		centroidTable = new DefaultResultsTable();
-		centroidTable.addAll(columns);
+
+		if (inputImage.getNFrames() > 1) {
+			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
+		}
+
+		if (!anisotropyWarned) {
+			if (!Common.warnAnisotropy(inputImage, uiService)) {
+				cancel(null);
+			}
+			anisotropyWarned = true;
+		}
+	}
+
+	@SuppressWarnings("unused")
+	private void initRealLength() {
+		if (inputImage == null || inputImage.getCalibration() == null) {
+			coefficients = Arrays.asList(1.0, 1.0, 1.0);
+			realLength = String.join(" ", String.format("%.2g",
+				(double) minimumTrabecularLength));
+		}
+		else {
+			final Calibration calibration = inputImage.getCalibration();
+			coefficients = Arrays.asList(calibration.pixelWidth,
+				calibration.pixelHeight, calibration.pixelDepth);
+			calculateRealLength();
+		}
+	}
+
+	private boolean isCloseToBoundary(final Vertex v) {
+		final List<Vector3d> pointVectors = GraphUtil.toVector3d(v.getPoints());
+		final Vector3d centroid = centroidOp.calculate(pointVectors);
+		final int width = inputImage.getWidth();
+		final int height = inputImage.getHeight();
+		final int depth = inputImage.getNSlices();
+		return centroid.x < marginCutOff || centroid.x > width - marginCutOff ||
+			centroid.y < marginCutOff || centroid.y > height - marginCutOff ||
+			depth != 1 && (centroid.z < marginCutOff || centroid.z > depth -
+				marginCutOff);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void matchOps() {
+		centroidOp = Functions.unary(opService, CentroidLinAlg3d.class,
+			Vector3d.class, List.class);
+		cleanShortEdgesOp = Functions.binary(opService, CleanShortEdges.class,
+			Graph.class, Graph.class, Double.class, coefficients, iteratePruning,
+			useClusters);
+		range = new ValuePair<>(minimumValence, maximumValence);
+		valenceSorterOp = (BinaryFunctionOp) Functions.binary(opService,
+			VertexValenceSorter.class, Map.class, Graph.class, range);
+		nPointAnglesOp = (BinaryFunctionOp) Functions.binary(opService,
+			NPointAngles.class, List.class, List.class, Integer.class);
 	}
 
 	private void printCulledEdgePercentages() {
@@ -232,58 +362,33 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		culledEdgePercentagesTable.add(deadEndCol);
 	}
 
-	private void warnMultipleGraphs(final Graph[] graphs) {
-		if (graphs.length < 2) {
+	private void printEdgeCentroids(final Collection<Edge> edges) {
+		if (!printCentroids || edges == null || edges.isEmpty()) {
 			return;
 		}
-		uiService.showDialog("Image has multiple skeletons - processing the largest", WARNING_MESSAGE);
-	}
 
-	private TreeMap<Integer, DoubleStream> createRadianMap(final Map<Integer, List<Vertex>> valenceMap) {
-		final TreeMap<Integer, DoubleStream> radianMap = new TreeMap<>();
-		valenceMap.forEach((valence, vertices) -> {
-			final List<Vertex> centreVertices = filterBoundaryVertices(vertices);
-			final List<NPoint> nPoints = nPointAnglesOp.calculate(centreVertices, NPointAngles.VERTEX_TO_VERTEX);
-			final DoubleStream radians = nPoints.stream().flatMap(p -> p.angles.stream())
-					.mapToDouble(VectorsAngle::getAngle);
-			radianMap.put(valence, radians);
-		});
-		return radianMap;
-	}
+		final List<DoubleColumn> columns = Arrays.asList(new DoubleColumn("V1x"),
+			new DoubleColumn("V1y"), new DoubleColumn("V1z"), new DoubleColumn("V2x"),
+			new DoubleColumn("V2y"), new DoubleColumn("V2z"));
 
-	private List<Vertex> filterBoundaryVertices(final Collection<Vertex> vertices) {
-		return vertices.stream().filter(v -> !isCloseToBoundary(v)).collect(toList());
-	}
-
-	@SuppressWarnings("unchecked")
-	private void matchOps() {
-		centroidOp = Functions.unary(opService, CentroidLinAlg3d.class, Vector3d.class, List.class);
-		cleanShortEdgesOp = Functions.binary(opService, CleanShortEdges.class, Graph.class, Graph.class, Double.class,
-				coefficients, iteratePruning, useClusters);
-		range = new ValuePair<>(minimumValence, maximumValence);
-		valenceSorterOp = (BinaryFunctionOp) Functions.binary(opService, VertexValenceSorter.class, Map.class,
-				Graph.class, range);
-		nPointAnglesOp = (BinaryFunctionOp) Functions.binary(opService, NPointAngles.class, List.class, List.class,
-				Integer.class);
-	}
-
-	private boolean isCloseToBoundary(final Vertex v) {
-		final List<Vector3d> pointVectors = GraphUtil.toVector3d(v.getPoints());
-		final Vector3d centroid = centroidOp.calculate(pointVectors);
-		final int width = inputImage.getWidth();
-		final int height = inputImage.getHeight();
-		final int depth = inputImage.getNSlices();
-		return centroid.x < marginCutOff || centroid.x > width - marginCutOff
-				|| centroid.y < marginCutOff || centroid.y > height - marginCutOff
-				|| depth != 1 && (centroid.z < marginCutOff || centroid.z > depth - marginCutOff);
-	}
-
-	private Graph[] analyzeSkeleton(final ImagePlus skeleton) {
-		// Analyse skeleton
-		final AnalyzeSkeleton_ analyser = new AnalyzeSkeleton_();
-		analyser.setup("", skeleton);
-		analyser.run();
-		return analyser.getGraphs();
+		final List<Vector3d> v1Centroids = edges.stream().map(e -> e.getV1()
+			.getPoints()).map(GraphUtil::toVector3d).map(centroidOp::calculate)
+			.collect(toList());
+		final List<Vector3d> v2Centroids = edges.stream().map(e -> e.getV2()
+			.getPoints()).map(GraphUtil::toVector3d).map(centroidOp::calculate)
+			.collect(toList());
+		for (int i = 0; i < v1Centroids.size(); i++) {
+			final Vector3d v1centroid = v1Centroids.get(i);
+			columns.get(0).add(v1centroid.x);
+			columns.get(1).add(v1centroid.y);
+			columns.get(2).add(v1centroid.z);
+			final Vector3d v2centroid = v2Centroids.get(i);
+			columns.get(3).add(v2centroid.x);
+			columns.get(4).add(v2centroid.y);
+			columns.get(5).add(v2centroid.z);
+		}
+		centroidTable = new DefaultResultsTable();
+		centroidTable.addAll(columns);
 	}
 
 	private ImagePlus skeletonise() {
@@ -302,70 +407,11 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		return skeleton;
 	}
 
-	private void addResults(final Map<Integer, DoubleStream> anglesMap) {
-		final String label = inputImage.getTitle();
-		anglesMap.forEach((valence, angles) -> {
-			final String heading = valence.toString();
-			angles.forEach(angle -> SharedTable.add(label, heading, angle));
-		});
-		if (SharedTable.hasData()) {
-			anglesTable = SharedTable.getTable();
-		} else {
-			cancel(NO_RESULTS_MSG);
-		}
-	}
-
-	@SuppressWarnings("unused")
-	private void imageValidater() {
-		if (inputImage == null) {
-			cancel(CommonMessages.NO_IMAGE_OPEN);
+	private void warnMultipleGraphs(final Graph[] graphs) {
+		if (graphs.length < 2) {
 			return;
 		}
-		if (inputImage.getBitDepth() != 8 || !ImagePlusUtil.isBinaryColour(inputImage)) {
-			cancel(NOT_8_BIT_BINARY_IMAGE);
-			return;
-		}
-
-		if (inputImage.getNChannels() > 1) {
-			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
-			return;
-		}
-
-		if (inputImage.getNFrames() > 1) {
-			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
-		}
-
-		if (!anisotropyWarned) {
-			if (!Common.warnAnisotropy(inputImage, uiService)) {
-			    cancel(null);
-            }
-			anisotropyWarned = true;
-		}
-	}
-
-	@SuppressWarnings("unused")
-	private void initRealLength() {
-		if (inputImage == null || inputImage.getCalibration() == null) {
-			coefficients = Arrays.asList(1.0, 1.0, 1.0);
-			realLength = String.join(" ", String.format("%.2g", (double) minimumTrabecularLength));
-		} else {
-			final Calibration calibration = inputImage.getCalibration();
-			coefficients = Arrays.asList(calibration.pixelWidth, calibration.pixelHeight, calibration.pixelDepth);
-			calculateRealLength();
-		}
-	}
-
-	@SuppressWarnings("unused")
-	private void calculateRealLength() {
-		calibratedMinimumLength = minimumTrabecularLength * coefficients.get(0);
-		final String unit = ResultUtils.getUnitHeader(inputImage);
-		realLength = String.join(" ", String.format("%.2g", calibratedMinimumLength), unit);
-	}
-
-	@SuppressWarnings("unused")
-	private void enforceValidRange() {
-		if (minimumValence > maximumValence) {
-			minimumValence = maximumValence;
-		}
+		uiService.showDialog(
+			"Image has multiple skeletons - processing the largest", WARNING_MESSAGE);
 	}
 }

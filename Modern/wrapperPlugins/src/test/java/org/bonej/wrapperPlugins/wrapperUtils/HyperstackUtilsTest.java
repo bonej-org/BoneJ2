@@ -53,91 +53,30 @@ public class HyperstackUtilsTest {
 		.unknown());
 
 	@Test
-	public void testSplitSubspacesNullTypes() {
+	public void testMultipleAxesOfType() {
 		// SETUP
-		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
+		final Img<ByteType> img = ArrayImgs.bytes(2, 2, 2, 2);
+		final Iterator<long[]> expectedSubscripts = Stream.generate(
+			() -> new long[] { 1, 2 }).limit(4).iterator();
+		final Iterator<String> expectedStrings = Stream.of("Time: 1, Time(2): 1",
+			"Time: 2, Time(2): 1", "Time: 1, Time(2): 2", "Time: 2, Time(2): 2")
+			.iterator();
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS,
+			T_AXIS, T_AXIS);
+		final List<AxisType> types = Arrays.asList(Axes.X, Axes.Y);
 
 		// EXECUTE
-		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus, null);
+		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus, types);
 
 		// VERIFY
-		assertEquals(0, subspaces.count());
-	}
-
-	@Test
-	public void testSplitSubspacesEmptyTypes() {
-		// SETUP
-		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
-		final List<AxisType> emptyList = Collections.emptyList();
-
-		// EXECUTE
-		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus,
-			emptyList);
-
-		// VERIFY
-		assertEquals(0, subspaces.count());
-	}
-
-	/**
-	 * Test that subspaces is empty, if we try to split into subspaces that don't
-	 * exist in the stack
-	 */
-	@Test
-	public void testSplitSubspacesEmptySubspaces() {
-		// SETUP
-		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
-		final List<AxisType> subspaceTypes = Collections.singletonList(
-			Axes.CHANNEL);
-
-		// EXECUTE
-		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus,
-			subspaceTypes);
-
-		// VERIFY
-		assertEquals(0, subspaces.count());
-	}
-
-	/**
-	 * Test that subspaces is empty, if we ImgPlus has no metadata about axis
-	 * types
-	 */
-	@Test
-	public void testSplitSubspacesNoImgPlusMeta() {
-		// SETUP
-		final Img<ByteType> img = ArrayImgs.bytes(2, 2, 2);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", BAD_AXIS, BAD_AXIS,
-			BAD_AXIS);
-		final List<AxisType> subspaceTypes = Arrays.asList(Axes.X, Axes.Y);
-
-		// EXECUTE
-		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus,
-			subspaceTypes);
-
-		// VERIFY
-		assertEquals(0, subspaces.count());
-	}
-
-	/**
-	 * Test that the subspace stream is identical to the input hyperstack, if
-	 * subspace dimensions are equal
-	 */
-	@Test
-	public void testSplitSubspacesIdentical() {
-		// SETUP
-		final Img<ByteType> img = ArrayImgs.bytes(2, 3);
-		final AxisType[] types = { Axes.X, Axes.Y };
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", types);
-
-		// EXECUTE
-		final List<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus, Arrays
-			.asList(types)).collect(Collectors.toList());
-
-		// VERIFY
-		assertEquals(1, subspaces.size());
-		assertEquals(imgPlus, subspaces.get(0).interval);
+		subspaces.forEach(subspace -> {
+			assertTrue(subspace.getAxisTypes().allMatch(t -> t == Axes.TIME));
+			assertArrayEquals(
+				"The subscripts of the multiple axes of the same type are incorrect",
+				expectedSubscripts.next(), subspace.getSubScripts().toArray());
+			assertEquals("The string describing the subspace position is incorrect",
+				expectedStrings.next(), subspace.toString());
+		});
 	}
 
 	@Test
@@ -162,27 +101,93 @@ public class HyperstackUtilsTest {
 		});
 	}
 
+	@Test
+	public void testSplitSubspaces() {
+		// SETUP
+		final long tSize = 3;
+		final long cSize = 3;
+		final long wSize = 3;
+		final long expectedSubspaces = tSize * cSize * wSize;
+		final long depth = 2;
+		final long height = 10;
+		final long width = 15;
+		final Img<ByteType> img = ArrayImgs.bytes(width, height, depth, wSize,
+			cSize, tSize);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS,
+			Z_AXIS, W_AXIS, C_AXIS, T_AXIS);
+
+		// EXECUTE
+		final List<Subspace<ByteType>> subspaces = HyperstackUtils.split3DSubspaces(
+			imgPlus).collect(Collectors.toList());
+
+		// VERIFY
+		assertEquals("Wrong number of subspaces", expectedSubspaces, subspaces
+			.size());
+		subspaces.stream().map(s -> s.interval).forEach(v -> {
+			assertEquals("Subspace has wrong number of dimensions", 3, v
+				.numDimensions());
+			assertEquals("Incorrect max X", width - 1, v.max(0));
+			assertEquals("Incorrect min X", 0, v.min(0));
+			assertEquals("Incorrect max Y", height - 1, v.max(1));
+			assertEquals("Incorrect min Y", 0, v.min(1));
+			assertEquals("Incorrect max Z", depth - 1, v.max(2));
+			assertEquals("Incorrect min Z", 0, v.min(2));
+		});
+	}
+
 	/**
-	 * Test that, for example, if you want a {X, Y, T} subspaces of a {X, Y, Z, T,
-	 * T} hyperstack, the subspaces contain all the time axes. You should get n
-	 * {X, Y, T, T} subspaces, where n is the size of the Z-dimension.
+	 * Test that subspaces is empty, if we try to split into subspaces that don't
+	 * exist in the stack
 	 */
 	@Test
-	public void testSplitSubspacesMultipleSubspaceTypes() {
+	public void testSplitSubspacesEmptySubspaces() {
 		// SETUP
-		final long depth = 5;
-		final Img<ByteType> img = ArrayImgs.bytes(2, 2, depth, 13, 14);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS,
-			Z_AXIS, T_AXIS, T_AXIS);
-		final List<AxisType> subspaceTypes = Arrays.asList(Axes.X, Axes.Y,
-			Axes.TIME);
+		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
+		final List<AxisType> subspaceTypes = Collections.singletonList(
+			Axes.CHANNEL);
 
 		// EXECUTE
 		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus,
 			subspaceTypes);
 
 		// VERIFY
-		assertEquals(depth, subspaces.count());
+		assertEquals(0, subspaces.count());
+	}
+
+	@Test
+	public void testSplitSubspacesEmptyTypes() {
+		// SETUP
+		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
+		final List<AxisType> emptyList = Collections.emptyList();
+
+		// EXECUTE
+		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus,
+			emptyList);
+
+		// VERIFY
+		assertEquals(0, subspaces.count());
+	}
+
+	/**
+	 * Test that the subspace stream is identical to the input hyperstack, if
+	 * subspace dimensions are equal
+	 */
+	@Test
+	public void testSplitSubspacesIdentical() {
+		// SETUP
+		final Img<ByteType> img = ArrayImgs.bytes(2, 3);
+		final AxisType[] types = { Axes.X, Axes.Y };
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", types);
+
+		// EXECUTE
+		final List<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus, Arrays
+			.asList(types)).collect(Collectors.toList());
+
+		// VERIFY
+		assertEquals(1, subspaces.size());
+		assertEquals(imgPlus, subspaces.get(0).interval);
 	}
 
 	/**
@@ -230,65 +235,60 @@ public class HyperstackUtilsTest {
 		});
 	}
 
+	/**
+	 * Test that, for example, if you want a {X, Y, T} subspaces of a {X, Y, Z, T,
+	 * T} hyperstack, the subspaces contain all the time axes. You should get n
+	 * {X, Y, T, T} subspaces, where n is the size of the Z-dimension.
+	 */
 	@Test
-	public void testSplitSubspaces() {
+	public void testSplitSubspacesMultipleSubspaceTypes() {
 		// SETUP
-		final long tSize = 3;
-		final long cSize = 3;
-		final long wSize = 3;
-		final long expectedSubspaces = tSize * cSize * wSize;
-		final long depth = 2;
-		final long height = 10;
-		final long width = 15;
-		final Img<ByteType> img = ArrayImgs.bytes(width, height, depth, wSize,
-			cSize, tSize);
+		final long depth = 5;
+		final Img<ByteType> img = ArrayImgs.bytes(2, 2, depth, 13, 14);
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS,
-			Z_AXIS, W_AXIS, C_AXIS, T_AXIS);
+			Z_AXIS, T_AXIS, T_AXIS);
+		final List<AxisType> subspaceTypes = Arrays.asList(Axes.X, Axes.Y,
+			Axes.TIME);
 
 		// EXECUTE
-		final List<Subspace<ByteType>> subspaces = HyperstackUtils.split3DSubspaces(
-			imgPlus).collect(Collectors.toList());
+		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus,
+			subspaceTypes);
 
 		// VERIFY
-		assertEquals("Wrong number of subspaces", expectedSubspaces, subspaces
-			.size());
-		subspaces.stream().map(s -> s.interval).forEach(v -> {
-			assertEquals("Subspace has wrong number of dimensions", 3, v
-				.numDimensions());
-			assertEquals("Incorrect max X", width - 1, v.max(0));
-			assertEquals("Incorrect min X", 0, v.min(0));
-			assertEquals("Incorrect max Y", height - 1, v.max(1));
-			assertEquals("Incorrect min Y", 0, v.min(1));
-			assertEquals("Incorrect max Z", depth - 1, v.max(2));
-			assertEquals("Incorrect min Z", 0, v.min(2));
-		});
+		assertEquals(depth, subspaces.count());
+	}
+
+	/**
+	 * Test that subspaces is empty, if we ImgPlus has no metadata about axis
+	 * types
+	 */
+	@Test
+	public void testSplitSubspacesNoImgPlusMeta() {
+		// SETUP
+		final Img<ByteType> img = ArrayImgs.bytes(2, 2, 2);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", BAD_AXIS, BAD_AXIS,
+			BAD_AXIS);
+		final List<AxisType> subspaceTypes = Arrays.asList(Axes.X, Axes.Y);
+
+		// EXECUTE
+		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus,
+			subspaceTypes);
+
+		// VERIFY
+		assertEquals(0, subspaces.count());
 	}
 
 	@Test
-	public void testMultipleAxesOfType() {
+	public void testSplitSubspacesNullTypes() {
 		// SETUP
-		final Img<ByteType> img = ArrayImgs.bytes(2, 2, 2, 2);
-		final Iterator<long[]> expectedSubscripts = Stream.generate(
-			() -> new long[] { 1, 2 }).limit(4).iterator();
-		final Iterator<String> expectedStrings = Stream.of("Time: 1, Time(2): 1",
-			"Time: 2, Time(2): 1", "Time: 1, Time(2): 2", "Time: 2, Time(2): 2")
-			.iterator();
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS,
-			T_AXIS, T_AXIS);
-		final List<AxisType> types = Arrays.asList(Axes.X, Axes.Y);
+		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
 
 		// EXECUTE
-		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(
-			imgPlus, types);
+		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus, null);
 
 		// VERIFY
-		subspaces.forEach(subspace -> {
-			assertTrue(subspace.getAxisTypes().allMatch(t -> t == Axes.TIME));
-			assertArrayEquals(
-				"The subscripts of the multiple axes of the same type are incorrect",
-				expectedSubscripts.next(), subspace.getSubScripts().toArray());
-			assertEquals("The string describing the subspace position is incorrect", expectedStrings.next(), subspace.toString());
-		});
+		assertEquals(0, subspaces.count());
 	}
 
 	@Test

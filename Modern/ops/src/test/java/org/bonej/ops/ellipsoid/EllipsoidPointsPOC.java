@@ -2,7 +2,6 @@
 package org.bonej.ops.ellipsoid;
 
 import java.util.Collection;
-import java.util.List;
 
 import net.imagej.ImageJ;
 
@@ -26,7 +25,7 @@ public final class EllipsoidPointsPOC {
 		final ImageJ imageJ = new ImageJ();
 		@SuppressWarnings("unchecked")
 		final Collection<Vector3d> points = (Collection<Vector3d>) imageJ.op().run(
-				EllipsoidPoints.class, new double[]{1, 2, 3}, 10_000);
+			EllipsoidPoints.class, new double[] { 1, 2, 3 }, 10_000);
 		points.stream().map(Vector3d::toString).forEach(System.out::println);
 	}
 }

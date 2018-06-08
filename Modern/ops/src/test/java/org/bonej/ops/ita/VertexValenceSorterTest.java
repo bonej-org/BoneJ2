@@ -138,6 +138,18 @@ public class VertexValenceSorterTest {
 		assertTrue("Empty graph should return an empty map.", map.isEmpty());
 	}
 
+	@SuppressWarnings("unchecked")
+	@BeforeClass
+	public static void setUpBeforeClass() {
+		valenceSorterOp = (BinaryFunctionOp) Functions.binary(IMAGE_J.op(),
+			VertexValenceSorter.class, Map.class, Graph.class, new ValuePair(0, 0));
+	}
+
+	@AfterClass
+	public static void tearDownAfterClass() {
+		IMAGE_J.context().dispose();
+	}
+
 	/**
 	 * Structure of the downward facing fish graph example
 	 *
@@ -200,17 +212,5 @@ public class VertexValenceSorterTest {
 			new Edge(vertices.get(7), vertices.get(2), null, 2.0));
 
 		return GraphUtil.createGraph(edges, vertices);
-	}
-
-	@SuppressWarnings("unchecked")
-	@BeforeClass
-	public static void setUpBeforeClass() {
-		valenceSorterOp = (BinaryFunctionOp) Functions.binary(IMAGE_J.op(),
-			VertexValenceSorter.class, Map.class, Graph.class, new ValuePair(0, 0));
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() {
-		IMAGE_J.context().dispose();
 	}
 }

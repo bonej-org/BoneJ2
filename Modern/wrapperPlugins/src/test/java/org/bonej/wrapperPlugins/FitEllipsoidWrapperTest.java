@@ -30,17 +30,6 @@ public class FitEllipsoidWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			FitEllipsoidWrapper.class);
-	}
-
 	@Test
 	public void test2DImageCancelsPlugin() throws Exception {
 		CommonWrapperTests.test2DImagePlusCancelsPlugin(IMAGE_J,
@@ -50,6 +39,12 @@ public class FitEllipsoidWrapperTest {
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() throws Exception {
 		CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
+			FitEllipsoidWrapper.class);
+	}
+
+	@Test
+	public void testNullImageCancelsPlugin() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			FitEllipsoidWrapper.class);
 	}
 
@@ -71,5 +66,10 @@ public class FitEllipsoidWrapperTest {
 				QUADRIC_TERMS));
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-    }
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
+	}
 }

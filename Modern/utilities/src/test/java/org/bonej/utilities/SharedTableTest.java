@@ -25,145 +25,6 @@ public class SharedTableTest {
 		SharedTable.reset();
 	}
 
-	@Test
-	public void testSharedTableIgnoresNullLabel() {
-		// EXECUTE
-		SharedTable.add(null, "Header", 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testSharedTableIgnoresEmptyLabel() {
-		// EXECUTE
-		SharedTable.add("", "Header", 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testSharedTableIgnoresNullHeader() {
-		// EXECUTE
-		SharedTable.add("Label", null, 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testSharedTableIgnoresEmptyHeader() {
-		// EXECUTE
-		SharedTable.add("Label", "", 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testAddNewLabel() {
-		// SETUP
-		final String label = "Image";
-		final String header = "Pixels";
-		final Double value = 1.0;
-
-		// EXECUTE
-		SharedTable.add(label, header, value);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getRowCount());
-		assertEquals(2, table.getColumnCount());
-		assertEquals(LABEL_HEADER, table.get(0).getHeader());
-		assertEquals(label, table.get(LABEL_HEADER).get(0));
-		assertEquals(header, table.get(1).getHeader());
-		assertEquals(String.valueOf(value), table.get(header).get(0));
-	}
-
-	@Test
-	public void testAddLabelRepeatedly() {
-		// SETUP
-		final String label = "Image";
-		final String header = "Pixels";
-
-		// EXECUTE
-		SharedTable.add(label, header, 2.0);
-		SharedTable.add(label, header, 3.0);
-		SharedTable.add(label, header, 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(3, table.getRowCount());
-	}
-
-	@Test
-	public void testFoo() {
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 1);
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 2);
-
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(2, table.getRowCount());
-		assertEquals("1", table.get("Run").get(0));
-		assertEquals("2", table.get("Run").get(1));
-	}
-
-	@Test
-	public void testAddMultipleColumns() {
-		// SETUP
-		final String label = "Image";
-		final String header = "White pixels";
-		final String header2 = "Black pixels";
-
-		// EXECUTE
-		SharedTable.add(label, header, 1.0);
-		SharedTable.add(label, header2, 3.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getRowCount());
-		assertEquals(3, table.getColumnCount());
-
-	}
-
-	@Test
-	public void testAddRowsInsertedAlphabetically() {
-		// SETUP
-		final String label = "ZZZ";
-		final String label2 = "AAA";
-		final String label3 = "BBB";
-
-		// EXECUTE
-		SharedTable.add(label, "Header", 3.0);
-		SharedTable.add(label2, "Header", 1.0);
-		SharedTable.add(label3, "Header", 2.0);
-		SharedTable.add(label, "Header", 4.0);
-		SharedTable.add(label, "Header 2", 4.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(4, table.getRowCount());
-		assertEquals(label2, table.get(0, 0));
-		assertEquals(String.valueOf(1.0), table.get(1, 0));
-		assertEquals(label3, table.get(0, 1));
-		assertEquals(String.valueOf(2.0), table.get(1, 1));
-		assertEquals(label, table.get(0, 2));
-		assertEquals(String.valueOf(3.0), table.get(1, 2));
-		assertEquals(String.valueOf(4.0), table.get(2, 2));
-		assertEquals(label, table.get(0, 3));
-		assertEquals(String.valueOf(4.0), table.get(1, 3));
-	}
-
 	/*
 	 * Test that the table is filled in the expected order:
 	 * Label    Measurement A   Measurement B
@@ -201,8 +62,98 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testHasDataEmptyTable() {
-		assertFalse(SharedTable.hasData());
+	public void testAddLabelRepeatedly() {
+		// SETUP
+		final String label = "Image";
+		final String header = "Pixels";
+
+		// EXECUTE
+		SharedTable.add(label, header, 2.0);
+		SharedTable.add(label, header, 3.0);
+		SharedTable.add(label, header, 1.0);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(3, table.getRowCount());
+	}
+
+	@Test
+	public void testAddMultipleColumns() {
+		// SETUP
+		final String label = "Image";
+		final String header = "White pixels";
+		final String header2 = "Black pixels";
+
+		// EXECUTE
+		SharedTable.add(label, header, 1.0);
+		SharedTable.add(label, header2, 3.0);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(1, table.getRowCount());
+		assertEquals(3, table.getColumnCount());
+
+	}
+
+	@Test
+	public void testAddNewLabel() {
+		// SETUP
+		final String label = "Image";
+		final String header = "Pixels";
+		final Double value = 1.0;
+
+		// EXECUTE
+		SharedTable.add(label, header, value);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(1, table.getRowCount());
+		assertEquals(2, table.getColumnCount());
+		assertEquals(LABEL_HEADER, table.get(0).getHeader());
+		assertEquals(label, table.get(LABEL_HEADER).get(0));
+		assertEquals(header, table.get(1).getHeader());
+		assertEquals(String.valueOf(value), table.get(header).get(0));
+	}
+
+	@Test
+	public void testAddRowsInsertedAlphabetically() {
+		// SETUP
+		final String label = "ZZZ";
+		final String label2 = "AAA";
+		final String label3 = "BBB";
+
+		// EXECUTE
+		SharedTable.add(label, "Header", 3.0);
+		SharedTable.add(label2, "Header", 1.0);
+		SharedTable.add(label3, "Header", 2.0);
+		SharedTable.add(label, "Header", 4.0);
+		SharedTable.add(label, "Header 2", 4.0);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(4, table.getRowCount());
+		assertEquals(label2, table.get(0, 0));
+		assertEquals(String.valueOf(1.0), table.get(1, 0));
+		assertEquals(label3, table.get(0, 1));
+		assertEquals(String.valueOf(2.0), table.get(1, 1));
+		assertEquals(label, table.get(0, 2));
+		assertEquals(String.valueOf(3.0), table.get(1, 2));
+		assertEquals(String.valueOf(4.0), table.get(2, 2));
+		assertEquals(label, table.get(0, 3));
+		assertEquals(String.valueOf(4.0), table.get(1, 3));
+	}
+
+	@Test
+	public void testFoo() {
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 1);
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 2);
+
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(2, table.getRowCount());
+		assertEquals("1", table.get("Run").get(0));
+		assertEquals("2", table.get("Run").get(1));
 	}
 
 	@Test
@@ -210,5 +161,54 @@ public class SharedTableTest {
 		SharedTable.add("Label", "Header", 0.0);
 
 		assertTrue(SharedTable.hasData());
+	}
+
+	@Test
+	public void testHasDataEmptyTable() {
+		assertFalse(SharedTable.hasData());
+	}
+
+	@Test
+	public void testSharedTableIgnoresEmptyHeader() {
+		// EXECUTE
+		SharedTable.add("Label", "", 1.0);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(1, table.getColumnCount());
+		assertEquals(0, table.getRowCount());
+	}
+
+	@Test
+	public void testSharedTableIgnoresEmptyLabel() {
+		// EXECUTE
+		SharedTable.add("", "Header", 1.0);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(1, table.getColumnCount());
+		assertEquals(0, table.getRowCount());
+	}
+
+	@Test
+	public void testSharedTableIgnoresNullHeader() {
+		// EXECUTE
+		SharedTable.add("Label", null, 1.0);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(1, table.getColumnCount());
+		assertEquals(0, table.getRowCount());
+	}
+
+	@Test
+	public void testSharedTableIgnoresNullLabel() {
+		// EXECUTE
+		SharedTable.add(null, "Header", 1.0);
+
+		// VERIFY
+		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		assertEquals(1, table.getColumnCount());
+		assertEquals(0, table.getRowCount());
 	}
 }

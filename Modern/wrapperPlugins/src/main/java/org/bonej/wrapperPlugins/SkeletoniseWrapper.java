@@ -7,7 +7,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
-import ij.plugin.filter.PlugInFilter;
 import net.imagej.patcher.LegacyInjector;
 
 import org.bonej.utilities.ImagePlusUtil;
@@ -19,6 +18,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ij.ImagePlus;
+import ij.plugin.filter.PlugInFilter;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
@@ -47,7 +47,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 	private ImagePlus skeleton;
 
 	@Parameter
-    private StatusService statusService;
+	private StatusService statusService;
 
 	@Override
 	public void run() {

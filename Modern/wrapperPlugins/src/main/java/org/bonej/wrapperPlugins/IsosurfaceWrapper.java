@@ -125,54 +125,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	/**
-	 * Writes the surface mesh as a binary, little endian STL file
-	 * <p>
-	 * NB: Public and static for testing purposes
-	 * </p>
-	 *
-	 * @param path The absolute path to the save location of the STL file
-	 * @param mesh A mesh consisting of triangular facets
-	 * @throws NullPointerException if mesh is null
-	 * @throws IllegalArgumentException if path is null or empty, or mesh doesn't
-	 *           have triangular facets
-	 * @throws IOException if there's an error while writing the file
-	 */
-	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
-	public static void writeBinarySTLFile(final String path, final Mesh mesh)
-		throws IllegalArgumentException, IOException, NullPointerException
-	{
-		if (mesh == null) {
-			throw new NullPointerException("Mesh cannot be null");
-		}
-
-		if (StringUtils.isNullOrEmpty(path)) {
-			throw new IllegalArgumentException("Filename cannot be null or empty");
-		}
-		if (!mesh.triangularFacets()) {
-			throw new IllegalArgumentException(
-				"Cannot write STL file: invalid surface mesh");
-		}
-
-		final List<Facet> facets = mesh.getFacets();
-		final int numFacets = facets.size();
-		try (final FileOutputStream writer = new FileOutputStream(path)) {
-			final byte[] header = STL_HEADER.getBytes();
-			writer.write(header);
-			final byte[] facetBytes = ByteBuffer.allocate(4).order(
-				ByteOrder.LITTLE_ENDIAN).putInt(numFacets).array();
-			writer.write(facetBytes);
-			final ByteBuffer buffer = ByteBuffer.allocate(50);
-			buffer.order(ByteOrder.LITTLE_ENDIAN);
-			for (final Facet facet : facets) {
-				final TriangularFacet triangularFacet = (TriangularFacet) facet;
-				writeSTLFacet(buffer, triangularFacet);
-				writer.write(buffer.array());
-				buffer.clear();
-			}
-		}
-	}
-
 	private void addResult(final String label, final double area) {
 		SharedTable.add(label, "Surface area " + unitHeader, area * areaScale);
 	}
@@ -213,8 +165,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
-		marchingCubesOp = Functions.unary(ops, MarchingCubes.class,
-			Mesh.class, interval);
+		marchingCubesOp = Functions.unary(ops, MarchingCubes.class, Mesh.class,
+			interval);
 	}
 
 	private void prepareResults() {
@@ -226,13 +178,16 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (AxisUtils.isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
 			areaScale = scale * scale;
-		} else {
+		}
+		else {
 			uiService.showDialog(BAD_SCALING, WARNING_MESSAGE);
 			areaScale = 1.0;
 		}
 	}
 
-	private Map<String, Mesh> processViews(final Iterable<Subspace<BitType>> subspaces) {
+	private Map<String, Mesh> processViews(
+		final Iterable<Subspace<BitType>> subspaces)
+	{
 		final String name = inputImage.getName();
 		final Map<String, Mesh> meshes = new HashMap<>();
 		for (final Subspace<BitType> subspace : subspaces) {
@@ -292,10 +247,60 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
+	/**
+	 * Writes the surface mesh as a binary, little endian STL file
+	 * <p>
+	 * NB: Public and static for testing purposes
+	 * </p>
+	 *
+	 * @param path The absolute path to the save location of the STL file
+	 * @param mesh A mesh consisting of triangular facets
+	 * @throws NullPointerException if mesh is null
+	 * @throws IllegalArgumentException if path is null or empty, or mesh doesn't
+	 *           have triangular facets
+	 * @throws IOException if there's an error while writing the file
+	 */
+	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
+	static void writeBinarySTLFile(final String path, final Mesh mesh)
+		throws IllegalArgumentException, IOException, NullPointerException
+	{
+		if (mesh == null) {
+			throw new NullPointerException("Mesh cannot be null");
+		}
+
+		if (StringUtils.isNullOrEmpty(path)) {
+			throw new IllegalArgumentException("Filename cannot be null or empty");
+		}
+		if (!mesh.triangularFacets()) {
+			throw new IllegalArgumentException(
+				"Cannot write STL file: invalid surface mesh");
+		}
+
+		final List<Facet> facets = mesh.getFacets();
+		final int numFacets = facets.size();
+		try (final FileOutputStream writer = new FileOutputStream(path)) {
+			final byte[] header = STL_HEADER.getBytes();
+			writer.write(header);
+			final byte[] facetBytes = ByteBuffer.allocate(4).order(
+				ByteOrder.LITTLE_ENDIAN).putInt(numFacets).array();
+			writer.write(facetBytes);
+			final ByteBuffer buffer = ByteBuffer.allocate(50);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
+			for (final Facet facet : facets) {
+				final TriangularFacet triangularFacet = (TriangularFacet) facet;
+				writeSTLFacet(buffer, triangularFacet);
+				writer.write(buffer.array());
+				buffer.clear();
+			}
+		}
+	}
+
 	// -- Utility methods --
 
 	// -- Helper methods --
-	private static void writeSTLFacet(final ByteBuffer buffer, final TriangularFacet facet) {
+	private static void writeSTLFacet(final ByteBuffer buffer,
+		final TriangularFacet facet)
+	{
 		writeSTLVector(buffer, facet.getNormal());
 		writeSTLVector(buffer, facet.getP0());
 		writeSTLVector(buffer, facet.getP1());
@@ -303,7 +308,9 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		buffer.putShort((short) 0); // Attribute byte count
 	}
 
-	private static void writeSTLVector(final ByteBuffer buffer, final Vector3D v) {
+	private static void writeSTLVector(final ByteBuffer buffer,
+		final Vector3D v)
+	{
 		buffer.putFloat((float) v.getX());
 		buffer.putFloat((float) v.getY());
 		buffer.putFloat((float) v.getZ());

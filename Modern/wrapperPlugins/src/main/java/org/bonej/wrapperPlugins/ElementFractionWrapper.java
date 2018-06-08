@@ -56,7 +56,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
 	private Table<DefaultColumn<String>, String> resultsTable;
 
-
 	@Parameter
 	private OpService opService;
 
@@ -67,7 +66,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private UnitService unitService;
 
 	@Parameter
-    private StatusService statusService;
+	private StatusService statusService;
 
 	/** Header of the foreground (bone) volume column in the results table */
 	private String boneSizeHeader;
@@ -78,15 +77,15 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	/** The calibrated size of an element in the image */
 	private double elementSize;
 
-    @Override
+	@Override
 	public void run() {
-	    statusService.showStatus("Element fraction: initializing");
+		statusService.showStatus("Element fraction: initializing");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		prepareResultDisplay();
 		// The value of each foreground element in a bit type image is 1, so we can
 		// count their number just by summing
-        statusService.showStatus("Element fraction: calculating");
+		statusService.showStatus("Element fraction: calculating");
 		final double foregroundSize = opService.stats().sum(bitImgPlus)
 			.getRealDouble() * elementSize;
 		final double totalSize = bitImgPlus.size() * elementSize;
@@ -95,6 +94,15 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+	}
+
+	private void addResults(final double foregroundSize, final double totalSize,
+		final double ratio)
+	{
+		final String label = inputImage.getName();
+		SharedTable.add(label, boneSizeHeader, foregroundSize);
+		SharedTable.add(label, totalSizeHeader, totalSize);
+		SharedTable.add(label, ratioHeader, ratio);
 	}
 
 	// region -- Helper methods --
@@ -108,20 +116,12 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
 		boneSizeHeader = "Bone " + sizeDescription.toLowerCase() + " " + unitHeader;
-		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " + unitHeader;
+		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " +
+			unitHeader;
 		ratioHeader = sizeDescription + " Ratio";
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
 			unitService);
 
-	}
-
-	private void addResults(final double foregroundSize, final double totalSize,
-		final double ratio)
-	{
-		final String label = inputImage.getName();
-		SharedTable.add(label, boneSizeHeader, foregroundSize);
-		SharedTable.add(label, totalSizeHeader, totalSize);
-		SharedTable.add(label, ratioHeader, ratio);
 	}
 
 	@SuppressWarnings("unused")

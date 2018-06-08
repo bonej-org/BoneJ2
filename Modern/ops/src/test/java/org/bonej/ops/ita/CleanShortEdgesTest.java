@@ -474,6 +474,73 @@ public class CleanShortEdgesTest {
 
 	}
 
+	private void assertEdgeEquals(final Edge expected, final Edge actual,
+		final List<Vertex> expectedVertices, final List<Vertex> actualVertices)
+	{
+		assertEquals(expected.getColor(), actual.getColor(), 1e-12);
+		assertEquals(expected.getColor3rd(), actual.getColor3rd(), 1e-12);
+		assertEquals(expected.getLength(), actual.getLength(), 1e-12);
+		assertEquals(expected.getLength_ra(), actual.getLength_ra(), 1e-12);
+		assertEquals(expected.getType(), actual.getType(), 1e-12);
+		assertEquals(expectedVertices.indexOf(expected.getV1()), actualVertices
+			.indexOf(actual.getV1()));
+		assertEquals(expectedVertices.indexOf(expected.getV2()), actualVertices
+			.indexOf(actual.getV2()));
+	}
+
+	private void assertGraphsEqual(final Graph expected, final Graph actual) {
+		final ArrayList<Vertex> vertices = expected.getVertices();
+		final ArrayList<Vertex> cloneVertices = actual.getVertices();
+		assertEquals(vertices.size(), cloneVertices.size());
+		IntStream.range(0, vertices.size()).forEach(i -> {
+			final Vertex vertex = vertices.get(i);
+			final Vertex clonedVertex = cloneVertices.get(i);
+			assertVerticesEqual(vertex, clonedVertex, expected.getEdges(), actual
+				.getEdges());
+		});
+		// VERIFY EDGES
+		final ArrayList<Edge> clonedEdges = actual.getEdges();
+		assertTrue("Vertices have branches that are not listed in the Edge list",
+			cloneVertices.stream().flatMap(v -> v.getBranches().stream()).allMatch(
+				clonedEdges::contains));
+		final ArrayList<Edge> edges = expected.getEdges();
+		assertEquals("Graph has wrong number of edges", edges.size(), clonedEdges
+			.size());
+		IntStream.range(0, edges.size()).forEach(i -> {
+			final Edge edge = edges.get(i);
+			final Edge clonedEdge = clonedEdges.get(i);
+			assertEdgeEquals(edge, clonedEdge, expected.getVertices(), actual
+				.getVertices());
+		});
+	}
+
+	private void assertPointsEqual(final Vertex vertex,
+		final Vertex clonedVertex)
+	{
+		final ArrayList<Point> points = vertex.getPoints();
+		final ArrayList<Point> clonedPoints = clonedVertex.getPoints();
+		assertEquals("Cloned vertex has wrong number of points", points.size(),
+			clonedPoints.size());
+		IntStream.range(0, points.size()).forEach(j -> {
+			final Point point = points.get(j);
+			final Point clonedPoint = clonedPoints.get(j);
+			assertEquals("Cloned vertex has a point with bad coordinates", point
+				.toString(), clonedPoint.toString());
+		});
+	}
+
+	private void assertVerticesEqual(final Vertex expected, final Vertex actual,
+		final List<Edge> expectedEdges, final List<Edge> actualEdges)
+	{
+		assertEquals(expected.getVisitOrder(), actual.getVisitOrder());
+		assertEquals(expected.isVisited(), actual.isVisited());
+		assertEquals(expectedEdges.indexOf(expected.getPredecessor()), actualEdges
+			.indexOf(actual.getPredecessor()));
+		assertEquals("Vertex has wrong number of branches", expected.getBranches()
+			.size(), actual.getBranches().size());
+		assertPointsEqual(expected, actual);
+	}
+
 	/**
 	 * Structure of arch with slab graph example
 	 * <p>
@@ -817,73 +884,6 @@ public class CleanShortEdgesTest {
 		);
 
 		return GraphUtil.createGraph(edges, vertices);
-	}
-
-	private void assertEdgeEquals(final Edge expected, final Edge actual,
-		final List<Vertex> expectedVertices, final List<Vertex> actualVertices)
-	{
-		assertEquals(expected.getColor(), actual.getColor(), 1e-12);
-		assertEquals(expected.getColor3rd(), actual.getColor3rd(), 1e-12);
-		assertEquals(expected.getLength(), actual.getLength(), 1e-12);
-		assertEquals(expected.getLength_ra(), actual.getLength_ra(), 1e-12);
-		assertEquals(expected.getType(), actual.getType(), 1e-12);
-		assertEquals(expectedVertices.indexOf(expected.getV1()), actualVertices
-			.indexOf(actual.getV1()));
-		assertEquals(expectedVertices.indexOf(expected.getV2()), actualVertices
-			.indexOf(actual.getV2()));
-	}
-
-	private void assertGraphsEqual(final Graph expected, final Graph actual) {
-		final ArrayList<Vertex> vertices = expected.getVertices();
-		final ArrayList<Vertex> cloneVertices = actual.getVertices();
-		assertEquals(vertices.size(), cloneVertices.size());
-		IntStream.range(0, vertices.size()).forEach(i -> {
-			final Vertex vertex = vertices.get(i);
-			final Vertex clonedVertex = cloneVertices.get(i);
-			assertVerticesEqual(vertex, clonedVertex, expected.getEdges(), actual
-				.getEdges());
-		});
-		// VERIFY EDGES
-		final ArrayList<Edge> clonedEdges = actual.getEdges();
-		assertTrue("Vertices have branches that are not listed in the Edge list",
-			cloneVertices.stream().flatMap(v -> v.getBranches().stream()).allMatch(
-				clonedEdges::contains));
-		final ArrayList<Edge> edges = expected.getEdges();
-		assertEquals("Graph has wrong number of edges", edges.size(), clonedEdges
-			.size());
-		IntStream.range(0, edges.size()).forEach(i -> {
-			final Edge edge = edges.get(i);
-			final Edge clonedEdge = clonedEdges.get(i);
-			assertEdgeEquals(edge, clonedEdge, expected.getVertices(), actual
-				.getVertices());
-		});
-	}
-
-	private void assertPointsEqual(final Vertex vertex,
-		final Vertex clonedVertex)
-	{
-		final ArrayList<Point> points = vertex.getPoints();
-		final ArrayList<Point> clonedPoints = clonedVertex.getPoints();
-		assertEquals("Cloned vertex has wrong number of points", points.size(),
-			clonedPoints.size());
-		IntStream.range(0, points.size()).forEach(j -> {
-			final Point point = points.get(j);
-			final Point clonedPoint = clonedPoints.get(j);
-			assertEquals("Cloned vertex has a point with bad coordinates", point
-				.toString(), clonedPoint.toString());
-		});
-	}
-
-	private void assertVerticesEqual(final Vertex expected, final Vertex actual,
-		final List<Edge> expectedEdges, final List<Edge> actualEdges)
-	{
-		assertEquals(expected.getVisitOrder(), actual.getVisitOrder());
-		assertEquals(expected.isVisited(), actual.isVisited());
-		assertEquals(expectedEdges.indexOf(expected.getPredecessor()), actualEdges
-			.indexOf(actual.getPredecessor()));
-		assertEquals("Vertex has wrong number of branches", expected.getBranches()
-			.size(), actual.getBranches().size());
-		assertPointsEqual(expected, actual);
 	}
 
 	private static boolean hasPoint(final Edge edge, final Point point) {
