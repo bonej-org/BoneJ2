@@ -56,23 +56,14 @@ public class SolveQuadricEqTest {
 
 	@Test
 	public void testMatrixElements() {
-		final double a = solution.getElement(0, 0);
 		assertEquals("The matrix element is incorrect", 1.0, a, 1e-12);
-		final double b = solution.getElement(1, 1);
 		assertEquals("The matrix element is incorrect", 1.0, b, 1e-12);
-		final double c = solution.getElement(2, 2);
 		assertEquals("The matrix element is incorrect", 1.0, c, 1e-12);
-		final double d = solution.getElement(0, 1);
 		assertEquals("The matrix element is incorrect", 0.0, d, 1e-12);
-		final double e = solution.getElement(0, 2);
 		assertEquals("The matrix element is incorrect", 0.0, e, 1e-12);
-		final double f = solution.getElement(1, 2);
 		assertEquals("The matrix element is incorrect", 0.0, f, 1e-12);
-		final double g = solution.getElement(0, 3);
 		assertEquals("The matrix element is incorrect", 0.0, g, 1e-12);
-		final double h = solution.getElement(1, 3);
 		assertEquals("The matrix element is incorrect", 0.0, h, 1e-12);
-		final double i = solution.getElement(2, 3);
 		assertEquals("The matrix element is incorrect", 0.0, i, 1e-12);
 
 		for (int j = 0; j < 4; j++) {

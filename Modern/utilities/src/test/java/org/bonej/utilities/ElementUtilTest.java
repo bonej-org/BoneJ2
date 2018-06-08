@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.axis.PowerAxis;
 import net.imagej.units.UnitService;
@@ -31,8 +32,8 @@ import org.junit.Test;
  */
 public class ElementUtilTest {
 
-	public static final ImageJ IMAGE_J = new ImageJ();
-	public static final UnitService unitService = IMAGE_J.context().getService(
+	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final UnitService unitService = IMAGE_J.context().getService(
 		UnitService.class);
 
 	@AfterClass
@@ -41,14 +42,14 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testIsColorsBinaryFalseWhenIntervalNull() throws Exception {
+	public void testIsColorsBinaryFalseWhenIntervalNull() {
 		final boolean result = ElementUtil.isColorsBinary(null);
 
 		assertFalse("A null interval should not be binary color", result);
 	}
 
 	@Test
-	public void testIsColorsBinaryReturnsFalseIfIntervalEmpty() throws Exception {
+	public void testIsColorsBinaryReturnsFalseIfIntervalEmpty() {
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(0);
 
 		final boolean result = ElementUtil.isColorsBinary(interval);
@@ -57,7 +58,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testIsColorsBinaryReturnsTrueForMonochrome() throws Exception {
+	public void testIsColorsBinaryReturnsTrueForMonochrome() {
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(2, 2);
 
 		final boolean result = ElementUtil.isColorsBinary(interval);
@@ -66,7 +67,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testIsColorsBinaryReturnsFalseForMulticolor() throws Exception {
+	public void testIsColorsBinaryReturnsFalseForMulticolor() {
 		// Create a test image with many colors
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(2, 2);
 		final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1)
@@ -80,7 +81,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testIsColorsBinaryBooleanTypeAssignable() throws Exception {
+	public void testIsColorsBinaryBooleanTypeAssignable() {
 		final Img<BitType> img = ArrayImgs.bits(1);
 
 		final boolean isBinary = ElementUtil.isColorsBinary(img);
@@ -89,7 +90,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testIsColorsBinary() throws Exception {
+	public void testIsColorsBinary() {
 		// Create a test image with two colors
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(2, 2);
 		final Iterator<Integer> intIterator = IntStream.iterate(0, i -> (i + 1) % 2)
@@ -102,7 +103,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeNullSpace() throws Exception {
+	public void testCalibratedSpatialElementSizeNullSpace() {
 		final double result = ElementUtil.calibratedSpatialElementSize(null,
 			unitService);
 
@@ -110,7 +111,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeNoSpatialAxes() throws Exception {
+	public void testCalibratedSpatialElementSizeNoSpatialAxes() {
 		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
 		final Img<DoubleType> img = IMAGE_J.op().create().img(new int[] { 3 });
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
@@ -123,7 +124,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeNonLinearAxis() throws Exception {
+	public void testCalibratedSpatialElementSizeNonLinearAxis() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final PowerAxis yAxis = new PowerAxis(Axes.Y, 2);
 		final Img<DoubleType> img = IMAGE_J.op().create().img(new int[] { 10, 10 });
@@ -138,9 +139,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeUnitsInconvertible()
-		throws Exception
-	{
+	public void testCalibratedSpatialElementSizeUnitsInconvertible() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm");
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "");
 		final Img<DoubleType> img = IMAGE_J.op().create().img(new int[] { 10, 10 });
@@ -154,7 +153,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeNoUnits() throws Exception {
+	public void testCalibratedSpatialElementSizeNoUnits() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 20.0);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 4.0);
 		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, 1.0);
@@ -169,7 +168,7 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSize() throws Exception {
+	public void testCalibratedSpatialElementSize() {
 		final double[][] scales = { { 20.0, 4.0, 1.0 }, { 20.0, 1.0, 4.0 }, { 4.0,
 			20.0, 1.0 } };
 		final String[][] units = { { "mm", "cm", "m" }, { "m", "cm", "mm" }, { "µm",
@@ -179,11 +178,11 @@ public class ElementUtilTest {
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img);
 
 		for (int i = 0; i < scales.length; i++) {
-			final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, units[i][0],
+			final CalibratedAxis xAxis = new DefaultLinearAxis(Axes.X, units[i][0],
 				scales[i][0]);
-			final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, units[i][1],
+			final CalibratedAxis yAxis = new DefaultLinearAxis(Axes.Y, units[i][1],
 				scales[i][1]);
-			final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, units[i][2],
+			final CalibratedAxis zAxis = new DefaultLinearAxis(Axes.Z, units[i][2],
 				scales[i][2]);
 			imgPlus.setAxis(xAxis, 0);
 			imgPlus.setAxis(yAxis, 1);

@@ -21,19 +21,20 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.net.URL;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultResultsTable;
-import net.imagej.table.Table;
 
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
@@ -51,7 +52,7 @@ import ij.gui.NewImage;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class IntertrabecularAngleWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
@@ -287,8 +288,8 @@ public class IntertrabecularAngleWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("anglesTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("anglesTable");
 		assertNotNull(table);
 		assertEquals(3, table.size());
 		final DefaultColumn<String> threeColumn = table.get(1);
@@ -321,8 +322,8 @@ public class IntertrabecularAngleWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-				(Table<DefaultColumn<String>, String>) module.getOutput("anglesTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("anglesTable");
 		assertNotNull(table);
 		assertEquals(2, table.size());
 		final DefaultColumn<String> fiveColumn = table.get(1);

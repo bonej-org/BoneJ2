@@ -65,8 +65,7 @@ public class LinePlaneTest {
 		origins.forEach(o -> {
 			final Vector3d a = new Vector3d(o);
 			a.sub(pointOnPlane);
-			assertTrue("Point " + a.toString() + " is not on the expected plane",
-				normal.dot(a) == 0.0);
+			assertEquals("Point " + a + " is not on the expected plane", 0.0, normal.dot(a), 0.0);
 		});
 	}
 
@@ -111,7 +110,7 @@ public class LinePlaneTest {
 		origins.forEach(o -> {
 			final Vector3d a = new Vector3d(o);
 			a.sub(pointOnPlane);
-			assertEquals("Point " + a.toString() + " rotated incorrectly", 0.0, normal
+			assertEquals("Point " + a + " rotated incorrectly", 0.0, normal
 				.dot(a), 1e-12);
 		});
 	}

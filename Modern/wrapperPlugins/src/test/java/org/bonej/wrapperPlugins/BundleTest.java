@@ -9,6 +9,7 @@ import net.imagej.ImageJ;
 
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.scijava.Gateway;
 import org.scijava.command.CommandInfo;
 import org.scijava.plugin.PluginInfo;
 
@@ -21,7 +22,7 @@ import org.scijava.plugin.PluginInfo;
  */
 public class BundleTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@AfterClass
 	public static void oneTimeTearDown() {
@@ -33,8 +34,7 @@ public class BundleTest {
 		final Stream<CommandInfo> commands = IMAGE_J.command().getCommands()
 			.stream();
 
-		assertTrue(commands.anyMatch(i -> i.getClassName().equals(
-			"net.imagej.plugins.commands.binary.ErodeBinaryImage")));
+		assertTrue(commands.anyMatch(i -> "net.imagej.plugins.commands.binary.ErodeBinaryImage".equals(i.getClassName())));
 	}
 
 	@Test
@@ -42,21 +42,20 @@ public class BundleTest {
 		final Stream<CommandInfo> commands = IMAGE_J.command().getCommands()
 			.stream();
 
-		assertTrue(commands.anyMatch(i -> i.getClassName().equals(
-			"net.imagej.plugins.commands.binary.DilateBinaryImage")));
+		assertTrue(commands.anyMatch(i -> "net.imagej.plugins.commands.binary.DilateBinaryImage".equals(i.getClassName())));
 	}
 
 	@Test
     public void checkScancoISQFormat() {
         final Stream<PluginInfo<?>> infoStream = IMAGE_J.plugin().getPlugins().stream();
 
-        assertTrue(infoStream.anyMatch(i -> i.getClassName().equals("io.scif.formats.ScancoISQFormat")));
+        assertTrue(infoStream.anyMatch(i -> "io.scif.formats.ScancoISQFormat".equals(i.getClassName())));
     }
 
     @Test
     public void checkKontronFormat() {
         final Stream<PluginInfo<?>> infoStream = IMAGE_J.plugin().getPlugins().stream();
 
-        assertTrue(infoStream.anyMatch(i -> i.getClassName().equals("io.scif.formats.KontronFormat")));
+        assertTrue(infoStream.anyMatch(i -> "io.scif.formats.KontronFormat".equals(i.getClassName())));
     }
 }

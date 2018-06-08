@@ -18,12 +18,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.List;
 
 import net.imagej.ImageJ;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.PrimitiveColumn;
-import net.imagej.table.Table;
 
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
@@ -170,7 +171,7 @@ public class AnalyseSkeletonWrapperTest {
 		square.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
 
 		// EXECUTE
-		CommandModule module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class,
+		final CommandModule module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class,
 			true, "inputImage", square, "pruneCycleMethod", "None").get();
 
 		// VERIFY
@@ -227,8 +228,8 @@ public class AnalyseSkeletonWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns",
 			expectedHeaders.length + 1, table.size());
@@ -262,8 +263,8 @@ public class AnalyseSkeletonWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final Collection<DefaultColumn<String>> table =
+				(Collection<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns", 11, table.size());
 	}
@@ -441,7 +442,7 @@ public class AnalyseSkeletonWrapperTest {
 			module.getCancelReason());
 	}
 
-	private void mockIntensityFileOpening(String path) {
+	private void mockIntensityFileOpening(final String path) {
 		final File intensityFile = mock(File.class);
 		final UserInterface mockUI = mock(UserInterface.class);
 		when(intensityFile.getAbsolutePath()).thenReturn(path);

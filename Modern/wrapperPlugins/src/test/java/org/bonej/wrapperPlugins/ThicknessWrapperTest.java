@@ -11,15 +11,17 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
+
 import net.imagej.ImageJ;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 
@@ -36,7 +38,7 @@ import ij.measure.Calibration;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ThicknessWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
@@ -154,8 +156,8 @@ public class ThicknessWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns", 7, table.size());
 		for (int i = 0; i < 6; i++) {

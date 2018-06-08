@@ -23,7 +23,7 @@ import ij.process.ImageStatistics;
 public class ImagePlusUtilTest {
 
 	@Test
-	public void testAnisotropyReturnsNaNIfImageIsNull() throws Exception {
+	public void testAnisotropyReturnsNaNIfImageIsNull() {
 		final double anisotropy = ImagePlusUtil.anisotropy(null);
 
 		assertTrue("Anisotropy should be NaN for a null image", Double.isNaN(
@@ -31,7 +31,7 @@ public class ImagePlusUtilTest {
 	}
 
 	@Test
-	public void testAnisotropy3D() throws Exception {
+	public void testAnisotropy3D() {
 		final double expected = 4.0;
 		// Mock an anisotropic 3D image
 		final ImagePlus testImage = mock(ImagePlus.class);
@@ -48,7 +48,7 @@ public class ImagePlusUtilTest {
 	}
 
 	@Test
-	public void testAnisotropy() throws Exception {
+	public void testAnisotropy() {
 		// Mock an isotropic 2D image
 		final ImagePlus testImage = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
@@ -66,13 +66,13 @@ public class ImagePlusUtilTest {
 	}
 
 	@Test
-	public void testIsBinaryColourReturnsFalseIfImageIsNull() throws Exception {
-		boolean result = ImagePlusUtil.isBinaryColour(null);
+	public void testIsBinaryColourReturnsFalseIfImageIsNull() {
+		final boolean result = ImagePlusUtil.isBinaryColour(null);
 		assertFalse("Null image should not be binary", result);
 	}
 
     @Test
-    public void testCleanDuplicate() throws Exception {
+    public void testCleanDuplicate() {
         final String title = "bonej-test-image.tiff";
         final int width = 5;
         final int height = 7;
@@ -93,23 +93,23 @@ public class ImagePlusUtilTest {
     }
 
 	@Test
-	public void testMonochromeIsBinaryColour() throws Exception {
-		ImagePlus testImage = mock(ImagePlus.class);
-		ImageStatistics binaryStats = new ImageStatistics();
+	public void testMonochromeIsBinaryColour() {
+		final ImagePlus testImage = mock(ImagePlus.class);
+		final ImageStatistics binaryStats = new ImageStatistics();
 		binaryStats.pixelCount = 1;
 		binaryStats.histogram = new int[256];
 		binaryStats.histogram[0xFF] = 1;
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
 		assertTrue("A monochrome image should be binary", result);
 	}
 
 	@Test
-	public void testMulticolorIsNotBinaryColour() throws Exception {
-		ImagePlus testImage = mock(ImagePlus.class);
-		ImageStatistics binaryStats = new ImageStatistics();
+	public void testMulticolorIsNotBinaryColour() {
+		final ImagePlus testImage = mock(ImagePlus.class);
+		final ImageStatistics binaryStats = new ImageStatistics();
 		binaryStats.pixelCount = 3;
 		binaryStats.histogram = new int[256];
 		binaryStats.histogram[0x00] = 1;
@@ -118,14 +118,14 @@ public class ImagePlusUtilTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
 		assertFalse("A multicolor image should be binary", result);
 	}
 
 	@Test
-	public void testIsBinaryColour() throws Exception {
-		ImagePlus testImage = mock(ImagePlus.class);
-		ImageStatistics binaryStats = new ImageStatistics();
+	public void testIsBinaryColour() {
+		final ImagePlus testImage = mock(ImagePlus.class);
+		final ImageStatistics binaryStats = new ImageStatistics();
 		binaryStats.pixelCount = 2;
 		binaryStats.histogram = new int[256];
 		binaryStats.histogram[0x00] = 1;
@@ -133,20 +133,20 @@ public class ImagePlusUtilTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
 		assertTrue("Image with two colors (black & white) should be binary",
 			result);
 	}
 
 	@Test
-	public void testIs3DFalseIfImageNull() throws Exception {
+	public void testIs3DFalseIfImageNull() {
 		final boolean result = ImagePlusUtil.is3D(null);
 
 		assertFalse("Null image should not be 3D", result);
 	}
 
 	@Test
-	public void testIs3DFalseIfImage2D() throws Exception {
+	public void testIs3DFalseIfImage2D() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		when(imagePlus.getNSlices()).thenReturn(1);
 

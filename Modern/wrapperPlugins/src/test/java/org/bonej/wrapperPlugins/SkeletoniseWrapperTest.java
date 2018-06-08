@@ -17,6 +17,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 
@@ -33,7 +34,7 @@ import ij.measure.Calibration;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SkeletoniseWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {

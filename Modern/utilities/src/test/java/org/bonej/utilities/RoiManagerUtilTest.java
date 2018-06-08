@@ -42,11 +42,11 @@ public class RoiManagerUtilTest {
 	private static ImageStack testStack;
 
 	private static final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
-	private final static int MOCK_IMAGE_WIDTH = 100;
-	private final static int MOCK_IMAGE_HEIGHT = 100;
-	private final static int MOCK_IMAGE_DEPTH = 4;
-	private final static int MIN_Z_INDEX = 4;
-	private final static int MAX_Z_INDEX = 5;
+	private static final int MOCK_IMAGE_WIDTH = 100;
+	private static final int MOCK_IMAGE_HEIGHT = 100;
+	private static final int MOCK_IMAGE_DEPTH = 4;
+	private static final int MIN_Z_INDEX = 4;
+	private static final int MAX_Z_INDEX = 5;
 
 	@BeforeClass
 	public static void oneTimeSetUp() {
@@ -61,8 +61,6 @@ public class RoiManagerUtilTest {
 		if (testImage != null) {
 			testImage.flush();
 			testImage.close();
-			testImage = null;
-			testStack = null;
 		}
 	}
 
@@ -75,7 +73,7 @@ public class RoiManagerUtilTest {
 	public void testGetSliceRoiReturnEmptyListIfRoiManagerNull() {
 		final List<Roi> result = RoiManagerUtil.getSliceRoi(null, testStack, 1);
 
-		assertEquals(true, result.isEmpty());
+		assertTrue(result.isEmpty());
 	}
 
 	@Test
@@ -83,7 +81,7 @@ public class RoiManagerUtilTest {
 		final List<Roi> result = RoiManagerUtil.getSliceRoi(MOCK_ROI_MANAGER, null,
 			1);
 
-		assertEquals(true, result.isEmpty());
+		assertTrue(result.isEmpty());
 	}
 
 	@Test
@@ -96,7 +94,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testGetSliceRoi() throws Exception {
+	public void testGetSliceRoi() {
 		// Mock a RoiManager with several Rois
 		// RoiManager.getSliceNumber tries to parse the number of the slice from the
 		// label of the Roi
@@ -129,31 +127,31 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testGetLimitsReturnEmptyIfRoiManagerNull() throws Exception {
-		Optional<int[]> result = RoiManagerUtil.getLimits(null, testStack);
+	public void testGetLimitsReturnEmptyIfRoiManagerNull() {
+		final Optional<int[]> result = RoiManagerUtil.getLimits(null, testStack);
 
 		assertFalse(result.isPresent());
 	}
 
 	@Test
-	public void testGetLimitsReturnEmptyIfStackNull() throws Exception {
-		Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER, null);
+	public void testGetLimitsReturnEmptyIfStackNull() {
+		final Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER, null);
 
 		assertFalse(result.isPresent());
 	}
 
 	@Test
-	public void testGetLimitsReturnEmptyIfRoiManagerEmpty() throws Exception {
+	public void testGetLimitsReturnEmptyIfRoiManagerEmpty() {
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(0);
 
-		Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
+		final Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
 			testStack);
 
 		assertFalse(result.isPresent());
 	}
 
 	@Test
-	public void testGetLimitsAllActiveSlide() throws Exception {
+	public void testGetLimitsAllActiveSlide() {
 		// Mock a RoiManager with Rois
 		final Roi roi = new Roi(0, 0, 10, 10);
 		final Roi allActive = new Roi(0, 0, 10, 10);
@@ -164,7 +162,7 @@ public class RoiManagerUtilTest {
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
 
-		Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
+		final Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
 			testStack);
 		assertTrue(result.isPresent());
 		final int[] limits = result.get();
@@ -173,7 +171,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testGetLimitsIgnoresBadRois() throws Exception {
+	public void testGetLimitsIgnoresBadRois() {
 		// Mock a RoiManager with invalid Rois
 		final Roi farZRoi = new Roi(10, 10, 10, 10);
 		final Roi badRoi = new Roi(-100, -100, 10, 10);
@@ -184,14 +182,14 @@ public class RoiManagerUtilTest {
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
 
-		Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
+		final Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
 			testStack);
 
 		assertFalse(result.isPresent());
 	}
 
 	@Test
-	public void testGetLimits() throws Exception {
+	public void testGetLimits() {
 		// Mock a RoiManager with two Rois
 		final int ROI1_X = 10;
 		final int ROI1_Y = 10;
@@ -214,11 +212,11 @@ public class RoiManagerUtilTest {
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
 
-		Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
+		final Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
 			testStack);
 
 		assertTrue(result.isPresent());
-		int[] limitsResult = result.get();
+		final int[] limitsResult = result.get();
 		assertEquals(6, limitsResult.length);
 		assertEquals(ROI1_X, limitsResult[0]);
 		assertEquals(ROI2_X + ROI2_WIDTH, limitsResult[1]);
@@ -229,7 +227,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testCropStackWithPadding() throws Exception {
+	public void testCropStackWithPadding() {
 		// Mock a RoiManager
 		final int WIDTH = 6;
 		final int HEIGHT = 3;
@@ -269,7 +267,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testCropStackFillColor() throws Exception {
+	public void testCropStackFillColor() {
 		// Mock a RoiManager and create a test image
 		final int TEST_COLOR_COUNT = 8;
 		final byte TEST_COLOR = 0x40;
@@ -293,7 +291,7 @@ public class RoiManagerUtilTest {
 
 		final Optional<ImageStack> optional = RoiManagerUtil.cropToRois(
 			MOCK_ROI_MANAGER, stack, true, FILL_COLOR, 0);
-		ImageStack result = optional.get();
+		final ImageStack result = optional.get();
 
 		final int foregroundCount = countColorPixels(result, TEST_COLOR);
 		assertEquals("Cropped area has wrong amount of foreground color",
@@ -307,7 +305,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testCropStack() throws Exception {
+	public void testCropStack() {
 		final int WIDTH = 6;
 		final int HEIGHT = 3;
 		final int DEPTH = 3;
@@ -318,47 +316,47 @@ public class RoiManagerUtilTest {
 		final byte BACKGROUND_COLOR = 0x00;
 		final int BACKGROUND_COLOR_COUNT = 46;
 
-		Roi roi1 = new Roi(2, 2, ROI_WIDTH, ROI_HEIGHT);
+		final Roi roi1 = new Roi(2, 2, ROI_WIDTH, ROI_HEIGHT);
 		roi1.setName("0002-0000-0001");
 
-		Roi roi2 = new Roi(6, 3, ROI_WIDTH, ROI_HEIGHT);
+		final Roi roi2 = new Roi(6, 3, ROI_WIDTH, ROI_HEIGHT);
 		roi2.setName("0003-0000-0001");
 
-		Roi noColorRoi = new Roi(2, 2, ROI_WIDTH, ROI_HEIGHT);
+		final Roi noColorRoi = new Roi(2, 2, ROI_WIDTH, ROI_HEIGHT);
 		noColorRoi.setName("0001-0000-0001");
 
-		Roi rois[] = { noColorRoi, roi1, roi2 };
+		final Roi[] rois = { noColorRoi, roi1, roi2 };
 
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 
 		final int CUBE_SIDE = 10;
-		ImagePlus image = createCuboid(CUBE_SIDE, CUBE_SIDE, CUBE_SIDE, TEST_COLOR,
+		final ImagePlus image = createCuboid(CUBE_SIDE, CUBE_SIDE, CUBE_SIDE, TEST_COLOR,
 			1);
-		ImageStack originalStack = image.getStack();
+		final ImageStack originalStack = image.getStack();
 
 		// All valid ROIs (basic cropping test)
-		Optional<ImageStack> optionalResult = RoiManagerUtil.cropToRois(
+		final Optional<ImageStack> optionalResult = RoiManagerUtil.cropToRois(
 			MOCK_ROI_MANAGER, originalStack, false, 0x00, 0);
-		ImageStack resultStack = optionalResult.get();
+		final ImageStack resultStack = optionalResult.get();
 		assertEquals("Cropped stack has wrong width", WIDTH, resultStack
 			.getWidth());
 		assertEquals("Cropped stack has wrong height", HEIGHT, resultStack
 			.getHeight());
 		assertEquals("Cropped stack has wrong depth", DEPTH, resultStack.getSize());
 
-		int foregroundCount = countColorPixels(resultStack, TEST_COLOR);
+		final int foregroundCount = countColorPixels(resultStack, TEST_COLOR);
 		assertEquals("Cropped area has wrong amount of foreground color",
 			TEST_COLOR_COUNT, foregroundCount);
 
-		int backgroundCount = countColorPixels(resultStack, BACKGROUND_COLOR);
+		final int backgroundCount = countColorPixels(resultStack, BACKGROUND_COLOR);
 		assertEquals("Cropped area has wrong amount of background color",
 			BACKGROUND_COLOR_COUNT, backgroundCount);
 	}
 
 	@Test
-	public void testGetSafeRoiBoundsInvalidRoi() throws Exception {
+	public void testGetSafeRoiBoundsInvalidRoi() {
 		final Rectangle rectangle = new Rectangle(-10, -10, 5, 5);
 
 		final boolean result = RoiManagerUtil.getSafeRoiBounds(rectangle, testStack
@@ -368,7 +366,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testGetSafeRoiBounds() throws Exception {
+	public void testGetSafeRoiBounds() {
 		final int X = 10;
 		final int Y = 10;
 		final int WIDTH = testStack.getWidth() + 100;
@@ -393,7 +391,7 @@ public class RoiManagerUtilTest {
 	 * ImageStack with a mask on one of its slices.
 	 */
 	@Test
-	public void testCopyRoiWithMask() throws Exception {
+	public void testCopyRoiWithMask() {
 		final int WIDTH = 10;
 		final int HEIGHT = 10;
 		final int TEST_COLOR = 0x20;
@@ -435,7 +433,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testPointRoiCoordinates() throws Exception {
+	public void testPointRoiCoordinates() {
 		final PointRoi pointRoi = new PointRoi(8, 9);
 		pointRoi.setPosition(13);
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(new Roi[] { new Roi(1, 2,
@@ -452,9 +450,7 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testPointRoiCoordinatesReturnsEmptyListIfManagerNull()
-			throws Exception
-	{
+	public void testPointRoiCoordinatesReturnsEmptyListIfManagerNull() {
 		final List<Vector3d> points = RoiManagerUtil.pointROICoordinates(null);
 
 		assertNotNull(points);
@@ -462,7 +458,7 @@ public class RoiManagerUtilTest {
 	}
 
     @Test
-    public void testIsActiveOnAllSlices() throws Exception {
+    public void testIsActiveOnAllSlices() {
 	    assertTrue(RoiManagerUtil.isActiveOnAllSlices(-1));
         assertTrue(RoiManagerUtil.isActiveOnAllSlices(0));
         assertFalse(RoiManagerUtil.isActiveOnAllSlices(1));
@@ -480,10 +476,10 @@ public class RoiManagerUtilTest {
 	 * @return An ImageProcessor that can be passed to ImageProcessor#setMask
 	 */
 	private ImageProcessor createLMask(final int width, final int height) {
-		ImageProcessor mask = new ByteProcessor(width, height);
-		ImageProcessor tmp = new ByteProcessor(width, height);
+		final ImageProcessor mask = new ByteProcessor(width, height);
+		final ImageProcessor tmp = new ByteProcessor(width, height);
 
-		Polygon polygon = new Polygon();
+		final Polygon polygon = new Polygon();
 		polygon.addPoint(0, 0);
 		polygon.addPoint(width, 0);
 		polygon.addPoint(width, height / 2);
@@ -505,19 +501,19 @@ public class RoiManagerUtilTest {
 	 * @param padding number of padding pixels on each side of paddedStack
 	 * @return true if all the pixels have shifted the correct amount
 	 */
-	private static boolean pixelsShifted(ImageStack croppedStack,
-		ImageStack paddedStack, int padding)
+	private static boolean pixelsShifted(final ImageStack croppedStack,
+										 final ImageStack paddedStack, final int padding)
 	{
 		for (int z = 1; z <= croppedStack.getSize(); z++) {
-			ImageProcessor sourceProcessor = croppedStack.getProcessor(z);
-			int targetZ = z + padding;
-			ImageProcessor targetProcessor = paddedStack.getProcessor(targetZ);
+			final ImageProcessor sourceProcessor = croppedStack.getProcessor(z);
+			final int targetZ = z + padding;
+			final ImageProcessor targetProcessor = paddedStack.getProcessor(targetZ);
 			for (int y = 0; y < croppedStack.getHeight(); y++) {
-				int targetY = y + padding;
+				final int targetY = y + padding;
 				for (int x = 0; x < croppedStack.getWidth(); x++) {
-					int targetX = x + padding;
-					int sourceColor = sourceProcessor.get(x, y);
-					int targetColor = targetProcessor.get(targetX, targetY);
+					final int targetX = x + padding;
+					final int sourceColor = sourceProcessor.get(x, y);
+					final int targetColor = targetProcessor.get(targetX, targetY);
 					if (sourceColor != targetColor) {
 						return false;
 					}
@@ -535,15 +531,15 @@ public class RoiManagerUtilTest {
 	 * @param color The color to be searched
 	 * @return The number of pixels that match the color
 	 */
-	private static int countColorPixels(ImageStack stack, int color) {
+	private static int countColorPixels(final ImageStack stack, final int color) {
 		int count = 0;
-		int height = stack.getHeight();
-		int width = stack.getWidth();
+		final int height = stack.getHeight();
+		final int width = stack.getWidth();
 
 		for (int z = 1; z <= stack.getSize(); z++) {
-			byte pixels[] = (byte[]) stack.getPixels(z);
+			final byte[] pixels = (byte[]) stack.getPixels(z);
 			for (int y = 0; y < height; y++) {
-				int offset = y * width;
+				final int offset = y * width;
 				for (int x = 0; x < width; x++) {
 					if (pixels[offset + x] == color) {
 						count++;

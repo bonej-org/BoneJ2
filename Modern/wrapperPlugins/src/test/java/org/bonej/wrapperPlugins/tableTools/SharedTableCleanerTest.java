@@ -10,6 +10,7 @@ import org.bonej.utilities.SharedTable;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 
 /**
  * Tests for {@link SharedTableCleaner}
@@ -19,7 +20,7 @@ import org.junit.experimental.categories.Category;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SharedTableCleanerTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@AfterClass
 	public static void oneTimeTearDown() {

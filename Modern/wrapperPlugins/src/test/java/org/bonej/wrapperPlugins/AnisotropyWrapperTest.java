@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.DialogPrompt;
+import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
@@ -69,7 +69,7 @@ public class AnisotropyWrapperTest {
 			yAxis, zAxis);
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockPrompt.prompt()).thenReturn(DialogPrompt.Result.CANCEL_OPTION);
+		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
 		final String expectedStart = "The voxels in the image are anisotropic";
 		when(mockUI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
@@ -96,7 +96,7 @@ public class AnisotropyWrapperTest {
 	 */
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
-		final UserInterface mockUI = Mockito.mock(UserInterface.class);
+		final UserInterface mockUI = mock(UserInterface.class);
 		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,

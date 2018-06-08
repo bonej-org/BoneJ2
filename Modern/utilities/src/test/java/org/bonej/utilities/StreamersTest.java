@@ -30,14 +30,14 @@ import org.junit.Test;
 public class StreamersTest {
 
 	@Test
-	public void testRealDoubleStreamReturnsEmptyIfSpaceNull() throws Exception {
+	public void testRealDoubleStreamReturnsEmptyIfSpaceNull() {
 		final DoubleStream doubleStream = Streamers.realDoubleStream(null);
 
 		assertEquals("Stream should be empty", doubleStream.count(), 0);
 	}
 
 	@Test
-	public void testRealDoubleStream() throws Exception {
+	public void testRealDoubleStream() {
 		final List<DoubleType> list = Arrays.asList(new DoubleType(2),
 			new DoubleType(3), new DoubleType(11));
 
@@ -54,7 +54,7 @@ public class StreamersTest {
 	}
 
 	@Test
-	public void testSpatialAxisStreamReturnsEmptyIfSpaceNull() throws Exception {
+	public void testSpatialAxisStreamReturnsEmptyIfSpaceNull() {
 		final Stream<TypedAxis> result = Streamers.spatialAxisStream(null);
 
 		assertNotNull("Stream should not be null", result);
@@ -62,7 +62,7 @@ public class StreamersTest {
 	}
 
 	@Test
-	public void testSpatialAxisStream() throws Exception {
+	public void testSpatialAxisStream() {
 		// Create a test image that has spatial axes
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);

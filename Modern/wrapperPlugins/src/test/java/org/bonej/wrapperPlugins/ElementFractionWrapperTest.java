@@ -33,6 +33,8 @@ import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
+import java.util.List;
+
 /**
  * Regression tests for the {@link ElementFractionWrapper} plugin
  *
@@ -89,8 +91,8 @@ public class ElementFractionWrapperTest {
 		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide);
 		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 5 }).forEach(
 			BitType::setOne);
-		double[] calibration = new double[] { scale, scale, scale };
-		final String[] units = new String[] { unit, unit, unit };
+		final double[] calibration = { scale, scale, scale };
+		final String[] units = { unit, unit, unit };
 		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z };
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube", axes,
 			calibration, units);
@@ -101,8 +103,8 @@ public class ElementFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		for (int i = 0; i < 3; i++) {

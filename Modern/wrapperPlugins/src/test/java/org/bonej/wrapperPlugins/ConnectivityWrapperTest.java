@@ -32,6 +32,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
@@ -44,7 +45,7 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ConnectivityWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
@@ -163,8 +164,8 @@ public class ConnectivityWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns", 5, table.size());
 		for (int i = 0; i < 4; i++) {

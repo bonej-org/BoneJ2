@@ -4,6 +4,7 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 
 /**
@@ -39,7 +41,7 @@ import org.scijava.command.CommandModule;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class FractalDimensionWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
@@ -93,7 +95,7 @@ public class FractalDimensionWrapperTest {
 			"Column has an incorrect number of rows", 4, column.size()));
 		table.stream().map(Column::getHeader).forEach(header -> assertEquals(
 			"Column has an incorrect header", header, expectedHeaders.next()));
-		table.get("Label").stream().map(v -> (String) v).forEach(s -> assertEquals(
+		table.get("Label").forEach(s -> assertEquals(
 			"Label column has a wrong value", expectedLabels.next(), s));
 		table.get("Fractal dimension").forEach(dimension -> assertEquals(
 			"Fractal dimension column has a wrong value", expectedDimensions.next(),
@@ -112,7 +114,7 @@ public class FractalDimensionWrapperTest {
 			.toArray();
 		final double[] cubeCounts = Stream.of(1.0, 8.0).mapToDouble(Math::log)
 			.toArray();
-		final double[][] expectedCounts = new double[][] { emptyCounts, cubeCounts,
+		final double[][] expectedCounts = { emptyCounts, cubeCounts,
 			cubeCounts, emptyCounts };
 		final String[] expectedLabels = { "Test Channel: 1, Time: 1",
 			"Test Channel: 2, Time: 1", "Test Channel: 1, Time: 2",
@@ -126,7 +128,7 @@ public class FractalDimensionWrapperTest {
 			"translations", 0L, "showPoints", true).get();
 
 		// VERIFY
-		final List<?> tables = (List) module.getOutput("subspaceTables");
+		final Collection<?> tables = (Collection<?>) module.getOutput("subspaceTables");
 		assertNotNull("Output not found!", tables);
 		assertEquals("Wrong number of tables", 4, tables.size());
 		final List<GenericTable> pointTables = tables.stream().map(
@@ -162,10 +164,9 @@ public class FractalDimensionWrapperTest {
 		cubeView = Views.offsetInterval(img, new long[] { 1, 1, 1, 0, 1 },
 			new long[] { 2, 2, 2, 1, 1 });
 		cubeView.forEach(BitType::setOne);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, imageName,
+		return new ImgPlus<>(img, imageName,
 			new DefaultLinearAxis(Axes.X), new DefaultLinearAxis(Axes.Y),
 			new DefaultLinearAxis(Axes.Z), new DefaultLinearAxis(Axes.CHANNEL),
 			new DefaultLinearAxis(Axes.TIME));
-		return imgPlus;
 	}
 }

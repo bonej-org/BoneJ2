@@ -4,12 +4,13 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.List;
+
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -20,6 +21,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 
 /**
@@ -30,7 +32,7 @@ import org.scijava.command.CommandModule;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SurfaceFractionWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@AfterClass
 	public static void oneTimeTearDown() {
@@ -127,8 +129,8 @@ public class SurfaceFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		// Assert results

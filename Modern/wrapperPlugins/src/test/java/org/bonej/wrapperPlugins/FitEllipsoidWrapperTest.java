@@ -13,6 +13,7 @@ import net.imagej.ImageJ;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 
@@ -27,7 +28,7 @@ import ij.gui.NewImage;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class FitEllipsoidWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@AfterClass
 	public static void oneTimeTearDown() {

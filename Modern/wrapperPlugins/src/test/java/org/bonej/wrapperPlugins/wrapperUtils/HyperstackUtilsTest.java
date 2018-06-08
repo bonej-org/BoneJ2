@@ -53,7 +53,7 @@ public class HyperstackUtilsTest {
 		.unknown());
 
 	@Test
-	public void testSplitSubspacesNullTypes() throws Exception {
+	public void testSplitSubspacesNullTypes() {
 		// SETUP
 		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
@@ -66,7 +66,7 @@ public class HyperstackUtilsTest {
 	}
 
 	@Test
-	public void testSplitSubspacesEmptyTypes() throws Exception {
+	public void testSplitSubspacesEmptyTypes() {
 		// SETUP
 		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
@@ -85,7 +85,7 @@ public class HyperstackUtilsTest {
 	 * exist in the stack
 	 */
 	@Test
-	public void testSplitSubspacesEmptySubspaces() throws Exception {
+	public void testSplitSubspacesEmptySubspaces() {
 		// SETUP
 		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
@@ -105,7 +105,7 @@ public class HyperstackUtilsTest {
 	 * types
 	 */
 	@Test
-	public void testSplitSubspacesNoImgPlusMeta() throws Exception {
+	public void testSplitSubspacesNoImgPlusMeta() {
 		// SETUP
 		final Img<ByteType> img = ArrayImgs.bytes(2, 2, 2);
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", BAD_AXIS, BAD_AXIS,
@@ -125,10 +125,10 @@ public class HyperstackUtilsTest {
 	 * subspace dimensions are equal
 	 */
 	@Test
-	public void testSplitSubspacesIdentical() throws Exception {
+	public void testSplitSubspacesIdentical() {
 		// SETUP
 		final Img<ByteType> img = ArrayImgs.bytes(2, 3);
-		final AxisType[] types = new AxisType[] { Axes.X, Axes.Y };
+		final AxisType[] types = { Axes.X, Axes.Y };
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", types);
 
 		// EXECUTE
@@ -141,7 +141,7 @@ public class HyperstackUtilsTest {
 	}
 
 	@Test
-	public void testSplit3DSubspacesWith2DImgPlus() throws Exception {
+	public void testSplit3DSubspacesWith2DImgPlus() {
 		// SETUP
 		final long height = 3;
 		final Img<ByteType> img = ArrayImgs.bytes(2, height);
@@ -168,7 +168,7 @@ public class HyperstackUtilsTest {
 	 * {X, Y, T, T} subspaces, where n is the size of the Z-dimension.
 	 */
 	@Test
-	public void testSplitSubspacesMultipleSubspaceTypes() throws Exception {
+	public void testSplitSubspacesMultipleSubspaceTypes() {
 		// SETUP
 		final long depth = 5;
 		final Img<ByteType> img = ArrayImgs.bytes(2, 2, depth, 13, 14);
@@ -191,7 +191,7 @@ public class HyperstackUtilsTest {
 	 * correspond to the original image
 	 */
 	@Test
-	public void testSplitSubspacesIntervalData() throws Exception {
+	public void testSplitSubspacesIntervalData() {
 		// SETUP
 		final long depth = 3;
 		final long height = 3;
@@ -206,7 +206,7 @@ public class HyperstackUtilsTest {
 		final List<long[]> positions = Arrays.asList(new long[] { 0, 0, 0, 0, 0 },
 			new long[] { 0, 0, 0, 1, 0 }, new long[] { 0, 0, 0, 0, 1 }, new long[] {
 				0, 0, 0, 1, 1 });
-		final long[] sizes = new long[] { width, height, depth, 1, 1 };
+		final long[] sizes = { width, height, depth, 1, 1 };
 		final List<IntervalView<LongType>> expectedSubspaces = new ArrayList<>();
 		positions.forEach(position -> {
 			final IntervalView<LongType> subspace = Views.offsetInterval(imgPlus,
@@ -231,7 +231,7 @@ public class HyperstackUtilsTest {
 	}
 
 	@Test
-	public void testSplitSubspaces() throws Exception {
+	public void testSplitSubspaces() {
 		// SETUP
 		final long tSize = 3;
 		final long cSize = 3;
@@ -265,7 +265,7 @@ public class HyperstackUtilsTest {
 	}
 
 	@Test
-	public void testMultipleAxesOfType() throws Exception {
+	public void testMultipleAxesOfType() {
 		// SETUP
 		final Img<ByteType> img = ArrayImgs.bytes(2, 2, 2, 2);
 		final Iterator<long[]> expectedSubscripts = Stream.generate(
@@ -278,7 +278,7 @@ public class HyperstackUtilsTest {
 		final List<AxisType> types = Arrays.asList(Axes.X, Axes.Y);
 
 		// EXECUTE
-		final Stream<Subspace<ByteType>> subspaces = HyperstackUtils.splitSubspaces(
+		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(
 			imgPlus, types);
 
 		// VERIFY
@@ -287,13 +287,12 @@ public class HyperstackUtilsTest {
 			assertArrayEquals(
 				"The subscripts of the multiple axes of the same type are incorrect",
 				expectedSubscripts.next(), subspace.getSubScripts().toArray());
-			assertTrue("The string describing the subspace position is incorrect",
-				expectedStrings.next().equals(subspace.toString()));
+			assertEquals("The string describing the subspace position is incorrect", expectedStrings.next(), subspace.toString());
 		});
 	}
 
 	@Test
-	public void testViewMeta() throws Exception {
+	public void testViewMeta() {
 		// SETUP
 		final AxisType[] expectedTypes = { W_TYPE, Axes.CHANNEL, Axes.TIME };
 		final Iterator<long[]> expectedPositions = Stream.of(new long[] { 0, 0, 0 },
@@ -318,7 +317,7 @@ public class HyperstackUtilsTest {
 			assertArrayEquals(expectedTypes, subspace.getAxisTypes().toArray());
 			assertArrayEquals(expectedPositions.next(), subspace.getPosition()
 				.toArray());
-			assertTrue(expectedStrings.next().equals(subspace.toString()));
+			assertEquals(expectedStrings.next(), subspace.toString());
 		});
 	}
 }

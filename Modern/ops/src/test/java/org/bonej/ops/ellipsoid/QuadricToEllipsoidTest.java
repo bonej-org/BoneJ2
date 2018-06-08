@@ -50,11 +50,11 @@ public class QuadricToEllipsoidTest {
 	// Constant seed for random generators
 	private static final long SEED = 0xc0ffee;
 	@SuppressWarnings("unchecked")
-	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoid =
+	private static final UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoid =
 		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToEllipsoid.class,
 			Ellipsoid.class, UNIT_SPHERE);
 	@SuppressWarnings("unchecked")
-	private static BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
+	private static final BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
 		(BinaryFunctionOp) Functions.binary(IMAGE_J.op(), EllipsoidPoints.class,
 			List.class, new double[] { 1, 2, 3 }, 0);
 

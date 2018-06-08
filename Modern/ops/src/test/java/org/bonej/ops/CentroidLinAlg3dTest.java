@@ -30,6 +30,7 @@ public class CentroidLinAlg3dTest {
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static UnaryFunctionOp<Collection<? extends Tuple3d>, Vector3d> centroidOp;
 
+	@SuppressWarnings("unchecked")
 	@BeforeClass
 	public static void oneTimeSetUp() {
 		centroidOp = (UnaryFunctionOp) Functions.unary(IMAGE_J.op(),
@@ -43,7 +44,7 @@ public class CentroidLinAlg3dTest {
 
 	@Test
 	public void testCentroidLinAlg3dWithEmptyCollection() {
-		final List<Vector3d> emptyVectors = new ArrayList<>();
+		final Collection<Vector3d> emptyVectors = new ArrayList<>();
 
 		final Tuple3d result = centroidOp.calculate(emptyVectors);
 

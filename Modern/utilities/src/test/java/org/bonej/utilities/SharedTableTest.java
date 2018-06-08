@@ -26,7 +26,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testSharedTableIgnoresNullLabel() throws Exception {
+	public void testSharedTableIgnoresNullLabel() {
 		// EXECUTE
 		SharedTable.add(null, "Header", 1.0);
 
@@ -37,7 +37,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testSharedTableIgnoresEmptyLabel() throws Exception {
+	public void testSharedTableIgnoresEmptyLabel() {
 		// EXECUTE
 		SharedTable.add("", "Header", 1.0);
 
@@ -48,7 +48,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testSharedTableIgnoresNullHeader() throws Exception {
+	public void testSharedTableIgnoresNullHeader() {
 		// EXECUTE
 		SharedTable.add("Label", null, 1.0);
 
@@ -59,7 +59,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testSharedTableIgnoresEmptyHeader() throws Exception {
+	public void testSharedTableIgnoresEmptyHeader() {
 		// EXECUTE
 		SharedTable.add("Label", "", 1.0);
 
@@ -70,7 +70,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testAddNewLabel() throws Exception {
+	public void testAddNewLabel() {
 		// SETUP
 		final String label = "Image";
 		final String header = "Pixels";
@@ -90,7 +90,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testAddLabelRepeatedly() throws Exception {
+	public void testAddLabelRepeatedly() {
 		// SETUP
 		final String label = "Image";
 		final String header = "Pixels";
@@ -106,7 +106,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testFoo() throws Exception {
+	public void testFoo() {
 		SharedTable.add("Image", "Value", 1.0);
 		SharedTable.add("Image", "Run", 1);
 		SharedTable.add("Image", "Value", 1.0);
@@ -119,7 +119,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testAddMultipleColumns() throws Exception {
+	public void testAddMultipleColumns() {
 		// SETUP
 		final String label = "Image";
 		final String header = "White pixels";
@@ -137,7 +137,7 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testAddRowsInsertedAlphabetically() throws Exception {
+	public void testAddRowsInsertedAlphabetically() {
 		// SETUP
 		final String label = "ZZZ";
 		final String label2 = "AAA";
@@ -172,7 +172,7 @@ public class SharedTableTest {
 	 * Image B              -             2.0
 	 */
 	@Test
-	public void testAdd() throws Exception {
+	public void testAdd() {
 		// SETUP
 		final String label = "Image A";
 		final String label2 = "Image B";

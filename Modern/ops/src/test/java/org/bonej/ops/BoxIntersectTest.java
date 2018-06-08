@@ -143,7 +143,7 @@ public class BoxIntersectTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testInfiniteDirection() throws Exception {
+	public void testInfiniteDirection() {
 		final Point3d origin = new Point3d(2, 2, -2);
 		final Vector3d direction = new Vector3d(0, 0, Double.POSITIVE_INFINITY);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
@@ -153,7 +153,7 @@ public class BoxIntersectTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testInfiniteOrigin() throws Exception {
+	public void testInfiniteOrigin() {
 		final Point3d origin = new Point3d(2, 2, Double.NEGATIVE_INFINITY);
 		final Vector3d direction = new Vector3d(0, 0, 1);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
@@ -194,7 +194,7 @@ public class BoxIntersectTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testNaNDirection() throws Exception {
+	public void testNaNDirection() {
 		final Point3d origin = new Point3d(2, 2, -1);
 		final Vector3d direction = new Vector3d(0, 0, Double.NaN);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,
@@ -204,7 +204,7 @@ public class BoxIntersectTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testNanOrigin() throws Exception {
+	public void testNanOrigin() {
 		final Point3d origin = new Point3d(2, Double.NaN, -1);
 		final Vector3d direction = new Vector3d(0, 0, 1);
 		final ValuePair<Tuple3d, Vector3d> line = new ValuePair<>(origin,

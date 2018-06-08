@@ -25,7 +25,7 @@ import sc.fiji.analyzeSkeleton.Vertex;
 public class GraphUtilTest {
 
     @Test
-    public void testToVector3dEmptyList() throws Exception {
+    public void testToVector3dEmptyList() {
         final List<Vector3d> vectors = GraphUtil.toVector3d(Collections.emptyList());
 
         assertEquals(1, vectors.size());
@@ -36,7 +36,7 @@ public class GraphUtilTest {
     }
     
     @Test
-    public void testToVector3dList() throws Exception {
+    public void testToVector3dList() {
         final List<Point> points = Arrays.asList(new Point(1, 2, 3), new Point(7, 8, 9));
 
         final List<Vector3d> vectors = GraphUtil.toVector3d(points);
@@ -48,7 +48,7 @@ public class GraphUtilTest {
     }
 
     @Test
-    public void testToVector3d() throws Exception {
+    public void testToVector3d() {
         final Point p = new Point(1, 2, 3);
 
         final Vector3d v = GraphUtil.toVector3d(p);
@@ -57,7 +57,7 @@ public class GraphUtilTest {
     }
 
     @Test
-	public void testIsLoop() throws Exception {
+	public void testIsLoop() {
 		final List<Vertex> vertices = Arrays.asList(new Vertex(), new Vertex());
 		final Vertex v0 = vertices.get(0);
 
@@ -69,7 +69,7 @@ public class GraphUtilTest {
 	}
 
 	@Test
-    public void testCreateGraph() throws Exception {
+    public void testCreateGraph() {
         final List<Vertex> vertices = Arrays.asList(new Vertex(), new Vertex());
         final Vertex v0 = vertices.get(0);
         final Vertex v1 = vertices.get(1);
@@ -84,7 +84,7 @@ public class GraphUtilTest {
     }
 
     @Test
-    public void testVectorToVertexNullVector() throws Exception {
+    public void testVectorToVertexNullVector() {
         final Point point = GraphUtil.vectorToVertex(null).getPoints().get(0);
 
         assertEquals(Integer.MAX_VALUE, point.x);
@@ -93,7 +93,7 @@ public class GraphUtilTest {
     }
 
     @Test
-    public void testVectorToVertex() throws Exception {
+    public void testVectorToVertex() {
         final Vector3d vector = new Vector3d(Double.NaN, 1.4, 1.5);
 
         final Point point = GraphUtil.vectorToVertex(vector).getPoints().get(0);
@@ -103,7 +103,7 @@ public class GraphUtilTest {
         assertEquals(2, point.z);
     }
 
-    private void assertVector3d(final Point expected, final Vector3d actual) throws Exception {
+    private void assertVector3d(final Point expected, final Vector3d actual) {
         assertEquals(expected.x, actual.x, 1e-12);
         assertEquals(expected.y, actual.y, 1e-12);
         assertEquals(expected.z, actual.z, 1e-12);
