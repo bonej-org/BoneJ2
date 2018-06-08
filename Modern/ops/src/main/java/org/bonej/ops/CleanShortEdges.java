@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -313,8 +314,11 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	}
 
 	private double calibratedLength(final Vector3d centre1) {
-		return Math.sqrt(Math.pow(centre1.x * calibration3d.get(0), 2) + Math.pow(centre1.y * calibration3d.get(1), 2)
-				+ Math.pow(centre1.z * calibration3d.get(2), 2));
+		final double calX = centre1.x * calibration3d.get(0);
+		final double calY = centre1.y * calibration3d.get(1);
+		final double calZ = centre1.z * calibration3d.get(2);
+		final double sqSum = DoubleStream.of(calX, calY, calZ).map(d -> d * d).sum();
+		return Math.sqrt(sqSum);
 	}
 
 	private static boolean isNotClusterEdge(final Edge e, final Collection<Set<Vertex>> clusters) {
