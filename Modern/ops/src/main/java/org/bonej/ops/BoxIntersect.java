@@ -66,7 +66,7 @@ public class BoxIntersect extends
 	{
 		final Vector3d direction = new Vector3d(line.b);
 		final Point3d origin = new Point3d(line.a);
-		if (!validCoordinates(direction) || !validCoordinates(origin)) {
+		if (invalidCoordinates(direction) || invalidCoordinates(origin)) {
 			throw new IllegalArgumentException(
 				"Direction or origin has non-finite coordinates");
 		}
@@ -181,8 +181,8 @@ public class BoxIntersect extends
 		return pair.a.get() < 0 && pair.b.get() < 0;
 	}
 
-	private boolean validCoordinates(final Tuple3d t) {
-		return DoubleStream.of(t.x, t.y, t.z).allMatch(Double::isFinite);
+	private boolean invalidCoordinates(final Tuple3d t) {
+		return DoubleStream.of(t.x, t.y, t.z).anyMatch(c -> !Double.isFinite(c));
 	}
 
 	// endregion

@@ -110,9 +110,9 @@ class LinePlane {
 
 	// region -- Helper methods --
 	private Vector3d createDirection() {
-		final Vector3d direction = new Vector3d(0, 0, 1);
-		rotateOp.mutate1(direction, rotation);
-		return direction;
+		final Vector3d newDirection = new Vector3d(0, 0, 1);
+		rotateOp.mutate1(newDirection, rotation);
+		return newDirection;
 	}
 
 	private Point3d createOrigin(final double t, final double u) {

@@ -171,9 +171,9 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	 * </p>
 	 * 
 	 * @see #findClusters(Graph, Double)
-	 * @see #mapReplacementEdges(Map, Set, Vertex)
-	 * @see #findEdgesWithOneEndInCluster(Set)
-	 * @see #getClusterCentre(Set)
+	 * @see #mapReplacementEdges(Map, Collection, Vertex)
+	 * @see #findEdgesWithOneEndInCluster(Collection)
+	 * @see #getClusterCentre(Collection)
 	 */
 	private Graph cleaningStep(final Graph graph, final Double tolerance) {
 		final List<Set<Vertex>> clusters = findClusters(graph, tolerance);
@@ -186,10 +186,10 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		clusterConnectingEdges.forEach(this::euclideanDistance);
 
 		final List<Edge> nonClusterEdges = graph.getEdges().stream()
-				.filter(e -> !replacementMap.containsKey(e) && !isClusterEdge(e, clusters)).collect(toList());
+				.filter(e -> !replacementMap.containsKey(e) && isNotClusterEdge(e, clusters)).collect(toList());
 
 		final Graph cleanGraph = new Graph();
-		final Set<Edge> cleanEdges = new HashSet<>();
+		final Collection<Edge> cleanEdges = new HashSet<>();
 		cleanEdges.addAll(nonClusterEdges);
 		cleanEdges.addAll(clusterConnectingEdges);
 		cleanGraph.getEdges().addAll(cleanEdges);
@@ -209,7 +209,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 
 		for (int i = 0; i < shortInnerEdges.size(); i++) {
 			final Edge currentShortEdge = shortInnerEdges.get(i);
-			final List<Set<Vertex>> clusters = new ArrayList<>();
+			final Collection<Set<Vertex>> clusters = new ArrayList<>();
 			final Set<Vertex> currentCluster = new HashSet<>();
 			currentCluster.add(currentShortEdge.getV1());
 			currentCluster.add(currentShortEdge.getV2());
@@ -224,7 +224,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 			clusterConnectingEdges.forEach(this::euclideanDistance);
 
 			final List<Edge> nonClusterEdges = currentGraph.getEdges().stream()
-					.filter(e -> !replacementMap.containsKey(e) && !isClusterEdge(e, clusters)).collect(toList());
+					.filter(e -> !replacementMap.containsKey(e) && isNotClusterEdge(e, clusters)).collect(toList());
 
 			final Graph cleanGraph = new Graph();
 			final Collection<Edge> cleanEdges = new HashSet<>();
@@ -266,14 +266,13 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	 * new centroid. Instead of altering the edges, we create new ones to
 	 * replace them, because {@link Edge} objects are immutable.
 	 * <p>
-	 * </p>
 	 * The method creates a map from old edges to their new replacements. Note
 	 * that both endpoints of an edge in the mapping can change, when it's an
 	 * edge connecting two clusters to each other.
 	 * </p>
 	 */
 
-	private static void mapReplacementEdges(final Map<Edge, Edge> replacementMapping, final Set<Vertex> cluster,
+	private static void mapReplacementEdges(final Map<Edge, Edge> replacementMapping, final Collection<Vertex> cluster,
 			final Vertex centroid) {
 		final Set<Edge> outerEdges = findEdgesWithOneEndInCluster(cluster);
 		outerEdges.forEach(outerEdge -> {
@@ -296,7 +295,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 			replacement.getV1().setBranch(replacement);
 			replacement.getV2().setBranch(replacement);
 		} else {
-			replacement = null;
+			return null;
 		}
 		return replacement;
 	}
@@ -318,8 +317,8 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 				+ Math.pow(centre1.z * calibration3d.get(2), 2));
 	}
 
-	private static boolean isClusterEdge(final Edge e, final Collection<Set<Vertex>> clusters) {
-		return clusters.stream().anyMatch(c -> c.contains(e.getV1()) && c.contains(e.getV2()));
+	private static boolean isNotClusterEdge(final Edge e, final Collection<Set<Vertex>> clusters) {
+		return clusters.stream().noneMatch(c -> c.contains(e.getV1()) && c.contains(e.getV2()));
 	}
 
 	/**
@@ -336,7 +335,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 
 	private static List<Vector3d> getClusterVectors(final Collection<Vertex> cluster) {
 		final Stream<Point> clusterPoints = cluster.stream().flatMap(v -> v.getPoints().stream());
-		return clusterPoints.map(GraphUtil::toVector3d).collect(Collectors.toList());
+		return clusterPoints.map(GraphUtil::toVector3d).collect(toList());
 	}
 
 	private static int pruneDeadEnds(final Graph graph, final Double tolerance) {
@@ -395,7 +394,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	public static List<Set<Vertex>> findClusters(final Graph graph, final Double tolerance) {
 		final List<Set<Vertex>> clusters = new ArrayList<>();
 		final List<Vertex> clusterVertices = findClusterVertices(graph, tolerance);
-		while (clusterVertices.size() > 0) {
+		while (!clusterVertices.isEmpty()) {
 			final Vertex start = clusterVertices.get(0);
 			final Set<Vertex> cluster = fillCluster(start, tolerance);
 			clusters.add(cluster);
@@ -407,11 +406,11 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	/** Finds all the vertices that are in one of the graph's clusters */
 	private static List<Vertex> findClusterVertices(final Graph graph, final Double tolerance) {
 		return graph.getEdges().stream().filter(e -> isShortEdge(e, tolerance))
-				.flatMap(e -> Stream.of(e.getV1(), e.getV2())).distinct().collect(Collectors.toList());
+				.flatMap(e -> Stream.of(e.getV1(), e.getV2())).distinct().collect(toList());
 	}
 
 	private static void copyLonelyVertices(final Graph originalGraph, final Graph targetGraph) {
-		final Set<Vertex> lonelyVertices = originalGraph.getVertices().stream().filter(v -> v.getBranches().size() == 0)
+		final Set<Vertex> lonelyVertices = originalGraph.getVertices().stream().filter(v -> v.getBranches().isEmpty())
 				.collect(toSet());
 		targetGraph.getVertices().addAll(lonelyVertices);
 	}

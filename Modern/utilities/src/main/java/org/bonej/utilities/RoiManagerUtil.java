@@ -104,9 +104,9 @@ public final class RoiManagerUtil {
 
 		for (final Roi roi : rois) {
 			final Rectangle r = roi.getBounds();
-			final boolean valid = getSafeRoiBounds(r, stack.getWidth(), stack.getHeight());
+			final boolean invalid = !getSafeRoiBounds(r, stack.getWidth(), stack.getHeight());
 
-			if (!valid) {
+			if (invalid) {
 				continue;
 			}
 
@@ -230,7 +230,7 @@ public final class RoiManagerUtil {
 
 		for (int sourceZ = zMin; sourceZ <= zMax; sourceZ++) {
 			final List<Roi> sliceRois = getSliceRoi(roiMan, sourceStack, sourceZ);
-			if (sliceRois.size() == 0) {
+			if (sliceRois.isEmpty()) {
 				continue;
 			}
 
@@ -305,10 +305,10 @@ public final class RoiManagerUtil {
 	{
 		for (final Roi sliceRoi : sliceRois) {
 			final Rectangle rectangle = sliceRoi.getBounds();
-			final boolean valid = getSafeRoiBounds(rectangle, sourceProcessor.getWidth(),
-				sourceProcessor.getHeight());
+			final boolean invalid = !getSafeRoiBounds(rectangle, sourceProcessor.getWidth(),
+					sourceProcessor.getHeight());
 
-			if (!valid) {
+			if (invalid) {
 				continue;
 			}
 

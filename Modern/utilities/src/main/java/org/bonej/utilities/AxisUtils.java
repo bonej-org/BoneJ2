@@ -23,6 +23,8 @@ import org.scijava.util.StringUtils;
  */
 public final class AxisUtils {
 
+	private AxisUtils() {}
+
 	/**
 	 * Counts the number of spatial dimensions in the given space.
 	 *

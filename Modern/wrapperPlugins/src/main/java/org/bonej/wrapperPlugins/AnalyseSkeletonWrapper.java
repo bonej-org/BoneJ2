@@ -312,7 +312,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			}
 		}
 		table.addAll(columns);
-		if (table.size() > 0) {
+		if (!table.isEmpty()) {
 			verboseTable = table;
 		}
 	}

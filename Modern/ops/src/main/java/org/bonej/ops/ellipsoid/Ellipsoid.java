@@ -88,7 +88,7 @@ public class Ellipsoid {
 	 *           or greater than b or c.
 	 */
 	public void setA(final double a) throws IllegalArgumentException {
-		if (!validRadius(a)) {
+		if (invalidRadius(a)) {
 			throw new IllegalArgumentException(
 				"Radius must be a finite positive number.");
 		}
@@ -115,7 +115,7 @@ public class Ellipsoid {
 	 *           or greater than c or less than a.
 	 */
 	public void setB(final double b) throws IllegalArgumentException {
-		if (!validRadius(b)) {
+		if (invalidRadius(b)) {
 			throw new IllegalArgumentException(
 				"Radius must be a finite positive number.");
 		}
@@ -143,7 +143,7 @@ public class Ellipsoid {
 	 *           or less than b or c.
 	 */
 	public void setC(final double c) throws IllegalArgumentException {
-		if (!validRadius(c)) {
+		if (invalidRadius(c)) {
 			throw new IllegalArgumentException(
 				"Radius must be a finite positive number.");
 		}
@@ -330,8 +330,8 @@ public class Ellipsoid {
 		return isotropicSampling != null;
 	}
 
-	private static boolean validRadius(final double r) {
-		return r > 0 && Double.isFinite(r);
+	private static boolean invalidRadius(final double r) {
+		return r <= 0 || !Double.isFinite(r);
 	}
 
 	private void setOrientation(final Vector3d u, final Vector3d v,

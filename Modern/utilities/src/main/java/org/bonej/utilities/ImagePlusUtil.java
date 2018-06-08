@@ -11,7 +11,9 @@ import ij.measure.Calibration;
  *
  * @author Richard Domander
  */
-public class ImagePlusUtil {
+public final class ImagePlusUtil {
+
+	private ImagePlusUtil() {}
 
 	/**
 	 * Checks if the image is 3D.
