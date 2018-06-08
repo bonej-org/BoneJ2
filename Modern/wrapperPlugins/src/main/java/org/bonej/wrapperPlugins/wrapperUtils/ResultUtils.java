@@ -93,21 +93,6 @@ public final class ResultUtils {
 	}
 
 	/**
-	 * Returns the common unit string that describes the elements in the space.
-	 *
-	 * @see ResultUtils#getUnitHeader(AnnotatedSpace, UnitService, char)
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-	 * @param unitService an {@link UnitService} to convert axis calibrations.
-	 * @return the unit string with the exponent.
-	 */
-	public static <S extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
-		final S space, final UnitService unitService)
-	{
-		return getUnitHeader(space, unitService, '\u0000');
-	}
-
-	/**
 	 * Returns the common unit string, e.g. "mm<sup>3</sup>" that describes the
 	 * elements in the space.
 	 * <p>

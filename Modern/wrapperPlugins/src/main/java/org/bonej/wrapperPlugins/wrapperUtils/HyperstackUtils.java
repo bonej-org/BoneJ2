@@ -62,7 +62,7 @@ public final class HyperstackUtils {
 	/**
 	 * Splits the hyperstack into {X, Y, Z} subspaces.
 	 * 
-	 * @see #splitSubspaces(ImgPlus, List)
+	 * @see #splitSubspaces(ImgPlus, Collection)
      * @param hyperStack an N-dimensional image.
      * @param <T> type of the elements in the image.
      * @return a stream of all the subspaces found.
@@ -92,7 +92,7 @@ public final class HyperstackUtils {
 	 * @return a stream of all the subspaces found.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> Stream<Subspace<T>>
-		splitSubspaces(final ImgPlus<T> hyperStack, final List<AxisType> subspaceTypes)
+		splitSubspaces(final ImgPlus<T> hyperStack, final Collection<AxisType> subspaceTypes)
 	{
 		if (subspaceTypes == null || subspaceTypes.isEmpty()) {
 			return Stream.empty();
@@ -313,7 +313,7 @@ public final class HyperstackUtils {
 		private Subspace(final RandomAccessibleInterval<T> subspace,
 			final HyperAxisMeta[] subspaceMeta)
 		{
-			this.interval = subspace;
+			interval = subspace;
 			if (subspaceMeta == null) {
 				this.subspaceMeta = new ArrayList<>();
 				return;
@@ -410,7 +410,7 @@ public final class HyperstackUtils {
 			@Override
 			public String toString() {
 				final String typeIndex = subscript > 1 ? "(" + subscript + ")" : "";
-				return type.toString() + typeIndex + ": " + (position + stringOffset);
+				return type + typeIndex + ": " + (position + stringOffset);
 			}
 		}
 	}

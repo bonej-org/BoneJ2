@@ -89,7 +89,7 @@ public class ResultUtilsTest {
 
 	@Test
 	public void testGetUnitHeaderReturnEmptyIfImageNull() throws Exception {
-		final String result = ResultUtils.getUnitHeader(null, unitService);
+		final String result = ResultUtils.getUnitHeader(null, unitService, '³');
 
 		assertTrue("Unit header should be empty", result.isEmpty());
 	}
@@ -100,7 +100,7 @@ public class ResultUtilsTest {
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
 
 		assertTrue("Unit header should be empty", result.isEmpty());
 	}
@@ -113,7 +113,7 @@ public class ResultUtilsTest {
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
 
 		assertTrue("Unit header should be empty", result.isEmpty());
 	}
@@ -124,7 +124,7 @@ public class ResultUtilsTest {
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
 
 		assertTrue("Unit header should be empty", result.isEmpty());
 	}

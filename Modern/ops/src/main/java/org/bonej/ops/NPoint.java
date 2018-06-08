@@ -1,6 +1,5 @@
 package org.bonej.ops;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.scijava.vecmath.Vector3d;
@@ -8,26 +7,23 @@ import org.scijava.vecmath.Vector3d;
 import sc.fiji.analyzeSkeleton.Vertex;
 
 public class NPoint {
-	public Vertex centre;
-	public List<VectorsAngle> angles;
+	public final Vertex centre;
+	public final List<VectorsAngle> angles;
 
 	public NPoint(final Vertex v, final List<VectorsAngle> vectorAngles) {
-		this.centre = v;
-		this.angles = vectorAngles;
-	}
-
-	public NPoint(final Vertex v) {
-		this(v, new ArrayList<>());
+		centre = v;
+		angles = vectorAngles;
 	}
 
 	public static class VectorsAngle {
-		private Vector3d u, v;
+		private Vector3d u;
+		private Vector3d v;
 		private double angle;
 
 		public VectorsAngle(final Vector3d u, final Vector3d v) {
 			this.u = u == null ? new Vector3d() : u;
 			this.v = v == null ? new Vector3d() : v;
-			this.angle = this.u.angle(this.v);
+			angle = this.u.angle(this.v);
 		}
 
 		public Vector3d getU() {
@@ -38,7 +34,7 @@ public class NPoint {
 			if (u == null)
 				return;
 			this.u = u;
-			this.angle = this.u.angle(v);
+			angle = this.u.angle(v);
 		}
 
 		public Vector3d getV() {
@@ -49,7 +45,7 @@ public class NPoint {
 			if (v == null)
 				return;
 			this.v = v;
-			this.angle = u.angle(this.v);
+			angle = u.angle(this.v);
 		}
 
 		public double getAngle() {

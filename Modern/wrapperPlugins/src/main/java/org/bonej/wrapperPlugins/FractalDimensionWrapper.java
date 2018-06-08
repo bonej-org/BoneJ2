@@ -14,6 +14,8 @@ import java.util.stream.Stream;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Morphology.Outline;
+import net.imagej.ops.Ops.Topology.BoxCount;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCF;
@@ -105,11 +107,11 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		description = "Let the computer decide values for the parameters",
 		required = false, callback = "enforceAutoParam", persist = false,
 		initializer = "initAutoParam")
-	private boolean autoParam = false;
+	private boolean autoParam;
 
 	@Parameter(label = "Show points",
 		description = "Show (log(size), -log(count)) points", required = false)
-	private boolean showPoints = false;
+	private boolean showPoints;
 
 	/**
 	 * The fractal dimension and R² values for each 3D subspace in a table
@@ -171,20 +173,20 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	// region -- Helper methods --
 
 	private void addSubspaceTable(final Subspace<BitType> subspace,
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
 	{
-		final String label = inputImage.getName() + " " + subspace.toString();
+		final String label = inputImage.getName() + " " + subspace;
 		final GenericColumn labelColumn = ResultUtils.createLabelColumn(label, pairs
 			.size());
 		final DoubleColumn xColumn = new DoubleColumn("-log(size)");
 		final DoubleColumn yColumn = new DoubleColumn("log(count)");
 		pairs.stream().map(p -> p.a.get()).forEach(xColumn::add);
 		pairs.stream().map(p -> p.b.get()).forEach(yColumn::add);
-		final GenericTable resultsTable = new DefaultGenericTable();
-		resultsTable.add(labelColumn);
-		resultsTable.add(xColumn);
-		resultsTable.add(yColumn);
-		subspaceTables.add(resultsTable);
+		final GenericTable subspaceTable = new DefaultGenericTable();
+		subspaceTable.add(labelColumn);
+		subspaceTable.add(xColumn);
+		subspaceTable.add(yColumn);
+		subspaceTables.add(subspaceTable);
 	}
 
 	private boolean allValuesFinite(
@@ -228,7 +230,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	}
 
 	private double[] fitCurve(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
 	{
 		if (!allValuesFinite(pairs)) {
 			return new double[2];
@@ -258,10 +260,10 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	@SuppressWarnings("unchecked")
 	private void matchOps(final RandomAccessibleInterval<BitType> input) {
 		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService,
-			Ops.Morphology.Outline.class, RandomAccessibleInterval.class, input,
+			Outline.class, RandomAccessibleInterval.class, input,
 			true);
 		boxCountOp = (UnaryFunctionOp) Functions.unary(opService,
-			Ops.Topology.BoxCount.class, List.class, input, startBoxSize,
+			BoxCount.class, List.class, input, startBoxSize,
 			smallestBoxSize, scaleFactor, translations);
 	}
 

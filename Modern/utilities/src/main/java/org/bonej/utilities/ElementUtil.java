@@ -1,6 +1,7 @@
 
 package org.bonej.utilities;
 
+import static org.bonej.utilities.Streamers.axisStream;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import net.imagej.axis.CalibratedAxis;
+import net.imagej.axis.LinearAxis;
+import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
@@ -75,7 +78,7 @@ public final class ElementUtil {
 		calibratedSpatialElementSize(final T space, final UnitService unitService)
 	{
         final Optional<String> optional = AxisUtils.getSpatialUnit(space, unitService);
-        if (!optional.isPresent() || AxisUtils.hasNonLinearSpatialAxes(space)) {
+        if (!optional.isPresent() || hasNonLinearSpatialAxes(space)) {
             return Double.NaN;
         }
         final String unit = optional.get().replaceFirst("^µ[mM]$", "um");
@@ -100,8 +103,27 @@ public final class ElementUtil {
 		return elementSize;
 	}
 
-    private static <T extends AnnotatedSpace<CalibratedAxis>> double uncalibratedSize(final T space) {
-        return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x,
-                y) -> x * y).orElse(0.0);
-    }
+	/**
+	 * Checks if the given space has any non-linear spatial dimensions.
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return true if there are any power, logarithmic or other non-linear axes.
+	 */
+	private static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
+		hasNonLinearSpatialAxes(final S space)
+	{
+		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
+			.type().isSpatial());
+	}
+
+	// region -- Helper methods --
+	private static <T extends AnnotatedSpace<CalibratedAxis>> double
+		uncalibratedSize(final T space)
+	{
+		return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x,
+			y) -> x * y).orElse(0.0);
+	}
+	// endregion
 }

@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Topology;
+import net.imagej.ops.Ops.Topology.EulerCharacteristic26NFloating;
+import net.imagej.ops.Ops.Topology.EulerCorrection;
 import net.imagej.ops.special.hybrid.Hybrids;
 import net.imagej.ops.special.hybrid.UnaryHybridCF;
 import net.imagej.table.DefaultColumn;
@@ -82,7 +85,7 @@ public class ConnectivityWrapper extends ContextCommand {
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCorrectionOp;
 
 	/** A flag to avoid showing the same warning repeatedly */
-	private boolean negativityWarned = false;
+	private boolean negativityWarned;
 	/** The unit displayed in the results */
 	private String unitHeader;
 
@@ -110,10 +113,10 @@ public class ConnectivityWrapper extends ContextCommand {
 	// region -- Helper methods --
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
         eulerCharacteristicOp = Hybrids.unaryCF(opService,
-			Ops.Topology.EulerCharacteristic26NFloating.class, DoubleType.class,
+			EulerCharacteristic26NFloating.class, DoubleType.class,
                 interval);
 		eulerCorrectionOp = Hybrids.unaryCF(opService,
-			Ops.Topology.EulerCorrection.class, DoubleType.class, interval);
+			EulerCorrection.class, DoubleType.class, interval);
 	}
 
 	private void determineResultUnit() {

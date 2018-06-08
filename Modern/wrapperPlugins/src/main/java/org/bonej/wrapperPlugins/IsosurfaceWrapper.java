@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Geometric.MarchingCubes;
 import net.imagej.ops.geom.geom3d.mesh.Facet;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
@@ -243,7 +243,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
-		marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class,
+		marchingCubesOp = Functions.unary(ops, MarchingCubes.class,
 			Mesh.class, interval);
 	}
 

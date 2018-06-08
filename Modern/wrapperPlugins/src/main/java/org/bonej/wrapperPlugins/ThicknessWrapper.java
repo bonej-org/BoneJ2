@@ -72,7 +72,7 @@ public class ThicknessWrapper extends ContextCommand {
 	@Parameter(label = "Crop to ROI manager",
 		description = "Limit the maps to the ROIs in the ROI manager",
 		persist = false, required = false)
-	private boolean cropToRois = false;
+	private boolean cropToRois;
 
 	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
 	private ImagePlus trabecularMap;
@@ -97,7 +97,7 @@ public class ThicknessWrapper extends ContextCommand {
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
-	private boolean anisotropyWarned = false;
+	private boolean anisotropyWarned;
 
 	@Override
 	public void run() {

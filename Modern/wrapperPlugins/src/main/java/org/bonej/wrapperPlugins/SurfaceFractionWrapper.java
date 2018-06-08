@@ -12,7 +12,9 @@ import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Copy.RAI;
+import net.imagej.ops.Ops.Geometric.MarchingCubes;
+import net.imagej.ops.Ops.Geometric.Size;
 import net.imagej.ops.geom.geom3d.mesh.DefaultMesh;
 import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.special.function.Functions;
@@ -116,12 +118,12 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	// region -- Helper methods --
 
 	private void matchOps(final RandomAccessibleInterval<BitType> subspace) {
-		raiCopy = Functions.unary(opService, Ops.Copy.RAI.class,
+		raiCopy = Functions.unary(opService, RAI.class,
 			RandomAccessibleInterval.class, subspace);
 		marchingCubes = Functions.unary(opService,
-			Ops.Geometric.MarchingCubes.class, Mesh.class, subspace);
+			MarchingCubes.class, Mesh.class, subspace);
 		// Create a dummy object to make op matching happy
-		meshVolume = Functions.unary(opService, Ops.Geometric.Size.class,
+		meshVolume = Functions.unary(opService, Size.class,
 			DoubleType.class, new DefaultMesh());
 	}
 

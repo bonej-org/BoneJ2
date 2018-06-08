@@ -82,23 +82,23 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	private String endPointSection = "-- END-POINTS --";
 
 	@Parameter(label = "Prune ends", required = false)
-	private boolean pruneEnds = false;
+	private boolean pruneEnds;
 
 	@Parameter(label = "Exclude ROI from pruning", required = false,
 		visibility = ItemVisibility.INVISIBLE)
-	private boolean excludeRoi = false;
+	private boolean excludeRoi;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String resultSection = "-- RESULTS AND OUTPUT --";
 
 	@Parameter(label = "Calculate largest shortest path", required = false)
-	private boolean calculateShortestPath = false;
+	private boolean calculateShortestPath;
 
 	@Parameter(label = "Show detailed info", required = false)
-	private boolean verbose = false;
+	private boolean verbose;
 
 	@Parameter(label = "Display labelled skeletons", required = false)
-	private boolean displaySkeletons = false;
+	private boolean displaySkeletons;
 
 	/**
 	 * The results of the analysis in a {@link Table}, null if there are no
@@ -146,7 +146,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter
 	private StatusService statusService;
 
-	private ImagePlus intensityImage = null;
+	private ImagePlus intensityImage;
 
 	@Override
 	public void run() {

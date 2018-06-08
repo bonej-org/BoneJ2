@@ -41,7 +41,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	private List<Double> calibration3d = Arrays.asList(1.0, 1.0, 1.0);
 
 	@Parameter(persist = false, required = false)
-	private boolean iterativePruning = false;
+	private boolean iterativePruning;
 
 	@Parameter(persist = false, required = false)
 	private boolean useClusters = true;

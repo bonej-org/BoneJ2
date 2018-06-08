@@ -80,7 +80,7 @@ public final class GraphUtil {
 	 * @return A graph where the vertices are connected by the edges.
 	 */
 	public static Graph createGraph(final Edge edge,
-		final Collection<Vertex> vertices)
+		final Iterable<Vertex> vertices)
 	{
 		return createGraph(Collections.singletonList(edge), vertices);
 	}

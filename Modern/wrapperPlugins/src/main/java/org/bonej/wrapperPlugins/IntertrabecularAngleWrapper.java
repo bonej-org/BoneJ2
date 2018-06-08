@@ -95,25 +95,25 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private int maximumValence = 3;
 
 	@Parameter(label = "Minimum trabecular length (px)", min = "0", stepSize = "1", description = "Minimum length for a trabecula to be kept from being fused into a node", style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength", persist = false, initializer = "initRealLength")
-	private int minimumTrabecularLength = 0;
+	private int minimumTrabecularLength;
 
 	@Parameter(label = "Margin (px)", min = "0", stepSize = "1", description = "Nodes with centroids closer than this value to any image boundary will not be included in results", style = NumberWidget.SPINNER_STYLE)
-	private int marginCutOff = 0;
+	private int marginCutOff;
 
 	@Parameter(label = "Calibrated minimum length", visibility = ItemVisibility.MESSAGE, persist = false)
 	private String realLength = "";
 
 	@Parameter(label = "Iterate pruning", description = "If true, iterate pruning as long as short edges remain, or stop after a single pass", required = false, persistKey = "ITA_iterate")
-	private boolean iteratePruning = false;
+	private boolean iteratePruning;
 
 	@Parameter(label = "Use clusters", description = "If true, considers connected components together as a cluster, otherwise only looks at single short edges (order-dependent!)", required = false, persistKey = "ITA_useClusters")
 	private boolean useClusters = true;
 
 	@Parameter(label = "Print centroids", description = "Print the centroids of vertices at either end of each edge", required = false, persistKey = "ITA_print_centroids")
-	private boolean printCentroids = false;
+	private boolean printCentroids;
 
 	@Parameter(label = "Print % culled edges", description = "Print the percentage of each of the type of edges that were culled after calling analyseSkeleton", required = false, persistKey = "ITA_print_culled_edges")
-	private boolean printCulledEdgePercentages = false;
+	private boolean printCulledEdgePercentages;
 
 	/** The ITA angles in a {@link Table}, null if there are no results */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
@@ -152,7 +152,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private ValuePair<Integer, Integer> range;
 	private List<Double> coefficients;
 	private double calibratedMinimumLength;
-	private boolean anisotropyWarned = false;
+	private boolean anisotropyWarned;
 
 	@Override
 	public void run() {

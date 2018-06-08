@@ -3,6 +3,7 @@ package org.bonej.utilities;
 
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 import java.util.stream.StreamSupport;
 
 import net.imagej.axis.TypedAxis;
@@ -35,7 +36,7 @@ public final class Streamers {
 		}
 
 		final int dimensions = space.numDimensions();
-		final Stream.Builder<A> builder = Stream.builder();
+		final Builder<A> builder = Stream.builder();
 		for (int d = 0; d < dimensions; d++) {
 			builder.add(space.axis(d));
 		}

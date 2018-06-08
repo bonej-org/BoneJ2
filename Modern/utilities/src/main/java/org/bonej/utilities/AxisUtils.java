@@ -10,7 +10,6 @@ import java.util.Optional;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
-import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
@@ -109,22 +108,6 @@ public final class AxisUtils {
 		return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
 	}
 
-	/**
-	 * Checks if the given space has any non-linear spatial dimensions.
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-	 * @param <A> type of axes in the space.
-	 * @return true if there are any power, logarithmic or other non-linear axes.
-	 */
-	//TODO is this really necessary?
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
-		hasNonLinearSpatialAxes(final S space)
-	{
-		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
-			.type().isSpatial());
-	}
-
 	// region -- Helper methods --
 
 	/**
@@ -154,7 +137,7 @@ public final class AxisUtils {
 				try {
 					unitService.value(1.0, units.get(i), units.get(j));
 				}
-				catch (Exception e) {
+				catch (final Exception e) {
 					return false;
 				}
 			}

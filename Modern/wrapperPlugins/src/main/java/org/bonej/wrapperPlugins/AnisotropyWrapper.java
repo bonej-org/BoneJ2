@@ -109,7 +109,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(label = "Recommended minimum",
 		description = "Apply minimum recommended values to directions, lines, and increment",
 		persist = false, required = false, callback = "applyMinimum")
-	private boolean recommendedMin = false;
+	private boolean recommendedMin;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
 		"NB parameter values can affect results significantly";
