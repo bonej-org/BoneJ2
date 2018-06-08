@@ -62,32 +62,30 @@ public final class ResultUtils {
 		getExponent(final S space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
-
 		if (dimensions == 2) {
 			return '\u00B2';
 		}
-		else if (dimensions == 3) {
+		if (dimensions == 3) {
 			return '\u00B3';
 		}
-		else if (dimensions == 4) {
+		if (dimensions == 4) {
 			return '\u2074';
 		}
-		else if (dimensions == 5) {
+		if (dimensions == 5) {
 			return '\u2075';
 		}
-		else if (dimensions == 6) {
+		if (dimensions == 6) {
 			return '\u2076';
 		}
-		else if (dimensions == 7) {
+		if (dimensions == 7) {
 			return '\u2077';
 		}
-		else if (dimensions == 8) {
+		if (dimensions == 8) {
 			return '\u2078';
 		}
-		else if (dimensions == 9) {
+		if (dimensions == 9) {
 			return '\u2079';
 		}
-
 		// Return an "empty" character
 		return '\u0000';
 	}
