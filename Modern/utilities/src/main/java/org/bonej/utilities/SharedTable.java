@@ -32,7 +32,7 @@ import org.scijava.util.StringUtils;
  *
  * @author Richard Domander
  */
-public class SharedTable {
+public final class SharedTable {
 
 	public static final String LABEL_HEADER = "Label";
 	public static final String EMPTY_CELL = "";

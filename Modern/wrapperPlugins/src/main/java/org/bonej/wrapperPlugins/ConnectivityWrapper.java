@@ -53,7 +53,7 @@ import org.scijava.ui.UIService;
 	headless = true)
 public class ConnectivityWrapper extends ContextCommand {
 
-	public static final String NEGATIVE_CONNECTIVITY =
+	static final String NEGATIVE_CONNECTIVITY =
 		"Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
 			"Try running Purify prior to Connectivity.\n";
 

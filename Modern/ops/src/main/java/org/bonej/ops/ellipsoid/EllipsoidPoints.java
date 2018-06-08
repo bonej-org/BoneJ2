@@ -69,7 +69,7 @@ public class EllipsoidPoints extends
 	 * @see Random#setSeed(long)
 	 * @see MersenneTwister#MersenneTwister(long)
 	 */
-	public static void setSeed(final long seed) {
+	static void setSeed(final long seed) {
 		rng.setSeed(seed);
 		sphereRng = new UnitSphereRandomVectorGenerator(3, new MersenneTwister(
 			seed));

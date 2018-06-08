@@ -331,7 +331,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	 * @param cluster a collection of directly connected vertices.
 	 * @return A vertex at the geometric center of the cluster.
 	 */
-	public Vertex getClusterCentre(final Collection<Vertex> cluster) {
+	Vertex getClusterCentre(final Collection<Vertex> cluster) {
 		final List<Vector3d> clusterVectors = getClusterVectors(cluster);
 		final Vector3d clusterCentroid = centroidOp.calculate(clusterVectors);
 		return GraphUtil.vectorToVertex(clusterCentroid);
@@ -353,7 +353,7 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 		return deadEnds.size();
 	}
 
-	public static boolean isShortEdge(final Edge e, final Double tolerance) {
+	static boolean isShortEdge(final Edge e, final Double tolerance) {
 		return (e.getLength() < tolerance);
 	}
 

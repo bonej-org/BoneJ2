@@ -42,7 +42,7 @@ public final class RoiManagerUtil {
 	 *         list if sliceNumber is out of bounds, or roiMan == null, or stack
 	 *         == null
 	 */
-	public static List<Roi> getSliceRoi(final RoiManager roiMan,
+	static List<Roi> getSliceRoi(final RoiManager roiMan,
 		final ImageStack stack, final int sliceNumber)
 	{
 		final List<Roi> roiList = new ArrayList<>();
@@ -81,7 +81,7 @@ public final class RoiManagerUtil {
 	 *         y1, z0, z1}. Returns an empty Optional if roiMan == null or stack
 	 *         == null or roiMan is empty.
 	 */
-	public static Optional<int[]> getLimits(final RoiManager roiMan,
+	static Optional<int[]> getLimits(final RoiManager roiMan,
 		final ImageStack stack)
 	{
 		if (roiMan == null || roiMan.getCount() == 0 || stack == null) {
@@ -150,7 +150,7 @@ public final class RoiManagerUtil {
 	 * @return false if the height or width of the fitted rectangle is 0 (couldn't
 	 *         be cropped inside the area).
 	 */
-	public static boolean getSafeRoiBounds(final Rectangle bounds,
+	static boolean getSafeRoiBounds(final Rectangle bounds,
 		final int width, final int height)
 	{
 		final int xMin = clamp(bounds.x, 0, width);
@@ -198,7 +198,7 @@ public final class RoiManagerUtil {
 	 *         is empty if roiMan == null, or sourceStack == null, or roiMan is
 	 *         empty.
 	 */
-	public static Optional<ImageStack> cropToRois(
+	static Optional<ImageStack> cropToRois(
 		final RoiManager roiMan, final ImageStack sourceStack,
 		final boolean fillBackground, final int fillColor, final int padding)
 	{

@@ -65,11 +65,11 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
-	public static final String STL_WRITE_ERROR =
+	static final String STL_WRITE_ERROR =
 		"Failed to write the following STL files:\n\n";
-	public static final String STL_HEADER = StringUtils.padEnd(
+	static final String STL_HEADER = StringUtils.padEnd(
 		"Binary STL created by BoneJ", 80, '.');
-	public static final String BAD_SCALING =
+	static final String BAD_SCALING =
 		"Cannot scale result because axis calibrations don't match";
 
 	@Parameter(validater = "validateImage")

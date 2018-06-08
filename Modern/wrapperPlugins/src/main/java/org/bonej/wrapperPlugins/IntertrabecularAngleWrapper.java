@@ -243,7 +243,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		final TreeMap<Integer, DoubleStream> radianMap = new TreeMap<>();
 		valenceMap.forEach((valence, vertices) -> {
 			final List<Vertex> centreVertices = filterBoundaryVertices(vertices);
-			final List<NPoint> nPoints = nPointAnglesOp.calculate(centreVertices, -1);
+			final List<NPoint> nPoints = nPointAnglesOp.calculate(centreVertices, NPointAngles.VERTEX_TO_VERTEX);
 			final DoubleStream radians = nPoints.stream().flatMap(p -> p.angles.stream())
 					.mapToDouble(VectorsAngle::getAngle);
 			radianMap.put(valence, radians);
