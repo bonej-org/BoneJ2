@@ -1,7 +1,6 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.utilities.Streamers.spatialAxisStream;
 import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
@@ -20,7 +19,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops.Geometric.MarchingCubes;
 import net.imagej.ops.geom.geom3d.mesh.Facet;
@@ -28,7 +26,6 @@ import net.imagej.ops.geom.geom3d.mesh.Mesh;
 import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
-import net.imagej.space.AnnotatedSpace;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
@@ -129,33 +126,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	/**
-	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
-	 * same scaling.
-	 * <p>
-	 * NB: Public and static for testing purposes.
-	 * </p>
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <T> type of the space
-	 * @return true if all spatial axes have matching calibration. Also returns
-	 *         true if none of them have a unit
-	 */
-	// TODO make into a utility method or remove if mesh area considers
-	// calibration in the future
-	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isAxesMatchingSpatialCalibration(final T space)
-	{
-		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.allMatch(StringUtils::isNullOrEmpty);
-		final boolean matchingUnit = spatialAxisStream(space).map(
-			CalibratedAxis::unit).distinct().count() == 1;
-		final boolean matchingScale = spatialAxisStream(space).map(a -> a
-			.averageScale(0, 1)).distinct().count() == 1;
-
-		return (matchingUnit || noUnits) && matchingScale;
-	}
-
-	/**
 	 * Writes the surface mesh as a binary, little endian STL file
 	 * <p>
 	 * NB: Public and static for testing purposes
@@ -253,7 +223,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
 		}
 
-		if (isAxesMatchingSpatialCalibration(inputImage)) {
+		if (AxisUtils.isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
 			areaScale = scale * scale;
 		} else {

@@ -3,9 +3,7 @@ package org.bonej.wrapperPlugins;
 
 import static org.bonej.wrapperPlugins.IsosurfaceWrapper.STL_WRITE_ERROR;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -297,75 +295,6 @@ public class IsosurfaceWrapperTest {
 		// Verify that warning dialog about result scaling got shown once
 		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
 			IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibrationDifferentScales() {
-		// Create a test image with different scales in calibration
-		final String unit = "mm";
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertFalse(
-			"Different scales in axes should mean that calibration doesn't match",
-			result);
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibrationDifferentUnits() {
-		// Create a test image with different units in calibration
-		final double scale = 0.75;
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm", scale);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", scale);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertFalse(
-			"Different units in axes should mean that calibration doesn't match",
-			result);
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibrationNoUnits() {
-		// Create a test image with no calibration units
-		final double scale = 0.75;
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", scale);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null, scale);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertTrue("No units should mean matching calibration", result);
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibration() {
-		// Create a test image with uniform calibration
-		final String unit = "mm";
-		final double scale = 0.75;
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertTrue("Axes should have matching calibration", result);
 	}
 
 	// -- Helper methods --

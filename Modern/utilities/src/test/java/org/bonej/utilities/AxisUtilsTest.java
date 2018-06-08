@@ -15,6 +15,7 @@ import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.units.UnitService;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 
@@ -33,9 +34,57 @@ public class AxisUtilsTest {
 	private static final UnitService unitService = IMAGE_J.context().getService(
 		UnitService.class);
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
+	@Test
+	public void testCountSpatialDimensions() {
+		// Create a test image
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+		final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
+		final long[] dimensions = { 10, 10, 3 };
+		final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis, channelAxis);
+
+		final long result = AxisUtils.countSpatialDimensions(imgPlus);
+
+		assertEquals("Wrong number of spatial dimensions", 2, result);
+	}
+
+	@Test
+	public void testCountSpatialDimensionsNullSpace() {
+		final long result = AxisUtils.countSpatialDimensions(null);
+
+		assertEquals("A null space should contain zero dimensions", 0, result);
+	}
+
+	@Test
+	public void testGetSpatialUnit() {
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "µm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 5.0);
+		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis);
+
+		final Optional<String> unit = AxisUtils.getSpatialUnit(imgPlus,
+			unitService);
+
+		assertTrue("String should be present when units are convertible", unit
+			.isPresent());
+		assertEquals("Unit is incorrect", "µm", unit.get());
+	}
+
+	@Test
+	public void testGetSpatialUnitAllAxesUncalibrated() {
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "", 5.0);
+		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis);
+
+		final Optional<String> unit = AxisUtils.getSpatialUnit(imgPlus,
+			unitService);
+
+		assertTrue("String should be present when units are convertible", unit
+			.isPresent());
+		assertTrue("Unit should be empty", unit.get().isEmpty());
 	}
 
 	@Test
@@ -59,40 +108,24 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testGetSpatialUnitAllAxesUncalibrated() {
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 1.0);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "", 5.0);
-		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis);
+	public void testHasChannelDimensions() {
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
+		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+		final Img<DoubleType> img = ArrayImgs.doubles(1, 1, 1);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis, cAxis);
 
-		final Optional<String> unit = AxisUtils.getSpatialUnit(imgPlus,
-			unitService);
+		final boolean result = AxisUtils.hasChannelDimensions(imgPlus);
 
-		assertTrue("String should be present when units are convertible", unit
-			.isPresent());
-		assertTrue("Unit should be empty", unit.get().isEmpty());
+		assertTrue("Should be true when image has channel dimensions", result);
 	}
 
 	@Test
-	public void testGetSpatialUnit() {
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "µm", 1.0);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 5.0);
-		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
-		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis);
+	public void testHasChannelDimensionsFalseIfSpaceNull() {
+		final boolean result = AxisUtils.hasChannelDimensions(null);
 
-		final Optional<String> unit = AxisUtils.getSpatialUnit(imgPlus,
-			unitService);
-
-		assertTrue("String should be present when units are convertible", unit
-			.isPresent());
-		assertEquals("Unit is incorrect", "µm", unit.get());
-	}
-
-	@Test
-	public void testHasSpatialDimensionsFalseIfSpaceNull() {
-		final boolean result = AxisUtils.hasSpatialDimensions(null);
-
-		assertFalse("Null image should not have a time dimension", result);
+		assertFalse("Null image should not have a channel dimension", result);
 	}
 
 	@Test
@@ -109,8 +142,8 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testHasTimeDimensionsFalseIfSpaceNull() {
-		final boolean result = AxisUtils.hasTimeDimensions(null);
+	public void testHasSpatialDimensionsFalseIfSpaceNull() {
+		final boolean result = AxisUtils.hasSpatialDimensions(null);
 
 		assertFalse("Null image should not have a time dimension", result);
 	}
@@ -130,47 +163,79 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testHasChannelDimensionsFalseIfSpaceNull() {
-		final boolean result = AxisUtils.hasChannelDimensions(null);
+	public void testHasTimeDimensionsFalseIfSpaceNull() {
+		final boolean result = AxisUtils.hasTimeDimensions(null);
 
-		assertFalse("Null image should not have a channel dimension", result);
+		assertFalse("Null image should not have a time dimension", result);
 	}
 
 	@Test
-	public void testHasChannelDimensions() {
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-		final Img<DoubleType> img = ArrayImgs.doubles(1, 1, 1);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, cAxis);
+	public void testIsAxesMatchingSpatialCalibration() {
+		// Create a test image with uniform calibration
+		final String unit = "mm";
+		final double scale = 0.75;
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
 
-		final boolean result = AxisUtils.hasChannelDimensions(imgPlus);
+		final boolean result = AxisUtils.isAxesMatchingSpatialCalibration(imgPlus);
 
-		assertTrue("Should be true when image has channel dimensions", result);
+		assertTrue("Axes should have matching calibration", result);
 	}
 
 	@Test
-	public void testCountSpatialDimensionsNullSpace() {
-		final long result = AxisUtils.countSpatialDimensions(null);
+	public void testIsAxesMatchingSpatialCalibrationDifferentScales() {
+		// Create a test image with different scales in calibration
+		final String unit = "mm";
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
 
-		assertEquals("A null space should contain zero dimensions", 0, result);
+		final boolean result = AxisUtils.isAxesMatchingSpatialCalibration(imgPlus);
+
+		assertFalse(
+			"Different scales in axes should mean that calibration doesn't match",
+			result);
 	}
 
 	@Test
-	public void testCountSpatialDimensions() {
-		// Create a test image
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
-		final long[] dimensions = { 10, 10, 3 };
-		final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, channelAxis);
+	public void testIsAxesMatchingSpatialCalibrationDifferentUnits() {
+		// Create a test image with different units in calibration
+		final double scale = 0.75;
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm", scale);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", scale);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
 
-		final long result = AxisUtils.countSpatialDimensions(imgPlus);
+		final boolean result = AxisUtils.isAxesMatchingSpatialCalibration(imgPlus);
 
-		assertEquals("Wrong number of spatial dimensions", 2, result);
+		assertFalse(
+			"Different units in axes should mean that calibration doesn't match",
+			result);
 	}
 
+	@Test
+	public void testIsAxesMatchingSpatialCalibrationNoUnits() {
+		// Create a test image with no calibration units
+		final double scale = 0.75;
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", scale);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null, scale);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
+
+		final boolean result = AxisUtils.isAxesMatchingSpatialCalibration(imgPlus);
+
+		assertTrue("No units should mean matching calibration", result);
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
+	}
 }
