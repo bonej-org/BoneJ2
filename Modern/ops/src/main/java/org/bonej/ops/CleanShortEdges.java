@@ -149,9 +149,9 @@ public class CleanShortEdges extends AbstractBinaryFunctionOp<Graph, Double, Gra
 	}
 
 	private static long connectionHash(final Edge e, final Map<Vertex, Integer> idMap) {
-		final int nVertices = idMap.size();
-		final int a = idMap.get(e.getV1());
-		final int b = idMap.get(e.getV2());
+		final long nVertices = idMap.size();
+		final long a = idMap.get(e.getV1());
+		final long b = idMap.get(e.getV2());
 		return a < b ? a * nVertices + b : b * nVertices + a;
 	}
 
