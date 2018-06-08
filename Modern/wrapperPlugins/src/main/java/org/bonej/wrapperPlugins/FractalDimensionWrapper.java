@@ -253,7 +253,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		}
 		final long[] dimensions = new long[inputImage.numDimensions()];
 		inputImage.dimensions(dimensions);
-		final long maxDimension = Arrays.stream(dimensions).max().getAsLong();
+		final long maxDimension = Arrays.stream(dimensions).max().orElse(0);
 		autoMax = maxDimension / 4;
 	}
 
