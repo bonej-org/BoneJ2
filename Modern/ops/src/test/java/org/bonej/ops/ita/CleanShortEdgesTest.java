@@ -110,35 +110,6 @@ public class CleanShortEdgesTest {
 			.getLength() == expectedLength2).count());
 	}
 
-	/**
-	 * Tests that graph cloning works, and that the input {@link Graph} is not
-	 * altered
-	 */
-	@Test
-	public void testCloning() {
-		// SETUP
-		final Graph graph = createTriangleWithSquareClusterAndArtefacts();
-		final Random random = new Random(0xC0FF33);
-		graph.getVertices().forEach(v -> {
-			v.setVisited(random.nextBoolean(), random.nextInt());
-			final ArrayList<Edge> edges = graph.getEdges();
-			v.setPredecessor(edges.get(random.nextInt(edges.size())));
-		});
-		graph.getEdges().forEach(e -> {
-			e.setType(random.nextInt());
-			e.setLength(random.nextDouble());
-			e.setColor(random.nextDouble());
-			e.setColor3rd(random.nextDouble());
-
-		});
-
-		// EXECUTE
-		final Graph cloneGraph = graph.clone();
-
-		// VERIFY
-		assertGraphsEqual(graph, cloneGraph);
-	}
-
 	@Test
 	public void testClusterCentresHaveOnePoint() {
 		final Graph graph = createDumbbellGraph();
