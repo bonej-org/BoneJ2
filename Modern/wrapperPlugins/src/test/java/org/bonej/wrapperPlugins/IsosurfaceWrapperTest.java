@@ -30,7 +30,9 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
-import net.imagej.ops.geom.geom3d.mesh.DefaultMesh;
+import net.imagej.mesh.Triangle;
+import net.imagej.mesh.Triangles;
+import net.imagej.mesh.naive.NaiveDoubleMesh;
 import net.imagej.ops.geom.geom3d.mesh.Facet;
 import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.geom.geom3d.mesh.Vertex;
@@ -74,25 +76,25 @@ public class IsosurfaceWrapperTest {
 	@Test
 	public void testNullImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			IsosurfaceWrapper.class);
+				IsosurfaceWrapper.class);
 	}
 
 	@Test
 	public void test2DImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
-			IsosurfaceWrapper.class);
+				IsosurfaceWrapper.class);
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
-			IsosurfaceWrapper.class);
+				IsosurfaceWrapper.class);
 	}
 
 	@Test
 	public void testNoCalibrationShowsWarning() throws Exception {
 		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
-			IsosurfaceWrapper.class, "exportSTL", false);
+				IsosurfaceWrapper.class, "exportSTL", false);
 	}
 
 	@Test
@@ -106,7 +108,7 @@ public class IsosurfaceWrapperTest {
 		// The mesh resulting from marching cubes is effectively one voxel smaller
 		// in each dimension
 		final double expectedArea = ((width - 1) * (height - 1) * 2 + (width - 1) *
-			(depth - 1) * 2 + (height - 1) * (depth - 1) * 2) * (scale * scale);
+				(depth - 1) * 2 + (height - 1) * (depth - 1) * 2) * (scale * scale);
 		final String[] expectedHeaders = { ("Surface area (" + unit + "²)") };
 		final double[] expectedValues = { 0, expectedArea, expectedArea, 0 };
 		/*
@@ -120,9 +122,9 @@ public class IsosurfaceWrapperTest {
 		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
 		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
 		final Img<BitType> img = ArrayImgs.bits(width + 2, height + 2, depth + 2, 2,
-			2);
+				2);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, zAxis, cAxis, tAxis);
+				yAxis, zAxis, cAxis, tAxis);
 		final RandomAccess<BitType> access = imgPlus.randomAccess();
 		for (int z = 1; z <= depth; z++) {
 			for (int y = 1; y <= height; y++) {
@@ -139,22 +141,22 @@ public class IsosurfaceWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(IsosurfaceWrapper.class,
-			true, "inputImage", imgPlus, "exportSTL", false).get();
+				true, "inputImage", imgPlus, "exportSTL", false).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+				(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 2, table.size());
 		for (int i = 0; i < 1; i++) {
 			final DefaultColumn<String> column = table.get(i + 1);
 			assertEquals("A column has wrong number of rows", 4, column.size());
 			assertEquals("A column has an incorrect header", expectedHeaders[i],
-				column.getHeader());
+					column.getHeader());
 			for (int j = 0; j < column.size(); j++) {
 				assertEquals("Column has an incorrect value", expectedValues[j], Double
-					.parseDouble(column.get(j)), 1e-12);
+						.parseDouble(column.get(j)), 1e-12);
 			}
 		}
 	}
@@ -166,24 +168,24 @@ public class IsosurfaceWrapperTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testWriteBinarySTLFileNullNameThrowsIAE() throws Exception {
-		final DefaultMesh mesh = new DefaultMesh();
+		final NaiveDoubleMesh mesh = new NaiveDoubleMesh();
 
 		IsosurfaceWrapper.writeBinarySTLFile(null, mesh);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testWriteBinarySTLFileEmptyNameThrowsIAE() throws Exception {
-		final DefaultMesh mesh = new DefaultMesh();
+		final NaiveDoubleMesh mesh = new NaiveDoubleMesh();
 
 		IsosurfaceWrapper.writeBinarySTLFile("", mesh);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testWriteBinarySTLFileNonTriangularMeshThrowsIAE()
-		throws Exception
+			throws Exception
 	{
-		final DefaultMesh mesh = mock(DefaultMesh.class);
-		when(mesh.triangularFacets()).thenReturn(false);
+		final NaiveDoubleMesh mesh = mock(NaiveDoubleMesh.class);
+		when(mesh.triangles()).thenReturn(null);
 
 		IsosurfaceWrapper.writeBinarySTLFile("Mesh", mesh);
 	}
@@ -191,12 +193,10 @@ public class IsosurfaceWrapperTest {
 	@Test
 	public void testWriteBinarySTLFile() throws Exception {
 		// Create test mesh
-		final DefaultMesh mesh = new DefaultMesh();
-		mesh.addFace(new TriangularFacet(new Vertex(1.0, 0.0, 0.0), new Vertex(0.0,
-			1.0, 0.0), new Vertex(0.0, 0.0, 0.0)));
-		mesh.addFace(new TriangularFacet(new Vertex(0.0, 0.0, 1.0), new Vertex(0.0,
-			1.0, 0.0), new Vertex(0.0, 0.0, 0.0)));
-		final int expectedLength = 80 + 4 + mesh.getFacets().size() * 50;
+		final NaiveDoubleMesh mesh = new NaiveDoubleMesh();
+		mesh.triangles().add(1.0, 0.0, 0.0,0.0,1.0, 0.0,0.0, 0.0, 0.0);
+		mesh.triangles().add(0.0, 0.0, 1.0,0.0,1.0, 0.0,0.0, 0.0, 0.0);
+		final long expectedLength = 80 + 4 + mesh.triangles().size() * 50;
 
 		// Write test mesh to a file
 		final String filePath = "./test_file.stl";
@@ -212,26 +212,26 @@ public class IsosurfaceWrapperTest {
 
 		final String header = new String(Arrays.copyOfRange(bytes, 0, 80));
 		assertEquals("File header is incorrect", IsosurfaceWrapper.STL_HEADER,
-			header);
+				header);
 
 		final int numFacets = ByteBuffer.wrap(bytes, 80, 4).order(
-			ByteOrder.LITTLE_ENDIAN).getInt();
+				ByteOrder.LITTLE_ENDIAN).getInt();
 		assertEquals("Wrong number of facets in the file", 2, numFacets);
 
-		final List<Facet> facets = mesh.getFacets();
+		final Triangles triangles = mesh.triangles();
 		int offset = 84;
-		for (Facet facet : facets) {
-			final TriangularFacet triangularFacet = (TriangularFacet) facet;
+		for (Triangle triangle : triangles) {
+			final TriangularFacet triangularFacet = (TriangularFacet) triangle;
 			assertVector3DEquals("Normal is incorrect", triangularFacet.getNormal(),
-				readVector3D(bytes, offset));
+					readVector3D(bytes, offset));
 			assertVector3DEquals("Vertex is incorrect", triangularFacet.getP0(),
-				readVector3D(bytes, offset + 12));
+					readVector3D(bytes, offset + 12));
 			assertVector3DEquals("Vertex is incorrect", triangularFacet.getP1(),
-				readVector3D(bytes, offset + 24));
+					readVector3D(bytes, offset + 24));
 			assertVector3DEquals("Vertex is incorrect", triangularFacet.getP2(),
-				readVector3D(bytes, offset + 36));
+					readVector3D(bytes, offset + 36));
 			final short attrByteCount = ByteBuffer.wrap(bytes, offset + 48, 2).order(
-				ByteOrder.LITTLE_ENDIAN).getShort();
+					ByteOrder.LITTLE_ENDIAN).getShort();
 			assertEquals("Attribute byte count is incorrect", 0, attrByteCount);
 			offset += 50;
 		}
@@ -250,24 +250,24 @@ public class IsosurfaceWrapperTest {
 		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, zAxis);
+				yAxis, zAxis);
 
 		// Mock UI
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.chooseFile(any(File.class), anyString())).thenReturn(
-			exceptionsThrowingFile);
+				exceptionsThrowingFile);
 		when(mockUI.dialogPrompt(startsWith(STL_WRITE_ERROR), anyString(), eq(
-			ERROR_MESSAGE), any())).thenReturn(mockPrompt);
+				ERROR_MESSAGE), any())).thenReturn(mockPrompt);
 		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Run plugin
 		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,
-			"exportSTL", true).get();
+				"exportSTL", true).get();
 
 		// Verify that write error dialog got shown
 		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
-			STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
+				STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
 	}
 
 	@Test
@@ -280,27 +280,27 @@ public class IsosurfaceWrapperTest {
 		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
 		final Img<BitType> img = ArrayImgs.bits(1, 1, 1, 1);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, zAxis, tAxis);
+				yAxis, zAxis, tAxis);
 
 		// Mock UI
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(eq(IsosurfaceWrapper.BAD_SCALING), anyString(), eq(
-			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
+				WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Run plugin
 		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,
-			"exportSTL", false).get();
+				"exportSTL", false).get();
 
 		// Verify that warning dialog about result scaling got shown once
 		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
-			IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
+				IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
 	@Test
 	public void testIsAxesMatchingSpatialCalibrationDifferentScales()
-		throws Exception
+			throws Exception
 	{
 		// Create a test image with different scales in calibration
 		final String unit = "mm";
@@ -308,19 +308,19 @@ public class IsosurfaceWrapperTest {
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
 		final Img<BitType> img = ArrayImgs.bits(1, 1);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
+				yAxis);
 
 		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
+				imgPlus);
 
 		assertFalse(
-			"Different scales in axes should mean that calibration doesn't match",
-			result);
+				"Different scales in axes should mean that calibration doesn't match",
+				result);
 	}
 
 	@Test
 	public void testIsAxesMatchingSpatialCalibrationDifferentUnits()
-		throws Exception
+			throws Exception
 	{
 		// Create a test image with different units in calibration
 		final double scale = 0.75;
@@ -328,14 +328,14 @@ public class IsosurfaceWrapperTest {
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", scale);
 		final Img<BitType> img = ArrayImgs.bits(1, 1);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
+				yAxis);
 
 		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
+				imgPlus);
 
 		assertFalse(
-			"Different units in axes should mean that calibration doesn't match",
-			result);
+				"Different units in axes should mean that calibration doesn't match",
+				result);
 	}
 
 	@Test
@@ -346,10 +346,10 @@ public class IsosurfaceWrapperTest {
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null, scale);
 		final Img<BitType> img = ArrayImgs.bits(1, 1);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
+				yAxis);
 
 		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
+				imgPlus);
 
 		assertTrue("No units should mean matching calibration", result);
 	}
@@ -363,20 +363,20 @@ public class IsosurfaceWrapperTest {
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
 		final Img<BitType> img = ArrayImgs.bits(1, 1);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
+				yAxis);
 
 		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
+				imgPlus);
 
 		assertTrue("Axes should have matching calibration", result);
 	}
 
 	// -- Helper methods --
 	private void assertVector3DEquals(final String message,
-		final Vector3D expected, final Vector3D result) throws AssertionError
+									  final Vector3D expected, final Vector3D result) throws AssertionError
 	{
 		if (Double.compare(expected.getX(), result.getX()) != 0 || Double.compare(
-			expected.getY(), result.getY()) != 0 || Double.compare(expected.getZ(),
+				expected.getY(), result.getY()) != 0 || Double.compare(expected.getZ(),
 				result.getZ()) != 0)
 		{
 			throw new AssertionError(message);
@@ -385,11 +385,11 @@ public class IsosurfaceWrapperTest {
 
 	private Vector3D readVector3D(byte[] bytes, int offset) {
 		final float x = ByteBuffer.wrap(bytes, offset, 4).order(
-			ByteOrder.LITTLE_ENDIAN).getFloat();
+				ByteOrder.LITTLE_ENDIAN).getFloat();
 		final float y = ByteBuffer.wrap(bytes, offset + 4, 4).order(
-			ByteOrder.LITTLE_ENDIAN).getFloat();
+				ByteOrder.LITTLE_ENDIAN).getFloat();
 		final float z = ByteBuffer.wrap(bytes, offset + 8, 4).order(
-			ByteOrder.LITTLE_ENDIAN).getFloat();
+				ByteOrder.LITTLE_ENDIAN).getFloat();
 
 		return new Vector3D(x, y, z);
 	}

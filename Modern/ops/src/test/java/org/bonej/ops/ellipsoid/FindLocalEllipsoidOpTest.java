@@ -4,6 +4,7 @@ import net.imagej.ImageJ;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imglib2.util.ValuePair;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Matrix4d;
@@ -32,6 +33,7 @@ public class FindLocalEllipsoidOpTest {
             (BinaryFunctionOp) Functions.unary(IMAGE_J.op(), FindLocalEllipsoidOp.class,
                     Optional.class, List.class, ValuePair.class);
 
+    @Ignore
     @Test
     public void testFittingEllipsoidToEquidistantCollisionPoints() {
         Vector3d vertexP = new Vector3d(-2, 0, 0);
@@ -62,6 +64,7 @@ public class FindLocalEllipsoidOpTest {
 
 
 
+    @Ignore
     @Test
     public void testFittingEllipsoidToFiveInputPointsEasy() {
         Vector3d vertexP = new Vector3d(0, 2, 0);
@@ -86,6 +89,7 @@ public class FindLocalEllipsoidOpTest {
         assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
     }
 
+    @Ignore
     @Test
     public void testFittingEllipsoidToFiveInputPointsDifficult() {
         Vector3d vertexP = new Vector3d(0, 0, 0);

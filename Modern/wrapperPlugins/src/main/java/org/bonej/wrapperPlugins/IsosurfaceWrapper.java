@@ -2,10 +2,7 @@
 package org.bonej.wrapperPlugins;
 
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
-import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
@@ -21,10 +18,12 @@ import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
+import net.imagej.mesh.Mesh;
+import net.imagej.mesh.Triangle;
+import net.imagej.mesh.Triangles;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops;
-import net.imagej.ops.geom.geom3d.mesh.Facet;
-import net.imagej.ops.geom.geom3d.mesh.Mesh;
+import net.imagej.ops.geom.geom3d.DefaultSurfaceArea;
 import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
@@ -36,6 +35,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.DoubleType;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.bonej.utilities.AxisUtils;
@@ -65,15 +65,15 @@ import org.scijava.widget.FileWidget;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Surface area")
 public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
-	ContextCommand
+		ContextCommand
 {
 
 	public static final String STL_WRITE_ERROR =
-		"Failed to write the following STL files:\n\n";
+			"Failed to write the following STL files:\n\n";
 	public static final String STL_HEADER = StringUtils.padEnd(
-		"Binary STL created by BoneJ", 80, '.');
+			"Binary STL created by BoneJ", 80, '.');
 	public static final String BAD_SCALING =
-		"Cannot scale result because axis calibrations don't match";
+			"Cannot scale result because axis calibrations don't match";
 
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
@@ -88,12 +88,12 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	private Table<DefaultColumn<String>, String> resultsTable;
 
 	@Parameter(label = "Export STL file(s)",
-		description = "Create a binary STL file from the surface mesh",
-		required = false)
+			description = "Create a binary STL file from the surface mesh",
+			required = false)
 	private boolean exportSTL;
 
 	@Parameter(label = "Help", description = "Open help web page",
-		callback = "openHelpPage")
+			callback = "openHelpPage")
 	private Button helpButton;
 
 	@Parameter
@@ -111,8 +111,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter
 	private UnitService unitService;
 
-    @Parameter
-    private StatusService statusService;
+	@Parameter
+	private StatusService statusService;
 
 	private String path = "";
 	private String extension = "";
@@ -122,18 +122,18 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Override
 	public void run() {
-	    statusService.showStatus("Surface area: initialising");
+		statusService.showStatus("Surface area: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops,
-			inputImage);
+				inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(Collectors.toList());
+				bitImgPlus).collect(Collectors.toList());
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
 		statusService.showStatus("Surface area: creating meshes");
 		final Map<String, Mesh> meshes = processViews(subspaces);
 		if (exportSTL) {
 			getFileName();
-            statusService.showStatus("Surface area: saving files");
+			statusService.showStatus("Surface area: saving files");
 			saveMeshes(meshes);
 		}
 		if (SharedTable.hasData()) {
@@ -174,7 +174,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
 		marchingCubesOp = Functions.unary(ops, Ops.Geometric.MarchingCubes.class,
-			Mesh.class, interval);
+				Mesh.class, interval);
 	}
 
 	private Map<String, Mesh> processViews(List<Subspace<BitType>> subspaces) {
@@ -182,10 +182,12 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		final Map<String, Mesh> meshes = new HashMap<>();
 		for (Subspace<BitType> subspace : subspaces) {
 			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
-			final double area = mesh.getSurfaceArea();
+			final DefaultSurfaceArea surfaceArea = new DefaultSurfaceArea();
+			DoubleType area = new DoubleType();
+			surfaceArea.compute(mesh,area);
 			final String suffix = subspace.toString();
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
-			addResult(label, area);
+			addResult(label, area.get());
 			meshes.put(subspace.toString(), mesh);
 		}
 		return meshes;
@@ -194,14 +196,14 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	private void saveMeshes(final Map<String, Mesh> meshes) {
 		final Map<String, String> savingErrors = new HashMap<>();
 		meshes.forEach((key, subspaceMesh) -> {
-            final String subspaceId = key.replace(' ', '_');
-            final String filePath = path + "_" + subspaceId + extension;
-            try {
-                writeBinarySTLFile(filePath, subspaceMesh);
-            } catch (IOException e) {
-                savingErrors.put(filePath, e.getMessage());
-            }
-        });
+			final String subspaceId = key.replace(' ', '_');
+			final String filePath = path + "_" + subspaceId + extension;
+			try {
+				writeBinarySTLFile(filePath, subspaceMesh);
+			} catch (IOException e) {
+				savingErrors.put(filePath, e.getMessage());
+			}
+		});
 		if (!savingErrors.isEmpty()) {
 			showSavingErrorsDialog(savingErrors);
 		}
@@ -220,7 +222,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 
 		final String fileName = path.substring(path.lastIndexOf(File.separator) +
-			1);
+				1);
 		final int dot = fileName.lastIndexOf(".");
 		if (dot >= 0) {
 			extension = fileName.substring(dot);
@@ -239,7 +241,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		// The file dialog won't allow empty filenames, and it prompts when file
 		// already exists
 		File file = uiService.chooseFile(new File(initialName),
-			FileWidget.SAVE_STYLE);
+				FileWidget.SAVE_STYLE);
 		if (file == null) {
 			// User pressed cancel on file dialog
 			return null;
@@ -278,7 +280,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	@SuppressWarnings("unused")
 	private void openHelpPage() {
 		Help.openHelpPage("http://bonej.org/isosurface", platformService, uiService,
-			logService);
+				logService);
 	}
 
 	// -- Utility methods --
@@ -298,7 +300,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	 */
 	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
 	public static void writeBinarySTLFile(final String path, final Mesh mesh)
-		throws IllegalArgumentException, IOException, NullPointerException
+			throws IllegalArgumentException, IOException, NullPointerException
 	{
 		if (mesh == null) {
 			throw new NullPointerException("Mesh cannot be null");
@@ -307,22 +309,22 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (StringUtils.isNullOrEmpty(path)) {
 			throw new IllegalArgumentException("Filename cannot be null or empty");
 		}
-		if (!mesh.triangularFacets()) {
+		if (mesh.triangles().size()==0) {
 			throw new IllegalArgumentException(
-				"Cannot write STL file: invalid surface mesh");
+					"Cannot write STL file: invalid surface mesh");
 		}
 
-		final List<Facet> facets = mesh.getFacets();
-		final int numFacets = facets.size();
+		final Triangles triangles =  mesh.triangles();
+		final long numTriangles = triangles.size();
 		try (FileOutputStream writer = new FileOutputStream(path)) {
 			final byte[] header = STL_HEADER.getBytes();
 			writer.write(header);
 			final byte[] facetBytes = ByteBuffer.allocate(4).order(
-				ByteOrder.LITTLE_ENDIAN).putInt(numFacets).array();
+					ByteOrder.LITTLE_ENDIAN).putLong(numTriangles).array();
 			writer.write(facetBytes);
 			final ByteBuffer buffer = ByteBuffer.allocate(50);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
-			for (Facet facet : facets) {
+			for (Triangle facet : triangles) {
 				final TriangularFacet triangularFacet = (TriangularFacet) facet;
 				writeSTLFacet(buffer, triangularFacet);
 				writer.write(buffer.array());
@@ -337,7 +339,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * <p>
 	 * NB: Public and static for testing purposes.
 	 * </p>
-	 * 
+	 *
 	 * @param space an N-dimensional space.
 	 * @param <T> type of the space
 	 * @return true if all spatial axes have matching calibration. Also returns
@@ -346,14 +348,14 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	// TODO make into a utility method or remove if mesh area considers
 	// calibration in the future
 	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isAxesMatchingSpatialCalibration(T space)
+	isAxesMatchingSpatialCalibration(T space)
 	{
 		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.allMatch(StringUtils::isNullOrEmpty);
+				.allMatch(StringUtils::isNullOrEmpty);
 		final boolean matchingUnit = spatialAxisStream(space).map(
-			CalibratedAxis::unit).distinct().count() == 1;
+				CalibratedAxis::unit).distinct().count() == 1;
 		final boolean matchingScale = spatialAxisStream(space).map(a -> a
-			.averageScale(0, 1)).distinct().count() == 1;
+				.averageScale(0, 1)).distinct().count() == 1;
 
 		return (matchingUnit || noUnits) && matchingScale;
 	}

@@ -6,6 +6,7 @@ import net.imglib2.util.ValuePair;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.*;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -26,19 +27,21 @@ import java.util.stream.Stream;
  * @author Alessandro Felder
  */
 @Plugin(type = Op.class)
-public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d>, ValuePair<Vector3d,Vector3d>,Optional<Ellipsoid>> {
+public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d>, ValuePair<Vector3d,Vector3d>,List<Ellipsoid>> {
 
     private static QuadricToEllipsoid quadricToEllipsoid = new QuadricToEllipsoid();
     private static EllipsoidPlaneIntersectionOp intersectionOp = new EllipsoidPlaneIntersectionOp();
 
     @Override
-    public Optional<Ellipsoid> calculate(List<Vector3d> otherVertices, final ValuePair<Vector3d, Vector3d> startingVertexWithNormal) {
+    public List<Ellipsoid> calculate(List<Vector3d> otherVertices, final ValuePair<Vector3d, Vector3d> startingVertexWithNormal) {
+
+        List<Ellipsoid> fittedEllipsoids = new ArrayList<>();
 
         VertexWithNormal p = new VertexWithNormal(startingVertexWithNormal);
         otherVertices.remove(p.getVertex());
 
         ValuePair<VertexWithNormal, Double> qAndRadius = calculateQ(otherVertices, p);
-        if (qAndRadius == null) return Optional.empty();
+        if (qAndRadius == null) return fittedEllipsoids;
         otherVertices.remove(qAndRadius.getA().getVertex());
 
         Vector3d np = new Vector3d(p.getNormal());
@@ -51,7 +54,7 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
         Matrix4d q2 = getQ2(p, qAndRadius.getA());
 
         ValuePair<Vector3d, Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, otherVertices);
-        if (rAndAlpha == null) return Optional.empty();
+        if (rAndAlpha == null) return fittedEllipsoids;
         otherVertices.remove(rAndAlpha.getA());
 
         Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
@@ -59,18 +62,20 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
         q1PlusAlphaQ2.add(q1);
 
         Optional<Ellipsoid> ellipsoid = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
-        if (!ellipsoid.isPresent()) return Optional.empty();
+        if (!ellipsoid.isPresent()) return fittedEllipsoids;
+        fittedEllipsoids.add(ellipsoid.get());
 
         Matrix4d q3 = getQ3(Stream.of(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()).collect(Collectors.toList()), ellipsoid.get());
 
         ValuePair<Vector3d, Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, otherVertices);
-        if (sAndBeta == null) return Optional.empty();
+        if (sAndBeta == null) return fittedEllipsoids;
 
         Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
         q1PlusAlphaQ2plusBetaQ3.mul(sAndBeta.getB());
         q1PlusAlphaQ2.add(q1PlusAlphaQ2plusBetaQ3);
+        fittedEllipsoids.add(quadricToEllipsoid.calculate(q1PlusAlphaQ2).get());
 
-        return quadricToEllipsoid.calculate(q1PlusAlphaQ2);
+        return fittedEllipsoids;
     }
 
     /**
@@ -241,7 +246,7 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
 
 
     private static ValuePair<VertexWithNormal,Double> calculateQ(final List<Vector3d> candidateQs, final VertexWithNormal p) {
-        List<ValuePair<VertexWithNormal, Double>> candidateQAndRs = candidateQs.stream().map(q -> calculatePossibleQAndR(q,p)).filter(qnr -> qnr.getB()>0).collect(Collectors.toList());
+        List<ValuePair<VertexWithNormal, Double>> candidateQAndRs = candidateQs.stream().filter(q -> euclideanDistance(q,p.getVertex())>50).map(q -> calculatePossibleQAndR(q,p)).filter(qnr -> qnr.getB()>0).collect(Collectors.toList());
 
         candidateQAndRs.sort(Comparator.comparingDouble(ValuePair::getB));
 
@@ -249,6 +254,12 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
             return candidateQAndRs.get(0);
         else
             return null;
+    }
+
+    private static double euclideanDistance(Vector3d q, Vector3d p) {
+        Vector3d distance = new Vector3d(q);
+        distance.sub(p);
+        return distance.length();
     }
 
     private static ValuePair<VertexWithNormal,Double> calculatePossibleQAndR(Vector3d x, VertexWithNormal p)
@@ -266,7 +277,6 @@ public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<Vector3d
         Vector3d cMinusX = new Vector3d(x);
         cMinusX.scaleAdd(-1.0, centre);
         return new ValuePair<>(new VertexWithNormal(new ValuePair<>(x,cMinusX)),radius);
-
     }
 
     private static ValuePair<Vector3d, Double> calculateSurfacePointAndGreekCoefficient(final Matrix4d Q1, final Matrix4d Q2, final List<Vector3d> vertices)

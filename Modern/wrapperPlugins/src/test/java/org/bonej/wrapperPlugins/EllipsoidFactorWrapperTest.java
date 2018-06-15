@@ -1,35 +1,31 @@
 package org.bonej.wrapperPlugins;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
+import ij.IJ;
+import ij.ImagePlus;
 import net.imagej.ImageJ;
-
 import net.imagej.ImgPlus;
-import net.imagej.plugins.commands.io.NewImage;
 import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
-
-import ij.IJ;
-import ij.ImagePlus;
-import org.scijava.ui.awt.AWTUI;
 import org.scijava.vecmath.Vector3d;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+@Ignore
 public class EllipsoidFactorWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
@@ -128,10 +124,10 @@ public class EllipsoidFactorWrapperTest {
     public void testInsideEllipsoidEasy() throws Exception {
         //SETUP
         Ellipsoid axisAligned = new Ellipsoid(1,2,3);
-        long[] origin = {0,0,0};
-        long[] definitelyOutside = {4,4,4};
-        long[] justInside = {0,0,2};
-        long[] justOutside = {0,2,0};
+        Vector3d origin = new Vector3d(0,0,0);
+        Vector3d definitelyOutside = new Vector3d(4,4,4);
+        Vector3d justInside = new Vector3d(0,0,2);
+        Vector3d justOutside = new Vector3d(0,2,0);
 
 
         //EXECUTE AND VERIFY
@@ -144,6 +140,7 @@ public class EllipsoidFactorWrapperTest {
 
     // main method for manual visual testing
     public static void main(String[] args) {
+
     }
 
 }
