@@ -57,17 +57,20 @@ Steps
 2. Run Process > Binary > Make Binary
 3. Run plugin BoneJ > Inter-trabecular Angle with
 	- valence range 3-50
-	- minimum length = 5
+	- minimum trabecular length = 5
+	- margin = 0
 	- iterate pruning = false
+	- use clusters = true
+	- print centroids = false
 	- print % culled edges = true
 	
 Expected result
 -----------------------------------------------------------------------
 Edge culling percentages correspond to 
-loops			repeated		short inner		short dead ends
+loops			    repeated		    short edges		    dead ends edges
 0.7867132867132868	4.108391608391608	25.961538461538463	5.244755244755245
 
-Completed 16 June 2017 Alessandro Felder
+Completed 19 June 2018 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -79,10 +82,13 @@ Steps
 -----------------------------------------------------------------------
 1. Open the sample: File > Open Samples > Bat Cochlea Volume
 2. Run plugin BoneJ > Inter-trabecular Angle
-   - valence range 3-50
-   - minimum length = 3
-   - iterate pruning = false
-   - print % culled edges = true
+	- valence range 3-50
+	- minimum trabecular length = 3
+	- margin = 0
+	- iterate pruning = false
+	- use clusters = true
+	- print centroids = false
+	- print % culled edges = true
 3. Close all windows except for the Bat Cochlea image
 4. Set scale on Bat Cochlea: Analyze > Set scale...
    - Distance in pixels: 1
@@ -94,7 +100,7 @@ Steps
 
 Expected result
 -----------------------------------------------------------------------
-Number of culled edges (short edges) changes after the second run
+Dead-end percentage changes after the second run
 
-Completed 16 June 2017 Richard Domander
+Completed 19 June 2018 Richard Domander
 -----------------------------------------------------------------------
