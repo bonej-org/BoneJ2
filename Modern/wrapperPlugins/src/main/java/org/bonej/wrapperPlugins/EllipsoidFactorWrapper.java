@@ -102,7 +102,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
 
         //find clever seed and boundary points
         final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
-        double samplingWidth = 1.0;
+        double samplingWidth = 1.0/2.3;
         int nSphere = estimateNSpiralPointsRequired(estimatedCharacteristicLength.get(), samplingWidth);
         List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
 
