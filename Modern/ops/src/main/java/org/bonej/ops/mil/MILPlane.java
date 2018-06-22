@@ -2,7 +2,6 @@
 package org.bonej.ops.mil;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -10,8 +9,6 @@ import java.util.stream.Stream;
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
-import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.Interval;
@@ -23,8 +20,9 @@ import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.ValuePair;
 
-import org.bonej.ops.BoxIntersect;
 import org.bonej.ops.RotateAboutAxis;
+import org.joml.Intersectiond;
+import org.joml.Vector2d;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.AxisAngle4d;
@@ -72,7 +70,6 @@ public class MILPlane<B extends BooleanType<B>> extends
 {
 
 	private static BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
-	private static BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp;
 	private final Random random = new Random();
 	/**
 	 * Number of sampling lines generated per dimension.
@@ -132,7 +129,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	public Vector3d calculate(final RandomAccessibleInterval<B> interval,
 		final AxisAngle4d rotation)
 	{
-		matchOps(interval);
+		matchOps();
 		final LinePlane samplingPlane = new LinePlane(interval, rotation, rotateOp);
 		if (seed != null) {
 			random.setSeed(seed);
@@ -199,17 +196,21 @@ public class MILPlane<B extends BooleanType<B>> extends
 	private static Section intersectInterval(final Point3d origin,
 		final Vector3d direction, final Interval interval)
 	{
-		final ValuePair<Point3d, Vector3d> line = new ValuePair<>(origin,
-			direction);
-		final Optional<ValuePair<DoubleType, DoubleType>> result = intersectOp
-			.calculate(line, interval);
-		if (!result.isPresent()) {
+		final Vector2d result = new Vector2d();
+		final org.joml.Vector3d o = new org.joml.Vector3d(origin.x, origin.y,
+			origin.z);
+		final org.joml.Vector3d d = new org.joml.Vector3d(direction.x, direction.y,
+			direction.z);
+		final org.joml.Vector3d min = new org.joml.Vector3d(interval.min(0),
+			interval.min(1), interval.min(2));
+		final org.joml.Vector3d max = new org.joml.Vector3d(interval.max(0) + 1,
+			interval.max(1) + 1, interval.max(2) + 1);
+		final boolean intersect = Intersectiond.intersectRayAab(o, d, min, max,
+			result);
+		if (!intersect) {
 			return null;
 		}
-		final ValuePair<DoubleType, DoubleType> scalars = result.get();
-		final double tMin = scalars.getA().get();
-		final double tMax = scalars.getB().get();
-		return new Section(line.a, tMin, tMax);
+		return new Section(origin, result.x, result.y);
 	}
 
 	private ValuePair<Double, Long> mILValues(
@@ -226,11 +227,9 @@ public class MILPlane<B extends BooleanType<B>> extends
 	}
 
 	@SuppressWarnings("unchecked")
-	private void matchOps(final RandomAccessibleInterval<B> interval) {
+	private void matchOps() {
 		rotateOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class, Tuple3d.class,
 			new Vector3d(), new AxisAngle4d());
-		intersectOp = (BinaryFunctionOp) Functions.binary(ops(), BoxIntersect.class,
-			Optional.class, ValuePair.class, interval);
 	}
 
 	private Vector3d sampleMILVector(final RandomAccessible<B> interval,
