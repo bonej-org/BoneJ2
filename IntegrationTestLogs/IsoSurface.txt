@@ -10,15 +10,18 @@ Steps
 4. Check "Export STL file(s)", and click "OK"
 5. Choose a directory and save file as "Mesh"
 6. Verify that plugin writes 4 .stl files to the specified folder
-7. Check that the files can be opened with http://www.viewstl.com/
-   (Should see a similar cube in each)
+7. Check that the files can be opened in software of your choice
 
 Expected result
 -----------------------------------------------------------------------
-Plugin writes four files with the extension ".stl" to the chosen directory.
-All files can be opened with the stl renderer above.
+Plugin writes four files with the extension ".stl" to the chosen
+directory. All files can be viewed.
 
-Completed 13 March 2018 Richard Domander
+Notes
+-----------------------------------------------------------------------
+Test was performed with Gmsh.
+
+Completed Richard Domander June 7th 2018
 -----------------------------------------------------------------------
 
 
@@ -28,14 +31,37 @@ Pressing cancel in the file dialog stops the plugin
 =======================================================================
 Steps
 -----------------------------------------------------------------------
-1. Create a cuboid (Test Images>Cuboid)
-2. Run Plugins >BoneJ > Surface area
-3. Check "Export STL file(s)", and click "OK"
-4. Click cancel on the file dialog
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/hyperCube.zip
+3. Run Plugins > BoneJ > Surface area
+4. Check "Export STL file(s)", and click "OK"
+5. Click cancel on the file dialog
 
 Expected result
 -----------------------------------------------------------------------
 Plugin stops without exceptions and no files are created
 
-Completed 5 August 2016 Richard Domander
+Completed Richard Domander June 4th 2018
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+Plug-in doesn't save results if it's cancelled
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/hyperCube.zip
+3. Run Plugins > BoneJ > Surface area
+4. Check "Export STL file(s)", and click "OK"
+5. Click cancel on the file dialog
+6. Run Plugins > BoneJ > Connectivity
+
+Expected result
+-----------------------------------------------------------------------
+Results table has only connectivity related results, and none from
+surface area.
+
+Completed Richard Domander June 4th 2018
 -----------------------------------------------------------------------
