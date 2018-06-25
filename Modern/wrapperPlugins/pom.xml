@@ -152,6 +152,10 @@
             <artifactId>ij1-patcher</artifactId>
         </dependency>
         <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-mesh</artifactId>
+        </dependency>
+        <dependency>
             <!-- Needed legacy things like ImagePlus UI. Do not remove. -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
@@ -224,12 +228,6 @@
                     <artifactId>hamcrest-core</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.bonej</groupId>
-            <artifactId>testImgs</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

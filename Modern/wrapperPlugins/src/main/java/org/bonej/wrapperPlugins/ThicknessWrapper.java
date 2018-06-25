@@ -1,12 +1,12 @@
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,12 +27,9 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
-import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 
 import ij.ImagePlus;
@@ -77,10 +74,6 @@ public class ThicknessWrapper extends ContextCommand {
 		persist = false, required = false)
 	private boolean cropToRois = false;
 
-	@Parameter(label = "Help", description = "Open help web page",
-		callback = "openHelpPage")
-	private Button helpButton;
-
 	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
 	private ImagePlus trabecularMap;
 
@@ -97,16 +90,10 @@ public class ThicknessWrapper extends ContextCommand {
 	private Table<DefaultColumn<String>, String> resultsTable;
 
 	@Parameter
-	private LogService logService;
-
-	@Parameter
-	private PlatformService platformService;
-
-	@Parameter
 	private UIService uiService;
 
 	@Parameter
-    private StatusService statusService;
+	private StatusService statusService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
@@ -121,7 +108,7 @@ public class ThicknessWrapper extends ContextCommand {
 			prepareRun(foreground);
 			statusService.showStatus("Thickness: creating thickness map");
 			final ImagePlus map = createMap();
-            statusService.showStatus("Thickness: calculating results");
+			statusService.showStatus("Thickness: calculating results");
 			addMapResults(map);
 			thicknessMaps.put(foreground, map);
 		});
@@ -132,6 +119,58 @@ public class ThicknessWrapper extends ContextCommand {
 			trabecularMap = thicknessMaps.get(true);
 			spacingMap = thicknessMaps.get(false);
 		}
+	}
+
+	private void addMapResults(final ImagePlus map) {
+		if (map == null) {
+			return;
+		}
+		final String unitHeader = ResultUtils.getUnitHeader(map);
+		final String label = map.getTitle();
+		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
+		final StackStatistics resultStats = new StackStatistics(map);
+		double mean = resultStats.mean;
+		double stdDev = resultStats.stdDev;
+		double max = resultStats.max;
+
+		if (resultStats.pixelCount == 0) {
+			// All pixels are background (NaN), stats not applicable
+			mean = Double.NaN;
+			stdDev = Double.NaN;
+			max = Double.NaN;
+		}
+
+		SharedTable.add(label, prefix + " Mean " + unitHeader, mean);
+		SharedTable.add(label, prefix + " Std Dev " + unitHeader, stdDev);
+		SharedTable.add(label, prefix + " Max " + unitHeader, max);
+	}
+
+	private void createLocalThickness() {
+		localThickness = new LocalThicknessWrapper();
+		localThickness.setSilence(true);
+		localThickness.setShowOptions(false);
+		localThickness.maskThicknessMap = maskArtefacts;
+		localThickness.calibratePixels = true;
+	}
+
+	private ImagePlus createMap() {
+		final ImagePlus image;
+
+		if (cropToRois) {
+			final RoiManager roiManager = RoiManager.getInstance2();
+			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
+				roiManager, inputImage.getStack(), true, 0x00);
+			if (!stackOptional.isPresent()) {
+				cancel("Can't crop without valid ROIs in the ROIManager");
+				return null;
+			}
+			image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
+		}
+		else {
+			image = cleanDuplicate(inputImage);
+		}
+
+		return localThickness.processImage(image);
 	}
 
 	// region -- Helper methods --
@@ -160,59 +199,7 @@ public class ThicknessWrapper extends ContextCommand {
 		localThickness.inverse = !foreground;
 	}
 
-	private ImagePlus createMap() {
-		final ImagePlus image;
-
-		if (cropToRois) {
-			final RoiManager roiManager = RoiManager.getInstance2();
-			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
-				roiManager, inputImage.getStack(), true, 0x00);
-			if (!stackOptional.isPresent()) {
-				cancel("Can't crop without valid ROIs in the ROIManager");
-				return null;
-			}
-			image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
-		}
-		else {
-			image = cleanDuplicate(inputImage);
-		}
-
-		return localThickness.processImage(image);
-	}
-
-	private void createLocalThickness() {
-		localThickness = new LocalThicknessWrapper();
-		localThickness.setSilence(true);
-		localThickness.setShowOptions(false);
-		localThickness.maskThicknessMap = maskArtefacts;
-		localThickness.calibratePixels = true;
-	}
-
-	private void addMapResults(final ImagePlus map) {
-		if (map == null) {
-			return;
-		}
-		final String unitHeader = ResultUtils.getUnitHeader(map);
-		final String label = map.getTitle();
-		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
-		final StackStatistics resultStats = new StackStatistics(map);
-		double mean = resultStats.mean;
-		double stdDev = resultStats.stdDev;
-		double max = resultStats.max;
-
-		if (resultStats.pixelCount == 0) {
-			// All pixels are background (NaN), stats not applicable
-			mean = Double.NaN;
-			stdDev = Double.NaN;
-			max = Double.NaN;
-		}
-
-		SharedTable.add(label, prefix + " Mean " + unitHeader, mean);
-		SharedTable.add(label, prefix + " Std Dev " + unitHeader, stdDev);
-		SharedTable.add(label, prefix + " Max " + unitHeader, max);
-	}
-
-    @SuppressWarnings("unused")
+	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
 			cancel(NO_IMAGE_OPEN);
@@ -241,17 +228,12 @@ public class ThicknessWrapper extends ContextCommand {
 		}
 
 		if (!anisotropyWarned) {
- 			if(!Common.warnAnisotropy(inputImage, uiService)) {
- 			    cancel(null);
-            }
-            anisotropyWarned = true;
-        }
+			if (!Common.warnAnisotropy(inputImage, uiService)) {
+				cancel(null);
+			}
+			anisotropyWarned = true;
+		}
 	}
 
-    @SuppressWarnings("unused")
-	private void openHelpPage() {
-		Help.openHelpPage("http://bonej.org/thickness", platformService, uiService,
-			logService);
-	}
 	// endregion
 }
