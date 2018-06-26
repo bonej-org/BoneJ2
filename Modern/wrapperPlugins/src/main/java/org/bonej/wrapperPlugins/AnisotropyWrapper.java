@@ -50,6 +50,9 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
+import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -60,10 +63,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
-import org.scijava.vecmath.AxisAngle4d;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Quat4d;
-import org.scijava.vecmath.Vector3d;
 import org.scijava.widget.NumberWidget;
 
 /**
@@ -92,9 +91,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	// with data at hand. Other data may need a different number.
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
-	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
-	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
+	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, Quaterniondc, Vector3d> milOp;
+	private static UnaryFunctionOp<org.scijava.vecmath.Matrix4d, Ellipsoid> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<List<org.scijava.vecmath.Vector3d>, org.scijava.vecmath.Matrix4d> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")
@@ -198,9 +197,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Ellipsoid fitEllipsoid(final List<Vector3d> pointCloud) {
+	private Ellipsoid fitEllipsoid(
+		final List<org.scijava.vecmath.Vector3d> pointCloud)
+	{
 		statusService.showStatus("Anisotropy: solving quadric equation");
-		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
+		final org.scijava.vecmath.Matrix4d quadric = solveQuadricOp.calculate(
+			pointCloud);
 		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
 			return null;
 		}
@@ -221,19 +223,21 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	private void matchOps(final Subspace<BitType> subspace) {
 		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
-			subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
-		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
-			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
+			subspace.interval, new Quaterniond(), lines, samplingIncrement);
+		final List<org.scijava.vecmath.Vector3d> tmpPoints = generate(
+			org.scijava.vecmath.Vector3d::new).limit(SolveQuadricEq.QUADRIC_TERMS)
+				.collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
-			Matrix4d.class, tmpPoints);
-		final Matrix4d matchingMock = new Matrix4d();
+			org.scijava.vecmath.Matrix4d.class, tmpPoints);
+		final org.scijava.vecmath.Matrix4d matchingMock =
+			new org.scijava.vecmath.Matrix4d();
 		matchingMock.setIdentity();
 		quadricToEllipsoidOp = Functions.unary(opService, QuadricToEllipsoid.class,
 			Ellipsoid.class, matchingMock);
 	}
 
 	private boolean processSubspace(final Subspace<BitType> subspace) {
-		final List<Vector3d> pointCloud;
+		final List<org.scijava.vecmath.Vector3d> pointCloud;
 		try {
 			pointCloud = runDirectionsInParallel(subspace.interval);
 		}
@@ -258,19 +262,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	/**
-	 * Creates {@link AxisAngle4d} from random isotropically distributed
-	 * quaternions.
+	 * Creates a random isotropically distributed quaternion.
 	 *
-	 * @return an axis-angle which can be used as a parameter for the op.
+	 * @return a (rotation) quaternion which can be used as a parameter for the
+	 *         op.
 	 */
-	private static AxisAngle4d randomAxisAngle() {
-		final Quat4d q = new Quat4d(qGenerator.nextVector());
-		final AxisAngle4d axisAngle4d = new AxisAngle4d();
-		axisAngle4d.set(q);
-		return axisAngle4d;
+	private static Quaterniondc randomQuaternion() {
+		final double[] v = qGenerator.nextVector();
+		return new Quaterniond(v[0], v[1], v[2], v[3]);
 	}
 
-	private List<Vector3d> runDirectionsInParallel(
+	private List<org.scijava.vecmath.Vector3d> runDirectionsInParallel(
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
 	{
@@ -283,16 +285,18 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final int nThreads = Math.max(5, cores);
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
-			randomAxisAngle());
+			randomQuaternion());
 		final List<Future<Vector3d>> futures = generate(() -> milTask).limit(
 			directions).map(executor::submit).collect(toList());
-		final List<Vector3d> pointCloud = Collections.synchronizedList(
-			new ArrayList<>(directions));
+		final List<org.scijava.vecmath.Vector3d> pointCloud = Collections
+			.synchronizedList(new ArrayList<>(directions));
 		final int futuresSize = futures.size();
 		final AtomicInteger progress = new AtomicInteger();
 		for (final Future<Vector3d> future : futures) {
 			statusService.showProgress(progress.getAndIncrement(), futuresSize);
-			final Vector3d milVector = future.get();
+			final Vector3d v = future.get();
+			final org.scijava.vecmath.Vector3d milVector =
+				new org.scijava.vecmath.Vector3d(v.x, v.y, v.z);
 			pointCloud.add(milVector);
 		}
 		shutdownAndAwaitTermination(executor);
