@@ -38,7 +38,8 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
-import org.bonej.ops.RotateAboutAxis;
+import org.apache.commons.math3.random.RandomVectorGenerator;
+import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.bonej.ops.SolveQuadricEq;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
@@ -61,6 +62,7 @@ import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Matrix4d;
+import org.scijava.vecmath.Quat4d;
 import org.scijava.vecmath.Vector3d;
 import org.scijava.widget.NumberWidget;
 
@@ -74,9 +76,13 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
-	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
-	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
+	/**
+	 * Generates four normally distributed values between [0, 1] that describe a
+	 * unit quaternion. These can be used to create isotropically distributed
+	 * rotations.
+	 */
+	private static final RandomVectorGenerator qGenerator =
+		new UnitSphereRandomVectorGenerator(4);
 	/**
 	 * Default directions is 2_000 since that's roughly the number of points in
 	 * Poisson distributed sampling that'd give points about 5 degrees apart).
@@ -86,6 +92,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	// with data at hand. Other data may need a different number.
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
+	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
+	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")
@@ -248,6 +257,19 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		return true;
 	}
 
+	/**
+	 * Creates {@link AxisAngle4d} from random isotropically distributed
+	 * quaternions.
+	 *
+	 * @return an axis-angle which can be used as a parameter for the op.
+	 */
+	private static AxisAngle4d randomAxisAngle() {
+		final Quat4d q = new Quat4d(qGenerator.nextVector());
+		final AxisAngle4d axisAngle4d = new AxisAngle4d();
+		axisAngle4d.set(q);
+		return axisAngle4d;
+	}
+
 	private List<Vector3d> runDirectionsInParallel(
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
@@ -261,7 +283,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final int nThreads = Math.max(5, cores);
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
-			RotateAboutAxis.randomAxisAngle());
+			randomAxisAngle());
 		final List<Future<Vector3d>> futures = generate(() -> milTask).limit(
 			directions).map(executor::submit).collect(toList());
 		final List<Vector3d> pointCloud = Collections.synchronizedList(

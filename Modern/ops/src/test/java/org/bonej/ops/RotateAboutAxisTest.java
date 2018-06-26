@@ -3,10 +3,7 @@ package org.bonej.ops;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import java.util.stream.DoubleStream;
 
 import net.imagej.ImageJ;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
@@ -60,21 +57,6 @@ public class RotateAboutAxisTest {
 
 		assertTrue("Rotated vector is incorrect.", expected.epsilonEquals(rotated,
 			1e-12));
-	}
-
-	@Test
-	public void testRandomAxisAngle() throws Exception {
-		final AxisAngle4d a = RotateAboutAxis.randomAxisAngle();
-
-		assertNotNull(a);
-		final double vectorLength = Math.sqrt(DoubleStream.of(a.x, a.y, a.z).map(
-			x -> x * x).sum());
-		final double magnitude = Math.sin(a.angle / 2.0) / vectorLength;
-		final double qNorm = DoubleStream.of(a.x * magnitude, a.y * magnitude, a.z *
-			magnitude, Math.cos(a.angle / 2.0)).map(x -> x * x).sum();
-		assertEquals(
-			"A random rotation axis-angle should correspond to a unit quaternion",
-			1.0, Math.sqrt(qNorm), 1e-12);
 	}
 
 	@BeforeClass

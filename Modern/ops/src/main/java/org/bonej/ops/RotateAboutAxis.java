@@ -4,7 +4,6 @@ package org.bonej.ops;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.hybrid.AbstractBinaryHybridCFI1;
 
-import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Quat4d;
@@ -25,14 +24,6 @@ import org.scijava.vecmath.Vector3d;
 public class RotateAboutAxis extends
 	AbstractBinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d>
 {
-
-	/**
-	 * Generates four normally distributed values between [0, 1] that describe a
-	 * unit quaternion. These can be used to create isotropically distributed
-	 * rotations.
-	 */
-	private static final UnitSphereRandomVectorGenerator qGenerator =
-		new UnitSphereRandomVectorGenerator(4);
 
 	/**
 	 * Rotates the input tuple around the axis-angle and stores the result in the
@@ -72,19 +63,6 @@ public class RotateAboutAxis extends
 		// the setter normalizes the quaternion
 		q.set(axisAngle);
 		rotate(v, q);
-	}
-
-	/**
-	 * Creates {@link AxisAngle4d} from random isotropically distributed
-	 * quaternions.
-	 *
-	 * @return an axis-angle which can be used as a parameter for the op.
-	 */
-	public static AxisAngle4d randomAxisAngle() {
-		final Quat4d q = new Quat4d(qGenerator.nextVector());
-		final AxisAngle4d axisAngle4d = new AxisAngle4d();
-		axisAngle4d.set(q);
-		return axisAngle4d;
 	}
 
 	private static void rotate(final Tuple3d v, final Quat4d q) {
