@@ -1,8 +1,6 @@
 
 package org.bonej.ops;
 
-import static java.util.stream.DoubleStream.generate;
-
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -10,13 +8,12 @@ import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.SingularValueDecomposition;
+import org.joml.Matrix4d;
+import org.joml.Vector3d;
+import org.ojalgo.matrix.BasicMatrix.Builder;
+import org.ojalgo.matrix.PrimitiveMatrix;
+import org.ojalgo.random.Deterministic;
 import org.scijava.plugin.Plugin;
-import org.scijava.vecmath.GMatrix;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Tuple3d;
 
 /**
  * An op that fits a quadratic surface (quadric) into a set of points.
@@ -34,11 +31,10 @@ import org.scijava.vecmath.Tuple3d;
  * </p>
  *
  * @author Richard Domander
- * @param <T> type of the three-element tuple.
  */
 @Plugin(type = Op.class)
-public class SolveQuadricEq<T extends Tuple3d> extends
-	AbstractUnaryFunctionOp<Collection<T>, Matrix4d> implements Contingent
+public class SolveQuadricEq extends
+	AbstractUnaryFunctionOp<Collection<Vector3d>, Matrix4d> implements Contingent
 {
 
 	/**
@@ -51,7 +47,7 @@ public class SolveQuadricEq<T extends Tuple3d> extends
 	public static final int QUADRIC_TERMS = 9;
 
 	@Override
-	public Matrix4d calculate(final Collection<T> points) {
+	public Matrix4d calculate(final Collection<Vector3d> points) {
 		final double[] vector = solveVector(points);
 		return toQuadricMatrix(vector);
 	}
@@ -69,48 +65,25 @@ public class SolveQuadricEq<T extends Tuple3d> extends
 	 * @param points points in a 3D space.
 	 * @return a [points.size()][9] matrix of real values.
 	 */
-	private GMatrix createDesignMatrix(final Collection<T> points) {
-		final GMatrix designMatrix = new GMatrix(points.size(), 9);
-		final Iterator<T> iterator = points.iterator();
+	private static PrimitiveMatrix createDesignMatrix(
+		final Collection<Vector3d> points)
+	{
+		final Builder<PrimitiveMatrix> builder = PrimitiveMatrix.FACTORY.getBuilder(
+			points.size(), QUADRIC_TERMS);
+		final Iterator<Vector3d> iterator = points.iterator();
 		for (int i = 0; i < points.size(); i++) {
-			final T p = iterator.next();
-			final double[] rowData = { p.x * p.x, p.y * p.y, p.z * p.z, 2 * p.x * p.y,
-				2 * p.x * p.z, 2 * p.y * p.z, 2 * p.x, 2 * p.y, 2 * p.z };
-			designMatrix.setRow(i, rowData);
+			final Vector3d p = iterator.next();
+			builder.set(i, 0, p.x * p.x);
+			builder.set(i, 1, p.y * p.y);
+			builder.set(i, 2, p.z * p.z);
+			builder.set(i, 3, 2 * p.x * p.y);
+			builder.set(i, 4, 2 * p.x * p.z);
+			builder.set(i, 5, 2 * p.y * p.z);
+			builder.set(i, 6, 2 * p.x);
+			builder.set(i, 7, 2 * p.y);
+			builder.set(i, 8, 2 * p.z);
 		}
-		return designMatrix;
-	}
-
-	/**
-	 * Calculates the pseudoinverse matrix A+ of the given matrix A.
-	 * <p>
-	 * A common use of the pseudoinverse is to compute a 'best fit' (least
-	 * squares) solution to a system of linear equations that lacks a unique
-	 * solution. Which is exactly what happens in
-	 * {@link #solveVector(Collection)}. Because the design matrix in the method
-	 * might lack an exact solution, it can cause a
-	 * {@link org.scijava.vecmath.SingularMatrixException} if were trying to get
-	 * its inverse.
-	 * </p>
-	 *
-	 * @param a the design matrix which when solved (best fit) provides an
-	 *          equation for a quadric surface.
-	 */
-	// Using apache.commons.math since scijava.vecmath doesn't yet offer
-	// pseudoinverse
-	private void pseudoInverse(final GMatrix a) {
-		final int rows = a.getNumRow();
-		final double[][] data = new double[rows][];
-		for (int i = 0; i < rows; i++) {
-			final double[] rowData = new double[a.getNumCol()];
-			a.getRow(i, rowData);
-			data[i] = rowData;
-		}
-		final RealMatrix pseudoInverse = new SingularValueDecomposition(
-			new Array2DRowRealMatrix(data)).getSolver().getInverse();
-		for (int i = 0; i < rows; i++) {
-			a.setRow(i, pseudoInverse.getRow(i));
-		}
+		return builder.build();
 	}
 
 	/**
@@ -125,26 +98,18 @@ public class SolveQuadricEq<T extends Tuple3d> extends
 	 * @param points A collection of points in a 3D space.
 	 * @return the solution vector of the surface.
 	 */
-	private double[] solveVector(final Collection<T> points) {
+	private static double[] solveVector(final Collection<Vector3d> points) {
 		final int n = points.size();
 		// Find (dT * d)^-1
-		final GMatrix d = createDesignMatrix(points);
-		final GMatrix dT = new GMatrix(d);
-		dT.transpose();
-		final GMatrix dTDInv = new GMatrix(dT.getNumRow(), d.getNumCol());
-		dTDInv.mul(dT, d);
-		pseudoInverse(dTDInv);
+		final PrimitiveMatrix d = createDesignMatrix(points);
+		final PrimitiveMatrix dT = d.transpose();
+		final PrimitiveMatrix dTDInv = dT.multiply(d).invert();
 		// Multiply dT * O, where O = [1, 1, ... 1] (n x 1) matrix
-		final GMatrix o = new GMatrix(n, 1, generate(() -> 1.0).limit(n).toArray());
-		final GMatrix dTO = new GMatrix(dT.getNumRow(), o.getNumCol());
-		dTO.mul(dT, o);
+		final PrimitiveMatrix o = PrimitiveMatrix.FACTORY.makeFilled(n, 1,
+			new Deterministic(1.0));
+		final PrimitiveMatrix dTO = dT.multiply(o);
 		// Find solution A = (dT * d)^-1 * (dT * O)
-		final GMatrix a = new GMatrix(dTDInv.getNumRow(), dTO.getNumCol());
-		a.mul(dTDInv, dTO);
-		// Return solution vector
-		final double[] vector = new double[a.getNumRow()];
-		a.getColumn(0, vector);
-		return vector;
+		return dTDInv.multiply(dTO).toRawCopy1D();
 	}
 
 	/**
@@ -167,11 +132,13 @@ public class SolveQuadricEq<T extends Tuple3d> extends
 		final double g = solution[6];
 		final double h = solution[7];
 		final double i = solution[8];
-		final Matrix4d matrix = new Matrix4d();
-		matrix.setRow(0, new double[] { a, d, e, g });
-		matrix.setRow(1, new double[] { d, b, f, h });
-		matrix.setRow(2, new double[] { e, f, c, i });
-		matrix.setRow(3, new double[] { g, h, i, -1 });
-		return matrix;
+		// @formatter:off
+		return new Matrix4d(
+				a, d, e, g,
+				d, b, f, h,
+				e, f, c, i,
+				g, h, i, -1
+		);
+		// @formatter:on
 	}
 }

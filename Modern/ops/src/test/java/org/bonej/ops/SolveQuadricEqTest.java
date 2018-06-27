@@ -9,10 +9,11 @@ import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
 
+import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
+import org.joml.Vector3d;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
 
 /**
  * Tests for {@link SolveQuadricEq}.
@@ -34,17 +35,17 @@ public class SolveQuadricEqTest {
 		new Vector3d(0, -alpha, -alpha), new Vector3d(alpha, 0, alpha),
 		new Vector3d(alpha, 0, -alpha), new Vector3d(-alpha, 0, alpha),
 		new Vector3d(-alpha, 0, -alpha)).collect(toList());
-	private static final Matrix4d solution = (Matrix4d) IMAGE_J.op().run(
+	private static final Matrix4dc solution = (Matrix4dc) IMAGE_J.op().run(
 		SolveQuadricEq.class, unitSpherePoints);
-	private static final double a = solution.getElement(0, 0);
-	private static final double b = solution.getElement(1, 1);
-	private static final double c = solution.getElement(2, 2);
-	private static final double d = solution.getElement(0, 1);
-	private static final double e = solution.getElement(0, 2);
-	private static final double f = solution.getElement(1, 2);
-	private static final double g = solution.getElement(0, 3);
-	private static final double h = solution.getElement(1, 3);
-	private static final double i = solution.getElement(2, 3);
+	private static final double a = solution.m00();
+	private static final double b = solution.m11();
+	private static final double c = solution.m22();
+	private static final double d = solution.m01();
+	private static final double e = solution.m02();
+	private static final double f = solution.m12();
+	private static final double g = solution.m03();
+	private static final double h = solution.m13();
+	private static final double i = solution.m23();
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testMatchingFailsIfTooFewPoints() {
@@ -56,31 +57,18 @@ public class SolveQuadricEqTest {
 
 	@Test
 	public void testMatrixElements() {
-		final double a = solution.getElement(0, 0);
-		assertEquals("The matrix element is incorrect", 1.0, a, 1e-12);
-		final double b = solution.getElement(1, 1);
-		assertEquals("The matrix element is incorrect", 1.0, b, 1e-12);
-		final double c = solution.getElement(2, 2);
-		assertEquals("The matrix element is incorrect", 1.0, c, 1e-12);
-		final double d = solution.getElement(0, 1);
-		assertEquals("The matrix element is incorrect", 0.0, d, 1e-12);
-		final double e = solution.getElement(0, 2);
-		assertEquals("The matrix element is incorrect", 0.0, e, 1e-12);
-		final double f = solution.getElement(1, 2);
-		assertEquals("The matrix element is incorrect", 0.0, f, 1e-12);
-		final double g = solution.getElement(0, 3);
-		assertEquals("The matrix element is incorrect", 0.0, g, 1e-12);
-		final double h = solution.getElement(1, 3);
-		assertEquals("The matrix element is incorrect", 0.0, h, 1e-12);
-		final double i = solution.getElement(2, 3);
-		assertEquals("The matrix element is incorrect", 0.0, i, 1e-12);
-
-		for (int j = 0; j < 4; j++) {
-			for (int k = 0; k < 4; k++) {
-				assertEquals("Matrix is not symmetric", solution.getElement(j, k),
-					solution.getElement(k, j), 1e-12);
-			}
-		}
+		assertEquals("The matrix element is incorrect", 1.0, solution.m00(), 1e-12);
+		assertEquals("The matrix element is incorrect", 1.0, solution.m11(), 1e-12);
+		assertEquals("The matrix element is incorrect", 1.0, solution.m22(), 1e-12);
+		assertEquals("The matrix element is incorrect", 0.0, solution.m01(), 1e-12);
+		assertEquals("The matrix element is incorrect", 0.0, solution.m02(), 1e-12);
+		assertEquals("The matrix element is incorrect", 0.0, solution.m12(), 1e-12);
+		assertEquals("The matrix element is incorrect", 0.0, solution.m03(), 1e-12);
+		assertEquals("The matrix element is incorrect", 0.0, solution.m13(), 1e-12);
+		assertEquals("The matrix element is incorrect", 0.0, solution.m23(), 1e-12);
+		final Matrix4d transposed = new Matrix4d();
+		solution.transpose(transposed);
+		assertEquals("Matrix is not symmetric", solution, transposed);
 	}
 
 	@Test

@@ -96,16 +96,20 @@ public class QuadricToEllipsoidTest {
 		final Random rng = new Random(SEED);
 
 		// EXECUTE
-		final List<Vector3d> points = ellipsoidPoints.calculate(radii, 1_000L);
 		// The points are isotropically distributed on the ellipsoid surface, but
 		// after the scaling they are not evenly distributed in space.
-		points.forEach(p -> {
-			final double scale = (2 * rng.nextDouble() - 1) * 0.05 + 1.0;
-			p.scale(scale);
-		});
-		final Matrix4d quadric = (Matrix4d) IMAGE_J.op().run(SolveQuadricEq.class,
-			points);
-		final Ellipsoid ellipsoid = quadricToEllipsoid.calculate(quadric);
+		final List<org.joml.Vector3d> points = ellipsoidPoints.calculate(radii,
+			1_000L).stream().peek(p -> {
+				final double scale = (2 * rng.nextDouble() - 1) * 0.05 + 1.0;
+				p.scale(scale);
+			}).map(p -> new org.joml.Vector3d(p.x, p.y, p.z)).collect(Collectors
+				.toList());
+		final org.joml.Matrix4d quadric = (org.joml.Matrix4d) IMAGE_J.op().run(
+			SolveQuadricEq.class, points);
+		final double[] data = new double[16];
+		quadric.get(data);
+		final Matrix4d q = new Matrix4d(data);
+		final Ellipsoid ellipsoid = quadricToEllipsoid.calculate(q);
 
 		// VERIFY
 		assertTrue("Ellipsoid centre point is not within tolerance", new Vector3d(0,
@@ -140,14 +144,17 @@ public class QuadricToEllipsoidTest {
 
 		// EXECUTE
 		final List<Vector3d> points = ellipsoidPoints.calculate(radii, 1_000L);
-		final List<Vector3d> rotated = points.stream().map(
+		final List<org.joml.Vector3d> rotated = points.stream().map(
 			p -> new org.joml.Vector3d(p.x, p.y, p.z)).peek(rotate::mutate).map(
-				v -> new Vector3d(v.x, v.y, v.z)).peek(p -> p.add(centroid)).collect(Collectors.toList());
-
-		final Matrix4d quadric = (Matrix4d) IMAGE_J.op().run(SolveQuadricEq.class,
-				rotated);
-		final Ellipsoid transformedEllipsoid = quadricToEllipsoid.calculate(
-			quadric);
+				v -> new Vector3d(v.x, v.y, v.z)).peek(p -> p.add(centroid)).map(
+					p -> new org.joml.Vector3d(p.x, p.y, p.z)).collect(Collectors
+						.toList());
+		final org.joml.Matrix4d quadric = (org.joml.Matrix4d) IMAGE_J.op().run(
+			SolveQuadricEq.class, rotated);
+		final double[] data = new double[16];
+		quadric.get(data);
+		final Matrix4d m = new Matrix4d(data);
+		final Ellipsoid transformedEllipsoid = quadricToEllipsoid.calculate(m);
 
 		// VERIFY
 		assertTrue(transformedEllipsoid.getCentroid().epsilonEquals(centroid,

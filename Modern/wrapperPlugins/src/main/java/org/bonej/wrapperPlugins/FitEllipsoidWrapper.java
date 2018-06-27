@@ -23,6 +23,9 @@ import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
+import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -30,8 +33,6 @@ import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -86,12 +87,17 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			return;
 		}
 		statusService.showStatus("Fit ellipsoid: solving ellipsoid equation");
-		final Matrix4d quadric = (Matrix4d) opService.run(SolveQuadricEq.class,
-			points);
+		final Matrix4dc quadric = (Matrix4dc) opService.run(SolveQuadricEq.class,
+				points);
+		final double[] data = new double[16];
+		quadric.get(data);
+		final org.scijava.vecmath.Matrix4d q = new org.scijava.vecmath.Matrix4d(
+				data);
 		statusService.showStatus("Fit ellipsoid: determining ellipsoid parameters");
 		@SuppressWarnings("unchecked")
+
 		final Optional<Ellipsoid> result = (Optional<Ellipsoid>) opService.run(
-			QuadricToEllipsoid.class, quadric);
+			QuadricToEllipsoid.class, q);
 		if (!result.isPresent()) {
 			cancel("Can't fit ellipsoid to points.\n" +
 				"Add more point ROI's to the ROI Manager and try again.");
@@ -106,7 +112,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	private void addResults(final Ellipsoid ellipsoid) {
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage);
 		final String label = inputImage.getTitle();
-		final Vector3d centroid = ellipsoid.getCentroid();
+		final org.scijava.vecmath.Vector3d centroid = ellipsoid.getCentroid();
 		SharedTable.add(label, "Centroid x " + unitHeader, centroid.getX());
 		SharedTable.add(label, "Centroid y " + unitHeader, centroid.getY());
 		SharedTable.add(label, "Centroid z " + unitHeader, centroid.getZ());
@@ -122,15 +128,17 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			return false;
 		}
 		final Calibration calibration = inputImage.getCalibration();
-		final Function<Vector3d, Vector3d> calibrate = v -> {
-			v.x *= calibration.pixelWidth;
-			v.y *= calibration.pixelHeight;
-			v.z *= calibration.pixelDepth;
-			return v;
-		};
+		final Function<Vector3d, Vector3d> calibrate =
+			v -> {
+				v.x *= calibration.pixelWidth;
+				v.y *= calibration.pixelHeight;
+				v.z *= calibration.pixelDepth;
+				return v;
+			};
 		points = RoiManagerUtil.pointROICoordinates(manager).stream().filter(
-			p -> !RoiManagerUtil.isActiveOnAllSlices((int) p.z)).map(calibrate)
-			.collect(Collectors.toList());
+			p -> !RoiManagerUtil.isActiveOnAllSlices((int) p.z)).map(
+				v -> new Vector3d(v.x, v.y, v.z)).map(calibrate).collect(Collectors
+					.toList());
 		return points.size() >= QUADRIC_TERMS;
 	}
 
