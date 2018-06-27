@@ -82,7 +82,7 @@ public class ElementFractionWrapperTest {
 		final double[] expectedTotalVolumes = { spaceVolume * elementSize };
 		final double[] expectedRatios = { cubeVolume / spaceVolume };
 		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
-			expectedRatios };
+				expectedRatios };
 		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
 			"Total volume (" + unit + "³)", "Volume Ratio" };
 		// Create an test image of a cuboid
@@ -97,22 +97,22 @@ public class ElementFractionWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
-			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+				ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+				(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		for (int i = 0; i < 3; i++) {
 			final DefaultColumn<String> column = table.get(i + 1);
 			assertEquals("Column has wrong number of rows", 1, column.size());
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
-				.getHeader());
+					.getHeader());
 			for (int j = 0; j < 1; j++) {
 				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					Double.parseDouble(column.get(j)), 1e-12);
+						Double.parseDouble(column.get(j)), 1e-12);
 			}
 		}
 	}

@@ -2,10 +2,7 @@
 package org.bonej.wrapperPlugins;
 
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
-import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
@@ -64,7 +61,7 @@ import org.scijava.widget.FileWidget;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Surface area")
 public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
-	ContextCommand
+		ContextCommand
 {
 
 	static final String STL_WRITE_ERROR =
@@ -87,8 +84,8 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	private Table<DefaultColumn<String>, String> resultsTable;
 
 	@Parameter(label = "Export STL file(s)",
-		description = "Create a binary STL file from the surface mesh",
-		required = false)
+			description = "Create a binary STL file from the surface mesh",
+			required = false)
 	private boolean exportSTL;
 
 	@Parameter
@@ -114,9 +111,9 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	public void run() {
 		statusService.showStatus("Surface area: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops,
-			inputImage);
+				inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(Collectors.toList());
+				bitImgPlus).collect(Collectors.toList());
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
 		final Map<String, Mesh> meshes = createMeshes(subspaces);
@@ -250,7 +247,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 
 		final String fileName = path.substring(path.lastIndexOf(File.separator) +
-			1);
+				1);
 		final int dot = fileName.lastIndexOf(".");
 		if (dot >= 0) {
 			extension = fileName.substring(dot);

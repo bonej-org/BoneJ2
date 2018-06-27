@@ -52,9 +52,9 @@ import org.scijava.ui.UIService;
  * @author Richard Domander
  */
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BoneJ>Fraction>Surface fraction", headless = true)
+		menuPath = "Plugins>BoneJ>Fraction>Surface fraction", headless = true)
 public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
-	extends ContextCommand
+		extends ContextCommand
 {
 
 	/** Header of ratio column in the results table */
@@ -98,9 +98,9 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	public void run() {
 		statusService.showStatus("Surface fraction: initializing");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
-			inputImage);
+				inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(Collectors.toList());
+				bitImgPlus).collect(Collectors.toList());
 		matchOps(subspaces.get(0).interval);
 		prepareResultDisplay();
 		final String name = inputImage.getName();
@@ -136,14 +136,14 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private void prepareResultDisplay() {
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
-			exponent);
+				exponent);
 		if (unitHeader.isEmpty()) {
 			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
 		}
 		bVHeader = "Bone volume " + unitHeader;
 		tVHeader = "Total volume " + unitHeader;
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
-			unitService);
+				unitService);
 	}
 
 	/** Process surface fraction for one 3D subspace in the n-dimensional image */
