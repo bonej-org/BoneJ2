@@ -6,7 +6,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -14,10 +13,12 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
+import net.imagej.ops.linalg.rotate.Rotate3d;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 
-import org.bonej.ops.RotateAboutAxis;
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -216,9 +217,10 @@ public class EllipsoidTest {
 		final AxisAngle4d invRotation = new AxisAngle4d();
 		invRotation.set(orientation);
 		invRotation.setAngle(-invRotation.angle);
-		final BinaryHybridCFI1<Serializable, AxisAngle4d, Vector3d> inverseRotation =
-			Hybrids.binaryCFI1(IMAGE_J.op(), RotateAboutAxis.class, Vector3d.class,
-				Vector3d.class, invRotation);
+		final Quaterniondc q = new Quaterniond(new org.joml.AxisAngle4d(invRotation.angle, invRotation.x, invRotation.y, invRotation.z));
+		final BinaryHybridCFI1<org.joml.Vector3d, Quaterniondc, org.joml.Vector3d> inverseRotation =
+			Hybrids.binaryCFI1(IMAGE_J.op(), Rotate3d.class, org.joml.Vector3d.class,
+					new org.joml.Vector3d(), q);
 		ellipsoid.setOrientation(orientation);
 		final long n = 10;
 		final Function<Vector3d, Double> ellipsoidEq = (Vector3d p) -> {
@@ -237,10 +239,10 @@ public class EllipsoidTest {
 		// Reverse the translation and rotation so that we can assert the easier
 		// equation of an axis-aligned ellipsoid at centroid
 		points.forEach(p -> p.sub(centroid));
-		points.forEach(inverseRotation::mutate);
-		points.forEach(p -> assertEquals(
-			"Point doesn't solve the ellipsoid equation", 1.0, ellipsoidEq.apply(p),
-			1e-5));
+		points.stream().map(p -> new org.joml.Vector3d(p.x, p.y, p.z)).peek(
+			inverseRotation::mutate).map(v -> new Vector3d(v.x, v.y, v.z)).forEach(
+				p -> assertEquals("Point doesn't solve the ellipsoid equation", 1.0,
+					ellipsoidEq.apply(p), 1e-5));
 	}
 
 	@Test(expected = RuntimeException.class)

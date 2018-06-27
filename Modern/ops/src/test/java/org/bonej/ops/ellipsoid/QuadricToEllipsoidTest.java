@@ -5,23 +5,24 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import net.imagej.ImageJ;
+import net.imagej.ops.linalg.rotate.Rotate3d;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 
-import org.bonej.ops.RotateAboutAxis;
 import org.bonej.ops.SolveQuadricEq;
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.scijava.vecmath.AxisAngle4d;
 import org.scijava.vecmath.Matrix4d;
 import org.scijava.vecmath.Vector3d;
 
@@ -123,8 +124,11 @@ public class QuadricToEllipsoidTest {
 	public void testTransformedEllipsoid() {
 		// SETUP
 		final Vector3d centroid = new Vector3d(1, 1, 1);
-		final AxisAngle4d rotation = new AxisAngle4d(0, 0, 1, Math.PI / 4.0);
+		final Quaterniondc q = new Quaterniond(new org.joml.AxisAngle4d(Math.PI / 4.0, 0, 0, 1));
 		final double[] radii = { 1, 2, 3 };
+		final BinaryHybridCFI1<org.joml.Vector3d, Quaterniondc, org.joml.Vector3d> rotate = Hybrids
+				.binaryCFI1(IMAGE_J.op(), Rotate3d.class, org.joml.Vector3d.class,
+						new org.joml.Vector3d(), q);
 		// @formatter:off
 		final double alpha = Math.sin(Math.PI / 4.0);
 		final Matrix4d orientation = new Matrix4d(
@@ -136,13 +140,12 @@ public class QuadricToEllipsoidTest {
 
 		// EXECUTE
 		final List<Vector3d> points = ellipsoidPoints.calculate(radii, 1_000L);
-		final BinaryHybridCFI1<Serializable, AxisAngle4d, Vector3d> rotate = Hybrids
-			.binaryCFI1(IMAGE_J.op(), RotateAboutAxis.class, Vector3d.class,
-				Vector3d.class, rotation);
-		points.forEach(rotate::mutate);
-		points.forEach(p -> p.add(centroid));
+		final List<Vector3d> rotated = points.stream().map(
+			p -> new org.joml.Vector3d(p.x, p.y, p.z)).peek(rotate::mutate).map(
+				v -> new Vector3d(v.x, v.y, v.z)).peek(p -> p.add(centroid)).collect(Collectors.toList());
+
 		final Matrix4d quadric = (Matrix4d) IMAGE_J.op().run(SolveQuadricEq.class,
-			points);
+				rotated);
 		final Ellipsoid transformedEllipsoid = quadricToEllipsoid.calculate(
 			quadric);
 
