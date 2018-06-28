@@ -150,7 +150,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		for (int i = 0; i < subspaces.size(); i++) {
 			statusService.showStatus("Anisotropy: sampling subspace #" + (i + 1));
 			final Subspace<BitType> subspace = subspaces.get(i);
-			final Ellipsoid ellipsoid = foo(subspace);
+			final Ellipsoid ellipsoid = milEllipsoid(subspace);
 			if (ellipsoid == null) {
 				return;
 			}
@@ -213,7 +213,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
-	private Ellipsoid foo(final Subspace<BitType> subspace) {
+	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
 		final List<Vector3d> pointCloud;
 		try {
 			pointCloud = runDirectionsInParallel(subspace.interval);
