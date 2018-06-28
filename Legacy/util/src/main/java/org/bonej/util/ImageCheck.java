@@ -1,24 +1,26 @@
 /*
- * #%L
- * BoneJ utility classes.
- * %%
- * Copyright (C) 2007 - 2016 Michael Doube, BoneJ developers.
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 package org.bonej.util;
 
 import ij.IJ;
@@ -32,21 +34,59 @@ import ij.process.ImageStatistics;
  *
  * @author Michael Doube
  */
-public class ImageCheck {
+public final class ImageCheck {
+
+	private ImageCheck() {}
 
 	/**
-	 * Minimal ImageJ version required by BoneJ
+	 * Check that the voxel thickness is correct in the DICOM image metadata.
+	 *
+	 * @param imp an image.
 	 */
-	public static final String requiredIJVersion = "1.49u";
+	public static void dicomVoxelDepth(final ImagePlus imp) {
+		if (imp == null) {
+			IJ.error("Cannot check DICOM header of a null image");
+			return;
+		}
+		final Calibration cal = imp.getCalibration();
+		final double vD = cal.pixelDepth;
+		final int stackSize = imp.getStackSize();
+		final double first = getDicomSlicePosition(imp, 1);
+		final double last = getDicomSlicePosition(imp, stackSize);
+		if (first < 0 || last < 0) {
+			IJ.error("No DICOM slice position data");
+			return;
+		}
+		final double sliceSpacing = (Math.abs(last - first) + 1) / stackSize;
+		final String units = cal.getUnits();
+		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100.0;
+		if (Double.compare(vD, sliceSpacing) == 0) {
+			IJ.log(imp.getTitle() + ": Voxel depth agrees with DICOM header.\n");
+			return;
+		}
+		IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " +
+			error + "% with DICOM header slice spacing.\n" + "Current voxel depth: " +
+			IJ.d2s(vD, 6) + " " + units + "\n" + "DICOM slice spacing: " + IJ.d2s(
+				sliceSpacing, 6) + " " + units + "\n" + "Updating image properties...");
+		cal.pixelDepth = sliceSpacing;
+		imp.setCalibration(cal);
+	}
 
 	/**
-	 * ImageJ releases known to produce errors or bugs with BoneJ. Daily builds
-	 * are not included.
+	 * Guess whether an image is Hounsfield unit calibrated
+	 *
+	 * @param imp an image.
+	 * @return true if the image might be HU calibrated
 	 */
-	public static final String[] blacklistedIJVersions = {
-			// introduced bug where ROIs added to the ROI Manager
-			// lost their z-position information
-			"1.48a" };
+	public static boolean huCalibrated(final ImagePlus imp) {
+		final Calibration cal = imp.getCalibration();
+		if (!cal.calibrated()) {
+			return false;
+		}
+		final double[] coeff = cal.getCoefficients();
+		final double value = cal.getCValue(0);
+		return (value != 0 && value != Short.MIN_VALUE) || coeff[1] != 1;
+	}
 
 	/**
 	 * Check if image is binary
@@ -69,20 +109,13 @@ public class ImageCheck {
 	}
 
 	/**
-	 * Check if an image is a multi-slice image stack
+	 * Checks if an image is a single slice image.
 	 *
 	 * @param imp an image.
-	 * @return true if the image has &ge; 2 slices
+	 * @return true if the image has only 1 slice.
 	 */
-	public static boolean isMultiSlice(final ImagePlus imp) {
-		if (imp == null) {
-			IJ.noImage();
-			return false;
-		}
-
-		if (imp.getStackSize() < 2)
-			return false;
-		return true;
+	public static boolean isSingleSlice(final ImagePlus imp) {
+		return imp.getStackSize() < 2;
 	}
 
 	/**
@@ -93,7 +126,9 @@ public class ImageCheck {
 	 * @param tolerance tolerated fractional deviation from equal length
 	 * @return true if voxel width == height == depth
 	 */
-	public static boolean isVoxelIsotropic(final ImagePlus imp, final double tolerance) {
+	public static boolean isVoxelIsotropic(final ImagePlus imp,
+		final double tolerance)
+	{
 		if (imp == null) {
 			IJ.error("No image", "Image is null");
 			return false;
@@ -104,13 +139,12 @@ public class ImageCheck {
 		final double tLow = 1 - tolerance;
 		final double tHigh = 1 + tolerance;
 		final double widthHeightRatio = vW > vH ? vW / vH : vH / vW;
-		final boolean isStack = (imp.getStackSize() > 1);
 
 		if (widthHeightRatio < tLow || widthHeightRatio > tHigh) {
 			return false;
 		}
 
-		if (!isStack) {
+		if (isSingleSlice(imp)) {
 			return true;
 		}
 
@@ -121,161 +155,45 @@ public class ImageCheck {
 	}
 
 	/**
-	 * Check that the voxel thickness is correct
-	 *
-	 * @param imp an image.
-	 * @return voxel thickness based on DICOM header information. Returns -1 if
-	 *         there is no DICOM slice position information.
-	 */
-	public static double dicomVoxelDepth(final ImagePlus imp) {
-		if (imp == null) {
-			IJ.error("Cannot check DICOM header of a null image");
-			return -1;
-		}
-
-		final Calibration cal = imp.getCalibration();
-		final double vD = cal.pixelDepth;
-		final int stackSize = imp.getStackSize();
-
-		String position = getDicomAttribute(imp, 1, "0020,0032");
-		if (position == null) {
-			IJ.log("No DICOM slice position data");
-			return -1;
-		}
-		String[] xyz = position.split("\\\\");
-		double first = 0;
-
-		if (xyz.length == 3) // we have 3 values
-			first = Double.parseDouble(xyz[2]);
-		else
-			return -1;
-
-		position = getDicomAttribute(imp, stackSize, "0020,0032");
-		xyz = position.split("\\\\");
-		double last = 0;
-
-		if (xyz.length == 3) // we have 3 values
-			last = Double.parseDouble(xyz[2]);
-		else
-			return -1;
-
-		final double sliceSpacing = (Math.abs(last - first) + 1) / stackSize;
-		final String units = cal.getUnits();
-		final double error = Math.abs((sliceSpacing - vD) / sliceSpacing) * 100.0;
-
-		if (Double.compare(vD, sliceSpacing) != 0) {
-			IJ.log(imp.getTitle() + ":\n" + "Current voxel depth disagrees by " + error
-						   + "% with DICOM header slice spacing.\n" + "Current voxel depth: " + IJ.d2s(vD, 6) + " " + units
-						   + "\n" + "DICOM slice spacing: " + IJ.d2s(sliceSpacing, 6) + " " + units + "\n"
-						   + "Updating image properties...");
-			cal.pixelDepth = sliceSpacing;
-			imp.setCalibration(cal);
-		} else
-			IJ.log(imp.getTitle() + ": Voxel depth agrees with DICOM header.\n");
-		return sliceSpacing;
-	}
-
-	/**
 	 * Get the value associated with a DICOM tag from an ImagePlus header
 	 *
 	 * @param imp an image.
 	 * @param slice number of slice in image.
-	 * @param tag a DICOM tag.
 	 * @return the value associated with the tag
 	 */
-	private static String getDicomAttribute(final ImagePlus imp, final int slice, final String tag) {
+	private static String getDicomAttribute(final ImagePlus imp,
+		final int slice)
+	{
 		final ImageStack stack = imp.getImageStack();
-		final String header = stack.getSliceLabel(slice);
-		// tag must be in format 0000,0000
 		if (slice < 1 || slice > stack.getSize()) {
 			return null;
 		}
+		final String header = stack.getSliceLabel(slice);
 		if (header == null) {
 			return null;
 		}
-		String attribute = " ";
-		String value = " ";
+		final String tag = "0020,0032";
 		final int idx1 = header.indexOf(tag);
 		final int idx2 = header.indexOf(":", idx1);
 		final int idx3 = header.indexOf("\n", idx2);
-		if (idx1 >= 0 && idx2 >= 0 && idx3 >= 0) {
-			try {
-				attribute = header.substring(idx1 + 9, idx2);
-				attribute = attribute.trim();
-				value = header.substring(idx2 + 1, idx3);
-				value = value.trim();
-				// IJ.log("tag = " + tag + ", attribute = " + attribute
-				// + ", value = " + value);
-			} catch (final Throwable e) {
-				return " ";
-			}
+		if (idx1 >= 0 && idx2 >= 0 && idx3 > idx2) {
+			final String value = header.substring(idx2 + 1, idx3);
+			return value.trim();
 		}
-		return value;
+		return " ";
 	}
 
-	/**
-	 * Checks if the version of ImageJ is compatible with BoneJ
-	 *
-	 * @return false if the IJ version is too old or blacklisted
-	 */
-	public static boolean checkIJVersion() {
-		if (isIJVersionBlacklisted()) {
-			IJ.error("Bad ImageJ version",
-					"The version of ImageJ you are using (v" + IJ.getVersion()
-							+ ") is known to run BoneJ incorrectly.\n"
-							+ "Please up- or downgrade your ImageJ using Help-Update ImageJ.");
-			return false;
+	private static double getDicomSlicePosition(final ImagePlus imp,
+		final int slice)
+	{
+		final String position = getDicomAttribute(imp, slice);
+		if (position == null) {
+			return -1;
 		}
-
-		if (requiredIJVersion.compareTo(IJ.getVersion()) > 0) {
-			IJ.error("Update ImageJ", "You are using an old version of ImageJ, v" + IJ.getVersion() + ".\n"
-					+ "Please update to at least ImageJ v" + requiredIJVersion + " using Help-Update ImageJ.");
-			return false;
+		final String[] xyz = position.split("\\\\");
+		if (xyz.length == 3) {
+			return Double.parseDouble(xyz[2]);
 		}
-		return true;
-	}
-
-	/**
-     * Checks if BoneJ can run on the current installation.
-     *
-     * @return true if environment is set up correctly. */
-	public static boolean checkEnvironment() {
-		try {
-			Class.forName("ij3d.ImageJ3DViewer");
-		} catch (final ClassNotFoundException e) {
-			IJ.showMessage("ImageJ 3D Viewer is not installed.\n" + "Please install and run the ImageJ 3D Viewer.");
-			return false;
-		}
-
-		return checkIJVersion();
-	}
-
-	/**
-	 * Guess whether an image is Hounsfield unit calibrated
-	 *
-	 * @param imp an image.
-	 * @return true if the image might be HU calibrated
-	 */
-	public static boolean huCalibrated(final ImagePlus imp) {
-		final Calibration cal = imp.getCalibration();
-		final double[] coeff = cal.getCoefficients();
-		if (!cal.calibrated() || cal == null || (cal.getCValue(0) == 0 && coeff[1] == 1)
-				|| (cal.getCValue(0) == Short.MIN_VALUE && coeff[1] == 1))
-			return false;
-
-		return true;
-	}
-
-	/**
-	 * Check if the version of IJ has been blacklisted as a known broken release
-	 *
-	 * @return true if the IJ version is blacklisted, false otherwise
-	 */
-	public static boolean isIJVersionBlacklisted() {
-		for (final String version : blacklistedIJVersions) {
-			if (version.equals(IJ.getVersion()))
-				return true;
-		}
-		return false;
+		return -1;
 	}
 }

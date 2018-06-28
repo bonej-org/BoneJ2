@@ -33,20 +33,19 @@ public class EllipsoidTest {
 	Ellipsoid unitSphere = new Ellipsoid(1, 1, 1, 0, 0, 0, new double[][] { { 0, 0, 1 }, { 0, 1, 0 }, { 1, 0, 0 } });
 
 	/** Ellipsoid of radii = 1 and centred on (17, 31, 71) */
-	Ellipsoid unitSphereTrans = FitEllipsoid.fitTo(FitEllipsoid.testEllipsoid(1, 1, 1, 0, 17, 31, 71, 0, 1000, true));
+	Ellipsoid unitSphereTrans = fitTo(FitEllipsoid.testEllipsoid(1, 1, 1, 0, 17, 31, 71, 0, 1000, true));
 
 	/** Ellipsoid with radii of 1, 2, and 3, centred on (1,2,3) */
-	Ellipsoid oneTwoThree = FitEllipsoid.fitTo(FitEllipsoid.testEllipsoid(1, 2, 3, 0, 1, 2, 3, 0, 10000, true));
+	Ellipsoid oneTwoThree = fitTo(FitEllipsoid.testEllipsoid(1, 2, 3, 0, 1, 2, 3, 0, 10000, true));
 
 	/** Ellipsoid with radii of 3, 5, 17, centred on (0, 0, 0) */
-	Ellipsoid threeFiveSeventeen = FitEllipsoid.fitTo(FitEllipsoid.testEllipsoid(3, 5, 17, 0, 0, 0, 0, 0, 10000, true));
+	Ellipsoid threeFiveSeventeen = fitTo(FitEllipsoid.testEllipsoid(3, 5, 17, 0, 0, 0, 0, 0, 10000, true));
 
 	/** Ellipsoid with radii of 17, 5, 3, centred on (0, 0, 0) */
-	Ellipsoid seventeenFiveThree = FitEllipsoid.fitTo(FitEllipsoid.testEllipsoid(17, 5, 3, 0, 0, 0, 0, 0, 10000, true));
+	Ellipsoid seventeenFiveThree = fitTo(FitEllipsoid.testEllipsoid(17, 5, 3, 0, 0, 0, 0, 0, 10000, true));
 
 	/** Ellipsoid rotated a bit */
-	Ellipsoid rotated = FitEllipsoid
-			.fitTo(FitEllipsoid.testEllipsoid(7, 13, 17, Math.PI / 4.32, 0, 0, 0, 0, 1000, true));
+	Ellipsoid rotated =fitTo(FitEllipsoid.testEllipsoid(7, 13, 17, Math.PI / 4.32, 0, 0, 0, 0, 1000, true));
 
 	@Test
 	public void testGetVolume() {
@@ -138,7 +137,6 @@ public class EllipsoidTest {
 			final double x = p[0] * rand;
 			final double y = p[1] * rand;
 			final double z = p[2] * rand;
-			System.out.println("Testing inside (" + x + ", " + y + ", " + z + ") with random scaling = " + rand);
 			assertTrue(rotated.contains(x, y, z));
 		}
 
@@ -149,7 +147,6 @@ public class EllipsoidTest {
 			final double x = p[0] / rand;
 			final double y = p[1] / rand;
 			final double z = p[2] / rand;
-			System.out.println("Testing outside (" + x + ", " + y + ", " + z + ") with random scaling = " + 1 / rand);
 			assertTrue(!rotated.contains(x, y, z));
 		}
 
@@ -162,7 +159,6 @@ public class EllipsoidTest {
 			final double x = p[0] * rand;
 			final double y = p[1] * rand;
 			final double z = p[2] * rand;
-			System.out.println("Testing inside (" + x + ", " + y + ", " + z + ") with random scaling = " + rand);
 			assertTrue(seventeenFiveThree.contains(x, y, z));
 		}
 
@@ -173,7 +169,6 @@ public class EllipsoidTest {
 			final double x = p[0] / rand;
 			final double y = p[1] / rand;
 			final double z = p[2] / rand;
-			System.out.println("Testing outside (" + x + ", " + y + ", " + z + ") with random scaling = " + 1 / rand);
 			assertTrue(!seventeenFiveThree.contains(x, y, z));
 		}
 
@@ -186,7 +181,6 @@ public class EllipsoidTest {
 			final double x = p[0] * rand;
 			final double y = p[1] * rand;
 			final double z = p[2] * rand;
-			System.out.println("Testing inside (" + x + ", " + y + ", " + z + ")");
 			assertTrue(threeFiveSeventeen.contains(x, y, z));
 		}
 
@@ -197,7 +191,6 @@ public class EllipsoidTest {
 			final double x = p[0] / rand;
 			final double y = p[1] / rand;
 			final double z = p[2] / rand;
-			System.out.println("Testing (" + x + ", " + y + ", " + z + ")");
 			assertTrue(!threeFiveSeventeen.contains(x, y, z));
 		}
 	}
@@ -239,13 +232,21 @@ public class EllipsoidTest {
 	public void testGetSortedRadii() {
 		final int t = 1000;
 		final Ellipsoid e = unitSphere.copy();
-		double[] r = new double[3];
 		for (int i = 0; i < t; i++) {
 			e.dilate(Math.random(), Math.random(), Math.random());
-			r = e.getSortedRadii();
+			final double[] r = e.getSortedRadii();
 			assertTrue(r[0] < r[1]);
 			assertTrue(r[1] < r[2]);
 		}
 	}
 
+	/**
+	 * Find the best-fit ellipsoid using the default method (yuryPetrov)
+	 *
+	 * @param coordinates in double[n][3] format
+	 * @return Object representing the best-fit ellipsoid
+	 */
+	private static Ellipsoid fitTo(final double[][] coordinates) {
+		return new Ellipsoid(FitEllipsoid.yuryPetrov(coordinates));
+	}
 }

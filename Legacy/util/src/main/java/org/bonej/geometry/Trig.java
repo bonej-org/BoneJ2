@@ -1,24 +1,26 @@
 /*
- * #%L
- * BoneJ: open source tools for trabecular geometry and whole bone shape analysis.
- * %%
- * Copyright (C) 2007 - 2016 Michael Doube, BoneJ developers. See also individual class @authors.
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 package org.bonej.geometry;
 
 /**
@@ -26,24 +28,9 @@ package org.bonej.geometry;
  *
  * @author Michael Doube
  */
-public class Trig {
+public final class Trig {
 
-	/**
-	 * <p>
-	 * Calculate the distance between 2 3D points p and q using Pythagoras'
-	 * theorem, <i>a</i><sup>2</sup> = <i>b</i><sup>2</sup> + <i>c</i>
-	 * <sup>2</sup>
-	 * </p>
-	 *
-	 * @param p
-	 *            a 3 element array
-	 * @param q
-	 *            another 3 element array
-	 * @return distance between <i>p</i> and <i>q</i>
-	 */
-	public static double distance3D(final double[] p, final double[] q) {
-		return distance3D(p[0], p[1], p[2], q[0], q[1], q[2]);
-	}
+	private Trig() {}
 
 	/**
 	 * Calculate the distance between 2 3D points <i>p</i>(x, y, z) and <i>q</i>
@@ -57,15 +44,16 @@ public class Trig {
 	 * @param qz z-coordinate of second point
 	 * @return distance between points.
 	 */
-	public static double distance3D(final double px, final double py, final double pz, final double qx, final double qy,
-			final double qz) {
+	public static double distance3D(final double px, final double py,
+		final double pz, final double qx, final double qy, final double qz)
+	{
 		return distance3D(px - qx, py - qy, pz - qz);
 	}
 
 	/**
 	 * <p>
-	 * Calculate the distance to the origin, (0,0,0). Given 3 orthogonal
-	 * vectors, calculates the vector sum
+	 * Calculate the distance to the origin, (0,0,0). Given 3 orthogonal vectors,
+	 * calculates the vector sum
 	 * </p>
 	 *
 	 * @param x x-coordinate of the point.
@@ -73,11 +61,28 @@ public class Trig {
 	 * @param z z-coordinate of the point.
 	 * @return distance of the point to the origin.
 	 */
-	public static double distance3D(final double x, final double y, final double z) {
+	public static double distance3D(final double x, final double y,
+		final double z)
+	{
 		return Math.sqrt(x * x + y * y + z * z);
 	}
 
-	public static double distance3D(final double[] v) {
+	/**
+	 * <p>
+	 * Calculate the distance between 2 3D points p and q using Pythagoras'
+	 * theorem, <i>a</i><sup>2</sup> = <i>b</i><sup>2</sup> + <i>c</i>
+	 * <sup>2</sup>
+	 * </p>
+	 *
+	 * @param p a 3 element array
+	 * @param q another 3 element array
+	 * @return distance between <i>p</i> and <i>q</i>
+	 */
+	static double distance3D(final double[] p, final double[] q) {
+		return distance3D(p[0], p[1], p[2], q[0], q[1], q[2]);
+	}
+
+	static double distance3D(final double[] v) {
 		return distance3D(v[0], v[1], v[2]);
 	}
 

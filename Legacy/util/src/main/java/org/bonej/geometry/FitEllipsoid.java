@@ -1,24 +1,26 @@
 /*
- * #%L
- * BoneJ: open source tools for trabecular geometry and whole bone shape analysis.
- * %%
- * Copyright (C) 2007 - 2016 Michael Doube, BoneJ developers. See also individual class @authors.
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 package org.bonej.geometry;
 
 import org.bonej.util.MatrixUtils;
@@ -34,154 +36,68 @@ import Jama.Matrix;
  * ellipsoid.
  *
  * @author Michael Doube
- *
  */
-public class FitEllipsoid {
+public final class FitEllipsoid {
 
-	/**
-	 * Find the best-fit ellipsoid using the default method (yuryPetrov)
-	 *
-	 * @param coordinates
-	 *            in double[n][3] format
-	 * @return Object representing the best-fit ellipsoid
-	 */
-	public static Ellipsoid fitTo(final double[][] coordinates) {
-		return new Ellipsoid(yuryPetrov(coordinates));
-	}
-
-	/**
-	 * Ellipsoid fitting method by Yury Petrov.
-	 * <p>
-	 * Fits an ellipsoid in the form <i>Ax</i><sup>2</sup> + <i>By</i>
-	 * <sup>2</sup> + <i>Cz</i><sup>2</sup> + 2<i>Dxy</i> + 2<i>Exz</i> + 2
-	 * <i>Fyz</i> + 2<i>Gx</i> + 2<i>Hy</i> + 2<i>Iz</i> = 1
-	 * To an n * 3 array of coordinates.
-	 * </p>
-	 * <p>
-	 * See <a href=
-	 * "http://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
-	 * >MATLAB script</a>
-	 * </p>
-	 * 
-	 * @param points array[n][3] where n &gt; 8
-	 * @return Object[] array containing the centre, radii, eigenvectors of the
-	 *         axes, the 9 variables of the ellipsoid equation and the EVD
-	 * @throws IllegalArgumentException if number of coordinates is less than 9
-	 */
-	public static Object[] yuryPetrov(final double[][] points) {
-
-		final int nPoints = points.length;
-		if (nPoints < 9) {
-			throw new IllegalArgumentException("Too few points; need at least 9 to calculate a unique ellipsoid");
-		}
-
-		final double[][] d = new double[nPoints][9];
-		for (int i = 0; i < nPoints; i++) {
-			final double x = points[i][0];
-			final double y = points[i][1];
-			final double z = points[i][2];
-			d[i][0] = x * x;
-			d[i][1] = y * y;
-			d[i][2] = z * z;
-			d[i][3] = 2 * x * y;
-			d[i][4] = 2 * x * z;
-			d[i][5] = 2 * y * z;
-			d[i][6] = 2 * x;
-			d[i][7] = 2 * y;
-			d[i][8] = 2 * z;
-		}
-
-		// do the fitting
-		final Matrix D = new Matrix(d);
-		final Matrix ones = MatrixUtils.ones(nPoints, 1);
-		final Matrix V = ((D.transpose().times(D)).inverse()).times(D.transpose().times(ones));
-
-		// the fitted equation
-		final double[] v = V.getColumnPackedCopy();
-
-		final Object[] matrices = Ellipsoid.matrixFromEquation(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]);
-
-		// pack data up for returning
-		final EigenvalueDecomposition E = (EigenvalueDecomposition) matrices[3];
-		final Matrix eVal = E.getD();
-		final Matrix diagonal = MatrixUtils.diag(eVal);
-		final int nEvals = diagonal.getRowDimension();
-		final double[] radii = new double[nEvals];
-		for (int i = 0; i < nEvals; i++) {
-			radii[i] = Math.sqrt(1 / diagonal.get(i, 0));
-		}
-		final double[] centre = (double[]) matrices[0];
-		final double[][] eigenVectors = (double[][]) matrices[2];
-		final double[] equation = v;
-		final Object[] ellipsoid = { centre, radii, eigenVectors, equation, E };
-		return ellipsoid;
-	}
+	private FitEllipsoid() {}
 
 	/**
 	 * Return points on an ellipsoid with optional noise. Point density is not
 	 * uniform, becoming more dense at the poles.
 	 *
-	 * @param a
-	 *            First axis length
-	 * @param b
-	 *            Second axis length
-	 * @param c
-	 *            Third axis length
-	 * @param angle
-	 *            angle of axis (rad)
-	 * @param xCentre
-	 *            x coordinate of centre
-	 * @param yCentre
-	 *            y coordinate of centre
-	 * @param zCentre
-	 *            z coordinate of centre
-	 * @param noise
-	 *            Intensity of noise to add to the points
-	 * @param nPoints
-	 *            number of points to generate
-	 * @param random
-	 *            if true, use a random grid to generate points, else use a
-	 *            regular grid
+	 * @param a First axis length
+	 * @param b Second axis length
+	 * @param c Third axis length
+	 * @param angle angle of axis (rad)
+	 * @param xCentre x coordinate of centre
+	 * @param yCentre y coordinate of centre
+	 * @param zCentre z coordinate of centre
+	 * @param noise Intensity of noise to add to the points
+	 * @param nPoints number of points to generate
+	 * @param random if true, use a random grid to generate points, else use a
+	 *          regular grid
 	 * @return array of (x,y,z) coordinates
 	 */
-	public static double[][] testEllipsoid(final double a, final double b, final double c, final double angle,
-			final double xCentre, final double yCentre, final double zCentre, final double noise, final int nPoints,
-			final boolean random) {
+	public static double[][] testEllipsoid(final double a, final double b,
+		final double c, final double angle, final double xCentre,
+		final double yCentre, final double zCentre, final double noise,
+		final int nPoints, final boolean random)
+	{
 
-		final int n = (int) Math.floor(-3 / 4 + Math.sqrt(1 + 8 * nPoints) / 4);
+		final int n = (int) Math.floor(-0.75 + Math.sqrt(1.0 + 8.0 * nPoints) /
+			4.0);
 		final int h = 2 * n + 2;
 		final int w = n + 1;
 		final double[][] s = new double[h][w];
 		final double[][] t = new double[h][w];
-		double value = -Math.PI / 2;
-		// Random points
+		final double theta = -Math.PI / 2.0;
 		if (random) {
+			// Random points
 			for (int j = 0; j < w; j++) {
 				for (int i = 0; i < h; i++) {
-					s[i][j] = value + Math.random() * 2 * Math.PI;
+					s[i][j] = theta + Math.random() * 2 * Math.PI;
 				}
 			}
 			for (int i = 0; i < h; i++) {
 				for (int j = 0; j < w; j++) {
-					t[i][j] = value + Math.random() * 2 * Math.PI;
+					t[i][j] = theta + Math.random() * 2 * Math.PI;
 				}
 			}
+		}
+		else {
 			// Regular points
-		} else {
 			final double increment = Math.PI / (n - 1);
-
 			for (int j = 0; j < w; j++) {
+				final double alpha = theta + j * increment;
 				for (int i = 0; i < h; i++) {
-					s[i][j] = value;
+					s[i][j] = alpha;
 				}
-				value += increment;
 			}
-			value = -Math.PI / 2;
 			for (int i = 0; i < h; i++) {
+				final double alpha = theta + i * increment;
 				for (int j = 0; j < w; j++) {
-					t[i][j] = value;
+					t[i][j] = alpha;
 				}
-				value += increment;
 			}
 
 		}
@@ -230,4 +146,126 @@ public class FitEllipsoid {
 		return ellipsoidPoints;
 	}
 
+	/**
+	 * Ellipsoid fitting method by Yury Petrov.
+	 * <p>
+	 * Fits an ellipsoid in the form <i>Ax</i><sup>2</sup> + <i>By</i>
+	 * <sup>2</sup> + <i>Cz</i><sup>2</sup> + 2<i>Dxy</i> + 2<i>Exz</i> + 2
+	 * <i>Fyz</i> + 2<i>Gx</i> + 2<i>Hy</i> + 2<i>Iz</i> = 1 To an n * 3 array of
+	 * coordinates.
+	 * </p>
+	 * <p>
+	 * See <a href=
+	 * "http://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
+	 * >MATLAB script</a>
+	 * </p>
+	 * 
+	 * @param points array[n][3] where n &gt; 8
+	 * @return Object[] array containing the centre, radii, eigenvectors of the
+	 *         axes, the 9 variables of the ellipsoid equation and the EVD
+	 * @throws IllegalArgumentException if number of coordinates is less than 9
+	 */
+	public static Object[] yuryPetrov(final double[][] points) {
+
+		final int nPoints = points.length;
+		if (nPoints < 9) {
+			throw new IllegalArgumentException(
+				"Too few points; need at least 9 to calculate a unique ellipsoid");
+		}
+
+		final double[][] d = new double[nPoints][9];
+		for (int i = 0; i < nPoints; i++) {
+			final double x = points[i][0];
+			final double y = points[i][1];
+			final double z = points[i][2];
+			d[i][0] = x * x;
+			d[i][1] = y * y;
+			d[i][2] = z * z;
+			d[i][3] = 2 * x * y;
+			d[i][4] = 2 * x * z;
+			d[i][5] = 2 * y * z;
+			d[i][6] = 2 * x;
+			d[i][7] = 2 * y;
+			d[i][8] = 2 * z;
+		}
+
+		// do the fitting
+		final Matrix D = new Matrix(d);
+		final Matrix ones = new Matrix(nPoints, 1, 1.0);
+		final Matrix V = ((D.transpose().times(D)).inverse()).times(D.transpose()
+			.times(ones));
+
+		// the fitted equation
+		final double[] v = V.getColumnPackedCopy();
+
+		final Object[] matrices = matrixFromEquation(v[0], v[1], v[2],
+			v[3], v[4], v[5], v[6], v[7], v[8]);
+
+		// pack data up for returning
+		final EigenvalueDecomposition E = (EigenvalueDecomposition) matrices[3];
+		final Matrix eVal = E.getD();
+		final Matrix diagonal = MatrixUtils.diag(eVal);
+		final int nEvals = diagonal.getRowDimension();
+		final double[] radii = new double[nEvals];
+		for (int i = 0; i < nEvals; i++) {
+			radii[i] = Math.sqrt(1 / diagonal.get(i, 0));
+		}
+		final double[] centre = (double[]) matrices[0];
+		final double[][] eigenVectors = (double[][]) matrices[2];
+		return new Object[] { centre, radii, eigenVectors, v, E };
+	}
+
+	/**
+	 * Calculate the matrix representation of the ellipsoid (centre, eigenvalues,
+	 * eigenvectors) from the equation <i>ax</i> <sup>2</sup> +
+	 * <i>by</i><sup>2</sup> + <i>cz</i><sup>2</sup> + 2 <i>dxy</i> + 2<i>exz</i>
+	 * + 2<i>fyz</i> + 2<i>gx</i> + 2<i>hy</i> + 2 <i>iz</i> = 1
+	 *
+	 * @param a coefficient of <em>x<sup>2</sup></em>
+	 * @param b coefficient of <em>y<sup>2</sup></em>
+	 * @param c coefficient of <em>z<sup>2</sup></em>.
+	 * @param d coefficient of <em>x</em><em>y</em>.
+	 * @param e coefficient of <em>x</em><em>z</em>.
+	 * @param f coefficient of <em>y</em><em>z</em>.
+	 * @param g coefficient of 2<em>x</em>.
+	 * @param h coefficient of 2<em>y</em>.
+	 * @param i coefficient of 2<em>z</em>.
+	 * @return Object[] array containing centre (double[3]), eigenvalues
+	 *         (double[3][3]), eigenvectors (double[3][3]), and the
+	 *         EigenvalueDecomposition
+	 */
+	private static Object[] matrixFromEquation(final double a, final double b,
+		final double c, final double d, final double e, final double f,
+		final double g, final double h, final double i)
+	{
+
+		// the fitted equation
+		final double[][] v = { { a }, { b }, { c }, { d }, { e }, { f }, { g }, {
+			h }, { i } };
+		final Matrix V = new Matrix(v);
+
+		// 4x4 based on equation variables
+		final double[][] aa = { { a, d, e, g }, { d, b, f, h }, { e, f, c, i }, { g,
+			h, i, -1 }, };
+		final Matrix A = new Matrix(aa);
+
+		// find the centre
+		final Matrix C = (A.getMatrix(0, 2, 0, 2).times(-1).inverse()).times(V
+			.getMatrix(6, 8, 0, 0));
+
+		// using the centre and 4x4 calculate the
+		// eigendecomposition
+		final Matrix T = Matrix.identity(4, 4);
+		T.setMatrix(3, 3, 0, 2, C.transpose());
+		final Matrix R = T.times(A.times(T.transpose()));
+		final double r33 = R.get(3, 3);
+		final Matrix R02 = R.getMatrix(0, 2, 0, 2);
+		final EigenvalueDecomposition E = new EigenvalueDecomposition(R02.times(-1 /
+			r33));
+
+		final double[] centre = C.getColumnPackedCopy();
+		final double[][] eigenVectors = E.getV().getArrayCopy();
+		final double[][] eigenValues = E.getD().getArrayCopy();
+		return new Object[] { centre, eigenValues, eigenVectors, E };
+	}
 }

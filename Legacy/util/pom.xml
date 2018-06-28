@@ -101,11 +101,6 @@
 
         <!-- Other dependencies -->
         <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>vecmath</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>gov.nist.math</groupId>
             <artifactId>jama</artifactId>
         </dependency>
@@ -116,11 +111,9 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
