@@ -6,11 +6,11 @@
     <parent>
         <groupId>org.bonej</groupId>
         <artifactId>pom-bonej-legacy</artifactId>
-        <version>5.0.0-SNAPSHOT</version>
+        <version>5.0.0</version>
     </parent>
 
     <artifactId>bonej-legacy-plugins_</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>4.0.0</version>
 
     <name>BoneJ legacy plugins</name>
     <description> The mavenized versions of the BoneJ1 plugins</description>

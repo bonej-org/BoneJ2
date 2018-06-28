@@ -12,7 +12,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej-legacy</artifactId>
-    <version>5.0.0-SNAPSHOT</version>
+    <version>5.0.0</version>
     <packaging>pom</packaging>
 
     <name>POM BoneJ legacy</name>
@@ -120,8 +120,8 @@
     </ciManagement>
 
     <properties>
-        <legacy-util.version>4.0.0-SNAPSHOT</legacy-util.version>
-        <legacy-plugins.version>4.0.0-SNAPSHOT</legacy-plugins.version>
+        <legacy-util.version>4.0.0</legacy-util.version>
+        <legacy-plugins.version>4.0.0</legacy-plugins.version>
         <license.licenseName>BSD-2-Clause</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
     </properties>
