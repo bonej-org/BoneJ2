@@ -152,6 +152,10 @@
             <artifactId>ij1-patcher</artifactId>
         </dependency>
         <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-mesh</artifactId>
+        </dependency>
+        <dependency>
             <!-- Needed legacy things like ImagePlus UI. Do not remove. -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>

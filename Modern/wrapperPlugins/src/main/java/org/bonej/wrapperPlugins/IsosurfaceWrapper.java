@@ -1,6 +1,7 @@
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.utilities.Streamers.spatialAxisStream;
 import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
@@ -14,18 +15,22 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
+import net.imagej.axis.CalibratedAxis;
+import net.imagej.mesh.Mesh;
+import net.imagej.mesh.Triangle;
+import net.imagej.mesh.naive.NaiveFloatMesh;
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops.Geometric.BoundarySize;
 import net.imagej.ops.Ops.Geometric.MarchingCubes;
-import net.imagej.ops.geom.geom3d.mesh.Facet;
-import net.imagej.ops.geom.geom3d.mesh.Mesh;
-import net.imagej.ops.geom.geom3d.mesh.TriangularFacet;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.space.AnnotatedSpace;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
@@ -33,8 +38,8 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.DoubleType;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
@@ -101,6 +106,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	private String path = "";
 	private String extension = "";
 	private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
+	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
 	private String unitHeader = "";
 
@@ -113,15 +119,87 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			bitImgPlus).collect(Collectors.toList());
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
-		statusService.showStatus("Surface area: creating meshes");
-		final Map<String, Mesh> meshes = processViews(subspaces);
+		final Map<String, Mesh> meshes = createMeshes(subspaces);
 		if (exportSTL) {
-			getFileName();
-			statusService.showStatus("Surface area: saving files");
+			if (!getFileName()) {
+				return;
+			}
 			saveMeshes(meshes);
 		}
+		calculateAreas(meshes);
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
+		}
+	}
+
+	/**
+	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
+	 * same scaling.
+	 * <p>
+	 * NB: Public and static for testing purposes.
+	 * </p>
+	 *
+	 * @param space an N-dimensional space.
+	 * @param <T> type of the space
+	 * @return true if all spatial axes have matching calibration. Also returns
+	 *         true if none of them have a unit
+	 */
+	// TODO make into a utility method or remove if mesh area considers
+	// calibration in the future
+	static <T extends AnnotatedSpace<CalibratedAxis>> boolean
+		isAxesMatchingSpatialCalibration(final T space)
+	{
+		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
+			.allMatch(StringUtils::isNullOrEmpty);
+		final boolean matchingUnit = spatialAxisStream(space).map(
+			CalibratedAxis::unit).distinct().count() == 1;
+		final boolean matchingScale = spatialAxisStream(space).map(a -> a
+			.averageScale(0, 1)).distinct().count() == 1;
+
+		return (matchingUnit || noUnits) && matchingScale;
+	}
+
+	/**
+	 * Writes the surface mesh as a binary, little endian STL file
+	 * <p>
+	 * NB: Public and static for testing purposes
+	 * </p>
+	 *
+	 * @param path The absolute path to the save location of the STL file
+	 * @param mesh A mesh consisting of triangular facets
+	 * @throws NullPointerException if mesh is null
+	 * @throws IllegalArgumentException if path is null or empty, or mesh doesn't
+	 *           have triangular facets
+	 * @throws IOException if there's an error while writing the file
+	 */
+	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
+	static void writeBinarySTLFile(final String path, final Mesh mesh)
+		throws IllegalArgumentException, IOException, NullPointerException
+	{
+		if (mesh == null) {
+			throw new NullPointerException("Mesh cannot be null");
+		}
+
+		if (StringUtils.isNullOrEmpty(path)) {
+			throw new IllegalArgumentException("Filename cannot be null or empty");
+		}
+
+		final Iterator<Triangle> triangles = mesh.triangles().iterator();
+		final int numTriangles = (int) mesh.triangles().size();
+		try (final FileOutputStream writer = new FileOutputStream(path)) {
+			final byte[] header = STL_HEADER.getBytes();
+			writer.write(header);
+			final byte[] facetBytes = ByteBuffer.allocate(4).order(
+				ByteOrder.LITTLE_ENDIAN).putInt(numTriangles).array();
+			writer.write(facetBytes);
+			final ByteBuffer buffer = ByteBuffer.allocate(50);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
+			while (triangles.hasNext()) {
+				final Triangle triangle = triangles.next();
+				writeSTLFacet(buffer, triangle);
+				writer.write(buffer.array());
+				buffer.clear();
+			}
 		}
 	}
 
@@ -129,9 +207,18 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		SharedTable.add(label, "Surface area " + unitHeader, area * areaScale);
 	}
 
+	private void calculateAreas(final Map<String, Mesh> meshes) {
+		statusService.showStatus("Surface area: calculating areas");
+		final String name = inputImage.getName();
+		meshes.forEach((suffix, mesh) -> {
+			final double area = areaOp.calculate(mesh).get();
+			final String label = suffix.isEmpty() ? name : name + " " + suffix;
+			addResult(label, area);
+		});
+	}
+
 	private String choosePath() {
 		final String initialName = stripFileExtension(inputImage.getName());
-
 		// The file dialog won't allow empty filenames, and it prompts when file
 		// already exists
 		final File file = uiService.chooseFile(new File(initialName),
@@ -144,10 +231,22 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		return file.getAbsolutePath();
 	}
 
-	private void getFileName() {
+	private Map<String, Mesh> createMeshes(
+		final Iterable<Subspace<BitType>> subspaces)
+	{
+		statusService.showStatus("Surface area: creating meshes");
+		final Map<String, Mesh> meshes = new HashMap<>();
+		for (final Subspace<BitType> subspace : subspaces) {
+			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
+			meshes.put(subspace.toString(), mesh);
+		}
+		return meshes;
+	}
+
+	private boolean getFileName() {
 		path = choosePath();
 		if (path == null) {
-			return;
+			return false;
 		}
 
 		final String fileName = path.substring(path.lastIndexOf(File.separator) +
@@ -162,11 +261,14 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		else {
 			extension = ".stl";
 		}
+		return true;
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
 		marchingCubesOp = Functions.unary(ops, MarchingCubes.class, Mesh.class,
 			interval);
+		areaOp = Functions.unary(ops, BoundarySize.class, DoubleType.class,
+			new NaiveFloatMesh());
 	}
 
 	private void prepareResults() {
@@ -175,7 +277,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
 		}
 
-		if (AxisUtils.isAxesMatchingSpatialCalibration(inputImage)) {
+		if (isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
 			areaScale = scale * scale;
 		}
@@ -185,26 +287,11 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Map<String, Mesh> processViews(
-		final Iterable<Subspace<BitType>> subspaces)
-	{
-		final String name = inputImage.getName();
-		final Map<String, Mesh> meshes = new HashMap<>();
-		for (final Subspace<BitType> subspace : subspaces) {
-			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
-			final double area = mesh.getSurfaceArea();
-			final String suffix = subspace.toString();
-			final String label = suffix.isEmpty() ? name : name + " " + suffix;
-			addResult(label, area);
-			meshes.put(subspace.toString(), mesh);
-		}
-		return meshes;
-	}
-
 	private void saveMeshes(final Map<String, Mesh> meshes) {
+		statusService.showStatus("Surface area: saving files");
 		final Map<String, String> savingErrors = new HashMap<>();
 		meshes.forEach((key, subspaceMesh) -> {
-			final String subspaceId = key.replace(' ', '_');
+			final String subspaceId = key.replace(' ', '_').replaceAll("[,:]", "");
 			final String filePath = path + "_" + subspaceId + extension;
 			try {
 				writeBinarySTLFile(filePath, subspaceMesh);
@@ -247,72 +334,27 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	/**
-	 * Writes the surface mesh as a binary, little endian STL file
-	 * <p>
-	 * NB: Public and static for testing purposes
-	 * </p>
-	 *
-	 * @param path The absolute path to the save location of the STL file
-	 * @param mesh A mesh consisting of triangular facets
-	 * @throws NullPointerException if mesh is null
-	 * @throws IllegalArgumentException if path is null or empty, or mesh doesn't
-	 *           have triangular facets
-	 * @throws IOException if there's an error while writing the file
-	 */
-	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
-	static void writeBinarySTLFile(final String path, final Mesh mesh)
-		throws IllegalArgumentException, IOException, NullPointerException
-	{
-		if (mesh == null) {
-			throw new NullPointerException("Mesh cannot be null");
-		}
-
-		if (StringUtils.isNullOrEmpty(path)) {
-			throw new IllegalArgumentException("Filename cannot be null or empty");
-		}
-		if (!mesh.triangularFacets()) {
-			throw new IllegalArgumentException(
-				"Cannot write STL file: invalid surface mesh");
-		}
-
-		final List<Facet> facets = mesh.getFacets();
-		final int numFacets = facets.size();
-		try (final FileOutputStream writer = new FileOutputStream(path)) {
-			final byte[] header = STL_HEADER.getBytes();
-			writer.write(header);
-			final byte[] facetBytes = ByteBuffer.allocate(4).order(
-				ByteOrder.LITTLE_ENDIAN).putInt(numFacets).array();
-			writer.write(facetBytes);
-			final ByteBuffer buffer = ByteBuffer.allocate(50);
-			buffer.order(ByteOrder.LITTLE_ENDIAN);
-			for (final Facet facet : facets) {
-				final TriangularFacet triangularFacet = (TriangularFacet) facet;
-				writeSTLFacet(buffer, triangularFacet);
-				writer.write(buffer.array());
-				buffer.clear();
-			}
-		}
-	}
-
-	// -- Utility methods --
-
 	// -- Helper methods --
 	private static void writeSTLFacet(final ByteBuffer buffer,
-		final TriangularFacet facet)
+		final Triangle triangle)
 	{
-		writeSTLVector(buffer, facet.getNormal());
-		writeSTLVector(buffer, facet.getP0());
-		writeSTLVector(buffer, facet.getP1());
-		writeSTLVector(buffer, facet.getP2());
-		buffer.putShort((short) 0); // Attribute byte count
-	}
-
-	private static void writeSTLVector(final ByteBuffer buffer,
-		final Vector3D v)
-	{
-		buffer.putFloat((float) v.getX());
-		buffer.putFloat((float) v.getY());
-		buffer.putFloat((float) v.getZ());
+		// Write normal
+		buffer.putFloat(triangle.nxf());
+		buffer.putFloat(triangle.nyf());
+		buffer.putFloat(triangle.nzf());
+		// Write vertex 0
+		buffer.putFloat(triangle.v0xf());
+		buffer.putFloat(triangle.v0yf());
+		buffer.putFloat(triangle.v0zf());
+		// Write vertex 1
+		buffer.putFloat(triangle.v1xf());
+		buffer.putFloat(triangle.v1yf());
+		buffer.putFloat(triangle.v1zf());
+		// Write vertex 2
+		buffer.putFloat(triangle.v2xf());
+		buffer.putFloat(triangle.v2yf());
+		buffer.putFloat(triangle.v2zf());
+		// Attribute byte count
+		buffer.putShort((short) 0);
 	}
 }

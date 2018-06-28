@@ -26,6 +26,7 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.ui.DialogPrompt.MessageType;
@@ -43,6 +44,7 @@ public class CommonTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
+	@Ignore
 	@Test
 	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
@@ -118,8 +120,8 @@ public class CommonTest {
 	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsTrueIfIsotropicImage() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
-		final Calibration calibration = new Calibration();
-		when(imagePlus.getCalibration()).thenReturn(calibration);
+		final Calibration isotropic = new Calibration();
+		when(imagePlus.getCalibration()).thenReturn(isotropic);
 		final UIService uiService = mock(UIService.class);
 
 		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
