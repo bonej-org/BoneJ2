@@ -156,7 +156,7 @@
             <artifactId>imagej-mesh</artifactId>
         </dependency>
         <dependency>
-            <!-- Needed legacy things like ImagePlus UI. Do not remove. -->
+            <!-- Needed for legacy things like ImagePlus UI. Do not remove. -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
             <scope>runtime</scope>
