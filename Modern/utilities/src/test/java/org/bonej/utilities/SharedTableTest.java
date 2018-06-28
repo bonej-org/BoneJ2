@@ -144,16 +144,20 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testFoo() {
+	public void testRepeatingHeaderAndLabelAddsARow() {
 		SharedTable.add("Image", "Value", 1.0);
 		SharedTable.add("Image", "Run", 1);
 		SharedTable.add("Image", "Value", 1.0);
 		SharedTable.add("Image", "Run", 2);
 
 		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(2, table.getRowCount());
-		assertEquals("1", table.get("Run").get(0));
-		assertEquals("2", table.get("Run").get(1));
+		assertEquals(
+			"Adding data to the same column, to the row with the same label, should create a new row",
+			2, table.getRowCount());
+		assertEquals("Values in wrong order, older should be first", "1", table.get(
+			"Run").get(0));
+		assertEquals("Values in wrong order, older should be first", "2", table.get(
+			"Run").get(1));
 	}
 
 	@Test
