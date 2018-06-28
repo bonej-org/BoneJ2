@@ -142,7 +142,7 @@ public class EllipsoidFactor implements PlugIn {
 
 		gd.addMessage("Ellipsoid Factor is beta software.\n" +
 			"Please report your experiences to the user group:\n" +
-			"http://bit.ly/bonej-group");
+			"http://forum.imagej.net");
 		gd.addHelp("http://bonej.org/ef");
 		gd.showDialog();
 
