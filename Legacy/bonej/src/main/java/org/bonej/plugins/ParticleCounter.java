@@ -1150,11 +1150,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private static List<int[]> get26NeighbourhoodCoordinates(final int[] voxel,
 		final int[] bounds)
 	{
-		final int x0 = voxel[0];
-		final int y0 = voxel[1];
-		final int z0 = voxel[2];
-		return get26NeighbourhoodCoordinates(x0, y0, z0, bounds[0], bounds[1],
-			bounds[2]);
+		return get26NeighbourhoodCoordinates(voxel[0], voxel[1], voxel[2],
+			bounds[0], bounds[1], bounds[2]);
 	}
 
 	private static List<int[]> get26NeighbourhoodCoordinates(final int x0,
@@ -1191,11 +1188,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	private static List<int[]> get6NeighbourhoodCoordinates(final int[] voxel,
 		final int[] bounds)
 	{
-		final int x0 = voxel[0];
-		final int y0 = voxel[1];
-		final int z0 = voxel[2];
-		return get6NeighbourhoodCoordinates(x0, y0, z0, bounds[0], bounds[1],
-			bounds[2]);
+		return get26NeighbourhoodCoordinates(voxel[0], voxel[1], voxel[2],
+				bounds[0], bounds[1], bounds[2]);
 	}
 
 	private static List<int[]> get6NeighbourhoodCoordinates(final int x0,
