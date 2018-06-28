@@ -339,7 +339,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			if (!doOriented || orienteer == null) {
 				continue;
 			}
-			final String[] dirs = orienteer.getDirections(imp);
+			final String[] dirs = orienteer.getAxisLabels(imp);
 			if (dirs == null) {
 				continue;
 			}

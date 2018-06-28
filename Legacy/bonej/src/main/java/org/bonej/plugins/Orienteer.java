@@ -421,10 +421,10 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	}
 
 	/**
-	 * Get the orientation of the principal direction
+	 * Get the orientation of the principal direction associated with the image
 	 *
-	 * @param imp an image.
-	 * @return Orientation in radians clockwise from 12 o'clock
+	 * @param imp an image tracked by Orienteer
+	 * @return orientation in radians clockwise from 12 o'clock
 	 */
 	private double getOrientation(final ImagePlus imp) {
 		final Integer id = imp.getID();
@@ -546,7 +546,7 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 
 	private void updateDirections() {
 		if (WindowManager.getImageCount() == 0) return;
-		directions = getDirections(WindowManager.getImage(activeImpID));
+		directions = getAxisLabels(WindowManager.getImage(activeImpID));
 		rotate(0);
 	}
 
@@ -568,7 +568,7 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	 *         head in the 2nd position and the secondary tail in the 3rd
 	 *         position.
 	 */
-	String[] getDirections(final ImagePlus imp) {
+	String[] getAxisLabels(final ImagePlus imp) {
 		if (!checkHash(imp)) return null;
 		final Integer id = imp.getID();
 		final int[] axes = axisHash.get(id);
@@ -604,16 +604,24 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 		return theta;
 	}
 
-	double getOrientation(final ImagePlus imp, final String direction)
+	/**
+	 * Gets the principal orientation of the axis associated with the image
+	 *
+	 * @param imp an image tracked by orienteer
+	 * @param axisLabel a label of the axis of the image
+	 * @return orientation in radians clockwise from 12 o'clock
+	 * @throws NullPointerException if imp is not tracked by orienteer.
+	 */
+	double getOrientation(final ImagePlus imp, final String axisLabel)
 		throws NullPointerException
 	{
-		final String[] dir = getDirections(imp);
+		final String[] dir = getAxisLabels(imp);
 		if (dir == null) {
 			throw new NullPointerException("Image not tracked by Orienteer");
 		}
 		int quadrant = 0;
 		for (int i = 0; i < 4; i++) {
-			if (dir[i].equals(direction)) {
+			if (dir[i].equals(axisLabel)) {
 				quadrant = i;
 				break;
 			}
