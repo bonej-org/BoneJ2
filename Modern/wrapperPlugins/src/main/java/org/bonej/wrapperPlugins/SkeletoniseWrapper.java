@@ -1,11 +1,11 @@
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 
 import net.imagej.patcher.LegacyInjector;
 
@@ -18,6 +18,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ij.ImagePlus;
+import ij.plugin.filter.PlugInFilter;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
@@ -46,13 +47,13 @@ public class SkeletoniseWrapper extends ContextCommand {
 	private ImagePlus skeleton;
 
 	@Parameter
-    private StatusService statusService;
+	private StatusService statusService;
 
 	@Override
 	public void run() {
 		skeleton = cleanDuplicate(inputImage);
 		skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+		final PlugInFilter skeletoniser = new Skeletonize3D_();
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);

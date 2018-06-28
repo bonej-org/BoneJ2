@@ -10,6 +10,7 @@ import org.bonej.utilities.SharedTable;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 
 /**
  * Tests for {@link SharedTableCleaner}
@@ -19,12 +20,7 @@ import org.junit.experimental.categories.Category;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SharedTableCleanerTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@Test
 	public void testRun() throws Exception {
@@ -38,6 +34,11 @@ public class SharedTableCleanerTest {
 
 		// VERIFY
 		assertFalse("Table should have no data", SharedTable.hasData());
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 
 }

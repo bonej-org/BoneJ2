@@ -30,7 +30,7 @@ public class RotateAboutAxisTest {
 	private static BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 
 	@Test
-	public void testCalculateDoesNotMutateInput() throws Exception {
+	public void testCalculateDoesNotMutateInput() {
 		final Tuple3d v = new Vector3d(1, 2, 3);
 
 		rotateOp.calculate(v, new AxisAngle4d(0, 0, 1, Math.PI / 2.0));
@@ -39,7 +39,7 @@ public class RotateAboutAxisTest {
 	}
 
 	@Test
-	public void testMutateChangesInput() throws Exception {
+	public void testMutateChangesInput() {
 		final Tuple3d input = new Vector3d(1, 0, 0);
 
 		rotateOp.mutate1(input, new AxisAngle4d(0, 0, 1, Math.PI / 2.0));
@@ -49,7 +49,7 @@ public class RotateAboutAxisTest {
 	}
 
 	@Test
-	public void testOp() throws Exception {
+	public void testOp() {
 		final Tuple3d expected = new Vector3d(Math.cos(Math.PI / 4.0), Math.sin(
 			Math.PI / 4.0), 0);
 		expected.scale(3.0);
@@ -63,7 +63,7 @@ public class RotateAboutAxisTest {
 	}
 
 	@Test
-	public void testRandomAxisAngle() throws Exception {
+	public void testRandomAxisAngle() {
 		final AxisAngle4d a = RotateAboutAxis.randomAxisAngle();
 
 		assertNotNull(a);

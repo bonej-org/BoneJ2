@@ -13,6 +13,7 @@ import net.imagej.ImageJ;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 
@@ -27,18 +28,7 @@ import ij.gui.NewImage;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class FitEllipsoidWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			FitEllipsoidWrapper.class);
-	}
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@Test
 	public void test2DImageCancelsPlugin() throws Exception {
@@ -49,6 +39,12 @@ public class FitEllipsoidWrapperTest {
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() throws Exception {
 		CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
+			FitEllipsoidWrapper.class);
+	}
+
+	@Test
+	public void testNullImageCancelsPlugin() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			FitEllipsoidWrapper.class);
 	}
 
@@ -70,5 +66,10 @@ public class FitEllipsoidWrapperTest {
 				QUADRIC_TERMS));
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-    }
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
+	}
 }

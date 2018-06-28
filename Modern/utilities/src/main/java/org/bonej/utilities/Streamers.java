@@ -3,6 +3,7 @@ package org.bonej.utilities;
 
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 import java.util.stream.StreamSupport;
 
 import net.imagej.axis.TypedAxis;
@@ -14,7 +15,7 @@ import net.imglib2.type.numeric.RealType;
  *
  * @author Richard Domander
  */
-public class Streamers {
+public final class Streamers {
 
 	private Streamers() {}
 
@@ -35,7 +36,7 @@ public class Streamers {
 		}
 
 		final int dimensions = space.numDimensions();
-		final Stream.Builder<A> builder = Stream.builder();
+		final Builder<A> builder = Stream.builder();
 		for (int d = 0; d < dimensions; d++) {
 			builder.add(space.axis(d));
 		}
@@ -52,7 +53,7 @@ public class Streamers {
 	 *         iterable == null.
 	 */
 	public static <T extends RealType<T>> DoubleStream realDoubleStream(
-		Iterable<T> iterable)
+		final Iterable<T> iterable)
 	{
 		if (iterable == null) {
 			return DoubleStream.empty();

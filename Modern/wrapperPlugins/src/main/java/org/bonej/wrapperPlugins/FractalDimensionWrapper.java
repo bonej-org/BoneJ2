@@ -6,13 +6,15 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Morphology.Outline;
+import net.imagej.ops.Ops.Topology.BoxCount;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCF;
@@ -104,11 +106,11 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		description = "Let the computer decide values for the parameters",
 		required = false, callback = "enforceAutoParam", persist = false,
 		initializer = "initAutoParam")
-	private boolean autoParam = false;
+	private boolean autoParam;
 
 	@Parameter(label = "Show points",
 		description = "Show (log(size), -log(count)) points", required = false)
-	private boolean showPoints = false;
+	private boolean showPoints;
 
 	/**
 	 * The fractal dimension and R² values for each 3D subspace in a table
@@ -143,8 +145,8 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		matchOps(bitImgPlus);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(Collectors.toList());
-		final ArrayList<Double> dimensions = new ArrayList<>();
-		final ArrayList<Double> rSquared = new ArrayList<>();
+		final List<Double> dimensions = new ArrayList<>();
+		final List<Double> rSquared = new ArrayList<>();
 		subspaceTables = new ArrayList<>();
 		subspaces.forEach(subspace -> {
 			final RandomAccessibleInterval<BitType> interval = subspace.interval;
@@ -170,24 +172,24 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	// region -- Helper methods --
 
 	private void addSubspaceTable(final Subspace<BitType> subspace,
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
 	{
-		final String label = inputImage.getName() + " " + subspace.toString();
+		final String label = inputImage.getName() + " " + subspace;
 		final GenericColumn labelColumn = ResultUtils.createLabelColumn(label, pairs
 			.size());
 		final DoubleColumn xColumn = new DoubleColumn("-log(size)");
 		final DoubleColumn yColumn = new DoubleColumn("log(count)");
 		pairs.stream().map(p -> p.a.get()).forEach(xColumn::add);
 		pairs.stream().map(p -> p.b.get()).forEach(yColumn::add);
-		final GenericTable resultsTable = new DefaultGenericTable();
-		resultsTable.add(labelColumn);
-		resultsTable.add(xColumn);
-		resultsTable.add(yColumn);
-		subspaceTables.add(resultsTable);
+		final GenericTable subspaceTable = new DefaultGenericTable();
+		subspaceTable.add(labelColumn);
+		subspaceTable.add(xColumn);
+		subspaceTable.add(yColumn);
+		subspaceTables.add(subspaceTable);
 	}
 
 	private boolean allValuesFinite(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
 	{
 		final Stream<Double> xValues = pairs.stream().map(p -> p.a.get());
 		final Stream<Double> yValues = pairs.stream().map(p -> p.b.get());
@@ -227,7 +229,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	}
 
 	private double[] fitCurve(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
 	{
 		if (!allValuesFinite(pairs)) {
 			return new double[2];
@@ -237,8 +239,10 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		return curveFitter.fit(points.toList());
 	}
 
-	private double getRSquared(List<ValuePair<DoubleType, DoubleType>> pairs) {
-		SimpleRegression regression = new SimpleRegression();
+	private double getRSquared(
+		final Iterable<ValuePair<DoubleType, DoubleType>> pairs)
+	{
+		final SimpleRegression regression = new SimpleRegression();
 		pairs.forEach(pair -> regression.addData(pair.a.get(), pair.b.get()));
 		return regression.getRSquare();
 	}
@@ -250,24 +254,23 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		}
 		final long[] dimensions = new long[inputImage.numDimensions()];
 		inputImage.dimensions(dimensions);
-		final long maxDimension = Arrays.stream(dimensions).max().getAsLong();
+		final long maxDimension = Arrays.stream(dimensions).max().orElse(0);
 		autoMax = maxDimension / 4;
 	}
 
 	@SuppressWarnings("unchecked")
 	private void matchOps(final RandomAccessibleInterval<BitType> input) {
-		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService,
-			Ops.Morphology.Outline.class, RandomAccessibleInterval.class, input,
-			true);
-		boxCountOp = (UnaryFunctionOp) Functions.unary(opService,
-			Ops.Topology.BoxCount.class, List.class, input, startBoxSize,
-			smallestBoxSize, scaleFactor, translations);
+		hollowOp = (BinaryHybridCF) Hybrids.binaryCF(opService, Outline.class,
+			RandomAccessibleInterval.class, input, true);
+		boxCountOp = (UnaryFunctionOp) Functions.unary(opService, BoxCount.class,
+			List.class, input, startBoxSize, smallestBoxSize, scaleFactor,
+			translations);
 	}
 
 	private WeightedObservedPoints toWeightedObservedPoints(
-		final List<ValuePair<DoubleType, DoubleType>> pairs)
+		final Iterable<ValuePair<DoubleType, DoubleType>> pairs)
 	{
-		WeightedObservedPoints points = new WeightedObservedPoints();
+		final WeightedObservedPoints points = new WeightedObservedPoints();
 		pairs.forEach(pair -> points.add(pair.a.get(), pair.b.get()));
 		return points;
 	}

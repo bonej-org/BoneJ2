@@ -3,8 +3,8 @@ package org.bonej.ops.ellipsoid;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public class EllipsoidTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
-	public void testConstructor() throws Exception {
+	public void testConstructor() {
 		// SETUP
 		final double a = 1.0;
 		final double b = 2.0;
@@ -75,57 +75,7 @@ public class EllipsoidTest {
 	}
 
 	@Test
-    public void testSemiAxesConstructor() throws Exception {
-	    // SETUP
-        final Vector3d u = new Vector3d(2, -2, 0);
-        final Vector3d v = new Vector3d(1, 1, 0);
-        final Vector3d w = new Vector3d(0, 0, 1);
-        final List<Vector3d> normalized = Stream.of(w, v, u).map(Vector3d::new).map(e -> {
-            e.normalize();
-            return e;
-        }).collect(toList());
-        final Matrix4d expectedOrientation = new Matrix4d();
-        expectedOrientation.setIdentity();
-        for (int i = 0; i < 3; i++) {
-            final Vector3d e = normalized.get(i);
-            expectedOrientation.setColumn(i, e.x, e.y, e.z, 0);
-        }
-
-        // EXECUTE
-        final Ellipsoid ellipsoid = new Ellipsoid(u, w, v);
-
-        // VERIFY
-        final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
-        assertEquals(w, semiAxes.get(0));
-        assertEquals(v, semiAxes.get(1));
-        assertEquals(u, semiAxes.get(2));
-        assertEquals(w.length(), ellipsoid.getA(), 1e-12);
-        assertEquals(v.length(), ellipsoid.getB(), 1e-12);
-        assertEquals(u.length(), ellipsoid.getC(), 1e-12);
-        assertEquals(expectedOrientation, ellipsoid.getOrientation());
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void testSetSemiAxesThrowsNPEIfParameterNull() {
-        final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
-
-        ellipsoid.setSemiAxes(new Vector3d(), new Vector3d(), null);
-    }
-
-    @Test
-    public void testSetSemiAxesClonesParameters() {
-        final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
-        final Vector3d v = new Vector3d(0, 0, 2);
-        final Vector3d original = new Vector3d(v);
-
-        ellipsoid.setSemiAxes(new Vector3d(2, 0, 0), new Vector3d(0, 2, 0), v);
-
-        assertFalse("Setter copied reference", v == ellipsoid.getSemiAxes().get(2));
-        assertEquals("Setter changed parameter", original, v);
-    }
-
-	@Test
-	public void testGetCentroid() throws Exception {
+	public void testGetCentroid() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 		final Vector3d centroid = new Vector3d(6, 7, 8);
 		ellipsoid.setCentroid(centroid);
@@ -138,18 +88,18 @@ public class EllipsoidTest {
 	}
 
 	@Test
-	public void testGetOrientation() throws Exception {
+	public void testGetOrientation() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		final Matrix4d expected = ellipsoid.getOrientation();
 		final Matrix4d orientation = ellipsoid.getOrientation();
 
-		assertFalse("Getter should have returned a copy, not a reference",
-			expected == orientation);
+		assertNotSame("Getter should have returned a copy, not a reference",
+			expected, orientation);
 	}
 
 	@Test
-	public void testGetSemiAxes() throws Exception {
+	public void testGetSemiAxes() {
 		// SETUP
 		final double a = 2.0;
 		final double b = 4.0;
@@ -177,7 +127,7 @@ public class EllipsoidTest {
 	}
 
 	@Test
-	public void testGetVolume() throws Exception {
+	public void testGetVolume() {
 		final double a = 2.3;
 		final double b = 3.14;
 		final double c = 4.25;
@@ -195,7 +145,7 @@ public class EllipsoidTest {
 	}
 
 	@Test
-	public void testSamplePoints() throws Exception {
+	public void testSamplePoints() {
 		// SETUP
 		final double a = 2.0;
 		final double b = 3.0;
@@ -244,16 +194,43 @@ public class EllipsoidTest {
 	}
 
 	@Test(expected = RuntimeException.class)
-	public void testSamplePointsThrowsRuntimeExceptionIfNotInitialized()
-		throws Exception
-	{
+	public void testSamplePointsThrowsRuntimeExceptionIfNotInitialized() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.samplePoints(10);
 	}
 
 	@Test
-	public void testSetA() throws Exception {
+	public void testSemiAxesConstructor() {
+		// SETUP
+		final Vector3d u = new Vector3d(2, -2, 0);
+		final Vector3d v = new Vector3d(1, 1, 0);
+		final Vector3d w = new Vector3d(0, 0, 1);
+		final List<Vector3d> normalized = Stream.of(w, v, u).map(Vector3d::new)
+			.peek(Vector3d::normalize).collect(toList());
+		final Matrix4d expectedOrientation = new Matrix4d();
+		expectedOrientation.setIdentity();
+		for (int i = 0; i < 3; i++) {
+			final Vector3d e = normalized.get(i);
+			expectedOrientation.setColumn(i, e.x, e.y, e.z, 0);
+		}
+
+		// EXECUTE
+		final Ellipsoid ellipsoid = new Ellipsoid(u, w, v);
+
+		// VERIFY
+		final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
+		assertEquals(w, semiAxes.get(0));
+		assertEquals(v, semiAxes.get(1));
+		assertEquals(u, semiAxes.get(2));
+		assertEquals(w.length(), ellipsoid.getA(), 1e-12);
+		assertEquals(v.length(), ellipsoid.getB(), 1e-12);
+		assertEquals(u.length(), ellipsoid.getC(), 1e-12);
+		assertEquals(expectedOrientation, ellipsoid.getOrientation());
+	}
+
+	@Test
+	public void testSetA() {
 		final Ellipsoid ellipsoid = new Ellipsoid(6, 7, 8);
 
 		ellipsoid.setA(5);
@@ -262,42 +239,42 @@ public class EllipsoidTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetAThrowsExceptionGTB() throws Exception {
+	public void testSetAThrowsExceptionGTB() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(3);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetAThrowsExceptionGTC() throws Exception {
+	public void testSetAThrowsExceptionGTC() {
 		final Ellipsoid ellipsoid = new Ellipsoid(2, 2, 2);
 
 		ellipsoid.setA(3);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetAThrowsExceptionNegativeRadius() throws Exception {
+	public void testSetAThrowsExceptionNegativeRadius() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(-1);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetAThrowsExceptionNonFiniteRadius() throws Exception {
+	public void testSetAThrowsExceptionNonFiniteRadius() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(Double.NaN);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetAThrowsExceptionZeroRadius() throws Exception {
+	public void testSetAThrowsExceptionZeroRadius() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setA(0);
 	}
 
 	@Test
-	public void testSetB() throws Exception {
+	public void testSetB() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 7, 8);
 
 		ellipsoid.setB(4);
@@ -306,21 +283,21 @@ public class EllipsoidTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetBThrowsExceptionGTC() throws Exception {
+	public void testSetBThrowsExceptionGTC() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setB(4);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetBThrowsExceptionLTA() throws Exception {
+	public void testSetBThrowsExceptionLTA() {
 		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4);
 
 		ellipsoid.setB(1);
 	}
 
 	@Test
-	public void testSetC() throws Exception {
+	public void testSetC() {
 		final Ellipsoid ellipsoid = new Ellipsoid(6, 7, 8);
 
 		ellipsoid.setC(11);
@@ -329,41 +306,41 @@ public class EllipsoidTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetCThrowsExceptionLTA() throws Exception {
+	public void testSetCThrowsExceptionLTA() {
 		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4);
 
 		ellipsoid.setC(1);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSetCThrowsExceptionLTB() throws Exception {
+	public void testSetCThrowsExceptionLTB() {
 		final Ellipsoid ellipsoid = new Ellipsoid(2, 3, 4);
 
 		ellipsoid.setC(2);
 	}
 
 	@Test
-	public void testSetCentroid() throws Exception {
+	public void testSetCentroid() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 		final Vector3d centroid = new Vector3d(6, 7, 8);
 
 		ellipsoid.setCentroid(centroid);
 
-		assertFalse("Setter should not copy reference", centroid == ellipsoid
+		assertNotSame("Setter should not copy reference", centroid, ellipsoid
 			.getCentroid());
 		assertEquals("Setter copied values wrong", centroid, ellipsoid
 			.getCentroid());
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testSetCentroidThrowsNPEIfCentroidNull() throws Exception {
+	public void testSetCentroidThrowsNPEIfCentroidNull() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setCentroid(null);
 	}
 
 	@Test
-	public void testSetOrientation() throws Exception {
+	public void testSetOrientation() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 4);
 		// @formatter:off
 		final Matrix3d orientation = new Matrix3d(
@@ -390,7 +367,7 @@ public class EllipsoidTest {
 	}
 
 	@Test
-	public void testSetOrientationAllowsLeftHandedBasis() throws Exception {
+	public void testSetOrientationAllowsLeftHandedBasis() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 4);
 		// @formatter:off
 		final Matrix3d leftHanded = new Matrix3d(
@@ -404,7 +381,7 @@ public class EllipsoidTest {
 	}
 
 	@Test
-	public void testSetOrientationNormalizesVectors() throws Exception {
+	public void testSetOrientationNormalizesVectors() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 4);
 		// @formatter:off
 		final Matrix3d orientation = new Matrix3d(
@@ -425,9 +402,7 @@ public class EllipsoidTest {
 	}
 
 	@Test
-	public void testSetOrientationThrowsIAEIfNotOrthogonalVectors()
-		throws Exception
-	{
+	public void testSetOrientationThrowsIAEIfNotOrthogonalVectors() {
 		// SETUP
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 		// @formatter:off
@@ -456,7 +431,7 @@ public class EllipsoidTest {
 			try {
 				ellipsoid.setOrientation(matrix);
 			}
-			catch (IllegalArgumentException e) {
+			catch (final IllegalArgumentException e) {
 				assertEquals("Vectors must be orthogonal", e.getMessage());
 				exceptions++;
 			}
@@ -468,10 +443,29 @@ public class EllipsoidTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testSetOrientationThrowsNPEIfMatrixNull() throws Exception {
+	public void testSetOrientationThrowsNPEIfMatrixNull() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setOrientation(null);
+	}
+
+	@Test
+	public void testSetSemiAxesClonesParameters() {
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
+		final Vector3d v = new Vector3d(0, 0, 2);
+		final Vector3d original = new Vector3d(v);
+
+		ellipsoid.setSemiAxes(new Vector3d(2, 0, 0), new Vector3d(0, 2, 0), v);
+
+		assertNotSame("Setter copied reference", v, ellipsoid.getSemiAxes().get(2));
+		assertEquals("Setter changed parameter", original, v);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testSetSemiAxesThrowsNPEIfParameterNull() {
+		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
+
+		ellipsoid.setSemiAxes(new Vector3d(), new Vector3d(), null);
 	}
 
 	@AfterClass

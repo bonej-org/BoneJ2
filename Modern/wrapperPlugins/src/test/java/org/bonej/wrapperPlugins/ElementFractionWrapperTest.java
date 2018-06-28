@@ -11,13 +11,14 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
@@ -89,8 +90,8 @@ public class ElementFractionWrapperTest {
 		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide);
 		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 5 }).forEach(
 			BitType::setOne);
-		double[] calibration = new double[] { scale, scale, scale };
-		final String[] units = new String[] { unit, unit, unit };
+		final double[] calibration = { scale, scale, scale };
+		final String[] units = { unit, unit, unit };
 		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z };
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube", axes,
 			calibration, units);
@@ -101,8 +102,8 @@ public class ElementFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		for (int i = 0; i < 3; i++) {

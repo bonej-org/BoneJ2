@@ -28,19 +28,18 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class EllipsoidPoints extends
-	AbstractBinaryFunctionOp<double[], Long, List<Vector3d>> implements
-	Contingent
+	AbstractBinaryFunctionOp<double[], Long, List<Vector3d>> implements Contingent
 {
 
+	private static final Random rng = new Random();
+	private static UnitSphereRandomVectorGenerator sphereRng =
+		new UnitSphereRandomVectorGenerator(3);
 	/** Smallest radius of the ellipsoid (x) */
 	private double a;
 	/** Second radius of the ellipsoid (y) */
 	private double b;
 	/** Largest radius of the ellipsoid (z) */
 	private double c;
-	private static final Random rng = new Random();
-	private static UnitSphereRandomVectorGenerator sphereRng =
-		new UnitSphereRandomVectorGenerator(3);
 
 	/**
 	 * Creates random points on an ellipsoid surface.
@@ -59,20 +58,25 @@ public class EllipsoidPoints extends
 		return sampleEllipsoidPoints(n);
 	}
 
+	@Override
+	public boolean conforms() {
+		final double[] radii = in1();
+		final Long n = in2();
+		return n >= 0 && radii.length == 3 && Arrays.stream(radii).allMatch(
+			r -> r > 0 && Double.isFinite(r));
+	}
+
 	/**
-	 * Sets the seed of the random generators used in point creation.
-	 * <p>
-	 * Setting a constant seed makes testing easier.
-	 * </p>
+	 * Calculates the &mu;-factor of a point.
 	 *
-	 * @param seed the seed number.
-	 * @see Random#setSeed(long)
-	 * @see MersenneTwister#MersenneTwister(long)
+	 * @param v a point on a unit sphere surface.
+	 * @return inverse ratio of ellipsoid surface area around given point.
 	 */
-	public static void setSeed(final long seed) {
-		rng.setSeed(seed);
-		sphereRng = new UnitSphereRandomVectorGenerator(3, new MersenneTwister(
-			seed));
+	private double mu(final Vector3d v) {
+		final DoubleStream terms = DoubleStream.of(a * c * v.y, a * b * v.z, b * c *
+			v.x);
+		final double sqSum = terms.map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
 	}
 
 	private List<Vector3d> sampleEllipsoidPoints(final long n) {
@@ -89,23 +93,18 @@ public class EllipsoidPoints extends
 	}
 
 	/**
-	 * Calculates the &mu;-factor of a point.
-	 * 
-	 * @param v a point on a unit sphere surface.
-	 * @return inverse ratio of ellipsoid surface area around given point.
+	 * Sets the seed of the random generators used in point creation.
+	 * <p>
+	 * Setting a constant seed makes testing easier.
+	 * </p>
+	 *
+	 * @param seed the seed number.
+	 * @see Random#setSeed(long)
+	 * @see MersenneTwister#MersenneTwister(long)
 	 */
-	private double mu(final Vector3d v) {
-		final DoubleStream terms = DoubleStream.of(a * c * v.y, a * b * v.z, b * c *
-			v.x);
-		final double sqSum = terms.map(x -> x * x).sum();
-		return Math.sqrt(sqSum);
-	}
-
-	@Override
-	public boolean conforms() {
-		final double[] radii = in1();
-		final Long n = in2();
-		return n >= 0 && radii.length == 3 && Arrays.stream(radii).allMatch(
-			r -> r > 0 && Double.isFinite(r));
+	static void setSeed(final long seed) {
+		rng.setSeed(seed);
+		sphereRng = new UnitSphereRandomVectorGenerator(3, new MersenneTwister(
+			seed));
 	}
 }

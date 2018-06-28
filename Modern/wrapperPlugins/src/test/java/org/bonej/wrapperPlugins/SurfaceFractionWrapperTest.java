@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 
 /**
@@ -31,7 +32,7 @@ import org.scijava.command.CommandModule;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SurfaceFractionWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {

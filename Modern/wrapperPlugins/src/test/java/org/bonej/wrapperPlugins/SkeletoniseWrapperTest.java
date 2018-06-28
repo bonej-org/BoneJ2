@@ -17,6 +17,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 
@@ -33,28 +34,11 @@ import ij.measure.Calibration;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SkeletoniseWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
 		SharedTable.reset();
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			SkeletoniseWrapper.class);
-	}
-
-	@Test
-	public void testNonBinaryImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
-			SkeletoniseWrapper.class);
 	}
 
 	@Test
@@ -79,24 +63,15 @@ public class SkeletoniseWrapperTest {
 	}
 
 	@Test
-	public void testTimeDimensionCancelsPlugin() throws Exception {
-		// SETUP
-		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
-			". Please split the hyperstack.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
-		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
+	public void testNonBinaryImageCancelsPlugin() throws Exception {
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+			SkeletoniseWrapper.class);
+	}
 
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(SkeletoniseWrapper.class,
-			true, "inputImage", imagePlus).get();
-
-		// VERIFY
-		assertTrue("An image with time dimension should have cancelled the plugin",
-			module.isCanceled());
-		assertEquals("Cancel reason is incorrect", expectedMessage, module
-			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
+	@Test
+	public void testNullImageCancelsPlugin() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+			SkeletoniseWrapper.class);
 	}
 
 	@Test
@@ -119,8 +94,34 @@ public class SkeletoniseWrapperTest {
 			.getTitle());
 		assertEquals("Skeleton should have same calibration", "my unit", skeleton
 			.getCalibration().getUnit());
-        assertNotSame("Original image should not have been overwritten",
-			imagePlus, skeleton);
+		assertNotSame("Original image should not have been overwritten", imagePlus,
+			skeleton);
+	}
+
+	@Test
+	public void testTimeDimensionCancelsPlugin() throws Exception {
+		// SETUP
+		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
+			". Please split the hyperstack.";
+		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
+		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(SkeletoniseWrapper.class,
+			true, "inputImage", imagePlus).get();
+
+		// VERIFY
+		assertTrue("An image with time dimension should have cancelled the plugin",
+			module.isCanceled());
+		assertEquals("Cancel reason is incorrect", expectedMessage, module
+			.getCancelReason());
+		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+			any());
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 
 }

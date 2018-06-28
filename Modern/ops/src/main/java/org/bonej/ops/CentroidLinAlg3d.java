@@ -3,7 +3,7 @@ package org.bonej.ops;
 
 import java.util.Collection;
 
-import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Geometric.Centroid;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 
 import org.scijava.plugin.Plugin;
@@ -15,7 +15,7 @@ import org.scijava.vecmath.Vector3d;
  *
  * @author Richard Domander
  */
-@Plugin(type = Ops.Geometric.Centroid.class, name = "centroidLinAlg3d")
+@Plugin(type = Centroid.class, name = "centroidLinAlg3d")
 public class CentroidLinAlg3d<T extends Tuple3d> extends
 	AbstractUnaryFunctionOp<Collection<T>, Vector3d>
 {

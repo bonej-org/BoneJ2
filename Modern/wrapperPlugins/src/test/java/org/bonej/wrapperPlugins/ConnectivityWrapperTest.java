@@ -21,7 +21,6 @@ import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -32,6 +31,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
@@ -44,39 +44,16 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ConnectivityWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
 		SharedTable.reset();
 	}
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	@Test
-	public void testNullImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
-	}
-
 	@Test
 	public void test2DImageCancelsConnectivity() throws Exception {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
-	}
-
-	@Test
-	public void testNonBinaryImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
-	}
-
-	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
 			ConnectivityWrapper.class);
 	}
 
@@ -114,8 +91,26 @@ public class ConnectivityWrapperTest {
 			imgPlus).get();
 
 		// Dialog should only be shown once
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(NEGATIVE_CONNECTIVITY),
-			anyString(), eq(INFORMATION_MESSAGE), any());
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
+			NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any());
+	}
+
+	@Test
+	public void testNoCalibrationShowsWarning() throws Exception {
+		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
+			ConnectivityWrapper.class);
+	}
+
+	@Test
+	public void testNonBinaryImageCancelsConnectivity() throws Exception {
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+			ConnectivityWrapper.class);
+	}
+
+	@Test
+	public void testNullImageCancelsConnectivity() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+			ConnectivityWrapper.class);
 	}
 
 	@Test
@@ -163,8 +158,8 @@ public class ConnectivityWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns", 5, table.size());
 		for (int i = 0; i < 4; i++) {
@@ -179,5 +174,10 @@ public class ConnectivityWrapperTest {
 					1e-12);
 			}
 		}
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }

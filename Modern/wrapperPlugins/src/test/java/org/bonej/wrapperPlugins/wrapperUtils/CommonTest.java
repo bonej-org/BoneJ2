@@ -44,14 +44,8 @@ public class CommonTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	// Test ignored, because it fails when executed by Maven (but only then!)
 	@Ignore
-    @Test
+	@Test
 	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
 		final String name = "Test image";
@@ -76,7 +70,38 @@ public class CommonTest {
 	}
 
 	@Test
-    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels() {
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 0.5;
+		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
+		final UIService uiService = mock(UIService.class);
+		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
+			.thenReturn(CANCEL_OPTION);
+
+		assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+		verify(uiService, timeout(1000)).showDialog(anyString(), any(
+			MessageType.class), any());
+	}
+
+	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses() {
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 0.5;
+		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
+		final UIService uiService = mock(UIService.class);
+		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
+			.thenReturn(CLOSED_OPTION);
+
+		assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+		verify(uiService, timeout(1000)).showDialog(anyString(), any(
+			MessageType.class), any());
+	}
+
+	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsTrueIfAnisotropicImageAndUserOK() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
@@ -87,49 +112,23 @@ public class CommonTest {
 			.thenReturn(OK_OPTION);
 
 		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
-        verify(uiService, timeout(1000)).showDialog(anyString(), any(
-                MessageType.class), any());
+		verify(uiService, timeout(1000)).showDialog(anyString(), any(
+			MessageType.class), any());
 	}
 
 	@Test
-	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels() {
-		final ImagePlus imagePlus = mock(ImagePlus.class);
-		final Calibration anisotropicCalibration = new Calibration();
-		anisotropicCalibration.pixelWidth = 0.5;
-		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
-		final UIService uiService = mock(UIService.class);
-		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
-			.thenReturn(CANCEL_OPTION);
-
-        assertFalse(Common.warnAnisotropy(imagePlus, uiService));
-        verify(uiService, timeout(1000)).showDialog(anyString(), any(
-                MessageType.class), any());
-	}
-
-	@Test
-    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses() {
-		final ImagePlus imagePlus = mock(ImagePlus.class);
-		final Calibration anisotropicCalibration = new Calibration();
-		anisotropicCalibration.pixelWidth = 0.5;
-		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
-		final UIService uiService = mock(UIService.class);
-		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
-			.thenReturn(CLOSED_OPTION);
-
-        assertFalse(Common.warnAnisotropy(imagePlus, uiService));
-        verify(uiService, timeout(1000)).showDialog(anyString(), any(
-                MessageType.class), any());
-	}
-
-	@Test
-    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsTrueIfIsotropicImage() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
-		final Calibration calibration = new Calibration();
-		when(imagePlus.getCalibration()).thenReturn(calibration);
+		final Calibration isotropic = new Calibration();
+		when(imagePlus.getCalibration()).thenReturn(isotropic);
 		final UIService uiService = mock(UIService.class);
 
 		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }

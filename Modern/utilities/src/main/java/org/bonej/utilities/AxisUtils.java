@@ -7,11 +7,9 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
-import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
@@ -23,7 +21,9 @@ import org.scijava.util.StringUtils;
  *
  * @author Richard Domander
  */
-public class AxisUtils {
+public final class AxisUtils {
+
+	private AxisUtils() {}
 
 	/**
 	 * Counts the number of spatial dimensions in the given space.
@@ -55,17 +55,16 @@ public class AxisUtils {
 	 *         the calibrations have a unit.
 	 */
 	public static <S extends AnnotatedSpace<CalibratedAxis>> Optional<String>
-		 getSpatialUnit(final S space, final UnitService unitService)
+		getSpatialUnit(final S space, final UnitService unitService)
 	{
-		if (space == null || !hasSpatialDimensions(space))
-		{
+		if (space == null || !hasSpatialDimensions(space)) {
 			return Optional.empty();
-		} else if (!isUnitsConvertible(space, unitService)) {
-		    return Optional.of("");
-        }
-
-        final String unit = space.axis(0).unit();
-        return unit == null ? Optional.of("") : Optional.of(unit);
+		}
+		if (!isUnitsConvertible(space, unitService)) {
+			return Optional.of("");
+		}
+		final String unit = space.axis(0).unit();
+		return unit == null ? Optional.of("") : Optional.of(unit);
 	}
 
 	/**
@@ -111,19 +110,28 @@ public class AxisUtils {
 	}
 
 	/**
-	 * Checks if the given space has any non-linear spatial dimensions.
+	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
+	 * same scaling.
+	 * <p>
+	 * NB: Public and static for testing purposes.
+	 * </p>
 	 *
 	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-	 * @param <A> type of axes in the space.
-	 * @return true if there are any power, logarithmic or other non-linear axes.
+	 * @param <T> type of the space
+	 * @return true if all spatial axes have matching calibration. Also returns
+	 *         true if none of them have a unit
 	 */
-	//TODO is this really necessary?
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
-		hasNonLinearSpatialAxes(final S space)
+	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
+		isAxesMatchingSpatialCalibration(final T space)
 	{
-		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
-			.type().isSpatial());
+		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
+			.allMatch(StringUtils::isNullOrEmpty);
+		final boolean matchingUnit = spatialAxisStream(space).map(
+			CalibratedAxis::unit).distinct().count() == 1;
+		final boolean matchingScale = spatialAxisStream(space).map(a -> a
+			.averageScale(0, 1)).distinct().count() == 1;
+
+		return (matchingUnit || noUnits) && matchingScale;
 	}
 
 	// region -- Helper methods --
@@ -136,35 +144,30 @@ public class AxisUtils {
 	 * </p>
 	 */
 	private static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isUnitsConvertible(T space, final UnitService unitService)
+		isUnitsConvertible(final T space, final UnitService unitService)
 	{
 		final long spatialDimensions = countSpatialDimensions(space);
-
 		final long uncalibrated = spatialAxisStream(space).map(CalibratedAxis::unit)
 			.filter(StringUtils::isNullOrEmpty).count();
-
 		if (uncalibrated == spatialDimensions) {
 			return true;
 		}
-		else if (uncalibrated > 0) {
+		if (uncalibrated > 0) {
 			return false;
 		}
-
 		final List<String> units = spatialAxisStream(space).map(
 			CalibratedAxis::unit).distinct().map(s -> s.replaceFirst("^µ[mM]$", "um"))
 			.collect(toList());
-
-        for (int i = 0; i < units.size(); i++) {
+		for (int i = 0; i < units.size(); i++) {
 			for (int j = i; j < units.size(); j++) {
 				try {
 					unitService.value(1.0, units.get(i), units.get(j));
 				}
-				catch (Exception e) {
+				catch (final Exception e) {
 					return false;
 				}
 			}
 		}
-
 		return true;
 	}
 	// endregion

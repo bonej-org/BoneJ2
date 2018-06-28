@@ -23,32 +23,7 @@ import ij.process.ImageStatistics;
 public class ImagePlusUtilTest {
 
 	@Test
-	public void testAnisotropyReturnsNaNIfImageIsNull() throws Exception {
-		final double anisotropy = ImagePlusUtil.anisotropy(null);
-
-		assertTrue("Anisotropy should be NaN for a null image", Double.isNaN(
-			anisotropy));
-	}
-
-	@Test
-	public void testAnisotropy3D() throws Exception {
-		final double expected = 4.0;
-		// Mock an anisotropic 3D image
-		final ImagePlus testImage = mock(ImagePlus.class);
-		final Calibration anisotropicCalibration = new Calibration();
-		anisotropicCalibration.pixelWidth = 1;
-		anisotropicCalibration.pixelHeight = 2;
-		anisotropicCalibration.pixelDepth = 5;
-		when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
-		when(testImage.getNSlices()).thenReturn(10);
-
-		final double result = ImagePlusUtil.anisotropy(testImage);
-
-		assertEquals("Anisotropy should be " + expected, expected, result, 1e-12);
-	}
-
-	@Test
-	public void testAnisotropy() throws Exception {
+	public void testAnisotropy() {
 		// Mock an isotropic 2D image
 		final ImagePlus testImage = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
@@ -66,93 +41,49 @@ public class ImagePlusUtilTest {
 	}
 
 	@Test
-	public void testIsBinaryColourReturnsFalseIfImageIsNull() throws Exception {
-		boolean result = ImagePlusUtil.isBinaryColour(null);
-		assertFalse("Null image should not be binary", result);
-	}
+	public void testAnisotropy3D() {
+		final double expected = 4.0;
+		// Mock an anisotropic 3D image
+		final ImagePlus testImage = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 1;
+		anisotropicCalibration.pixelHeight = 2;
+		anisotropicCalibration.pixelDepth = 5;
+		when(testImage.getCalibration()).thenReturn(anisotropicCalibration);
+		when(testImage.getNSlices()).thenReturn(10);
 
-    @Test
-    public void testCleanDuplicate() throws Exception {
-        final String title = "bonej-test-image.tiff";
-        final int width = 5;
-        final int height = 7;
-        final int depth = 11;
-        final Roi roi = new Roi(1, 1, 3, 3);
-        final ImagePlus image = IJ.createImage(title, width, height, depth, 8);
-        image.setRoi(roi);
+		final double result = ImagePlusUtil.anisotropy(testImage);
 
-        final ImagePlus result = ImagePlusUtil.cleanDuplicate(image);
-
-        assertEquals("Duplicate has wrong title", result.getTitle(), title);
-        assertEquals("ROI should not affect duplicate size", width, result
-                .getWidth());
-        assertEquals("ROI should not affect duplicate size", height, result
-                .getHeight());
-        assertEquals("The original image should still have its ROI", roi, image
-                .getRoi());
-    }
-
-	@Test
-	public void testMonochromeIsBinaryColour() throws Exception {
-		ImagePlus testImage = mock(ImagePlus.class);
-		ImageStatistics binaryStats = new ImageStatistics();
-		binaryStats.pixelCount = 1;
-		binaryStats.histogram = new int[256];
-		binaryStats.histogram[0xFF] = 1;
-
-		when(testImage.getStatistics()).thenReturn(binaryStats);
-
-		boolean result = ImagePlusUtil.isBinaryColour(testImage);
-		assertTrue("A monochrome image should be binary", result);
+		assertEquals("Anisotropy should be " + expected, expected, result, 1e-12);
 	}
 
 	@Test
-	public void testMulticolorIsNotBinaryColour() throws Exception {
-		ImagePlus testImage = mock(ImagePlus.class);
-		ImageStatistics binaryStats = new ImageStatistics();
-		binaryStats.pixelCount = 3;
-		binaryStats.histogram = new int[256];
-		binaryStats.histogram[0x00] = 1;
-		binaryStats.histogram[0x01] = 1;
-		binaryStats.histogram[0xFF] = 1;
+	public void testAnisotropyReturnsNaNIfImageIsNull() {
+		final double anisotropy = ImagePlusUtil.anisotropy(null);
 
-		when(testImage.getStatistics()).thenReturn(binaryStats);
-
-		boolean result = ImagePlusUtil.isBinaryColour(testImage);
-		assertFalse("A multicolor image should be binary", result);
+		assertTrue("Anisotropy should be NaN for a null image", Double.isNaN(
+			anisotropy));
 	}
 
 	@Test
-	public void testIsBinaryColour() throws Exception {
-		ImagePlus testImage = mock(ImagePlus.class);
-		ImageStatistics binaryStats = new ImageStatistics();
-		binaryStats.pixelCount = 2;
-		binaryStats.histogram = new int[256];
-		binaryStats.histogram[0x00] = 1;
-		binaryStats.histogram[0xFF] = 1;
+	public void testCleanDuplicate() {
+		final String title = "bonej-test-image.tiff";
+		final int width = 5;
+		final int height = 7;
+		final int depth = 11;
+		final Roi roi = new Roi(1, 1, 3, 3);
+		final ImagePlus image = IJ.createImage(title, width, height, depth, 8);
+		image.setRoi(roi);
 
-		when(testImage.getStatistics()).thenReturn(binaryStats);
+		final ImagePlus result = ImagePlusUtil.cleanDuplicate(image);
 
-		boolean result = ImagePlusUtil.isBinaryColour(testImage);
-		assertTrue("Image with two colors (black & white) should be binary",
-			result);
-	}
-
-	@Test
-	public void testIs3DFalseIfImageNull() throws Exception {
-		final boolean result = ImagePlusUtil.is3D(null);
-
-		assertFalse("Null image should not be 3D", result);
-	}
-
-	@Test
-	public void testIs3DFalseIfImage2D() throws Exception {
-		final ImagePlus imagePlus = mock(ImagePlus.class);
-		when(imagePlus.getNSlices()).thenReturn(1);
-
-		final boolean result = ImagePlusUtil.is3D(imagePlus);
-
-		assertFalse("2D image should not be 3D", result);
+		assertEquals("Duplicate has wrong title", result.getTitle(), title);
+		assertEquals("ROI should not affect duplicate size", width, result
+			.getWidth());
+		assertEquals("ROI should not affect duplicate size", height, result
+			.getHeight());
+		assertEquals("The original image should still have its ROI", roi, image
+			.getRoi());
 	}
 
 	@Test
@@ -163,6 +94,75 @@ public class ImagePlusUtilTest {
 		final boolean result = ImagePlusUtil.is3D(imagePlus);
 
 		assertTrue("Image with more than 1 slice should be 3D", result);
+	}
+
+	@Test
+	public void testIs3DFalseIfImage2D() {
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		when(imagePlus.getNSlices()).thenReturn(1);
+
+		final boolean result = ImagePlusUtil.is3D(imagePlus);
+
+		assertFalse("2D image should not be 3D", result);
+	}
+
+	@Test
+	public void testIs3DFalseIfImageNull() {
+		final boolean result = ImagePlusUtil.is3D(null);
+
+		assertFalse("Null image should not be 3D", result);
+	}
+
+	@Test
+	public void testIsBinaryColour() {
+		final ImagePlus testImage = mock(ImagePlus.class);
+		final ImageStatistics binaryStats = new ImageStatistics();
+		binaryStats.pixelCount = 2;
+		binaryStats.histogram = new int[256];
+		binaryStats.histogram[0x00] = 1;
+		binaryStats.histogram[0xFF] = 1;
+
+		when(testImage.getStatistics()).thenReturn(binaryStats);
+
+		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		assertTrue("Image with two colors (black & white) should be binary",
+			result);
+	}
+
+	@Test
+	public void testIsBinaryColourReturnsFalseIfImageIsNull() {
+		final boolean result = ImagePlusUtil.isBinaryColour(null);
+		assertFalse("Null image should not be binary", result);
+	}
+
+	@Test
+	public void testMonochromeIsBinaryColour() {
+		final ImagePlus testImage = mock(ImagePlus.class);
+		final ImageStatistics binaryStats = new ImageStatistics();
+		binaryStats.pixelCount = 1;
+		binaryStats.histogram = new int[256];
+		binaryStats.histogram[0xFF] = 1;
+
+		when(testImage.getStatistics()).thenReturn(binaryStats);
+
+		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		assertTrue("A monochrome image should be binary", result);
+	}
+
+	@Test
+	public void testMulticolorIsNotBinaryColour() {
+		final ImagePlus testImage = mock(ImagePlus.class);
+		final ImageStatistics binaryStats = new ImageStatistics();
+		binaryStats.pixelCount = 3;
+		binaryStats.histogram = new int[256];
+		binaryStats.histogram[0x00] = 1;
+		binaryStats.histogram[0x01] = 1;
+		binaryStats.histogram[0xFF] = 1;
+
+		when(testImage.getStatistics()).thenReturn(binaryStats);
+
+		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		assertFalse("A multicolor image should be binary", result);
 	}
 
 }

@@ -9,26 +9,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
+import net.imagej.axis.Axis;
 import net.imagej.axis.AxisType;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.GenericColumn;
-import net.imagej.table.LongColumn;
 import net.imagej.units.UnitService;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.junit.AfterClass;
 import org.junit.Test;
+import org.scijava.Contextual;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -40,40 +38,53 @@ import ij.measure.Calibration;
  */
 public class ResultUtilsTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Contextual IMAGE_J = new ImageJ();
 	private static final UnitService unitService = IMAGE_J.context().getService(
 		UnitService.class);
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
+	@Test
+	public void testCreateLabelColumn() {
+		final String label = "Test";
+		final int rows = 10;
+
+		final GenericColumn column = ResultUtils.createLabelColumn(label, rows);
+
+		assertEquals("Column header is incorrect", "Label", column.getHeader());
+		assertEquals("Wrong number of rows", rows, column.size());
+		assertTrue("Column has incorrect values", column.stream().map(
+			o -> (String) o).allMatch(label::equals));
 	}
 
 	@Test
-	public void testGetSizeDescription() throws Exception {
-		final String[] expected = { "Size", "Area", "Volume", "Size" };
-		final AxisType spatialAxis = Axes.get("Spatial", true);
-		final DefaultLinearAxis axis = new DefaultLinearAxis(spatialAxis);
-		final ImgPlus mockImage = mock(ImgPlus.class);
-		when(mockImage.axis(anyInt())).thenReturn(axis);
+	public void testCreateLabelColumnEmptyString() {
+		final GenericColumn column = ResultUtils.createLabelColumn("", 3);
 
-		for (int i = 0; i < expected.length; i++) {
-			final int dimensions = i + 1;
-			when(mockImage.numDimensions()).thenReturn(dimensions);
-
-			final String description = ResultUtils.getSizeDescription(mockImage);
-
-			assertTrue("Size description is incorrect", expected[i].equals(
-				description));
-		}
+		assertTrue("Column has incorrect values", column.stream().map(
+			o -> (String) o).allMatch("-"::equals));
 	}
 
 	@Test
-	public void testGetExponent() throws Exception {
+	public void testCreateLabelColumnNullString() {
+		final GenericColumn column = ResultUtils.createLabelColumn(null, 3);
+
+		assertNotNull(column);
+		assertTrue("Column has incorrect values", column.stream().map(
+			o -> (String) o).allMatch("-"::equals));
+	}
+
+	@Test
+	public void testCreateLabelNegativeRows() {
+		final GenericColumn column = ResultUtils.createLabelColumn("Test", -1);
+
+		assertEquals(0, column.size());
+	}
+
+	@Test
+	public void testGetExponent() {
 		final char[] expected = { '\u0000', '\u00B2', '\u00B3', '\u2074', '\u2075',
 			'\u2076', '\u2077', '\u2078', '\u2079', '\u0000' };
 		final AxisType spatialAxis = Axes.get("Spatial", true);
-		final DefaultLinearAxis axis = new DefaultLinearAxis(spatialAxis);
+		final CalibratedAxis axis = new DefaultLinearAxis(spatialAxis);
 		final ImgPlus<?> mockImage = mock(ImgPlus.class);
 		when(mockImage.axis(anyInt())).thenReturn(axis);
 
@@ -88,49 +99,25 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testGetUnitHeaderReturnEmptyIfImageNull() throws Exception {
-		final String result = ResultUtils.getUnitHeader(null, unitService);
+	public void testGetSizeDescription() {
+		final String[] expected = { "Size", "Area", "Volume", "Size" };
+		final AxisType spatialAxis = Axes.get("Spatial", true);
+		final Axis axis = new DefaultLinearAxis(spatialAxis);
+		final ImgPlus mockImage = mock(ImgPlus.class);
+		when(mockImage.axis(anyInt())).thenReturn(axis);
 
-		assertTrue("Unit header should be empty", result.isEmpty());
+		for (int i = 0; i < expected.length; i++) {
+			final int dimensions = i + 1;
+			when(mockImage.numDimensions()).thenReturn(dimensions);
+			@SuppressWarnings("unchecked")
+			final String description = ResultUtils.getSizeDescription(mockImage);
+
+			assertEquals("Size description is incorrect", expected[i], description);
+		}
 	}
 
 	@Test
-	public void testGetUnitHeaderEmptyIfNoUnit() throws Exception {
-		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X);
-		final Img<DoubleType> img = ArrayImgs.doubles(10);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
-
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
-
-		assertTrue("Unit header should be empty", result.isEmpty());
-	}
-
-	@Test
-	public void testGetUnitHeaderReturnEmptyIfDefaultUnitPixel()
-		throws Exception
-	{
-		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "pixel");
-		final Img<DoubleType> img = ArrayImgs.doubles(10);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
-
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
-
-		assertTrue("Unit header should be empty", result.isEmpty());
-	}
-
-	@Test
-	public void testGetUnitHeaderReturnEmptyIfDefaultUnitUnit() throws Exception {
-		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "unit");
-		final Img<DoubleType> img = ArrayImgs.doubles(10);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
-
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService);
-
-		assertTrue("Unit header should be empty", result.isEmpty());
-	}
-
-	@Test
-	public void testGetUnitHeader() throws Exception {
+	public void testGetUnitHeader() {
 		final String unit = "mm";
 		final char exponent = '³';
 		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, unit);
@@ -144,62 +131,42 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testCreateLabelColumnNullString() throws Exception {
-		final GenericColumn column = ResultUtils.createLabelColumn(null, 3);
+	public void testGetUnitHeaderEmptyIfNoUnit() {
+		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X);
+		final Img<DoubleType> img = ArrayImgs.doubles(10);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		assertNotNull(column);
-		assertTrue("Column has incorrect values", column.stream().map(
-			o -> (String) o).allMatch("-"::equals));
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
+
+		assertTrue("Unit header should be empty", result.isEmpty());
 	}
 
 	@Test
-	public void testCreateLabelColumnEmptyString() throws Exception {
-		final GenericColumn column = ResultUtils.createLabelColumn("", 3);
+	public void testGetUnitHeaderImagePlus() {
+		final ImagePlus imagePlus = new ImagePlus();
+		final Calibration calibration = new Calibration();
+		final String unit = "mm";
+		calibration.setUnit(unit);
+		imagePlus.setCalibration(calibration);
 
-		assertTrue("Column has incorrect values", column.stream().map(
-			o -> (String) o).allMatch("-"::equals));
+		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
+
+		assertEquals("(" + unit + ")", unitHeader);
 	}
 
 	@Test
-	public void testCreateLabelNegativeRows() throws Exception {
-		final GenericColumn column = ResultUtils.createLabelColumn("Test", -1);
+	public void testGetUnitHeaderImagePlusReturnsEmptyIfDefaultUnit() {
+		final ImagePlus imagePlus = new ImagePlus();
+		final Calibration calibration = new Calibration();
+		imagePlus.setCalibration(calibration);
 
-		assertEquals(0, column.size());
+		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
+
+		assertEquals("", unitHeader);
 	}
 
 	@Test
-	public void testCreateLabelColumn() throws Exception {
-		final String label = "Test";
-		final int rows = 10;
-
-		final GenericColumn column = ResultUtils.createLabelColumn(label, rows);
-
-		assertEquals("Column header is incorrect", "Label", column.getHeader());
-		assertEquals("Wrong number of rows", rows, column.size());
-		assertTrue("Column has incorrect values", column.stream().map(
-			o -> (String) o).allMatch(label::equals));
-	}
-
-	@Test
-    public void testToConventionalIndexNullType() throws Exception {
-        assertEquals(0, ResultUtils.toConventionalIndex(null, 0));
-    }
-
-	@Test
-	public void testToConventionalIndex() throws Exception {
-		final Stream<AxisType> types = Stream.of(Axes.X, Axes.Y, Axes.Z,
-			Axes.CHANNEL, Axes.TIME);
-		final Iterator<Long> expectedIndices = Stream.of(0L, 0L, 1L, 1L, 1L)
-			.iterator();
-
-		types.map(type -> ResultUtils.toConventionalIndex(type, 0)).forEach(
-			i -> assertEquals(expectedIndices.next().longValue(), i.longValue()));
-	}
-
-	@Test
-	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitEmpty()
-		throws Exception
-	{
+	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitEmpty() {
 		final ImagePlus imagePlus = new ImagePlus();
 		final Calibration calibration = new Calibration();
 		calibration.setUnit("");
@@ -211,22 +178,7 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testGetUnitHeaderImagePlusReturnsEmptyIfDefaultUnit()
-		throws Exception
-	{
-		final ImagePlus imagePlus = new ImagePlus();
-		final Calibration calibration = new Calibration();
-		imagePlus.setCalibration(calibration);
-
-		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
-
-		assertEquals("", unitHeader);
-	}
-
-	@Test
-	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitUnit()
-		throws Exception
-	{
+	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitUnit() {
 		final ImagePlus imagePlus = new ImagePlus();
 		final Calibration calibration = new Calibration();
 		calibration.setUnit("unit");
@@ -238,15 +190,52 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testGetUnitHeaderImagePlus() throws Exception {
-		final ImagePlus imagePlus = new ImagePlus();
-		final Calibration calibration = new Calibration();
-        final String unit = "mm";
-        calibration.setUnit(unit);
-		imagePlus.setCalibration(calibration);
+	public void testGetUnitHeaderReturnEmptyIfDefaultUnitPixel() {
+		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "pixel");
+		final Img<DoubleType> img = ArrayImgs.doubles(10);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
 
-		assertEquals("(" + unit + ")", unitHeader);
+		assertTrue("Unit header should be empty", result.isEmpty());
+	}
+
+	@Test
+	public void testGetUnitHeaderReturnEmptyIfDefaultUnitUnit() {
+		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "unit");
+		final Img<DoubleType> img = ArrayImgs.doubles(10);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
+
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
+
+		assertTrue("Unit header should be empty", result.isEmpty());
+	}
+
+	@Test
+	public void testGetUnitHeaderReturnEmptyIfImageNull() {
+		final String result = ResultUtils.getUnitHeader(null, unitService, '³');
+
+		assertTrue("Unit header should be empty", result.isEmpty());
+	}
+
+	@Test
+	public void testToConventionalIndex() {
+		final Stream<AxisType> types = Stream.of(Axes.X, Axes.Y, Axes.Z,
+			Axes.CHANNEL, Axes.TIME);
+		final Iterator<Long> expectedIndices = Stream.of(0L, 0L, 1L, 1L, 1L)
+			.iterator();
+
+		types.map(type -> ResultUtils.toConventionalIndex(type, 0)).forEach(
+			i -> assertEquals(expectedIndices.next().longValue(), i.longValue()));
+	}
+
+	@Test
+	public void testToConventionalIndexNullType() {
+		assertEquals(0, ResultUtils.toConventionalIndex(null, 0));
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }

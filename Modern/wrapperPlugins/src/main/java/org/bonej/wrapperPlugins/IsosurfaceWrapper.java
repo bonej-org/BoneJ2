@@ -146,7 +146,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	 */
 	// TODO make into a utility method or remove if mesh area considers
 	// calibration in the future
-	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
+	static <T extends AnnotatedSpace<CalibratedAxis>> boolean
 		isAxesMatchingSpatialCalibration(final T space)
 	{
 		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
@@ -173,7 +173,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * @throws IOException if there's an error while writing the file
 	 */
 	// TODO: Remove when imagej-mesh / ThreeDViewer supports STL
-	public static void writeBinarySTLFile(final String path, final Mesh mesh)
+	static void writeBinarySTLFile(final String path, final Mesh mesh)
 		throws IllegalArgumentException, IOException, NullPointerException
 	{
 		if (mesh == null) {
@@ -333,8 +333,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_BINARY);
 		}
 	}
-
-	// -- Utility methods --
 
 	// -- Helper methods --
 	private static void writeSTLFacet(final ByteBuffer buffer,
