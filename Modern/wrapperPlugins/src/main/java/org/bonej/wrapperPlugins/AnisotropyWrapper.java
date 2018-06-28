@@ -146,15 +146,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(toList());
 		matchOps(subspaces.get(0));
-		// TODO Does it make more sense to collect all the results we can (without
-		// cancelling) and then report errors at the end?
+		final List<Ellipsoid> ellipsoids = new ArrayList<>();
 		for (int i = 0; i < subspaces.size(); i++) {
 			statusService.showStatus("Anisotropy: sampling subspace #" + (i + 1));
 			final Subspace<BitType> subspace = subspaces.get(i);
-			if (!processSubspace(subspace)) {
+			final Ellipsoid ellipsoid = milEllipsoid(subspace);
+			if (ellipsoid == null) {
 				return;
 			}
+			ellipsoids.add(ellipsoid);
 		}
+		addResults(subspaces, ellipsoids);
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
@@ -162,7 +164,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	// region -- Helper methods --
 
-	private void addResults(final Subspace<BitType> subspace,
+	private void addResult(final Subspace<BitType> subspace,
 		final double anisotropy, final Ellipsoid ellipsoid)
 	{
 		final String imageName = inputImage.getName();
@@ -177,6 +179,18 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				.getB()));
 			SharedTable.add(label, "Radius c", String.format("%.2f", ellipsoid
 				.getC()));
+		}
+	}
+
+	private void addResults(final List<Subspace<BitType>> subspaces,
+		final List<Ellipsoid> ellipsoids)
+	{
+		statusService.showStatus("Anisotropy: showing results");
+		for (int i = 0; i < subspaces.size(); i++) {
+			final Subspace<BitType> subspace = subspaces.get(i);
+			final Ellipsoid ellipsoid = ellipsoids.get(i);
+			final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
+			addResult(subspace, anisotropy, ellipsoid);
 		}
 	}
 
@@ -197,6 +211,27 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
+	}
+
+	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
+		final List<Vector3d> pointCloud;
+		try {
+			pointCloud = runDirectionsInParallel(subspace.interval);
+			if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
+				cancel("Anisotropy could not be calculated - too few points");
+				return null;
+			}
+			final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
+			if (ellipsoid == null) {
+				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+			}
+			return ellipsoid;
+		}
+		catch (final ExecutionException | InterruptedException e) {
+			logService.trace(e.getMessage());
+			cancel("The plug-in was interrupted");
+		}
+		return null;
 	}
 
 	// TODO Refactor into a static utility method with unit tests
@@ -221,31 +256,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		matchingMock.setIdentity();
 		quadricToEllipsoidOp = Functions.unary(opService, QuadricToEllipsoid.class,
 			Ellipsoid.class, matchingMock);
-	}
-
-	private boolean processSubspace(final Subspace<BitType> subspace) {
-		final List<Vector3d> pointCloud;
-		try {
-			pointCloud = runDirectionsInParallel(subspace.interval);
-		}
-		catch (final ExecutionException | InterruptedException e) {
-			logService.trace(e.getMessage());
-			cancel("The plug-in was interrupted");
-			return false;
-		}
-		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
-			cancel("Anisotropy could not be calculated - too few points");
-			return false;
-		}
-		final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
-		if (ellipsoid == null) {
-			cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
-			return false;
-		}
-		statusService.showStatus("Determining anisotropy");
-		final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
-		addResults(subspace, anisotropy, ellipsoid);
-		return true;
 	}
 
 	private List<Vector3d> runDirectionsInParallel(
