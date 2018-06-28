@@ -71,7 +71,8 @@ import ij.plugin.frame.PlugInFrame;
  * @author Michael Doube
  * @author Wayne Rasband
  */
-// TODO Figure out if class should be singleton or not. Design is broken.
+// TODO Fix design: getInstance() probably shouldn't return reference to Orienteer.instance,
+// but a clone of it. For example, what would happen if user called close() on that reference?
 @SuppressWarnings("serial")
 public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	ItemListener, TextListener, MouseWheelListener
