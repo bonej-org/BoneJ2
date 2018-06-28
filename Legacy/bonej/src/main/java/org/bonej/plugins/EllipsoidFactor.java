@@ -163,8 +163,7 @@ public class EllipsoidFactor implements PlugIn {
 		final double gaussianSigma = gd.getNextNumber();
 		final boolean doFlinnPlot = gd.getNextBoolean();
 
-		final double[][] unitVectors = Vectors.regularVectors(nVectors);
-		regularVectors = unitVectors.clone();
+		regularVectors = Vectors.regularVectors(nVectors);
 
 		final int[][] skeletonPoints = skeletonPoints(imp);
 
