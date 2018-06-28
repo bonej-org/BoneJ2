@@ -23,6 +23,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.geometry;
 
+import java.util.Random;
+
 import org.bonej.util.MatrixUtils;
 
 import Jama.EigenvalueDecomposition;
@@ -38,6 +40,8 @@ import Jama.Matrix;
  * @author Michael Doube
  */
 public final class FitEllipsoid {
+
+	private static Random rng = new Random();
 
 	private FitEllipsoid() {}
 
@@ -75,12 +79,12 @@ public final class FitEllipsoid {
 			// Random points
 			for (int j = 0; j < w; j++) {
 				for (int i = 0; i < h; i++) {
-					s[i][j] = theta + Math.random() * 2 * Math.PI;
+					s[i][j] = theta + rng.nextDouble() * 2 * Math.PI;
 				}
 			}
 			for (int i = 0; i < h; i++) {
 				for (int j = 0; j < w; j++) {
-					t[i][j] = theta + Math.random() * 2 * Math.PI;
+					t[i][j] = theta + rng.nextDouble() * 2 * Math.PI;
 				}
 			}
 		}
@@ -128,9 +132,9 @@ public final class FitEllipsoid {
 		}
 		for (int i = 0; i < h; i++) {
 			for (int j = 0; j < w; j++) {
-				x[i][j] = x[i][j] + Math.random() * noise;
-				y[i][j] = y[i][j] + Math.random() * noise;
-				z[i][j] = z[i][j] + Math.random() * noise;
+				x[i][j] = x[i][j] + rng.nextDouble() * noise;
+				y[i][j] = y[i][j] + rng.nextDouble() * noise;
+				z[i][j] = z[i][j] + rng.nextDouble() * noise;
 			}
 		}
 		final double[][] ellipsoidPoints = new double[w * h][3];
@@ -213,6 +217,16 @@ public final class FitEllipsoid {
 		final double[] centre = (double[]) matrices[0];
 		final double[][] eigenVectors = (double[][]) matrices[2];
 		return new Object[] { centre, radii, eigenVectors, v, E };
+	}
+
+	/**
+	 * Sets the seed number of the pseudo-random number generator in
+	 * testEllipsoid.
+	 *
+	 * @param seed seed number.
+	 */
+	static void setSeed(final long seed) {
+		rng.setSeed(seed);
 	}
 
 	/**

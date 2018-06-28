@@ -24,6 +24,7 @@ package org.bonej.geometry;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class FitEllipsoidTest {
@@ -35,11 +36,11 @@ public class FitEllipsoidTest {
 	final static double x = 1.2;
 	final static double y = -3.4;
 	final static double z = 7.7;
-	final static double[][] points = FitEllipsoid.testEllipsoid(a, b, c, r, x, y, z, 0.0, 1000, true);
-	final static double[][] noisyPoints = FitEllipsoid.testEllipsoid(a, b, c, r, x, y, z, 0.01, 1000, true);
 
 	@Test
 	public void testYuryPetrov() {
+		final double[][] points = FitEllipsoid.testEllipsoid(a, b, c, r, x, y, z, 0.0, 1000, true);
+		final double[][] noisyPoints = FitEllipsoid.testEllipsoid(a, b, c, r, x, y, z, 0.01, 1000, true);
 		final double[] centre = { x, y, z };
 		final double[] radii = { c, b, a };
 		Object[] result = FitEllipsoid.yuryPetrov(points);
@@ -73,6 +74,10 @@ public class FitEllipsoidTest {
 			final double equation = xi * xi / (a * a) + yi * yi / (b * b) + zi * zi / (c * c);
 			assertEquals(1.0, equation, 1e-15);
 		}
+	}
 
+	@BeforeClass
+	public static void oneTimeSetup() {
+		FitEllipsoid.setSeed(0xc0ffee);
 	}
 }

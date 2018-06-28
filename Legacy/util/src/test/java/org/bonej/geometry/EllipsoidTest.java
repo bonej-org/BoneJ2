@@ -25,6 +25,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class EllipsoidTest {
@@ -248,5 +249,10 @@ public class EllipsoidTest {
 	 */
 	private static Ellipsoid fitTo(final double[][] coordinates) {
 		return new Ellipsoid(FitEllipsoid.yuryPetrov(coordinates));
+	}
+
+	@BeforeClass
+	public static void oneTimeSetup() {
+		FitEllipsoid.setSeed(0xc0ffee);
 	}
 }

@@ -29,6 +29,7 @@ public class FitSphereTest {
 
 	@Test
 	public void testFitSphere() {
+		FitEllipsoid.setSeed(0xc0ffee);
 		for (double r = 1; r < 5; r += Math.random()) {
 			for (double x = -2; x < 2; x += Math.random()) {
 				for (double y = -2; y < 2; y += Math.random()) {
