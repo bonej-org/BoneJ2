@@ -116,9 +116,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
 		boneSizeHeader = "Bone " + sizeDescription.toLowerCase() + " " + unitHeader;
-		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " +
-			unitHeader;
-		ratioHeader = sizeDescription + " Ratio";
+		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " + unitHeader;
+		ratioHeader = sizeDescription + " ratio";
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
 			unitService);
 
