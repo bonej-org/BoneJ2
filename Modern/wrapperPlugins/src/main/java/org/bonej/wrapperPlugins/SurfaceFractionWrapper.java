@@ -22,11 +22,13 @@ import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
+import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.DoubleType;
+import net.imglib2.view.Views;
 
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
@@ -66,6 +68,9 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
 
+	@Parameter(label = "Show surface meshes", persist = false)
+	private boolean showMeshes;
+
 	/**
 	 * The surface faction results in a {@link Table}
 	 * <p>
@@ -103,13 +108,10 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 			bitImgPlus).collect(Collectors.toList());
 		matchOps(subspaces.get(0).interval);
 		prepareResultDisplay();
-		final String name = inputImage.getName();
-		subspaces.forEach(subspace -> {
-			final double[] results = subSpaceFraction(subspace.interval);
-			final String suffix = subspace.toString();
-			final String label = suffix.isEmpty() ? name : name + " " + suffix;
-			addResults(label, results);
-		});
+		for (int i = 0; i < subspaces.size(); i++) {
+			statusService.showProgress(i, subspaces.size() - 1);
+			calculateSubspaceVolumes(subspaces.get(i));
+		}
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
@@ -121,6 +123,42 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		SharedTable.add(label, bVHeader, results[0]);
 		SharedTable.add(label, tVHeader, results[1]);
 		SharedTable.add(label, ratioHeader, results[2]);
+	}
+
+	private double[] calculateMeshVolumes(final Mesh foregroundMesh,
+		final Mesh totalMesh)
+	{
+		final double foregroundVolume = meshVolume.calculate(foregroundMesh).get() *
+			elementSize;
+		final double totalVolume = meshVolume.calculate(totalMesh).get() *
+			elementSize;
+		final double ratio = foregroundVolume / totalVolume;
+		return new double[] { foregroundVolume, totalVolume, ratio };
+	}
+
+	private void calculateSubspaceVolumes(final Subspace<BitType> subspace) {
+		statusService.showStatus("Surface fraction: creating surfaces");
+		final Mesh foregroundMesh = marchingCubes.calculate(subspace.interval);
+		final Mesh totalMesh = createTotalMesh(subspace.interval);
+		statusService.showStatus("Surface fraction: calculating volumes");
+		final double[] results = calculateMeshVolumes(foregroundMesh, totalMesh);
+		final String suffix = subspace.toString();
+		final String name = inputImage.getName();
+		final String label = suffix.isEmpty() ? name : name + " " + suffix;
+		addResults(label, results);
+	}
+
+	private Mesh createTotalMesh(
+		final RandomAccessibleInterval<BitType> subspace)
+	{
+		@SuppressWarnings("unchecked")
+		final RandomAccessibleInterval<BitType> totalMask = raiCopy.calculate(
+			subspace);
+		// Because we want to create a surface from the whole image, set everything
+		// in the mask to foreground
+		final IterableInterval<BitType> iterable = Views.flatIterable(totalMask);
+		iterable.forEach(BitType::setOne);
+		return marchingCubes.calculate(totalMask);
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> subspace) {
@@ -144,33 +182,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		tVHeader = "Total volume " + unitHeader;
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
 			unitService);
-	}
-
-	/** Process surface fraction for one 3D subspace in the n-dimensional image */
-	@SuppressWarnings("unchecked")
-	private double[] subSpaceFraction(
-		final RandomAccessibleInterval<BitType> subSpace)
-	{
-		statusService.showStatus("Surface fraction: creating surface");
-		// Create masks for marching cubes
-		final RandomAccessibleInterval totalMask = raiCopy.calculate(subSpace);
-		// Because we want to create a surface from the whole image, set everything
-		// in the mask to foreground
-		((Iterable<BitType>) totalMask).forEach(BitType::setOne);
-
-		// Create surface meshes and calculate their volume. If the input interval
-		// wasn't binary, we'd have to threshold it before these calls.
-		final Mesh thresholdMesh = marchingCubes.calculate(subSpace);
-		statusService.showStatus("Surface fraction: calculating volume");
-		final double rawThresholdVolume = meshVolume.calculate(thresholdMesh).get();
-		final Mesh totalMesh = marchingCubes.calculate(totalMask);
-		final double rawTotalVolume = meshVolume.calculate(totalMesh).get();
-
-		final double thresholdVolume = rawThresholdVolume * elementSize;
-		final double totalVolume = rawTotalVolume * elementSize;
-		final double ratio = thresholdVolume / totalVolume;
-
-		return new double[] { thresholdVolume, totalVolume, ratio };
 	}
 
 	@SuppressWarnings("unused")
