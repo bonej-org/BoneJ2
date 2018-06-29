@@ -42,7 +42,7 @@ public class SurfaceFractionWrapperTest {
 	@Test
 	public void test2DImageCancelsConnectivity() throws Exception {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
+			SurfaceFractionWrapper.class);
 	}
 
 	@Test
