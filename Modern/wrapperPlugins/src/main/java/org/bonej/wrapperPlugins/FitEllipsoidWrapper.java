@@ -28,7 +28,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -111,15 +110,15 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		final Matrix4d quadric = (Matrix4d) opService.run(SolveQuadricEq.class,
 			points);
 		statusService.showStatus("Fit ellipsoid: determining ellipsoid parameters");
-		@SuppressWarnings("unchecked")
-		final Optional<Ellipsoid> result = (Optional<Ellipsoid>) opService.run(
-			QuadricToEllipsoid.class, quadric);
-		if (!result.isPresent()) {
+		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
 			cancel("Can't fit ellipsoid to points.\n" +
-				"Add more point ROI's to the ROI Manager and try again.");
+				"Try adding more point ROIs to the ROI Manager and try again.");
 			return;
 		}
-		addResults(result.get());
+		@SuppressWarnings("unchecked")
+		final Ellipsoid result = (Ellipsoid) opService.run(
+			QuadricToEllipsoid.class, quadric);
+		addResults(result);
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
