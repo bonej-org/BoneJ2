@@ -17,30 +17,19 @@ import java.util.TreeMap;
 import java.util.stream.DoubleStream;
 
 import net.imagej.ops.OpService;
-import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.ops.special.function.Functions;
-import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultResultsTable;
 import net.imagej.table.DoubleColumn;
 import net.imagej.table.ResultsTable;
 import net.imagej.table.Table;
-import net.imglib2.util.Pair;
 import net.imglib2.util.ValuePair;
 
-import org.bonej.ops.CentroidLinAlg3d;
-import org.bonej.ops.ita.CleanShortEdges;
-import org.bonej.ops.ita.CleanShortEdges.PercentagesOfCulledEdges;
-import org.bonej.ops.ita.NPoint;
-import org.bonej.ops.ita.NPoint.VectorsAngle;
-import org.bonej.ops.ita.NPointAngles;
-import org.bonej.ops.ita.VertexValenceSorter;
-import org.bonej.utilities.GraphUtil;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -50,7 +39,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
-import org.scijava.vecmath.Vector3d;
 import org.scijava.widget.NumberWidget;
 
 import ij.ImagePlus;
@@ -59,6 +47,9 @@ import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Edge;
 import sc.fiji.analyzeSkeleton.Graph;
 import sc.fiji.analyzeSkeleton.Vertex;
+import sc.fiji.analyzeSkeleton.ita.GraphPruning;
+import sc.fiji.analyzeSkeleton.ita.PointUtils;
+import sc.fiji.analyzeSkeleton.ita.VertexUtils;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
@@ -168,19 +159,13 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@Parameter
 	private PrefService prefService;
 
-	private UnaryFunctionOp<List, Vector3d> centroidOp;
-	private BinaryFunctionOp<Graph, Double, Graph> cleanShortEdgesOp;
-	private BinaryFunctionOp<Graph, Pair<Integer, Integer>, Map<Integer, List<Vertex>>> valenceSorterOp;
-	private BinaryFunctionOp<List<Vertex>, Integer, List<NPoint>> nPointAnglesOp;
-	private ValuePair<Integer, Integer> range;
-	private List<Double> coefficients;
+	private double[] coefficients;
 	private double calibratedMinimumLength;
 	private boolean anisotropyWarned;
 
 	@Override
 	public void run() {
 		statusService.showStatus("Intertrabecular angles: Initialising...");
-		matchOps();
 		statusService.showStatus("Intertrabecular angles: skeletonising");
 		final ImagePlus skeleton = skeletonise();
 		statusService.showStatus("Intertrabecular angles: analysing skeletons");
@@ -193,17 +178,19 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		final Graph largestGraph = Arrays.stream(graphs).max(Comparator
 			.comparingInt(a -> a.getVertices().size())).orElse(new Graph());
 		statusService.showStatus("Intertrabecular angles: pruning graph");
-		final Graph cleanGraph = cleanShortEdgesOp.calculate(largestGraph,
-			calibratedMinimumLength);
+		final ValuePair<Graph, double[]> pruningResult = GraphPruning
+			.pruneShortEdges(largestGraph, minimumTrabecularLength, iteratePruning,
+				useClusters, coefficients);
+		final Graph cleanGraph = pruningResult.a;
 		statusService.showStatus(
 			"Intertrabecular angles: valence sorting trabeculae");
-		final Map<Integer, List<Vertex>> valenceMap = valenceSorterOp.calculate(
-			cleanGraph, range);
+		final Map<Integer, List<Vertex>> valenceMap = VertexUtils.groupByValence(
+			cleanGraph.getVertices(), minimumValence, maximumValence);
 		statusService.showStatus("Intertrabecular angles: calculating angles");
 		final Map<Integer, DoubleStream> radianMap = createRadianMap(valenceMap);
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
-		printCulledEdgePercentages();
+		printCulledEdgePercentages(pruningResult.b);
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {
@@ -230,7 +217,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	@SuppressWarnings("unused")
 	private void calculateRealLength() {
-		calibratedMinimumLength = minimumTrabecularLength * coefficients.get(0);
+		calibratedMinimumLength = minimumTrabecularLength * coefficients[0];
 		final String unit = ResultUtils.getUnitHeader(inputImage);
 		realLength = String.join(" ", String.format("%.2g",
 			calibratedMinimumLength), unit);
@@ -242,10 +229,8 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		final TreeMap<Integer, DoubleStream> radianMap = new TreeMap<>();
 		valenceMap.forEach((valence, vertices) -> {
 			final List<Vertex> centreVertices = filterBoundaryVertices(vertices);
-			final List<NPoint> nPoints = nPointAnglesOp.calculate(centreVertices,
-				NPointAngles.VERTEX_TO_VERTEX);
-			final DoubleStream radians = nPoints.stream().flatMap(p -> p.angles
-				.stream()).mapToDouble(VectorsAngle::getAngle);
+			final DoubleStream radians = VertexUtils.getNJunctionAngles(
+				centreVertices).stream().flatMap(List::stream).mapToDouble(a -> a);
 			radianMap.put(valence, radians);
 		});
 		return radianMap;
@@ -298,21 +283,20 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void initRealLength() {
 		if (inputImage == null || inputImage.getCalibration() == null) {
-			coefficients = Arrays.asList(1.0, 1.0, 1.0);
+			coefficients = new double[] { 1.0, 1.0, 1.0 };
 			realLength = String.join(" ", String.format("%.2g",
 				(double) minimumTrabecularLength));
 		}
 		else {
 			final Calibration calibration = inputImage.getCalibration();
-			coefficients = Arrays.asList(calibration.pixelWidth,
-				calibration.pixelHeight, calibration.pixelDepth);
+			coefficients = new double[] { calibration.pixelWidth,
+				calibration.pixelHeight, calibration.pixelDepth };
 			calculateRealLength();
 		}
 	}
 
 	private boolean isCloseToBoundary(final Vertex v) {
-		final List<Vector3d> pointVectors = GraphUtil.toVector3d(v.getPoints());
-		final Vector3d centroid = centroidOp.calculate(pointVectors);
+		final Vector3d centroid = PointUtils.centroid(v.getPoints());
 		final int width = inputImage.getWidth();
 		final int height = inputImage.getHeight();
 		final int depth = inputImage.getNSlices();
@@ -322,27 +306,11 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 				marginCutOff);
 	}
 
-	@SuppressWarnings("unchecked")
-	private void matchOps() {
-		centroidOp = Functions.unary(opService, CentroidLinAlg3d.class,
-			Vector3d.class, List.class);
-		cleanShortEdgesOp = Functions.binary(opService, CleanShortEdges.class,
-			Graph.class, Graph.class, Double.class, coefficients, iteratePruning,
-			useClusters);
-		range = new ValuePair<>(minimumValence, maximumValence);
-		valenceSorterOp = (BinaryFunctionOp) Functions.binary(opService,
-			VertexValenceSorter.class, Map.class, Graph.class, range);
-		nPointAnglesOp = (BinaryFunctionOp) Functions.binary(opService,
-			NPointAngles.class, List.class, List.class, Integer.class);
-	}
-
-	private void printCulledEdgePercentages() {
+	private void printCulledEdgePercentages(final double[] stats) {
 		if (!printCulledEdgePercentages) {
 			return;
 		}
-		final PercentagesOfCulledEdges percentages =
-			((CleanShortEdges) cleanShortEdgesOp).getPercentages();
-		if (percentages.getTotalEdges() == 0) {
+		if (stats[4] == 0) {
 			return;
 		}
 		final DoubleColumn loopCol = new DoubleColumn("Loop edges (%)");
@@ -350,10 +318,10 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		final DoubleColumn shortCol = new DoubleColumn("Short edges (%)");
 		final DoubleColumn deadEndCol = new DoubleColumn("Dead end edges (%)");
 
-		loopCol.add(percentages.getPercentageLoopEdges());
-		repeatedCol.add(percentages.getPercentageParallelEdges());
-		shortCol.add(percentages.getPercentageClusterEdges());
-		deadEndCol.add(percentages.getPercentageDeadEnds());
+		loopCol.add(stats[0]);
+		repeatedCol.add(stats[2]);
+		shortCol.add(stats[3]);
+		deadEndCol.add(stats[1]);
 
 		culledEdgePercentagesTable = new DefaultResultsTable();
 		culledEdgePercentagesTable.add(loopCol);
@@ -372,11 +340,10 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 			new DoubleColumn("V2y"), new DoubleColumn("V2z"));
 
 		final List<Vector3d> v1Centroids = edges.stream().map(e -> e.getV1()
-			.getPoints()).map(GraphUtil::toVector3d).map(centroidOp::calculate)
-			.collect(toList());
+			.getPoints()).map(PointUtils::centroid).collect(toList());
 		final List<Vector3d> v2Centroids = edges.stream().map(e -> e.getV2()
-			.getPoints()).map(GraphUtil::toVector3d).map(centroidOp::calculate)
-			.collect(toList());
+			.getPoints()).map(PointUtils::centroid).collect(toList());
+
 		for (int i = 0; i < v1Centroids.size(); i++) {
 			final Vector3d v1centroid = v1Centroids.get(i);
 			columns.get(0).add(v1centroid.x);

@@ -166,6 +166,8 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
+            <!-- TODO Remove explicit version when pom-scijava declares new enough release -->
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
@@ -202,6 +204,10 @@
         <dependency>
             <groupId>io.scif</groupId>
             <artifactId>scifio</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.joml</groupId>
+            <artifactId>joml</artifactId>
         </dependency>
 
         <!-- Testing dependencies -->
