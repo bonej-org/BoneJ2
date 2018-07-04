@@ -156,10 +156,15 @@
             <artifactId>imagej-mesh</artifactId>
         </dependency>
         <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-plugins-commands</artifactId>
+        </dependency>
+        <dependency>
             <!-- Needed for legacy things like ImagePlus UI. Do not remove. -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
             <scope>runtime</scope>
+            <optional>true</optional>
         </dependency>
 
         <!-- Fiji dependencies -->

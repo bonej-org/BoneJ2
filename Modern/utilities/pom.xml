@@ -144,12 +144,6 @@
             <artifactId>vecmath</artifactId>
         </dependency>
 
-        <!-- Fiji dependencies -->
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>AnalyzeSkeleton_</artifactId>
-        </dependency>
-
         <!-- ImgLib2 dependencies -->
         <dependency>
             <groupId>net.imglib2</groupId>
