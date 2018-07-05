@@ -90,9 +90,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
 
-	@Parameter(label = "Show surface meshes", persist = false)
-	private boolean showMeshes;
-
 	/**
 	 * The surface faction results in a {@link Table}
 	 * <p>
