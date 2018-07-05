@@ -131,31 +131,6 @@ public final class AxisUtils {
 		return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
 	}
 
-	/**
-	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
-	 * same scaling.
-	 * <p>
-	 * NB: Public and static for testing purposes.
-	 * </p>
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <T> type of the space
-	 * @return true if all spatial axes have matching calibration. Also returns
-	 *         true if none of them have a unit
-	 */
-	public static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isAxesMatchingSpatialCalibration(final T space)
-	{
-		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.allMatch(StringUtils::isNullOrEmpty);
-		final boolean matchingUnit = spatialAxisStream(space).map(
-			CalibratedAxis::unit).distinct().count() == 1;
-		final boolean matchingScale = spatialAxisStream(space).map(a -> a
-			.averageScale(0, 1)).distinct().count() == 1;
-
-		return (matchingUnit || noUnits) && matchingScale;
-	}
-
 	// region -- Helper methods --
 
 	/**
