@@ -247,14 +247,13 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 			imp3.setCalibration(imp2.getCalibration());
 			imp3.show();
 			if (!imp3.isInvertedLut()) IJ.run("Invert LUT");
-			final Purify p = new Purify();
 			final Erode_ e = new Erode_();
 			final Dilate_ d = new Dilate_();
 			final JOINING labelMethod = MULTI;
-			replaceImage(imp3, p.purify(imp3, 4, labelMethod));
+			replaceImage(imp3, Purify.purify(imp3, 4, labelMethod));
 			for (int j = 0; j < nErodes; j++)
 				replaceImage(imp3, e.erode(imp3, 255, false));
-			if (nErodes > 0) replaceImage(imp3, p.purify(imp3, 4, labelMethod));
+			if (nErodes > 0) replaceImage(imp3, Purify.purify(imp3, 4, labelMethod));
 			for (int j = 0; j < nDilates; j++)
 				replaceImage(imp3, d.dilate(imp3, 255, false));
 
