@@ -107,7 +107,7 @@ public class ElementFractionWrapperTest {
 		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
 			expectedRatios };
 		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
-			"Total volume (" + unit + "³)", "Volume Ratio" };
+			"Total volume (" + unit + "³)", "Volume ratio" };
 		// Create an test image of a cuboid
 		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide);
 		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 5 }).forEach(
