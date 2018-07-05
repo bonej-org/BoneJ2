@@ -76,7 +76,7 @@ public final class AxisUtils {
 	 *         between their units. The Optional contains an empty string none of
 	 *         the calibrations have a unit.
 	 */
-	public static <S extends AnnotatedSpace<CalibratedAxis>> Optional<String>
+	public static <S extends AnnotatedSpace<C>, C extends CalibratedAxis> Optional<String>
 		getSpatialUnit(final S space, final UnitService unitService)
 	{
 		if (space == null || !hasSpatialDimensions(space)) {
@@ -140,7 +140,7 @@ public final class AxisUtils {
 	 * NB Returns true also when all axes are uncalibrated (no units)
 	 * </p>
 	 */
-	private static <T extends AnnotatedSpace<CalibratedAxis>> boolean
+	private static <T extends AnnotatedSpace<C>, C extends CalibratedAxis> boolean
 		isUnitsConvertible(final T space, final UnitService unitService)
 	{
 		final long spatialDimensions = countSpatialDimensions(space);
