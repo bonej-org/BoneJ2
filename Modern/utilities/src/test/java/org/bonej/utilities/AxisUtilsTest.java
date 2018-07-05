@@ -37,7 +37,6 @@ import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.units.UnitService;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 
