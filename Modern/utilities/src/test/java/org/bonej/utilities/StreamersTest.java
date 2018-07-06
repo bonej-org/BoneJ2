@@ -52,30 +52,6 @@ import org.junit.Test;
 public class StreamersTest {
 
 	@Test
-	public void testRealDoubleStream() {
-		final List<DoubleType> list = Arrays.asList(new DoubleType(2),
-			new DoubleType(3), new DoubleType(11));
-
-		final List<Double> result = Streamers.realDoubleStream(list).boxed()
-			.collect(Collectors.toList());
-
-		assertEquals("Stream had wrong number of elements", list.size(), result
-			.size());
-
-		for (int i = 0; i < list.size(); i++) {
-			assertEquals("Stream had wrong values", list.get(i).getRealDouble(),
-				result.get(i), 1e-12);
-		}
-	}
-
-	@Test
-	public void testRealDoubleStreamReturnsEmptyIfSpaceNull() {
-		final DoubleStream doubleStream = Streamers.realDoubleStream(null);
-
-		assertEquals("Stream should be empty", doubleStream.count(), 0);
-	}
-
-	@Test
 	public void testSpatialAxisStream() {
 		// Create a test image that has spatial axes
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
