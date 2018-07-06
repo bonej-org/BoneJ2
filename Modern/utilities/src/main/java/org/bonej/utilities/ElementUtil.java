@@ -26,8 +26,10 @@ package org.bonej.utilities;
 import static org.bonej.utilities.Streamers.axisStream;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import net.imagej.axis.CalibratedAxis;
@@ -35,6 +37,7 @@ import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
+import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.NativeType;
@@ -121,10 +124,17 @@ public final class ElementUtil {
 			return true;
 		}
 
-		final long colours = Streamers.realDoubleStream(interval).distinct()
-			.count();
-
-		return colours <= 2;
+		final Set<Double> colors = new HashSet<>();
+		final Cursor<T> cursor = interval.cursor();
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			final T e = cursor.get();
+			colors.add(e.getRealDouble());
+			if (colors.size() > 2) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
