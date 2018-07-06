@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins;
 
@@ -11,13 +33,14 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
@@ -84,13 +107,13 @@ public class ElementFractionWrapperTest {
 		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
 				expectedRatios };
 		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
-			"Total volume (" + unit + "³)", "Volume Ratio" };
+			"Total volume (" + unit + "³)", "Volume ratio" };
 		// Create an test image of a cuboid
 		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide);
 		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 5 }).forEach(
 			BitType::setOne);
-		double[] calibration = new double[] { scale, scale, scale };
-		final String[] units = new String[] { unit, unit, unit };
+		final double[] calibration = { scale, scale, scale };
+		final String[] units = { unit, unit, unit };
 		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z };
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube", axes,
 			calibration, units);
@@ -101,8 +124,13 @@ public class ElementFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
+<<<<<<< HEAD
 		final Table<DefaultColumn<String>, String> table =
 				(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+=======
+		final List<DefaultColumn<String>> table =
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+>>>>>>> master
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		for (int i = 0; i < 3; i++) {

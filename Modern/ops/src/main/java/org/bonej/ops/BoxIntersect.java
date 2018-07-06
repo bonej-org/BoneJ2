@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops;
 
@@ -53,8 +75,8 @@ public class BoxIntersect extends
 	 *
 	 * @param line parametric equation of a line <b>a<sub>0</sub></b> + <b>v</b>
 	 *          as a (point, vector) pair.
-	 * @param interval an interval with integer coordinates. The method assumes that the
-	 *          first three dimensions are x, y and z.
+	 * @param interval an interval with integer coordinates. The method assumes
+	 *          that the first three dimensions are x, y and z.
 	 * @return scalar values (t<sub>1</sub>, t<sub>2</sub>) for intersection
 	 *         points (<b>a<sub>0</sub></b> + <em>t<sub>1</sub></em> <b>v</b>,
 	 *         <b>a<sub>0</sub></b> + <em>t<sub>2</sub></em> <b>v</b>).
@@ -66,7 +88,7 @@ public class BoxIntersect extends
 	{
 		final Vector3d direction = new Vector3d(line.b);
 		final Point3d origin = new Point3d(line.a);
-		if (!validCoordinates(direction) || !validCoordinates(origin)) {
+		if (invalidCoordinates(direction) || invalidCoordinates(origin)) {
 			throw new IllegalArgumentException(
 				"Direction or origin has non-finite coordinates");
 		}
@@ -150,14 +172,18 @@ public class BoxIntersect extends
 			Double::isNaN);
 	}
 
+	private boolean invalidCoordinates(final Tuple3d t) {
+		return DoubleStream.of(t.x, t.y, t.z).anyMatch(c -> !Double.isFinite(c));
+	}
+
 	private static double maxNan(final double a, final double b) {
 		if (Double.isNaN(a) && Double.isNaN(b)) {
 			return Double.NaN;
 		}
-		else if (Double.isNaN(a)) {
+		if (Double.isNaN(a)) {
 			return b;
 		}
-		else if (Double.isNaN(b)) {
+		if (Double.isNaN(b)) {
 			return a;
 		}
 		return Math.max(a, b);
@@ -167,10 +193,10 @@ public class BoxIntersect extends
 		if (Double.isNaN(a) && Double.isNaN(b)) {
 			return Double.NaN;
 		}
-		else if (Double.isNaN(a)) {
+		if (Double.isNaN(a)) {
 			return b;
 		}
-		else if (Double.isNaN(b)) {
+		if (Double.isNaN(b)) {
 			return a;
 		}
 		return Math.min(a, b);
@@ -179,10 +205,6 @@ public class BoxIntersect extends
 	/** Checks if the scalars reverse the direction of the line */
 	private boolean reverseScalars(final ValuePair<DoubleType, DoubleType> pair) {
 		return pair.a.get() < 0 && pair.b.get() < 0;
-	}
-
-	private boolean validCoordinates(final Tuple3d t) {
-		return DoubleStream.of(t.x, t.y, t.z).allMatch(Double::isFinite);
 	}
 
 	// endregion

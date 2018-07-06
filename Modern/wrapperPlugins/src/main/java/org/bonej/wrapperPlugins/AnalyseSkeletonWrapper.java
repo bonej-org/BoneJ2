@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins;
 
@@ -82,23 +104,23 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	private String endPointSection = "-- END-POINTS --";
 
 	@Parameter(label = "Prune ends", required = false)
-	private boolean pruneEnds = false;
+	private boolean pruneEnds;
 
 	@Parameter(label = "Exclude ROI from pruning", required = false,
 		visibility = ItemVisibility.INVISIBLE)
-	private boolean excludeRoi = false;
+	private boolean excludeRoi;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String resultSection = "-- RESULTS AND OUTPUT --";
 
 	@Parameter(label = "Calculate largest shortest path", required = false)
-	private boolean calculateShortestPath = false;
+	private boolean calculateShortestPath;
 
 	@Parameter(label = "Show detailed info", required = false)
-	private boolean verbose = false;
+	private boolean verbose;
 
 	@Parameter(label = "Display labelled skeletons", required = false)
-	private boolean displaySkeletons = false;
+	private boolean displaySkeletons;
 
 	/**
 	 * The results of the analysis in a {@link Table}, null if there are no
@@ -146,7 +168,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter
 	private StatusService statusService;
 
-	private ImagePlus intensityImage = null;
+	private ImagePlus intensityImage;
 
 	@Override
 	public void run() {
@@ -253,7 +275,6 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			formatService.getFormat(file.getAbsolutePath());
 			final Dataset dataset = (Dataset) ioService.open(file.getAbsolutePath());
 			if (!isValidIntensityImage(dataset)) {
-				intensityImage = null;
 				return;
 			}
 			if (!convertService.supports(dataset, ImagePlus.class)) {
@@ -262,11 +283,11 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			}
 			intensityImage = convertService.convert(dataset, ImagePlus.class);
 		}
-		catch (FormatException e) {
+		catch (final FormatException e) {
 			cancel("Image format is not recognized");
 			logService.trace(e);
 		}
-		catch (IOException | NullPointerException e) {
+		catch (final IOException | NullPointerException e) {
 			cancel("An error occurred while opening the image");
 			logService.trace(e);
 		}
@@ -312,7 +333,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			}
 		}
 		table.addAll(columns);
-		if (table.size() > 0) {
+		if (!table.isEmpty()) {
 			verboseTable = table;
 		}
 	}

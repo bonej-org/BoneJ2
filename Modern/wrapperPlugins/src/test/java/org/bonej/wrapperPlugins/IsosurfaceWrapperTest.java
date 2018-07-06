@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins;
 
@@ -46,6 +68,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
@@ -58,12 +81,7 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class IsosurfaceWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
@@ -71,6 +89,7 @@ public class IsosurfaceWrapperTest {
 	}
 
 	@Test
+<<<<<<< HEAD
 	public void testNullImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 				IsosurfaceWrapper.class);
@@ -86,12 +105,159 @@ public class IsosurfaceWrapperTest {
 	public void testNonBinaryImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 				IsosurfaceWrapper.class);
+=======
+	public void test2DImageCancelsIsosurface() throws Exception {
+		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
+			IsosurfaceWrapper.class);
+	}
+
+	@Test
+	public void testFileWritingExceptionsShowErrorDialog() throws Exception {
+		// Mock a File that will cause an exception
+		final File exceptionsThrowingFile = mock(File.class);
+		// Directory path throws an exception
+		when(exceptionsThrowingFile.getAbsolutePath()).thenReturn("/.stl/");
+
+		// Create a test image
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm");
+		final Img<BitType> img = ArrayImgs.bits(1, 1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis, zAxis);
+
+		// Mock UI
+		final UserInterface mockUI = mock(UserInterface.class);
+		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+		when(mockUI.chooseFile(any(File.class), anyString())).thenReturn(
+			exceptionsThrowingFile);
+		when(mockUI.dialogPrompt(startsWith(STL_WRITE_ERROR), anyString(), eq(
+			ERROR_MESSAGE), any())).thenReturn(mockPrompt);
+		IMAGE_J.ui().setDefaultUI(mockUI);
+
+		// Run plugin
+		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,
+			"exportSTL", true).get();
+
+		// Verify that write error dialog got shown
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
+			STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
+	}
+
+	@Test
+	public void testIsAxesMatchingSpatialCalibration() {
+		// Create a test image with uniform calibration
+		final String unit = "mm";
+		final double scale = 0.75;
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
+
+		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+			imgPlus);
+
+		assertTrue("Axes should have matching calibration", result);
+	}
+
+	@Test
+	public void testIsAxesMatchingSpatialCalibrationDifferentScales() {
+		// Create a test image with different scales in calibration
+		final String unit = "mm";
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
+
+		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+			imgPlus);
+
+		assertFalse(
+			"Different scales in axes should mean that calibration doesn't match",
+			result);
+	}
+
+	@Test
+	public void testIsAxesMatchingSpatialCalibrationDifferentUnits() {
+		// Create a test image with different units in calibration
+		final double scale = 0.75;
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm", scale);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", scale);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
+
+		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+			imgPlus);
+
+		assertFalse(
+			"Different units in axes should mean that calibration doesn't match",
+			result);
+	}
+
+	@Test
+	public void testIsAxesMatchingSpatialCalibrationNoUnits() {
+		// Create a test image with no calibration units
+		final double scale = 0.75;
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", scale);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null, scale);
+		final Img<BitType> img = ArrayImgs.bits(1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis);
+
+		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+			imgPlus);
+
+		assertTrue("No units should mean matching calibration", result);
+	}
+
+	@Test
+	public void testMismatchingCalibrationsShowsWarningDialog() throws Exception {
+		// Create a test image with different scales in spatial calibration
+		final String unit = "mm";
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit, 0.6);
+		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+		final Img<BitType> img = ArrayImgs.bits(1, 1, 1, 1);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+			yAxis, zAxis, tAxis);
+
+		// Mock UI
+		final UserInterface mockUI = mock(UserInterface.class);
+		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+		when(mockUI.dialogPrompt(eq(IsosurfaceWrapper.BAD_SCALING), anyString(), eq(
+			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
+		IMAGE_J.ui().setDefaultUI(mockUI);
+
+		// Run plugin
+		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,
+			"exportSTL", false).get();
+
+		// Verify that warning dialog about result scaling got shown once
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
+			IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
+>>>>>>> master
 	}
 
 	@Test
 	public void testNoCalibrationShowsWarning() throws Exception {
 		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
 				IsosurfaceWrapper.class, "exportSTL", false);
+	}
+
+	@Test
+	public void testNonBinaryImageCancelsIsosurface() throws Exception {
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+			IsosurfaceWrapper.class);
+	}
+
+	@Test
+	public void testNullImageCancelsIsosurface() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+			IsosurfaceWrapper.class);
 	}
 
 	@Test
@@ -143,7 +309,7 @@ public class IsosurfaceWrapperTest {
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<String>> table =
-				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 2, table.size());
 		for (int i = 0; i < 1; i++) {
@@ -158,6 +324,7 @@ public class IsosurfaceWrapperTest {
 		}
 	}
 
+<<<<<<< HEAD
 	@Test(expected = NullPointerException.class)
 	public void testWriteBinarySTLFileNullMeshThrowsNPE() throws Exception {
 		IsosurfaceWrapper.writeBinarySTLFile("Mesh", null);
@@ -175,6 +342,8 @@ public class IsosurfaceWrapperTest {
 		IsosurfaceWrapper.writeBinarySTLFile("", mesh);
 	}
 
+=======
+>>>>>>> master
 	@Test
 	public void testWriteBinarySTLFile() throws Exception {
 		final int headerSize = 84;
@@ -187,13 +356,13 @@ public class IsosurfaceWrapperTest {
 				1.0f, 0.0f, 0.0f,
 				0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f,
-				 0.0f, 0.0f, 1.0f
+				0.0f, 0.0f, 1.0f
 		);
 		triangles.addf(
 				0.0f, 0.0f, 1.0f,
 				0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f,
-				 1.0f, 0.0f, 0.0f
+				1.0f, 0.0f, 0.0f
 		);
 		// @formatter:on
 
@@ -241,6 +410,7 @@ public class IsosurfaceWrapperTest {
 		}
 	}
 
+<<<<<<< HEAD
 	@Test
 	public void testFileWritingExceptionsShowErrorDialog() throws Exception {
 		// Mock a File that will cause an exception
@@ -350,10 +520,28 @@ public class IsosurfaceWrapperTest {
 
 		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
 				imgPlus);
+=======
+	@Test(expected = IllegalArgumentException.class)
+	public void testWriteBinarySTLFileEmptyNameThrowsIAE() throws Exception {
+		final Mesh mesh = new NaiveFloatMesh();
 
-		assertTrue("No units should mean matching calibration", result);
+		IsosurfaceWrapper.writeBinarySTLFile("", mesh);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testWriteBinarySTLFileNullMeshThrowsNPE() throws Exception {
+		IsosurfaceWrapper.writeBinarySTLFile("Mesh", null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testWriteBinarySTLFileNullNameThrowsIAE() throws Exception {
+		final Mesh mesh = new NaiveFloatMesh();
+>>>>>>> master
+
+		IsosurfaceWrapper.writeBinarySTLFile(null, mesh);
+	}
+
+<<<<<<< HEAD
 	@Test
 	public void testIsAxesMatchingSpatialCalibration() {
 		// Create a test image with uniform calibration
@@ -369,5 +557,10 @@ public class IsosurfaceWrapperTest {
 				imgPlus);
 
 		assertTrue("Axes should have matching calibration", result);
+=======
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
+>>>>>>> master
 	}
 }

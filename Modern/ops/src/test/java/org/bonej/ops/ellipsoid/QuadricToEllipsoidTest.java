@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops.ellipsoid;
 
@@ -50,11 +72,11 @@ public class QuadricToEllipsoidTest {
 	// Constant seed for random generators
 	private static final long SEED = 0xc0ffee;
 	@SuppressWarnings("unchecked")
-	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoid =
+	private static final UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoid =
 		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToEllipsoid.class,
 			Ellipsoid.class, UNIT_SPHERE);
 	@SuppressWarnings("unchecked")
-	private static BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
+	private static final BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
 		(BinaryFunctionOp) Functions.binary(IMAGE_J.op(), EllipsoidPoints.class,
 			List.class, new double[] { 1, 2, 3 }, 0);
 
@@ -115,6 +137,21 @@ public class QuadricToEllipsoidTest {
 		assertTrue(symmetry.epsilonEquals(ellipsoid.getOrientation(), 0.025));
 	}
 
+	@Test
+	public void testNanRadiusIsNotEllipsoid() {
+		// This quadric looks like an ellipsoid (3x3 diagonals positive), but it has
+		// a NaN radius (negative eigenvalue). These typically result from quadrics
+		// solved from sparse data.
+		final Matrix4d nanRadiusEllipsoid = new Matrix4d(new double[] {
+			0.01085019421630129, -0.026230819423660012, -0.0012390257941481408,
+			0.016336103119147793, -0.026230819423660012, 0.02043899336863353,
+			0.01731688607718951, 0.03182508790873584, -0.0012390257941481408,
+			0.01731688607718951, 0.2516413880666182, 0.0022183414533909485,
+			0.016336103119147793, 0.03182508790873584, 0.0022183414533909485, -1.0 });
+
+		assertFalse(QuadricToEllipsoid.isEllipsoid(nanRadiusEllipsoid));
+	}
+
 	/**
 	 * Tests a point cloud that's been translated and rotated, which should result
 	 * in a translated an rotated ellipsoid.
@@ -171,21 +208,6 @@ public class QuadricToEllipsoidTest {
 			1e-12));
 		assertTrue(expectedOrientation.epsilonEquals(unitSphere.getOrientation(),
 			1e-12));
-	}
-
-	@Test
-	public void testNanRadiusIsNotEllipsoid() {
-		// This quadric looks like an ellipsoid (3x3 diagonals positive), but it has
-		// a NaN radius (negative eigenvalue). These typically result from quadrics
-		// solved from sparse data.
-		final Matrix4d nanRadiusEllipsoid = new Matrix4d(new double[] {
-			0.01085019421630129, -0.026230819423660012, -0.0012390257941481408,
-			0.016336103119147793, -0.026230819423660012, 0.02043899336863353,
-			0.01731688607718951, 0.03182508790873584, -0.0012390257941481408,
-			0.01731688607718951, 0.2516413880666182, 0.0022183414533909485,
-			0.016336103119147793, 0.03182508790873584, 0.0022183414533909485, -1.0 });
-
-		assertFalse(QuadricToEllipsoid.isEllipsoid(nanRadiusEllipsoid));
 	}
 
 	@BeforeClass

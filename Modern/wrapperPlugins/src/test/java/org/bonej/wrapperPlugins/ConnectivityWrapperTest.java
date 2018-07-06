@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins;
 
@@ -21,7 +43,6 @@ import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -32,6 +53,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
@@ -44,39 +66,16 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ConnectivityWrapperTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static final Gateway IMAGE_J = new ImageJ();
 
 	@After
 	public void tearDown() {
 		SharedTable.reset();
 	}
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	@Test
-	public void testNullImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
-	}
-
 	@Test
 	public void test2DImageCancelsConnectivity() throws Exception {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
-	}
-
-	@Test
-	public void testNonBinaryImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
-			ConnectivityWrapper.class);
-	}
-
-	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
 			ConnectivityWrapper.class);
 	}
 
@@ -114,8 +113,26 @@ public class ConnectivityWrapperTest {
 			imgPlus).get();
 
 		// Dialog should only be shown once
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(NEGATIVE_CONNECTIVITY),
-			anyString(), eq(INFORMATION_MESSAGE), any());
+		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
+			NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any());
+	}
+
+	@Test
+	public void testNoCalibrationShowsWarning() throws Exception {
+		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
+			ConnectivityWrapper.class);
+	}
+
+	@Test
+	public void testNonBinaryImageCancelsConnectivity() throws Exception {
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+			ConnectivityWrapper.class);
+	}
+
+	@Test
+	public void testNullImageCancelsConnectivity() throws Exception {
+		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+			ConnectivityWrapper.class);
 	}
 
 	@Test
@@ -163,8 +180,8 @@ public class ConnectivityWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Table<DefaultColumn<String>, String> table =
-			(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
+		final List<DefaultColumn<String>> table =
+			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns", 5, table.size());
 		for (int i = 0; i < 4; i++) {
@@ -179,5 +196,10 @@ public class ConnectivityWrapperTest {
 					1e-12);
 			}
 		}
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }

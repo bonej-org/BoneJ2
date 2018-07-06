@@ -1,34 +1,38 @@
 /*
- * #%L
- * BoneJ: open source tools for trabecular geometry and whole bone shape analysis.
- * %%
- * Copyright (C) 2007 - 2016 Michael Doube, BoneJ developers. See also individual class @authors.
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 package org.bonej.plugins;
 
-import java.awt.*;
-import java.util.Vector;
+import java.awt.AWTEvent;
+import java.awt.Checkbox;
+import java.awt.Rectangle;
+import java.awt.TextField;
+import java.util.List;
 
 import org.bonej.geometry.FitSphere;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.ResultInserter;
-import org.bonej.util.RoiMan;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -36,12 +40,11 @@ import ij.ImageStack;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.gui.OvalRoi;
+import ij.gui.Roi;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-
-//import ij.WindowManager;
 
 /**
  * <p>
@@ -49,27 +52,40 @@ import ij.process.ImageProcessor;
  * of a best fit sphere Ported from Angelo Tardugno's C++
  * </p>
  *
- *
  * @author Michael Doube and Angelo Tardugno
  */
 public class SphereFitter implements PlugIn, DialogListener {
 
 	@Override
+	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
+		final List<?> checkboxes = gd.getCheckboxes();
+		final List<?> numbers = gd.getNumericFields();
+		final Checkbox box = (Checkbox) checkboxes.get(0);
+		final TextField num = (TextField) numbers.get(0);
+		if (box.getState()) {
+			num.setEnabled(true);
+		}
+		else {
+			num.setEnabled(false);
+		}
+		DialogModifier.registerMacroValues(gd, gd.getComponents());
+		return true;
+	}
+
+	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment())
-			return;
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp) {
 			IJ.noImage();
 			return;
 		}
-		final ImageCheck ic = new ImageCheck();
-		if (!ImageCheck.isMultiSlice(imp)) {
+		if (ImageCheck.isSingleSlice(imp)) {
 			IJ.error("Stack required");
 			return;
 		}
 		final RoiManager roiMan = RoiManager.getInstance();
-		if (roiMan == null && imp != null) {
+		if (roiMan == null) {
 			IJ.error("Please populate ROI Manager with point ROIs");
 			IJ.run("ROI Manager...");
 			return;
@@ -97,31 +113,35 @@ public class SphereFitter implements PlugIn, DialogListener {
 		final boolean doRoiMan = gd.getNextBoolean();
 		final boolean clearRois = gd.getNextBoolean();
 
-		final double[][] points = RoiMan.getRoiManPoints(imp, roiMan);
+		final double[][] points = getRoiManPoints(imp, roiMan);
 		if (points == null) {
-			IJ.showMessage("Can't fit sphere to points.\n" + "No usable points in the ROI Manager.");
+			IJ.showMessage("Can't fit sphere to points.\n" +
+				"No usable points in the ROI Manager.");
 			return;
 		}
 		final double i = points[0][2];
 		double j = i;
 		for (final double[] p : points)
-			if (p[2] != i)
-				j = p[2];
+			if (p[2] != i) j = p[2];
 		if (j == i) {
-			IJ.showMessage("Can't fit sphere to points.\n" + "All points are on the same slice.\n"
-					+ "Check the ROI Manager option More >> Options... >\n" + "Associate ROIs with stack positions.\n");
+			IJ.showMessage("Can't fit sphere to points.\n" +
+				"All points are on the same slice.\n" +
+				"Check the ROI Manager option More >> Options... >\n" +
+				"Associate ROIs with stack positions.\n");
 			return;
 		}
 
-		double[] sphereDim = new double[4];
+		final double[] sphereDim;
 		try {
 			sphereDim = FitSphere.fitSphere(points);
-		} catch (final IllegalArgumentException ia) {
+		}
+		catch (final IllegalArgumentException ia) {
 			IJ.showMessage(ia.getMessage());
 			return;
-		} catch (final RuntimeException re) {
-			IJ.showMessage(
-					"Can't fit sphere to points.\n" + "Add more point ROI's to the ROI Manager and try again.\n");
+		}
+		catch (final RuntimeException re) {
+			IJ.showMessage("Can't fit sphere to points.\n" +
+				"Add more point ROI's to the ROI Manager and try again.\n");
 			return;
 		}
 
@@ -133,191 +153,13 @@ public class SphereFitter implements PlugIn, DialogListener {
 		ri.setResultInRow(imp, "Radius (" + units + ")", sphereDim[3]);
 		ri.updateTable();
 
-		if (doCopy)
-			copySphere(imp, padding, cropFactor, sphereDim).show();
-		if (doInnerCube)
-			copyInnerCube(imp, cropFactor, sphereDim).show();
-		if (doOuterCube)
-			copyOuterCube(imp, cropFactor, sphereDim).show();
+		if (doCopy) copySphere(imp, padding, cropFactor, sphereDim).show();
+		if (doInnerCube) copyInnerCube(imp, cropFactor, sphereDim).show();
+		if (doOuterCube) copyOuterCube(imp, cropFactor, sphereDim).show();
 		if (doRoiMan) {
 			addToRoiManager(imp, roiMan, sphereDim, clearRois);
 		}
 		UsageReporter.reportEvent(this).send();
-		return;
-	}
-
-	public ImagePlus copySphere(final ImagePlus imp, final int padding, final double cropFactor,
-			final double[] sphereDim) {
-		final Calibration cal = imp.getCalibration();
-		final double vW = cal.pixelWidth;
-		final double vH = cal.pixelHeight;
-		final double vD = cal.pixelDepth;
-		final double xC = sphereDim[0];
-		final double yC = sphereDim[1];
-		final double zC = sphereDim[2];
-		final double r = sphereDim[3];
-		final double maxRad = r * cropFactor;
-		int startX = (int) Math.round((xC - maxRad) / vW) - padding;
-		int startY = (int) Math.round((yC - maxRad) / vH) - padding;
-		int startZ = (int) Math.round((zC - maxRad) / vD) - padding;
-		int roiWidth = (int) Math.round(2 * maxRad / vW) + 2 * padding;
-		int roiHeight = (int) Math.round(2 * maxRad / vH) + 2 * padding;
-		int roiDepth = (int) Math.round(2 * maxRad / vD) + 2 * padding;
-		// bounds checking
-		if (startX < 0)
-			startX = 0;
-		if (startY < 0)
-			startY = 0;
-		if (startZ < 1)
-			startZ = 1;
-		if (startX + roiWidth > imp.getWidth())
-			roiWidth = imp.getWidth() - startX;
-		if (startY + roiHeight > imp.getHeight())
-			roiHeight = imp.getHeight() - startY;
-		if (startZ + roiDepth > imp.getStackSize())
-			roiDepth = imp.getStackSize() - startZ;
-		final ImageStack sourceStack = imp.getImageStack();
-		final ImageStack targetStack = new ImageStack(roiWidth, roiHeight, roiDepth);
-		final int endZ = startZ + roiDepth;
-		final int endY = startY + roiHeight;
-		final int endX = startX + roiWidth;
-		for (int z = startZ; z < endZ; z++) {
-			IJ.showProgress(z - startZ, roiDepth);
-			IJ.showStatus("Copying sphere to new stack");
-			final int tZ = z - startZ + 1;
-			final double dZ = z * vD - zC;
-			final double dZ2 = dZ * dZ;
-			targetStack.setPixels(Moments.getEmptyPixels(roiWidth, roiHeight, imp.getBitDepth()), tZ);
-			targetStack.setSliceLabel(sourceStack.getShortSliceLabel(z), tZ);
-			final ImageProcessor ip = sourceStack.getProcessor(z);
-			final ImageProcessor targetIP = targetStack.getProcessor(tZ);
-			for (int y = startY; y < endY; y++) {
-				final int tY = y - startY;
-				final double dY = y * vH - yC;
-				final double dY2 = dY * dY;
-				for (int x = startX; x < endX; x++) {
-					final double dX = x * vW - xC;
-					final double distance = Math.sqrt(dX * dX + dY2 + dZ2);
-					if (distance > maxRad)
-						continue;
-					targetIP.set(x - startX, tY, ip.get(x, y));
-				}
-			}
-		}
-		final ImagePlus target = new ImagePlus("Sphere", targetStack);
-		target.setCalibration(cal);
-		target.setDisplayRange(imp.getDisplayRangeMin(), imp.getDisplayRangeMax());
-		return target;
-	}
-
-	public ImagePlus copyInnerCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
-		final Calibration cal = imp.getCalibration();
-		final double vW = cal.pixelWidth;
-		final double vH = cal.pixelHeight;
-		final double vD = cal.pixelDepth;
-		final double xC = sphereDim[0];
-		final double yC = sphereDim[1];
-		final double zC = sphereDim[2];
-		final double r = sphereDim[3];
-		final double h = r * cropFactor / Math.sqrt(3);
-		int startX = (int) Math.round((xC - h) / vW);
-		int startY = (int) Math.round((yC - h) / vH);
-		int startZ = (int) Math.round((zC - h) / vD);
-		int roiWidth = (int) Math.round(2 * h / vW);
-		int roiHeight = (int) Math.round(2 * h / vH);
-		int roiDepth = (int) Math.round(2 * h / vD);
-		// bounds checking
-		if (startX < 0)
-			startX = 0;
-		if (startY < 0)
-			startY = 0;
-		if (startZ < 1)
-			startZ = 1;
-		if (startX + roiWidth > imp.getWidth())
-			roiWidth = imp.getWidth() - startX;
-		if (startY + roiHeight > imp.getHeight())
-			roiHeight = imp.getHeight() - startY;
-		if (startZ + roiDepth > imp.getStackSize())
-			roiDepth = imp.getStackSize() - startZ;
-		final ImageStack sourceStack = imp.getStack();
-		final ImageStack targetStack = new ImageStack(roiWidth, roiHeight, roiDepth);
-		final int endZ = startZ + roiDepth;
-		final int endY = startY + roiHeight;
-		final int endX = startX + roiWidth;
-		for (int z = startZ; z < endZ; z++) {
-			IJ.showProgress(z - startZ, roiDepth);
-			IJ.showStatus("Copying largest enclosed cube");
-			final int tZ = z - startZ + 1;
-			targetStack.setPixels(Moments.getEmptyPixels(roiWidth, roiHeight, imp.getBitDepth()), tZ);
-			targetStack.setSliceLabel(sourceStack.getShortSliceLabel(z), tZ);
-			final ImageProcessor ip = sourceStack.getProcessor(z);
-			final ImageProcessor targetIP = targetStack.getProcessor(tZ);
-			for (int y = startY; y < endY; y++) {
-				final int tY = y - startY;
-				for (int x = startX; x < endX; x++) {
-					targetIP.set(x - startX, tY, ip.get(x, y));
-				}
-			}
-		}
-		final ImagePlus target = new ImagePlus("Inner Cube", targetStack);
-		target.setCalibration(cal);
-		target.setDisplayRange(imp.getDisplayRangeMin(), imp.getDisplayRangeMax());
-		return target;
-	}
-
-	public ImagePlus copyOuterCube(final ImagePlus imp, final double cropFactor, final double[] sphereDim) {
-		final Calibration cal = imp.getCalibration();
-		final double vW = cal.pixelWidth;
-		final double vH = cal.pixelHeight;
-		final double vD = cal.pixelDepth;
-		final double xC = sphereDim[0];
-		final double yC = sphereDim[1];
-		final double zC = sphereDim[2];
-		final double r = sphereDim[3];
-		final double h = r * cropFactor;
-		int startX = (int) Math.round((xC - h) / vW);
-		int startY = (int) Math.round((yC - h) / vH);
-		int startZ = (int) Math.round((zC - h) / vD);
-		int roiWidth = (int) Math.round(2 * h / vW);
-		int roiHeight = (int) Math.round(2 * h / vH);
-		int roiDepth = (int) Math.round(2 * h / vD);
-		// bounds checking
-		if (startX < 0)
-			startX = 0;
-		if (startY < 0)
-			startY = 0;
-		if (startZ < 1)
-			startZ = 1;
-		if (startX + roiWidth > imp.getWidth())
-			roiWidth = imp.getWidth() - startX;
-		if (startY + roiHeight > imp.getHeight())
-			roiHeight = imp.getHeight() - startY;
-		if (startZ + roiDepth > imp.getStackSize())
-			roiDepth = imp.getStackSize() - startZ;
-		final ImageStack sourceStack = imp.getImageStack();
-		final ImageStack targetStack = new ImageStack(roiWidth, roiHeight, roiDepth);
-		final int endZ = startZ + roiDepth;
-		final int endY = startY + roiHeight;
-		final int endX = startX + roiWidth;
-		for (int z = startZ; z < endZ; z++) {
-			final int tZ = z - startZ + 1;
-			IJ.showProgress(z - startZ, roiDepth);
-			IJ.showStatus("Copying smallest enclosing cube");
-			targetStack.setPixels(Moments.getEmptyPixels(roiWidth, roiHeight, imp.getBitDepth()), tZ);
-			targetStack.setSliceLabel(sourceStack.getShortSliceLabel(z), tZ);
-			final ImageProcessor ip = sourceStack.getProcessor(z);
-			final ImageProcessor targetIP = targetStack.getProcessor(tZ);
-			for (int y = startY; y < endY; y++) {
-				final int tY = y - startY;
-				for (int x = startX; x < endX; x++) {
-					targetIP.set(x - startX, tY, ip.get(x, y));
-				}
-			}
-		}
-		final ImagePlus target = new ImagePlus("Outer Cube", targetStack);
-		target.setCalibration(cal);
-		target.setDisplayRange(imp.getDisplayRangeMin(), imp.getDisplayRangeMax());
-		return target;
 	}
 
 	/**
@@ -331,12 +173,14 @@ public class SphereFitter implements PlugIn, DialogListener {
 	 * @throws IllegalArgumentException if roiMan is null, rather than
 	 *           instantiating RoiManager.
 	 */
-	public static void addToRoiManager(final ImagePlus imp, final RoiManager roiMan, final double[] sphereDim,
-			final boolean clearRois) throws IllegalArgumentException {
-		if (roiMan == null)
-			throw new IllegalArgumentException("ROI Manager has not been instantiated");
+	private static void addToRoiManager(final ImagePlus imp,
+		final RoiManager roiMan, final double[] sphereDim, final boolean clearRois)
+		throws IllegalArgumentException
+	{
+		if (roiMan == null) throw new IllegalArgumentException(
+			"ROI Manager has not been instantiated");
 		if (clearRois) {
-			RoiMan.deleteAll(roiMan);
+			deleteAll(roiMan);
 		}
 		final Calibration cal = imp.getCalibration();
 		final double xs = sphereDim[0];
@@ -359,20 +203,228 @@ public class SphereFitter implements PlugIn, DialogListener {
 		}
 	}
 
-	@Override
-	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
-			return false;
-		final Vector<?> checkboxes = gd.getCheckboxes();
-		final Vector<?> numbers = gd.getNumericFields();
-		final Checkbox box = (Checkbox) checkboxes.get(0);
-		final TextField num = (TextField) numbers.get(0);
-		if (box.getState()) {
-			num.setEnabled(true);
-		} else {
-			num.setEnabled(false);
+	private static ImagePlus copyInnerCube(final ImagePlus imp,
+		final double cropFactor, final double[] sphereDim)
+	{
+		final Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		final double xC = sphereDim[0];
+		final double yC = sphereDim[1];
+		final double zC = sphereDim[2];
+		final double r = sphereDim[3];
+		final double h = r * cropFactor / Math.sqrt(3);
+		int startX = (int) Math.round((xC - h) / vW);
+		int startY = (int) Math.round((yC - h) / vH);
+		int startZ = (int) Math.round((zC - h) / vD);
+		int roiWidth = (int) Math.round(2 * h / vW);
+		int roiHeight = (int) Math.round(2 * h / vH);
+		int roiDepth = (int) Math.round(2 * h / vD);
+		// bounds checking
+		if (startX < 0) startX = 0;
+		if (startY < 0) startY = 0;
+		if (startZ < 1) startZ = 1;
+		if (startX + roiWidth > imp.getWidth()) roiWidth = imp.getWidth() - startX;
+		if (startY + roiHeight > imp.getHeight()) roiHeight = imp.getHeight() -
+			startY;
+		if (startZ + roiDepth > imp.getStackSize()) roiDepth = imp.getStackSize() -
+			startZ;
+		final ImageStack sourceStack = imp.getStack();
+		final ImageStack targetStack = new ImageStack(roiWidth, roiHeight,
+			roiDepth);
+		final int endZ = startZ + roiDepth;
+		final int endY = startY + roiHeight;
+		final int endX = startX + roiWidth;
+		for (int z = startZ; z < endZ; z++) {
+			IJ.showProgress(z - startZ, roiDepth);
+			IJ.showStatus("Copying largest enclosed cube");
+			final int tZ = z - startZ + 1;
+			targetStack.setPixels(Moments.getEmptyPixels(roiWidth, roiHeight, imp
+				.getBitDepth()), tZ);
+			targetStack.setSliceLabel(sourceStack.getShortSliceLabel(z), tZ);
+			final ImageProcessor ip = sourceStack.getProcessor(z);
+			final ImageProcessor targetIP = targetStack.getProcessor(tZ);
+			for (int y = startY; y < endY; y++) {
+				final int tY = y - startY;
+				for (int x = startX; x < endX; x++) {
+					targetIP.set(x - startX, tY, ip.get(x, y));
+				}
+			}
 		}
-		DialogModifier.registerMacroValues(gd, gd.getComponents());
-		return true;
+		final ImagePlus target = new ImagePlus("Inner Cube", targetStack);
+		target.setCalibration(cal);
+		target.setDisplayRange(imp.getDisplayRangeMin(), imp.getDisplayRangeMax());
+		return target;
+	}
+
+	private static ImagePlus copyOuterCube(final ImagePlus imp,
+		final double cropFactor, final double[] sphereDim)
+	{
+		final Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		final double xC = sphereDim[0];
+		final double yC = sphereDim[1];
+		final double zC = sphereDim[2];
+		final double r = sphereDim[3];
+		final double h = r * cropFactor;
+		int startX = (int) Math.round((xC - h) / vW);
+		int startY = (int) Math.round((yC - h) / vH);
+		int startZ = (int) Math.round((zC - h) / vD);
+		int roiWidth = (int) Math.round(2 * h / vW);
+		int roiHeight = (int) Math.round(2 * h / vH);
+		int roiDepth = (int) Math.round(2 * h / vD);
+		// bounds checking
+		if (startX < 0) startX = 0;
+		if (startY < 0) startY = 0;
+		if (startZ < 1) startZ = 1;
+		if (startX + roiWidth > imp.getWidth()) roiWidth = imp.getWidth() - startX;
+		if (startY + roiHeight > imp.getHeight()) roiHeight = imp.getHeight() -
+			startY;
+		if (startZ + roiDepth > imp.getStackSize()) roiDepth = imp.getStackSize() -
+			startZ;
+		final ImageStack sourceStack = imp.getImageStack();
+		final ImageStack targetStack = new ImageStack(roiWidth, roiHeight,
+			roiDepth);
+		final int endZ = startZ + roiDepth;
+		final int endY = startY + roiHeight;
+		final int endX = startX + roiWidth;
+		for (int z = startZ; z < endZ; z++) {
+			final int tZ = z - startZ + 1;
+			IJ.showProgress(z - startZ, roiDepth);
+			IJ.showStatus("Copying smallest enclosing cube");
+			targetStack.setPixels(Moments.getEmptyPixels(roiWidth, roiHeight, imp
+				.getBitDepth()), tZ);
+			targetStack.setSliceLabel(sourceStack.getShortSliceLabel(z), tZ);
+			final ImageProcessor ip = sourceStack.getProcessor(z);
+			final ImageProcessor targetIP = targetStack.getProcessor(tZ);
+			for (int y = startY; y < endY; y++) {
+				final int tY = y - startY;
+				for (int x = startX; x < endX; x++) {
+					targetIP.set(x - startX, tY, ip.get(x, y));
+				}
+			}
+		}
+		final ImagePlus target = new ImagePlus("Outer Cube", targetStack);
+		target.setCalibration(cal);
+		target.setDisplayRange(imp.getDisplayRangeMin(), imp.getDisplayRangeMax());
+		return target;
+	}
+
+	private static ImagePlus copySphere(final ImagePlus imp, final int padding,
+		final double cropFactor, final double[] sphereDim)
+	{
+		final Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		final double xC = sphereDim[0];
+		final double yC = sphereDim[1];
+		final double zC = sphereDim[2];
+		final double r = sphereDim[3];
+		final double maxRad = r * cropFactor;
+		int startX = (int) Math.round((xC - maxRad) / vW) - padding;
+		int startY = (int) Math.round((yC - maxRad) / vH) - padding;
+		int startZ = (int) Math.round((zC - maxRad) / vD) - padding;
+		int roiWidth = (int) Math.round(2 * maxRad / vW) + 2 * padding;
+		int roiHeight = (int) Math.round(2 * maxRad / vH) + 2 * padding;
+		int roiDepth = (int) Math.round(2 * maxRad / vD) + 2 * padding;
+		// bounds checking
+		if (startX < 0) startX = 0;
+		if (startY < 0) startY = 0;
+		if (startZ < 1) startZ = 1;
+		if (startX + roiWidth > imp.getWidth()) roiWidth = imp.getWidth() - startX;
+		if (startY + roiHeight > imp.getHeight()) roiHeight = imp.getHeight() -
+			startY;
+		if (startZ + roiDepth > imp.getStackSize()) roiDepth = imp.getStackSize() -
+			startZ;
+		final ImageStack sourceStack = imp.getImageStack();
+		final ImageStack targetStack = new ImageStack(roiWidth, roiHeight,
+			roiDepth);
+		final int endZ = startZ + roiDepth;
+		final int endY = startY + roiHeight;
+		final int endX = startX + roiWidth;
+		for (int z = startZ; z < endZ; z++) {
+			IJ.showProgress(z - startZ, roiDepth);
+			IJ.showStatus("Copying sphere to new stack");
+			final int tZ = z - startZ + 1;
+			final double dZ = z * vD - zC;
+			final double dZ2 = dZ * dZ;
+			targetStack.setPixels(Moments.getEmptyPixels(roiWidth, roiHeight, imp
+				.getBitDepth()), tZ);
+			targetStack.setSliceLabel(sourceStack.getShortSliceLabel(z), tZ);
+			final ImageProcessor ip = sourceStack.getProcessor(z);
+			final ImageProcessor targetIP = targetStack.getProcessor(tZ);
+			for (int y = startY; y < endY; y++) {
+				final int tY = y - startY;
+				final double dY = y * vH - yC;
+				final double dY2 = dY * dY;
+				for (int x = startX; x < endX; x++) {
+					final double dX = x * vW - xC;
+					final double distance = Math.sqrt(dX * dX + dY2 + dZ2);
+					if (distance > maxRad) continue;
+					targetIP.set(x - startX, tY, ip.get(x, y));
+				}
+			}
+		}
+		final ImagePlus target = new ImagePlus("Sphere", targetStack);
+		target.setCalibration(cal);
+		target.setDisplayRange(imp.getDisplayRangeMin(), imp.getDisplayRangeMax());
+		return target;
+	}
+
+	/**
+	 * Remove all ROIs from the ROI manager
+	 *
+	 * @param roiMan an instance of {@link RoiManager}.
+	 */
+	private static void deleteAll(final RoiManager roiMan) {
+		final Roi[] rois = roiMan.getRoisAsArray();
+		for (int i = 0; i < rois.length; i++) {
+			if (roiMan.getCount() == 0) break;
+			roiMan.select(i);
+			roiMan.runCommand("delete");
+		}
+	}
+
+	/**
+	 * Get the calibrated 3D coordinates of point ROIs from the ROI manager
+	 *
+	 * @param imp an image.
+	 * @param roiMan an instance of {@link RoiManager}
+	 * @return double[n][3] containing n (x, y, z) coordinates or null if there
+	 *         are no points
+	 */
+	private static double[][] getRoiManPoints(final ImagePlus imp,
+		final RoiManager roiMan)
+	{
+		final Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		int nPoints = 0;
+		final Roi[] roiList = roiMan.getRoisAsArray();
+		for (int i = 0; i < roiMan.getCount(); i++) {
+			final Roi roi = roiList[i];
+			if (roi.getType() == 10) {
+				nPoints++;
+			}
+		}
+		if (nPoints == 0) return null;
+		final double[][] dataPoints = new double[nPoints][3];
+		int j = 0;
+		for (int i = 0; i < roiMan.getCount(); i++) {
+			final Roi roi = roiList[i];
+			if (roi.getType() == 10) {
+				final Rectangle xy = roi.getBounds();
+				dataPoints[j][0] = xy.getX() * vW;
+				dataPoints[j][1] = xy.getY() * vH;
+				dataPoints[j][2] = roi.getPosition() * vD;
+				j++;
+			}
+		}
+		return dataPoints;
 	}
 }
