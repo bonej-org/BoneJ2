@@ -97,7 +97,6 @@ public final class RoiManagerUtil {
 			return Collections.emptyList();
 		}
 		final Roi[] rois = manager.getRoisAsArray();
-		// TODO Add unit test for multi-point ROIs
 		return Arrays.stream(rois).filter(roi -> roi.getType() == Roi.POINT).map(
 			roi -> {
 				final int z = roi.getZPosition();

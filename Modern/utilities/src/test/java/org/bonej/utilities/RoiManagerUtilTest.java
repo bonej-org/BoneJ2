@@ -462,6 +462,27 @@ public class RoiManagerUtilTest {
 		assertEquals(pointRoi.getPosition(), point.z, 1e-12);
 	}
 
+	// Tests that the method filters out duplicate points within and between
+	// multi-point ROIs. Duplicate points have the same (x, y, z) coordinates.
+	@Test
+	public void testPointRoiCoordinatesMultiPointRois() {
+		final PointRoi roi = new PointRoi(new int[] { 1, 1, 2 }, new int[] { 0, 0,
+			0 }, 3);
+		roi.setPosition(1);
+		final PointRoi roi2 = new PointRoi(new int[] { 1, 1 }, new int[] { 0, 0 },
+			2);
+		roi2.setPosition(2);
+		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(new Roi[] { roi, roi2 });
+
+		final List<Vector3d> result = RoiManagerUtil.pointROICoordinates(
+			MOCK_ROI_MANAGER);
+
+		assertEquals(3, result.size());
+		assertEquals(new Vector3d(1, 0, 1), result.get(0));
+		assertEquals(new Vector3d(2, 0, 1), result.get(1));
+		assertEquals(new Vector3d(1, 0, 2), result.get(2));
+	}
+
 	@Test
 	public void testPointRoiCoordinatesReturnsEmptyListIfManagerNull() {
 		final List<Vector3d> points = RoiManagerUtil.pointROICoordinates(null);
