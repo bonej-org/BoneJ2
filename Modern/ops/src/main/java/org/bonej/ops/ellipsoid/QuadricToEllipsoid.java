@@ -11,11 +11,13 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.EigenDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.joml.Matrix3d;
+import org.joml.Matrix3dc;
+import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.plugin.Plugin;
-import org.scijava.vecmath.GMatrix;
-import org.scijava.vecmath.Matrix3d;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
 
 /**
  * Tries to create an {@link Ellipsoid} from a general equation of a quadratic
@@ -39,20 +41,20 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends
-	AbstractUnaryFunctionOp<Matrix4d, Ellipsoid> implements Contingent
+	AbstractUnaryFunctionOp<Matrix4dc, Ellipsoid> implements Contingent
 {
 
 	@Override
-	public Ellipsoid calculate(final Matrix4d quadricSolution) {
-		final Vector3d center = findCenter(quadricSolution);
-		final Matrix4d translated = translateToCenter(quadricSolution, center);
+	public Ellipsoid calculate(final Matrix4dc quadricSolution) {
+		final Vector3dc center = findCenter(quadricSolution);
+		final Matrix4dc translated = translateToCenter(quadricSolution, center);
 		final EigenDecomposition decomposition = solveEigenDecomposition(
 			translated);
 		final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
 			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
 		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
-		ellipsoid.setCentroid(center);
-		final Matrix3d orientation = toOrientationMatrix(decomposition);
+		ellipsoid.setCentroid(new org.scijava.vecmath.Vector3d(center.x(), center.y(), center.z()));
+		final org.scijava.vecmath.Matrix3d orientation = toOrientationMatrix(decomposition);
 		ellipsoid.setOrientation(orientation);
 		return ellipsoid;
 	}
@@ -73,12 +75,9 @@ public class QuadricToEllipsoid extends
 	 * @param quadric a quadric in the algebraic form.
 	 * @return true if an ellipsoid can be created, false if not.
 	 */
-	public static boolean isEllipsoid(final Matrix4d quadric) {
-		final double det2d = quadric.m00 * quadric.m11 - quadric.m10 * quadric.m01;
-		final Matrix3d sub = new Matrix3d();
-		quadric.get(sub);
-		final double det3d = sub.determinant();
-		return quadric.m00 > 0 && det2d > 0 && det3d > 0;
+	public static boolean isEllipsoid(final Matrix4dc quadric) {
+		final double det2d = quadric.m00() * quadric.m11() - quadric.m10() * quadric.m01();
+		return quadric.m00() > 0 && det2d > 0 && quadric.determinant3x3() > 0;
 	}
 
 	/**
@@ -87,42 +86,34 @@ public class QuadricToEllipsoid extends
 	 * @param quadric the general equation of a quadric in algebraic matrix form.
 	 * @return the 3D center point in a vector.
 	 */
-	private static Vector3d findCenter(final Matrix4d quadric) {
+	private static Vector3dc findCenter(final Matrix4dc quadric) {
 		// @formatter:off
-		final GMatrix sub = new GMatrix(3, 3, new double[] {
-				quadric.m00, quadric.m01, quadric.m02,
-				quadric.m10, quadric.m11, quadric.m12,
-				quadric.m20, quadric.m21, quadric.m22
-		});
+		final Matrix3dc sub = new Matrix3d(
+				quadric.m00(), quadric.m01(), quadric.m02(),
+				quadric.m10(), quadric.m11(), quadric.m12(),
+				quadric.m20(), quadric.m21(), quadric.m22()
+		).scale(-1.0).invert();
 		// @formatter:on
-		sub.negate();
-		sub.invert();
-		final GMatrix translation = new GMatrix(3, 1, new double[] { quadric.m03,
-			quadric.m13, quadric.m23 });
-		final GMatrix center = new GMatrix(3, 1);
-		center.mul(sub, translation);
-		final double[] centerCoords = new double[3];
-		center.getColumn(0, centerCoords);
-		return new Vector3d(centerCoords);
+		final Vector3d translation = new Vector3d(quadric.m03(), quadric.m13(),
+			quadric.m23());
+		return sub.transform(translation);
 	}
 
-	// Using apache.commons.math3 since scijava.vecmath doesn't yet have eigen
-	// decomposition, and I can't figure out how to use the tensor eigen stuff
-	// from net.imglib2.algorithm.linalg.eigen
 	private static EigenDecomposition solveEigenDecomposition(
-		final Matrix4d quadric)
+		final Matrix4dc quadric)
 	{
+		// TODO Figure out how to solve eigen decomposition with ojAlgo!
 		// @formatter:off
 		final RealMatrix input = new Array2DRowRealMatrix(new double[][]{
-				{quadric.m00, quadric.m01, quadric.m02},
-				{quadric.m10, quadric.m11, quadric.m12},
-				{quadric.m20, quadric.m21, quadric.m22},
-		}).scalarMultiply(-1.0 / quadric.m33);
+				{ quadric.m00(), quadric.m01(), quadric.m02() },
+				{ quadric.m10(), quadric.m11(), quadric.m12() },
+				{ quadric.m20(), quadric.m21(), quadric.m22() }
+		}).scalarMultiply(-1.0 / quadric.m33());
 		// @formatter:on
 		return new EigenDecomposition(input);
 	}
 
-	private static Matrix3d toOrientationMatrix(
+	private static org.scijava.vecmath.Matrix3d toOrientationMatrix(
 		final EigenDecomposition decomposition)
 	{
 		final RealVector e1 = decomposition.getEigenvector(0);
@@ -134,10 +125,10 @@ public class QuadricToEllipsoid extends
 			2));
 		final Vector3d z = new Vector3d(e3.getEntry(0), e3.getEntry(1), e3.getEntry(
 			2));
-		final Matrix3d orientation = new Matrix3d();
-		orientation.setColumn(0, x);
-		orientation.setColumn(1, y);
-		orientation.setColumn(2, z);
+		final org.scijava.vecmath.Matrix3d orientation = new org.scijava.vecmath.Matrix3d();
+		orientation.setColumn(0, new org.scijava.vecmath.Vector3d(x.x, x.y, x.z));
+		orientation.setColumn(1, new org.scijava.vecmath.Vector3d(y.x, y.y, y.z));
+		orientation.setColumn(2, new org.scijava.vecmath.Vector3d(z.x, z.y, z.z));
 		return orientation;
 	}
 
@@ -147,22 +138,20 @@ public class QuadricToEllipsoid extends
 	 * @param quadric the general equation of a quadric in algebraic matrix form.
 	 * @param center the center point of the surface.
 	 */
-	private static Matrix4d translateToCenter(final Matrix4d quadric,
-		final Vector3d center)
+	private static Matrix4d translateToCenter(final Matrix4dc quadric,
+		final Vector3dc center)
 	{
 		//@formatter:off
 		final Matrix4d t = new Matrix4d(
-				1, 0, 0, 0,
-				0, 1, 0, 0,
-				0, 0, 1, 0,
-				center.x, center.y, center.z, 1
+				1, 0, 0, center.x(),
+				0, 1, 0, center.y(),
+				0, 0, 1, center.z(),
+				0, 0, 0, 1
 		);
 		//@formatter:on
-		final Matrix4d tT = new Matrix4d(t);
-		tT.transpose();
-		final Matrix4d translated = new Matrix4d();
-		translated.mul(t, quadric);
-		translated.mul(tT);
-		return translated;
+		final Matrix4d tT = t.transpose(new Matrix4d());
+		t.mul(quadric);
+		t.mul(tT);
+		return t;
 	}
 }

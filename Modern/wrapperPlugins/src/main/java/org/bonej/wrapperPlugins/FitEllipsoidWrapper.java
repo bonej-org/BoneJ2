@@ -23,7 +23,6 @@ import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.joml.Matrix4d;
 import org.joml.Matrix4dc;
 import org.joml.Vector3d;
 import org.scijava.ItemIO;

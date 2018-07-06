@@ -93,7 +93,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, Quaterniondc, Vector3d> milOp;
-	private static UnaryFunctionOp<org.scijava.vecmath.Matrix4d, Ellipsoid> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
@@ -201,15 +201,11 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private Ellipsoid fitEllipsoid(final List<Vector3d> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
-		final double[] data = new double[16];
-		quadric.get(data);
-		final org.scijava.vecmath.Matrix4d q = new org.scijava.vecmath.Matrix4d(
-			data);
-		if (!QuadricToEllipsoid.isEllipsoid(q)) {
+		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
 			return null;
 		}
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
-		return quadricToEllipsoidOp.calculate(q);
+		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
 	// TODO Refactor into a static utility method with unit tests
@@ -230,9 +226,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
 			Matrix4d.class, tmpPoints);
-		final org.scijava.vecmath.Matrix4d matchingMock =
-			new org.scijava.vecmath.Matrix4d();
-		matchingMock.setIdentity();
+		final Matrix4d matchingMock =
+			new Matrix4d();
+		matchingMock.identity();
 		quadricToEllipsoidOp = Functions.unary(opService, QuadricToEllipsoid.class,
 			Ellipsoid.class, matchingMock);
 	}
