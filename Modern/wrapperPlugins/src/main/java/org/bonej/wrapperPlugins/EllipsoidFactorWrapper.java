@@ -69,7 +69,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
     private DoubleType percentageOfRidgePoints = new DoubleType(0.8);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
-    private ImgPlus<UnsignedByteType> ridgePointsImage;
+    private ImgPlus<BitType> ridgePointsImage;
 
     @Parameter(label = "EF image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> efImage;
@@ -127,7 +127,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         final double ridgePointCutOff = percentageOfRidgePoints.getRealFloat()*opService.stats().max(ridge).getRealFloat();
         final Img<R> ridgeImg = (Img) ridge;
         final Img<BitType> thresholdedRidge = Thresholder.threshold(ridgeImg, (R) new FloatType((float) ridgePointCutOff), true, 1);
-        ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
+        ridgePointsImage = new ImgPlus<>(opService.convert().bit(thresholdedRidge), "Seeding Points");
 
         final List<ValuePair<List<Vector3d>, List<ValuePair<Vector3d, Vector3d>>>> starVolumes = new ArrayList<>();
         final List<Vector3d> internalSeedPoints = new ArrayList<>();
@@ -202,6 +202,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         efImage.setColorTable(ColorTables.FIRE, 0);
 
         eIdImage = new ImgPlus<>(ellipsoidIdentityImage, "ID");
+        eIdImage.setChannelMaximum(0,ellipsoids.size()/10.0);
+        eIdImage.setChannelMinimum(0, -1.0);
+
 
     }
 
