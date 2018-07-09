@@ -54,7 +54,7 @@ import static net.imglib2.roi.Regions.countTrue;
  * @author Alessandro Felder
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
 public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextCommand {
 
     private final FindLocalEllipsoidOp findLocalEllipsoidOp = new FindLocalEllipsoidOp();
