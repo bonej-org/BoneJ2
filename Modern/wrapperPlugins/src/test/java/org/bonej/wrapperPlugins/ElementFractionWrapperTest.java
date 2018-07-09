@@ -124,13 +124,8 @@ public class ElementFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-<<<<<<< HEAD
-		final Table<DefaultColumn<String>, String> table =
-				(Table<DefaultColumn<String>, String>) module.getOutput("resultsTable");
-=======
 		final List<DefaultColumn<String>> table =
 			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
->>>>>>> master
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 4, table.size());
 		for (int i = 0; i < 3; i++) {
