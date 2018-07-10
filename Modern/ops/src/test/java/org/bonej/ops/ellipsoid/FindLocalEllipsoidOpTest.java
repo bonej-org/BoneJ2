@@ -29,11 +29,10 @@ public class FindLocalEllipsoidOpTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
     @SuppressWarnings("unchecked")
-    private static BinaryFunctionOp<List<Vector3d>, ValuePair<Vector3d, Vector3d>, Optional<Ellipsoid>> ellipsoidDecomposition =
+    private static BinaryFunctionOp<List<Vector3d>, ValuePair<Vector3d, Vector3d>, List<Optional<Ellipsoid>>> ellipsoidDecomposition =
             (BinaryFunctionOp) Functions.unary(IMAGE_J.op(), FindLocalEllipsoidOp.class,
-                    Optional.class, List.class, ValuePair.class);
+                    List.class, List.class, ValuePair.class);
 
-    @Ignore
     @Test
     public void testFittingEllipsoidToEquidistantCollisionPoints() {
         Vector3d vertexP = new Vector3d(-2, 0, 0);
@@ -50,7 +49,9 @@ public class FindLocalEllipsoidOpTest {
         LinkedList<Vector3d> otherVertices = new LinkedList<>();
         otherVertices.addAll(arrayList);
 
-        final Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
+        final List<Optional<Ellipsoid>> ellipsoids = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
+
+        Optional<Ellipsoid> ellipsoid = ellipsoids.get(1);
 
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
@@ -63,8 +64,6 @@ public class FindLocalEllipsoidOpTest {
     }
 
 
-
-    @Ignore
     @Test
     public void testFittingEllipsoidToFiveInputPointsEasy() {
         Vector3d vertexP = new Vector3d(0, 2, 0);
@@ -79,8 +78,9 @@ public class FindLocalEllipsoidOpTest {
         LinkedList<Vector3d> otherVertices = new LinkedList<>();
         otherVertices.addAll(arrayList);
 
-        final Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
+        final List<Optional<Ellipsoid>> ellipsoids = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
 
+        Optional<Ellipsoid> ellipsoid = ellipsoids.get(1);
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
@@ -89,7 +89,6 @@ public class FindLocalEllipsoidOpTest {
         assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
     }
 
-    @Ignore
     @Test
     public void testFittingEllipsoidToFiveInputPointsDifficult() {
         Vector3d vertexP = new Vector3d(0, 0, 0);
@@ -104,8 +103,9 @@ public class FindLocalEllipsoidOpTest {
         LinkedList<Vector3d> otherVertices = new LinkedList<>();
         otherVertices.addAll(arrayList);
 
-        final Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
+        final List<Optional<Ellipsoid>> ellipsoids = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
 
+        Optional<Ellipsoid> ellipsoid = ellipsoids.get(1);
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
@@ -144,7 +144,6 @@ public class FindLocalEllipsoidOpTest {
         return Math.abs(shouldBeOne - 1.0) < 1.0e-12;
     }
 
-    @Ignore
     @Test
     public void testQ1() {
         Vector3d sphereCentre = new Vector3d(3, 4, 5);
@@ -170,7 +169,6 @@ public class FindLocalEllipsoidOpTest {
 
     }
 
-    @Ignore
     @Test
     public void testQ2() {
         Vector3d p = new Vector3d(4, 4, 1);

@@ -315,7 +315,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
     }
 
     private List<Ellipsoid> getLocalEllipsoids(final List<ValuePair<Vector3d, Vector3d>> seedPoints, final List<Vector3d> boundaryPoints) {
-        return seedPoints.stream().map(s -> findLocalEllipsoidOp.calculate(new ArrayList<Vector3d>(boundaryPoints), s)).flatMap(Collection::stream).collect(toList());
+        return seedPoints.stream().map(s -> findLocalEllipsoidOp.calculate(new ArrayList<Vector3d>(boundaryPoints), s)).flatMap(Collection::stream).filter(opt -> opt.isPresent()).map(e -> e.get()).collect(toList());
     }
 
 
