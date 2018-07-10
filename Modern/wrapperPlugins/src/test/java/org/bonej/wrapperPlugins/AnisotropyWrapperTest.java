@@ -49,7 +49,6 @@ import net.imglib2.view.Views;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
@@ -122,8 +121,6 @@ public class AnisotropyWrapperTest {
 	 * quadric solution to them is not an ellipsoid.
 	 * </p>
 	 */
-	// TODO Figure why test fails occasionally
-	@Ignore
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
 		final UserInterface mockUI = mock(UserInterface.class);

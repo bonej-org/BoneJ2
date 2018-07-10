@@ -295,7 +295,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * @return a (rotation) quaternion which can be used as a parameter for the
 	 *         op.
 	 */
-	private static Quaterniondc randomQuaternion() {
+	private static synchronized Quaterniondc randomQuaternion() {
 		final double[] v = qGenerator.nextVector();
 		return new Quaterniond(v[0], v[1], v[2], v[3]);
 	}
