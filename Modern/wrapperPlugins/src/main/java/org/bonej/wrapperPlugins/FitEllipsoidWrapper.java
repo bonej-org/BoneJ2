@@ -116,7 +116,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			QuadricToEllipsoid.class, quadric);
 		if (!result.isPresent()) {
 			cancel("Can't fit ellipsoid to points.\n" +
-				"Add more point ROI's to the ROI Manager and try again.");
+				"Try adding more point ROIs to the ROI Manager and try again.");
 			return;
 		}
 		addResults(result.get());

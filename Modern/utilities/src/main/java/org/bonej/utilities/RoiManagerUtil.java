@@ -97,16 +97,12 @@ public final class RoiManagerUtil {
 			return Collections.emptyList();
 		}
 		final Roi[] rois = manager.getRoisAsArray();
-		// To be completely accurate, we'd have to calculate the centers of the ROIs
-		// bounding boxes, but since we're only interested in point ROIs that won't
-		// make a huge difference.
 		return Arrays.stream(rois).filter(roi -> roi.getType() == Roi.POINT).map(
 			roi -> {
-				final double x = roi.getXBase();
-				final double y = roi.getYBase();
 				final int z = roi.getZPosition();
-				return new Vector3d(x, y, z);
-			}).collect(Collectors.toList());
+				return Arrays.stream(roi.getContainedPoints()).distinct().map(
+					p -> new Vector3d(p.x, p.y, z));
+			}).flatMap(s -> s).distinct().collect(Collectors.toList());
 	}
 
 	// endregion

@@ -24,8 +24,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.ops.ellipsoid;
 
 import java.util.Arrays;
+import java.util.Optional;
 
-import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 
@@ -61,46 +61,27 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends
-	AbstractUnaryFunctionOp<Matrix4d, Ellipsoid> implements Contingent
+	AbstractUnaryFunctionOp<Matrix4d, Optional<Ellipsoid>>
 {
 
 	@Override
-	public Ellipsoid calculate(final Matrix4d quadricSolution) {
+	public Optional<Ellipsoid> calculate(final Matrix4d quadricSolution) {
 		final Vector3d center = findCenter(quadricSolution);
 		final Matrix4d translated = translateToCenter(quadricSolution, center);
 		final EigenDecomposition decomposition = solveEigenDecomposition(
 			translated);
+		final boolean invalidEv = Arrays.stream(decomposition.getRealEigenvalues())
+			.anyMatch(e -> e <= 0.0);
+		if (invalidEv) {
+			return Optional.empty();
+		}
 		final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
 			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
 		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
 		ellipsoid.setCentroid(center);
 		final Matrix3d orientation = toOrientationMatrix(decomposition);
 		ellipsoid.setOrientation(orientation);
-		return ellipsoid;
-	}
-
-	/**
-	 * Checks if the matrix has the equation of an ellipsoid.
-	 *
-	 * @return true if an ellipsoid can be created from the input quadric.
-	 */
-	@Override
-	public boolean conforms() {
-		return isEllipsoid(in());
-	}
-
-	/**
-	 * Checks if the quadric matrix describes a real ellipsoid.
-	 *
-	 * @param quadric a quadric in the algebraic form.
-	 * @return true if an ellipsoid can be created, false if not.
-	 */
-	public static boolean isEllipsoid(final Matrix4d quadric) {
-		final double det2d = quadric.m00 * quadric.m11 - quadric.m10 * quadric.m01;
-		final Matrix3d sub = new Matrix3d();
-		quadric.get(sub);
-		final double det3d = sub.determinant();
-		return quadric.m00 > 0 && det2d > 0 && det3d > 0;
+		return Optional.of(ellipsoid);
 	}
 
 	/**

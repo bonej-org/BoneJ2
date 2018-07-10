@@ -67,25 +67,6 @@ public final class Streamers {
 	}
 
 	/**
-	 * Generates a Stream from the realDouble values in the Iterable.
-	 *
-	 * @param iterable an iterable collection.
-	 * @param <T> type of the elements in the iterable.
-	 * @return a DoubleStream of the realDouble values, or empty stream if
-	 *         iterable == null.
-	 */
-	public static <T extends RealType<T>> DoubleStream realDoubleStream(
-		final Iterable<T> iterable)
-	{
-		if (iterable == null) {
-			return DoubleStream.empty();
-		}
-
-		return StreamSupport.stream(iterable.spliterator(), false).mapToDouble(
-			RealType::getRealDouble);
-	}
-
-	/**
 	 * Generates a {@link Stream} from the spatial axes in the given space.
 	 * 
 	 * @param space an N-dimensional space.

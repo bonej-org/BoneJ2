@@ -106,7 +106,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
@@ -225,12 +225,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Ellipsoid fitEllipsoid(final List<Vector3d> pointCloud) {
+	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3d> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
-		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
-			return null;
-		}
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
@@ -243,11 +240,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				cancel("Anisotropy could not be calculated - too few points");
 				return null;
 			}
-			final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
-			if (ellipsoid == null) {
+			final Optional<Ellipsoid> ellipsoid = fitEllipsoid(pointCloud);
+			if (!ellipsoid.isPresent()) {
 				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+				return null;
 			}
-			return ellipsoid;
+			return ellipsoid.get();
 		}
 		catch (final ExecutionException | InterruptedException e) {
 			logService.trace(e.getMessage());
@@ -267,6 +265,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			.averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
 	}
 
+	@SuppressWarnings("unchecked")
 	private void matchOps(final Subspace<BitType> subspace) {
 		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
 			subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
@@ -276,8 +275,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			Matrix4d.class, tmpPoints);
 		final Matrix4d matchingMock = new Matrix4d();
 		matchingMock.setIdentity();
-		quadricToEllipsoidOp = Functions.unary(opService, QuadricToEllipsoid.class,
-			Ellipsoid.class, matchingMock);
+		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService, QuadricToEllipsoid.class,
+			Optional.class, matchingMock);
 	}
 
 	private List<Vector3d> runDirectionsInParallel(
