@@ -1,9 +1,31 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops.ellipsoid;
 
 import java.util.Arrays;
+import java.util.Optional;
 
-import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 
@@ -41,43 +63,29 @@ import org.scijava.plugin.Plugin;
  */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends
-	AbstractUnaryFunctionOp<Matrix4dc, Ellipsoid> implements Contingent
+	AbstractUnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>>
 {
 
 	@Override
-	public Ellipsoid calculate(final Matrix4dc quadricSolution) {
+	public Optional<Ellipsoid> calculate(final Matrix4dc quadricSolution) {
 		final Vector3dc center = findCenter(quadricSolution);
 		final Matrix4dc translated = translateToCenter(quadricSolution, center);
 		final EigenDecomposition decomposition = solveEigenDecomposition(
 			translated);
+		final boolean invalidEv = Arrays.stream(decomposition.getRealEigenvalues())
+			.anyMatch(e -> e <= 0.0);
+		if (invalidEv) {
+			return Optional.empty();
+		}
 		final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
 			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
 		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
-		ellipsoid.setCentroid(new org.scijava.vecmath.Vector3d(center.x(), center.y(), center.z()));
-		final org.scijava.vecmath.Matrix3d orientation = toOrientationMatrix(decomposition);
+		ellipsoid.setCentroid(new org.scijava.vecmath.Vector3d(center.x(), center
+			.y(), center.z()));
+		final org.scijava.vecmath.Matrix3d orientation = toOrientationMatrix(
+			decomposition);
 		ellipsoid.setOrientation(orientation);
-		return ellipsoid;
-	}
-
-	/**
-	 * Checks if the matrix has the equation of an ellipsoid.
-	 *
-	 * @return true if an ellipsoid can be created from the input quadric.
-	 */
-	@Override
-	public boolean conforms() {
-		return isEllipsoid(in());
-	}
-
-	/**
-	 * Checks if the quadric matrix describes a real ellipsoid.
-	 *
-	 * @param quadric a quadric in the algebraic form.
-	 * @return true if an ellipsoid can be created, false if not.
-	 */
-	public static boolean isEllipsoid(final Matrix4dc quadric) {
-		final double det2d = quadric.m00() * quadric.m11() - quadric.m10() * quadric.m01();
-		return quadric.m00() > 0 && det2d > 0 && quadric.determinant3x3() > 0;
+		return Optional.of(ellipsoid);
 	}
 
 	/**
@@ -125,7 +133,8 @@ public class QuadricToEllipsoid extends
 			2));
 		final Vector3d z = new Vector3d(e3.getEntry(0), e3.getEntry(1), e3.getEntry(
 			2));
-		final org.scijava.vecmath.Matrix3d orientation = new org.scijava.vecmath.Matrix3d();
+		final org.scijava.vecmath.Matrix3d orientation =
+			new org.scijava.vecmath.Matrix3d();
 		orientation.setColumn(0, new org.scijava.vecmath.Vector3d(x.x, x.y, x.z));
 		orientation.setColumn(1, new org.scijava.vecmath.Vector3d(y.x, y.y, y.z));
 		orientation.setColumn(2, new org.scijava.vecmath.Vector3d(z.x, z.y, z.z));

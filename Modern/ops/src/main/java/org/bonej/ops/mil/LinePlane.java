@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops.mil;
 
@@ -12,6 +34,7 @@ import net.imglib2.Interval;
 
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 /**
  * A class that describes a set of parallel lines normal to a plane. The plane
@@ -22,16 +45,15 @@ import org.joml.Vector3d;
 class LinePlane {
 
 	private final double size;
-	private final Vector3d translation = new Vector3d();
-	private final Vector3d centroid;
-	private final Vector3d direction;
+	private final Vector3dc translation;
+	private final Vector3dc centroid;
+	private final Vector3dc direction;
 	private final Random random = new Random();
 	private final Quaterniondc rotation;
 	private final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 
 	/**
-	 * Creates an instance of {@link LinePlane}, and initializes it for generating
-	 * lines.
+	 * Creates an instance of LinePlane, and initializes it for generating lines.
 	 *
 	 * @param interval a discrete interval through which the lines pass.
 	 * @param rotation the direction of the lines through the interval.
@@ -42,7 +64,7 @@ class LinePlane {
 		final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp)
 	{
 		size = findPlaneSize(interval);
-		translation.set(-size * 0.5, -size * 0.5, 0.0);
+		translation = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
 		centroid = findCentroid(interval);
 		this.rotateOp = rotateOp;
 		this.rotation = rotation;
@@ -50,13 +72,13 @@ class LinePlane {
 	}
 
 	// region -- Helper methods --
-	private Vector3d createDirection() {
+	private Vector3dc createDirection() {
 		final Vector3d direction = new Vector3d(0, 0, 1);
 		rotateOp.mutate1(direction, rotation);
 		return direction;
 	}
 
-	private Vector3d createOrigin(final double t, final double u) {
+	private Vector3dc createOrigin(final double t, final double u) {
 		final double x = t * size;
 		final double y = u * size;
 		final Vector3d origin = new Vector3d(x, y, 0);
@@ -66,7 +88,7 @@ class LinePlane {
 		return origin;
 	}
 
-	private static <I extends Interval> Vector3d findCentroid(final I interval) {
+	private static <I extends Interval> Vector3dc findCentroid(final I interval) {
 		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
 			.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
 		return new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
@@ -99,8 +121,8 @@ class LinePlane {
 	 *          points, one from each quadrant of the plane.
 	 * @return a finite stream of origin points on the plane.
 	 */
-	Stream<Vector3d> getOrigins(final Long bins) {
-		final Builder<Vector3d> builder = Stream.builder();
+	Stream<Vector3dc> getOrigins(final Long bins) {
+		final Builder<Vector3dc> builder = Stream.builder();
 		final double step = 1.0 / bins;
 		final double uOffset = random.nextDouble() * step;
 		final double tOffset = random.nextDouble() * step;
@@ -108,7 +130,7 @@ class LinePlane {
 			final double u = i * step + uOffset;
 			for (long j = 0; j < bins; j++) {
 				final double t = j * step + tOffset;
-				final Vector3d origin = createOrigin(t, u);
+				final Vector3dc origin = createOrigin(t, u);
 				builder.add(origin);
 			}
 		}
@@ -120,7 +142,7 @@ class LinePlane {
 	 *
 	 * @return direction of the lines passing through the plane.
 	 */
-	Vector3d getDirection() {
+	Vector3dc getDirection() {
 		return direction;
 	}
 

@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops.mil;
 
@@ -45,7 +67,7 @@ public class LinePlaneTest {
 		final Vector3d expectedDirection = new Vector3d(0, 0, 1);
 		final LinePlane plane = new LinePlane(IMG, IDENTITY, rotateOp);
 
-		final Vector3d direction = plane.getDirection();
+		final Vector3dc direction = plane.getDirection();
 
 		assertEquals("Incorrect direction", expectedDirection, direction);
 	}
@@ -60,7 +82,7 @@ public class LinePlaneTest {
 		final LinePlane plane = new LinePlane(IMG, rotation, rotateOp);
 
 		// EXECUTE
-		final Vector3d direction = plane.getDirection();
+		final Vector3dc direction = plane.getDirection();
 
 		// VERIFY
 		assertEquals("Direction rotated incorrectly", expectedDirection, direction);
@@ -83,21 +105,21 @@ public class LinePlaneTest {
 		final double cY = SIZE / 2.0;
 
 		// EXECUTE
-		final List<Vector3d> origins = plane.getOrigins(2L).collect(Collectors
+		final List<Vector3dc> origins = plane.getOrigins(2L).collect(Collectors
 			.toList());
 
-		final Vector3d a = origins.get(0);
-		assertTrue("Point is in the wrong quadrant of the plane", a.x <= cX &&
-			a.y <= cY);
-		final Vector3d b = origins.get(1);
-		assertTrue("Point is in the wrong quadrant of the plane", b.x > cX &&
-			b.y <= cY);
-		final Vector3d c = origins.get(2);
-		assertTrue("Point is in the wrong quadrant of the plane", c.x <= cX &&
-			c.y > cY);
-		final Vector3d d = origins.get(3);
-		assertTrue("Point is in the wrong quadrant of the plane", d.x > cX &&
-			d.y > cY);
+		final Vector3dc a = origins.get(0);
+		assertTrue("Point is in the wrong quadrant of the plane", a.x() <= cX &&
+			a.y() <= cY);
+		final Vector3dc b = origins.get(1);
+		assertTrue("Point is in the wrong quadrant of the plane", b.x() > cX &&
+			b.y() <= cY);
+		final Vector3dc c = origins.get(2);
+		assertTrue("Point is in the wrong quadrant of the plane", c.x() <= cX &&
+			c.y() > cY);
+		final Vector3dc d = origins.get(3);
+		assertTrue("Point is in the wrong quadrant of the plane", d.x() > cX &&
+			d.y() > cY);
 	}
 
 	@Test
@@ -111,14 +133,14 @@ public class LinePlaneTest {
 		final LinePlane plane = new LinePlane(IMG, IDENTITY, rotateOp);
 
 		// EXECUTE
-		final Stream<Vector3d> origins = plane.getOrigins(4L);
+		final Stream<Vector3dc> origins = plane.getOrigins(4L);
 
 		// VERIFY
 		origins.forEach(o -> {
 			final Vector3d a = new Vector3d(o);
 			a.sub(pointOnPlane);
-			assertTrue("Point " + a.toString() + " is not on the expected plane",
-				normal.dot(a) == 0.0);
+			assertEquals("Point " + a + " is not on the expected plane", 0.0, normal
+				.dot(a), 0.0);
 		});
 	}
 
@@ -134,14 +156,14 @@ public class LinePlaneTest {
 		final LinePlane plane = new LinePlane(IMG, rotation, rotateOp);
 
 		// EXECUTE
-		final Stream<Vector3d> origins = plane.getOrigins(2L);
+		final Stream<Vector3dc> origins = plane.getOrigins(2L);
 
 		// VERIFY
 		origins.forEach(o -> {
 			final Vector3d a = new Vector3d(o);
 			a.sub(pointOnPlane);
-			assertEquals("Point " + a.toString() + " rotated incorrectly", 0.0, normal
-				.dot(a), 1e-12);
+			assertEquals("Point " + a + " rotated incorrectly", 0.0, normal.dot(a),
+				1e-12);
 		});
 	}
 

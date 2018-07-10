@@ -1,42 +1,48 @@
 /*
- * #%L
- * BoneJ: open source tools for trabecular geometry and whole bone shape analysis.
- * %%
- * Copyright (C) 2007 - 2016 Michael Doube, BoneJ developers. See also individual class @authors.
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 package org.bonej.plugins;
 
-import java.awt.*;
+import java.awt.AWTEvent;
+import java.awt.Checkbox;
+import java.awt.Choice;
+import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Vector;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bonej.geometry.FitEllipsoid;
-import org.bonej.geometry.Vectors;
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
-import org.bonej.util.Multithreader;
 import org.scijava.vecmath.Color3f;
 import org.scijava.vecmath.Point3f;
 
@@ -95,42 +101,58 @@ import marchingcubes.MCTriangulator;
  * @author Jonathan Jackson
  * @author Fabrice Cordelires
  * @author Michał Kłosowski
- * @see
- *      <p>
- *      <a href="http://rsbweb.nih.gov/ij/plugins/track/objects.html">3D Object
+ * @see <a href="http://rsbweb.nih.gov/ij/plugins/track/objects.html">3D Object
  *      Counter</a>
- *      </p>
  */
 public class ParticleCounter implements PlugIn, DialogListener {
 
 	/** Foreground value */
-	public final static int FORE = -1;
-
+	static final int FORE = -1;
 	/** Background value */
-	public final static int BACK = 0;
-
-	/** Particle joining method */
-	public final static int MULTI = 0, LINEAR = 1, MAPPED = 2;
-
+	static final int BACK = 0;
 	/** Surface colour style */
-	private final static int GRADIENT = 0, SPLIT = 1;
-
+	private static final int GRADIENT = 0;
+	private static final int SPLIT = 1;
 	private String sPhase = "";
-
 	private String chunkString = "";
+	private JOINING labelMethod = JOINING.MAPPED;
 
-	private int labelMethod = MAPPED;
+	@Override
+	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
+		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
+		final List<?> choices = gd.getChoices();
+		final List<?> checkboxes = gd.getCheckboxes();
+		final List<?> numbers = gd.getNumericFields();
+		// link algorithm choice to chunk size field
+		final Choice choice = (Choice) choices.get(1);
+		final TextField num = (TextField) numbers.get(5);
+		num.setEnabled(choice.getSelectedItem().contentEquals("Multithreaded"));
+		// link moments and ellipsoid choice to unit vector choice
+		final Checkbox momBox = (Checkbox) checkboxes.get(4);
+		final Checkbox elBox = (Checkbox) checkboxes.get(8);
+		final Checkbox vvvBox = (Checkbox) checkboxes.get(9);
+		vvvBox.setEnabled(elBox.getState() || momBox.getState());
+		// link show stack 3d to volume resampling
+		final Checkbox box = (Checkbox) checkboxes.get(16);
+		final TextField numb = (TextField) numbers.get(4);
+		numb.setEnabled(box.getState());
+		// link show surfaces, gradient choice and split value
+		final Checkbox surfbox = (Checkbox) checkboxes.get(12);
+		final Choice col = (Choice) choices.get(0);
+		final TextField split = (TextField) numbers.get(3);
+		col.setEnabled(surfbox.getState());
+		split.setEnabled(surfbox.getState() && col.getSelectedIndex() == 1);
+		DialogModifier.registerMacroValues(gd, gd.getComponents());
+		return true;
+	}
 
 	@Override
 	public void run(final String arg) {
-		if (!ImageCheck.checkEnvironment())
-			return;
 		final ImagePlus imp = IJ.getImage();
 		if (null == imp) {
 			IJ.noImage();
 			return;
 		}
-		final ImageCheck ic = new ImageCheck();
 		if (!ImageCheck.isBinary(imp)) {
 			IJ.error("Binary image required");
 			return;
@@ -163,7 +185,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues[9] = false;
 		gd.addCheckboxGroup(5, 2, labels, defaultValues, headers);
 		gd.addNumericField("Min Volume", 0, 3, 7, units + "³");
-		gd.addNumericField("Max Volume", Double.POSITIVE_INFINITY, 3, 7, units + "³");
+		gd.addNumericField("Max Volume", Double.POSITIVE_INFINITY, 3, 7, units +
+			"³");
 		gd.addNumericField("Surface_resampling", 2, 0);
 		final String[] headers2 = { "Graphical Results", " " };
 		final String[] labels2 = new String[8];
@@ -226,17 +249,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean do3DOriginal = gd.getNextBoolean();
 		final int origResampling = (int) Math.floor(gd.getNextNumber());
 		final String choice = gd.getNextChoice();
-		if (choice.equals(items2[0]))
-			labelMethod = MULTI;
-		else if (choice.equals(items2[1]))
-			labelMethod = LINEAR;
-		else
-			labelMethod = MAPPED;
+		if (choice.equals(items2[0])) labelMethod = JOINING.MULTI;
+		else if (choice.equals(items2[1])) labelMethod = JOINING.LINEAR;
+		else labelMethod = JOINING.MAPPED;
 		final int slicesPerChunk = (int) Math.floor(gd.getNextNumber());
 
 		// get the particles and do the analysis
 		final long start = System.nanoTime();
-		final Object[] result = getParticles(imp, slicesPerChunk, minVol, maxVol, FORE, doExclude);
+		final Object[] result = getParticles(imp, slicesPerChunk, minVol, maxVol,
+			FORE, doExclude);
 		// calculate particle labelling time in ms
 		final long time = (System.nanoTime() - start) / 1000000;
 		IJ.log("Particle labelling finished in " + time + " ms");
@@ -244,13 +265,17 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final long[] particleSizes = getParticleSizes(particleLabels);
 		final int nParticles = particleSizes.length;
 		final double[] volumes = getVolumes(imp, particleSizes);
-		final double[][] centroids = getCentroids(imp, particleLabels, particleSizes);
+		final double[][] centroids = getCentroids(imp, particleLabels,
+			particleSizes);
 		final int[][] limits = getParticleLimits(imp, particleLabels, nParticles);
 
 		// set up resources for analysis
-		ArrayList<List<Point3f>> surfacePoints = new ArrayList<List<Point3f>>();
-		if (doSurfaceArea || doSurfaceVolume || doSurfaceImage || doEllipsoids || doFeret) {
-			surfacePoints = getSurfacePoints(imp, particleLabels, limits, resampling, nParticles);
+		ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
+		if (doSurfaceArea || doSurfaceVolume || doSurfaceImage || doEllipsoids ||
+			doFeret)
+		{
+			surfacePoints = getSurfacePoints(imp, particleLabels, limits, resampling,
+				nParticles);
 		}
 		EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
 		if (doMoments || doAxesImage) {
@@ -259,7 +284,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// calculate dimensions
 		double[] surfaceAreas = new double[nParticles];
 		if (doSurfaceArea) {
-			surfaceAreas = getSurfaceArea(surfacePoints);
+			surfaceAreas = getSurfaceAreas(surfacePoints);
 		}
 		double[] ferets = new double[nParticles];
 		if (doFeret) {
@@ -271,13 +296,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		double[][] eulerCharacters = new double[nParticles][3];
 		if (doEulerCharacters) {
-			eulerCharacters = getEulerCharacter(imp, particleLabels, limits, nParticles);
+			eulerCharacters = getEulerCharacter(imp, particleLabels, limits,
+				nParticles);
 		}
 		double[][] thick = new double[nParticles][2];
 		if (doThickness) {
 			final LocalThickness th = new LocalThickness();
 			final ImagePlus thickImp = th.getLocalThickness(imp, false, doMask);
-			thick = getMeanStdDev(thickImp, particleLabels, particleSizes, 0);
+			thick = getMeanStdDev(thickImp, particleLabels, particleSizes);
 			if (doThickImage) {
 				double max = 0;
 				for (int i = 1; i < nParticles; i++) {
@@ -343,15 +369,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					rt.addValue("Max Thickness (" + units + ")", thick[i][2]);
 				}
 				if (doEllipsoids) {
-					double[] rad = new double[3];
-					double[][] unitV = new double[3][3];
+					final double[] rad;
+					final double[][] unitV;
 					if (ellipsoids[i] == null) {
-						final double[] r = { Double.NaN, Double.NaN, Double.NaN };
-						rad = r;
-						final double[][] u = { { Double.NaN, Double.NaN, Double.NaN },
-								{ Double.NaN, Double.NaN, Double.NaN }, { Double.NaN, Double.NaN, Double.NaN } };
-						unitV = u;
-					} else {
+						rad = new double[] { Double.NaN, Double.NaN, Double.NaN };
+						unitV = new double[][] { { Double.NaN, Double.NaN, Double.NaN }, {
+							Double.NaN, Double.NaN, Double.NaN }, { Double.NaN, Double.NaN,
+								Double.NaN } };
+					}
+					else {
 						final Object[] el = ellipsoids[i];
 						rad = (double[]) el[1];
 						unitV = (double[][]) el[2];
@@ -382,21 +408,26 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			IJ.run("Fire");
 		}
 		if (doParticleSizeImage) {
-			displayParticleValues(imp, particleLabels, volumes, "volume").show();
+			displayParticleValues(imp, particleLabels, volumes).show();
 			IJ.run("Fire");
 		}
 
 		// show 3D renderings
-		if (doSurfaceImage || doCentroidImage || doAxesImage || do3DOriginal || doEllipsoidImage) {
+		if (doSurfaceImage || doCentroidImage || doAxesImage || do3DOriginal ||
+			doEllipsoidImage)
+		{
+
 			final Image3DUniverse univ = new Image3DUniverse();
 			if (doSurfaceImage) {
-				displayParticleSurfaces(univ, surfacePoints, colourMode, volumes, splitValue);
+				displayParticleSurfaces(univ, surfacePoints, colourMode, volumes,
+					splitValue);
 			}
 			if (doCentroidImage) {
 				displayCentroids(centroids, univ);
 			}
 			if (doAxesImage) {
-				final double[][] lengths = (double[][]) getMaxDistances(imp, particleLabels, centroids, eigens)[1];
+				final double[][] lengths = (double[][]) getMaxDistances(imp,
+					particleLabels, centroids, eigens)[1];
 				displayPrincipalAxes(univ, eigens, centroids, lengths);
 			}
 			if (doEllipsoidImage) {
@@ -410,30 +441,316 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		IJ.showProgress(1.0);
 		IJ.showStatus("Particle Analysis Complete");
 		UsageReporter.reportEvent(this).send();
-		return;
 	}
 
-	private void displayEllipsoids(final Object[][] ellipsoids, final Image3DUniverse univ) {
+	/**
+	 * Add all the neighbouring labels of a pixel to the map, except 0
+	 * (background) and the pixel's own label, which is already in the map. The
+	 * LUT gets updated with the minimum neighbour found, but this is only within
+	 * the first neighbours and not the minimum label in the pixel's neighbour
+	 * network
+	 *
+	 * @param map a map of LUT values.
+	 * @param nbh a neighbourhood in the image.
+	 * @param centre current pixel's label
+	 */
+	private static void addNeighboursToMap(final List<HashSet<Integer>> map,
+		final int[] nbh, final int centre)
+	{
+		final HashSet<Integer> set = map.get(centre);
+		Arrays.stream(nbh).filter(n -> n > 0).forEach(set::add);
+	}
+
+	private static void applyLUT(final int[][] particleLabels, final int[] lut,
+		final int w, final int h, final int d)
+	{
+		for (int z = 0; z < d; z++) {
+			IJ.showStatus("Applying LUT...");
+			IJ.showProgress(z, d - 1);
+			final int[] slice = particleLabels[z];
+			for (int y = 0; y < h; y++) {
+				final int yw = y * w;
+				for (int x = 0; x < w; x++) {
+					final int i = yw + x;
+					final int label = slice[i];
+					if (label == 0) continue;
+					slice[i] = lut[label];
+				}
+			}
+		}
+	}
+
+	private static boolean checkConsistence(final int[] lut,
+		final List<HashSet<Integer>> map)
+	{
+		final int l = lut.length;
+		for (int i = 1; i < l; i++) {
+			if (!map.get(lut[i]).contains(i)) return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Connect structures = minimisation of IDs
+	 *
+	 * @param imp an image.
+	 * @param workArray work array.
+	 * @param particleLabels particles in the image.
+	 * @param phase foreground or background
+	 * @param scanRanges int[][] listgetPixel(particleLabels, x, y, z, w, h,
+	 *          d);ing ranges to run connectStructures on
+	 */
+	private void connectStructures(final ImagePlus imp, final byte[][] workArray,
+		final int[][] particleLabels, final int phase, final int[][] scanRanges)
+	{
+		IJ.showStatus("Connecting " + sPhase + " structures" + chunkString);
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		for (int c = 0; c < scanRanges[0].length; c++) {
+			final int sR0 = scanRanges[0][c];
+			final int sR1 = scanRanges[1][c];
+			final int sR2 = scanRanges[2][c];
+			final int sR3 = scanRanges[3][c];
+			for (int z = sR0; z < sR1; z++) {
+				for (int y = 0; y < h; y++) {
+					final int rowIndex = y * w;
+					for (int x = 0; x < w; x++) {
+						final int arrayIndex = rowIndex + x;
+						final List<int[]> coordinates;
+						if (workArray[z][arrayIndex] == BACK) {
+							coordinates = get26NeighbourhoodCoordinates(x, y, z, w, h, d);
+						}
+						else if (workArray[z][arrayIndex] == FORE &&
+							particleLabels[z][arrayIndex] > 1)
+						{
+							coordinates = get6NeighbourhoodCoordinates(x, y, z, w, h, d);
+						}
+						else {
+							continue;
+						}
+						replaceLabelsWithMinimum(coordinates, workArray, particleLabels, w,
+							phase, sR2, sR3);
+					}
+				}
+				if (phase == FORE) {
+					IJ.showStatus("Connecting foreground structures" + chunkString);
+					IJ.showProgress(z, d);
+				}
+				else {
+					IJ.showStatus("Connecting background structures" + chunkString);
+					IJ.showProgress(z, d + 1);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Find duplicated values and update the LUT
+	 *
+	 * @param counter counts of LUT values.
+	 * @param map map of LUT values.
+	 * @param lut a look-up table.
+	 * @return total number of duplicate values found.
+	 */
+	private static long countDuplicates(final int[] counter,
+		final List<HashSet<Integer>> map, final int[] lut)
+	{
+		for (int i = 1; i < map.size(); i++) {
+			final Set<Integer> set = map.get(i);
+			for (final Integer val : set) {
+				final int v = val;
+				// every time a value is seen, log it
+				counter[v]++;
+				// update its LUT value if value was
+				// found in a set with lower than current
+				// lut value
+				if (lut[v] > i) lut[v] = i;
+			}
+		}
+		minimiseLutArray(lut);
+		// all values should be seen only once,
+		// count how many >1s there are.
+		return Arrays.stream(counter).filter(i -> i > 1).count();
+	}
+
+	/**
+	 * Calculate the cross product of 3 Point3f's, which describe two vectors
+	 * joined at the tails. Can be used to find the plane / surface normal of a
+	 * triangle. Half of its magnitude is the area of the triangle.
+	 *
+	 * @param point0 both vectors' tails
+	 * @param point1 vector 1's head
+	 * @param point2 vector 2's head
+	 * @return cross product vector
+	 */
+	private static Point3f crossProduct(final Point3f point0,
+		final Point3f point1, final Point3f point2)
+	{
+		final double x1 = point1.x - point0.x;
+		final double y1 = point1.y - point0.y;
+		final double z1 = point1.z - point0.z;
+		final double x2 = point2.x - point0.x;
+		final double y2 = point2.y - point0.y;
+		final double z2 = point2.z - point0.z;
+		final Point3f crossVector = new Point3f();
+		crossVector.x = (float) (y1 * z2 - z1 * y2);
+		crossVector.y = (float) (z1 * x2 - x1 * z2);
+		crossVector.z = (float) (x1 * y2 - y1 * x2);
+		return crossVector;
+	}
+
+	private static void display3DOriginal(final ImagePlus imp,
+		final int resampling, final Image3DUniverse univ)
+	{
+		final Color3f colour = new Color3f(1.0f, 1.0f, 1.0f);
+		final boolean[] channels = { true, true, true };
+		try {
+			univ.addVoltex(imp, colour, imp.getTitle(), 0, channels, resampling)
+				.setLocked(true);
+		}
+		catch (final NullPointerException npe) {
+			IJ.log("3D Viewer was closed before rendering completed.");
+		}
+	}
+
+	/**
+	 * Draws 3 orthogonal axes defined by the centroid, unitvector and axis
+	 * length.
+	 *
+	 * @param univ the universe where axes are drawn.
+	 * @param centroid centroid of a particle.
+	 * @param unitVector orientation of the particle.
+	 * @param lengths lengths of the axes.
+	 * @param green green component of the axes' color.
+	 * @param title text shown by the axes.
+	 */
+	private static void displayAxes(final Image3DUniverse univ,
+		final double[] centroid, final double[][] unitVector,
+		final double[] lengths, final float green, final String title)
+	{
+		final double cX = centroid[0];
+		final double cY = centroid[1];
+		final double cZ = centroid[2];
+		final double eVec1x = unitVector[0][0];
+		final double eVec1y = unitVector[1][0];
+		final double eVec1z = unitVector[2][0];
+		final double eVec2x = unitVector[0][1];
+		final double eVec2y = unitVector[1][1];
+		final double eVec2z = unitVector[2][1];
+		final double eVec3x = unitVector[0][2];
+		final double eVec3y = unitVector[1][2];
+		final double eVec3z = unitVector[2][2];
+		final double l1 = lengths[0];
+		final double l2 = lengths[1];
+		final double l3 = lengths[2];
+
+		final List<Point3f> mesh = new ArrayList<>();
+		final Point3f start1 = new Point3f();
+		start1.x = (float) (cX - eVec1x * l1);
+		start1.y = (float) (cY - eVec1y * l1);
+		start1.z = (float) (cZ - eVec1z * l1);
+		mesh.add(start1);
+
+		final Point3f end1 = new Point3f();
+		end1.x = (float) (cX + eVec1x * l1);
+		end1.y = (float) (cY + eVec1y * l1);
+		end1.z = (float) (cZ + eVec1z * l1);
+		mesh.add(end1);
+
+		final Point3f start2 = new Point3f();
+		start2.x = (float) (cX - eVec2x * l2);
+		start2.y = (float) (cY - eVec2y * l2);
+		start2.z = (float) (cZ - eVec2z * l2);
+		mesh.add(start2);
+
+		final Point3f end2 = new Point3f();
+		end2.x = (float) (cX + eVec2x * l2);
+		end2.y = (float) (cY + eVec2y * l2);
+		end2.z = (float) (cZ + eVec2z * l2);
+		mesh.add(end2);
+
+		final Point3f start3 = new Point3f();
+		start3.x = (float) (cX - eVec3x * l3);
+		start3.y = (float) (cY - eVec3y * l3);
+		start3.z = (float) (cZ - eVec3z * l3);
+		mesh.add(start3);
+
+		final Point3f end3 = new Point3f();
+		end3.x = (float) (cX + eVec3x * l3);
+		end3.y = (float) (cY + eVec3y * l3);
+		end3.z = (float) (cZ + eVec3z * l3);
+		mesh.add(end3);
+
+		final Color3f aColour = new Color3f(1.0f, green, 0.0f);
+		try {
+			univ.addLineMesh(mesh, aColour, title, false).setLocked(true);
+		}
+		catch (final NullPointerException npe) {
+			IJ.log("3D Viewer was closed before rendering completed.");
+		}
+	}
+
+	/**
+	 * Draw the particle centroids in a 3D viewer
+	 *
+	 * @param centroids [n][3] centroids of particles.
+	 * @param univ universe where the centroids are displayed.
+	 */
+	private static void displayCentroids(final double[][] centroids,
+		final Image3DUniverse univ)
+	{
+		final int nCentroids = centroids.length;
+		for (int p = 1; p < nCentroids; p++) {
+			IJ.showStatus("Rendering centroids...");
+			IJ.showProgress(p, nCentroids);
+			final Point3f centroid = new Point3f();
+			centroid.x = (float) centroids[p][0];
+			centroid.y = (float) centroids[p][1];
+			centroid.z = (float) centroids[p][2];
+			final List<Point3f> point = new ArrayList<>();
+			point.add(centroid);
+			final CustomPointMesh mesh = new CustomPointMesh(point);
+			mesh.setPointSize(5.0f);
+			final float red = 0.0f;
+			final float green = 0.5f * p / nCentroids;
+			final float blue = 1.0f;
+			final Color3f cColour = new Color3f(red, green, blue);
+			mesh.setColor(cColour);
+			try {
+				univ.addCustomMesh(mesh, "Centroid " + p).setLocked(true);
+			}
+			catch (final NullPointerException npe) {
+				IJ.log("3D Viewer was closed before rendering completed.");
+				return;
+			}
+		}
+	}
+
+	private static void displayEllipsoids(final Object[][] ellipsoids,
+		final Image3DUniverse univ)
+	{
 		final int nEllipsoids = ellipsoids.length;
-		ellipsoidLoop: for (int el = 1; el < nEllipsoids; el++) {
+		for (int el = 1; el < nEllipsoids; el++) {
 			IJ.showStatus("Rendering ellipsoids...");
 			IJ.showProgress(el, nEllipsoids);
-			if (ellipsoids[el] == null)
-				continue ellipsoidLoop;
-			final double[] centre = (double[]) ellipsoids[el][0];
-			final double[] radii = (double[]) ellipsoids[el][1];
-			final double[][] eV = (double[][]) ellipsoids[el][2];
-			for (int r = 0; r < 3; r++) {
-				final Double s = radii[r];
-				if (s.equals(Double.NaN))
-					continue ellipsoidLoop;
+			if (ellipsoids[el] == null) {
+				continue;
 			}
+			final double[] radii = (double[]) ellipsoids[el][1];
+			if (!isRadiiValid(radii)) {
+				continue;
+			}
+			final double[] centre = (double[]) ellipsoids[el][0];
+			final double[][] eV = (double[][]) ellipsoids[el][2];
 			final double a = radii[0]; // longest
 			final double b = radii[1]; // middle
 			final double c = radii[2]; // shortest
-			if (a < b || b < c || a < c)
+			if (a < b || b < c || a < c) {
 				IJ.log("Error: Bad ellipsoid radius ordering! Surface: " + el);
-			final double[][] ellipsoid = FitEllipsoid.testEllipsoid(a, b, c, 0, 0, 0, 0, 0, 1000, false);
+			}
+			final double[][] ellipsoid = FitEllipsoid.testEllipsoid(a, b, c, 0, 0, 0,
+				0, 0, 1000, false);
 			final int nPoints = ellipsoid.length;
 			// rotate points by eigenvector matrix
 			// and add transformation for centre
@@ -441,17 +758,20 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				final double x = ellipsoid[p][0];
 				final double y = ellipsoid[p][1];
 				final double z = ellipsoid[p][2];
-				ellipsoid[p][0] = x * eV[0][0] + y * eV[0][1] + z * eV[0][2] + centre[0];
-				ellipsoid[p][1] = x * eV[1][0] + y * eV[1][1] + z * eV[1][2] + centre[1];
-				ellipsoid[p][2] = x * eV[2][0] + y * eV[2][1] + z * eV[2][2] + centre[2];
+				ellipsoid[p][0] = x * eV[0][0] + y * eV[0][1] + z * eV[0][2] +
+					centre[0];
+				ellipsoid[p][1] = x * eV[1][0] + y * eV[1][1] + z * eV[1][2] +
+					centre[1];
+				ellipsoid[p][2] = x * eV[2][0] + y * eV[2][1] + z * eV[2][2] +
+					centre[2];
 			}
 
-			final List<Point3f> points = new ArrayList<Point3f>();
-			for (int p = 0; p < nPoints; p++) {
+			final List<Point3f> points = new ArrayList<>();
+			for (final double[] anEllipsoid : ellipsoid) {
 				final Point3f e = new Point3f();
-				e.x = (float) ellipsoid[p][0];
-				e.y = (float) ellipsoid[p][1];
-				e.z = (float) ellipsoid[p][2];
+				e.x = (float) anEllipsoid[0];
+				e.y = (float) anEllipsoid[1];
+				e.z = (float) anEllipsoid[2];
 				points.add(e);
 			}
 			final CustomPointMesh mesh = new CustomPointMesh(points);
@@ -463,174 +783,513 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			mesh.setColor(cColour);
 			try {
 				univ.addCustomMesh(mesh, "Ellipsoid " + el).setLocked(true);
-			} catch (final NullPointerException npe) {
+			}
+			catch (final NullPointerException npe) {
 				IJ.log("3D Viewer was closed before rendering completed.");
 				return;
 			}
 			// Add some axes
-			displayAxes(univ, centre, eV, radii, 1.0f, 1.0f, 0.0f, "Ellipsoid Axes " + el);
+			displayAxes(univ, centre, eV, radii, 1.0f, "Ellipsoid Axes " + el);
 		}
-	}
-
-	private Object[][] getEllipsoids(final ArrayList<List<Point3f>> surfacePoints) {
-		final Object[][] ellipsoids = new Object[surfacePoints.size()][];
-		int p = 0;
-		final Iterator<List<Point3f>> partIter = surfacePoints.iterator();
-		while (partIter.hasNext()) {
-			final List<Point3f> points = partIter.next();
-			if (points == null) {
-				p++;
-				continue;
-			}
-			final Iterator<Point3f> pointIter = points.iterator();
-			final double[][] coOrdinates = new double[points.size()][3];
-			int i = 0;
-			while (pointIter.hasNext()) {
-				final Point3f point = pointIter.next();
-				coOrdinates[i][0] = point.x;
-				coOrdinates[i][1] = point.y;
-				coOrdinates[i][2] = point.z;
-				i++;
-			}
-			try {
-				ellipsoids[p] = FitEllipsoid.yuryPetrov(coOrdinates);
-			} catch (final RuntimeException re) {
-				IJ.log("Could not fit ellipsoid to surface " + p);
-				ellipsoids[p] = null;
-			}
-			p++;
-		}
-		return ellipsoids;
 	}
 
 	/**
-	 * Get the mean and standard deviation of pixel values above a minimum value
-	 * for each particle in a particle label work array
+	 * Display the particle labels as an ImagePlus
 	 *
-	 * @param imp Input image containing pixel values
-	 * @param particleLabels workArray containing particle labels
-	 * @param particleSizes array of particle sizes as pixel counts
-	 * @param threshold restrict calculation to values > i
-	 * @return array containing mean, std dev and max pixel values for each
-	 *         particle
+	 * @param particleLabels particles labelled in the original image.
+	 * @param imp original image, used for image dimensions, calibration and
+	 *          titles
+	 * @return an image of the particles.
 	 */
-	private double[][] getMeanStdDev(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes,
-			final int threshold) {
-		final int nParticles = particleSizes.length;
-		final int d = imp.getImageStackSize();
-		final int wh = imp.getWidth() * imp.getHeight();
-		final ImageStack stack = imp.getImageStack();
-		final double[] sums = new double[nParticles];
-		for (int z = 0; z < d; z++) {
-			final float[] pixels = (float[]) stack.getPixels(z + 1);
-			final int[] labelPixels = particleLabels[z];
-			for (int i = 0; i < wh; i++) {
-				final double value = pixels[i];
-				if (value > threshold) {
-					sums[labelPixels[i]] += value;
-				}
-			}
-		}
-		final double[][] meanStdDev = new double[nParticles][3];
-		for (int p = 1; p < nParticles; p++) {
-			meanStdDev[p][0] = sums[p] / particleSizes[p];
-		}
-
-		final double[] sumSquares = new double[nParticles];
-		for (int z = 0; z < d; z++) {
-			final float[] pixels = (float[]) stack.getPixels(z + 1);
-			final int[] labelPixels = particleLabels[z];
-			for (int i = 0; i < wh; i++) {
-				final double value = pixels[i];
-				if (value > threshold) {
-					final int p = labelPixels[i];
-					final double residual = value - meanStdDev[p][0];
-					sumSquares[p] += residual * residual;
-					meanStdDev[p][2] = Math.max(meanStdDev[p][2], value);
-				}
-			}
-		}
-		for (int p = 1; p < nParticles; p++) {
-			meanStdDev[p][1] = Math.sqrt(sumSquares[p] / particleSizes[p]);
-		}
-		return meanStdDev;
-	}
-
-	/**
-	 * Get the Euler characteristic of each particle
-	 *
-	 * @param imp an image.
-	 * @param particleLabels particles of the image.
-	 * @param limits limits of the particles.
-	 * @param nParticles number particles.
-	 * @return euler characteristic of each image.
-	 */
-	private double[][] getEulerCharacter(final ImagePlus imp, final int[][] particleLabels, final int[][] limits,
-			final int nParticles) {
-		final Connectivity con = new Connectivity();
-		final double[][] eulerCharacters = new double[nParticles][3];
-		for (int p = 1; p < nParticles; p++) {
-			final ImagePlus particleImp = getBinaryParticle(p, imp, particleLabels, limits, 1);
-			final double euler = con.getSumEuler(particleImp);
-			final double cavities = getNCavities(particleImp);
-			// Calculate number of holes and cavities using
-			// Euler = particles - holes + cavities
-			// where particles = 1
-			final double holes = cavities - euler + 1;
-			final double[] bettis = { euler, holes, cavities };
-			eulerCharacters[p] = bettis;
-		}
-		return eulerCharacters;
-	}
-
-	private int getNCavities(final ImagePlus imp) {
-		final Object[] result = getParticles(imp, 4, BACK);
-		final long[] particleSizes = (long[]) result[2];
-		final int nParticles = particleSizes.length;
-		final int nCavities = nParticles - 2; // 1 particle is the background
-		return nCavities;
-	}
-
-	/**
-	 * Get the minimum and maximum x, y and z coordinates of each particle
-	 *
-	 * @param imp ImagePlus (used for stack size)
-	 * @param particleLabels work array containing labelled particles
-	 * @param nParticles number of particles in the stack
-	 * @return int[][] containing x, y and z minima and maxima.
-	 */
-	private int[][] getParticleLimits(final ImagePlus imp, final int[][] particleLabels, final int nParticles) {
+	private static ImagePlus displayParticleLabels(final int[][] particleLabels,
+		final ImagePlus imp)
+	{
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
-		final int[][] limits = new int[nParticles][6];
-		for (int i = 0; i < nParticles; i++) {
-			limits[i][0] = Integer.MAX_VALUE; // x min
-			limits[i][1] = 0; // x max
-			limits[i][2] = Integer.MAX_VALUE; // y min
-			limits[i][3] = 0; // y max
-			limits[i][4] = Integer.MAX_VALUE; // z min
-			limits[i][5] = 0; // z max
+		final int wh = w * h;
+		final ImageStack stack = new ImageStack(w, h);
+		double max = 0;
+		for (int z = 0; z < d; z++) {
+			final float[] slicePixels = new float[wh];
+			for (int i = 0; i < wh; i++) {
+				slicePixels[i] = particleLabels[z][i];
+				max = Math.max(max, slicePixels[i]);
+			}
+			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), slicePixels);
 		}
+		final ImagePlus impParticles = new ImagePlus(imp.getShortTitle() + "_parts",
+			stack);
+		impParticles.setCalibration(imp.getCalibration());
+		impParticles.getProcessor().setMinAndMax(0, max);
+		if (max > Math.pow(2, 24)) IJ.error("Warning",
+			"More than 16777216 (2^24) particles./n/n" +
+				"Particle image labels are inaccurate above this number.");
+		return impParticles;
+	}
+
+	/**
+	 * Draw the particle surfaces in a 3D viewer
+	 *
+	 * @param univ universe where the centroids are displayed.
+	 * @param surfacePoints points of each particle.
+	 */
+	private static void displayParticleSurfaces(final Image3DUniverse univ,
+		final Collection<List<Point3f>> surfacePoints, final int colourMode,
+		final double[] volumes, final double splitValue)
+	{
+		int p = 0;
+		final int nParticles = surfacePoints.size();
+		for (final List<Point3f> surfacePoint : surfacePoints) {
+			IJ.showStatus("Rendering surfaces...");
+			IJ.showProgress(p, nParticles);
+			if (p > 0 && !surfacePoint.isEmpty()) {
+				Color3f pColour = new Color3f(0, 0, 0);
+				if (colourMode == GRADIENT) {
+					final float red = 1.0f - p / (float) nParticles;
+					final float green = 1.0f - red;
+					final float blue = p / (2.0f * nParticles);
+					pColour = new Color3f(red, green, blue);
+				}
+				else if (colourMode == SPLIT) {
+					if (volumes[p] > splitValue) {
+						// red if over
+						pColour = new Color3f(1.0f, 0.0f, 0.0f);
+					}
+					else {
+						// yellow if under
+						pColour = new Color3f(1.0f, 1.0f, 0.0f);
+					}
+				}
+				// Add the mesh
+				try {
+					univ.addTriangleMesh(surfacePoint, pColour, "Surface " + p).setLocked(
+						true);
+				}
+				catch (final NullPointerException npe) {
+					IJ.log("3D Viewer was closed before rendering completed.");
+					return;
+				}
+			}
+			p++;
+		}
+	}
+
+	/**
+	 * Create an image showing some particle measurement
+	 *
+	 * @param imp an image.
+	 * @param particleLabels the particles in the image.
+	 * @param values list of values whose array indices correspond to
+	 *          particlelabels
+	 * @return ImagePlus with particle labels substituted with some value
+	 */
+	private static ImagePlus displayParticleValues(final ImagePlus imp,
+		final int[][] particleLabels, final double[] values)
+	{
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		final int wh = w * h;
+		final float[][] pL = new float[d][wh];
+		values[0] = 0; // don't colour the background
+		final ImageStack stack = new ImageStack(w, h);
+		for (int z = 0; z < d; z++) {
+			for (int i = 0; i < wh; i++) {
+				final int p = particleLabels[z][i];
+				pL[z][i] = (float) values[p];
+			}
+			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), pL[z]);
+		}
+		final double max = Arrays.stream(values).max().orElse(0.0);
+		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + "volume",
+			stack);
+		impOut.setCalibration(imp.getCalibration());
+		impOut.getProcessor().setMinAndMax(0, max);
+		return impOut;
+	}
+
+	private static void displayPrincipalAxes(final Image3DUniverse univ,
+		final EigenvalueDecomposition[] eigens, final double[][] centroids,
+		final double[][] lengths)
+	{
+		final int nEigens = eigens.length;
+		for (int p = 1; p < nEigens; p++) {
+			IJ.showStatus("Rendering principal axes...");
+			IJ.showProgress(p, nEigens);
+			final Matrix eVec = eigens[p].getV();
+			displayAxes(univ, centroids[p], eVec.getArray(), lengths[p], 0.0f,
+				"Principal Axes " + p);
+		}
+	}
+
+	/**
+	 * Scans edge voxels and set all touching particles to background
+	 *
+	 * @param imp an image.
+	 * @param particleLabels particles in the image.
+	 */
+	private void excludeOnEdges(final ImagePlus imp, final int[][] particleLabels,
+		final byte[][] workArray)
+	{
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		final long[] particleSizes = getParticleSizes(particleLabels);
+		final int nLabels = particleSizes.length;
+		final int[] newLabel = new int[nLabels];
+		for (int i = 0; i < nLabels; i++)
+			newLabel[i] = i;
+
+		// scan faces
+		// top and bottom faces
+		for (int y = 0; y < h; y++) {
+			final int index = y * w;
+			for (int x = 0; x < w; x++) {
+				final int pt = particleLabels[0][index + x];
+				if (pt > 0) newLabel[pt] = 0;
+				final int pb = particleLabels[d - 1][index + x];
+				if (pb > 0) newLabel[pb] = 0;
+			}
+		}
+
+		// west and east faces
+		for (int z = 0; z < d; z++) {
+			for (int y = 0; y < h; y++) {
+				final int pw = particleLabels[z][y * w];
+				final int pe = particleLabels[z][y * w + w - 1];
+				if (pw > 0) newLabel[pw] = 0;
+				if (pe > 0) newLabel[pe] = 0;
+			}
+		}
+
+		// north and south faces
+		final int lastRow = w * (h - 1);
+		for (int z = 0; z < d; z++) {
+			for (int x = 0; x < w; x++) {
+				final int pn = particleLabels[z][x];
+				final int ps = particleLabels[z][lastRow + x];
+				if (pn > 0) newLabel[pn] = 0;
+				if (ps > 0) newLabel[ps] = 0;
+			}
+		}
+
+		// replace labels
+		final int wh = w * h;
+		for (int z = 0; z < d; z++) {
+			for (int i = 0; i < wh; i++) {
+				final int p = particleLabels[z][i];
+				final int nL = newLabel[p];
+				if (nL == 0) {
+					particleLabels[z][i] = 0;
+					workArray[z][i] = 0;
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * Remove particles outside user-specified volume thresholds
+	 *
+	 * @param imp ImagePlus, used for calibration
+	 * @param workArray binary foreground and background information
+	 * @param particleLabels Packed 3D array of particle labels
+	 * @param minVol minimum (inclusive) particle volume
+	 * @param maxVol maximum (inclusive) particle volume
+	 * @param phase phase we are interested in
+	 */
+	private void filterParticles(final ImagePlus imp, final byte[][] workArray,
+		final int[][] particleLabels, final double minVol, final double maxVol,
+		final int phase)
+	{
+		if (minVol == 0 && maxVol == Double.POSITIVE_INFINITY) return;
+		final int d = imp.getImageStackSize();
+		final int wh = workArray[0].length;
+		final long[] particleSizes = getParticleSizes(particleLabels);
+		final double[] particleVolumes = getVolumes(imp, particleSizes);
+		final byte flip;
+		if (phase == FORE) {
+			flip = 0;
+		}
+		else {
+			flip = (byte) 255;
+		}
+		for (int z = 0; z < d; z++) {
+			for (int i = 0; i < wh; i++) {
+				final int p = particleLabels[z][i];
+				final double v = particleVolumes[p];
+				if (v < minVol || v > maxVol) {
+					workArray[z][i] = flip;
+					particleLabels[z][i] = 0;
+				}
+			}
+		}
+	}
+
+	private static boolean findFirstAppearance(final int[] lut,
+		final List<HashSet<Integer>> map)
+	{
+		final int l = map.size();
+		boolean changed = false;
+		for (int i = 0; i < l; i++) {
+			final HashSet<Integer> set = map.get(i);
+			for (final Integer val : set) {
+				// if the current lut value is greater
+				// than the current position
+				// update lut with current position
+				if (lut[val] > i) {
+					lut[val] = i;
+					changed = true;
+				}
+			}
+		}
+		return changed;
+	}
+
+	private static int findMinimumLabel(final Iterable<int[]> coordinates,
+		final byte[][] workArray, final int[][] particleLabels, final int w,
+		final int phase, final int minStart)
+	{
+		int minLabel = minStart;
+		for (final int[] coordinate : coordinates) {
+			final int z = coordinate[2];
+			final int index = getOffset(coordinate[0], coordinate[1], w);
+			if (workArray[z][index] == phase) {
+				final int label = particleLabels[z][index];
+				if (label != 0 && label < minLabel) {
+					minLabel = label;
+				}
+			}
+		}
+		return minLabel;
+	}
+
+	/**
+	 * Go through all pixels and assign initial particle label
+	 *
+	 * @param imp an image.
+	 * @param workArray byte[] array containing pixel values
+	 * @param phase FORE or BACK for foreground of background respectively
+	 * @return particleLabels int[] array containing label associating every pixel
+	 *         with a particle
+	 */
+	private int[][] firstIDAttribution(final ImagePlus imp,
+		final byte[][] workArray, final int phase)
+	{
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		final int[] bounds = { w, h, d };
+		final int wh = w * h;
+		IJ.showStatus("Finding " + sPhase + " structures");
+		final int[][] particleLabels = new int[d][wh];
+		int ID = 1;
+		final BiFunction<int[], int[], List<int[]>> neighbourhoodFinder;
+		if (phase == BACK) {
+			neighbourhoodFinder = ParticleCounter::get6NeighbourhoodCoordinates;
+		}
+		else {
+			neighbourhoodFinder = ParticleCounter::get26NeighbourhoodCoordinates;
+		}
+		for (int z = 0; z < d; z++) {
+			for (int y = 0; y < h; y++) {
+				final int rowIndex = y * w;
+				for (int x = 0; x < w; x++) {
+					final int arrayIndex = rowIndex + x;
+					if (workArray[z][arrayIndex] != phase) {
+						continue;
+					}
+					particleLabels[z][arrayIndex] = ID;
+					final List<int[]> coordinates = neighbourhoodFinder.apply(new int[] {
+						x, y, z }, bounds);
+					coordinates.add(new int[] { x, y, z });
+					final int minTag = findMinimumLabel(coordinates, workArray,
+						particleLabels, w, phase, ID);
+					particleLabels[z][arrayIndex] = minTag;
+					if (minTag == ID) {
+						ID++;
+					}
+				}
+			}
+			IJ.showProgress(z, d);
+		}
+		return particleLabels;
+	}
+
+	/**
+	 * Get neighborhood of a pixel in a 3D image (0 border conditions)
+	 *
+	 * @param neighborhood a neighbourhood in the image.
+	 * @param image 3D image (int[][])
+	 * @param x0 x- coordinate
+	 * @param y0 y- coordinate
+	 * @param z0 z- coordinate (in image stacks the indexes start at 1)
+	 * @param w width of the image.
+	 * @param h height of the image.
+	 * @param d depth of the image.
+	 */
+	private static void get26Neighborhood(final int[] neighborhood,
+		final int[][] image, final int x0, final int y0, final int z0, final int w,
+		final int h, final int d)
+	{
+		int i = 0;
+		for (int z = z0 - 1; z < z0 + 1; z++) {
+			for (int y = y0 - 1; y < y0 + 1; y++) {
+				for (int x = x0 - 1; x < x0 + 1; x++) {
+					if (x == x0 && y == y0 && z == z0) {
+						continue;
+					}
+					neighborhood[i] = getPixel(image, x, y, z, w, h, d);
+					i++;
+				}
+			}
+		}
+	}
+
+	private static List<int[]> get26NeighbourhoodCoordinates(final int[] voxel,
+		final int[] bounds)
+	{
+		return get26NeighbourhoodCoordinates(voxel[0], voxel[1], voxel[2],
+			bounds[0], bounds[1], bounds[2]);
+	}
+
+	private static List<int[]> get26NeighbourhoodCoordinates(final int x0,
+		final int y0, final int z0, final int w, final int h, final int d)
+	{
+		final List<int[]> coordinates = new ArrayList<>();
+		for (int z = z0 - 1; z <= z0 + 1; z++) {
+			for (int y = y0 - 1; y <= y0 + 1; y++) {
+				for (int x = x0 - 1; x <= x0 + 1; x++) {
+					if (z == z0 && y == y0 && x == x0) {
+						continue;
+					}
+					if (withinBounds(x, y, z, w, h, d)) {
+						coordinates.add(new int[] { x, y, z });
+					}
+				}
+			}
+		}
+		return coordinates;
+	}
+
+	private static void get6Neighborhood(final int[] neighborhood,
+		final int[][] image, final int x, final int y, final int z, final int w,
+		final int h, final int d)
+	{
+		neighborhood[0] = getPixel(image, x - 1, y, z, w, h, d);
+		neighborhood[1] = getPixel(image, x, y - 1, z, w, h, d);
+		neighborhood[2] = getPixel(image, x, y, z - 1, w, h, d);
+		neighborhood[3] = getPixel(image, x + 1, y, z, w, h, d);
+		neighborhood[4] = getPixel(image, x, y + 1, z, w, h, d);
+		neighborhood[5] = getPixel(image, x, y, z + 1, w, h, d);
+	}
+
+	private static List<int[]> get6NeighbourhoodCoordinates(final int[] voxel,
+		final int[] bounds)
+	{
+		return get26NeighbourhoodCoordinates(voxel[0], voxel[1], voxel[2],
+				bounds[0], bounds[1], bounds[2]);
+	}
+
+	private static List<int[]> get6NeighbourhoodCoordinates(final int x0,
+		final int y0, final int z0, final int w, final int h, final int d)
+	{
+		return Stream.of(new int[] { x0 - 1, y0, z0 }, new int[] { x0 + 1, y0, z0 },
+			new int[] { x0, y0 - 1, z0 }, new int[] { x0, y0 + 1, z0 }, new int[] {
+				x0, y0, z0 - 1 }, new int[] { x0, y0, z0 + 1 }).filter(
+					a -> withinBounds(a[0], a[1], a[2], w, h, d)).collect(Collectors
+						.toList());
+	}
+
+	/**
+	 * create a binary ImagePlus containing a single particle and which 'just
+	 * fits' the particle
+	 *
+	 * @param p The particle ID to get
+	 * @param imp original image, used for calibration
+	 * @param particleLabels work array of particle labels
+	 * @param limits x,y and z limits of each particle
+	 * @param padding amount of empty space to pad around each particle
+	 * @return a cropped single particle image.
+	 */
+	private static ImagePlus getBinaryParticle(final int p, final ImagePlus imp,
+		final int[][] particleLabels, final int[][] limits, final int padding)
+	{
+
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		final int xMin = Math.max(0, limits[p][0] - padding);
+		final int xMax = Math.min(w - 1, limits[p][1] + padding);
+		final int yMin = Math.max(0, limits[p][2] - padding);
+		final int yMax = Math.min(h - 1, limits[p][3] + padding);
+		final int zMin = Math.max(0, limits[p][4] - padding);
+		final int zMax = Math.min(d - 1, limits[p][5] + padding);
+		final int stackWidth = xMax - xMin + 1;
+		final int stackHeight = yMax - yMin + 1;
+		final int stackSize = stackWidth * stackHeight;
+		final ImageStack stack = new ImageStack(stackWidth, stackHeight);
+		for (int z = zMin; z <= zMax; z++) {
+			final byte[] slice = new byte[stackSize];
+			int i = 0;
+			for (int y = yMin; y <= yMax; y++) {
+				final int sourceIndex = y * w;
+				for (int x = xMin; x <= xMax; x++) {
+					if (particleLabels[z][sourceIndex + x] == p) {
+						slice[i] = (byte) 0xFF;
+					}
+					i++;
+				}
+			}
+			stack.addSlice(imp.getStack().getSliceLabel(z + 1), slice);
+		}
+		final ImagePlus binaryImp = new ImagePlus("Particle_" + p, stack);
+		final Calibration cal = imp.getCalibration();
+		binaryImp.setCalibration(cal);
+		return binaryImp;
+	}
+
+	/**
+	 * Get the centroids of all the particles in real units
+	 *
+	 * @param imp an image.
+	 * @param particleLabels particles in the image.
+	 * @param particleSizes sizes of the particles
+	 * @return double[][] containing all the particles' centroids
+	 */
+	private static double[][] getCentroids(final ImagePlus imp,
+		final int[][] particleLabels, final long[] particleSizes)
+	{
+		final int nParticles = particleSizes.length;
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		final double[][] sums = new double[nParticles][3];
 		for (int z = 0; z < d; z++) {
 			for (int y = 0; y < h; y++) {
 				final int index = y * w;
 				for (int x = 0; x < w; x++) {
-					final int i = particleLabels[z][index + x];
-					limits[i][0] = Math.min(limits[i][0], x);
-					limits[i][1] = Math.max(limits[i][1], x);
-					limits[i][2] = Math.min(limits[i][2], y);
-					limits[i][3] = Math.max(limits[i][3], y);
-					limits[i][4] = Math.min(limits[i][4], z);
-					limits[i][5] = Math.max(limits[i][5], z);
+					final int particle = particleLabels[z][index + x];
+					sums[particle][0] += x;
+					sums[particle][1] += y;
+					sums[particle][2] += z;
 				}
 			}
 		}
-		return limits;
+		final Calibration cal = imp.getCalibration();
+		final double[][] centroids = new double[nParticles][3];
+		for (int p = 0; p < nParticles; p++) {
+			centroids[p][0] = cal.pixelWidth * sums[p][0] / particleSizes[p];
+			centroids[p][1] = cal.pixelHeight * sums[p][1] / particleSizes[p];
+			centroids[p][2] = cal.pixelDepth * sums[p][2] / particleSizes[p];
+		}
+		return centroids;
 	}
 
-	private EigenvalueDecomposition[] getEigens(final ImagePlus imp, final int[][] particleLabels,
-			final double[][] centroids) {
+	private static EigenvalueDecomposition[] getEigens(final ImagePlus imp,
+		final int[][] particleLabels, final double[][] centroids)
+	{
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
 		final double vH = cal.pixelHeight;
@@ -642,7 +1301,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 		final int nParticles = centroids.length;
-		final EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
+		final EigenvalueDecomposition[] eigens =
+			new EigenvalueDecomposition[nParticles];
 		final double[][] momentTensors = new double[nParticles][6];
 		for (int z = 0; z < d; z++) {
 			IJ.showStatus("Calculating particle moments...");
@@ -679,11 +1339,114 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				inertiaTensor[2][0] = -momentTensors[p][4];
 				inertiaTensor[2][1] = -momentTensors[p][5];
 				final Matrix inertiaTensorMatrix = new Matrix(inertiaTensor);
-				final EigenvalueDecomposition E = new EigenvalueDecomposition(inertiaTensorMatrix);
+				final EigenvalueDecomposition E = new EigenvalueDecomposition(
+					inertiaTensorMatrix);
 				eigens[p] = E;
 			}
 		}
 		return eigens;
+	}
+
+	private static Object[][] getEllipsoids(
+		final Collection<List<Point3f>> surfacePoints)
+	{
+		final Object[][] ellipsoids = new Object[surfacePoints.size()][];
+		int p = 0;
+		for (final List<Point3f> points : surfacePoints) {
+			if (points == null) {
+				p++;
+				continue;
+			}
+			final Iterator<Point3f> pointIter = points.iterator();
+			final double[][] coOrdinates = new double[points.size()][3];
+			int i = 0;
+			while (pointIter.hasNext()) {
+				final Point3f point = pointIter.next();
+				coOrdinates[i][0] = point.x;
+				coOrdinates[i][1] = point.y;
+				coOrdinates[i][2] = point.z;
+				i++;
+			}
+			try {
+				ellipsoids[p] = FitEllipsoid.yuryPetrov(coOrdinates);
+			}
+			catch (final RuntimeException re) {
+				IJ.log("Could not fit ellipsoid to surface " + p);
+			}
+			p++;
+		}
+		return ellipsoids;
+	}
+
+	/**
+	 * Get the Euler characteristic of each particle
+	 *
+	 * @param imp an image.
+	 * @param particleLabels particles of the image.
+	 * @param limits limits of the particles.
+	 * @param nParticles number particles.
+	 * @return euler characteristic of each image.
+	 */
+	private double[][] getEulerCharacter(final ImagePlus imp,
+		final int[][] particleLabels, final int[][] limits, final int nParticles)
+	{
+		final Connectivity con = new Connectivity();
+		final double[][] eulerCharacters = new double[nParticles][3];
+		for (int p = 1; p < nParticles; p++) {
+			final ImagePlus particleImp = getBinaryParticle(p, imp, particleLabels,
+				limits, 1);
+			final double euler = con.getSumEuler(particleImp);
+			final double cavities = getNCavities(particleImp);
+			// Calculate number of holes and cavities using
+			// Euler = particles - holes + cavities
+			// where particles = 1
+			final double holes = cavities - euler + 1;
+			final double[] bettis = { euler, holes, cavities };
+			eulerCharacters[p] = bettis;
+		}
+		return eulerCharacters;
+	}
+
+	/**
+	 * Get the Feret diameter of a surface. Uses an inefficient brute-force
+	 * algorithm.
+	 *
+	 * @param particleSurfaces points of all the particles.
+	 * @return Feret diameters of the surfaces.
+	 */
+	private static double[] getFerets(
+		final List<List<Point3f>> particleSurfaces)
+	{
+		final int nParticles = particleSurfaces.size();
+		final double[] ferets = new double[nParticles];
+		final ListIterator<List<Point3f>> it = particleSurfaces.listIterator();
+		int i = 0;
+		Point3f a;
+		Point3f b;
+		List<Point3f> surface;
+		ListIterator<Point3f> ita;
+		ListIterator<Point3f> itb;
+		while (it.hasNext()) {
+			IJ.showStatus("Finding Feret diameter...");
+			IJ.showProgress(it.nextIndex(), nParticles);
+			surface = it.next();
+			if (surface == null) {
+				ferets[i] = Double.NaN;
+				i++;
+				continue;
+			}
+			ita = surface.listIterator();
+			while (ita.hasNext()) {
+				a = ita.next();
+				itb = surface.listIterator(ita.nextIndex());
+				while (itb.hasNext()) {
+					b = itb.next();
+					ferets[i] = Math.max(ferets[i], a.distance(b));
+				}
+			}
+			i++;
+		}
+		return ferets;
 	}
 
 	/**
@@ -696,10 +1459,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param E transformation eigenvectors and values of the particles.
 	 * @return array containing two nPoints * 3 arrays with max and max
 	 *         transformed distances respectively
-	 *
 	 */
-	private Object[] getMaxDistances(final ImagePlus imp, final int[][] particleLabels, final double[][] centroids,
-			final EigenvalueDecomposition[] E) {
+	private static Object[] getMaxDistances(final ImagePlus imp,
+		final int[][] particleLabels, final double[][] centroids,
+		final EigenvalueDecomposition[] E)
+	{
 		final Calibration cal = imp.getCalibration();
 		final double vW = cal.pixelWidth;
 		final double vH = cal.pixelHeight;
@@ -741,1159 +1505,130 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 			maxDt[p] = temp.clone();
 		}
-		final Object[] maxDistances = { maxD, maxDt };
-		return maxDistances;
-	}
-
-	private void display3DOriginal(final ImagePlus imp, final int resampling, final Image3DUniverse univ) {
-		final Color3f colour = new Color3f(1.0f, 1.0f, 1.0f);
-		final boolean[] channels = { true, true, true };
-		try {
-			univ.addVoltex(imp, colour, imp.getTitle(), 0, channels, resampling).setLocked(true);
-		} catch (final NullPointerException npe) {
-			IJ.log("3D Viewer was closed before rendering completed.");
-		}
-		return;
-	}
-
-	private void displayPrincipalAxes(final Image3DUniverse univ, final EigenvalueDecomposition[] eigens,
-			final double[][] centroids, final double[][] lengths) {
-		final int nEigens = eigens.length;
-		for (int p = 1; p < nEigens; p++) {
-			IJ.showStatus("Rendering principal axes...");
-			IJ.showProgress(p, nEigens);
-			final Matrix eVec = eigens[p].getV();
-			displayAxes(univ, centroids[p], eVec.getArray(), lengths[p], 1.0f, 0.0f, 0.0f, "Principal Axes " + p);
-		}
-		return;
+		return new Object[] { maxD, maxDt };
 	}
 
 	/**
-	 * Draws 3 orthogonal axes defined by the centroid, unitvector and axis
-	 * length.
+	 * Get the mean and standard deviation of pixel values &gt;0 for each particle
+	 * in a particle label work array
 	 *
-	 * @param univ the universe where axes are drawn.
-	 * @param centroid centroid of a particle.
-	 * @param unitVector orientation of the particle.
-	 * @param lengths lengths of the axes.
-	 * @param red red component of the axes' color.
-	 * @param green green component of the axes' color.
-	 * @param blue blue component of the axes' color.
-	 * @param title text shown by the axes.
+	 * @param imp Input image containing pixel values
+	 * @param particleLabels workArray containing particle labels
+	 * @param particleSizes array of particle sizes as pixel counts
+	 * @return array containing mean, std dev and max pixel values for each
+	 *         particle
 	 */
-	private void displayAxes(final Image3DUniverse univ, final double[] centroid, final double[][] unitVector,
-			final double[] lengths, final float red, final float green, final float blue, final String title) {
-		final double cX = centroid[0];
-		final double cY = centroid[1];
-		final double cZ = centroid[2];
-		final double eVec1x = unitVector[0][0];
-		final double eVec1y = unitVector[1][0];
-		final double eVec1z = unitVector[2][0];
-		final double eVec2x = unitVector[0][1];
-		final double eVec2y = unitVector[1][1];
-		final double eVec2z = unitVector[2][1];
-		final double eVec3x = unitVector[0][2];
-		final double eVec3y = unitVector[1][2];
-		final double eVec3z = unitVector[2][2];
-		final double l1 = lengths[0];
-		final double l2 = lengths[1];
-		final double l3 = lengths[2];
-
-		final List<Point3f> mesh = new ArrayList<Point3f>();
-		final Point3f start1 = new Point3f();
-		start1.x = (float) (cX - eVec1x * l1);
-		start1.y = (float) (cY - eVec1y * l1);
-		start1.z = (float) (cZ - eVec1z * l1);
-		mesh.add(start1);
-
-		final Point3f end1 = new Point3f();
-		end1.x = (float) (cX + eVec1x * l1);
-		end1.y = (float) (cY + eVec1y * l1);
-		end1.z = (float) (cZ + eVec1z * l1);
-		mesh.add(end1);
-
-		final Point3f start2 = new Point3f();
-		start2.x = (float) (cX - eVec2x * l2);
-		start2.y = (float) (cY - eVec2y * l2);
-		start2.z = (float) (cZ - eVec2z * l2);
-		mesh.add(start2);
-
-		final Point3f end2 = new Point3f();
-		end2.x = (float) (cX + eVec2x * l2);
-		end2.y = (float) (cY + eVec2y * l2);
-		end2.z = (float) (cZ + eVec2z * l2);
-		mesh.add(end2);
-
-		final Point3f start3 = new Point3f();
-		start3.x = (float) (cX - eVec3x * l3);
-		start3.y = (float) (cY - eVec3y * l3);
-		start3.z = (float) (cZ - eVec3z * l3);
-		mesh.add(start3);
-
-		final Point3f end3 = new Point3f();
-		end3.x = (float) (cX + eVec3x * l3);
-		end3.y = (float) (cY + eVec3y * l3);
-		end3.z = (float) (cZ + eVec3z * l3);
-		mesh.add(end3);
-
-		final Color3f aColour = new Color3f(red, green, blue);
-		try {
-			univ.addLineMesh(mesh, aColour, title, false).setLocked(true);
-		} catch (final NullPointerException npe) {
-			IJ.log("3D Viewer was closed before rendering completed.");
-			return;
-		}
-	}
-
-	/**
-	 * Draw the particle centroids in a 3D viewer
-	 *
-	 * @param centroids [n][3] centroids of particles.
-	 * @param univ universe where the centroids are displayed.
-	 */
-	private void displayCentroids(final double[][] centroids, final Image3DUniverse univ) {
-		final int nCentroids = centroids.length;
-		for (int p = 1; p < nCentroids; p++) {
-			IJ.showStatus("Rendering centroids...");
-			IJ.showProgress(p, nCentroids);
-			final Point3f centroid = new Point3f();
-			centroid.x = (float) centroids[p][0];
-			centroid.y = (float) centroids[p][1];
-			centroid.z = (float) centroids[p][2];
-			final List<Point3f> point = new ArrayList<Point3f>();
-			point.add(centroid);
-			final CustomPointMesh mesh = new CustomPointMesh(point);
-			mesh.setPointSize(5.0f);
-			final float red = 0.0f;
-			final float green = 0.5f * p / nCentroids;
-			final float blue = 1.0f;
-			final Color3f cColour = new Color3f(red, green, blue);
-			mesh.setColor(cColour);
-			try {
-				univ.addCustomMesh(mesh, "Centroid " + p).setLocked(true);
-			} catch (final NullPointerException npe) {
-				IJ.log("3D Viewer was closed before rendering completed.");
-				return;
-			}
-		}
-		return;
-	}
-
-	/**
-	 * Draw the particle surfaces in a 3D viewer
-	 *
-     * @param univ universe where the centroids are displayed.
-	 * @param surfacePoints points of each particle.
-	 *
-	 */
-	private void displayParticleSurfaces(final Image3DUniverse univ, final ArrayList<List<Point3f>> surfacePoints,
-			final int colourMode, final double[] volumes, final double splitValue) {
-		int p = 0;
-		final int nParticles = surfacePoints.size();
-		final Iterator<List<Point3f>> iter = surfacePoints.iterator();
-		while (iter.hasNext()) {
-			IJ.showStatus("Rendering surfaces...");
-			IJ.showProgress(p, nParticles);
-			final List<Point3f> points = iter.next();
-			if (p > 0 && points.size() > 0) {
-				Color3f pColour = new Color3f(0, 0, 0);
-				if (colourMode == GRADIENT) {
-					final float red = 1.0f - (float) p / (float) nParticles;
-					final float green = 1.0f - red;
-					final float blue = p / (2.0f * nParticles);
-					pColour = new Color3f(red, green, blue);
-				} else if (colourMode == SPLIT) {
-					if (volumes[p] > splitValue) {
-						// red if over
-						pColour = new Color3f(1.0f, 0.0f, 0.0f);
-					} else {
-						// yellow if under
-						pColour = new Color3f(1.0f, 1.0f, 0.0f);
-					}
-				}
-				// Add the mesh
-				try {
-					univ.addTriangleMesh(points, pColour, "Surface " + p).setLocked(true);
-				} catch (final NullPointerException npe) {
-					IJ.log("3D Viewer was closed before rendering completed.");
-					return;
-				}
-			}
-			p++;
-		}
-	}
-
-	private double[] getSurfaceArea(final ArrayList<List<Point3f>> surfacePoints) {
-		final Iterator<List<Point3f>> iter = surfacePoints.iterator();
-		final double[] surfaceAreas = new double[surfacePoints.size()];
-		int p = 0;
-		while (iter.hasNext()) {
-			final List<Point3f> points = iter.next();
-			if (null != points) {
-				final double surfaceArea = getSurfaceArea(points);
-				surfaceAreas[p] = surfaceArea;
-			}
-			p++;
-		}
-		return surfaceAreas;
-	}
-
-	/**
-	 * Calculate surface area of the isosurface
-	 *
-	 * @param points in 3D triangle mesh
-	 * @return surface area
-	 */
-    private static double getSurfaceArea(final List<Point3f> points) {
-        double sumArea = 0;
-        final int nPoints = points.size();
-        final Point3f origin = new Point3f(0.0f, 0.0f, 0.0f);
-        for (int n = 0; n < nPoints; n += 3) {
-            IJ.showStatus("Calculating surface area...");
-            final Point3f cp = Vectors.crossProduct(points.get(n), points.get(n + 1), points.get(n + 2));
-            final double deltaArea = 0.5 * cp.distance(origin);
-            sumArea += deltaArea;
-        }
-        return sumArea;
-    }
-
-	private double[] getSurfaceVolume(final ArrayList<List<Point3f>> surfacePoints) {
-		final Iterator<List<Point3f>> iter = surfacePoints.iterator();
-		final double[] surfaceVolumes = new double[surfacePoints.size()];
-		final Color3f colour = new Color3f(0.0f, 0.0f, 0.0f);
-		int p = 0;
-		while (iter.hasNext()) {
-			IJ.showStatus("Calculating enclosed volume...");
-			final List<Point3f> points = iter.next();
-			if (null != points) {
-				final CustomTriangleMesh surface = new CustomTriangleMesh(points, colour, 0.0f);
-				surfaceVolumes[p] = Math.abs(surface.getVolume());
-			}
-			p++;
-		}
-		return surfaceVolumes;
-	}
-
-	@SuppressWarnings("unchecked")
-	private ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp, final int[][] particleLabels,
-			final int[][] limits, final int resampling, final int nParticles) {
-		final Calibration cal = imp.getCalibration();
-		final ArrayList<List<Point3f>> surfacePoints = new ArrayList<List<Point3f>>();
-		final boolean[] channels = { true, false, false };
-		for (int p = 0; p < nParticles; p++) {
-			IJ.showStatus("Getting surface meshes...");
-			IJ.showProgress(p, nParticles);
-			if (p > 0) {
-				final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels, limits, resampling);
-				final MCTriangulator mct = new MCTriangulator();
-				final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels, resampling);
-
-				final double xOffset = (limits[p][0] - 1) * cal.pixelWidth;
-				final double yOffset = (limits[p][2] - 1) * cal.pixelHeight;
-				final double zOffset = (limits[p][4] - 1) * cal.pixelDepth;
-				final Iterator<Point3f> iter = points.iterator();
-				while (iter.hasNext()) {
-					final Point3f point = iter.next();
-					point.x += xOffset;
-					point.y += yOffset;
-					point.z += zOffset;
-				}
-				surfacePoints.add(points);
-				if (points.size() == 0) {
-					IJ.log("Particle " + p + " resulted in 0 surface points");
-				}
-			} else {
-				surfacePoints.add(null);
-			}
-		}
-		return surfacePoints;
-	}
-
-	/**
-	 * Get the Feret diameter of a surface. Uses an inefficient brute-force
-	 * algorithm.
-	 *
-	 * @param particleSurfaces points of all the particles.
-	 * @return Feret diameters of the surfaces.
-	 */
-	private double[] getFerets(final ArrayList<List<Point3f>> particleSurfaces) {
-		final int nParticles = particleSurfaces.size();
-		final double[] ferets = new double[nParticles];
-		final ListIterator<List<Point3f>> it = particleSurfaces.listIterator();
-		int i = 0;
-		Point3f a;
-		Point3f b;
-		List<Point3f> surface;
-		ListIterator<Point3f> ita;
-		ListIterator<Point3f> itb;
-		while (it.hasNext()) {
-			IJ.showStatus("Finding Feret diameter...");
-			IJ.showProgress(it.nextIndex(), nParticles);
-			surface = it.next();
-			if (surface == null) {
-				ferets[i] = Double.NaN;
-				i++;
-				continue;
-			}
-			ita = surface.listIterator();
-			while (ita.hasNext()) {
-				a = ita.next();
-				itb = surface.listIterator(ita.nextIndex());
-				while (itb.hasNext()) {
-					b = itb.next();
-					ferets[i] = Math.max(ferets[i], a.distance(b));
-				}
-			}
-			i++;
-		}
-		return ferets;
-	}
-
-	/**
-	 * create a binary ImagePlus containing a single particle and which 'just
-	 * fits' the particle
-	 *
-	 * @param p The particle ID to get
-	 * @param imp original image, used for calibration
-	 * @param particleLabels work array of particle labels
-	 * @param limits x,y and z limits of each particle
-	 * @param padding amount of empty space to pad around each particle
-	 * @return a cropped single particle image.
-	 */
-	private static ImagePlus getBinaryParticle(final int p, final ImagePlus imp, final int[][] particleLabels,
-			final int[][] limits, final int padding) {
-
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final int xMin = Math.max(0, limits[p][0] - padding);
-		final int xMax = Math.min(w - 1, limits[p][1] + padding);
-		final int yMin = Math.max(0, limits[p][2] - padding);
-		final int yMax = Math.min(h - 1, limits[p][3] + padding);
-		final int zMin = Math.max(0, limits[p][4] - padding);
-		final int zMax = Math.min(d - 1, limits[p][5] + padding);
-		final int stackWidth = xMax - xMin + 1;
-		final int stackHeight = yMax - yMin + 1;
-		final int stackSize = stackWidth * stackHeight;
-		final ImageStack stack = new ImageStack(stackWidth, stackHeight);
-		for (int z = zMin; z <= zMax; z++) {
-			final byte[] slice = new byte[stackSize];
-			int i = 0;
-			for (int y = yMin; y <= yMax; y++) {
-				final int sourceIndex = y * w;
-				for (int x = xMin; x <= xMax; x++) {
-					if (particleLabels[z][sourceIndex + x] == p) {
-						slice[i] = (byte) (255 & 0xFF);
-					}
-					i++;
-				}
-			}
-			stack.addSlice(imp.getStack().getSliceLabel(z + 1), slice);
-		}
-		final ImagePlus binaryImp = new ImagePlus("Particle_" + p, stack);
-		final Calibration cal = imp.getCalibration();
-		binaryImp.setCalibration(cal);
-		return binaryImp;
-	}
-
-	/**
-	 * Create an image showing some particle measurement
-	 *
-	 * @param imp an image.
-	 * @param particleLabels the particles in the image.
-	 * @param values list of values whose array indices correspond to
-	 *          particlelabels
-	 * @param title tag stating what we are displaying
-	 * @return ImagePlus with particle labels substituted with some value
-	 */
-	private ImagePlus displayParticleValues(final ImagePlus imp, final int[][] particleLabels, final double[] values,
-			final String title) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final int wh = w * h;
-		final float[][] pL = new float[d][wh];
-		values[0] = 0; // don't colour the background
-		final ImageStack stack = new ImageStack(w, h);
-		for (int z = 0; z < d; z++) {
-			for (int i = 0; i < wh; i++) {
-				final int p = particleLabels[z][i];
-				pL[z][i] = (float) values[p];
-			}
-			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), pL[z]);
-		}
-		final int nValues = values.length;
-		double max = 0;
-		for (int i = 0; i < nValues; i++) {
-			max = Math.max(max, values[i]);
-		}
-		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + title, stack);
-		impOut.setCalibration(imp.getCalibration());
-		impOut.getProcessor().setMinAndMax(0, max);
-		return impOut;
-	}
-
-	/**
-	 * Get the centroids of all the particles in real units
-	 *
-	 * @param imp an image.
-	 * @param particleLabels particles in the image.
-	 * @param particleSizes sizes of the particles
-	 * @return double[][] containing all the particles' centroids
-	 */
-	private double[][] getCentroids(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes) {
+	private static double[][] getMeanStdDev(final ImagePlus imp,
+		final int[][] particleLabels, final long[] particleSizes)
+	{
 		final int nParticles = particleSizes.length;
+		final int d = imp.getImageStackSize();
+		final int wh = imp.getWidth() * imp.getHeight();
+		final ImageStack stack = imp.getImageStack();
+		final double[] sums = new double[nParticles];
+		for (int z = 0; z < d; z++) {
+			final float[] pixels = (float[]) stack.getPixels(z + 1);
+			final int[] labelPixels = particleLabels[z];
+			for (int i = 0; i < wh; i++) {
+				final double value = pixels[i];
+				if (value > 0) {
+					sums[labelPixels[i]] += value;
+				}
+			}
+		}
+		final double[][] meanStdDev = new double[nParticles][3];
+		for (int p = 1; p < nParticles; p++) {
+			meanStdDev[p][0] = sums[p] / particleSizes[p];
+		}
+
+		final double[] sumSquares = new double[nParticles];
+		for (int z = 0; z < d; z++) {
+			final float[] pixels = (float[]) stack.getPixels(z + 1);
+			final int[] labelPixels = particleLabels[z];
+			for (int i = 0; i < wh; i++) {
+				final double value = pixels[i];
+				if (value > 0) {
+					final int p = labelPixels[i];
+					final double residual = value - meanStdDev[p][0];
+					sumSquares[p] += residual * residual;
+					meanStdDev[p][2] = Math.max(meanStdDev[p][2], value);
+				}
+			}
+		}
+		for (int p = 1; p < nParticles; p++) {
+			meanStdDev[p][1] = Math.sqrt(sumSquares[p] / particleSizes[p]);
+		}
+		return meanStdDev;
+	}
+
+	private int getNCavities(final ImagePlus imp) {
+		final Object[] result = getParticles(imp, BACK);
+		final long[] particleSizes = (long[]) result[2];
+		final int nParticles = particleSizes.length;
+		return nParticles - 2;
+	}
+
+	/**
+	 * Find the offset within a 1D array given 2 (x, y) offset values
+	 *
+	 * @param m x difference
+	 * @param n y difference
+	 * @param w width of the stack.
+	 * @return Integer offset for looking up pixel in work array
+	 */
+	private static int getOffset(final int m, final int n, final int w) {
+		return m + n * w;
+	}
+
+	/**
+	 * Get the minimum and maximum x, y and z coordinates of each particle
+	 *
+	 * @param imp ImagePlus (used for stack size)
+	 * @param particleLabels work array containing labelled particles
+	 * @param nParticles number of particles in the stack
+	 * @return int[][] containing x, y and z minima and maxima.
+	 */
+	private static int[][] getParticleLimits(final ImagePlus imp,
+		final int[][] particleLabels, final int nParticles)
+	{
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
-		final double[][] sums = new double[nParticles][3];
+		final int[][] limits = new int[nParticles][6];
+		for (int i = 0; i < nParticles; i++) {
+			limits[i][0] = Integer.MAX_VALUE; // x min
+			limits[i][1] = 0; // x max
+			limits[i][2] = Integer.MAX_VALUE; // y min
+			limits[i][3] = 0; // y max
+			limits[i][4] = Integer.MAX_VALUE; // z min
+			limits[i][5] = 0; // z max
+		}
 		for (int z = 0; z < d; z++) {
 			for (int y = 0; y < h; y++) {
 				final int index = y * w;
 				for (int x = 0; x < w; x++) {
-					final int particle = particleLabels[z][index + x];
-					sums[particle][0] += x;
-					sums[particle][1] += y;
-					sums[particle][2] += z;
+					final int i = particleLabels[z][index + x];
+					limits[i][0] = Math.min(limits[i][0], x);
+					limits[i][1] = Math.max(limits[i][1], x);
+					limits[i][2] = Math.min(limits[i][2], y);
+					limits[i][3] = Math.max(limits[i][3], y);
+					limits[i][4] = Math.min(limits[i][4], z);
+					limits[i][5] = Math.max(limits[i][5], z);
 				}
 			}
 		}
-		final Calibration cal = imp.getCalibration();
-		final double[][] centroids = new double[nParticles][3];
-		for (int p = 0; p < nParticles; p++) {
-			centroids[p][0] = cal.pixelWidth * sums[p][0] / particleSizes[p];
-			centroids[p][1] = cal.pixelHeight * sums[p][1] / particleSizes[p];
-			centroids[p][2] = cal.pixelDepth * sums[p][2] / particleSizes[p];
-		}
-		return centroids;
+		return limits;
 	}
 
-	private double[] getVolumes(final ImagePlus imp, final long[] particleSizes) {
-		final Calibration cal = imp.getCalibration();
-		final double voxelVolume = cal.pixelWidth * cal.pixelHeight * cal.pixelDepth;
-		final int nLabels = particleSizes.length;
-		final double[] particleVolumes = new double[nLabels];
-		for (int i = 0; i < nLabels; i++) {
-			particleVolumes[i] = voxelVolume * particleSizes[i];
-		}
-		return particleVolumes;
-	}
-
-	/**
-	 * Get particles, particle labels and particle sizes from a 3D ImagePlus
-	 *
-	 * @param imp Binary input image
-	 * @param slicesPerChunk number of slices per chunk. 2 is generally good.
-	 * @param minVol minimum volume particle to include
-	 * @param maxVol maximum volume particle to include
-	 * @param phase foreground or background (FORE or BACK)
-	 * @param doExclude if true, remove particles touching sides of the stack
-	 * @return Object[] {byte[][], int[][]} containing a binary workArray and
-	 *         particle labels.
-	 */
-	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final double minVol,
-			final double maxVol, final int phase, final boolean doExclude) {
-		final byte[][] workArray = makeWorkArray(imp);
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, doExclude);
-	}
-
-	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final double minVol,
-			final double maxVol, final int phase) {
-		final byte[][] workArray = makeWorkArray(imp);
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
-	}
-
-	public Object[] getParticles(final ImagePlus imp, final int slicesPerChunk, final int phase) {
-		final byte[][] workArray = makeWorkArray(imp);
-		final double minVol = 0;
-		final double maxVol = Double.POSITIVE_INFINITY;
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
-	}
-
-	//TODO Remove
-	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-			final int phase, final int method) {
-		final double minVol = 0;
-		final double maxVol = Double.POSITIVE_INFINITY;
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
-	}
-
-	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-			final double minVol, final double maxVol, final int phase) {
-		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase, false);
-	}
-
-	/**
-	 * Get particles, particle labels and sizes from a workArray using an
-	 * ImagePlus for scale information
-	 *
-	 * @param imp input binary image
-	 * @param workArray work array
-	 * @param slicesPerChunk number of slices to use for each chunk
-	 * @param minVol minimum volume particle to include
-	 * @param maxVol maximum volume particle to include
-	 * @param phase FORE or BACK for foreground or background respectively
-	 * @param doExclude exclude particles touching the edges.
-	 * @return Object[] array containing a binary workArray, particle labels and
-	 *         particle sizes
-	 */
-	public Object[] getParticles(final ImagePlus imp, final byte[][] workArray, final int slicesPerChunk,
-			final double minVol, final double maxVol, final int phase, final boolean doExclude) {
-		if (phase == FORE) {
-			this.sPhase = "foreground";
-		} else if (phase == BACK) {
-			this.sPhase = "background";
-		} else {
-			throw new IllegalArgumentException();
-		}
-		if (slicesPerChunk < 1) {
-			throw new IllegalArgumentException();
-		}
-		// Set up the chunks
-		final int nChunks = getNChunks(imp, slicesPerChunk);
-		final int[][] chunkRanges = getChunkRanges(imp, nChunks, slicesPerChunk);
-		final int[][] stitchRanges = getStitchRanges(imp, nChunks, slicesPerChunk);
-
-		final int[][] particleLabels = firstIDAttribution(imp, workArray, phase);
-		final int nParticles = getParticleSizes(particleLabels).length;
-
-		if (labelMethod == MULTI) {
-			// connect particles within chunks
-			final int nThreads = Runtime.getRuntime().availableProcessors();
-			final ConnectStructuresThread[] cptf = new ConnectStructuresThread[nThreads];
-			for (int thread = 0; thread < nThreads; thread++) {
-				cptf[thread] = new ConnectStructuresThread(thread, nThreads, imp, workArray, particleLabels, phase,
-						nChunks, chunkRanges);
-				cptf[thread].start();
-			}
-			try {
-				for (int thread = 0; thread < nThreads; thread++) {
-					cptf[thread].join();
-				}
-			} catch (final InterruptedException ie) {
-				IJ.error("A thread was interrupted.");
-			}
-
-			// connect particles between chunks
-			if (nChunks > 1) {
-				chunkString = ": stitching...";
-				connectStructures(imp, workArray, particleLabels, phase, stitchRanges);
-			}
-		} else if (labelMethod == LINEAR) {
-			joinStructures(imp, particleLabels, phase);
-		} else if (labelMethod == MAPPED) {
-			joinMappedStructures(imp, particleLabels, nParticles, phase);
-		}
-		filterParticles(imp, workArray, particleLabels, minVol, maxVol, phase);
-		if (doExclude)
-			excludeOnEdges(imp, particleLabels, workArray);
-		minimiseLabels(particleLabels);
+	private ArrayList<ArrayList<short[]>> getParticleLists(
+		final int[][] particleLabels, final int nBlobs, final int w, final int h,
+		final int d)
+	{
+		final ArrayList<ArrayList<short[]>> pL = new ArrayList<>(nBlobs);
+		pL.add(new ArrayList<>());
 		final long[] particleSizes = getParticleSizes(particleLabels);
-		final Object[] result = { workArray, particleLabels, particleSizes };
-		return result;
-
-	}
-
-	/**
-	 * Remove particles outside user-specified volume thresholds
-	 *
-	 * @param imp ImagePlus, used for calibration
-	 * @param workArray binary foreground and background information
-	 * @param particleLabels Packed 3D array of particle labels
-	 * @param minVol minimum (inclusive) particle volume
-	 * @param maxVol maximum (inclusive) particle volume
-	 * @param phase phase we are interested in
-	 */
-	private void filterParticles(final ImagePlus imp, final byte[][] workArray, final int[][] particleLabels,
-			final double minVol, final double maxVol, final int phase) {
-		if (minVol == 0 && maxVol == Double.POSITIVE_INFINITY)
-			return;
-		final int d = imp.getImageStackSize();
-		final int wh = workArray[0].length;
-		final long[] particleSizes = getParticleSizes(particleLabels);
-		final double[] particleVolumes = getVolumes(imp, particleSizes);
-		byte flip = 0;
-		if (phase == FORE) {
-			flip = (byte) 0;
-		} else {
-			flip = (byte) 255;
-		}
-		for (int z = 0; z < d; z++) {
-			for (int i = 0; i < wh; i++) {
-				final int p = particleLabels[z][i];
-				final double v = particleVolumes[p];
-				if (v < minVol || v > maxVol) {
-					workArray[z][i] = flip;
-					particleLabels[z][i] = 0;
-				}
-			}
-		}
-	}
-
-	/**
-	 * Gets rid of redundant particle labels
-	 *
-	 * @param particleLabels particles in the image.
-	 */
-	private void minimiseLabels(final int[][] particleLabels) {
-		IJ.showStatus("Minimising labels...");
-		final int d = particleLabels.length;
-		final long[] particleSizes = getParticleSizes(particleLabels);
-		final int nLabels = particleSizes.length;
-		final int[] newLabel = new int[nLabels];
-		int minLabel = 0;
-		// find the minimised labels
-		for (int i = 0; i < nLabels; i++) {
-			if (particleSizes[i] > 0) {
-				if (i == minLabel) {
-					newLabel[i] = i;
-					minLabel++;
-					continue;
-				}
-				newLabel[i] = minLabel;
-				particleSizes[minLabel] = particleSizes[i];
-				particleSizes[i] = 0;
-				minLabel++;
-			}
-		}
-		// now replace labels
-		final int wh = particleLabels[0].length;
-		for (int z = 0; z < d; z++) {
-			IJ.showStatus("Replacing with minimised labels...");
-			IJ.showProgress(z, d);
-			final int[] slice = particleLabels[z];
-			for (int i = 0; i < wh; i++) {
-				final int p = slice[i];
-				if (p > 0) {
-					slice[i] = newLabel[p];
-				}
-			}
-		}
-		return;
-	}
-
-	/**
-	 * Scans edge voxels and set all touching particles to background
-	 *
-     * @param imp an image.
-	 * @param particleLabels particles in the image.
-	 */
-	private void excludeOnEdges(final ImagePlus imp, final int[][] particleLabels, final byte[][] workArray) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final long[] particleSizes = getParticleSizes(particleLabels);
-		final int nLabels = particleSizes.length;
-		final int[] newLabel = new int[nLabels];
-		for (int i = 0; i < nLabels; i++)
-			newLabel[i] = i;
-
-		// scan faces
-		// top and bottom faces
-		for (int y = 0; y < h; y++) {
-			final int index = y * w;
-			for (int x = 0; x < w; x++) {
-				final int pt = particleLabels[0][index + x];
-				if (pt > 0)
-					newLabel[pt] = 0;
-				final int pb = particleLabels[d - 1][index + x];
-				if (pb > 0)
-					newLabel[pb] = 0;
-			}
-		}
-
-		// west and east faces
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int pw = particleLabels[z][y * w];
-				final int pe = particleLabels[z][y * w + w - 1];
-				if (pw > 0)
-					newLabel[pw] = 0;
-				if (pe > 0)
-					newLabel[pe] = 0;
-			}
-		}
-
-		// north and south faces
-		final int lastRow = w * (h - 1);
-		for (int z = 0; z < d; z++) {
-			for (int x = 0; x < w; x++) {
-				final int pn = particleLabels[z][x];
-				final int ps = particleLabels[z][lastRow + x];
-				if (pn > 0)
-					newLabel[pn] = 0;
-				if (ps > 0)
-					newLabel[ps] = 0;
-			}
-		}
-
-		// replace labels
-		final int wh = w * h;
-		for (int z = 0; z < d; z++) {
-			for (int i = 0; i < wh; i++) {
-				final int p = particleLabels[z][i];
-				final int nL = newLabel[p];
-				if (nL == 0) {
-					particleLabels[z][i] = 0;
-					workArray[z][i] = (byte) 0;
-				}
-			}
-		}
-
-		return;
-	}
-
-	/**
-	 * Gets number of chunks needed to divide a stack into evenly-sized sets of
-	 * slices.
-	 *
-	 * @param imp input image
-	 * @param slicesPerChunk number of slices per chunk
-	 * @return number of chunks
-	 */
-	public int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
-		final int d = imp.getImageStackSize();
-		int nChunks = (int) Math.floor((double) d / (double) slicesPerChunk);
-
-		final int remainder = d % slicesPerChunk;
-
-		if (remainder > 0) {
-			nChunks++;
-		}
-		return nChunks;
-	}
-
-	/**
-	 * Go through all pixels and assign initial particle label
-	 *
-     * @param imp an image.
-	 * @param workArray byte[] array containing pixel values
-	 * @param phase FORE or BACK for foreground of background respectively
-	 * @return particleLabels int[] array containing label associating every pixel
-	 *         with a particle
-	 */
-	private int[][] firstIDAttribution(final ImagePlus imp, final byte[][] workArray, final int phase) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final int wh = w * h;
-		IJ.showStatus("Finding " + sPhase + " structures");
-		final int[][] particleLabels = new int[d][wh];
-		int ID = 1;
-
-		if (phase == FORE) {
-			for (int z = 0; z < d; z++) {
-				for (int y = 0; y < h; y++) {
-					final int rowIndex = y * w;
-					for (int x = 0; x < w; x++) {
-						final int arrayIndex = rowIndex + x;
-						if (workArray[z][arrayIndex] == phase) {
-							particleLabels[z][arrayIndex] = ID;
-							int minTag = ID;
-							// Find the minimum particleLabel in the
-							// neighbouring pixels
-							for (int vZ = z - 1; vZ <= z + 1; vZ++) {
-								for (int vY = y - 1; vY <= y + 1; vY++) {
-									for (int vX = x - 1; vX <= x + 1; vX++) {
-										if (withinBounds(vX, vY, vZ, w, h, 0, d)) {
-											final int offset = getOffset(vX, vY, w);
-											if (workArray[vZ][offset] == phase) {
-												final int tagv = particleLabels[vZ][offset];
-												if (tagv != 0 && tagv < minTag) {
-													minTag = tagv;
-												}
-											}
-										}
-									}
-								}
-							}
-							// assign the smallest particle label from the
-							// neighbours to the pixel
-							particleLabels[z][arrayIndex] = minTag;
-							// increment the particle label
-							if (minTag == ID) {
-								ID++;
-							}
-						}
-					}
-				}
-				IJ.showProgress(z, d);
-			}
-			ID++;
-		} else if (phase == BACK) {
-			for (int z = 0; z < d; z++) {
-				for (int y = 0; y < h; y++) {
-					final int rowIndex = y * w;
-					for (int x = 0; x < w; x++) {
-						final int arrayIndex = rowIndex + x;
-						if (workArray[z][arrayIndex] == phase) {
-							particleLabels[z][arrayIndex] = ID;
-							int minTag = ID;
-							// Find the minimum particleLabel in the
-							// neighbouring pixels
-							int nX = x, nY = y, nZ = z;
-							for (int n = 0; n < 7; n++) {
-								switch (n) {
-								case 0:
-									break;
-								case 1:
-									nX = x - 1;
-									break;
-								case 2:
-									nX = x + 1;
-									break;
-								case 3:
-									nY = y - 1;
-									nX = x;
-									break;
-								case 4:
-									nY = y + 1;
-									break;
-								case 5:
-									nZ = z - 1;
-									nY = y;
-									break;
-								case 6:
-									nZ = z + 1;
-									break;
-								}
-								if (withinBounds(nX, nY, nZ, w, h, 0, d)) {
-									final int offset = getOffset(nX, nY, w);
-									if (workArray[nZ][offset] == phase) {
-										final int tagv = particleLabels[nZ][offset];
-										if (tagv != 0 && tagv < minTag) {
-											minTag = tagv;
-										}
-									}
-								}
-							}
-							// assign the smallest particle label from the
-							// neighbours to the pixel
-							particleLabels[z][arrayIndex] = minTag;
-							// increment the particle label
-							if (minTag == ID) {
-								ID++;
-							}
-						}
-					}
-				}
-				IJ.showProgress(z, d);
-			}
-			ID++;
-		}
-		return particleLabels;
-	}
-
-	/**
-	 * Connect structures = minimisation of IDs
-	 *
-	 * @param imp an image.
-	 * @param workArray work array.
-	 * @param particleLabels particles in the image.
-	 * @param phase foreground or background
-	 * @param scanRanges int[][] listgetPixel(particleLabels, x, y, z, w, h,
-	 *          d);ing ranges to run connectStructures on
-	 */
-	private void connectStructures(final ImagePlus imp, final byte[][] workArray, final int[][] particleLabels,
-			final int phase, final int[][] scanRanges) {
-		IJ.showStatus("Connecting " + sPhase + " structures" + chunkString);
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		for (int c = 0; c < scanRanges[0].length; c++) {
-			final int sR0 = scanRanges[0][c];
-			final int sR1 = scanRanges[1][c];
-			final int sR2 = scanRanges[2][c];
-			final int sR3 = scanRanges[3][c];
-			if (phase == FORE) {
-				for (int z = sR0; z < sR1; z++) {
-					for (int y = 0; y < h; y++) {
-						final int rowIndex = y * w;
-						for (int x = 0; x < w; x++) {
-							final int arrayIndex = rowIndex + x;
-							if (workArray[z][arrayIndex] == phase && particleLabels[z][arrayIndex] > 1) {
-								int minTag = particleLabels[z][arrayIndex];
-								// Find the minimum particleLabel in the
-								// neighbours' pixels
-								for (int vZ = z - 1; vZ <= z + 1; vZ++) {
-									for (int vY = y - 1; vY <= y + 1; vY++) {
-										for (int vX = x - 1; vX <= x + 1; vX++) {
-											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
-												final int offset = getOffset(vX, vY, w);
-												if (workArray[vZ][offset] == phase) {
-													final int tagv = particleLabels[vZ][offset];
-													if (tagv != 0 && tagv < minTag) {
-														minTag = tagv;
-													}
-												}
-											}
-										}
-									}
-								}
-								// Replacing particleLabel by the minimum
-								// particleLabel found
-								for (int vZ = z - 1; vZ <= z + 1; vZ++) {
-									for (int vY = y - 1; vY <= y + 1; vY++) {
-										for (int vX = x - 1; vX <= x + 1; vX++) {
-											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
-												final int offset = getOffset(vX, vY, w);
-												if (workArray[vZ][offset] == phase) {
-													final int tagv = particleLabels[vZ][offset];
-													if (tagv != 0 && tagv != minTag) {
-														replaceLabel(particleLabels, tagv, minTag, sR2, sR3);
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-					IJ.showStatus("Connecting foreground structures" + chunkString);
-					IJ.showProgress(z, d);
-				}
-			} else if (phase == BACK) {
-				for (int z = sR0; z < sR1; z++) {
-					for (int y = 0; y < h; y++) {
-						final int rowIndex = y * w;
-						for (int x = 0; x < w; x++) {
-							final int arrayIndex = rowIndex + x;
-							if (workArray[z][arrayIndex] == phase) {
-								int minTag = particleLabels[z][arrayIndex];
-								// Find the minimum particleLabel in the
-								// neighbours' pixels
-								int nX = x, nY = y, nZ = z;
-								for (int n = 0; n < 7; n++) {
-									switch (n) {
-									case 0:
-										break;
-									case 1:
-										nX = x - 1;
-										break;
-									case 2:
-										nX = x + 1;
-										break;
-									case 3:
-										nY = y - 1;
-										nX = x;
-										break;
-									case 4:
-										nY = y + 1;
-										break;
-									case 5:
-										nZ = z - 1;
-										nY = y;
-										break;
-									case 6:
-										nZ = z + 1;
-										break;
-									}
-									if (withinBounds(nX, nY, nZ, w, h, sR2, sR3)) {
-										final int offset = getOffset(nX, nY, w);
-										if (workArray[nZ][offset] == phase) {
-											final int tagv = particleLabels[nZ][offset];
-											if (tagv != 0 && tagv < minTag) {
-												minTag = tagv;
-											}
-										}
-									}
-								}
-								// Replacing particleLabel by the minimum
-								// particleLabel found
-								for (int n = 0; n < 7; n++) {
-									switch (n) {
-									case 0:
-										nZ = z;
-										break; // last switch block left nZ = z
-									// + 1;
-									case 1:
-										nX = x - 1;
-										break;
-									case 2:
-										nX = x + 1;
-										break;
-									case 3:
-										nY = y - 1;
-										nX = x;
-										break;
-									case 4:
-										nY = y + 1;
-										break;
-									case 5:
-										nZ = z - 1;
-										nY = y;
-										break;
-									case 6:
-										nZ = z + 1;
-										break;
-									}
-									if (withinBounds(nX, nY, nZ, w, h, sR2, sR3)) {
-										final int offset = getOffset(nX, nY, w);
-										if (workArray[nZ][offset] == phase) {
-											final int tagv = particleLabels[nZ][offset];
-											if (tagv != 0 && tagv != minTag) {
-												replaceLabel(particleLabels, tagv, minTag, sR2, sR3);
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-					IJ.showStatus("Connecting background structures" + chunkString);
-					IJ.showProgress(z, d + 1);
-				}
-			}
-		}
-		return;
-	}
-
-	class ConnectStructuresThread extends Thread {
-		final ImagePlus imp;
-
-		final int thread, nThreads, nChunks, phase;
-
-		final byte[][] workArray;
-
-		final int[][] particleLabels;
-
-		final int[][] chunkRanges;
-
-		public ConnectStructuresThread(final int thread, final int nThreads, final ImagePlus imp,
-				final byte[][] workArray, final int[][] particleLabels, final int phase, final int nChunks,
-				final int[][] chunkRanges) {
-			this.imp = imp;
-			this.thread = thread;
-			this.nThreads = nThreads;
-			this.workArray = workArray;
-			this.particleLabels = particleLabels;
-			this.phase = phase;
-			this.nChunks = nChunks;
-			this.chunkRanges = chunkRanges;
-		}
-
-		@Override
-		public void run() {
-			for (int k = this.thread; k < this.nChunks; k += this.nThreads) {
-				// assign singleChunkRange for chunk k from chunkRanges
-				final int[][] singleChunkRange = new int[4][1];
-				for (int i = 0; i < 4; i++) {
-					singleChunkRange[i][0] = this.chunkRanges[i][k];
-				}
-				chunkString = ": chunk " + (k + 1) + "/" + nChunks;
-				connectStructures(this.imp, this.workArray, this.particleLabels, this.phase, singleChunkRange);
-			}
-		}
-	}// ConnectStructuresThread
-
-	/**
-	 * Joins semi-labelled particles using a non-recursive algorithm
-	 *
-	 * @param imp an image.
-	 * @param particleLabels particles in the image.
-	 * @param phase foreground or background
-	 */
-	private void joinStructures(final ImagePlus imp, final int[][] particleLabels, final int phase) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final long[] particleSizes = getParticleSizes(particleLabels);
-		final int nBlobs = particleSizes.length;
-		final ArrayList<ArrayList<short[]>> particleLists = getParticleLists(particleLabels, nBlobs, w, h, d);
-		switch (phase) {
-		case FORE: {
-			for (int b = 1; b < nBlobs; b++) {
-				IJ.showStatus("Joining substructures...");
-				IJ.showProgress(b, nBlobs);
-				if (particleLists.get(b).isEmpty()) {
-					continue;
-				}
-
-				for (int l = 0; l < particleLists.get(b).size(); l++) {
-					final short[] voxel = particleLists.get(b).get(l);
-					final int x = voxel[0];
-					final int y = voxel[1];
-					final int z = voxel[2];
-					// find any neighbours with bigger labels
-					for (int zN = z - 1; zN <= z + 1; zN++) {
-						for (int yN = y - 1; yN <= y + 1; yN++) {
-							final int index = yN * w;
-							for (int xN = x - 1; xN <= x + 1; xN++) {
-								if (!withinBounds(xN, yN, zN, w, h, d))
-									continue;
-								final int iN = index + xN;
-								final int p = particleLabels[zN][iN];
-								if (p > b) {
-									joinBlobs(b, p, particleLabels, particleLists, w);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		case BACK: {
-			for (int b = 1; b < nBlobs; b++) {
-				IJ.showStatus("Joining substructures...");
-				IJ.showProgress(b, nBlobs);
-				if (particleLists.get(b).isEmpty()) {
-					continue;
-				}
-				for (int l = 0; l < particleLists.get(b).size(); l++) {
-					final short[] voxel = particleLists.get(b).get(l);
-					final int x = voxel[0];
-					final int y = voxel[1];
-					final int z = voxel[2];
-					// find any neighbours with bigger labels
-					int xN = x, yN = y, zN = z;
-					for (int n = 1; n < 7; n++) {
-						switch (n) {
-						case 1:
-							xN = x - 1;
-							break;
-						case 2:
-							xN = x + 1;
-							break;
-						case 3:
-							yN = y - 1;
-							xN = x;
-							break;
-						case 4:
-							yN = y + 1;
-							break;
-						case 5:
-							zN = z - 1;
-							yN = y;
-							break;
-						case 6:
-							zN = z + 1;
-							break;
-						}
-						if (!withinBounds(xN, yN, zN, w, h, d))
-							continue;
-						final int iN = yN * w + xN;
-						final int p = particleLabels[zN][iN];
-						if (p > b) {
-							joinBlobs(b, p, particleLabels, particleLists, w);
-						}
-					}
-				}
-			}
-		}
-		}
-		return;
-	}
-
-	private ArrayList<ArrayList<short[]>> getParticleLists(final int[][] particleLabels, final int nBlobs, final int w,
-            final int h, final int d) {
-		final ArrayList<ArrayList<short[]>> pL = new ArrayList<ArrayList<short[]>>(nBlobs);
-		final long[] particleSizes = getParticleSizes(particleLabels);
-		final ArrayList<short[]> background = new ArrayList<short[]>(0);
-		pL.add(0, background);
 		for (int b = 1; b < nBlobs; b++) {
-			final ArrayList<short[]> a = new ArrayList<short[]>((int) particleSizes[b]);
-			pL.add(b, a);
+			pL.add(new ArrayList<>((int) particleSizes[b]));
 		}
 		// add all the particle coordinates to the appropriate list
 		for (short z = 0; z < d; z++) {
@@ -1915,466 +1650,106 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Join particle p to particle b, relabelling p with b.
+	 * Get particles, particle labels and particle sizes from a 3D ImagePlus
 	 *
-	 * @param b a particle label.
-	 * @param p another particle label.
-	 * @param particleLabels array of particle labels
-	 * @param particleLists list of particle voxel coordinates
-	 * @param w stack width
+	 * @param imp Binary input image
+	 * @param slicesPerChunk number of slices per chunk. 2 is generally good.
+	 * @param minVol minimum volume particle to include
+	 * @param maxVol maximum volume particle to include
+	 * @param phase foreground or background (FORE or BACK)
+	 * @param doExclude if true, remove particles touching sides of the stack
+	 * @return Object[] {byte[][], int[][]} containing a binary workArray and
+	 *         particle labels.
 	 */
-	public void joinBlobs(final int b, final int p, final int[][] particleLabels,
-			final ArrayList<ArrayList<short[]>> particleLists, final int w) {
-		final ListIterator<short[]> iterB = particleLists.get(p).listIterator();
-		while (iterB.hasNext()) {
-			final short[] voxelB = iterB.next();
-			particleLists.get(b).add(voxelB);
-			final int iB = voxelB[1] * w + voxelB[0];
-			particleLabels[voxelB[2]][iB] = b;
-		}
-		particleLists.get(p).clear();
+	private Object[] getParticles(final ImagePlus imp, final int slicesPerChunk,
+		final double minVol, final double maxVol, final int phase,
+		final boolean doExclude)
+	{
+		final byte[][] workArray = makeWorkArray(imp);
+		return getParticles(imp, workArray, slicesPerChunk, minVol, maxVol, phase,
+			doExclude);
 	}
 
-	private void joinMappedStructures(final ImagePlus imp, final int[][] particleLabels, final int nParticles,
-			final int phase) {
-		IJ.showStatus("Mapping structures and joining...");
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-
-		final ArrayList<HashSet<Integer>> map = new ArrayList<HashSet<Integer>>(nParticles + 1);
-
-		final int[] lut = new int[nParticles + 1];
-		// set each label to be its own root
-		final int initialCapacity = 1;
-		for (int i = 0; i < nParticles + 1; i++) {
-			lut[i] = i;
-			final Integer root = Integer.valueOf(i);
-			final HashSet<Integer> set = new HashSet<Integer>(initialCapacity);
-			set.add(root);
-			map.add(set);
-		}
-
-		// populate the first list with neighbourhoods
-		int[] nbh = null;
-		if (phase == FORE)
-			nbh = new int[26];
-		else if (phase == BACK)
-			nbh = new int[6];
-		for (int z = 0; z < d; z++) {
-			IJ.showStatus("Building neighbourhood list");
-			IJ.showProgress(z, d - 1);
-			final int[] slice = particleLabels[z];
-			for (int y = 0; y < h; y++) {
-				final int yw = y * w;
-				for (int x = 0; x < w; x++) {
-					final int centre = slice[yw + x];
-					// ignore background
-					if (centre == 0)
-						continue;
-					if (phase == FORE)
-						get26Neighborhood(nbh, particleLabels, x, y, z, w, h, d);
-					else if (phase == BACK)
-						get6Neighborhood(nbh, particleLabels, x, y, z, w, h, d);
-					addNeighboursToMap(map, nbh, centre);
-				}
-			}
-		}
-		// map now contains for every value the set of first degree neighbours
-
-		IJ.showStatus("Minimising list and generating LUT...");
-		// place to store counts of each label
-		final int[] counter = new int[lut.length];
-
-		// place to map lut values and targets
-		// lutList lists the indexes which point to each transformed lutvalue
-		// for quick updating
-		final ArrayList<HashSet<Integer>> lutList = new ArrayList<HashSet<Integer>>(nParticles);
-
-		// initialise the lutList
-		for (int i = 0; i <= nParticles; i++) {
-			final HashSet<Integer> set = new HashSet<Integer>(2);
-			lutList.add(set);
-		}
-
-		// set it up. ArrayList index is now the transformed value
-		// list contains the lut indices that have the transformed value
-		for (int i = 1; i < nParticles; i++) {
-			final HashSet<Integer> list = lutList.get(lut[i]);
-			list.add(Integer.valueOf(i));
-		}
-
-		// initialise LUT with minimal label in set
-		updateLUTwithMinPosition(lut, map, lutList);
-
-		// find the minimal position of each value
-		findFirstAppearance(lut, map);
-
-		// de-chain the lut array
-		minimiseLutArray(lut);
-
-		int duplicates = Integer.MAX_VALUE;
-		boolean snowball = true;
-		boolean merge = true;
-		boolean update = true;
-		boolean find = true;
-		boolean minimise = true;
-		boolean consistent = false;
-		while ((duplicates > 0) && snowball && merge && update && find && minimise && !consistent) {
-			snowball = snowballLUT(lut, map, lutList);
-
-			duplicates = countDuplicates(counter, map, lut);
-
-			// merge duplicates
-			merge = mergeDuplicates(map, counter, duplicates, lut, lutList);
-
-			// update the LUT
-			update = updateLUTwithMinPosition(lut, map, lutList);
-
-			find = findFirstAppearance(lut, map);
-
-			// minimise the LUT
-			minimise = minimiseLutArray(lut);
-
-			consistent = checkConsistence(lut, map);
-		}
-
-		// replace all labels with LUT values
-		applyLUT(particleLabels, lut, w, h, d);
-		IJ.showStatus("LUT applied");
-	}
-
-	private boolean checkConsistence(final int[] lut, final ArrayList<HashSet<Integer>> map) {
-		final int l = lut.length;
-		Integer val = null;
-		for (int i = 1; i < l; i++) {
-			val = Integer.valueOf(i);
-			if (!map.get(lut[i]).contains(val))
-				return false;
-		}
-		return true;
-	}
-
-	private boolean findFirstAppearance(final int[] lut, final ArrayList<HashSet<Integer>> map) {
-		final int l = map.size();
-		boolean changed = false;
-		for (int i = 0; i < l; i++) {
-			final HashSet<Integer> set = map.get(i);
-			for (final Integer val : set) {
-				// if the current lut value is greater
-				// than the current position
-				// update lut with current position
-				final int v = val.intValue();
-				if (lut[v] > i) {
-					lut[v] = i;
-					changed = true;
-				}
-			}
-		}
-		return changed;
-	}
-
-	private boolean updateLUTwithMinPosition(final int[] lut, final ArrayList<HashSet<Integer>> map,
-			final ArrayList<HashSet<Integer>> lutList) {
-		final int l = lut.length;
-		final boolean changed = false;
-		for (int i = 1; i < l; i++) {
-			final HashSet<Integer> set = map.get(i);
-			if (set.isEmpty())
-				continue;
-			// find minimal value or lut value in the set
-			int min = Integer.MAX_VALUE;
-			int minLut = Integer.MAX_VALUE;
-			for (final Integer val : set) {
-				final int v = val.intValue();
-				min = Math.min(min, v);
-				minLut = Math.min(minLut, lut[v]);
-			}
-			// min now contains the smaller of the neighbours or their LUT
-			// values
-			min = Math.min(min, minLut);
-			// add minimal value to lut
-			final HashSet<Integer> target = map.get(min);
-			for (final Integer val : set) {
-				target.add(val);
-				final int v = val.intValue();
-				if (lut[v] > min)
-					lut[v] = min;
-			}
-			set.clear();
-			updateLUT(i, min, lut, lutList);
-		}
-		return changed;
-	}
-
-	private boolean mergeDuplicates(final ArrayList<HashSet<Integer>> map, final int[] counter, final int duplicates,
-			final int[] lut, final ArrayList<HashSet<Integer>> lutList) {
-		boolean changed = false;
-		// create a list of duplicate values to check for
-		final int[] dupList = new int[duplicates];
-		final int l = counter.length;
-		int dup = 0;
-		for (int i = 1; i < l; i++) {
-			if (counter[i] > 1)
-				dupList[dup] = i;
-			dup++;
-		}
-
-		// find duplicates hiding in sets which are greater than the lut
-		// HashSet<Integer> set = null;
-		// HashSet<Integer> target = null;
-		// Iterator<Integer> iter = null;
-		// Integer val = null;
-		for (int i = 1; i < l; i++) {
-			final HashSet<Integer> set = map.get(i);
-			if (set.isEmpty())
-				continue;
-			for (final int d : dupList) {
-				// if we are in the lut key of this value, continue
-				final int lutValue = lut[d];
-				if (lutValue == i)
-					continue;
-				// otherwise check to see if the non-lut set contains our dup
-				if (set.contains(Integer.valueOf(d))) {
-					// we found a dup, merge whole set back to lut
-					changed = true;
-					final Iterator<Integer> iter = set.iterator();
-					final HashSet<Integer> target = map.get(lutValue);
-					// if (target.isEmpty())
-					// IJ.log("attempting to merge with empty target"
-					// + lutValue);
-					while (iter.hasNext()) {
-						final Integer val = iter.next();
-						target.add(val);
-						lut[val.intValue()] = lutValue;
-					}
-					// empty the set
-					set.clear();
-					updateLUT(i, lutValue, lut, lutList);
-					// move to the next set
-					break;
-
-				}
-			}
-		}
-		return changed;
+	private Object[] getParticles(final ImagePlus imp, final int phase) {
+		final byte[][] workArray = makeWorkArray(imp);
+		final double minVol = 0;
+		final double maxVol = Double.POSITIVE_INFINITY;
+		return getParticles(imp, workArray, 4, minVol, maxVol, phase, false);
 	}
 
 	/**
-	 * Iterate backwards over map entries, moving set values to their new lut
-	 * positions in the map. Updates LUT value of shifted values
+	 * Get particles, particle labels and sizes from a workArray using an
+	 * ImagePlus for scale information
 	 *
-	 * @param lut a color look-up table.
-	 * @param map a map of LUT values.
-	 * @return false if nothing changed, true if something changed
+	 * @param imp input binary image
+	 * @param workArray work array
+	 * @param slicesPerChunk number of slices to use for each chunk
+	 * @param minVol minimum volume particle to include
+	 * @param maxVol maximum volume particle to include
+	 * @param phase FORE or BACK for foreground or background respectively
+	 * @param doExclude exclude particles touching the edges.
+	 * @return Object[] array containing a binary workArray, particle labels and
+	 *         particle sizes
 	 */
-	private boolean snowballLUT(final int[] lut, final ArrayList<HashSet<Integer>> map,
-			final ArrayList<HashSet<Integer>> lutList) {
-		// HashSet<Integer> set = null;
-		// HashSet<Integer> target = null;
-		boolean changed = false;
-		for (int i = lut.length - 1; i > 0; i--) {
-			IJ.showStatus("Snowballing labels...");
-			IJ.showProgress(lut.length - i + 1, lut.length);
-			final int lutValue = lut[i];
-			if (lutValue < i) {
-				changed = true;
-				final HashSet<Integer> set = map.get(i);
-				final HashSet<Integer> target = map.get(lutValue);
-				// if (target.isEmpty())
-				// IJ.log("merging with empty target " + lutValue);
-				for (final Integer n : set) {
-					target.add(n);
-					lut[n.intValue()] = lutValue;
-				}
-				// set is made empty
-				// if later tests come across empty sets, then
-				// must look up the lut to find the new location of the
-				// neighbour network
-				set.clear();
-				// update lut so that anything pointing
-				// to cleared set points to the new set
-				updateLUT(i, lutValue, lut, lutList);
+	private Object[] getParticles(final ImagePlus imp, final byte[][] workArray,
+		final int slicesPerChunk, final double minVol, final double maxVol,
+		final int phase, final boolean doExclude)
+	{
+		if (phase == FORE) {
+			sPhase = "foreground";
+		}
+		else if (phase == BACK) {
+			sPhase = "background";
+		}
+		else {
+			throw new IllegalArgumentException();
+		}
+		if (slicesPerChunk < 1) {
+			throw new IllegalArgumentException();
+		}
+		// Set up the chunks
+		final int[][] particleLabels = firstIDAttribution(imp, workArray, phase);
+		if (labelMethod == JOINING.MULTI) {
+			// connect particles within chunks
+			final int nChunks = getNChunks(imp, slicesPerChunk);
+			final int nThreads = Runtime.getRuntime().availableProcessors();
+			final ConnectStructuresThread[] cptf =
+				new ConnectStructuresThread[nThreads];
+			final int[][] chunkRanges = getChunkRanges(imp, nChunks, slicesPerChunk);
+			for (int thread = 0; thread < nThreads; thread++) {
+				cptf[thread] = new ConnectStructuresThread(thread, nThreads, imp,
+					workArray, particleLabels, phase, nChunks, chunkRanges);
+				cptf[thread].start();
 			}
-		}
-		return changed;
-	}
-
-	/**
-	 * Replace old value with new value in LUT using map
-	 *
-	 * @param oldValue a LUT value to be replaced.
-	 * @param newValue new value of the LUT value.
-	 * @param lut a look-up table.
-	 * @param lutlist hash of LUT values.
-	 */
-	private void updateLUT(final int oldValue, final int newValue, final int[] lut,
-			final ArrayList<HashSet<Integer>> lutlist) {
-		final HashSet<Integer> list = lutlist.get(oldValue);
-		final HashSet<Integer> newList = lutlist.get(newValue);
-
-		for (final Integer in : list) {
-			lut[in] = newValue;
-			newList.add(in);
-		}
-		list.clear();
-	}
-
-	/**
-	 * Find duplicated values and update the LUT
-	 *
-	 * @param counter counts of LUT values.
-	 * @param map map of LUT values.
-	 * @param lut a look-up table.
-	 * @return total number of duplicate values found.
-	 */
-	private int countDuplicates(int[] counter, final ArrayList<HashSet<Integer>> map, final int[] lut) {
-		// reset to 0 the counter array
-		final int l = counter.length;
-		counter = new int[l];
-		HashSet<Integer> set = null;
-		for (int i = 1; i < map.size(); i++) {
-			set = map.get(i);
-			for (final Integer val : set) {
-				final int v = val;
-				// every time a value is seen, log it
-				counter[v]++;
-				// update its LUT value if value was
-				// found in a set with lower than current
-				// lut value
-				if (lut[v] > i)
-					lut[v] = i;
-			}
-		}
-		minimiseLutArray(lut);
-		// all values should be seen only once,
-		// count how many >1s there are.
-		int count = 0;
-		for (int i = 1; i < l; i++) {
-			if (counter[i] > 1)
-				count++;
-		}
-		return count;
-	}
-
-	/**
-	 * Add all the neighbouring labels of a pixel to the map, except 0
-	 * (background) and the pixel's own label, which is already in the map. The
-	 * LUT gets updated with the minimum neighbour found, but this is only within
-	 * the first neighbours and not the minimum label in the pixel's neighbour
-	 * network
-	 *
-	 * @param map a map of LUT values.
-	 * @param nbh a neighbourhood in the image.
-	 * @param centre current pixel's label
-	 */
-	private void addNeighboursToMap(final ArrayList<HashSet<Integer>> map, final int[] nbh, final int centre) {
-		final HashSet<Integer> set = map.get(centre);
-        Arrays.stream(nbh).filter(n -> n > 0).forEach(set::add);
-	}
-
-	private void applyLUT(final int[][] particleLabels, final int[] lut, final int w, final int h, final int d) {
-		for (int z = 0; z < d; z++) {
-			IJ.showStatus("Applying LUT...");
-			IJ.showProgress(z, d - 1);
-			final int[] slice = particleLabels[z];
-			for (int y = 0; y < h; y++) {
-				final int yw = y * w;
-				for (int x = 0; x < w; x++) {
-					final int i = yw + x;
-					final int label = slice[i];
-					if (label == 0)
-						continue;
-					slice[i] = lut[label];
+			try {
+				for (int thread = 0; thread < nThreads; thread++) {
+					cptf[thread].join();
 				}
 			}
+			catch (final InterruptedException ie) {
+				IJ.error("A thread was interrupted.");
+			}
+			// connect particles between chunks
+			if (nChunks > 1) {
+				chunkString = ": stitching...";
+				final int[][] stitchRanges = getStitchRanges(imp, nChunks,
+					slicesPerChunk);
+				connectStructures(imp, workArray, particleLabels, phase, stitchRanges);
+			}
 		}
-	}
-
-	private boolean minimiseLutArray(final int[] lutArray) {
-		final int l = lutArray.length;
-		boolean changed = false;
-		for (int key = 1; key < l; key++) {
-			final int value = lutArray[key];
-			// this is a root
-			if (value == key)
-				continue;
-			// otherwise update the current key with the
-			// value from the referred key
-			final int minValue = lutArray[value];
-			lutArray[key] = minValue;
-			changed = true;
+		else if (labelMethod == JOINING.LINEAR) {
+			joinStructures(imp, particleLabels, phase);
 		}
-		return changed;
-	}
+		else if (labelMethod == JOINING.MAPPED) {
+			final int nParticles = getParticleSizes(particleLabels).length;
+			joinMappedStructures(imp, particleLabels, nParticles, phase);
+		}
+		filterParticles(imp, workArray, particleLabels, minVol, maxVol, phase);
+		if (doExclude) excludeOnEdges(imp, particleLabels, workArray);
+		minimiseLabels(particleLabels);
+		final long[] particleSizes = getParticleSizes(particleLabels);
+		return new Object[] { workArray, particleLabels, particleSizes };
 
-	/**
-	 * Get neighborhood of a pixel in a 3D image (0 border conditions)
-	 *
-	 * @param neighborhood a neighbourhood in the image.
-	 * @param image 3D image (int[][])
-	 * @param x x- coordinate
-	 * @param y y- coordinate
-	 * @param z z- coordinate (in image stacks the indexes start at 1)
-	 * @param w width of the image.
-	 * @param h height of the image.
-	 * @param d depth of the image.
-	 */
-	private void get26Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y, final int z,
-			final int w, final int h, final int d) {
-		// if (phase == FORE) {
-		// int[] neighborhood = new int[26];
-
-		neighborhood[0] = getPixel(image, x - 1, y - 1, z - 1, w, h, d);
-		neighborhood[1] = getPixel(image, x, y - 1, z - 1, w, h, d);
-		neighborhood[2] = getPixel(image, x + 1, y - 1, z - 1, w, h, d);
-
-		neighborhood[3] = getPixel(image, x - 1, y, z - 1, w, h, d);
-		neighborhood[4] = getPixel(image, x, y, z - 1, w, h, d);
-		neighborhood[5] = getPixel(image, x + 1, y, z - 1, w, h, d);
-
-		neighborhood[6] = getPixel(image, x - 1, y + 1, z - 1, w, h, d);
-		neighborhood[7] = getPixel(image, x, y + 1, z - 1, w, h, d);
-		neighborhood[8] = getPixel(image, x + 1, y + 1, z - 1, w, h, d);
-
-		neighborhood[9] = getPixel(image, x - 1, y - 1, z, w, h, d);
-		neighborhood[10] = getPixel(image, x, y - 1, z, w, h, d);
-		neighborhood[11] = getPixel(image, x + 1, y - 1, z, w, h, d);
-
-		neighborhood[12] = getPixel(image, x - 1, y, z, w, h, d);
-		// neighborhood[13] = getPixel(image, x, y, z, w, h, d);
-		neighborhood[13] = getPixel(image, x + 1, y, z, w, h, d);
-
-		neighborhood[14] = getPixel(image, x - 1, y + 1, z, w, h, d);
-		neighborhood[15] = getPixel(image, x, y + 1, z, w, h, d);
-		neighborhood[16] = getPixel(image, x + 1, y + 1, z, w, h, d);
-
-		neighborhood[17] = getPixel(image, x - 1, y - 1, z + 1, w, h, d);
-		neighborhood[18] = getPixel(image, x, y - 1, z + 1, w, h, d);
-		neighborhood[19] = getPixel(image, x + 1, y - 1, z + 1, w, h, d);
-
-		neighborhood[20] = getPixel(image, x - 1, y, z + 1, w, h, d);
-		neighborhood[21] = getPixel(image, x, y, z + 1, w, h, d);
-		neighborhood[22] = getPixel(image, x + 1, y, z + 1, w, h, d);
-
-		neighborhood[23] = getPixel(image, x - 1, y + 1, z + 1, w, h, d);
-		neighborhood[24] = getPixel(image, x, y + 1, z + 1, w, h, d);
-		neighborhood[25] = getPixel(image, x + 1, y + 1, z + 1, w, h, d);
-
-		// return neighborhood;
-	}
-
-	private void get6Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y, final int z,
-			final int w, final int h, final int d) {
-		// int[] neighborhood = new int[6];
-		neighborhood[0] = getPixel(image, x - 1, y, z, w, h, d);
-		neighborhood[1] = getPixel(image, x, y - 1, z, w, h, d);
-		neighborhood[2] = getPixel(image, x, y, z - 1, w, h, d);
-
-		neighborhood[3] = getPixel(image, x + 1, y, z, w, h, d);
-		neighborhood[4] = getPixel(image, x, y + 1, z, w, h, d);
-		neighborhood[5] = getPixel(image, x, y, z + 1, w, h, d);
-		// return neighborhood;
 	}
 
 	/**
@@ -2389,70 +1764,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param d depth of the image.
 	 * @return corresponding pixel (0 if out of image)
 	 */
-	private int getPixel(final int[][] image, final int x, final int y, final int z, final int w, final int h,
-			final int d) {
-		if (withinBounds(x, y, z, w, h, d))
-			return image[z][x + y * w];
+	private static int getPixel(final int[][] image, final int x, final int y,
+		final int z, final int w, final int h, final int d)
+	{
+		if (withinBounds(x, y, z, w, h, d)) return image[z][x + y * w];
 
 		return 0;
-	} /* end getPixel */
-
-	/**
-	 * Create a work array
-	 *
-     * @param imp an image.
-	 * @return byte[][] work array
-	 */
-	private byte[][] makeWorkArray(final ImagePlus imp) {
-		final int s = imp.getStackSize();
-		final int p = imp.getWidth() * imp.getHeight();
-		final byte[][] workArray = new byte[s][p];
-		final ImageStack stack = imp.getStack();
-		for (int z = 0; z < s; z++) {
-			final ImageProcessor ip = stack.getProcessor(z + 1);
-			for (int i = 0; i < p; i++) {
-				workArray[z][i] = (byte) ip.get(i);
-			}
-		}
-		return workArray;
-	}
-
-	/**
-	 * Get a 2 d array that defines the z-slices to scan within while connecting
-	 * particles within chunkified stacks.
-	 *
-	 * @param imp an image.
-	 * @param nC number of chunks
-	 * @param slicesPerChunk number of slices chunks process.
-	 * @return scanRanges int[][] containing 4 limits: int[0][] - start of outer
-	 *         for; int[1][] end of outer for; int[3][] start of inner for; int[4]
-	 *         end of inner 4. Second dimension is chunk number.
-	 */
-	public int[][] getChunkRanges(final ImagePlus imp, final int nC, final int slicesPerChunk) {
-		final int nSlices = imp.getImageStackSize();
-		final int[][] scanRanges = new int[4][nC];
-		scanRanges[0][0] = 0; // the first chunk starts at the first (zeroth)
-		// slice
-		scanRanges[2][0] = 0; // and that is what replaceLabel() will work on
-		// first
-
-		if (nC == 1) {
-			scanRanges[1][0] = nSlices;
-			scanRanges[3][0] = nSlices;
-		} else if (nC > 1) {
-			scanRanges[1][0] = slicesPerChunk;
-			scanRanges[3][0] = slicesPerChunk;
-
-			for (int c = 1; c < nC; c++) {
-				for (int i = 0; i < 4; i++) {
-					scanRanges[i][c] = scanRanges[i][c - 1] + slicesPerChunk;
-				}
-			}
-			// reduce the last chunk to nSlices
-			scanRanges[1][nC - 1] = nSlices;
-			scanRanges[3][nC - 1] = nSlices;
-		}
-		return scanRanges;
 	}
 
 	/**
@@ -2468,7 +1785,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @return scanRanges list of scan limits for connectStructures() to stitch
 	 *         chunks back together
 	 */
-	private int[][] getStitchRanges(final ImagePlus imp, final int nC, final int slicesPerChunk) {
+	private static int[][] getStitchRanges(final ImagePlus imp, final int nC,
+		final int slicesPerChunk)
+	{
 		final int nSlices = imp.getImageStackSize();
 		if (nC < 2) {
 			return null;
@@ -2511,49 +1830,414 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Check to see if the pixel at (m,n,o) is within the bounds of the current
-	 * stack
+	 * Calculate surface area of the isosurface
 	 *
-	 * @param m x co-ordinate
-	 * @param n y co-ordinate
-	 * @param o z co-ordinate
-	 * @param w width of the stack.
-	 * @param h height of the stack.
-	 * @param startZ first Z coordinate to use
-	 * @param endZ last Z coordinate to use
-	 * @return True if the pixel is within the bounds of the current stack
+	 * @param points in 3D triangle mesh
+	 * @return surface area
 	 */
-	private boolean withinBounds(final int m, final int n, final int o, final int w, final int h, final int startZ,
-			final int endZ) {
-		return (m >= 0 && m < w && n >= 0 && n < h && o >= startZ && o < endZ);
+	private static double getSurfaceArea(final List<Point3f> points) {
+		if (points == null) {
+			return 0;
+		}
+		double sumArea = 0;
+		final int nPoints = points.size();
+		final Point3f origin = new Point3f(0.0f, 0.0f, 0.0f);
+		for (int n = 0; n < nPoints; n += 3) {
+			IJ.showStatus("Calculating surface area...");
+			final Point3f cp = crossProduct(points.get(n), points.get(n + 1), points
+				.get(n + 2));
+			final double deltaArea = 0.5 * cp.distance(origin);
+			sumArea += deltaArea;
+		}
+		return sumArea;
 	}
 
-	private boolean withinBounds(final int m, final int n, final int o, final int w, final int h, final int d) {
-		return (m >= 0 && m < w && n >= 0 && n < h && o >= 0 && o < d);
+	private static double[] getSurfaceAreas(
+		final Collection<List<Point3f>> surfacePoints)
+	{
+		return surfacePoints.stream().mapToDouble(ParticleCounter::getSurfaceArea)
+			.toArray();
+	}
+
+	private static ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp,
+		final int[][] particleLabels, final int[][] limits, final int resampling,
+		final int nParticles)
+	{
+		final Calibration cal = imp.getCalibration();
+		final ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
+		final boolean[] channels = { true, false, false };
+		for (int p = 0; p < nParticles; p++) {
+			IJ.showStatus("Getting surface meshes...");
+			IJ.showProgress(p, nParticles);
+			if (p > 0) {
+				final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels,
+					limits, resampling);
+				// noinspection TypeMayBeWeakened
+				final MCTriangulator mct = new MCTriangulator();
+				@SuppressWarnings("unchecked")
+				final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels,
+					resampling);
+
+				final double xOffset = (limits[p][0] - 1) * cal.pixelWidth;
+				final double yOffset = (limits[p][2] - 1) * cal.pixelHeight;
+				final double zOffset = (limits[p][4] - 1) * cal.pixelDepth;
+				for (final Point3f point : points) {
+					point.x += xOffset;
+					point.y += yOffset;
+					point.z += zOffset;
+				}
+				surfacePoints.add(points);
+				if (points.isEmpty()) {
+					IJ.log("Particle " + p + " resulted in 0 surface points");
+				}
+			}
+			else {
+				surfacePoints.add(null);
+			}
+		}
+		return surfacePoints;
+	}
+
+	private static double[] getSurfaceVolume(
+		final Collection<List<Point3f>> surfacePoints)
+	{
+		return surfacePoints.stream().mapToDouble(p -> {
+			if (p == null) {
+				return 0;
+			}
+			final CustomTriangleMesh mesh = new CustomTriangleMesh(p);
+			return mesh.getVolume();
+		}).toArray();
+	}
+
+	private static double[] getVolumes(final ImagePlus imp,
+		final long[] particleSizes)
+	{
+		final Calibration cal = imp.getCalibration();
+		final double voxelVolume = cal.pixelWidth * cal.pixelHeight *
+			cal.pixelDepth;
+		final int nLabels = particleSizes.length;
+		final double[] particleVolumes = new double[nLabels];
+		for (int i = 0; i < nLabels; i++) {
+			particleVolumes[i] = voxelVolume * particleSizes[i];
+		}
+		return particleVolumes;
+	}
+
+	private static boolean isRadiiValid(final double[] radii) {
+		for (int r = 0; r < 3; r++) {
+			if (Double.isNaN(radii[r])) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
-	 * Find the offset within a 1D array given 2 (x, y) offset values
+	 * Join particle p to particle b, relabelling p with b.
 	 *
-	 * @param m x difference
-	 * @param n y difference
-	 * @param w width of the stack.
-	 * @return Integer offset for looking up pixel in work array
+	 * @param b a particle label.
+	 * @param p another particle label.
+	 * @param particleLabels array of particle labels
+	 * @param particleLists list of particle voxel coordinates
+	 * @param w stack width
 	 */
-	private int getOffset(final int m, final int n, final int w) {
-		return m + n * w;
+	private static void joinBlobs(final int b, final int p,
+		final int[][] particleLabels, final List<ArrayList<short[]>> particleLists,
+		final int w)
+	{
+		for (final short[] voxelB : particleLists.get(p)) {
+			particleLists.get(b).add(voxelB);
+			final int iB = voxelB[1] * w + voxelB[0];
+			particleLabels[voxelB[2]][iB] = b;
+		}
+		particleLists.get(p).clear();
+	}
+
+	private static void joinMappedStructures(final ImagePlus imp,
+		final int[][] particleLabels, final int nParticles, final int phase)
+	{
+		IJ.showStatus("Mapping structures and joining...");
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+
+		final List<HashSet<Integer>> map = new ArrayList<>(nParticles + 1);
+
+		final int[] lut = new int[nParticles + 1];
+		// set each label to be its own root
+		final int initialCapacity = 1;
+		for (int i = 0; i < nParticles + 1; i++) {
+			lut[i] = i;
+			final HashSet<Integer> set = new HashSet<>(initialCapacity);
+			set.add(i);
+			map.add(set);
+		}
+
+		// populate the first list with neighbourhoods
+		int[] nbh = null;
+		if (phase == FORE) nbh = new int[26];
+		else if (phase == BACK) nbh = new int[6];
+		for (int z = 0; z < d; z++) {
+			IJ.showStatus("Building neighbourhood list");
+			IJ.showProgress(z, d - 1);
+			final int[] slice = particleLabels[z];
+			for (int y = 0; y < h; y++) {
+				final int yw = y * w;
+				for (int x = 0; x < w; x++) {
+					final int centre = slice[yw + x];
+					// ignore background
+					if (centre == 0) continue;
+					if (phase == FORE) get26Neighborhood(nbh, particleLabels, x, y, z, w,
+						h, d);
+					else if (phase == BACK) get6Neighborhood(nbh, particleLabels, x, y, z,
+						w, h, d);
+					addNeighboursToMap(map, nbh, centre);
+				}
+			}
+		}
+		// map now contains for every value the set of first degree neighbours
+
+		IJ.showStatus("Minimising list and generating LUT...");
+
+		// place to map lut values and targets
+		// lutList lists the indexes which point to each transformed lutvalue
+		// for quick updating
+		final List<HashSet<Integer>> lutList = new ArrayList<>(nParticles);
+
+		// initialise the lutList
+		for (int i = 0; i <= nParticles; i++) {
+			lutList.add(new HashSet<>(2));
+		}
+
+		// set it up. ArrayList index is now the transformed value
+		// list contains the lut indices that have the transformed value
+		for (int i = 1; i < nParticles; i++) {
+			final HashSet<Integer> list = lutList.get(lut[i]);
+			list.add(i);
+		}
+
+		// initialise LUT with minimal label in set
+		updateLUTwithMinPosition(lut, map, lutList);
+
+		// find the minimal position of each value
+		findFirstAppearance(lut, map);
+
+		// de-chain the lut array
+		minimiseLutArray(lut);
+
+		long duplicates = Long.MAX_VALUE;
+		boolean snowball = true;
+		boolean merge = true;
+		boolean update = true;
+		boolean find = true;
+		boolean minimise = true;
+		boolean inconsistent = true;
+		while ((duplicates > 0) && snowball && merge && update && find &&
+			minimise && inconsistent)
+		{
+			snowball = snowballLUT(lut, map, lutList);
+			final int[] counter = new int[lut.length];
+			duplicates = countDuplicates(counter, map, lut);
+
+			// merge duplicates
+			merge = mergeDuplicates(map, counter, duplicates, lut, lutList);
+
+			// update the LUT
+			update = updateLUTwithMinPosition(lut, map, lutList);
+
+			find = findFirstAppearance(lut, map);
+
+			// minimise the LUT
+			minimise = minimiseLutArray(lut);
+
+			inconsistent = !checkConsistence(lut, map);
+		}
+
+		// replace all labels with LUT values
+		applyLUT(particleLabels, lut, w, h, d);
+		IJ.showStatus("LUT applied");
+	}
+
+	/**
+	 * Joins semi-labelled particles using a non-recursive algorithm
+	 *
+	 * @param imp an image.
+	 * @param particleLabels particles in the image.
+	 * @param phase foreground or background
+	 */
+	private void joinStructures(final ImagePlus imp, final int[][] particleLabels,
+		final int phase)
+	{
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		final int[] bounds = { w, h, d };
+		final long[] particleSizes = getParticleSizes(particleLabels);
+		final int nBlobs = particleSizes.length;
+		final ArrayList<ArrayList<short[]>> particleLists = getParticleLists(
+			particleLabels, nBlobs, w, h, d);
+		final BiFunction<int[], int[], List<int[]>> neighbourhoodFinder;
+		if (phase == BACK) {
+			neighbourhoodFinder = ParticleCounter::get6NeighbourhoodCoordinates;
+		}
+		else {
+			neighbourhoodFinder = ParticleCounter::get26NeighbourhoodCoordinates;
+		}
+		for (int b = 1; b < nBlobs; b++) {
+			IJ.showStatus("Joining substructures...");
+			IJ.showProgress(b, nBlobs);
+			final ArrayList<short[]> blob = particleLists.get(b);
+			if (blob.isEmpty()) {
+				continue;
+			}
+			for (final short[] voxel : blob) {
+				final int[] tmp = { voxel[0], voxel[1], voxel[2] };
+				final List<int[]> coordinates = neighbourhoodFinder.apply(tmp, bounds);
+				for (final int[] coordinate : coordinates) {
+					final int index = coordinate[1] * w + coordinate[0];
+					final int label = particleLabels[coordinate[2]][index];
+					if (label > b) {
+						joinBlobs(b, label, particleLabels, particleLists, w);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Create a work array
+	 *
+	 * @param imp an image.
+	 * @return byte[][] work array
+	 */
+	private static byte[][] makeWorkArray(final ImagePlus imp) {
+		final int s = imp.getStackSize();
+		final int p = imp.getWidth() * imp.getHeight();
+		final byte[][] workArray = new byte[s][p];
+		final ImageStack stack = imp.getStack();
+		for (int z = 0; z < s; z++) {
+			final ImageProcessor ip = stack.getProcessor(z + 1);
+			for (int i = 0; i < p; i++) {
+				workArray[z][i] = (byte) ip.get(i);
+			}
+		}
+		return workArray;
+	}
+
+	private static boolean mergeDuplicates(final List<HashSet<Integer>> map,
+		final int[] counter, final long duplicates, final int[] lut,
+		final List<HashSet<Integer>> lutList)
+	{
+		boolean changed = false;
+		// create a list of duplicate values to check for
+		final int[] dupList = new int[(int) duplicates];
+		final int l = counter.length;
+		int dup = 0;
+		for (int i = 1; i < l; i++) {
+			if (counter[i] > 1) dupList[dup] = i;
+			dup++;
+		}
+
+		// find duplicates hiding in sets which are greater than the lut
+		for (int i = 1; i < l; i++) {
+			final HashSet<Integer> set = map.get(i);
+			if (set.isEmpty()) continue;
+			for (final int d : dupList) {
+				// if we are in the lut key of this value, continue
+				final int lutValue = lut[d];
+				if (lutValue == i) continue;
+				// otherwise check to see if the non-lut set contains our dup
+				if (set.contains(d)) {
+					// we found a dup, merge whole set back to lut
+					changed = true;
+					final Iterator<Integer> iter = set.iterator();
+					final HashSet<Integer> target = map.get(lutValue);
+					while (iter.hasNext()) {
+						final Integer val = iter.next();
+						target.add(val);
+						lut[val] = lutValue;
+					}
+					// empty the set
+					set.clear();
+					updateLUT(i, lutValue, lut, lutList);
+					// move to the next set
+					break;
+				}
+			}
+		}
+		return changed;
+	}
+
+	/**
+	 * Gets rid of redundant particle labels
+	 *
+	 * @param particleLabels particles in the image.
+	 */
+	private void minimiseLabels(final int[][] particleLabels) {
+		IJ.showStatus("Minimising labels...");
+		final int d = particleLabels.length;
+		final long[] particleSizes = getParticleSizes(particleLabels);
+		final int nLabels = particleSizes.length;
+		final int[] newLabel = new int[nLabels];
+		int minLabel = 0;
+		// find the minimised labels
+		for (int i = 0; i < nLabels; i++) {
+			if (particleSizes[i] > 0) {
+				if (i == minLabel) {
+					newLabel[i] = i;
+					minLabel++;
+					continue;
+				}
+				newLabel[i] = minLabel;
+				particleSizes[minLabel] = particleSizes[i];
+				particleSizes[i] = 0;
+				minLabel++;
+			}
+		}
+		// now replace labels
+		final int wh = particleLabels[0].length;
+		for (int z = 0; z < d; z++) {
+			IJ.showStatus("Replacing with minimised labels...");
+			IJ.showProgress(z, d);
+			final int[] slice = particleLabels[z];
+			for (int i = 0; i < wh; i++) {
+				final int p = slice[i];
+				if (p > 0) {
+					slice[i] = newLabel[p];
+				}
+			}
+		}
+	}
+
+	private static boolean minimiseLutArray(final int[] lutArray) {
+		final int l = lutArray.length;
+		boolean changed = false;
+		for (int key = 1; key < l; key++) {
+			final int value = lutArray[key];
+			// this is a root
+			if (value == key) continue;
+			// otherwise update the current key with the
+			// value from the referred key
+			final int minValue = lutArray[value];
+			lutArray[key] = minValue;
+			changed = true;
+		}
+		return changed;
 	}
 
 	/**
 	 * Check whole array replacing m with n
 	 *
-     * @param particleLabels particles labelled in the image.
+	 * @param particleLabels particles labelled in the image.
 	 * @param m value to be replaced
 	 * @param n new value
 	 * @param startZ first z coordinate to check
 	 * @param endZ last+1 z coordinate to check
 	 */
-	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int startZ, final int endZ) {
+	private static void replaceLabel(final int[][] particleLabels, final int m,
+		final int n, final int startZ, final int endZ)
+	{
 		final int s = particleLabels[0].length;
 		for (int z = startZ; z < endZ; z++) {
 			for (int i = 0; i < s; i++)
@@ -2563,40 +2247,234 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	/**
-	 * Check whole array replacing m with n
-	 *
-     * @param particleLabels particle labels in the image.
-	 * @param m value to be replaced
-	 * @param n new value
-	 * @param startZ first z coordinate to check
-	 * @param endZ last+1 z coordinate to check
-	 * @param multithreaded true if label replacement should happen in multiple
-	 *          threads
-	 */
-	public void replaceLabel(final int[][] particleLabels, final int m, final int n, final int startZ, final int endZ,
-			final boolean multithreaded) {
-		if (!multithreaded) {
-			replaceLabel(particleLabels, m, n, startZ, endZ);
-			return;
-		}
-		final int s = particleLabels[0].length;
-		final AtomicInteger ai = new AtomicInteger(startZ);
-		final Thread[] threads = Multithreader.newThreads();
-		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					for (int z = ai.getAndIncrement(); z < endZ; z = ai.getAndIncrement()) {
-						for (int i = 0; i < s; i++)
-							if (particleLabels[z][i] == m) {
-								particleLabels[z][i] = n;
-							}
-					}
+	private static void replaceLabelsWithMinimum(
+		final Iterable<int[]> coordinates, final byte[][] workArray,
+		final int[][] particleLabels, final int w, final int phase, final int minZ,
+		final int maxZ)
+	{
+		final int minimumLabel = findMinimumLabel(coordinates, workArray,
+			particleLabels, w, phase, 0);
+		for (final int[] coordinate : coordinates) {
+			final int vX = coordinate[0];
+			final int vY = coordinate[1];
+			final int vZ = coordinate[2];
+			final int offset = getOffset(vX, vY, w);
+			if (workArray[vZ][offset] == phase) {
+				final int label = particleLabels[vZ][offset];
+				if (label != 0 && label != minimumLabel) {
+					replaceLabel(particleLabels, label, minimumLabel, minZ, maxZ);
 				}
-			});
+			}
 		}
-		Multithreader.startAndJoin(threads);
+	}
+
+	/**
+	 * Iterate backwards over map entries, moving set values to their new lut
+	 * positions in the map. Updates LUT value of shifted values
+	 *
+	 * @param lut a color look-up table.
+	 * @param map a map of LUT values.
+	 * @return false if nothing changed, true if something changed
+	 */
+	private static boolean snowballLUT(final int[] lut,
+		final List<HashSet<Integer>> map, final List<HashSet<Integer>> lutList)
+	{
+		boolean changed = false;
+		for (int i = lut.length - 1; i > 0; i--) {
+			IJ.showStatus("Snowballing labels...");
+			IJ.showProgress(lut.length - i + 1, lut.length);
+			final int lutValue = lut[i];
+			if (lutValue < i) {
+				changed = true;
+				final HashSet<Integer> set = map.get(i);
+				final HashSet<Integer> target = map.get(lutValue);
+				for (final Integer n : set) {
+					target.add(n);
+					lut[n] = lutValue;
+				}
+				// set is made empty
+				// if later tests come across empty sets, then
+				// must look up the lut to find the new location of the
+				// neighbour network
+				set.clear();
+				// update lut so that anything pointing
+				// to cleared set points to the new set
+				updateLUT(i, lutValue, lut, lutList);
+			}
+		}
+		return changed;
+	}
+
+	/**
+	 * Replace old value with new value in LUT using map
+	 *
+	 * @param oldValue a LUT value to be replaced.
+	 * @param newValue new value of the LUT value.
+	 * @param lut a look-up table.
+	 * @param lutlist hash of LUT values.
+	 */
+	private static void updateLUT(final int oldValue, final int newValue,
+		final int[] lut, final List<HashSet<Integer>> lutlist)
+	{
+		final HashSet<Integer> list = lutlist.get(oldValue);
+		final HashSet<Integer> newList = lutlist.get(newValue);
+
+		for (final Integer in : list) {
+			lut[in] = newValue;
+			newList.add(in);
+		}
+		list.clear();
+	}
+
+	private static boolean updateLUTwithMinPosition(final int[] lut,
+		final List<HashSet<Integer>> map, final List<HashSet<Integer>> lutList)
+	{
+		final int l = lut.length;
+		final boolean changed = false;
+		for (int i = 1; i < l; i++) {
+			final HashSet<Integer> set = map.get(i);
+			if (set.isEmpty()) continue;
+			// find minimal value or lut value in the set
+			int min = Integer.MAX_VALUE;
+			int minLut = Integer.MAX_VALUE;
+			for (final Integer val : set) {
+				min = Math.min(min, val);
+				minLut = Math.min(minLut, lut[val]);
+			}
+			// min now contains the smaller of the neighbours or their LUT
+			// values
+			min = Math.min(min, minLut);
+			// add minimal value to lut
+			final HashSet<Integer> target = map.get(min);
+			for (final Integer val : set) {
+				target.add(val);
+				if (lut[val] > min) lut[val] = min;
+			}
+			set.clear();
+			updateLUT(i, min, lut, lutList);
+		}
+		return changed;
+	}
+
+	private static boolean withinBounds(final int m, final int n, final int o,
+		final int w, final int h, final int d)
+	{
+		return (m >= 0 && m < w && n >= 0 && n < h && o >= 0 && o < d);
+	}
+
+	/** Particle joining method */
+	public enum JOINING {
+			MULTI, LINEAR, MAPPED
+	}
+
+	private final class ConnectStructuresThread extends Thread {
+
+		private final ImagePlus imp;
+		private final int thread;
+		private final int nThreads;
+		private final int nChunks;
+		private final int phase;
+		private final byte[][] workArray;
+		private final int[][] particleLabels;
+		private final int[][] chunkRanges;
+
+		private ConnectStructuresThread(final int thread, final int nThreads,
+			final ImagePlus imp, final byte[][] workArray,
+			final int[][] particleLabels, final int phase, final int nChunks,
+			final int[][] chunkRanges)
+		{
+			this.imp = imp;
+			this.thread = thread;
+			this.nThreads = nThreads;
+			this.workArray = workArray;
+			this.particleLabels = particleLabels;
+			this.phase = phase;
+			this.nChunks = nChunks;
+			this.chunkRanges = chunkRanges;
+		}
+
+		@Override
+		public void run() {
+			for (int k = thread; k < nChunks; k += nThreads) {
+				// assign singleChunkRange for chunk k from chunkRanges
+				final int[][] singleChunkRange = new int[4][1];
+				for (int i = 0; i < 4; i++) {
+					singleChunkRange[i][0] = chunkRanges[i][k];
+				}
+				chunkString = ": chunk " + (k + 1) + "/" + nChunks;
+				connectStructures(imp, workArray, particleLabels, phase,
+					singleChunkRange);
+			}
+		}
+	}
+
+	Object[] getParticles(final ImagePlus imp, final int slicesPerChunk,
+		final int phase)
+	{
+		final byte[][] workArray = makeWorkArray(imp);
+		return getParticles(imp, workArray, slicesPerChunk, 0.0,
+			Double.POSITIVE_INFINITY, phase, false);
+	}
+
+	Object[] getParticles(final ImagePlus imp, final byte[][] workArray,
+		final int slicesPerChunk, final int phase)
+	{
+		return getParticles(imp, workArray, slicesPerChunk, 0.0,
+			Double.POSITIVE_INFINITY, phase, false);
+	}
+
+	/**
+	 * Gets number of chunks needed to divide a stack into evenly-sized sets of
+	 * slices.
+	 *
+	 * @param imp input image
+	 * @param slicesPerChunk number of slices per chunk
+	 * @return number of chunks
+	 */
+	static int getNChunks(final ImagePlus imp, final int slicesPerChunk) {
+		final double d = imp.getImageStackSize();
+		return (int) Math.ceil(d / slicesPerChunk);
+	}
+
+	/**
+	 * Get a 2 d array that defines the z-slices to scan within while connecting
+	 * particles within chunkified stacks.
+	 *
+	 * @param imp an image.
+	 * @param nC number of chunks
+	 * @param slicesPerChunk number of slices chunks process.
+	 * @return scanRanges int[][] containing 4 limits: int[0][] - start of outer
+	 *         for; int[1][] end of outer for; int[3][] start of inner for; int[4]
+	 *         end of inner 4. Second dimension is chunk number.
+	 */
+	static int[][] getChunkRanges(final ImagePlus imp, final int nC,
+		final int slicesPerChunk)
+	{
+		final int nSlices = imp.getImageStackSize();
+		final int[][] scanRanges = new int[4][nC];
+		scanRanges[0][0] = 0; // the first chunk starts at the first (zeroth)
+		// slice
+		scanRanges[2][0] = 0; // and that is what replaceLabel() will work on
+		// first
+
+		if (nC == 1) {
+			scanRanges[1][0] = nSlices;
+			scanRanges[3][0] = nSlices;
+		}
+		else if (nC > 1) {
+			scanRanges[1][0] = slicesPerChunk;
+			scanRanges[3][0] = slicesPerChunk;
+
+			for (int c = 1; c < nC; c++) {
+				for (int i = 0; i < 4; i++) {
+					scanRanges[i][c] = scanRanges[i][c - 1] + slicesPerChunk;
+				}
+			}
+			// reduce the last chunk to nSlices
+			scanRanges[1][nC - 1] = nSlices;
+			scanRanges[3][nC - 1] = nSlices;
+		}
+		return scanRanges;
 	}
 
 	/**
@@ -2605,14 +2483,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param particleLabels particles in the image.
 	 * @return particleSizes sizes of the particles.
 	 */
-	public long[] getParticleSizes(final int[][] particleLabels) {
+	long[] getParticleSizes(final int[][] particleLabels) {
 		IJ.showStatus("Getting " + sPhase + " particle sizes");
 		final int d = particleLabels.length;
 		final int wh = particleLabels[0].length;
 		// find the highest value particleLabel
 		int maxParticle = 0;
-        for (int z = 0; z < d; z++) {
-			final int[] slice = particleLabels[z];
+		for (final int[] slice : particleLabels) {
 			for (int i = 0; i < wh; i++) {
 				maxParticle = Math.max(maxParticle, slice[i]);
 			}
@@ -2630,108 +2507,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Display the particle labels as an ImagePlus
-	 *
-	 * @param particleLabels particles labelled in the original image.
-	 * @param imp original image, used for image dimensions, calibration and
-	 *          titles
-	 * @return an image of the particles.
-	 */
-	private ImagePlus displayParticleLabels(final int[][] particleLabels, final ImagePlus imp) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final int wh = w * h;
-		final ImageStack stack = new ImageStack(w, h);
-		double max = 0;
-		for (int z = 0; z < d; z++) {
-			final float[] slicePixels = new float[wh];
-			for (int i = 0; i < wh; i++) {
-				slicePixels[i] = particleLabels[z][i];
-				max = Math.max(max, slicePixels[i]);
-			}
-			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), slicePixels);
-		}
-		final ImagePlus impParticles = new ImagePlus(imp.getShortTitle() + "_parts", stack);
-		impParticles.setCalibration(imp.getCalibration());
-		impParticles.getProcessor().setMinAndMax(0, max);
-		if (max > Math.pow(2, 24))
-			IJ.error("Warning", "More than 16777216 (2^24) particles./n/n"
-					+ "Particle image labels are inaccurate above this number.");
-		return impParticles;
-	}
-
-	/**
-	 * Return the value of this instance's labelMethod field
-	 *
-	 * @return number of label method.
-	 */
-	// TODO remove
-	public int getLabelMethod() {
-		return labelMethod;
-	}
-
-	/**
 	 * Set the value of this instance's labelMethod field
 	 *
 	 * @param label one of ParticleCounter.MULTI or .LINEAR
 	 */
-	public void setLabelMethod(final int label) {
-		if (label != MULTI && label != LINEAR && label != MAPPED) {
-			throw new IllegalArgumentException();
-		}
+	void setLabelMethod(final JOINING label) {
 		labelMethod = label;
-		return;
-	}
-
-	@Override
-	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (!DialogModifier.allNumbersValid(gd.getNumericFields()))
-			return false;
-		final Vector<?> choices = gd.getChoices();
-		final Vector<?> checkboxes = gd.getCheckboxes();
-		final Vector<?> numbers = gd.getNumericFields();
-		// link algorithm choice to chunk size field
-		final Choice choice = (Choice) choices.get(1);
-		final TextField num = (TextField) numbers.get(5);
-		if (choice.getSelectedItem().contentEquals("Multithreaded")) {
-			num.setEnabled(true);
-		} else {
-			num.setEnabled(false);
-		}
-		// link moments and ellipsoid choice to unit vector choice
-		final Checkbox momBox = (Checkbox) checkboxes.get(4);
-		final Checkbox elBox = (Checkbox) checkboxes.get(8);
-		final Checkbox vvvBox = (Checkbox) checkboxes.get(9);
-		if (elBox.getState() || momBox.getState())
-			vvvBox.setEnabled(true);
-		else
-			vvvBox.setEnabled(false);
-
-		// link show stack 3d to volume resampling
-		final Checkbox box = (Checkbox) checkboxes.get(16);
-		final TextField numb = (TextField) numbers.get(4);
-		if (box.getState()) {
-			numb.setEnabled(true);
-		} else {
-			numb.setEnabled(false);
-		}
-		// link show surfaces, gradient choice and split value
-		final Checkbox surfbox = (Checkbox) checkboxes.get(12);
-		final Choice col = (Choice) choices.get(0);
-		final TextField split = (TextField) numbers.get(3);
-		if (!surfbox.getState()) {
-			col.setEnabled(false);
-			split.setEnabled(false);
-		} else {
-			col.setEnabled(true);
-			if (col.getSelectedIndex() == 1) {
-				split.setEnabled(true);
-			} else {
-				split.setEnabled(false);
-			}
-		}
-		DialogModifier.registerMacroValues(gd, gd.getComponents());
-		return true;
 	}
 }

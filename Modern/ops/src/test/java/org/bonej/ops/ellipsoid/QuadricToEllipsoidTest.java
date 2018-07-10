@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops.ellipsoid;
 
@@ -6,6 +28,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -54,16 +77,17 @@ public class QuadricToEllipsoidTest {
 	// Constant seed for random generators
 	private static final long SEED = 0xc0ffee;
 	@SuppressWarnings("unchecked")
-	private static final UnaryFunctionOp<Matrix4dc, Ellipsoid> quadricToEllipsoid =
+	private static final UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoid =
+
 		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToEllipsoid.class,
-			Ellipsoid.class, UNIT_SPHERE);
+			Optional.class, UNIT_SPHERE);
 	@SuppressWarnings("unchecked")
 	private static final BinaryFunctionOp<double[], Long, List<org.scijava.vecmath.Vector3d>> ellipsoidPoints =
 		(BinaryFunctionOp) Functions.binary(IMAGE_J.op(), EllipsoidPoints.class,
 			List.class, new double[] { 1, 2, 3 }, 0);
 
-	@Test(expected = IllegalArgumentException.class)
-	public void testConeFailsMatching() {
+	@Test
+	public void testCone() {
 		//@formatter:off
         final Matrix4d cone = new Matrix4d(
                 1, 0, 0, 0,
@@ -72,6 +96,10 @@ public class QuadricToEllipsoidTest {
                 0, 0, 0, -1);
         //@formatter:on
 		IMAGE_J.op().run(QuadricToEllipsoid.class, cone);
+
+		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(cone);
+
+		assertFalse(result.isPresent());
 	}
 
 	/**
@@ -106,9 +134,11 @@ public class QuadricToEllipsoidTest {
 		// EXECUTE
 		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(SolveQuadricEq.class,
 				points);
-		final Ellipsoid ellipsoid = quadricToEllipsoid.calculate(quadric);
+		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(quadric);
 
 		// VERIFY
+		assertTrue(result.isPresent());
+		final Ellipsoid ellipsoid = result.get();
 		final Vector3dc centroid = new Vector3d(ellipsoid.getCentroid().x, ellipsoid
 			.getCentroid().y, ellipsoid.getCentroid().z);
 		assertTrue("Ellipsoid centre point is not within tolerance", epsilonEquals(
@@ -121,22 +151,6 @@ public class QuadricToEllipsoidTest {
 		orientation.set(o.m00, o.m01, o.m02, o.m03, o.m10, o.m11, o.m12, o.m13,
 			o.m20, o.m21, o.m22, o.m23, o.m30, o.m31, o.m32, o.m33);
 		epsilonEquals(symmetry, o, 0.025);
-	}
-
-	@Test
-	public void testNanRadiusIsNotEllipsoid() {
-		// This quadric looks like an ellipsoid (3x3 diagonals positive), but it has
-		// a NaN radius (negative eigenvalue). These typically result from quadrics
-		// solved from sparse data.
-
-		final Matrix4dc nanRadiusEllipsoid = new Matrix4d(0.01085019421630129,
-			-0.026230819423660012, -0.0012390257941481408, 0.016336103119147793,
-			-0.026230819423660012, 0.02043899336863353, 0.01731688607718951,
-			0.03182508790873584, -0.0012390257941481408, 0.01731688607718951,
-			0.2516413880666182, 0.0022183414533909485, 0.016336103119147793,
-			0.03182508790873584, 0.0022183414533909485, -1.0);
-
-		assertFalse(QuadricToEllipsoid.isEllipsoid(nanRadiusEllipsoid));
 	}
 
 	/**
@@ -170,10 +184,11 @@ public class QuadricToEllipsoidTest {
 		// EXECUTE
 		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(SolveQuadricEq.class,
 				points);
-		final Ellipsoid transformedEllipsoid = quadricToEllipsoid.calculate(
-			quadric);
+		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(quadric);
 
 		// VERIFY
+		assertTrue(result.isPresent());
+		final Ellipsoid transformedEllipsoid = result.get();
 		final org.scijava.vecmath.Vector3d v = transformedEllipsoid.getCentroid();
 		assertTrue(epsilonEquals(centroid, new Vector3d(v.x, v.y, v.z), 1e-12));
 		assertEquals(radii[0], transformedEllipsoid.getA(), 1e-12);
@@ -187,8 +202,11 @@ public class QuadricToEllipsoidTest {
 		// A unit sphere has no orientation, so it's matrix will always be identity
 		final Matrix4d expectedOrientation = new Matrix4d().identity();
 
-		final Ellipsoid unitSphere = quadricToEllipsoid.calculate(UNIT_SPHERE);
+		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(
+			UNIT_SPHERE);
 
+		assertTrue(result.isPresent());
+		final Ellipsoid unitSphere = result.get();
 		assertEquals(1.0, unitSphere.getA(), 1e-12);
 		assertEquals(1.0, unitSphere.getB(), 1e-12);
 		assertEquals(1.0, unitSphere.getC(), 1e-12);

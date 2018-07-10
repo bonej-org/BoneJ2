@@ -1,11 +1,33 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 
 import net.imagej.patcher.LegacyInjector;
 
@@ -18,6 +40,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ij.ImagePlus;
+import ij.plugin.filter.PlugInFilter;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
@@ -46,13 +69,13 @@ public class SkeletoniseWrapper extends ContextCommand {
 	private ImagePlus skeleton;
 
 	@Parameter
-    private StatusService statusService;
+	private StatusService statusService;
 
 	@Override
 	public void run() {
 		skeleton = cleanDuplicate(inputImage);
 		skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+		final PlugInFilter skeletoniser = new Skeletonize3D_();
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);

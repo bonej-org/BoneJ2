@@ -21,36 +21,46 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package org.bonej.geometry;
+package org.bonej.plugins;
 
-import java.util.Arrays;
+import static org.bonej.plugins.Moments.getEmptyPixels;
+import static org.junit.Assert.assertTrue;
 
-public final class Centroid {
+import org.junit.Test;
 
-	private Centroid() {}
+/**
+ * Tests for the {@link Moments} class.
+ *
+ * @author Richard Domander
+ */
+public class MomentsTest {
 
-	/**
-	 * Find the centroid of an array in double[i][n] format, where i = number of
-	 * points and n = number of dimensions
-	 *
-	 * @param points a set of points in N-dimensions.
-	 * @return array containing centroid in N-dimensions
-	 */
-	static double[] getCentroid(final double[][] points) {
-		if (Arrays.stream(points).mapToInt(p -> p.length).distinct().count() != 1) {
-			throw new IllegalArgumentException(
-				"Points must have the same dimensionality");
-		}
-		final int nDimensions = points[0].length;
-		final double[] centroid = new double[nDimensions];
-		for (final double[] point : points) {
-			for (int d = 0; d < nDimensions; d++) {
-				centroid[d] += point[d];
-			}
-		}
-		for (int i = 0; i < centroid.length; i++) {
-			centroid[i] /= points.length;
-		}
-		return centroid;
+	@Test
+	public void testGetEmptyPixels16bit() {
+		final Object pixels = getEmptyPixels(1, 1, 16);
+		assertTrue(pixels instanceof short[]);
+	}
+
+	@Test
+	public void testGetEmptyPixels24bit() {
+		final Object pixels = getEmptyPixels(1, 1, 24);
+		assertTrue(pixels instanceof int[]);
+	}
+
+	@Test
+	public void testGetEmptyPixels32bit() {
+		final Object pixels = getEmptyPixels(1, 1, 32);
+		assertTrue(pixels instanceof float[]);
+	}
+
+	@Test
+	public void testGetEmptyPixels8bit() {
+		final Object pixels = getEmptyPixels(1, 1, 8);
+		assertTrue(pixels instanceof byte[]);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetEmptyPixelsBadBitDepth() {
+		getEmptyPixels(1, 1, 64);
 	}
 }

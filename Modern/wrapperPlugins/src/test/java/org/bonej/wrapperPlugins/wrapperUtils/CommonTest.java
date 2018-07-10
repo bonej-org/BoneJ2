@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
@@ -44,14 +66,8 @@ public class CommonTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
-	// Test ignored, because it fails when executed by Maven (but only then!)
 	@Ignore
-    @Test
+	@Test
 	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
 		final String name = "Test image";
@@ -76,7 +92,38 @@ public class CommonTest {
 	}
 
 	@Test
-    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels() {
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 0.5;
+		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
+		final UIService uiService = mock(UIService.class);
+		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
+			.thenReturn(CANCEL_OPTION);
+
+		assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+		verify(uiService, timeout(1000)).showDialog(anyString(), any(
+			MessageType.class), any());
+	}
+
+	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses() {
+		final ImagePlus imagePlus = mock(ImagePlus.class);
+		final Calibration anisotropicCalibration = new Calibration();
+		anisotropicCalibration.pixelWidth = 0.5;
+		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
+		final UIService uiService = mock(UIService.class);
+		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
+			.thenReturn(CLOSED_OPTION);
+
+		assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+		verify(uiService, timeout(1000)).showDialog(anyString(), any(
+			MessageType.class), any());
+	}
+
+	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsTrueIfAnisotropicImageAndUserOK() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
@@ -87,49 +134,23 @@ public class CommonTest {
 			.thenReturn(OK_OPTION);
 
 		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
-        verify(uiService, timeout(1000)).showDialog(anyString(), any(
-                MessageType.class), any());
+		verify(uiService, timeout(1000)).showDialog(anyString(), any(
+			MessageType.class), any());
 	}
 
 	@Test
-	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels() {
-		final ImagePlus imagePlus = mock(ImagePlus.class);
-		final Calibration anisotropicCalibration = new Calibration();
-		anisotropicCalibration.pixelWidth = 0.5;
-		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
-		final UIService uiService = mock(UIService.class);
-		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
-			.thenReturn(CANCEL_OPTION);
-
-        assertFalse(Common.warnAnisotropy(imagePlus, uiService));
-        verify(uiService, timeout(1000)).showDialog(anyString(), any(
-                MessageType.class), any());
-	}
-
-	@Test
-    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCloses() {
-		final ImagePlus imagePlus = mock(ImagePlus.class);
-		final Calibration anisotropicCalibration = new Calibration();
-		anisotropicCalibration.pixelWidth = 0.5;
-		when(imagePlus.getCalibration()).thenReturn(anisotropicCalibration);
-		final UIService uiService = mock(UIService.class);
-		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
-			.thenReturn(CLOSED_OPTION);
-
-        assertFalse(Common.warnAnisotropy(imagePlus, uiService));
-        verify(uiService, timeout(1000)).showDialog(anyString(), any(
-                MessageType.class), any());
-	}
-
-	@Test
-    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsTrueIfIsotropicImage() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
-		final Calibration calibration = new Calibration();
-		when(imagePlus.getCalibration()).thenReturn(calibration);
+		final Calibration isotropic = new Calibration();
+		when(imagePlus.getCalibration()).thenReturn(isotropic);
 		final UIService uiService = mock(UIService.class);
 
 		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		IMAGE_J.context().dispose();
 	}
 }

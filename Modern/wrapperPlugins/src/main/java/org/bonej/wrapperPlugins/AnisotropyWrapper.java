@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins;
 
@@ -51,6 +73,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
@@ -75,7 +98,6 @@ import org.scijava.widget.NumberWidget;
 public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
-
 	/**
 	 * Generates four normally distributed values between [0, 1] that describe a
 	 * unit quaternion. These can be used to create isotropically distributed
@@ -83,6 +105,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 */
 	private static final RandomVectorGenerator qGenerator =
 		new UnitSphereRandomVectorGenerator(4);
+
 	/**
 	 * Default directions is 2_000 since that's roughly the number of points in
 	 * Poisson distributed sampling that'd give points about 5 degrees apart).
@@ -93,7 +116,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, Quaterniondc, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4d, Ellipsoid> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
@@ -118,7 +141,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(label = "Recommended minimum",
 		description = "Apply minimum recommended values to directions, lines, and increment",
 		persist = false, required = false, callback = "applyMinimum")
-	private boolean recommendedMin = false;
+	private boolean recommendedMin;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
 		"NB parameter values can affect results significantly";
@@ -155,15 +178,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(toList());
 		matchOps(subspaces.get(0));
-		// TODO Does it make more sense to collect all the results we can (without
-		// cancelling) and then report errors at the end?
+		final List<Ellipsoid> ellipsoids = new ArrayList<>();
 		for (int i = 0; i < subspaces.size(); i++) {
 			statusService.showStatus("Anisotropy: sampling subspace #" + (i + 1));
 			final Subspace<BitType> subspace = subspaces.get(i);
-			if (!processSubspace(subspace)) {
+			final Ellipsoid ellipsoid = milEllipsoid(subspace);
+			if (ellipsoid == null) {
 				return;
 			}
+			ellipsoids.add(ellipsoid);
 		}
+		addResults(subspaces, ellipsoids);
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
@@ -171,7 +196,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	// region -- Helper methods --
 
-	private void addResults(final Subspace<BitType> subspace,
+	private void addResult(final Subspace<BitType> subspace,
 		final double anisotropy, final Ellipsoid ellipsoid)
 	{
 		final String imageName = inputImage.getName();
@@ -189,6 +214,18 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
+	private void addResults(final List<Subspace<BitType>> subspaces,
+		final List<Ellipsoid> ellipsoids)
+	{
+		statusService.showStatus("Anisotropy: showing results");
+		for (int i = 0; i < subspaces.size(); i++) {
+			final Subspace<BitType> subspace = subspaces.get(i);
+			final Ellipsoid ellipsoid = ellipsoids.get(i);
+			final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
+			addResult(subspace, anisotropy, ellipsoid);
+		}
+	}
+
 	@SuppressWarnings("unused")
 	private void applyMinimum() {
 		if (recommendedMin) {
@@ -198,14 +235,33 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Ellipsoid fitEllipsoid(final List<Vector3d> pointCloud) {
+	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3d> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
-		if (!QuadricToEllipsoid.isEllipsoid(quadric)) {
-			return null;
-		}
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
+	}
+
+	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
+		final List<Vector3d> pointCloud;
+		try {
+			pointCloud = runDirectionsInParallel(subspace.interval);
+			if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
+				cancel("Anisotropy could not be calculated - too few points");
+				return null;
+			}
+			final Optional<Ellipsoid> ellipsoid = fitEllipsoid(pointCloud);
+			if (!ellipsoid.isPresent()) {
+				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+				return null;
+			}
+			return ellipsoid.get();
+		}
+		catch (final ExecutionException | InterruptedException e) {
+			logService.trace(e.getMessage());
+			cancel("The plug-in was interrupted");
+		}
+		return null;
 	}
 
 	// TODO Refactor into a static utility method with unit tests
@@ -219,6 +275,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			.averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
 	}
 
+	@SuppressWarnings("unchecked")
 	private void matchOps(final Subspace<BitType> subspace) {
 		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
 			subspace.interval, new Quaterniond(), lines, samplingIncrement);
@@ -226,36 +283,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
 		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
 			Matrix4d.class, tmpPoints);
-		final Matrix4d matchingMock =
-			new Matrix4d();
+		final Matrix4d matchingMock = new Matrix4d();
 		matchingMock.identity();
-		quadricToEllipsoidOp = Functions.unary(opService, QuadricToEllipsoid.class,
-			Ellipsoid.class, matchingMock);
-	}
-
-	private boolean processSubspace(final Subspace<BitType> subspace) {
-		final List<Vector3d> pointCloud;
-		try {
-			pointCloud = runDirectionsInParallel(subspace.interval);
-		}
-		catch (final ExecutionException | InterruptedException e) {
-			logService.trace(e.getMessage());
-			cancel("The plug-in was interrupted");
-			return false;
-		}
-		if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
-			cancel("Anisotropy could not be calculated - too few points");
-			return false;
-		}
-		final Ellipsoid ellipsoid = fitEllipsoid(pointCloud);
-		if (ellipsoid == null) {
-			cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
-			return false;
-		}
-		statusService.showStatus("Determining anisotropy");
-		final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
-		addResults(subspace, anisotropy, ellipsoid);
-		return true;
+		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService, QuadricToEllipsoid.class,
+			Optional.class, matchingMock);
 	}
 
 	/**

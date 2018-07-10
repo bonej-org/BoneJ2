@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins;
 
@@ -15,12 +37,11 @@ import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.stream.IntStream;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -29,9 +50,10 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
 
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.Command;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.DialogPrompt;
+import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
@@ -46,10 +68,10 @@ import ij.process.ImageStatistics;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class CommonWrapperTests {
+public final class CommonWrapperTests {
 
-	public static <C extends Command> void testNullImageCancelsPlugin(
-		final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void testNullImageCancelsPlugin(
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -67,8 +89,8 @@ public class CommonWrapperTests {
 			any());
 	}
 
-	public static <C extends Command> void test2DImageCancelsPlugin(
-		final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void test2DImageCancelsPlugin(final Gateway imageJ,
+		final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -93,8 +115,8 @@ public class CommonWrapperTests {
 			any());
 	}
 
-	public static <C extends Command> void testNonBinaryImageCancelsPlugin(
-		final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void testNonBinaryImageCancelsPlugin(
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -123,9 +145,9 @@ public class CommonWrapperTests {
 			any());
 	}
 
-	public static <C extends Command> void testNoCalibrationShowsWarning(
-		final ImageJ imageJ, final Class<C> commandClass,
-		Object... additionalInputs) throws Exception
+	static <C extends Command> void testNoCalibrationShowsWarning(
+		final Gateway imageJ, final Class<C> commandClass,
+		final Object... additionalInputs) throws Exception
 	{
 		// SETUP
 		// Mock UI
@@ -142,7 +164,7 @@ public class CommonWrapperTests {
 		final Img<DoubleType> img = ArrayImgs.doubles(5, 5, 5, 2);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, zAxis, tAxis);
-		final List<Object> inputs = new ArrayList<>();
+		final Collection<Object> inputs = new ArrayList<>();
 		inputs.add("inputImage");
 		inputs.add(imgPlus);
 		Collections.addAll(inputs, additionalInputs);
@@ -155,8 +177,8 @@ public class CommonWrapperTests {
 			anyString(), eq(WARNING_MESSAGE), any());
 	}
 
-	public static <C extends Command> void testNonBinaryImagePlusCancelsPlugin(
-		final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void testNonBinaryImagePlusCancelsPlugin(
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -184,8 +206,8 @@ public class CommonWrapperTests {
 			any());
 	}
 
-	public static <C extends Command> void test2DImagePlusCancelsPlugin(
-		final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void test2DImagePlusCancelsPlugin(
+		final Gateway imageJ, final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mockUIService(imageJ);
@@ -205,7 +227,7 @@ public class CommonWrapperTests {
 			any());
 	}
 
-	public static UserInterface mockUIService(final ImageJ imageJ) {
+	static UserInterface mockUIService(final Gateway imageJ) {
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(any(), anyString(), any(), any())).thenReturn(
@@ -218,15 +240,15 @@ public class CommonWrapperTests {
 	 * Tests that running the given command with an anisotropic {@link ImagePlus}
 	 * shows a warning dialog that can be used to cancel the plugin
 	 */
-	public static <C extends Command> void testAnisotropyWarning(
-			final ImageJ imageJ, final Class<C> commandClass) throws Exception
+	static <C extends Command> void testAnisotropyWarning(final Gateway imageJ,
+		final Class<C> commandClass) throws Exception
 	{
 		// SETUP
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockPrompt.prompt()).thenReturn(DialogPrompt.Result.CANCEL_OPTION);
+		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
 		when(mockUI.dialogPrompt(startsWith("The image is anisotropic"),
-				anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
+			anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 		imageJ.ui().setDefaultUI(mockUI);
 		final Calibration calibration = new Calibration();
 		calibration.pixelWidth = 300;
@@ -237,12 +259,12 @@ public class CommonWrapperTests {
 
 		// EXECUTE
 		final CommandModule module = imageJ.command().run(commandClass, true,
-				"inputImage", imagePlus).get();
+			"inputImage", imagePlus).get();
 
 		// VERIFY
 		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
-				"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
+			"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
 		assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
-				module.isCanceled());
+			module.isCanceled());
 	}
 }

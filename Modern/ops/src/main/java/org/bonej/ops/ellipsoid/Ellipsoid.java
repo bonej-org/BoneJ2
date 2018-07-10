@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops.ellipsoid;
 
@@ -31,17 +53,17 @@ import org.scijava.vecmath.Vector3d;
 // TODO Should vectors also be (returned) in homogeneous coordinates (Vector4d)?
 public class Ellipsoid {
 
+	private final Vector3d centroid = new Vector3d();
+	private final Matrix3d orientation = new Matrix3d();
 	private double a;
 	private double b;
 	private double c;
-	private Vector3d centroid = new Vector3d();
-	private Matrix3d orientation = new Matrix3d();
 	// TODO Add a way to change the sampling function, either by passing and Op of
 	// certain type, or by creating an enumerator.
 	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;
 
 	/**
-	 * Constructs an {@link Ellipsoid} object.
+	 * Constructs an Ellipsoid.
 	 * <p>
 	 * The radii will be sorted in the constructor.
 	 * </p>
@@ -60,7 +82,7 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Constructs an {@link Ellipsoid} from semi-axes.
+	 * Constructs an Ellipsoid from semi-axes.
 	 *
 	 * @param u a semi-axis of the ellipsoid.
 	 * @param v a semi-axis of the ellipsoid.
@@ -88,7 +110,7 @@ public class Ellipsoid {
 	 *           or greater than b or c.
 	 */
 	public void setA(final double a) throws IllegalArgumentException {
-		if (!validRadius(a)) {
+		if (invalidRadius(a)) {
 			throw new IllegalArgumentException(
 				"Radius must be a finite positive number.");
 		}
@@ -115,7 +137,7 @@ public class Ellipsoid {
 	 *           or greater than c or less than a.
 	 */
 	public void setB(final double b) throws IllegalArgumentException {
-		if (!validRadius(b)) {
+		if (invalidRadius(b)) {
 			throw new IllegalArgumentException(
 				"Radius must be a finite positive number.");
 		}
@@ -143,7 +165,7 @@ public class Ellipsoid {
 	 *           or less than b or c.
 	 */
 	public void setC(final double c) throws IllegalArgumentException {
-		if (!validRadius(c)) {
+		if (invalidRadius(c)) {
 			throw new IllegalArgumentException(
 				"Radius must be a finite positive number.");
 		}
@@ -222,35 +244,6 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Sets the semi-axes of the ellipsoid.
-	 * <p>
-	 * Semi-axes will be sorted by length in ascending order so that the shortest
-	 * vector becomes the 1st and the longest the 3rd column vector in the
-	 * orientation matrix. Thus radius {@link #a} will be the length of the 1st
-	 * column vector etc.
-	 * </p>
-	 * 
-	 * @param u a semi-axis of the ellipsoid.
-	 * @param v a semi-axis of the ellipsoid.
-	 * @param w a semi-axis of the ellipsoid.
-	 * @throws IllegalArgumentException if the vectors are not orthogonal.
-	 * @throws NullPointerException if any of the vectors is null.
-	 */
-	public void setSemiAxes(final Vector3d u, final Vector3d v, final Vector3d w)
-		throws IllegalArgumentException, NullPointerException
-	{
-        if (u == null || v == null || w == null) {
-			throw new NullPointerException("Vectors cannot be null.");
-		}
-		final List<Vector3d> semiAxes = Stream.of(u, v, w).map(Vector3d::new)
-			.sorted(comparingDouble(Vector3d::length)).collect(toList());
-		setC(semiAxes.get(2).length());
-		setB(semiAxes.get(1).length());
-		setA(semiAxes.get(0).length());
-		setOrientation(semiAxes.get(0), semiAxes.get(1), semiAxes.get(2));
-	}
-
-	/**
 	 * Returns a copy of the semi-axes of the ellipsoid.
 	 *
 	 * @return semi-axes with radii a, b, c.
@@ -312,7 +305,40 @@ public class Ellipsoid {
 		return points;
 	}
 
+	/**
+	 * Sets the semi-axes of the ellipsoid.
+	 * <p>
+	 * Semi-axes will be sorted by length in ascending order so that the shortest
+	 * vector becomes the 1st and the longest the 3rd column vector in the
+	 * orientation matrix. Thus radius {@link #a} will be the length of the 1st
+	 * column vector etc.
+	 * </p>
+	 *
+	 * @param u a semi-axis of the ellipsoid.
+	 * @param v a semi-axis of the ellipsoid.
+	 * @param w a semi-axis of the ellipsoid.
+	 * @throws IllegalArgumentException if the vectors are not orthogonal.
+	 * @throws NullPointerException if any of the vectors is null.
+	 */
+	public void setSemiAxes(final Vector3d u, final Vector3d v, final Vector3d w)
+		throws IllegalArgumentException, NullPointerException
+	{
+		if (u == null || v == null || w == null) {
+			throw new NullPointerException("Vectors cannot be null.");
+		}
+		final List<Vector3d> semiAxes = Stream.of(u, v, w).map(Vector3d::new)
+			.sorted(comparingDouble(Vector3d::length)).collect(toList());
+		setC(semiAxes.get(2).length());
+		setB(semiAxes.get(1).length());
+		setA(semiAxes.get(0).length());
+		setOrientation(semiAxes.get(0), semiAxes.get(1), semiAxes.get(2));
+	}
+
 	// region -- Helper methods --
+
+	private static boolean invalidRadius(final double r) {
+		return r <= 0 || !Double.isFinite(r);
+	}
 
 	private void mapToOrientation(final Vector3d v) {
 		final Vector3d[] rowVectors = Stream.generate(Vector3d::new).limit(3)
@@ -328,10 +354,6 @@ public class Ellipsoid {
 
 	private boolean samplingInitialized() {
 		return isotropicSampling != null;
-	}
-
-	private static boolean validRadius(final double r) {
-		return r > 0 && Double.isFinite(r);
 	}
 
 	private void setOrientation(final Vector3d u, final Vector3d v,

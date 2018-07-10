@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.ops.mil;
 
@@ -155,6 +177,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	private static <B extends BooleanType<B>> long countPhaseChanges(
 		final RandomAccessible<B> interval, final Vector3d start,
 		final Vector3dc gap, final long samples)
+
 	{
 		final RandomAccess<B> access = interval.randomAccess();
 		boolean previous = false;
@@ -179,7 +202,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	private Stream<Section> findIntersectingSections(final LinePlane plane,
 		final Interval interval)
 	{
-		final Vector3d direction = plane.getDirection();
+		final Vector3dc direction = plane.getDirection();
 		return plane.getOrigins(bins).map(origin -> intersectInterval(origin,
 			direction, interval)).filter(Objects::nonNull);
 	}
@@ -193,12 +216,12 @@ public class MILPlane<B extends BooleanType<B>> extends
 		return access.get().get();
 	}
 
-	private static Section intersectInterval(final Vector3d origin,
-		final Vector3d direction, final Interval interval)
+	private static Section intersectInterval(final Vector3dc origin,
+		final Vector3dc direction, final Interval interval)
 	{
 		final Vector2d result = new Vector2d();
-		final Vector3dc o = new Vector3d(origin.x, origin.y, origin.z);
-		final Vector3dc d = new Vector3d(direction.x, direction.y, direction.z);
+		final Vector3dc o = new Vector3d(origin.x(), origin.y(), origin.z());
+		final Vector3dc d = new Vector3d(direction.x(), direction.y(), direction.z());
 		final Vector3dc min = new Vector3d(interval.min(0), interval.min(1),
 			interval.min(2));
 		final Vector3dc max = new Vector3d(interval.max(0) + 1, interval.max(1) + 1,
@@ -212,7 +235,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	}
 
 	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
-		final Section section, final Vector3d direction, final double increment)
+		final Section section, final Vector3dc direction, final double increment)
 	{
 		final long intercepts = sampleSection(interval, section, direction,
 			increment);
@@ -230,7 +253,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	}
 
 	private Vector3d sampleMILVector(final RandomAccessible<B> interval,
-		final Stream<Section> sections, final Vector3d direction)
+		final Stream<Section> sections, final Vector3dc direction)
 	{
 		final DoubleType totalLength = new DoubleType();
 		final LongType totalIntercepts = new LongType();
@@ -245,7 +268,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	}
 
 	private long sampleSection(final RandomAccessible<B> interval,
-		final Section section, final Vector3d direction, final double increment)
+		final Section section, final Vector3dc direction, final double increment)
 	{
 		// Add a random offset so that sampling doesn't always start from the same
 		// plane
@@ -277,9 +300,9 @@ public class MILPlane<B extends BooleanType<B>> extends
 
 		private final double tMin;
 		private final double tMax;
-		private final Vector3d origin;
+		private final Vector3dc origin;
 
-		private Section(final Vector3d origin, final double tMin,
+		private Section(final Vector3dc origin, final double tMin,
 			final double tMax)
 		{
 			this.tMin = tMin;

@@ -1,43 +1,41 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.utilities;
 
 import java.util.Arrays;
 
-import ij.CompositeImage;
 import ij.ImagePlus;
 import ij.measure.Calibration;
-import ij.process.ImageProcessor;
-import ij.process.LUT;
 
 /**
  * Utility methods for checking ImagePlus properties
  *
  * @author Richard Domander
  */
-public class ImagePlusUtil {
+public final class ImagePlusUtil {
 
-	/**
-	 * Checks if the image is 3D.
-	 *
-	 * @param image an ImageJ1 style {@link ImagePlus}.
-	 * @return true if the image has more than one slice, false if not, or image
-	 *         is null.
-	 */
-	public static boolean is3D(final ImagePlus image) {
-		return image != null && image.getNSlices() > 1;
-	}
-
-	/**
-	 * Checks if the image has only two different colours.
-	 *
-	 * @param image an ImageJ1 style {@link ImagePlus}.
-	 * @return true if there are only two distinct pixel values present in the
-	 *         image, false if more, or the image is null.
-	 */
-	public static boolean isBinaryColour(final ImagePlus image) {
-		return image != null && Arrays.stream(image.getStatistics().histogram)
-			.filter(p -> p > 0).count() <= 2;
-	}
+	private ImagePlusUtil() {}
 
 	/**
 	 * Calculates the degree of anisotropy in the image, i.e. the maximum
@@ -73,20 +71,43 @@ public class ImagePlusUtil {
 	}
 
 	/**
-     * Duplicates the image without changing the title of the copy, or cropping it
-     * to the ROI.
-     * <p>
-     * Circumvents the default behaviour of {@link ImagePlus#duplicate()}.
-     * </p>
-     *
-     * @param image an ImageJ1 style ImagePlus.
-     * @return an unchanged copy of the image.
-     */
-    public static ImagePlus cleanDuplicate(final ImagePlus image) {
-        image.killRoi();
-        final ImagePlus copy = image.duplicate();
-        image.restoreRoi();
-        copy.setTitle(image.getTitle());
-        return copy;
-    }
+	 * Duplicates the image without changing the title of the copy, or cropping it
+	 * to the ROI.
+	 * <p>
+	 * Circumvents the default behaviour of {@link ImagePlus#duplicate()}.
+	 * </p>
+	 *
+	 * @param image an ImageJ1 style ImagePlus.
+	 * @return an unchanged copy of the image.
+	 */
+	public static ImagePlus cleanDuplicate(final ImagePlus image) {
+		image.killRoi();
+		final ImagePlus copy = image.duplicate();
+		image.restoreRoi();
+		copy.setTitle(image.getTitle());
+		return copy;
+	}
+
+	/**
+	 * Checks if the image is 3D.
+	 *
+	 * @param image an ImageJ1 style {@link ImagePlus}.
+	 * @return true if the image has more than one slice, false if not, or image
+	 *         is null.
+	 */
+	public static boolean is3D(final ImagePlus image) {
+		return image != null && image.getNSlices() > 1;
+	}
+
+	/**
+	 * Checks if the image has only two different colours.
+	 *
+	 * @param image an ImageJ1 style {@link ImagePlus}.
+	 * @return true if there are only two distinct pixel values present in the
+	 *         image, false if more, or the image is null.
+	 */
+	public static boolean isBinaryColour(final ImagePlus image) {
+		return image != null && Arrays.stream(image.getStatistics().histogram)
+			.filter(p -> p > 0).count() <= 2;
+	}
 }

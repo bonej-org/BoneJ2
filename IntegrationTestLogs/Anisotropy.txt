@@ -51,7 +51,7 @@ Notes
 -----------------------------------------------------------------------
 If fitting fails, run again, or add directions.
 
-Completed March 12 2018 Richard Domander
+Completed July 6 2018 Richard Domander
 -----------------------------------------------------------------------
 
 

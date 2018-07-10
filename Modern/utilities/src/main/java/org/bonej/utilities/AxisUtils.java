@@ -1,3 +1,25 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.utilities;
 
@@ -7,11 +29,9 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
-import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
@@ -23,7 +43,9 @@ import org.scijava.util.StringUtils;
  *
  * @author Richard Domander
  */
-public class AxisUtils {
+public final class AxisUtils {
+
+	private AxisUtils() {}
 
 	/**
 	 * Counts the number of spatial dimensions in the given space.
@@ -54,18 +76,17 @@ public class AxisUtils {
 	 *         between their units. The Optional contains an empty string none of
 	 *         the calibrations have a unit.
 	 */
-	public static <S extends AnnotatedSpace<CalibratedAxis>> Optional<String>
-		 getSpatialUnit(final S space, final UnitService unitService)
+	public static <S extends AnnotatedSpace<C>, C extends CalibratedAxis> Optional<String>
+		getSpatialUnit(final S space, final UnitService unitService)
 	{
-		if (space == null || !hasSpatialDimensions(space))
-		{
+		if (space == null || !hasSpatialDimensions(space)) {
 			return Optional.empty();
-		} else if (!isUnitsConvertible(space, unitService)) {
-		    return Optional.of("");
-        }
-
-        final String unit = space.axis(0).unit();
-        return unit == null ? Optional.of("") : Optional.of(unit);
+		}
+		if (!isUnitsConvertible(space, unitService)) {
+			return Optional.of("");
+		}
+		final String unit = space.axis(0).unit();
+		return unit == null ? Optional.of("") : Optional.of(unit);
 	}
 
 	/**
@@ -110,22 +131,6 @@ public class AxisUtils {
 		return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
 	}
 
-	/**
-	 * Checks if the given space has any non-linear spatial dimensions.
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-	 * @param <A> type of axes in the space.
-	 * @return true if there are any power, logarithmic or other non-linear axes.
-	 */
-	//TODO is this really necessary?
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
-		hasNonLinearSpatialAxes(final S space)
-	{
-		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
-			.type().isSpatial());
-	}
-
 	// region -- Helper methods --
 
 	/**
@@ -135,36 +140,31 @@ public class AxisUtils {
 	 * NB Returns true also when all axes are uncalibrated (no units)
 	 * </p>
 	 */
-	private static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isUnitsConvertible(T space, final UnitService unitService)
+	private static <T extends AnnotatedSpace<C>, C extends CalibratedAxis> boolean
+		isUnitsConvertible(final T space, final UnitService unitService)
 	{
 		final long spatialDimensions = countSpatialDimensions(space);
-
 		final long uncalibrated = spatialAxisStream(space).map(CalibratedAxis::unit)
 			.filter(StringUtils::isNullOrEmpty).count();
-
 		if (uncalibrated == spatialDimensions) {
 			return true;
 		}
-		else if (uncalibrated > 0) {
+		if (uncalibrated > 0) {
 			return false;
 		}
-
 		final List<String> units = spatialAxisStream(space).map(
 			CalibratedAxis::unit).distinct().map(s -> s.replaceFirst("^µ[mM]$", "um"))
 			.collect(toList());
-
-        for (int i = 0; i < units.size(); i++) {
+		for (int i = 0; i < units.size(); i++) {
 			for (int j = i; j < units.size(); j++) {
 				try {
 					unitService.value(1.0, units.get(i), units.get(j));
 				}
-				catch (Exception e) {
+				catch (final Exception e) {
 					return false;
 				}
 			}
 		}
-
 		return true;
 	}
 	// endregion

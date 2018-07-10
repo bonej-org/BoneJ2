@@ -1,10 +1,29 @@
+/*
+BSD 2-Clause License
+Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.axis.Axes;
@@ -13,13 +32,9 @@ import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
 import net.imagej.table.GenericColumn;
-import net.imagej.table.LongColumn;
 import net.imagej.units.UnitService;
-import net.imglib2.type.NativeType;
-import net.imglib2.type.numeric.RealType;
 
 import org.bonej.utilities.AxisUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.scijava.util.StringUtils;
 
 import ij.ImagePlus;
@@ -29,32 +44,26 @@ import ij.ImagePlus;
  *
  * @author Richard Domander
  */
-public class ResultUtils {
+public final class ResultUtils {
 
 	private ResultUtils() {}
 
 	/**
-	 * Returns a verbal description of the size of the elements in the given
-	 * space, e.g. "Area" for 2D images.
-	 * 
-	 * @param space an N-dimensional space.
-	 * @param <S> type of the space.
-     * @param <A> type of the axes.
-	 * @return the noun for the size of the elements.
+	 * Creates a column for a {@link net.imagej.table.GenericTable} that repeats
+	 * the given label on each row.
+	 *
+	 * @param label the string displayed on each row.
+	 * @param rows number of rows created.
+	 * @return a column that repeats the label.
 	 */
-	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> String
-		getSizeDescription(S space)
+	public static GenericColumn createLabelColumn(final String label,
+		final int rows)
 	{
-		final long dimensions = AxisUtils.countSpatialDimensions(space);
-
-		if (dimensions == 2) {
-			return "Area";
-		}
-		else if (dimensions == 3) {
-			return "Volume";
-		}
-
-		return "Size";
+		final GenericColumn labelColumn = new GenericColumn("Label");
+		final int n = Math.max(0, rows);
+		final String s = StringUtils.isNullOrEmpty(label) ? "-" : label;
+		Stream.generate(() -> s).limit(n).forEach(labelColumn::add);
+		return labelColumn;
 	}
 
 	/**
@@ -63,7 +72,7 @@ public class ResultUtils {
 	 *
 	 * @param space an N-dimensional space.
 	 * @param <S> type of the space.
-     * @param <A> type of the axes.
+	 * @param <A> type of the axes.
 	 * @return the exponent character if the space has 2 - 9 spatial dimensions.
 	 *         An empty character otherwise.
 	 */
@@ -71,49 +80,54 @@ public class ResultUtils {
 		getExponent(final S space)
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
-
 		if (dimensions == 2) {
 			return '\u00B2';
 		}
-		else if (dimensions == 3) {
+		if (dimensions == 3) {
 			return '\u00B3';
 		}
-		else if (dimensions == 4) {
+		if (dimensions == 4) {
 			return '\u2074';
 		}
-		else if (dimensions == 5) {
+		if (dimensions == 5) {
 			return '\u2075';
 		}
-		else if (dimensions == 6) {
+		if (dimensions == 6) {
 			return '\u2076';
 		}
-		else if (dimensions == 7) {
+		if (dimensions == 7) {
 			return '\u2077';
 		}
-		else if (dimensions == 8) {
+		if (dimensions == 8) {
 			return '\u2078';
 		}
-		else if (dimensions == 9) {
+		if (dimensions == 9) {
 			return '\u2079';
 		}
-
 		// Return an "empty" character
 		return '\u0000';
 	}
 
 	/**
-	 * Returns the common unit string that describes the elements in the space.
+	 * Returns a verbal description of the size of the elements in the given
+	 * space, e.g. "Area" for 2D images.
 	 *
-	 * @see ResultUtils#getUnitHeader(AnnotatedSpace, UnitService, char)
 	 * @param space an N-dimensional space.
 	 * @param <S> type of the space.
-	 * @param unitService an {@link UnitService} to convert axis calibrations.
-	 * @return the unit string with the exponent.
+	 * @param <A> type of the axes.
+	 * @return the noun for the size of the elements.
 	 */
-	public static <S extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
-		final S space, final UnitService unitService)
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> String
+		getSizeDescription(final S space)
 	{
-		return getUnitHeader(space, unitService, '\u0000');
+		final long dimensions = AxisUtils.countSpatialDimensions(space);
+		if (dimensions == 2) {
+			return "Area";
+		}
+		if (dimensions == 3) {
+			return "Volume";
+		}
+		return "Size";
 	}
 
 	/**
@@ -150,19 +164,21 @@ public class ResultUtils {
 	}
 
 	/**
-	 * Creates a column for a {@link net.imagej.table.GenericTable} that repeats
-	 * the given label on each row.
+	 * Gets the unit of the image calibration, which can be displayed to the user.
 	 *
-	 * @param label the string displayed on each row.
-	 * @param rows number of rows created.
-	 * @return a column that repeats the label.
+	 * @param imagePlus a ImageJ1 style {@link ImagePlus}.
+	 * @return calibration unit, or empty string if there's no unit, or the
+	 *         calibration has a placeholder unit.
 	 */
-	public static GenericColumn createLabelColumn(final String label, int rows) {
-		final GenericColumn labelColumn = new GenericColumn("Label");
-		final int n = Math.max(0, rows);
-		final String s = StringUtils.isNullOrEmpty(label) ? "-" : label;
-		Stream.generate(() -> s).limit(n).forEach(labelColumn::add);
-		return labelColumn;
+	public static String getUnitHeader(final ImagePlus imagePlus) {
+		final String unit = imagePlus.getCalibration().getUnit();
+		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
+			"unit".equalsIgnoreCase(unit))
+		{
+			return "";
+		}
+
+		return "(" + unit + ")";
 	}
 
 	/**
@@ -181,23 +197,5 @@ public class ResultUtils {
 			return index + 1;
 		}
 		return index;
-	}
-
-	/**
-	 * Gets the unit of the image calibration, which can be displayed to the user.
-	 *
-	 * @param imagePlus a ImageJ1 style {@link ImagePlus}.
-	 * @return calibration unit, or empty string if there's no unit, or the
-	 *         calibration has a placeholder unit.
-	 */
-	public static String getUnitHeader(final ImagePlus imagePlus) {
-		final String unit = imagePlus.getCalibration().getUnit();
-		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
-			"unit".equalsIgnoreCase(unit))
-		{
-			return "";
-		}
-
-		return "(" + unit + ")";
 	}
 }
