@@ -3,6 +3,7 @@ package org.bonej.ops.ellipsoid;
 import net.imagej.ImageJ;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
+import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.util.ValuePair;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,63 +30,61 @@ public class FindLocalEllipsoidOpTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
     @SuppressWarnings("unchecked")
-    private static BinaryFunctionOp<List<Vector3d>, ValuePair<Vector3d, Vector3d>, List<Optional<Ellipsoid>>> ellipsoidDecomposition =
-            (BinaryFunctionOp) Functions.unary(IMAGE_J.op(), FindLocalEllipsoidOp.class,
-                    List.class, List.class, ValuePair.class);
+    private static UnaryFunctionOp<List<ValuePair<Vector3d, Vector3d>>, Optional<Ellipsoid>> ellipsoidDecomposition =
+            (UnaryFunctionOp) Functions.unary(IMAGE_J.op(), FindLocalEllipsoidOp.class,
+                    Optional.class, List.class);
 
     @Test
     public void testFittingEllipsoidToEquidistantCollisionPoints() {
         Vector3d vertexP = new Vector3d(-2, 0, 0);
         Vector3d normalP = new Vector3d(1, 0, 0);
+        ValuePair<Vector3d,Vector3d> p = new ValuePair<>(vertexP,normalP);
 
-        Vector3d vertexQ1 = new Vector3d(-2, 0, 0);
-        Vector3d vertexQ2 = new Vector3d(0, 2, 0);
-        Vector3d vertexQ3 = new Vector3d(0, -2, 0);
-        Vector3d vertexQ4 = new Vector3d(0, 0, 2);
-        Vector3d vertexQ5 = new Vector3d(0, 0, -2);
+        Vector3d vertexQ = new Vector3d(2, 0, 0);
+        Vector3d normalQ = new Vector3d(-1, 0, 0);
+        ValuePair<Vector3d,Vector3d> q = new ValuePair<>(vertexQ,normalQ);
+
+        Vector3d vertexR = new Vector3d(0, 2, 0);
+        Vector3d normalR = new Vector3d(0, -1, 0);
+        ValuePair<Vector3d,Vector3d> r = new ValuePair<>(vertexR,normalR);
+
         Vector3d vertexTooFarAway = new Vector3d(10, -20, 4);
 
-        List<Vector3d> arrayList = Arrays.asList(vertexP,vertexQ1, vertexQ2, vertexQ3,vertexQ4,vertexQ5,vertexTooFarAway);
-        LinkedList<Vector3d> otherVertices = new LinkedList<>();
-        otherVertices.addAll(arrayList);
+        final List<ValuePair<Vector3d, Vector3d>> threeVertices = Arrays.asList(p, q, r);
 
-        final List<Optional<Ellipsoid>> ellipsoids = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
-
-        Optional<Ellipsoid> ellipsoid = ellipsoids.get(1);
+        Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(threeVertices);
 
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ1, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ2, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ3, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ4, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ5, ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid.get()));
         assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
     }
-
 
     @Test
     public void testFittingEllipsoidToFiveInputPointsEasy() {
         Vector3d vertexP = new Vector3d(0, 2, 0);
         Vector3d normalP = new Vector3d(0, 1, 0);
+        ValuePair<Vector3d,Vector3d> p = new ValuePair<>(vertexP,normalP);
 
         Vector3d vertexQ = new Vector3d(0, 4, 0);
+        Vector3d normalQ = new Vector3d(-1, 0, 0);
+        ValuePair<Vector3d,Vector3d> q = new ValuePair<>(vertexQ,normalQ);
+
         Vector3d vertexR = new Vector3d(3, 3, 0);
-        Vector3d vertexS = new Vector3d(0, 3, 20);
+        Vector3d normalR = new Vector3d(0, -1, 0);
+        ValuePair<Vector3d,Vector3d> r = new ValuePair<>(vertexR,normalR);
+
         Vector3d vertexTooFarAway = new Vector3d(10, -20, 4);
 
-        List<Vector3d> arrayList = Arrays.asList(vertexP,vertexQ, vertexR, vertexS, vertexTooFarAway);
-        LinkedList<Vector3d> otherVertices = new LinkedList<>();
-        otherVertices.addAll(arrayList);
+        final List<ValuePair<Vector3d, Vector3d>> threeVertices = Arrays.asList(p, q, r);
 
-        final List<Optional<Ellipsoid>> ellipsoids = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
+        Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(threeVertices);
 
-        Optional<Ellipsoid> ellipsoid = ellipsoids.get(1);
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid.get()));
         assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
     }
 
@@ -93,27 +92,28 @@ public class FindLocalEllipsoidOpTest {
     public void testFittingEllipsoidToFiveInputPointsDifficult() {
         Vector3d vertexP = new Vector3d(0, 0, 0);
         Vector3d normalP = new Vector3d(0, 1, 0);
+        ValuePair<Vector3d,Vector3d> p = new ValuePair<>(vertexP,normalP);
 
         Vector3d vertexQ = new Vector3d(1, 3, 0);
+        Vector3d normalQ = new Vector3d(-1, 0, 0);
+        ValuePair<Vector3d,Vector3d> q = new ValuePair<>(vertexQ,normalQ);
+
         Vector3d vertexR = new Vector3d(-4, 2, 0);
-        Vector3d vertexS = new Vector3d(-2, 2, 7);
+        Vector3d normalR = new Vector3d(0, -1, 0);
+        ValuePair<Vector3d,Vector3d> r = new ValuePair<>(vertexR,normalR);
+
         Vector3d vertexTooFarAway = new Vector3d(10, -20, 4);
 
-        List<Vector3d> arrayList = Arrays.asList(vertexP,vertexQ, vertexR, vertexS, vertexTooFarAway);
-        LinkedList<Vector3d> otherVertices = new LinkedList<>();
-        otherVertices.addAll(arrayList);
+        final List<ValuePair<Vector3d, Vector3d>> threeVertices = Arrays.asList(p, q, r);
 
-        final List<Optional<Ellipsoid>> ellipsoids = ellipsoidDecomposition.calculate(otherVertices, new ValuePair<>(vertexP, normalP));
+        Optional<Ellipsoid> ellipsoid = ellipsoidDecomposition.calculate(threeVertices);
 
-        Optional<Ellipsoid> ellipsoid = ellipsoids.get(1);
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
         assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid.get()));
         assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
     }
-
 
     private boolean testPointIsOnEllipsoidSurface(Vector3d point, Ellipsoid ellipsoid) {
         Vector3d xminusC = ellipsoid.getCentroid();
