@@ -8,10 +8,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.vecmath.*;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,7 +26,7 @@ import java.util.stream.Stream;
  * @author Alessandro Felder
  */
 @Plugin(type = Op.class)
-public class FindLocalEllipsoidOp extends AbstractUnaryFunctionOp<List<ValuePair<Vector3d,Vector3d>>,Optional<Ellipsoid>> {
+public class FindLocalEllipsoidOp extends AbstractBinaryFunctionOp<List<ValuePair<Vector3d,Vector3d>>,Vector3d,Optional<Ellipsoid>> {
 
     private static QuadricToEllipsoid quadricToEllipsoid = new QuadricToEllipsoid();
     private static EllipsoidPlaneIntersectionOp intersectionOp = new EllipsoidPlaneIntersectionOp();
@@ -38,16 +35,17 @@ public class FindLocalEllipsoidOp extends AbstractUnaryFunctionOp<List<ValuePair
     private double calibratedLargestImageDimension = 100.0;
 
     @Override
-    public Optional<Ellipsoid>calculate(List<ValuePair<Vector3d,Vector3d>> threeVerticesWithNormals) {
-        List<Vector3d> threeVertices = new ArrayList<>();
-        threeVerticesWithNormals.forEach(v -> threeVertices.add(v.getA()));
+    public Optional<Ellipsoid>calculate(List<ValuePair<Vector3d,Vector3d>> fourVerticesWithNormals, Vector3d centre) {
+        List<Vector3d> fourVertices = new ArrayList<>();
+        fourVerticesWithNormals.forEach(v -> fourVertices.add(v.getA()));
 
-        VertexWithNormal p = new VertexWithNormal(threeVerticesWithNormals.get(0));
-        threeVerticesWithNormals.remove(p.getVertex());
+        fourVerticesWithNormals.sort(Comparator.comparingDouble(p->euclideanDistance(p.getA(),centre)));
+        VertexWithNormal p = new VertexWithNormal(fourVerticesWithNormals.get(0));
+        fourVerticesWithNormals.remove(p.getVertex());
 
-        ValuePair<VertexWithNormal, Double> qAndRadius = calculateQ(threeVertices, p);
+        ValuePair<VertexWithNormal, Double> qAndRadius = calculateQ(fourVertices, p);
         if (qAndRadius == null || qAndRadius.getB()>calibratedLargestImageDimension) return Optional.empty();
-        threeVerticesWithNormals.remove(qAndRadius.getA().getVertex());
+        fourVerticesWithNormals.remove(qAndRadius.getA().getVertex());
 
         Vector3d np = new Vector3d(p.getNormal());
         np.scale(qAndRadius.getB());
@@ -58,17 +56,27 @@ public class FindLocalEllipsoidOp extends AbstractUnaryFunctionOp<List<ValuePair
         Matrix4d q1 = getQ1(c, qAndRadius.getB());
         Matrix4d q2 = getQ2(p, qAndRadius.getA());
 
-        ValuePair<Vector3d, Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, threeVertices);
+        ValuePair<Vector3d, Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, fourVertices);
         if (rAndAlpha == null) return Optional.empty();
-        threeVerticesWithNormals.remove(rAndAlpha.getA());
+        fourVerticesWithNormals.remove(rAndAlpha.getA());
 
         Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
         q1PlusAlphaQ2.mul(rAndAlpha.getB());
         q1PlusAlphaQ2.add(q1);
 
         Optional<Ellipsoid> ellipsoid = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
+        if(!ellipsoid.isPresent()) return Optional.empty();
 
-        return ellipsoid;
+        Matrix4d q3 = getQ3(Arrays.asList(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()), ellipsoid.get());
+
+        ValuePair<Vector3d, Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, fourVertices);
+        if (sAndBeta == null) return ellipsoid;
+
+        Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
+        q1PlusAlphaQ2plusBetaQ3.mul(sAndBeta.getB());
+        q1PlusAlphaQ2.add(q1PlusAlphaQ2plusBetaQ3);
+
+        return quadricToEllipsoid.calculate(q1PlusAlphaQ2);
     }
 
     /**

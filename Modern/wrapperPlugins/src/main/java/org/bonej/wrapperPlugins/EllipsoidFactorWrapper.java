@@ -7,7 +7,6 @@ import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.binary.Thresholder;
-import net.imglib2.algorithm.edge.Edgel;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
@@ -20,6 +19,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
+import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindLocalEllipsoidOp;
 import org.scijava.ItemIO;
@@ -34,16 +34,12 @@ import org.scijava.ui.UIService;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
-
 
 /**
  * Ellipsoid Factor
@@ -66,10 +62,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
     private DoubleType estimatedCharacteristicLength = new DoubleType(2.5);
 
     @Parameter(persist = false, required = false)
-    private DoubleType percentageOfRidgePoints = new DoubleType(0.8);
+    private DoubleType percentageOfRidgePoints = new DoubleType(0.85);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
-    private ImgPlus<BitType> ridgePointsImage;
+    private ImgPlus<UnsignedByteType> ridgePointsImage;
 
     @Parameter(label = "EF image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> efImage;
@@ -102,9 +98,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
 
         //find clever seed and boundary points
         final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
-        double samplingWidth = 1.0/2.3;
-        int nSphere = estimateNSpiralPointsRequired(estimatedCharacteristicLength.get(), samplingWidth);
-        List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+        int nSphere = 10;//estimateNSpiralPointsRequired(estimatedCharacteristicLength.get(), samplingWidth);
+        final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+        sphereSamplingDirections.addAll(Arrays.asList(
+                new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
+                new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
+        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(300);
 
         List<Shape> shapes = new ArrayList<>();
         shapes.add(new HyperSphereShape(2));
@@ -127,18 +126,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         final double ridgePointCutOff = percentageOfRidgePoints.getRealFloat()*opService.stats().max(ridge).getRealFloat();
         final Img<R> ridgeImg = (Img) ridge;
         final Img<BitType> thresholdedRidge = Thresholder.threshold(ridgeImg, (R) new FloatType((float) ridgePointCutOff), true, 1);
-        ridgePointsImage = new ImgPlus<>(opService.convert().bit(thresholdedRidge), "Seeding Points");
+        ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
 
         final List<ValuePair<List<Vector3d>, List<ValuePair<Vector3d, Vector3d>>>> starVolumes = new ArrayList<>();
         final List<Vector3d> internalSeedPoints = new ArrayList<>();
+        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combos = new ArrayList<>();
 
         ridgeCursor.reset();
-        while (ridgeCursor.hasNext()) {
+       while (ridgeCursor.hasNext()) {
             ridgeCursor.fwd();
             final double localValue = ridgeCursor.get().getRealFloat();
             if (localValue > ridgePointCutOff) {
                 final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
-                final List<Vector3d> boundaryPoints = new ArrayList<>();
                 long[] position = new long[3];
                 ridgeCursor.localize(position);
                 final Vector3d internalSeedPoint = new Vector3d(position[0]+0.5, position[1]+0.5, position[2]+0.5);
@@ -149,18 +148,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
                 }).collect(toList());
 
                 contactPoints.forEach(c -> {
-                    boundaryPoints.add(c);
                     Vector3d inwardDirection = new Vector3d(internalSeedPoint);
                     inwardDirection.sub(c);
                     inwardDirection.normalize();
                     seedPoints.add(new ValuePair<>(c, inwardDirection));
                 });
-                starVolumes.add(new ValuePair<>(boundaryPoints, seedPoints));
+                combos.addAll(getAllCombosOfFour(seedPoints, internalSeedPoint));
             }
         }
+
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
 
-        final List<Ellipsoid> ellipsoids = starVolumes.parallelStream().map(s -> getLocalEllipsoids(s.getB(), s.getA())).flatMap(l -> l.stream()).filter(e -> e.getA()>minimumAxisLength.get() && whollyContainedInForeground(e,sphereSamplingDirections)).collect(Collectors.toList());
+        final List<Ellipsoid> ellipsoids = combos.parallelStream().map(c -> findLocalEllipsoidOp.calculate(c.getA(),c.getB())).filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
         ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
 
         //find EF values
@@ -258,7 +257,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
     }
 
     private boolean ellipsoidIntersectionIsBackground(Ellipsoid e, Vector3d dir) {
-        double axisReduction = 1.0;
+        double axisReduction = Math.sqrt(3);
         final Matrix3d Q = new Matrix3d();
         e.getOrientation().getRotationScale(Q);
         final Matrix3d lambda = new Matrix3d();
@@ -282,7 +281,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
             return inputRA.get().getInteger() == 0;
         }
         else {
-            return false;
+            return true;//false to have outside input image equals foreground
         }
     }
 
@@ -313,11 +312,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
 
         return x.dot(Ax) < 1;
     }
-
-    private List<Ellipsoid> getLocalEllipsoids(final List<ValuePair<Vector3d, Vector3d>> seedPoints, final List<Vector3d> boundaryPoints) {
-        return seedPoints.stream().map(s -> findLocalEllipsoidOp.calculate(new ArrayList<Vector3d>(boundaryPoints), s)).flatMap(Collection::stream).filter(opt -> opt.isPresent()).map(e -> e.get()).collect(toList());
-    }
-
 
     /**
      * Method to numerically approximate equidistantly spaced points on the
@@ -394,8 +388,25 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
                 currentPixelPosition[2] < 0 || currentPixelPosition[2] >= depth);
     }
 
-    private long[] vectorToPixelGrid(Vector3d currentPosition) {
+    private static long[] vectorToPixelGrid(Vector3d currentPosition) {
         return Stream.of(currentPosition.getX(), currentPosition.getY(),
                 currentPosition.getZ()).mapToLong(x -> (long) x.doubleValue()).toArray();
+    }
+
+    static List<List<ValuePair<Vector3d,Vector3d>>> getAllCombosOfThree(List<ValuePair<Vector3d,Vector3d>> points){
+        final List<List<ValuePair<Vector3d,Vector3d>>> combos = new ArrayList<>();
+        for(int i = 0; i<points.size()-2; i++)
+            for(int j = i+1; j<points.size()-1; j++)
+                for(int k = j+1; k<points.size(); k++)
+                    combos.add(Arrays.asList(points.get(i),points.get(j),points.get(k)));
+        return combos;
+    }
+
+    static List<ValuePair<List<ValuePair<Vector3d,Vector3d>>,Vector3d>> getAllCombosOfFour(List<ValuePair<Vector3d,Vector3d>> points, Vector3d centre){
+        final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(points.size(), 4);
+        final List<ValuePair<List<ValuePair<Vector3d,Vector3d>>,Vector3d>> combos = new ArrayList<>();
+        iterator.forEachRemaining(el -> combos.add(
+                new ValuePair<>(Arrays.asList(points.get(el[0]), points.get(el[1]), points.get(el[2]), points.get(el[3])), centre)));
+        return combos;
     }
 }

@@ -38,6 +38,7 @@ import org.scijava.vecmath.GMatrix;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Matrix4d;
 import org.scijava.vecmath.Vector3d;
+import org.scijava.vecmath.SingularMatrixException;
 
 /**
  * Tries to create an {@link Ellipsoid} from a general equation of a quadratic
@@ -66,22 +67,29 @@ public class QuadricToEllipsoid extends
 
 	@Override
 	public Optional<Ellipsoid> calculate(final Matrix4d quadricSolution) {
-		final Vector3d center = findCenter(quadricSolution);
-		final Matrix4d translated = translateToCenter(quadricSolution, center);
-		final EigenDecomposition decomposition = solveEigenDecomposition(
-			translated);
-		final boolean invalidEv = Arrays.stream(decomposition.getRealEigenvalues())
-			.anyMatch(e -> e <= 0.0);
-		if (invalidEv) {
+		try {
+			Vector3d center = findCenter(quadricSolution);
+			final Matrix4d translated = translateToCenter(quadricSolution, center);
+			final EigenDecomposition decomposition = solveEigenDecomposition(
+					translated);
+			final boolean invalidEv = Arrays.stream(decomposition.getRealEigenvalues())
+					.anyMatch(e -> e <= 0.0);
+			if (invalidEv) {
+				return Optional.empty();
+			}
+			final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
+					.map(ev -> Math.sqrt(1.0 / ev)).toArray();
+			final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
+			ellipsoid.setCentroid(center);
+			final Matrix3d orientation = toOrientationMatrix(decomposition);
+			ellipsoid.setOrientation(orientation);
+			return Optional.of(ellipsoid);
+		}
+		catch (Exception e)
+		{
+			System.out.println(e.toString()+" occurred in maths underlying QuadricToEllipsoid, returning empty");
 			return Optional.empty();
 		}
-		final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
-			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
-		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
-		ellipsoid.setCentroid(center);
-		final Matrix3d orientation = toOrientationMatrix(decomposition);
-		ellipsoid.setOrientation(orientation);
-		return Optional.of(ellipsoid);
 	}
 
 	/**
