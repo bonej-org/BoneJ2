@@ -98,12 +98,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
 
         //find clever seed and boundary points
         final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
-        int nSphere = 10;//estimateNSpiralPointsRequired(estimatedCharacteristicLength.get(), samplingWidth);
+        int nSphere = 12;//estimateNSpiralPointsRequired(estimatedCharacteristicLength.get(), samplingWidth);
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(300);
+        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(200);
 
         List<Shape> shapes = new ArrayList<>();
         shapes.add(new HyperSphereShape(2));

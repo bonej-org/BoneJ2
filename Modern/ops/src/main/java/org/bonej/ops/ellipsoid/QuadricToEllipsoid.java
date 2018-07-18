@@ -87,7 +87,7 @@ public class QuadricToEllipsoid extends
 		}
 		catch (Exception e)
 		{
-			System.out.println(e.toString()+" occurred in maths underlying QuadricToEllipsoid, returning empty");
+			//System.out.println(e.toString()+" occurred in maths underlying QuadricToEllipsoid, returning empty");
 			return Optional.empty();
 		}
 	}
