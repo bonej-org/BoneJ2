@@ -171,8 +171,6 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
-            <!-- TODO Remove explicit version when pom-scijava declares new enough release -->
-            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
