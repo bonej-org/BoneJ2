@@ -23,7 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.ops.SolveQuadricEq.QUADRIC_TERMS;
+import static net.imagej.ops.stats.regression.leastSq.Quadric.MIN_DATA;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
@@ -33,11 +33,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import net.imagej.ops.OpService;
+import net.imagej.ops.stats.regression.leastSq.Quadric;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 
-import org.bonej.ops.SolveQuadricEq;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
 import org.bonej.utilities.ImagePlusUtil;
@@ -103,17 +103,16 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	@Override
 	public void run() {
 		if (!initPointROIs()) {
-			cancel("Please populate ROI Manager with at least " + QUADRIC_TERMS +
+			cancel("Please populate ROI Manager with at least " + MIN_DATA +
 				" point ROIs");
 			return;
 		}
 		statusService.showStatus("Fit ellipsoid: solving ellipsoid equation");
-		final Matrix4dc quadric = (Matrix4dc) opService.run(SolveQuadricEq.class,
-				points);
+		final Matrix4dc quadric = (Matrix4dc) opService.run(Quadric.class, points);
 		final double[] data = new double[16];
 		quadric.get(data);
 		final org.scijava.vecmath.Matrix4d q = new org.scijava.vecmath.Matrix4d(
-				data);
+			data);
 		statusService.showStatus("Fit ellipsoid: determining ellipsoid parameters");
 		@SuppressWarnings("unchecked")
 
@@ -149,18 +148,17 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			return false;
 		}
 		final Calibration calibration = inputImage.getCalibration();
-		final Function<Vector3d, Vector3d> calibrate =
-			v -> {
-				v.x *= calibration.pixelWidth;
-				v.y *= calibration.pixelHeight;
-				v.z *= calibration.pixelDepth;
-				return v;
-			};
+		final Function<Vector3d, Vector3d> calibrate = v -> {
+			v.x *= calibration.pixelWidth;
+			v.y *= calibration.pixelHeight;
+			v.z *= calibration.pixelDepth;
+			return v;
+		};
 		points = RoiManagerUtil.pointROICoordinates(manager).stream().filter(
 			p -> !RoiManagerUtil.isActiveOnAllSlices((int) p.z)).map(
 				v -> new Vector3d(v.x, v.y, v.z)).map(calibrate).collect(Collectors
 					.toList());
-		return points.size() >= QUADRIC_TERMS;
+		return points.size() >= MIN_DATA;
 	}
 
 	@SuppressWarnings("unused")

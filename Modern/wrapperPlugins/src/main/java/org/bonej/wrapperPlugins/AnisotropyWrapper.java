@@ -52,6 +52,7 @@ import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.ops.stats.regression.leastSq.Quadric;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
@@ -62,7 +63,6 @@ import net.imglib2.type.numeric.RealType;
 
 import org.apache.commons.math3.random.RandomVectorGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
-import org.bonej.ops.SolveQuadricEq;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
 import org.bonej.ops.mil.MILPlane;
@@ -98,6 +98,7 @@ import org.scijava.widget.NumberWidget;
 public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
+
 	/**
 	 * Generates four normally distributed values between [0, 1] that describe a
 	 * unit quaternion. These can be used to create isotropically distributed
@@ -116,8 +117,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, Quaterniondc, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> quadricToEllipsoidOp;
-	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
+	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<List<Vector3d>, Matrix4dc> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")
@@ -237,31 +238,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3d> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
-		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
+		final Matrix4dc quadric = solveQuadricOp.calculate(pointCloud);
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
-	}
-
-	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
-		final List<Vector3d> pointCloud;
-		try {
-			pointCloud = runDirectionsInParallel(subspace.interval);
-			if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
-				cancel("Anisotropy could not be calculated - too few points");
-				return null;
-			}
-			final Optional<Ellipsoid> ellipsoid = fitEllipsoid(pointCloud);
-			if (!ellipsoid.isPresent()) {
-				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
-				return null;
-			}
-			return ellipsoid.get();
-		}
-		catch (final ExecutionException | InterruptedException e) {
-			logService.trace(e.getMessage());
-			cancel("The plug-in was interrupted");
-		}
-		return null;
 	}
 
 	// TODO Refactor into a static utility method with unit tests
@@ -280,13 +259,34 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
 			subspace.interval, new Quaterniond(), lines, samplingIncrement);
 		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
-			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
-		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
-			Matrix4d.class, tmpPoints);
-		final Matrix4d matchingMock = new Matrix4d();
-		matchingMock.identity();
-		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService, QuadricToEllipsoid.class,
-			Optional.class, matchingMock);
+			Quadric.MIN_DATA).collect(toList());
+		solveQuadricOp = Functions.unary(opService, Quadric.class, Matrix4dc.class,
+			tmpPoints);
+		final Matrix4dc matchingMock = new Matrix4d();
+		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService,
+			QuadricToEllipsoid.class, Optional.class, matchingMock);
+	}
+
+	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
+		final List<Vector3d> pointCloud;
+		try {
+			pointCloud = runDirectionsInParallel(subspace.interval);
+			if (pointCloud.size() < Quadric.MIN_DATA) {
+				cancel("Anisotropy could not be calculated - too few points");
+				return null;
+			}
+			final Optional<Ellipsoid> ellipsoid = fitEllipsoid(pointCloud);
+			if (!ellipsoid.isPresent()) {
+				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+				return null;
+			}
+			return ellipsoid.get();
+		}
+		catch (final ExecutionException | InterruptedException e) {
+			logService.trace(e.getMessage());
+			cancel("The plug-in was interrupted");
+		}
+		return null;
 	}
 
 	/**

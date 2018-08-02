@@ -39,8 +39,8 @@ import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
+import net.imagej.ops.stats.regression.leastSq.Quadric;
 
-import org.bonej.ops.SolveQuadricEq;
 import org.joml.AxisAngle4d;
 import org.joml.Matrix4d;
 import org.joml.Matrix4dc;
@@ -132,8 +132,8 @@ public class QuadricToEllipsoidTest {
 			}).collect(Collectors.toList());
 
 		// EXECUTE
-		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(SolveQuadricEq.class,
-				points);
+		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(Quadric.class,
+			points);
 		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(quadric);
 
 		// VERIFY
@@ -182,8 +182,8 @@ public class QuadricToEllipsoidTest {
 		points.forEach(p -> p.add(centroid));
 
 		// EXECUTE
-		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(SolveQuadricEq.class,
-				points);
+		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(Quadric.class,
+			points);
 		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(quadric);
 
 		// VERIFY
@@ -211,7 +211,8 @@ public class QuadricToEllipsoidTest {
 		assertEquals(1.0, unitSphere.getB(), 1e-12);
 		assertEquals(1.0, unitSphere.getC(), 1e-12);
 		final org.scijava.vecmath.Vector3d c = unitSphere.getCentroid();
-		assertTrue(epsilonEquals(new Vector3d(0, 0, 0), new Vector3d(c.x, c.y, c.z), 1e-12));
+		assertTrue(epsilonEquals(new Vector3d(0, 0, 0), new Vector3d(c.x, c.y, c.z),
+			1e-12));
 		epsilonEquals(expectedOrientation, unitSphere.getOrientation(), 1e-12);
 	}
 

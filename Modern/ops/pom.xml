@@ -148,10 +148,6 @@
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.ojalgo</groupId>
-            <artifactId>ojalgo</artifactId>
-        </dependency>
 
         <!-- Testing dependencies -->
         <dependency>

@@ -59,7 +59,7 @@ import org.scijava.plugin.Plugin;
  * </pre>
  * 
  * @author Richard Domander
- * @see org.bonej.ops.SolveQuadricEq
+ * @see net.imagej.ops.stats.regression.leastSq.Quadric
  */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends
