@@ -24,7 +24,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.ops.ellipsoid;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
@@ -32,7 +35,6 @@ import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.EigenDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
 import org.joml.Matrix3d;
 import org.joml.Matrix3dc;
 import org.joml.Matrix4d;
@@ -80,10 +82,8 @@ public class QuadricToEllipsoid extends
 		final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
 			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
 		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
-		ellipsoid.setCentroid(new org.scijava.vecmath.Vector3d(center.x(), center
-			.y(), center.z()));
-		final org.scijava.vecmath.Matrix3d orientation = toOrientationMatrix(
-			decomposition);
+		ellipsoid.setCentroid(center);
+		final Matrix3dc orientation = toOrientationMatrix(decomposition);
 		ellipsoid.setOrientation(orientation);
 		return Optional.of(ellipsoid);
 	}
@@ -121,24 +121,13 @@ public class QuadricToEllipsoid extends
 		return new EigenDecomposition(input);
 	}
 
-	private static org.scijava.vecmath.Matrix3d toOrientationMatrix(
+	private static Matrix3dc toOrientationMatrix(
 		final EigenDecomposition decomposition)
 	{
-		final RealVector e1 = decomposition.getEigenvector(0);
-		final RealVector e2 = decomposition.getEigenvector(1);
-		final RealVector e3 = decomposition.getEigenvector(2);
-		final Vector3d x = new Vector3d(e1.getEntry(0), e1.getEntry(1), e1.getEntry(
-			2));
-		final Vector3d y = new Vector3d(e2.getEntry(0), e2.getEntry(1), e2.getEntry(
-			2));
-		final Vector3d z = new Vector3d(e3.getEntry(0), e3.getEntry(1), e3.getEntry(
-			2));
-		final org.scijava.vecmath.Matrix3d orientation =
-			new org.scijava.vecmath.Matrix3d();
-		orientation.setColumn(0, new org.scijava.vecmath.Vector3d(x.x, x.y, x.z));
-		orientation.setColumn(1, new org.scijava.vecmath.Vector3d(y.x, y.y, y.z));
-		orientation.setColumn(2, new org.scijava.vecmath.Vector3d(z.x, z.y, z.z));
-		return orientation;
+		final List<Vector3d> vectors = IntStream.range(0, 3).mapToObj(
+			decomposition::getEigenvector).map(e -> new Vector3d(e.getEntry(0), e
+				.getEntry(1), e.getEntry(2))).collect(Collectors.toList());
+		return new Matrix3d(vectors.get(0), vectors.get(1), vectors.get(2));
 	}
 
 	/**

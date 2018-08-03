@@ -47,6 +47,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.joml.Matrix4dc;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -109,15 +110,10 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		}
 		statusService.showStatus("Fit ellipsoid: solving ellipsoid equation");
 		final Matrix4dc quadric = (Matrix4dc) opService.run(Quadric.class, points);
-		final double[] data = new double[16];
-		quadric.get(data);
-		final org.scijava.vecmath.Matrix4d q = new org.scijava.vecmath.Matrix4d(
-			data);
 		statusService.showStatus("Fit ellipsoid: determining ellipsoid parameters");
 		@SuppressWarnings("unchecked")
-
 		final Optional<Ellipsoid> result = (Optional<Ellipsoid>) opService.run(
-			QuadricToEllipsoid.class, q);
+			QuadricToEllipsoid.class, quadric);
 		if (!result.isPresent()) {
 			cancel("Can't fit ellipsoid to points.\n" +
 				"Try adding more point ROIs to the ROI Manager and try again.");
@@ -132,10 +128,10 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	private void addResults(final Ellipsoid ellipsoid) {
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage);
 		final String label = inputImage.getTitle();
-		final org.scijava.vecmath.Vector3d centroid = ellipsoid.getCentroid();
-		SharedTable.add(label, "Centroid x " + unitHeader, centroid.getX());
-		SharedTable.add(label, "Centroid y " + unitHeader, centroid.getY());
-		SharedTable.add(label, "Centroid z " + unitHeader, centroid.getZ());
+		final Vector3dc centroid = ellipsoid.getCentroid();
+		SharedTable.add(label, "Centroid x " + unitHeader, centroid.x());
+		SharedTable.add(label, "Centroid y " + unitHeader, centroid.y());
+		SharedTable.add(label, "Centroid z " + unitHeader, centroid.z());
 		SharedTable.add(label, "Radius a " + unitHeader, ellipsoid.getA());
 		SharedTable.add(label, "Radius b " + unitHeader, ellipsoid.getB());
 		SharedTable.add(label, "Radius c " + unitHeader, ellipsoid.getC());

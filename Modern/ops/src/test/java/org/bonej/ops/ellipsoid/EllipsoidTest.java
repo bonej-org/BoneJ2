@@ -39,17 +39,20 @@ import net.imagej.ops.linalg.rotate.Rotate3d;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 
+import org.joml.AxisAngle4d;
+import org.joml.Matrix3d;
+import org.joml.Matrix3dc;
+import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
+import org.joml.Vector4d;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.scijava.vecmath.AxisAngle4d;
-import org.scijava.vecmath.Matrix3d;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
-import org.scijava.vecmath.Vector4d;
 
 /**
  * Tests for {@link Ellipsoid}.
@@ -68,9 +71,8 @@ public class EllipsoidTest {
 		final double a = 1.0;
 		final double b = 2.0;
 		final double c = 3.0;
-		final Vector3d expectedCentroid = new Vector3d(0, 0, 0);
-		final Matrix4d expectedOrientation = new Matrix4d();
-		expectedOrientation.setIdentity();
+		final Vector3dc expectedCentroid = new Vector3d();
+		final Matrix4dc expectedOrientation = new Matrix4d();
 		final List<Vector3d> expectedAxes = Arrays.asList(new Vector3d(a, 0, 0),
 			new Vector3d(0, b, 0), new Vector3d(0, 0, c));
 
@@ -100,7 +102,7 @@ public class EllipsoidTest {
 	@Test
 	public void testGetCentroid() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
-		final Vector3d centroid = new Vector3d(6, 7, 8);
+		final Vector3dc centroid = new Vector3d(6, 7, 8);
 		ellipsoid.setCentroid(centroid);
 
 		final Vector3d c = ellipsoid.getCentroid();
@@ -128,7 +130,7 @@ public class EllipsoidTest {
 		final double b = 4.0;
 		final double c = 8.0;
 		// @formatter:off
-		final Matrix3d orientation = new Matrix3d(
+		final Matrix3dc orientation = new Matrix3d(
 				-1, 0, 0,
 				0, -1, 0,
 				0, 0, 1
@@ -174,13 +176,13 @@ public class EllipsoidTest {
 		final double b = 3.0;
 		final double c = 4.0;
 		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c);
-		final Vector3d centroid = new Vector3d(4, 5, 6);
+		final Vector3dc centroid = new Vector3d(4, 5, 6);
 		ellipsoid.setCentroid(centroid);
 		final double sinAlpha = Math.sin(Math.PI / 4.0);
 		final double cosAlpha = Math.cos(Math.PI / 4.0);
 		// Orientation of an ellipsoid that's been rotated 45 deg around the z-axis
 		// @formatter:off
-		final Matrix3d orientation = new Matrix3d(
+		final Matrix3dc orientation = new Matrix3d(
 				cosAlpha, -sinAlpha, 0,
 				sinAlpha, cosAlpha, 0,
 				0, 0, 1
@@ -188,11 +190,11 @@ public class EllipsoidTest {
 		// @formatter:on
 		final AxisAngle4d invRotation = new AxisAngle4d();
 		invRotation.set(orientation);
-		invRotation.setAngle(-invRotation.angle);
-		final Quaterniondc q = new Quaterniond(new org.joml.AxisAngle4d(invRotation.angle, invRotation.x, invRotation.y, invRotation.z));
-		final BinaryHybridCFI1<org.joml.Vector3d, Quaterniondc, org.joml.Vector3d> inverseRotation =
-			Hybrids.binaryCFI1(IMAGE_J.op(), Rotate3d.class, org.joml.Vector3d.class,
-					new org.joml.Vector3d(), q);
+		invRotation.angle = -invRotation.angle;
+		final Quaterniondc q = new Quaterniond(new AxisAngle4d(invRotation.angle, invRotation.x, invRotation.y, invRotation.z));
+		final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> inverseRotation =
+			Hybrids.binaryCFI1(IMAGE_J.op(), Rotate3d.class, Vector3d.class,
+					new Vector3d(), q);
 		ellipsoid.setOrientation(orientation);
 		final long n = 10;
 		final Function<Vector3d, Double> ellipsoidEq = (Vector3d p) -> {
@@ -211,10 +213,10 @@ public class EllipsoidTest {
 		// Reverse the translation and rotation so that we can assert the easier
 		// equation of an axis-aligned ellipsoid at centroid
 		points.forEach(p -> p.sub(centroid));
-		points.stream().map(p -> new org.joml.Vector3d(p.x, p.y, p.z)).peek(
-			inverseRotation::mutate).map(v -> new Vector3d(v.x, v.y, v.z)).forEach(
-				p -> assertEquals("Point doesn't solve the ellipsoid equation", 1.0,
-					ellipsoidEq.apply(p), 1e-5));
+		points.forEach(inverseRotation::mutate);
+		points.forEach(p -> assertEquals(
+			"Point doesn't solve the ellipsoid equation", 1.0, ellipsoidEq.apply(p),
+			1e-5));
 	}
 
 	@Test(expected = RuntimeException.class)
@@ -233,10 +235,9 @@ public class EllipsoidTest {
 		final List<Vector3d> normalized = Stream.of(w, v, u).map(Vector3d::new)
 			.peek(Vector3d::normalize).collect(toList());
 		final Matrix4d expectedOrientation = new Matrix4d();
-		expectedOrientation.setIdentity();
 		for (int i = 0; i < 3; i++) {
 			final Vector3d e = normalized.get(i);
-			expectedOrientation.setColumn(i, e.x, e.y, e.z, 0);
+			expectedOrientation.setColumn(i, new Vector4d(e.x, e.y, e.z, 0));
 		}
 
 		// EXECUTE
@@ -346,7 +347,7 @@ public class EllipsoidTest {
 	@Test
 	public void testSetCentroid() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
-		final Vector3d centroid = new Vector3d(6, 7, 8);
+		final Vector3dc centroid = new Vector3d(6, 7, 8);
 
 		ellipsoid.setCentroid(centroid);
 
@@ -373,17 +374,17 @@ public class EllipsoidTest {
 				0, 0, 1
 		);
 		// @formatter:on
-		final Matrix3d original = new Matrix3d(orientation);
+		final Matrix3dc original = new Matrix3d(orientation);
 
 		ellipsoid.setOrientation(orientation);
-		orientation.mul(1.234);
+		orientation.scale(1.234);
 
 		final Matrix4d m = ellipsoid.getOrientation();
 		// @formatter:off
-		final Matrix3d result = new Matrix3d(
-				m.m00, m.m01, m.m02,
-				m.m10, m.m11, m.m12,
-				m.m20, m.m21, m.m22
+		final Matrix3dc result = new Matrix3d(
+				m.m00(), m.m01(), m.m02(),
+				m.m10(), m.m11(), m.m12(),
+				m.m20(), m.m21(), m.m22()
 		);
 		// @formatter:on
 		assertEquals("Setter copied values incorrectly or set a reference",
@@ -394,7 +395,7 @@ public class EllipsoidTest {
 	public void testSetOrientationAllowsLeftHandedBasis() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 4);
 		// @formatter:off
-		final Matrix3d leftHanded = new Matrix3d(
+		final Matrix3dc leftHanded = new Matrix3d(
 				1, 0, 0,
 				0, 1, 0,
 				0, 0, -1
@@ -408,7 +409,7 @@ public class EllipsoidTest {
 	public void testSetOrientationNormalizesVectors() {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 4);
 		// @formatter:off
-		final Matrix3d orientation = new Matrix3d(
+		final Matrix3dc orientation = new Matrix3d(
 				3, 0, 0,
 				0, 3, 0,
 				0, 0, 3

@@ -30,7 +30,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 import net.imagej.ImageJ;
 import net.imagej.ops.linalg.rotate.Rotate3d;
@@ -125,12 +124,11 @@ public class QuadricToEllipsoidTest {
 		final Random rng = new Random(SEED);
 		// The points are isotropically distributed on the ellipsoid surface, but
 		// after the scaling they are not evenly distributed in space.
-		final List<Vector3d> points = ellipsoidPoints.calculate(radii, 1_000L)
-			.stream().map(p -> new Vector3d(p.x, p.y, p.z)).peek(p -> {
-				final double scale = (2 * rng.nextDouble() - 1) * 0.05 + 1.0;
-				p.mul(scale);
-			}).collect(Collectors.toList());
-
+		final List<Vector3d> points = ellipsoidPoints.calculate(radii, 1_000L);
+		points.forEach(p -> {
+			final double scale = (2 * rng.nextDouble() - 1) * 0.05 + 1.0;
+			p.mul(scale);
+		});
 		// EXECUTE
 		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(Quadric.class,
 			points);
@@ -146,11 +144,7 @@ public class QuadricToEllipsoidTest {
 		assertEquals(radii[0], ellipsoid.getA(), 0.025);
 		assertEquals(radii[1], ellipsoid.getB(), 0.025);
 		assertEquals(radii[2], ellipsoid.getC(), 0.025);
-		final Matrix4d orientation = new Matrix4d();
-		final org.scijava.vecmath.Matrix4d o = ellipsoid.getOrientation();
-		orientation.set(o.m00, o.m01, o.m02, o.m03, o.m10, o.m11, o.m12, o.m13,
-			o.m20, o.m21, o.m22, o.m23, o.m30, o.m31, o.m32, o.m33);
-		epsilonEquals(symmetry, o, 0.025);
+		epsilonEquals(symmetry, ellipsoid.getOrientation(), 0.025);
 	}
 
 	/**
@@ -175,9 +169,7 @@ public class QuadricToEllipsoidTest {
 				0, 0, -1, 0,
 				0, 0, 0, 1);
 		// @formatter:on
-		final List<Vector3d> points = ellipsoidPoints.calculate(radii, 1_000L)
-			.stream().map(p -> new Vector3d(p.x, p.y, p.z)).collect(Collectors
-				.toList());
+		final List<Vector3d> points = ellipsoidPoints.calculate(radii, 1_000L);
 		points.forEach(rotate::mutate);
 		points.forEach(p -> p.add(centroid));
 
@@ -189,7 +181,7 @@ public class QuadricToEllipsoidTest {
 		// VERIFY
 		assertTrue(result.isPresent());
 		final Ellipsoid transformedEllipsoid = result.get();
-		final org.scijava.vecmath.Vector3d v = transformedEllipsoid.getCentroid();
+		final Vector3d v = transformedEllipsoid.getCentroid();
 		assertTrue(epsilonEquals(centroid, new Vector3d(v.x, v.y, v.z), 1e-12));
 		assertEquals(radii[0], transformedEllipsoid.getA(), 1e-12);
 		assertEquals(radii[1], transformedEllipsoid.getB(), 1e-12);
@@ -210,7 +202,7 @@ public class QuadricToEllipsoidTest {
 		assertEquals(1.0, unitSphere.getA(), 1e-12);
 		assertEquals(1.0, unitSphere.getB(), 1e-12);
 		assertEquals(1.0, unitSphere.getC(), 1e-12);
-		final org.scijava.vecmath.Vector3d c = unitSphere.getCentroid();
+		final Vector3d c = unitSphere.getCentroid();
 		assertTrue(epsilonEquals(new Vector3d(0, 0, 0), new Vector3d(c.x, c.y, c.z),
 			1e-12));
 		epsilonEquals(expectedOrientation, unitSphere.getOrientation(), 1e-12);
@@ -226,25 +218,25 @@ public class QuadricToEllipsoidTest {
 		IMAGE_J.context().dispose();
 	}
 
-	private void epsilonEquals(final Matrix4dc a,
-		final org.scijava.vecmath.Matrix4d b, final double eps)
+	private void epsilonEquals(final Matrix4dc a, final Matrix4dc b,
+		final double eps)
 	{
-		assertEquals(a.m00(), b.m00, eps);
-		assertEquals(a.m01(), b.m01, eps);
-		assertEquals(a.m02(), b.m02, eps);
-		assertEquals(a.m03(), b.m03, eps);
-		assertEquals(a.m10(), b.m10, eps);
-		assertEquals(a.m11(), b.m11, eps);
-		assertEquals(a.m12(), b.m12, eps);
-		assertEquals(a.m13(), b.m13, eps);
-		assertEquals(a.m20(), b.m20, eps);
-		assertEquals(a.m21(), b.m21, eps);
-		assertEquals(a.m22(), b.m22, eps);
-		assertEquals(a.m23(), b.m23, eps);
-		assertEquals(a.m30(), b.m30, eps);
-		assertEquals(a.m31(), b.m31, eps);
-		assertEquals(a.m32(), b.m32, eps);
-		assertEquals(a.m33(), b.m33, eps);
+		assertEquals(a.m00(), b.m00(), eps);
+		assertEquals(a.m01(), b.m01(), eps);
+		assertEquals(a.m02(), b.m02(), eps);
+		assertEquals(a.m03(), b.m03(), eps);
+		assertEquals(a.m10(), b.m10(), eps);
+		assertEquals(a.m11(), b.m11(), eps);
+		assertEquals(a.m12(), b.m12(), eps);
+		assertEquals(a.m13(), b.m13(), eps);
+		assertEquals(a.m20(), b.m20(), eps);
+		assertEquals(a.m21(), b.m21(), eps);
+		assertEquals(a.m22(), b.m22(), eps);
+		assertEquals(a.m23(), b.m23(), eps);
+		assertEquals(a.m30(), b.m30(), eps);
+		assertEquals(a.m31(), b.m31(), eps);
+		assertEquals(a.m32(), b.m32(), eps);
+		assertEquals(a.m33(), b.m33(), eps);
 	}
 
 	private boolean epsilonEquals(final Vector3dc u, final Vector3dc v,

@@ -322,8 +322,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final AtomicInteger progress = new AtomicInteger();
 		for (final Future<Vector3d> future : futures) {
 			statusService.showProgress(progress.getAndIncrement(), futuresSize);
-			final Vector3d v = future.get();
-			pointCloud.add(v);
+			pointCloud.add(future.get());
 		}
 		shutdownAndAwaitTermination(executor);
 		return pointCloud;
