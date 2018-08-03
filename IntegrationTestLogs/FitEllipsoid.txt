@@ -113,7 +113,7 @@ Expected result
 User sees the BoneJ results table with the radii and centroid 
 coordinates of an ellipsoid.
 
-Completed: July 6 2017 Richard Domander
+Completed: August 3 2018 Richard Domander
 -----------------------------------------------------------------------
 
 
