@@ -31,12 +31,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.scijava.vecmath.Vector3d;
-
 import ij.ImageStack;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import org.joml.Vector3d;
 
 /**
  * A class containing utility methods for the ImageJ RoiManager

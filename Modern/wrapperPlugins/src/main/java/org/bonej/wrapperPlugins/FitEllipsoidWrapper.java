@@ -151,9 +151,8 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			return v;
 		};
 		points = RoiManagerUtil.pointROICoordinates(manager).stream().filter(
-			p -> !RoiManagerUtil.isActiveOnAllSlices((int) p.z)).map(
-				v -> new Vector3d(v.x, v.y, v.z)).map(calibrate).collect(Collectors
-					.toList());
+			p -> !RoiManagerUtil.isActiveOnAllSlices((int) p.z)).map(calibrate)
+			.collect(Collectors.toList());
 		return points.size() >= MIN_DATA;
 	}
 

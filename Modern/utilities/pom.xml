@@ -150,6 +150,12 @@
             <artifactId>imglib2</artifactId>
         </dependency>
 
+        <!-- Other dependencies -->
+        <dependency>
+            <groupId>org.joml</groupId>
+            <artifactId>joml</artifactId>
+        </dependency>
+
         <!-- Testing dependencies -->
         <dependency>
             <groupId>junit</groupId>
