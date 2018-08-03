@@ -82,7 +82,7 @@ public class QuadricToEllipsoidTest {
 		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToEllipsoid.class,
 			Optional.class, UNIT_SPHERE);
 	@SuppressWarnings("unchecked")
-	private static final BinaryFunctionOp<double[], Long, List<org.scijava.vecmath.Vector3d>> ellipsoidPoints =
+	private static final BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
 		(BinaryFunctionOp) Functions.binary(IMAGE_J.op(), EllipsoidPoints.class,
 			List.class, new double[] { 1, 2, 3 }, 0);
 

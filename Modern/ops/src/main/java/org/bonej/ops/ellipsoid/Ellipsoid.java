@@ -60,7 +60,7 @@ public class Ellipsoid {
 	private double c;
 	// TODO Add a way to change the sampling function, either by passing and Op of
 	// certain type, or by creating an enumerator.
-	private BinaryFunctionOp<double[], Long, List<Vector3d>> isotropicSampling;
+	private BinaryFunctionOp<double[], Long, List<org.joml.Vector3d>> isotropicSampling;
 
 	/**
 	 * Constructs an Ellipsoid.
@@ -299,7 +299,7 @@ public class Ellipsoid {
 			throw new RuntimeException("Sampling has not been initialized");
 		}
 		final List<Vector3d> points = isotropicSampling.calculate(new double[] { a,
-			b, c }, n);
+			b, c }, n).stream().map(v -> new Vector3d(v.x, v.y, v.z)).collect(toList());
 		points.forEach(this::mapToOrientation);
 		points.forEach(p -> p.add(centroid));
 		return points;
