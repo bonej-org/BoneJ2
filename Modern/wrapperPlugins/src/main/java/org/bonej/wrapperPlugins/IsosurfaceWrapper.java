@@ -24,7 +24,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.wrapperPlugins;
 
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
@@ -295,9 +294,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	private void prepareResults() {
 		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
 
 		if (isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);

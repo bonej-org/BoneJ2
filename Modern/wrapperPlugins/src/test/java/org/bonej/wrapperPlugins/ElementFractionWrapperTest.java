@@ -72,12 +72,6 @@ public class ElementFractionWrapperTest {
 	}
 
 	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
-			ElementFractionWrapper.class);
-	}
-
-	@Test
 	public void testNonBinaryImageCancelsElementFraction() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			ElementFractionWrapper.class);

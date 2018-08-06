@@ -68,12 +68,6 @@ public class SurfaceFractionWrapperTest {
 	}
 
 	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
-			SurfaceFractionWrapper.class);
-	}
-
-	@Test
 	public void testNonBinaryImageCancelsSurfaceFraction() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			SurfaceFractionWrapper.class);

@@ -23,11 +23,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.WEIRD_SPATIAL;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
@@ -132,9 +130,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
 			exponent);
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
 		boneSizeHeader = "Bone " + sizeDescription.toLowerCase() + " " + unitHeader;
