@@ -225,12 +225,6 @@ public class IsosurfaceWrapperTest {
 	}
 
 	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
-			IsosurfaceWrapper.class, "exportSTL", false);
-	}
-
-	@Test
 	public void testNonBinaryImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			IsosurfaceWrapper.class);

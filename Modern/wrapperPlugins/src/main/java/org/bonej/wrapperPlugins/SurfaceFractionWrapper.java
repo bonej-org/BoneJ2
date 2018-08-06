@@ -194,9 +194,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
 			exponent);
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
 		bVHeader = "Bone volume " + unitHeader;
 		tVHeader = "Total volume " + unitHeader;
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,

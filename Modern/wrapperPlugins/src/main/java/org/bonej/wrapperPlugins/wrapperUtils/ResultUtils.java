@@ -153,8 +153,7 @@ public final class ResultUtils {
 		}
 
 		final String unitHeader = unit.get();
-		if ("pixel".equalsIgnoreCase(unitHeader) || "unit".equalsIgnoreCase(
-			unitHeader) || unitHeader.isEmpty())
+		if (unitHeader.isEmpty())
 		{
 			// Don't show default units
 			return "";

@@ -132,9 +132,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
 			exponent);
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
 		boneSizeHeader = "Bone " + sizeDescription.toLowerCase() + " " + unitHeader;
