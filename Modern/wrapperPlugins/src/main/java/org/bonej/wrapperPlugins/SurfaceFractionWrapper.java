@@ -23,11 +23,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -194,9 +192,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
 			exponent);
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
 		bVHeader = "Bone volume " + unitHeader;
 		tVHeader = "Total volume " + unitHeader;
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,

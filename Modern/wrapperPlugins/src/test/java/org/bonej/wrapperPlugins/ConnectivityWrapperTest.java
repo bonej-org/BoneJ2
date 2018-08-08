@@ -118,12 +118,6 @@ public class ConnectivityWrapperTest {
 	}
 
 	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
-			ConnectivityWrapper.class);
-	}
-
-	@Test
 	public void testNonBinaryImageCancelsConnectivity() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			ConnectivityWrapper.class);
