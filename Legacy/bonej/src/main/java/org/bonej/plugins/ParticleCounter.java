@@ -1906,7 +1906,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				return 0;
 			}
 			final CustomTriangleMesh mesh = new CustomTriangleMesh(p);
-			return mesh.getVolume();
+			return Math.abs(mesh.getVolume());
 		}).toArray();
 	}
 
