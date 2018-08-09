@@ -9,6 +9,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.DoubleType;
+import net.imglib2.type.numeric.real.FloatType;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
@@ -25,7 +26,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@Ignore
 public class EllipsoidFactorWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
@@ -39,18 +39,21 @@ public class EllipsoidFactorWrapperTest {
         IMAGE_J.context().dispose();
     }
 
+    @Ignore
     @Test
     public void testNullImageCancelsPlugin() throws Exception {
         CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
                 EllipsoidFactorWrapper.class);
     }
 
+    @Ignore
     @Test
     public void testNonBinaryImageCancelsPlugin() throws Exception {
         CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
                 EllipsoidFactorWrapper.class);
     }
 
+    @Ignore
     @Test
     public void testCompositeImageCancelsPlugin() throws Exception {
         // SETUP
@@ -73,7 +76,7 @@ public class EllipsoidFactorWrapperTest {
     }
 
     @Test
-    public void testSphereHasEFZero() throws Exception {
+    public void testSphereVoxelsHaveEFZero() throws Exception {
         // SETUP
         final UserInterface mockUI = mock(UserInterface.class);
         doNothing().when(mockUI).show(any(ImgPlus.class));
@@ -105,17 +108,63 @@ public class EllipsoidFactorWrapperTest {
                 EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
 
         // VERIFY
-        final ImgPlus<DoubleType> efImage = (ImgPlus) module.getOutput("efImage");
-        Cursor<DoubleType> efCursor = efImage.getImg().localizingCursor();
-        while (cursor.hasNext())
+        final ImgPlus<FloatType> efImage = (ImgPlus) module.getOutput("efImage");
+        Cursor<FloatType> efCursor = efImage.getImg().localizingCursor();
+        while (efCursor.hasNext())
+        {
+            efCursor.fwd();
+            if(Double.isFinite(efCursor.get().getRealDouble()))
+            {
+                long [] coordinates = new long[3];
+                efCursor.localize(coordinates);
+                assertEquals(0.0, efCursor.get().getRealDouble(),1e-5);
+            }
+        }
+    }
+
+    @Test
+    public void testSphereVoxelsHaveCorrectVolume() throws Exception {
+        // SETUP
+        final UserInterface mockUI = mock(UserInterface.class);
+        doNothing().when(mockUI).show(any(ImgPlus.class));
+        IMAGE_J.ui().setDefaultUI(mockUI);
+
+
+        long[] imageDimensions = {101,101,101};
+        Vector3d centre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
+        int radius = 10;
+
+        final Img<IntType> sphereImg = ArrayImgs.ints(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
+        final ImgPlus<IntType> sphereImgPlus = new ImgPlus<>(sphereImg, "Sphere test image");
+        Cursor<IntType> cursor = sphereImgPlus.localizingCursor();
+
+        while(cursor.hasNext())
         {
             cursor.fwd();
             long [] coordinates = new long[3];
             cursor.localize(coordinates);
+            double x = centre.getX()-coordinates[0];
+            double y = centre.getY()-coordinates[1];
+            double z = centre.getZ()-coordinates[2];
+            double distanceFromCentre = x*x+y*y+z*z;
+            if(distanceFromCentre <= radius*radius)
+                cursor.get().set(255);
+        }
+        // EXECUTE
+        final CommandModule module = IMAGE_J.command().run(
+                EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
 
-            if(efCursor.get().get()!=Double.NaN)
+        // VERIFY
+        final ImgPlus<FloatType> volumeImage = (ImgPlus) module.getOutput("vImage");
+        Cursor<FloatType> volumeCursor = volumeImage.getImg().localizingCursor();
+        while (volumeCursor.hasNext())
+        {
+            volumeCursor.fwd();
+            if(Float.isFinite(volumeCursor.get().getRealFloat()))
             {
-                assertEquals(0.0, efCursor.get().get(),1e-12);
+                long [] coordinates = new long[3];
+                volumeCursor.localize(coordinates);
+                assertEquals(5575.27976, volumeCursor.get().getRealFloat(),1e-4);
             }
         }
     }

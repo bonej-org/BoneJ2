@@ -62,7 +62,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
     private DoubleType estimatedCharacteristicLength = new DoubleType(2.5);
 
     @Parameter(persist = false, required = false)
-    private DoubleType percentageOfRidgePoints = new DoubleType(0.85);
+    private DoubleType percentageOfRidgePoints = new DoubleType(0.95);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -72,6 +72,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
 
     @Parameter(label = "ID image", type = ItemIO.OUTPUT)
     private ImgPlus<IntType> eIdImage;
+
+    @Parameter(label = "Volume Image", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> vImage;
 
     @SuppressWarnings("unused")
     @Parameter
@@ -133,7 +136,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combos = new ArrayList<>();
 
         ridgeCursor.reset();
-       while (ridgeCursor.hasNext()) {
+        while (ridgeCursor.hasNext()) {
             ridgeCursor.fwd();
             final double localValue = ridgeCursor.get().getRealFloat();
             if (localValue > ridgePointCutOff) {
@@ -164,10 +167,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
 
         //find EF values
         statusService.showStatus("Ellipsoid Factor: preparing assignment...");
-        final Img<FloatType> ellipsoidFactorImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
-        ellipsoidFactorImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
         final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
+        final Img<FloatType> ellipsoidFactorImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
+        ellipsoidFactorImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
+        final Img<FloatType> volumeImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
+        volumeImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
 
         final Cursor<BitType> inputCursor = inputAsBit.localizingCursor();
         long numberOfForegroundVoxels = countTrue(inputAsBit);
@@ -183,8 +188,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         }
 
         statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-        long numberOfAssignedVoxels = voxelCentrePoints.parallelStream().filter(centrePoint -> assignEllipsoidFactor(ellipsoids,ellipsoidFactorImage,ellipsoidIdentityImage,centrePoint)).count();
+        long numberOfAssignedVoxels = voxelCentrePoints.parallelStream().filter(centrePoint -> findID(ellipsoids,ellipsoidIdentityImage,centrePoint)).count();
 
+        final double[] ellipsoidFactorArray = ellipsoids.parallelStream().mapToDouble(e -> computeEllipsoidFactor(e)).toArray();
+        mapValuesToImage(ellipsoidFactorArray, ellipsoidIdentityImage, ellipsoidFactorImage);
+
+        final double[] volumeArray = ellipsoids.parallelStream().mapToDouble(e -> e.getVolume()).toArray();
+        mapValuesToImage(volumeArray, ellipsoidIdentityImage, volumeImage);
 
         final LogService log = uiService.log();
         log.initialize();
@@ -204,10 +214,27 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         eIdImage.setChannelMaximum(0,ellipsoids.size()/10.0);
         eIdImage.setChannelMinimum(0, -1.0);
 
-
+        vImage = new ImgPlus<>(volumeImage, "Volume");
+        vImage.setChannelMaximum(0,ellipsoids.size()/10.0);
+        vImage.setChannelMinimum(0, -1.0);
     }
 
-    private boolean assignEllipsoidFactor(List<Ellipsoid> ellipsoids, Img<FloatType> ellipsoidFactorImage, Img<IntType> ellipsoidIdentityImage, Vector3d point) {
+    private void mapValuesToImage(double[] values, Img<IntType> ellipsoidIdentityImage, Img<FloatType> ellipsoidFactorImage) {
+        final RandomAccess<FloatType> ef = ellipsoidFactorImage.randomAccess();
+        final Cursor<IntType> id = ellipsoidIdentityImage.localizingCursor();
+        while(id.hasNext()){
+            id.fwd();
+            if(id.get().getInteger()!=-1){
+                long[] position = new long[3];
+                id.localize(position);
+                final double value = values[id.get().getInteger()];
+                ef.setPosition(position);
+                ef.get().setReal(value);
+            }
+        }
+    }
+
+    private boolean findID(List<Ellipsoid> ellipsoids, Img<IntType> ellipsoidIdentityImage, Vector3d point) {
         boolean assigned = false;
 
         //find largest ellipsoid containing current position
@@ -216,18 +243,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
             currentEllipsoidCounter++;
         }
 
-        RandomAccess<FloatType> efRandomAccess = ellipsoidFactorImage.randomAccess();
         RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
-
-        efRandomAccess.setPosition(vectorToPixelGrid(point));
         eIDRandomAccess.setPosition(vectorToPixelGrid(point));
 
         //ignore background voxels and voxels not contained in any ellipsoid
         if (currentEllipsoidCounter == ellipsoids.size()) {
-            efRandomAccess.get().setReal(Double.NaN);
-            eIDRandomAccess.get().set(-1);
+             eIDRandomAccess.get().set(-1);
         } else {
-            efRandomAccess.get().set(computeEllipsoidFactor(ellipsoids.get(currentEllipsoidCounter)));
             eIDRandomAccess.get().set(currentEllipsoidCounter);
             assigned = true;
         }
