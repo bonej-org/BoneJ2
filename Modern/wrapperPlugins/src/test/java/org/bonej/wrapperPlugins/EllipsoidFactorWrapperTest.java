@@ -1,20 +1,18 @@
 package org.bonej.wrapperPlugins;
 
-import ij.IJ;
-import ij.ImagePlus;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
+import net.imagej.axis.Axes;
+import net.imagej.axis.AxisType;
 import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.real.DoubleType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.FloatType;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.SharedTable;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
@@ -23,8 +21,14 @@ import org.scijava.vecmath.Vector3d;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+
+/**
+ * Tests for {@link EllipsoidFactorWrapper}.
+ *
+ * @author Alessandro Felder
+ */
 
 public class EllipsoidFactorWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
@@ -39,40 +43,21 @@ public class EllipsoidFactorWrapperTest {
         IMAGE_J.context().dispose();
     }
 
-    @Ignore
     @Test
     public void testNullImageCancelsPlugin() throws Exception {
         CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
                 EllipsoidFactorWrapper.class);
     }
 
-    @Ignore
     @Test
-    public void testNonBinaryImageCancelsPlugin() throws Exception {
-        CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+    public void testNonBinaryImgCancelsPlugin() throws Exception {
+        CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
                 EllipsoidFactorWrapper.class);
     }
 
-    @Ignore
     @Test
-    public void testCompositeImageCancelsPlugin() throws Exception {
-        // SETUP
-        final String expectedMessage = CommonMessages.HAS_CHANNEL_DIMENSIONS +
-                ". Please split the channels.";
-        final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
-        final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
-
-        // EXECUTE
-        final CommandModule module = IMAGE_J.command().run(
-                EllipsoidFactorWrapper.class, true, "inputImage", imagePlus).get();
-
-        // VERIFY
-        assertTrue("A composite image should have cancelled the plugin", module
-                .isCanceled());
-        assertEquals("Cancel reason is incorrect", expectedMessage, module
-                .getCancelReason());
-        verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-                any());
+    public void test2DImgCancelsPlugin() throws Exception {
+        CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J, EllipsoidFactorWrapper.class);
     }
 
     @Test
@@ -81,7 +66,7 @@ public class EllipsoidFactorWrapperTest {
         final UserInterface mockUI = mock(UserInterface.class);
         doNothing().when(mockUI).show(any(ImgPlus.class));
         IMAGE_J.ui().setDefaultUI(mockUI);
-        final ImgPlus<IntType> sphereImgPlus = getSphereImage();
+        final ImgPlus<BitType> sphereImgPlus = getSphereImage();
 
         // EXECUTE
         final CommandModule module = IMAGE_J.command().run(
@@ -99,7 +84,7 @@ public class EllipsoidFactorWrapperTest {
         final UserInterface mockUI = mock(UserInterface.class);
         doNothing().when(mockUI).show(any(ImgPlus.class));
         IMAGE_J.ui().setDefaultUI(mockUI);
-        final ImgPlus<IntType> sphereImgPlus = getSphereImage();
+        final ImgPlus<BitType> sphereImgPlus = getSphereImage();
 
         // EXECUTE
         final CommandModule module = IMAGE_J.command().run(
@@ -118,7 +103,7 @@ public class EllipsoidFactorWrapperTest {
         final UserInterface mockUI = mock(UserInterface.class);
         doNothing().when(mockUI).show(any(ImgPlus.class));
         IMAGE_J.ui().setDefaultUI(mockUI);
-        final ImgPlus<IntType> sphereImgPlus = getSphereImage();
+        final ImgPlus<BitType> sphereImgPlus = getSphereImage();
 
         // EXECUTE
         final CommandModule module = IMAGE_J.command().run(
@@ -134,6 +119,7 @@ public class EllipsoidFactorWrapperTest {
         assertFiniteImageEntriesMatchValue(bToC,expectedValue,1e-4);
     }
 
+    // TODO check image has any finite entries!
     private void assertFiniteImageEntriesMatchValue(ImgPlus<FloatType> efImage, double expectedValue, double tolerance) {
         Cursor<FloatType> efCursor = efImage.getImg().localizingCursor();
         while (efCursor.hasNext())
@@ -148,14 +134,17 @@ public class EllipsoidFactorWrapperTest {
         }
     }
 
-    private static ImgPlus<IntType> getSphereImage() {
+    private static ImgPlus<BitType> getSphereImage() {
         long[] imageDimensions = {101,101,101};
         Vector3d centre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
         int radius = 10;
 
-        final Img<IntType> sphereImg = ArrayImgs.ints(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
-        final ImgPlus<IntType> sphereImgPlus = new ImgPlus<>(sphereImg, "Sphere test image");
-        Cursor<IntType> cursor = sphereImgPlus.localizingCursor();
+        final Img<BitType> sphereImg = ArrayImgs.bits(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
+        final ImgPlus<BitType> sphereImgPlus = new ImgPlus<>(sphereImg, "Sphere test image",
+                new AxisType[]{Axes.X,Axes.Y, Axes.Z},
+                new double[]{1.0,1.0,1.0},
+                new String[]{"","",""});
+        Cursor<BitType> cursor = sphereImgPlus.localizingCursor();
 
         while(cursor.hasNext())
         {
@@ -167,7 +156,7 @@ public class EllipsoidFactorWrapperTest {
             double z = centre.getZ()-coordinates[2];
             double distanceFromCentre = x*x+y*y+z*z;
             if(distanceFromCentre <= radius*radius)
-                cursor.get().set(255);
+                cursor.get().setOne();
         }
         return sphereImgPlus;
     }
