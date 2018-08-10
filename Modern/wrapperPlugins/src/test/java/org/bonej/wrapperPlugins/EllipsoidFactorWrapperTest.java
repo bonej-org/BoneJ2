@@ -30,6 +30,12 @@ import static org.mockito.Mockito.mock;
  * @author Alessandro Felder
  */
 
+/**
+ * Tests for {@link EllipsoidFactorWrapper}.
+ *
+ * @author Alessandro Felder
+ */
+
 public class EllipsoidFactorWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
@@ -60,7 +66,6 @@ public class EllipsoidFactorWrapperTest {
         CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J, EllipsoidFactorWrapper.class);
     }
 
-    @Test
     public void testSphereVoxelsHaveEFZero() throws Exception {
         // SETUP
         final UserInterface mockUI = mock(UserInterface.class);
