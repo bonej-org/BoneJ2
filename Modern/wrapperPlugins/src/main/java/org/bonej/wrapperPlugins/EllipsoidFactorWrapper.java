@@ -76,6 +76,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
     @Parameter(label = "Volume Image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> vImage;
 
+    @Parameter(label = "a/b Image", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> aToBAxisRatioImage;
+
+    @Parameter(label = "b/c Image", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> bToCAxisRatioImage;
+
     @SuppressWarnings("unused")
     @Parameter
     private OpService opService;
@@ -171,8 +177,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
         final Img<FloatType> ellipsoidFactorImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         ellipsoidFactorImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
+
         final Img<FloatType> volumeImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         volumeImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
+        final Img<FloatType> aToBImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
+        aToBImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
+        final Img<FloatType> bToCImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
+        bToCImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
 
         final Cursor<BitType> inputCursor = inputAsBit.localizingCursor();
         long numberOfForegroundVoxels = countTrue(inputAsBit);
@@ -196,6 +207,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         final double[] volumeArray = ellipsoids.parallelStream().mapToDouble(e -> e.getVolume()).toArray();
         mapValuesToImage(volumeArray, ellipsoidIdentityImage, volumeImage);
 
+        final double[] aToBArray = ellipsoids.parallelStream().mapToDouble(e -> e.getA()/e.getB()).toArray();
+        mapValuesToImage(aToBArray, ellipsoidIdentityImage, aToBImage);
+
+        final double[] bToCArray = ellipsoids.parallelStream().mapToDouble(e -> e.getB()/e.getC()).toArray();
+        mapValuesToImage(bToCArray, ellipsoidIdentityImage, bToCImage);
+
+
         final LogService log = uiService.log();
         log.initialize();
         log.info("found "+ellipsoids.size()+" ellipsoids");
@@ -204,7 +222,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         double fillingPercentage = 100.0*((double) numberOfAssignedVoxels)/((double) numberOfForegroundVoxels);
         log.info("filling percentage = "+fillingPercentage+"%");
 
-        efImage = new ImgPlus<FloatType>(ellipsoidFactorImage, "EF");
+        efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
         efImage.setChannelMaximum(0,1);
         efImage.setChannelMinimum(  0,-1);
         efImage.initializeColorTables(1);
@@ -215,8 +233,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         eIdImage.setChannelMinimum(0, -1.0);
 
         vImage = new ImgPlus<>(volumeImage, "Volume");
-        vImage.setChannelMaximum(0,ellipsoids.size()/10.0);
+        vImage.setChannelMaximum(0,ellipsoids.get(0).getVolume());
         vImage.setChannelMinimum(0, -1.0);
+
+        aToBAxisRatioImage = new ImgPlus<>(aToBImage, "a/b");
+        aToBAxisRatioImage.setChannelMaximum(0,1.0);
+        aToBAxisRatioImage.setChannelMinimum(0, 0.0);
+
+        bToCAxisRatioImage = new ImgPlus<>(bToCImage, "b/c");
+        bToCAxisRatioImage.setChannelMaximum(0,1.0);
+        bToCAxisRatioImage.setChannelMinimum(0, 0.0);
+
+
     }
 
     private void mapValuesToImage(double[] values, Img<IntType> ellipsoidIdentityImage, Img<FloatType> ellipsoidFactorImage) {

@@ -81,45 +81,16 @@ public class EllipsoidFactorWrapperTest {
         final UserInterface mockUI = mock(UserInterface.class);
         doNothing().when(mockUI).show(any(ImgPlus.class));
         IMAGE_J.ui().setDefaultUI(mockUI);
+        final ImgPlus<IntType> sphereImgPlus = getSphereImage();
 
-
-        long[] imageDimensions = {101,101,101};
-        Vector3d centre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
-        int radius = 10;
-
-        final Img<IntType> sphereImg = ArrayImgs.ints(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
-        final ImgPlus<IntType> sphereImgPlus = new ImgPlus<>(sphereImg, "Sphere test image");
-        Cursor<IntType> cursor = sphereImgPlus.localizingCursor();
-
-        while(cursor.hasNext())
-        {
-            cursor.fwd();
-            long [] coordinates = new long[3];
-            cursor.localize(coordinates);
-            double x = centre.getX()-coordinates[0];
-            double y = centre.getY()-coordinates[1];
-            double z = centre.getZ()-coordinates[2];
-            double distanceFromCentre = x*x+y*y+z*z;
-            if(distanceFromCentre <= radius*radius)
-                cursor.get().set(255);
-        }
         // EXECUTE
         final CommandModule module = IMAGE_J.command().run(
                 EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
 
         // VERIFY
         final ImgPlus<FloatType> efImage = (ImgPlus) module.getOutput("efImage");
-        Cursor<FloatType> efCursor = efImage.getImg().localizingCursor();
-        while (efCursor.hasNext())
-        {
-            efCursor.fwd();
-            if(Double.isFinite(efCursor.get().getRealDouble()))
-            {
-                long [] coordinates = new long[3];
-                efCursor.localize(coordinates);
-                assertEquals(0.0, efCursor.get().getRealDouble(),1e-5);
-            }
-        }
+        double expectedValue = 0.0;
+        assertFiniteImageEntriesMatchValue(efImage, expectedValue, 1e-5);
     }
 
     @Test
@@ -128,8 +99,56 @@ public class EllipsoidFactorWrapperTest {
         final UserInterface mockUI = mock(UserInterface.class);
         doNothing().when(mockUI).show(any(ImgPlus.class));
         IMAGE_J.ui().setDefaultUI(mockUI);
+        final ImgPlus<IntType> sphereImgPlus = getSphereImage();
+
+        // EXECUTE
+        final CommandModule module = IMAGE_J.command().run(
+                EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
+
+        // VERIFY
+        final ImgPlus<FloatType> volumeImage = (ImgPlus) module.getOutput("vImage");
+        double expectedValue = 5575.27976;
+        assertFiniteImageEntriesMatchValue(volumeImage,expectedValue,1e-4);
+    }
 
 
+    @Test
+    public void testSphereVoxelsHaveCorrectAxisRatios() throws Exception {
+        // SETUP
+        final UserInterface mockUI = mock(UserInterface.class);
+        doNothing().when(mockUI).show(any(ImgPlus.class));
+        IMAGE_J.ui().setDefaultUI(mockUI);
+        final ImgPlus<IntType> sphereImgPlus = getSphereImage();
+
+        // EXECUTE
+        final CommandModule module = IMAGE_J.command().run(
+                EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
+
+        // VERIFY
+        double expectedValue = 1.0;
+
+        final ImgPlus<FloatType> aToB = (ImgPlus) module.getOutput("aToBAxisRatioImage");
+        assertFiniteImageEntriesMatchValue(aToB,expectedValue,1e-4);
+
+        final ImgPlus<FloatType> bToC = (ImgPlus) module.getOutput("bToCAxisRatioImage");
+        assertFiniteImageEntriesMatchValue(bToC,expectedValue,1e-4);
+    }
+
+    private void assertFiniteImageEntriesMatchValue(ImgPlus<FloatType> efImage, double expectedValue, double tolerance) {
+        Cursor<FloatType> efCursor = efImage.getImg().localizingCursor();
+        while (efCursor.hasNext())
+        {
+            efCursor.fwd();
+            if(Double.isFinite(efCursor.get().getRealDouble()))
+            {
+                long [] coordinates = new long[3];
+                efCursor.localize(coordinates);
+                assertEquals(expectedValue, efCursor.get().getRealDouble(),tolerance);
+            }
+        }
+    }
+
+    private static ImgPlus<IntType> getSphereImage() {
         long[] imageDimensions = {101,101,101};
         Vector3d centre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
         int radius = 10;
@@ -150,23 +169,7 @@ public class EllipsoidFactorWrapperTest {
             if(distanceFromCentre <= radius*radius)
                 cursor.get().set(255);
         }
-        // EXECUTE
-        final CommandModule module = IMAGE_J.command().run(
-                EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
-
-        // VERIFY
-        final ImgPlus<FloatType> volumeImage = (ImgPlus) module.getOutput("vImage");
-        Cursor<FloatType> volumeCursor = volumeImage.getImg().localizingCursor();
-        while (volumeCursor.hasNext())
-        {
-            volumeCursor.fwd();
-            if(Float.isFinite(volumeCursor.get().getRealFloat()))
-            {
-                long [] coordinates = new long[3];
-                volumeCursor.localize(coordinates);
-                assertEquals(5575.27976, volumeCursor.get().getRealFloat(),1e-4);
-            }
-        }
+        return sphereImgPlus;
     }
 
     @Test
