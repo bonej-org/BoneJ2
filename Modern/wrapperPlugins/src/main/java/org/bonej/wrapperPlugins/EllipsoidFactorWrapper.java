@@ -3,6 +3,7 @@ package org.bonej.wrapperPlugins;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
+import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
@@ -11,6 +12,7 @@ import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
@@ -22,6 +24,9 @@ import net.imglib2.util.ValuePair;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindLocalEllipsoidOp;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -30,6 +35,7 @@ import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
+import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
@@ -40,6 +46,14 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
+import static org.bonej.utilities.AxisUtils.getSpatialUnit;
+import static org.bonej.utilities.Streamers.spatialAxisStream;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 /**
  * Ellipsoid Factor
@@ -51,12 +65,13 @@ import static net.imglib2.roi.Regions.countTrue;
  */
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
-public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextCommand {
+public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> extends ContextCommand {
 
     private final FindLocalEllipsoidOp findLocalEllipsoidOp = new FindLocalEllipsoidOp();
 
-    @Parameter(validater = "imageValidater")
-    private ImgPlus<IntegerType> inputImage;
+    @SuppressWarnings("unused")
+    @Parameter(validater = "validateImage")
+    private ImgPlus<R> inputImage;
 
     @Parameter(persist = false, required = false)
     private DoubleType estimatedCharacteristicLength = new DoubleType(2.5);
@@ -98,10 +113,16 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
     @Parameter
     private PrefService prefService;
 
+    @SuppressWarnings("unused")
+    @Parameter
+    private UnitService unitService;
+
+    private boolean calibrationWarned;
+
     @Override
     public void run() {
         statusService.showStatus("Ellipsoid Factor: initialising...");
-        Img<BitType> inputAsBit = opService.convert().bit(inputImage);
+        Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
         final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
         DoubleType minimumAxisLength = new DoubleType(2.5);
 
@@ -120,6 +141,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         final IterableInterval<R> close = opService.morphology().close(distanceTransform, shapes);
         final IterableInterval<R> ridge = opService.math().subtract(close, open);
         final Cursor<R> ridgeCursor = ridge.localizingCursor();
+
         //remove ridgepoints in BG - how does this make a difference?
         while(ridgeCursor.hasNext()){
             ridgeCursor.fwd();
@@ -326,9 +348,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
         intersectionPoint.scaleAdd(surfaceIntersectionParameter,e.getCentroid());
         final long[] pixel = vectorToPixelGrid(intersectionPoint);
         if (isInBounds(pixel)) {
-            final RandomAccess<IntegerType> inputRA = inputImage.getImg().randomAccess();
+            final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
             inputRA.setPosition(pixel);
-            return inputRA.get().getInteger() == 0;
+            return inputRA.get().getRealDouble() == 0;
         }
         else {
             return true;//false to have outside input image equals foreground
@@ -413,13 +435,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
 
     Vector3d findFirstPointInBGAlongRay(final Vector3d rayIncrement,
                                         final Vector3d start) {
-        RandomAccess<IntegerType> randomAccess = inputImage.randomAccess();
+        RandomAccess<R> randomAccess = inputImage.randomAccess();
 
         Vector3d currentRealPosition = new Vector3d(start);
         long[] currentPixelPosition = vectorToPixelGrid(start);
         randomAccess.setPosition(currentPixelPosition);
 
-        while (randomAccess.get().getInteger() > 0) {
+        while (randomAccess.get().getRealDouble() > 0) {
             currentRealPosition.add(rayIncrement);
             currentPixelPosition = vectorToPixelGrid(currentRealPosition);
             if (!isInBounds(currentPixelPosition)) break;
@@ -459,4 +481,43 @@ public class EllipsoidFactorWrapper<R extends RealType<R>> extends ContextComman
                 new ValuePair<>(Arrays.asList(points.get(el[0]), points.get(el[1]), points.get(el[2]), points.get(el[3])), centre)));
         return combos;
     }
+
+    @SuppressWarnings("unused")
+    private void validateImage() {
+        if (inputImage == null) {
+            cancel(NO_IMAGE_OPEN);
+            return;
+        }
+        if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+            cancel(NOT_3D_IMAGE);
+            return;
+        }
+        if (!ElementUtil.isColorsBinary(inputImage)) {
+            cancel(NOT_BINARY);
+            return;
+        }
+        if (!isCalibrationIsotropic() && !calibrationWarned) {
+            final DialogPrompt.Result result = uiService.showDialog(
+                    "The voxels in the image are anisotropic, which may affect results. Continue anyway?",
+                    WARNING_MESSAGE, OK_CANCEL_OPTION);
+            // Avoid showing warning more than once (validator gets called before and
+            // after dialog pops up..?)
+            calibrationWarned = true;
+            if (result != OK_OPTION) {
+                cancel(null);
+            }
+        }
+    }
+
+    // TODO Refactor into a static utility method with unit tests
+    private boolean isCalibrationIsotropic() {
+        final Optional<String> commonUnit = getSpatialUnit(inputImage, unitService);
+        if (!commonUnit.isPresent()) {
+            return false;
+        }
+        final String unit = commonUnit.get();
+        return spatialAxisStream(inputImage).map(axis -> unitService.value(axis
+                .averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
+    }
+    // endregion
 }
