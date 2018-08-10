@@ -84,6 +84,55 @@ public class ElementFractionWrapperTest {
 	}
 
 	@Test
+	public void testResultsComposite2D() throws Exception {
+		// SETUP
+		final String unit = "mm";
+		final int squareSide = 5;
+		final int stackSide = squareSide + 2;
+		final int expectedSize = 2;
+		final double squareArea = squareSide * squareSide;
+		final double spaceArea = stackSide * stackSide;
+		final double ratio = squareArea / spaceArea;
+		final double[] expectedAreas = {0, squareArea};
+		final double[] expectedTotalAreas = {spaceArea, spaceArea};
+		final double[] expectedRatios = {0, ratio};
+		final double[][] expectedValues = {expectedAreas, expectedTotalAreas, expectedRatios};
+		final String[] expectedHeaders = { "Bone area (" + unit + "\u00B2)",
+				"Total area (" + unit + "\u00B2)", "Area ratio" };
+		// Create an 2D image with two channels with a square drawn on channel 2
+		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, 2);
+		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 1 }).forEach(
+				BitType::setOne);
+		// Wrap Img in an ImgPlus
+		final double[] calibration = { 1.0, 1.0, 1.0};
+		final String[] units = { unit, unit, "" };
+		final AxisType[] axes = { Axes.X, Axes.Y, Axes.CHANNEL};
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Square", axes,
+				calibration, units);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+				ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final List<DefaultColumn<String>> table =
+				(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		assertNotNull(table);
+		assertEquals("Wrong number of columns", 4, table.size());
+		for (int i = 0; i < 3; i++) {
+			final DefaultColumn<String> column = table.get(i + 1);
+			assertEquals("Column has wrong number of rows", expectedSize, column.size());
+			assertEquals("Column has incorrect header", expectedHeaders[i], column
+					.getHeader());
+			for (int j = 0; j < expectedSize; j++) {
+				assertEquals("Column has an incorrect value", expectedValues[i][j],
+						Double.parseDouble(column.get(j)), 1e-12);
+			}
+		}
+	}
+
+	@Test
 	public void testResults3DHyperstack() throws Exception {
 		// SETUP
 		final String unit = "mm";
@@ -113,7 +162,6 @@ public class ElementFractionWrapperTest {
 		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z, Axes.TIME, Axes.CHANNEL};
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube", axes,
 			calibration, units);
-
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
