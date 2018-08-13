@@ -1,10 +1,11 @@
 # BoneJ contribution guidelines
 
-## Prerequirements
+## Prerequisites
 * Familiarize yourself with GitHub
 * [Maven](https://github.com/bonej-org/BoneJ2/wiki/Maven)
 * [Git](https://git-scm.com)
 * Preferrably an IDE such as [Eclipse](https://www.eclipse.org), [IntelliJ](https://www.jetbrains.com/idea/) or [NetBeans](https://netbeans.org)
+  * Eclipse requires the m2e-egit connector to be installed so that you can seamlessly import your BoneJ2 fork from GitHub, but the version in the marketplace is often too old: you may need to [install it from the repository](https://stackoverflow.com/questions/51359823/m2e-egit-connector-for-scm-on-eclipse-photon-failure).
 
 ## Getting started
 1) Create a [fork](http://imagej.net/How_to_contribute_to_an_existing_plugin_or_library)
