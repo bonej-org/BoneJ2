@@ -193,21 +193,22 @@ public final class SharedTable {
 		final int columnIndex, final String value)
 	{
 		final int rows = table.getRowCount();
-		final DefaultColumn<String> labelColumn = table.get(LABEL_HEADER);
-		int alphabeticalIndex = IntStream.range(0, rows).filter(i -> labelColumn
-			.get(i).compareTo(label) >= 0).findFirst().orElse(rows);
-		while (alphabeticalIndex < rows && labelColumn.get(alphabeticalIndex)
-			.equals(label))
-		{
-			final String cell = table.get(columnIndex).get(alphabeticalIndex);
-			if (cell == null || EMPTY_CELL.equals(cell)) {
-				table.set(columnIndex, alphabeticalIndex, value);
-				return;
+		//iterate up the table from the bottom
+		for (int i = rows-1; i >=0; i--) {
+			//if we find a row with the same label
+			if (table.get(LABEL_HEADER, i).equals(label)) {
+				//check whether there is not already a value in columnIndex
+				final String cell = table.get(columnIndex, i); 
+				if (cell.isEmpty() || cell == null) {
+					//add the value to the row and column
+					table.set(columnIndex, i, value);
+					return;
+				}
 			}
-			alphabeticalIndex++;
 		}
-		insertEmptyRow(label, alphabeticalIndex);
-		table.set(columnIndex, alphabeticalIndex, value);
+		//we didn't find the label in the table so make a new row
+		insertEmptyRow(label, rows);
+		table.set(columnIndex, rows, value);
 	}
 	// endregion
 }
