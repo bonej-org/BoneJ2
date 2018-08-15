@@ -26,6 +26,7 @@ package org.bonej.wrapperPlugins;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;
 import static org.bonej.utilities.AxisUtils.getSpatialUnit;
+import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
@@ -343,7 +344,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_BINARY);
 			return;
 		}
-		if (!isCalibrationIsotropic() && !calibrationWarned) {
+		if (!isSpatialCalibrationsIsotropic(inputImage, 0.01, unitService) &&
+			!calibrationWarned)
+		{
 			final Result result = uiService.showDialog(
 				"The voxels in the image are anisotropic, which may affect results. Continue anyway?",
 				WARNING_MESSAGE, OK_CANCEL_OPTION);
