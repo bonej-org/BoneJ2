@@ -64,7 +64,7 @@ public final class Streamers {
 	 * @param space an N-dimensional space.
 	 * @param <S> type of the space.
 	 * @param <A> type of the axes.
-	 * @return a Stream of spatial axes. An empty stream if space == null.
+	 * @return a Stream of spatial axes. An empty stream space has no spatial axes.
 	 */
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> Stream<A>
 		spatialAxisStream(final S space)

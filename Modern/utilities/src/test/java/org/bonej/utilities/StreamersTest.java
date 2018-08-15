@@ -24,18 +24,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.utilities;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imglib2.img.Img;
@@ -71,6 +69,18 @@ public class StreamersTest {
 			0));
 		assertEquals("Axes in the stream are in wrong order", Axes.Y, result.get(
 			1));
+	}
+
+	@Test
+	public void testSpatialAxisStreamNoSpatialAxes() {
+		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", new AxisType[] {
+			Axes.unknown(), Axes.unknown(), Axes.unknown() });
+
+		final Stream<CalibratedAxis> result = Streamers.spatialAxisStream(imgPlus);
+
+		assertNotNull(result);
+		assertEquals(0, result.count());
 	}
 
 	@Test(expected = NullPointerException.class)
