@@ -25,9 +25,7 @@ package org.bonej.wrapperPlugins;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;
-import static org.bonej.utilities.AxisUtils.getSpatialUnit;
 import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
-import static org.bonej.utilities.Streamers.spatialAxisStream;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
@@ -253,17 +251,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel("The plug-in was interrupted");
 		}
 		return null;
-	}
-
-	// TODO Refactor into a static utility method with unit tests
-	private boolean isCalibrationIsotropic() {
-		final Optional<String> commonUnit = getSpatialUnit(inputImage, unitService);
-		if (!commonUnit.isPresent()) {
-			return false;
-		}
-		final String unit = commonUnit.get();
-		return spatialAxisStream(inputImage).map(axis -> unitService.value(axis
-			.averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
 	}
 
 	@SuppressWarnings("unchecked")
