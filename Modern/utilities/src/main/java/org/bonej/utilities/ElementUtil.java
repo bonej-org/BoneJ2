@@ -66,7 +66,8 @@ public final class ElementUtil {
 	 * @param unitService needed to convert between units of different
 	 *          calibrations.
 	 * @return Calibrated size of a spatial element, or Double.NaN if space ==
-	 *         null, has nonlinear axes, or calibration units don't match.
+	 *         has nonlinear axes, or calibrations don't have a common unit.
+	 * @see AxisUtils#getSpatialUnit(AnnotatedSpace, UnitService)
 	 */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> double
 		calibratedSpatialElementSize(final T space, final UnitService unitService)

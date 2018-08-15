@@ -161,22 +161,6 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testCountSpatialDimensions() {
-		// Create a test image
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final DefaultLinearAxis channelAxis = new DefaultLinearAxis(Axes.CHANNEL);
-		final long[] dimensions = { 10, 10, 3 };
-		final Img<DoubleType> img = ArrayImgs.doubles(dimensions);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, channelAxis);
-
-		final long result = AxisUtils.countSpatialDimensions(imgPlus);
-
-		assertEquals("Wrong number of spatial dimensions", 2, result);
-	}
-
-	@Test
 	public void testGetSpatialUnit() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "µm", 1.0);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 5.0);
@@ -221,8 +205,7 @@ public class AxisUtilsTest {
 			final Optional<String> result = AxisUtils.getSpatialUnit(imgPlus,
 				unitService);
 
-			assertTrue(result.isPresent());
-			assertTrue("Unit should be empty", result.get().isEmpty());
+			assertFalse(result.isPresent());
 		}
 	}
 

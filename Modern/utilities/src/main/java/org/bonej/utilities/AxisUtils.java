@@ -71,19 +71,21 @@ public final class AxisUtils {
 	 * @param space an n-dimensional space with calibrated axes.
 	 * @param <S> type of the space.
 	 * @param unitService an {@link UnitService} to convert axis calibrations.
-	 * @return an optional with the unit of spatial calibration. It's empty if the
-	 *         space == null, there are no spatial axes, or there's no conversion
-	 *         between their units. The Optional contains an empty string none of
-	 *         the calibrations have a unit.
+	 * @return an optional with the common unit of spatial calibrations. It's
+	 *         {@link Optional#empty()} if there's no conversion between the
+	 *         units. The Optional contains an empty string if none of the axes
+	 *         have a unit.
+	 * @throws IllegalArgumentException if space has no spatial axes
 	 */
-	public static <S extends AnnotatedSpace<C>, C extends CalibratedAxis> Optional<String>
-		getSpatialUnit(final S space, final UnitService unitService)
+	public static <S extends AnnotatedSpace<C>, C extends CalibratedAxis>
+		Optional<String> getSpatialUnit(final S space,
+			final UnitService unitService) throws IllegalArgumentException
 	{
-		if (space == null || !hasSpatialDimensions(space)) {
-			return Optional.empty();
+		if (!hasSpatialDimensions(space)) {
+			throw new IllegalArgumentException("Space has no spatial axes");
 		}
 		if (!isUnitsConvertible(space, unitService)) {
-			return Optional.of("");
+			return Optional.empty();
 		}
 		final String unit = space.axis(0).unit();
 		return unit == null ? Optional.of("") : Optional.of(unit);
@@ -152,8 +154,7 @@ public final class AxisUtils {
 	 * @param tolerance tolerance for anisotropy in scaling
 	 * @param unitService service to convert between units of calibration
 	 * @return true if spatial calibrations are isotropic within tolerance
-	 * @throws IllegalArgumentException if tolerance is negative or NaN, or space
-	 *           has no spatial axes.
+	 * @throws IllegalArgumentException if tolerance is negative or NaN
 	 */
 	public static <S extends AnnotatedSpace<A>, A extends CalibratedAxis> boolean
 		isSpatialCalibrationsIsotropic(final S space, final double tolerance,
