@@ -95,31 +95,40 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE, columns = 1)
 	private String loopSection = "-- LOOPS --";
 
-	@Parameter(label = "Prune cycle method", required = false,
-		style = ChoiceWidget.LIST_BOX_STYLE, choices = { "None", "Shortest branch",
-			"Lowest intensity voxel", "Lowest intensity branch" })
+	@Parameter(label = "Prune cycle method",
+		description = "Which method is used to prune cycles in the skeleton graph",
+		required = false, style = ChoiceWidget.LIST_BOX_STYLE, choices = { "None",
+			"Shortest branch", "Lowest intensity voxel", "Lowest intensity branch" })
 	private String pruneCycleMethod = "None";
 
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String endPointSection = "-- END-POINTS --";
 
-	@Parameter(label = "Prune ends", required = false)
+	@Parameter(label = "Prune ends",
+		description = "Prune very short edges with no slabs", required = false)
 	private boolean pruneEnds;
 
-	@Parameter(label = "Exclude ROI from pruning", required = false,
-		visibility = ItemVisibility.INVISIBLE)
+	@Parameter(label = "Exclude ROI from pruning",
+		description = "Exclude the current selection from pruning",
+		required = false, visibility = ItemVisibility.INVISIBLE)
 	private boolean excludeRoi;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String resultSection = "-- RESULTS AND OUTPUT --";
 
-	@Parameter(label = "Calculate largest shortest paths", required = false)
+	@Parameter(label = "Calculate largest shortest paths",
+		description = "Calculate and display the largest shortest skeleton paths",
+		required = false)
 	private boolean calculateShortestPaths;
 
-	@Parameter(label = "Show detailed info", required = false)
+	@Parameter(label = "Show detailed info",
+		description = "Show detailed branch info in an additional table",
+		required = false)
 	private boolean verbose;
 
-	@Parameter(label = "Display labelled skeletons", required = false)
+	@Parameter(label = "Display labelled skeletons",
+		description = "Show skeleton images labelled with their IDs",
+		required = false)
 	private boolean displaySkeletons;
 
 	/**
