@@ -134,7 +134,7 @@ public class AnisotropyWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
-			true, "inputImage", imgPlus, "lines", 1, "directions", 1).get();
+			true, "inputImage", imgPlus, "lines", 10, "directions", 10).get();
 
 		// VERIFY
 		assertTrue(module.isCanceled());
