@@ -35,28 +35,26 @@ import org.scijava.util.StringUtils;
 /**
  * Stores a {@link Table}, which is ordered according to the following rules:
  * <ol>
- * <li>Each row starts with "Label" column. The labels identify the rows, and
- * tell you which image was measured, e.g. "bat-cochlea-volume.tif"</li>
+ * <li>Each row has a header label, which tells you which image was measured,
+ * e.g. "bat-cochlea-volume.tif"</li>
  * <li>Each column has a header, which tells you the type of the measurement,
  * e.g. "Volume"</li>
  * <li>If there are no rows with the given label, then add a new row</li>
  * <li>If there are rows with the given label, but there is not a column with
- * the given heading, then add a column, and set its value on the last row with
+ * the given heading, then append a column, and set its value on the last row with
  * the label.</li>
  * <li>If there are rows with the given label, and there's a column with the
- * given heading, then find the first empty cell (equals {@link #EMPTY_CELL}),
- * and add the new value there. If there are no empty cells, then add a new
+ * given heading, then find the last empty cell (equals {@link #EMPTY_CELL}),
+ * and add the new value there. If there are no empty cells, then append a new
  * row.</li>
- * <li>Labels and columns are kept in alphabetical order</li>
- * <li>If there are multiple rows with the same labels &amp; non-empty cells,
- * the last inserted value comes last</li>
+ * <li>Labels and columns are kept in the order in which they were produced.</li>
  * </ol>
  *
  * @author Richard Domander
+ * @author Michael Doube
  */
 public final class SharedTable {
 
-	public static final String LABEL_HEADER = "Label";
 	public static final String EMPTY_CELL = "";
 
 	/**
@@ -115,15 +113,11 @@ public final class SharedTable {
 		}
 
 		final int columns = table.getColumnCount();
-		final int columnIndex = alphabeticalHeaderIndex(header);
+		final int columnIndex = headerIndex(header);
 
 		if (columnIndex == columns) {
 			appendEmptyColumn(header);
 		}
-		else if (!table.get(columnIndex).getHeader().equals(header)) {
-			insertEmptyColumn(columnIndex, header);
-		}
-
 		insertIntoNextFreeRow(label, columnIndex, value);
 	}
 
@@ -148,9 +142,9 @@ public final class SharedTable {
 
 	// region -- Helper methods --
 
-	private static int alphabeticalHeaderIndex(final String header) {
+	private static int headerIndex(final String header) {
 		final int cols = table.getColumnCount();
-		return IntStream.range(1, cols).filter(i -> table.get(i).getHeader().equals(
+		return IntStream.range(0, cols).filter(i -> table.get(i).getHeader().equals(
 			header)).findFirst().orElse(cols);
 	}
 
@@ -163,7 +157,6 @@ public final class SharedTable {
 	@SuppressWarnings("unchecked")
 	private static Table<DefaultColumn<String>, String> createTable() {
 		final Table newTable = new DefaultGenericTable();
-		newTable.appendColumn(LABEL_HEADER);
 		return newTable;
 	}
 
@@ -172,23 +165,19 @@ public final class SharedTable {
 		IntStream.range(0, column.size()).forEach(i -> column.set(i, EMPTY_CELL));
 	}
 
+	private static void appendEmptyRow(final String label) {
+		table.appendRow(label);
+		final int lastRow = table.getRowCount() - 1;
+		fillEmptyRow(label, lastRow);
+	}
+	
 	private static void fillEmptyRow(final String label, final int row) {
-		table.get(LABEL_HEADER).set(row, label);
+		table.setRowHeader(row, label);
 		final int columns = table.getColumnCount();
-		IntStream.range(1, columns).forEach(column -> table.set(column, row,
+		IntStream.range(0, columns).forEach(column -> table.set(column, row,
 			EMPTY_CELL));
 	}
-
-	private static void insertEmptyColumn(final int column, final String header) {
-		table.insertColumn(column, header);
-		fillEmptyColumn(column);
-	}
-
-	private static void insertEmptyRow(final String label, final int rowIndex) {
-		table.insertRow(rowIndex);
-		fillEmptyRow(label, rowIndex);
-	}
-
+	
 	private static void insertIntoNextFreeRow(final String label,
 		final int columnIndex, final String value)
 	{
@@ -196,7 +185,7 @@ public final class SharedTable {
 		//iterate up the table from the bottom
 		for (int i = rows-1; i >=0; i--) {
 			//if we find a row with the same label
-			if (table.get(LABEL_HEADER, i).equals(label)) {
+			if (table.getRowHeader(i).equals(label)) {
 				//check whether there is not already a value in columnIndex
 				final String cell = table.get(columnIndex, i); 
 				if (cell.isEmpty() || cell == null) {
@@ -207,7 +196,7 @@ public final class SharedTable {
 			}
 		}
 		//we didn't find the label in the table so make a new row
-		insertEmptyRow(label, rows);
+		appendEmptyRow(label);
 		table.set(columnIndex, rows, value);
 	}
 	// endregion
