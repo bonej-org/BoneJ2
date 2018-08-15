@@ -177,13 +177,6 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testCountSpatialDimensionsNullSpace() {
-		final long result = AxisUtils.countSpatialDimensions(null);
-
-		assertEquals("A null space should contain zero dimensions", 0, result);
-	}
-
-	@Test
 	public void testGetSpatialUnit() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "µm", 1.0);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 5.0);
@@ -248,13 +241,6 @@ public class AxisUtilsTest {
 	}
 
 	@Test
-	public void testHasChannelDimensionsFalseIfSpaceNull() {
-		final boolean result = AxisUtils.hasChannelDimensions(null);
-
-		assertFalse("Null image should not have a channel dimension", result);
-	}
-
-	@Test
 	public void testHasSpatialDimensions() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
@@ -265,13 +251,6 @@ public class AxisUtilsTest {
 		final boolean result = AxisUtils.hasTimeDimensions(imgPlus);
 
 		assertTrue("Should be true when image has spatial dimensions", result);
-	}
-
-	@Test
-	public void testHasSpatialDimensionsFalseIfSpaceNull() {
-		final boolean result = AxisUtils.hasSpatialDimensions(null);
-
-		assertFalse("Null image should not have a time dimension", result);
 	}
 
 	@Test
@@ -286,13 +265,6 @@ public class AxisUtilsTest {
 		final boolean result = AxisUtils.hasTimeDimensions(imgPlus);
 
 		assertTrue("Should be true when image has time dimensions", result);
-	}
-
-	@Test
-	public void testHasTimeDimensionsFalseIfSpaceNull() {
-		final boolean result = AxisUtils.hasTimeDimensions(null);
-
-		assertFalse("Null image should not have a time dimension", result);
 	}
 
 	@AfterClass
