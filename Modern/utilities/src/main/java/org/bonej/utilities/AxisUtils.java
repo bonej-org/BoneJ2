@@ -154,7 +154,8 @@ public final class AxisUtils {
 	 * @param tolerance tolerance for anisotropy in scaling
 	 * @param unitService service to convert between units of calibration
 	 * @return true if spatial calibrations are isotropic within tolerance
-	 * @throws IllegalArgumentException if tolerance is negative or NaN
+	 * @throws IllegalArgumentException if tolerance is negative or NaN, or
+	 *           calibration units cannot be converted
 	 */
 	public static <S extends AnnotatedSpace<A>, A extends CalibratedAxis> boolean
 		isSpatialCalibrationsIsotropic(final S space, final double tolerance,
@@ -168,7 +169,8 @@ public final class AxisUtils {
 		}
 		final Optional<String> commonUnit = getSpatialUnit(space, unitService);
 		if (!commonUnit.isPresent()) {
-			return false;
+			throw new IllegalArgumentException(
+				"Isotropy cannot be determined: units of spatial calibrations are inconvertible");
 		}
 		final String outputUnit = commonUnit.get();
 		final double[] scales = spatialAxisStream(space).mapToDouble(

@@ -161,6 +161,22 @@ public class AxisUtilsTest {
 	}
 
 	@Test
+	public void isSpatialCalibrationsIsotropicThrowsIAEInconvertibleUnits() {
+		// SETUP
+		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.0);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "kg", 1.0);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
+				yAxis, zAxis);
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Isotropy cannot be determined: units of spatial calibrations are inconvertible");
+
+		// EXECUTE
+		AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.0, unitService);
+	}
+
+	@Test
 	public void testGetSpatialUnit() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "µm", 1.0);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 5.0);
