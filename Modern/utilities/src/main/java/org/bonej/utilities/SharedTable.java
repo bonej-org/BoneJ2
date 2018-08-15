@@ -41,7 +41,7 @@ import org.scijava.util.StringUtils;
  * e.g. "Volume"</li>
  * <li>If there are no rows with the given label, then add a new row</li>
  * <li>If there are rows with the given label, but there is not a column with
- * the given heading, then add a column, and set its value on the first row with
+ * the given heading, then add a column, and set its value on the last row with
  * the label.</li>
  * <li>If there are rows with the given label, and there's a column with the
  * given heading, then find the first empty cell (equals {@link #EMPTY_CELL}),
