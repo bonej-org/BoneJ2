@@ -67,7 +67,7 @@ public final class SharedTable {
 	/**
 	 * Adds new value as a {@link Double} to the shared table.
 	 *
-	 * @see #add(String, String, String)
+	 * @see #add(String, String, Double)
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
 	 * @param value the value of the new data.
