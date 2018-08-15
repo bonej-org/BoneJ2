@@ -105,7 +105,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	@Parameter(label = "Export STL file(s)",
 		description = "Create a binary STL file from the surface mesh",

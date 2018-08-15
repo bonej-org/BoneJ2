@@ -55,19 +55,18 @@ import org.scijava.util.StringUtils;
  */
 public final class SharedTable {
 
-	public static final String EMPTY_CELL = "";
+	public static final Double EMPTY_CELL = null;
 
 	/**
-	 * The table uses String values, so that we can mark empty cells with empty
-	 * Strings. Numerical columns cannot have empty cells. Unfortunately this
-	 * causes sorting in UI to work alphabetically, i.e. "1", "11", "2".
+	 * The table uses Double values. Numerical columns cannot have empty cells.
+	 * Empty cells are indicated by Double.NaN
 	 */
-	private static Table<DefaultColumn<String>, String> table = createTable();
+	private static Table<DefaultColumn<Double>, Double> table = createTable();
 
 	private SharedTable() {}
 
 	/**
-	 * Adds new value as a {@link String} to the shared table.
+	 * Adds new value as a {@link Double} to the shared table.
 	 *
 	 * @see #add(String, String, String)
 	 * @param label the row label of the new data.
@@ -77,13 +76,13 @@ public final class SharedTable {
 	public static void add(final String label, final String header,
 		final long value)
 	{
-		add(label, header, String.valueOf(value));
+		add(label, header, new Double(value));
 	}
 
 	/**
-	 * Adds new value as a {@link String} to the shared table
+	 * Adds new value as a {@link Double} to the shared table
 	 *
-	 * @see #add(String, String, String)
+	 * @see #add(String, String, Double)
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
 	 * @param value the value of the new data.
@@ -91,7 +90,7 @@ public final class SharedTable {
 	public static void add(final String label, final String header,
 		final double value)
 	{
-		add(label, header, String.valueOf(value));
+		add(label, header, new Double(value));
 	}
 
 	/**
@@ -106,7 +105,7 @@ public final class SharedTable {
 	 * @param value the value of the new data.
 	 */
 	public static void add(final String label, final String header,
-		final String value)
+		final Double value)
 	{
 		if (StringUtils.isNullOrEmpty(label) || StringUtils.isNullOrEmpty(header)) {
 			return;
@@ -126,13 +125,12 @@ public final class SharedTable {
 	 *
 	 * @return the singleton table.
 	 */
-	public static Table<DefaultColumn<String>, String> getTable() {
+	public static Table<DefaultColumn<Double>, Double> getTable() {
 		return table;
 	}
 
 	public static boolean hasData() {
-		return table.stream().flatMap(Collection::stream).anyMatch(s -> s != null &&
-			!EMPTY_CELL.equals(s));
+		return table.stream().flatMap(Collection::stream).anyMatch(s -> s != null );
 	}
 
 	/** Initializes the table into a new empty table */
@@ -155,13 +153,13 @@ public final class SharedTable {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Table<DefaultColumn<String>, String> createTable() {
+	private static Table<DefaultColumn<Double>, Double> createTable() {
 		final Table newTable = new DefaultGenericTable();
 		return newTable;
 	}
 
 	private static void fillEmptyColumn(final int columnIndex) {
-		final DefaultColumn<String> column = table.get(columnIndex);
+		final DefaultColumn<Double> column = table.get(columnIndex);
 		IntStream.range(0, column.size()).forEach(i -> column.set(i, EMPTY_CELL));
 	}
 
@@ -179,7 +177,7 @@ public final class SharedTable {
 	}
 	
 	private static void insertIntoNextFreeRow(final String label,
-		final int columnIndex, final String value)
+		final int columnIndex, final Double value)
 	{
 		final int rows = table.getRowCount();
 		//iterate up the table from the bottom
@@ -187,8 +185,8 @@ public final class SharedTable {
 			//if we find a row with the same label
 			if (table.getRowHeader(i).equals(label)) {
 				//check whether there is not already a value in columnIndex
-				final String cell = table.get(columnIndex, i); 
-				if (cell.isEmpty() || cell == null) {
+				final Double cell = table.get(columnIndex, i); 
+				if (cell == EMPTY_CELL) {
 					//add the value to the row and column
 					table.set(columnIndex, i, value);
 					return;
