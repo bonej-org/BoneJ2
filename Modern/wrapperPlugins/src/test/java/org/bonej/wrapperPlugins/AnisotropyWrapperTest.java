@@ -24,6 +24,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -81,6 +82,35 @@ public class AnisotropyWrapperTest {
 	public void test2DImageCancelsWrapper() throws Exception {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
 			AnisotropyWrapper.class);
+	}
+
+	@Test
+	public void testAnisotropicCalibrationWithinToleranceDoesNotShowWarningDialog()
+			throws ExecutionException, InterruptedException
+	{
+		// SETUP
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "", 1.01);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "", 1.0);
+		final Img<BitType> img = ArrayImgs.bits(5, 5, 5);
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
+				yAxis, zAxis);
+		final UserInterface mockUI = mock(UserInterface.class);
+		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
+		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
+		final String expectedStart = "The voxels in the image are anisotropic";
+		when(mockUI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
+				WARNING_MESSAGE), any())).thenReturn(mockPrompt);
+		IMAGE_J.ui().setDefaultUI(mockUI);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
+				true, "inputImage", imgPlus, "lines", 10, "directions", 10).get();
+
+		// VERIFY
+		assertFalse(module.isCanceled());
+		verify(mockUI, timeout(1000).times(0)).dialogPrompt(startsWith(
+				expectedStart), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
 	@Test
