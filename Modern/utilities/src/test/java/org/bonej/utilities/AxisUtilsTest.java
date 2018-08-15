@@ -61,14 +61,103 @@ public class AxisUtilsTest {
 	public ExpectedException expectedException = ExpectedException.none();
 
 	@Test
+	public void isSpatialCalibrationsIsotropic() {
+		// SETUP
+		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.0);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+			zAxis);
+
+		// EXECUTE
+		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus,
+			0.0, unitService);
+
+		// VERIFY
+		assertTrue(result);
+	}
+
+	@Test
+	public void isSpatialCalibrationsIsotropicAnisotropicBeyondTolerance() {
+		// SETUP
+		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.06);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+			zAxis);
+
+		// EXECUTE
+		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus,
+			0.05, unitService);
+
+		// VERIFY
+		assertFalse(result);
+	}
+
+	@Test
+	public void isSpatialCalibrationsIsotropicAnisotropicWithinTolerance() {
+		// SETUP
+		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.05);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+			zAxis);
+
+		// EXECUTE
+		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus,
+			0.05, unitService);
+
+		// VERIFY
+		assertTrue(result);
+	}
+
+	@Test
+	public void isSpatialCalibrationsIsotropicDifferentUnits() {
+		// SETUP
+		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "cm", 0.1);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+			zAxis);
+
+		// EXECUTE
+		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus,
+			0.0, unitService);
+
+		// VERIFY
+		assertTrue(result);
+	}
+
+	@Test
+	public void isSpatialCalibrationsIsotropicThrowsIAEInconvertibleUnits() {
+		// SETUP
+		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.0);
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "kg", 1.0);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+			zAxis);
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage(
+			"Isotropy cannot be determined: units of spatial calibrations are inconvertible");
+
+		// EXECUTE
+		AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.0, unitService);
+	}
+
+	@Test
 	public void isSpatialCalibrationsIsotropicThrowsIAENanTolerance() {
 		// SETUP
 		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.0);
 		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
-				yAxis, zAxis);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+			zAxis);
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Tolerance cannot be NaN");
 
@@ -83,97 +172,13 @@ public class AxisUtilsTest {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.0);
 		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
-				yAxis, zAxis);
+		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+			zAxis);
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Tolerance cannot be negative");
 
 		// EXECUTE
 		AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, -1.0, unitService);
-	}
-
-	@Test
-	public void isSpatialCalibrationsIsotropic() {
-		// SETUP
-		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.0);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
-				yAxis, zAxis);
-
-		// EXECUTE
-		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.0, unitService);
-
-		// VERIFY
-		assertTrue(result);
-	}
-
-	@Test
-	public void isSpatialCalibrationsIsotropicDifferentUnits() {
-		// SETUP
-		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "cm", 0.1);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
-				yAxis, zAxis);
-
-		// EXECUTE
-		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.0, unitService);
-
-		// VERIFY
-		assertTrue(result);
-	}
-
-	@Test
-	public void isSpatialCalibrationsIsotropicAnisotropicBeyondTolerance() {
-		// SETUP
-		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.06);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
-				yAxis, zAxis);
-
-		// EXECUTE
-		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.05, unitService);
-
-		// VERIFY
-		assertFalse(result);
-	}
-
-	@Test
-	public void isSpatialCalibrationsIsotropicAnisotropicWithinTolerance() {
-		// SETUP
-		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.05);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "mm", 1.0);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
-				yAxis, zAxis);
-
-		// EXECUTE
-		final boolean result = AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.05, unitService);
-
-		// VERIFY
-		assertTrue(result);
-	}
-
-	@Test
-	public void isSpatialCalibrationsIsotropicThrowsIAEInconvertibleUnits() {
-		// SETUP
-		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm", 1.0);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 1.0);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "kg", 1.0);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", xAxis,
-				yAxis, zAxis);
-		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("Isotropy cannot be determined: units of spatial calibrations are inconvertible");
-
-		// EXECUTE
-		AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.0, unitService);
 	}
 
 	@Test

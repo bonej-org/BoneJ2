@@ -231,6 +231,20 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
+	@SuppressWarnings("unchecked")
+	private void matchOps(final Subspace<BitType> subspace) {
+		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
+			subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
+		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
+			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
+		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
+			Matrix4d.class, tmpPoints);
+		final Matrix4d matchingMock = new Matrix4d();
+		matchingMock.setIdentity();
+		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService,
+			QuadricToEllipsoid.class, Optional.class, matchingMock);
+	}
+
 	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
 		final List<Vector3d> pointCloud;
 		try {
@@ -251,20 +265,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel("The plug-in was interrupted");
 		}
 		return null;
-	}
-
-	@SuppressWarnings("unchecked")
-	private void matchOps(final Subspace<BitType> subspace) {
-		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
-			subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
-		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
-			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
-		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
-			Matrix4d.class, tmpPoints);
-		final Matrix4d matchingMock = new Matrix4d();
-		matchingMock.setIdentity();
-		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService, QuadricToEllipsoid.class,
-			Optional.class, matchingMock);
 	}
 
 	private List<Vector3d> runDirectionsInParallel(
