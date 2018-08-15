@@ -84,7 +84,7 @@ import org.scijava.widget.FileWidget;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Surface area")
-public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
+public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
