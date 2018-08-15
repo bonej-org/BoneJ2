@@ -58,8 +58,7 @@ public final class SharedTable {
 	public static final Double EMPTY_CELL = null;
 
 	/**
-	 * The table uses Double values. Numerical columns cannot have empty cells.
-	 * Empty cells are indicated by Double.NaN
+	 * The table uses Double values. Empty cells are indicated by null
 	 */
 	private static Table<DefaultColumn<Double>, Double> table = createTable();
 
