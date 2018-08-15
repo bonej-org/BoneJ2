@@ -131,6 +131,60 @@ public final class AxisUtils {
 		return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
 	}
 
+	/**
+	 * Checks if the spatial axes in the space have the same i.e. isotropic
+	 * scaling.
+	 * <p>
+	 * If calibrations are isotropic, then the values returned by
+	 * {@link CalibratedAxis#averageScale(double, double)} differ only within the
+	 * given tolerance. For example, if <em>X-axis scale = 1.00</em>, <em>Y-axis
+	 * scale = 1.02</em>, and <em>tolerance = 0.03</em>, then calibration is
+	 * isotropic.
+	 * </p>
+	 * <p>
+	 * NB if the calibrations of the axes are not in the same unit, the method
+	 * tries to convert them to the unit of the first spatial axis (x-axis).
+	 * </p>
+	 *
+	 * @param <S> type of the space
+	 * @param <A> type of the axes in the space
+	 * @param space a space with spatial axes
+	 * @param tolerance tolerance for anisotropy in scaling
+	 * @param unitService service to convert between units of calibration
+	 * @return true if spatial calibrations are isotropic within tolerance
+	 * @throws IllegalArgumentException if tolerance is negative or NaN, or space
+	 *           has no spatial axes.
+	 */
+	public static <S extends AnnotatedSpace<A>, A extends CalibratedAxis> boolean
+		isSpatialCalibrationsIsotropic(final S space, final double tolerance,
+			final UnitService unitService) throws IllegalArgumentException
+	{
+		if (tolerance < 0.0) {
+			throw new IllegalArgumentException("Tolerance cannot be negative");
+		}
+		if (Double.isNaN(tolerance)) {
+			throw new IllegalArgumentException("Tolerance cannot be NaN");
+		}
+		final Optional<String> commonUnit = getSpatialUnit(space, unitService);
+		if (!commonUnit.isPresent()) {
+			return false;
+		}
+		final String outputUnit = commonUnit.get();
+		final double[] scales = spatialAxisStream(space).mapToDouble(
+			axis -> unitService.value(axis.averageScale(0, 1), axis.unit(),
+				outputUnit)).sorted().toArray();
+		for (int i = 0; i < scales.length - 1; i++) {
+			for (int j = i + 1; j < scales.length; j++) {
+				final double anisotropy = scales[j] / scales[i] - 1.0;
+				// Allow small error
+				if (anisotropy - tolerance > 1e-12) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	// region -- Helper methods --
 
 	/**
