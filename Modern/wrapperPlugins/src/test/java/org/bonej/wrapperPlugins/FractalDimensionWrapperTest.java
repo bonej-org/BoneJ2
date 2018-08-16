@@ -94,9 +94,6 @@ public class FractalDimensionWrapperTest {
 			.toArray();
 		final double[][] expectedCounts = { emptyCounts, cubeCounts, cubeCounts,
 			emptyCounts };
-//		final String[] expectedLabels = { "Test Channel: 1, Time: 1",
-//			"Test Channel: 2, Time: 1", "Test Channel: 1, Time: 2",
-//			"Test Channel: 2, Time: 2" };
 		final ImgPlus<BitType> imgPlus = createTestHyperStack("Test");
 
 		// EXECUTE
@@ -115,9 +112,6 @@ public class FractalDimensionWrapperTest {
 		for (int i = 0; i < pointTables.size(); i++) {
 			final GenericTable table = pointTables.get(i);
 			assertEquals("Table has wrong number of columns", 3, table.size());
-//			final Column<String> label = (Column<String>) table.get("Label");
-//			assertEquals("Label column has wrong number of rows", expectedRows, label
-//				.size());
 			final DoubleColumn sizes = (DoubleColumn) table.get("-log(size)");
 			assertEquals("Size column has wrong number of rows", expectedRows, sizes
 				.size());
@@ -125,7 +119,6 @@ public class FractalDimensionWrapperTest {
 			assertEquals("Count column has wrong number of rows", expectedRows, counts
 				.size());
 			for (int j = 0; j < expectedRows; j++) {
-//				assertEquals("Incorrect label", expectedLabels[i], label.get(j));
 				assertEquals("Incorrect log(count) value", expectedCounts[i][j], counts
 					.get(j), 1e-12);
 				assertEquals("Incorrect -log(box size) value", expectedSizes[j], sizes
@@ -140,9 +133,6 @@ public class FractalDimensionWrapperTest {
 		final Iterator<String> expectedHeaders = 
 				Stream.of("Fractal dimension", "R²").iterator();
 		final String imageName = "Image";
-//		final Iterator<String> expectedLabels = Stream.of(" Channel: 1, Time: 1",
-//			" Channel: 1, Time: 2", " Channel: 2, Time: 1", " Channel: 2, Time: 2")
-//			.map(imageName::concat).iterator();
 		final Iterator<Double> expectedDimensions = Stream.of(0.0,
 			1.4999999999999998, 1.4999999999999998, 0.0).iterator();
 		final Iterator<Double> expectedRSquares = Stream.of(Double.NaN,
@@ -164,8 +154,6 @@ public class FractalDimensionWrapperTest {
 			"Column has an incorrect number of rows", 4, column.size()));
 		table.stream().map(Column::getHeader).forEach(header -> assertEquals(
 			"Column has an incorrect header", header, expectedHeaders.next()));
-//		table.get.forEach(s -> assertEquals(
-//			"Label column has a wrong value", expectedLabels.next(), s));
 		table.get("Fractal dimension").forEach(dimension -> assertEquals(
 			"Fractal dimension column has a wrong value", expectedDimensions.next(),
 			dimension, 1e-12));
