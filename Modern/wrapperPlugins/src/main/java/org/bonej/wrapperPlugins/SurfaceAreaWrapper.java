@@ -72,6 +72,7 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
@@ -84,7 +85,7 @@ import org.scijava.widget.FileWidget;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Surface area")
-public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
+public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
@@ -114,6 +115,9 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Parameter
 	private OpService ops;
+
+	@Parameter
+	private LogService logService;
 
 	@Parameter
 	private UIService uiService;
@@ -316,6 +320,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			}
 			catch (final IOException e) {
 				savingErrors.put(filePath, e.getMessage());
+				logService.trace(e);
 			}
 		});
 		if (!savingErrors.isEmpty()) {

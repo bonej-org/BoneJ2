@@ -323,6 +323,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			executor.shutdownNow();
 			// Preserve interrupt status
 			Thread.currentThread().interrupt();
+			logService.trace(ie);
 		}
 	}
 

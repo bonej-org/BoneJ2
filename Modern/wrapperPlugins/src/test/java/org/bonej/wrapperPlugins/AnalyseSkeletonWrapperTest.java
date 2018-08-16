@@ -314,7 +314,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		CommandModule module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class,
 			true, "inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons",
-			false, "calculateShortestPath", true).get();
+			false, "calculateShortestPaths", true).get();
 
 		// VERIFY
 		assertNull(module.getOutput("labelledSkeleton"));
@@ -323,7 +323,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
-			"calculateShortestPath", false).get();
+			"calculateShortestPaths", false).get();
 
 		// VERIFY
 		assertNotNull(module.getOutput("labelledSkeleton"));
@@ -332,7 +332,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
-			"calculateShortestPath", true).get();
+			"calculateShortestPaths", true).get();
 
 		// VERIFY
 		final ImagePlus labelledSkeleton = (ImagePlus) module.getOutput(
@@ -368,7 +368,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixels,
-			"pruneCycleMethod", "None", "calculateShortestPath", true).get();
+			"pruneCycleMethod", "None", "calculateShortestPaths", true).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
@@ -403,7 +403,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
-			"pruneCycleMethod", "None", "calculateShortestPath", false).get();
+			"pruneCycleMethod", "None", "calculateShortestPaths", false).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")

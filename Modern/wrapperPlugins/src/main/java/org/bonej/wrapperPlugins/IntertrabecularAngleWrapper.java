@@ -141,8 +141,9 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		required = false, persistKey = "ITA_useClusters")
 	private boolean useClusters = true;
 
+	// TODO Fix typo
 	@Parameter(label = "Print centroids",
-		description = "Print the centroids of vertices at either end of each edge",
+		description = "Print the centroids of vertices at both ends of each edge",
 		required = false, persistKey = "ITA_print_centroids")
 	private boolean printCentroids;
 
