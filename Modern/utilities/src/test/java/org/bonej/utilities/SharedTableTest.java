@@ -28,6 +28,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Objects;
+
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 
@@ -75,8 +77,7 @@ public class SharedTableTest {
 		assertEquals("Wrong number of rows", 3, table.getRowCount());
 		final DefaultColumn<Double> column1 = table.get(header1);
 		assertEquals("Cell should be empty", EMPTY_CELL, column1.get(0));
-		assertEquals("Wrong number of empty cells", 1, column1.stream().filter(
-			s -> s == null).count());
+		assertEquals("Wrong number of empty cells", 1, column1.stream().filter(Objects::isNull).count());
 		final DefaultColumn<Double> column2 = table.get(header2);
 		assertEquals("Cell contains wrong value", 3.0, column2.get(1).doubleValue(), 1e-12);
 		assertEquals("Wrong number of empty cells", 0, column2.stream().filter(

@@ -24,6 +24,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.utilities;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 import net.imagej.table.DefaultColumn;
@@ -129,7 +130,7 @@ public final class SharedTable {
 	}
 
 	public static boolean hasData() {
-		return table.stream().flatMap(Collection::stream).anyMatch(s -> s != null );
+		return table.stream().flatMap(Collection::stream).anyMatch(Objects::nonNull);
 	}
 
 	/** Initializes the table into a new empty table */
