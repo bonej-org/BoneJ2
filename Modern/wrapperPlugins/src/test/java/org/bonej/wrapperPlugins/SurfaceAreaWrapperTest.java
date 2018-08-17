@@ -284,18 +284,17 @@ public class SurfaceAreaWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Wrong number of columns", 2, table.size());
+		assertEquals("Wrong number of columns", 1, table.size());
 		for (int i = 0; i < 1; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("A column has wrong number of rows", 4, column.size());
 			assertEquals("A column has an incorrect header", expectedHeaders[i],
 				column.getHeader());
 			for (int j = 0; j < column.size(); j++) {
-				assertEquals("Column has an incorrect value", expectedValues[j], Double
-					.parseDouble(column.get(j)), 1e-12);
+				assertEquals("Column has an incorrect value", expectedValues[j], column.get(j).doubleValue(), 1e-12);
 			}
 		}
 	}

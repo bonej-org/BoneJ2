@@ -44,6 +44,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -84,7 +85,7 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testAngleResults() throws Exception {
 		// SETUP
-		final Predicate<String> nonEmpty = s -> !s.equals(SharedTable.EMPTY_CELL);
+		final Predicate<Double> nonEmpty = Objects::nonNull;
 		final URL resource = getClass().getClassLoader().getResource(
 			"test-skelly.zip");
 		assert resource != null;
@@ -98,16 +99,16 @@ public class IntertrabecularAngleWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("anglesTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("anglesTable");
 		assertNotNull(table);
-		assertEquals(3, table.size());
-		final DefaultColumn<String> threeColumn = table.get(1);
+		assertEquals(2, table.size());
+		final DefaultColumn<Double> threeColumn = table.get(0);
 		assertEquals("3", threeColumn.getHeader());
 		assertEquals(10, threeColumn.size());
 		assertEquals(3, threeColumn.stream().filter(nonEmpty).count());
 		assertEquals(2, threeColumn.stream().filter(nonEmpty).distinct().count());
-		final DefaultColumn<String> fiveColumn = table.get(2);
+		final DefaultColumn<Double> fiveColumn = table.get(1);
 		assertEquals("5", fiveColumn.getHeader());
 		assertEquals(10, fiveColumn.size());
 		assertEquals(10, fiveColumn.stream().filter(nonEmpty).count());
@@ -148,7 +149,7 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testMargins() throws Exception {
 		// SETUP
-		final Predicate<String> nonEmpty = s -> !s.equals(SharedTable.EMPTY_CELL);
+		final Predicate<Double> nonEmpty = s -> !s.equals(SharedTable.EMPTY_CELL);
 		final URL resource = getClass().getClassLoader().getResource(
 			"test-skelly.zip");
 		assert resource != null;
@@ -162,11 +163,11 @@ public class IntertrabecularAngleWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("anglesTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("anglesTable");
 		assertNotNull(table);
-		assertEquals(2, table.size());
-		final DefaultColumn<String> fiveColumn = table.get(1);
+		assertEquals(1, table.size());
+		final DefaultColumn<Double> fiveColumn = table.get(0);
 		assertEquals("5", fiveColumn.getHeader());
 		assertEquals(10, fiveColumn.size());
 		assertEquals(10, fiveColumn.stream().filter(nonEmpty).count());

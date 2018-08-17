@@ -140,20 +140,20 @@ public class SurfaceFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Wrong number of columns", 4, table.size());
+		assertEquals("Wrong number of columns", 3, table.size());
 		// Assert results
 		for (int i = 0; i < 3; i++) {
 			// Skip Label column
-			final DefaultColumn<String> column = table.get(i + 1);
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("Wrong number of rows", 4, column.size());
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			for (int j = 0; j < expectedValues.length; j++) {
-				assertEquals("Incorrect value in table", expectedValues[i][j], Double
-					.parseDouble(column.get(j)), 1e-12);
+				assertEquals("Incorrect value in table", expectedValues[i][j], 
+						column.get(j).doubleValue(), 1e-12);
 			}
 		}
 	}

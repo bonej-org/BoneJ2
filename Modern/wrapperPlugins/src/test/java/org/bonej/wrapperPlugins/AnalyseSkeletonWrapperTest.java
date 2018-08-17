@@ -360,10 +360,10 @@ public class AnalyseSkeletonWrapperTest {
 			"# Junctions", "# End-point voxels", "# Junction voxels", "# Slab voxels",
 			"Average Branch Length", "# Triple points", "# Quadruple points",
 			"Maximum Branch Length", "Longest Shortest Path", "spx", "spy", "spz" };
-		final String[][] expectedValues = { { "1", "2" }, { "0", "0" }, { "0",
-			"0" }, { "1", "1" }, { "0", "0" }, { "0", "0" }, { "0.0", "0.0" }, { "0",
-				"0" }, { "0", "0" }, { "0.0", "0.0" }, { "0.0", "0.0" }, { "1.0",
-					"3.0" }, { "1.0", "3.0" }, { "0.0", "0.0" } };
+		final double[][] expectedValues = { { 1, 2 }, { 0, 0 }, { 0,
+			0 }, { 1, 1 }, { 0, 0 }, { 0, 0 }, { 0.0, 0.0 }, { 0,
+				0 }, { 0, 0 }, { 0.0, 0.0 }, { 0.0, 0.0 }, { 1.0,
+					3.0 }, { 1.0, 3.0 }, { 0.0, 0.0 } };
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
@@ -372,19 +372,19 @@ public class AnalyseSkeletonWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns",
-			expectedHeaders.length + 1, table.size());
-		for (int i = 0; i < table.size() - 1; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
+			expectedHeaders.length, table.size());
+		for (int i = 0; i < table.size(); i++) {
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			assertEquals("Column has wrong number of rows", 2, column.size());
 			for (int j = 0; j < 2; j++) {
 				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					column.get(j));
+					column.get(j).doubleValue(), 1e-12);
 			}
 		}
 	}
@@ -407,10 +407,10 @@ public class AnalyseSkeletonWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Collection<DefaultColumn<String>> table =
-			(Collection<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final Collection<DefaultColumn<Double>> table =
+			(Collection<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Results table has wrong number of columns", 11, table.size());
+		assertEquals("Results table has wrong number of columns", 10, table.size());
 	}
 
 	/**
