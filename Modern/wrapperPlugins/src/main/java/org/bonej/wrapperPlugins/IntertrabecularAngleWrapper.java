@@ -154,7 +154,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	/** The ITA angles in a {@link Table}, null if there are no results */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> anglesTable;
+	private Table<DefaultColumn<Double>, Double> anglesTable;
 
 	/**
 	 * The ITA edge-end coordinates in a {@link Table}, null if there are no

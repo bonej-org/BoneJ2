@@ -109,7 +109,7 @@ public class ThicknessWrapper extends ContextCommand {
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	@Parameter
 	private UIService uiService;

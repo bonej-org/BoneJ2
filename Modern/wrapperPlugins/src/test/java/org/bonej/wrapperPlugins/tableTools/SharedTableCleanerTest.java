@@ -47,7 +47,7 @@ public class SharedTableCleanerTest {
 	@Test
 	public void testRun() throws Exception {
 		// SETUP
-		SharedTable.add("Label", "Header", "Value");
+		SharedTable.add("Label", "Header", 0.0);
 		assertTrue("Sanity check failed, no data in SharedTable", SharedTable
 			.hasData());
 

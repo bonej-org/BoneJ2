@@ -127,7 +127,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	 * results.
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>,Double> resultsTable;
 
 	/**
 	 * Additional analysis details in a {@link DefaultGenericTable}, null if
