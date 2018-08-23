@@ -1,7 +1,7 @@
 package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
-import net.imagej.display.ColorTables;
+import net.imagej.display.*;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
@@ -14,7 +14,6 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -48,9 +47,7 @@ import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.utilities.AxisUtils.getSpatialUnit;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
-import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
@@ -97,6 +94,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(label = "b/c Image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> bToCAxisRatioImage;
 
+    @Parameter(label = "b/c Image", type = ItemIO.OUTPUT)
+    private ImgPlus<BitType> flinnPlotImage;
+
     @SuppressWarnings("unused")
     @Parameter
     private OpService opService;
@@ -121,6 +121,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     @Override
     public void run() {
+
         statusService.showStatus("Ellipsoid Factor: initialising...");
         Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
         final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
@@ -235,6 +236,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final double[] bToCArray = ellipsoids.parallelStream().mapToDouble(e -> e.getB()/e.getC()).toArray();
         mapValuesToImage(bToCArray, ellipsoidIdentityImage, bToCImage);
 
+        long FlinnPlotDimension = 101; //several ellipsoids may fall in same bin if this is too small a number! This will be ignored!
+        final Img<BitType> flinnPlot = ArrayImgs.bits(FlinnPlotDimension,FlinnPlotDimension);
+        flinnPlot.cursor().forEachRemaining(c -> c.setZero());
+
+        final RandomAccess<BitType> flinnRA = flinnPlot.randomAccess();
+        for(int i=0; i<aToBArray.length; i++)
+        {
+            long x = Math.round(aToBArray[i]*(FlinnPlotDimension-1));
+            long y = Math.round(bToCArray[i]*(FlinnPlotDimension-1));
+            flinnRA.setPosition(new long[]{x,FlinnPlotDimension-y-1});
+            flinnRA.get().setOne();
+        }
 
         final LogService log = uiService.log();
         log.initialize();
@@ -266,7 +279,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         bToCAxisRatioImage.setChannelMaximum(0,1.0);
         bToCAxisRatioImage.setChannelMinimum(0, 0.0);
 
-
+        flinnPlotImage = new ImgPlus<>(flinnPlot, "Flinn Peaks");
+        flinnPlotImage.setChannelMaximum(0,255);
+        flinnPlotImage.setChannelMinimum(0, 0.0);
     }
 
     private void mapValuesToImage(double[] values, Img<IntType> ellipsoidIdentityImage, Img<FloatType> ellipsoidFactorImage) {

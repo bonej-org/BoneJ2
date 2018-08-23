@@ -66,6 +66,7 @@ public class EllipsoidFactorWrapperTest {
         CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J, EllipsoidFactorWrapper.class);
     }
 
+    @Test
     public void testSphereVoxelsHaveEFZero() throws Exception {
         // SETUP
         final UserInterface mockUI = mock(UserInterface.class);
