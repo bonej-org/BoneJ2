@@ -75,9 +75,19 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
 	 * @param ellipsoid the ellipsoid in question
 	 * @param point the point in question
 	 * @return shortest distance
+	 * @throws IllegalArgumentException if {@link #tolerance} is negative, or
+	 *           {@link #maxIterations} is not positive.
 	 */
 	@Override
-	public DoubleType calculate(final Ellipsoid ellipsoid, final T point) {
+	public DoubleType calculate(final Ellipsoid ellipsoid, final T point)
+		throws IllegalArgumentException
+	{
+		if (tolerance < 0.0) {
+			throw new IllegalArgumentException("Tolerance cannot be negative");
+		}
+		if (maxIterations < 1) {
+			throw new IllegalArgumentException("Max iterations must be positive");
+		}
 		final double a = ellipsoid.getA();
 		final double b = ellipsoid.getB();
 		final double c = ellipsoid.getC();

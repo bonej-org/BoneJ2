@@ -36,7 +36,9 @@ import org.apache.commons.math3.random.RandomVectorGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Point3d;
 import org.scijava.vecmath.Vector3d;
@@ -57,6 +59,9 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 	private static Ellipsoid sphere;
 	private final Supplier<Vector3d> spherePointSupplier = () -> new Vector3d(
 		sphereRng.nextVector());
+
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 
 	@Test(expected = ArithmeticException.class)
 	public void testArithmeticExceptionForZeroDeterminant() {
@@ -184,6 +189,22 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 		assertEquals(0.0, translated.y, 1.0e-12);
 		assertEquals(1.0, translated.z, 1.0e-12);
 
+	}
+
+	@Test
+	public void testCalculateThrowsIAEIfMaxIterationsNegative() {
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Max iterations must be positive");
+		IMAGE_J.op().run(DistanceFromEllipsoidSurfaceOp.class, sphere, new Point3d(
+			2, 0, 0), 1.0, -1);
+	}
+
+	@Test
+	public void testCalculateThrowsIAEIfToleranceNegative() {
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Tolerance cannot be negative");
+		IMAGE_J.op().run(DistanceFromEllipsoidSurfaceOp.class, sphere, new Point3d(
+			2, 0, 0), -1.0, 100);
 	}
 
 	@BeforeClass
