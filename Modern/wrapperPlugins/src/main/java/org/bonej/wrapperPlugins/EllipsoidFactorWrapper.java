@@ -11,9 +11,11 @@ import net.imglib2.algorithm.binary.Thresholder;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -94,8 +96,11 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(label = "b/c Image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> bToCAxisRatioImage;
 
-    @Parameter(label = "b/c Image", type = ItemIO.OUTPUT)
+    @Parameter(label = "Unweighted Flinn Plot", type = ItemIO.OUTPUT)
     private ImgPlus<BitType> flinnPlotImage;
+
+    @Parameter(label = "Flinn Peak Plot", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> flinnPeakPlotImage;
 
     @SuppressWarnings("unused")
     @Parameter
@@ -125,7 +130,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         statusService.showStatus("Ellipsoid Factor: initialising...");
         Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
         final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
-        DoubleType minimumAxisLength = new DoubleType(2.5);
 
         //find clever seed and boundary points
         final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
@@ -134,7 +138,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(200);
+        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(12);
 
         List<Shape> shapes = new ArrayList<>();
         shapes.add(new HyperSphereShape(2));
@@ -249,6 +253,29 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             flinnRA.get().setOne();
         }
 
+        final Img<FloatType> flinnPeakPlot = ArrayImgs.floats(FlinnPlotDimension,FlinnPlotDimension);
+        flinnPeakPlot.cursor().forEachRemaining(c -> c.set(0.0f));
+
+        final RandomAccess<FloatType> flinnPeakPlotRA = flinnPeakPlot.randomAccess();
+        final RandomAccess<IntType> idAccess = ellipsoidIdentityImage.randomAccess();
+        final Cursor<IntType> idCursor = ellipsoidIdentityImage.localizingCursor();
+        while(idCursor.hasNext())
+        {
+            idCursor.fwd();
+            if(idCursor.get().getInteger()>=0)
+            {
+                long[] position = new long[3];
+                idCursor.localize(position);
+                idAccess.setPosition(position);
+                int localMaxEllipsoidID = idAccess.get().getInteger();
+                long x = Math.round(aToBArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
+                long y = Math.round(bToCArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
+                flinnPeakPlotRA.setPosition(new long[]{x,FlinnPlotDimension-y-1});
+                final float currentValue = flinnPeakPlotRA.get().getRealFloat();
+                flinnPeakPlotRA.get().set(currentValue+1.0f);
+            }
+        }
+
         final LogService log = uiService.log();
         log.initialize();
         log.info("found "+ellipsoids.size()+" ellipsoids");
@@ -279,9 +306,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         bToCAxisRatioImage.setChannelMaximum(0,1.0);
         bToCAxisRatioImage.setChannelMinimum(0, 0.0);
 
-        flinnPlotImage = new ImgPlus<>(flinnPlot, "Flinn Peaks");
+        flinnPlotImage = new ImgPlus<>(flinnPlot, "Unweighted Flinn Plot");
         flinnPlotImage.setChannelMaximum(0,255);
-        flinnPlotImage.setChannelMinimum(0, 0.0);
+        flinnPlotImage.setChannelMinimum(0, 0);
+
+        flinnPeakPlotImage = new ImgPlus<FloatType>(flinnPeakPlot, "Flinn Peak Plot");
+        flinnPeakPlotImage.setChannelMaximum(0,255f);
+        flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
     }
 
     private void mapValuesToImage(double[] values, Img<IntType> ellipsoidIdentityImage, Img<FloatType> ellipsoidFactorImage) {
