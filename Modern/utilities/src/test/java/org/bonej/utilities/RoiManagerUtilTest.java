@@ -36,8 +36,6 @@ import java.awt.Rectangle;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scijava.vecmath.Vector3d;
@@ -45,6 +43,7 @@ import org.scijava.vecmath.Vector3d;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.NewImage;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.gui.TextRoi;
@@ -59,19 +58,9 @@ import ij.process.ImageProcessor;
  */
 public class RoiManagerUtilTest {
 
-	private static final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
-	private static final int MOCK_IMAGE_WIDTH = 100;
-	private static final int MOCK_IMAGE_HEIGHT = 100;
-	private static final int MOCK_IMAGE_DEPTH = 4;
 	private static final int MIN_Z_INDEX = 4;
 	private static final int MAX_Z_INDEX = 5;
-	private static ImagePlus testImage;
 	private static ImageStack testStack;
-
-	@Before
-	public void setUp() {
-		MOCK_ROI_MANAGER.reset();
-	}
 
 	/**
 	 * A test for copying from source stack to target stack with a mask
@@ -89,6 +78,7 @@ public class RoiManagerUtilTest {
 		// Set up mock RoiManager
 		final Roi roi = new Roi(0, 0, WIDTH, HEIGHT);
 		roi.setName("0001-0000-0001");
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(new Roi[] { roi });
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(1);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
@@ -128,6 +118,7 @@ public class RoiManagerUtilTest {
 
 	@Test(expected = NullPointerException.class)
 	public void testCropToRoisThrowsNPEIfStackNull() {
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		RoiManagerUtil.cropToRois(MOCK_ROI_MANAGER, null,  false, 0);
 	}
 
@@ -153,7 +144,7 @@ public class RoiManagerUtilTest {
 		noColorRoi.setName("0001-0000-0001");
 
 		final Roi[] rois = { noColorRoi, roi1, roi2 };
-
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
@@ -201,6 +192,7 @@ public class RoiManagerUtilTest {
 		roi1.setName("0002-0000-0001");
 		roi2.setName("0003-0000-0001");
 		roi3.setName("0001-0000-0001");
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
@@ -237,6 +229,7 @@ public class RoiManagerUtilTest {
 		roi1.setName("0002-0000-0001");
 		roi2.setName("0003-0000-0001");
 		roi3.setName("0001-0000-0001");
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
@@ -280,6 +273,7 @@ public class RoiManagerUtilTest {
 		final Roi rois[] = { roi1, roi2 };
 		roi1.setName(roi1Label);
 		roi2.setName(roi2Label);
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
@@ -306,6 +300,7 @@ public class RoiManagerUtilTest {
 		final Roi rois[] = { roi, allActive };
 		roi.setName("0001-0000-0001");
 		allActive.setName("ALL_ACTIVE");
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
@@ -326,6 +321,7 @@ public class RoiManagerUtilTest {
 		final Roi rois[] = { farZRoi, badRoi };
 		farZRoi.setName("9999-0000-0001"); // slice no == 9999
 		badRoi.setName("0001-0000-0001");
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 		when(MOCK_ROI_MANAGER.getCount()).thenReturn(rois.length);
@@ -338,7 +334,7 @@ public class RoiManagerUtilTest {
 
 	@Test
 	public void testGetLimitsReturnEmptyIfRoiManagerEmpty() {
-		when(MOCK_ROI_MANAGER.getCount()).thenReturn(0);
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 
 		final Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
 			testStack);
@@ -394,6 +390,7 @@ public class RoiManagerUtilTest {
 		sliceRoi1.setName(multiRoi1Label);
 		sliceRoi2.setName(multiRoi2Label);
 		allSliceRoi.setName(noSliceLabel);
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getSliceNumber(anyString())).thenCallRealMethod();
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(rois);
 
@@ -411,6 +408,7 @@ public class RoiManagerUtilTest {
 
 	@Test
 	public void testGetSliceRoiReturnEmptyListIfInvalidNumber() {
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		final List<Roi> result = RoiManagerUtil.getSliceRoi(MOCK_ROI_MANAGER,
 			testStack, -3);
 
@@ -427,6 +425,7 @@ public class RoiManagerUtilTest {
 
 	@Test
 	public void testGetSliceRoiReturnEmptyListIfStackNull() {
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		final List<Roi> result = RoiManagerUtil.getSliceRoi(MOCK_ROI_MANAGER, null,
 			1);
 
@@ -444,6 +443,7 @@ public class RoiManagerUtilTest {
 	public void testPointRoiCoordinates() {
 		final PointRoi pointRoi = new PointRoi(8, 9);
 		pointRoi.setPosition(13);
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(new Roi[] { new Roi(1, 2,
 			1, 1), pointRoi, new TextRoi(3, 4, "foo") });
 
@@ -467,6 +467,7 @@ public class RoiManagerUtilTest {
 		final PointRoi roi2 = new PointRoi(new int[] { 1, 1 }, new int[] { 0, 0 },
 			2);
 		roi2.setPosition(2);
+		final RoiManager MOCK_ROI_MANAGER = mock(RoiManager.class);
 		when(MOCK_ROI_MANAGER.getRoisAsArray()).thenReturn(new Roi[] { roi, roi2 });
 
 		final List<Vector3d> result = RoiManagerUtil.pointROICoordinates(
@@ -485,18 +486,9 @@ public class RoiManagerUtilTest {
 
 	@BeforeClass
 	public static void oneTimeSetUp() {
-		IJ.newImage("testImage", "8-bit", MOCK_IMAGE_WIDTH, MOCK_IMAGE_HEIGHT,
-			MOCK_IMAGE_DEPTH);
-		testImage = IJ.getImage();
-		testStack = testImage.getStack();
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		if (testImage != null) {
-			testImage.flush();
-			testImage.close();
-		}
+		final ImagePlus image = NewImage.createByteImage("testImage", 100, 100, 4,
+			0);
+		testStack = image.getStack();
 	}
 
 	// region -- Helper methods --
