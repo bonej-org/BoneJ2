@@ -65,43 +65,6 @@ public class ResultUtilsTest {
 		UnitService.class);
 
 	@Test
-	public void testCreateLabelColumn() {
-		final String label = "Test";
-		final int rows = 10;
-
-		final GenericColumn column = ResultUtils.createLabelColumn(label, rows);
-
-		assertEquals("Column header is incorrect", "Label", column.getHeader());
-		assertEquals("Wrong number of rows", rows, column.size());
-		assertTrue("Column has incorrect values", column.stream().map(
-			o -> (String) o).allMatch(label::equals));
-	}
-
-	@Test
-	public void testCreateLabelColumnEmptyString() {
-		final GenericColumn column = ResultUtils.createLabelColumn("", 3);
-
-		assertTrue("Column has incorrect values", column.stream().map(
-			o -> (String) o).allMatch("-"::equals));
-	}
-
-	@Test
-	public void testCreateLabelColumnNullString() {
-		final GenericColumn column = ResultUtils.createLabelColumn(null, 3);
-
-		assertNotNull(column);
-		assertTrue("Column has incorrect values", column.stream().map(
-			o -> (String) o).allMatch("-"::equals));
-	}
-
-	@Test
-	public void testCreateLabelNegativeRows() {
-		final GenericColumn column = ResultUtils.createLabelColumn("Test", -1);
-
-		assertEquals(0, column.size());
-	}
-
-	@Test
 	public void testGetExponent() {
 		final char[] expected = { '\u0000', '\u00B2', '\u00B3', '\u2074', '\u2075',
 			'\u2076', '\u2077', '\u2078', '\u2079', '\u0000' };

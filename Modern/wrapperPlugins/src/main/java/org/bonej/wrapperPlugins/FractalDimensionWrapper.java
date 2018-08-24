@@ -197,16 +197,16 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
 	{
 		final String label = inputImage.getName() + " " + subspace;
-		final GenericColumn labelColumn = ResultUtils.createLabelColumn(label, pairs
-			.size());
 		final DoubleColumn xColumn = new DoubleColumn("-log(size)");
 		final DoubleColumn yColumn = new DoubleColumn("log(count)");
 		pairs.stream().map(p -> p.a.get()).forEach(xColumn::add);
 		pairs.stream().map(p -> p.b.get()).forEach(yColumn::add);
 		final GenericTable subspaceTable = new DefaultGenericTable();
-		subspaceTable.add(labelColumn);
 		subspaceTable.add(xColumn);
 		subspaceTable.add(yColumn);
+		for (int i = 0; i < subspaceTable.getRowCount(); i++) {
+			subspaceTable.setRowHeader(i, label);
+		}
 		subspaceTables.add(subspaceTable);
 	}
 
