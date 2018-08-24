@@ -48,7 +48,6 @@ import net.imglib2.type.numeric.RealType;
  *
  * @author Richard Domander
  */
-// TODO Throw exceptions
 public final class ElementUtil {
 
 	private ElementUtil() {}
@@ -65,8 +64,8 @@ public final class ElementUtil {
 	 * @param <T> type of the space.
 	 * @param unitService needed to convert between units of different
 	 *          calibrations.
-	 * @return Calibrated size of a spatial element, or Double.NaN if space ==
-	 *         null, has nonlinear axes, or calibration units don't match.
+	 * @return Calibrated size of a spatial element, or Double.NaN if space has
+	 *         nonlinear axes, or calibration units cannot be converted.
 	 */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> double
 		calibratedSpatialElementSize(final T space, final UnitService unitService)
@@ -76,27 +75,23 @@ public final class ElementUtil {
 		if (!optional.isPresent() || hasNonLinearSpatialAxes(space)) {
 			return Double.NaN;
 		}
-		final String unit = optional.get().replaceFirst("^µ[mM]$", "um");
-		if (unit.isEmpty()) {
-			return uncalibratedSize(space);
+		final double elementSize = spatialAxisStream(space).map(a -> a.averageScale(
+			0, 1)).reduce((x, y) -> x * y).orElse(0.0);
+		// DefaultUnitService handles microns as "um" instead of "µm",
+		final String outputUnit = optional.get().replaceFirst("^µ[mM]$", "um");
+		if (outputUnit.isEmpty()) {
+			// None of the axes have units, no conversions between units necessary
+			return elementSize;
 		}
-
 		final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
 			Collectors.toList());
-		double elementSize = axes.get(0).averageScale(0.0, 1.0);
+		double unitCoeff = 1.0;
 		for (int i = 1; i < axes.size(); i++) {
-			final double scale = axes.get(i).averageScale(0.0, 1.0);
-			final String axisUnit = axes.get(i).unit().replaceFirst("^µ[mM]$", "um");
-			try {
-				final double axisSize = unitService.value(scale, axisUnit, unit);
-				elementSize *= axisSize;
-			}
-			catch (final Exception e) {
-				return uncalibratedSize(space);
-			}
+			final String inputUnit = axes.get(i).unit().replaceFirst("^µ[mM]$", "um");
+			final double conversion = unitService.value(1.0, inputUnit, outputUnit);
+			unitCoeff *= conversion;
 		}
-
-		return elementSize;
+		return elementSize * unitCoeff;
 	}
 
 	/**
@@ -107,13 +102,13 @@ public final class ElementUtil {
 	 *
 	 * @param interval an iterable interval.
 	 * @param <T> type of the elements in the interval.
-	 * @return true if only two distinct values, false if interval is null, empty
+	 * @return true if only two distinct values, false if interval is empty
 	 *         or has more colors.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> boolean isColorsBinary(
 		final IterableInterval<T> interval)
 	{
-		if (interval == null || interval.size() == 0) {
+		if (interval.size() == 0) {
 			return false;
 		}
 
@@ -137,6 +132,7 @@ public final class ElementUtil {
 		return true;
 	}
 
+	//@region -- Helper methods --
 	/**
 	 * Checks if the given space has any non-linear spatial dimensions.
 	 *
@@ -151,13 +147,5 @@ public final class ElementUtil {
 		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
 			.type().isSpatial());
 	}
-
-	// region -- Helper methods --
-	private static <T extends AnnotatedSpace<CalibratedAxis>> double
-		uncalibratedSize(final T space)
-	{
-		return spatialAxisStream(space).map(a -> a.averageScale(0, 1)).reduce((x,
-			y) -> x * y).orElse(0.0);
-	}
-	// endregion
+	//@endregion
 }

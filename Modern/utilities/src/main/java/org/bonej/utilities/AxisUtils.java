@@ -71,19 +71,20 @@ public final class AxisUtils {
 	 * @param space an n-dimensional space with calibrated axes.
 	 * @param <S> type of the space.
 	 * @param unitService an {@link UnitService} to convert axis calibrations.
-	 * @return an optional with the unit of spatial calibration. It's empty if the
-	 *         space == null, there are no spatial axes, or there's no conversion
-	 *         between their units. The Optional contains an empty string none of
-	 *         the calibrations have a unit.
+	 * @return an optional with the unit of spatial calibration. It's empty if
+	 *         there's no conversion between the units of spatial axes. The
+	 *         Optional contains an empty string none of the axes have a unit,
+	 *         i.e. they're uncalibrated.
+	 * @throws IllegalArgumentException if space has no spatial axes.
 	 */
 	public static <S extends AnnotatedSpace<C>, C extends CalibratedAxis> Optional<String>
-		getSpatialUnit(final S space, final UnitService unitService)
+		getSpatialUnit(final S space, final UnitService unitService) throws IllegalArgumentException
 	{
-		if (space == null || !hasSpatialDimensions(space)) {
-			return Optional.empty();
+		if (!hasSpatialDimensions(space)) {
+			throw new IllegalArgumentException("Space has no spatial axes.");
 		}
 		if (!isUnitsConvertible(space, unitService)) {
-			return Optional.of("");
+			return Optional.empty();
 		}
 		final String unit = space.axis(0).unit();
 		return unit == null ? Optional.of("") : Optional.of(unit);
@@ -152,6 +153,7 @@ public final class AxisUtils {
 		if (uncalibrated > 0) {
 			return false;
 		}
+		// DefaultUnitService handles microns as "um" instead of "µm",
 		final List<String> units = spatialAxisStream(space).map(
 			CalibratedAxis::unit).distinct().map(s -> s.replaceFirst("^µ[mM]$", "um"))
 			.collect(toList());
@@ -160,7 +162,7 @@ public final class AxisUtils {
 				try {
 					unitService.value(1.0, units.get(i), units.get(j));
 				}
-				catch (final Exception e) {
+				catch (final IllegalArgumentException e) {
 					return false;
 				}
 			}

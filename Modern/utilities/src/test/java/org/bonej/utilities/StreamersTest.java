@@ -73,11 +73,8 @@ public class StreamersTest {
 			1));
 	}
 
-	@Test
-	public void testSpatialAxisStreamReturnsEmptyIfSpaceNull() {
-		final Stream<TypedAxis> result = Streamers.spatialAxisStream(null);
-
-		assertNotNull("Stream should not be null", result);
-		assertFalse("Stream should be empty", result.findAny().isPresent());
+	@Test(expected = NullPointerException.class)
+	public void testAxisStreamThrowsNPEIfSpaceNull() {
+		Streamers.axisStream(null);
 	}
 }

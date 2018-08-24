@@ -211,11 +211,9 @@ public class ResultUtilsTest {
 		assertEquals("", unitHeader);
 	}
 
-	@Test
-	public void testGetUnitHeaderReturnEmptyIfImageNull() {
-		final String result = ResultUtils.getUnitHeader(null, unitService, '³');
-
-		assertTrue("Unit header should be empty", result.isEmpty());
+	@Test(expected = NullPointerException.class)
+	public void testGetUnitHeaderThrowsNPEIfImageNull() {
+		 ResultUtils.getUnitHeader(null, unitService, '³');
 	}
 
 	@Test
