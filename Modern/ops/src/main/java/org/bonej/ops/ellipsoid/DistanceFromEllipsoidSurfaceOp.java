@@ -106,7 +106,7 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
 			anglesKPlus1 = new Vector2d(anglesK.x, anglesK.y);
 			anglesKPlus1.add(inverseJacobian(anglesK, ellipsoid,
 				pointInEllipsoidCoordinates));
-			if (getDifference(anglesK, anglesKPlus1) < tolerance) {
+			if (getDifference(anglesK, anglesKPlus1) <= tolerance) {
 				break;
 			}
 			anglesK = new Vector2d(anglesKPlus1.x, anglesKPlus1.y);
