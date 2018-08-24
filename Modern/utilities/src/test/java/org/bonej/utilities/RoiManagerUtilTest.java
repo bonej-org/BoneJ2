@@ -25,7 +25,6 @@ package org.bonej.utilities;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -119,6 +118,17 @@ public class RoiManagerUtilTest {
 		final int foregroundCount = countColorPixels(result, TEST_COLOR);
 		assertEquals("Image was cropped incorrectly", TEST_COLOR_COUNT,
 			foregroundCount);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testCropToRoisThrowsNPEIfRoiManNull() {
+		final ImageStack mockStack = mock(ImageStack.class);
+		RoiManagerUtil.cropToRois(null, mockStack,  false, 0);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testCropToRoisThrowsNPEIfStackNull() {
+		RoiManagerUtil.cropToRois(MOCK_ROI_MANAGER, null,  false, 0);
 	}
 
 	@Test
@@ -337,21 +347,6 @@ public class RoiManagerUtilTest {
 	}
 
 	@Test
-	public void testGetLimitsReturnEmptyIfRoiManagerNull() {
-		final Optional<int[]> result = RoiManagerUtil.getLimits(null, testStack);
-
-		assertFalse(result.isPresent());
-	}
-
-	@Test
-	public void testGetLimitsReturnEmptyIfStackNull() {
-		final Optional<int[]> result = RoiManagerUtil.getLimits(MOCK_ROI_MANAGER,
-			null);
-
-		assertFalse(result.isPresent());
-	}
-
-	@Test
 	public void testGetSafeRoiBounds() {
 		final int X = 10;
 		final int Y = 10;
@@ -483,12 +478,9 @@ public class RoiManagerUtilTest {
 		assertEquals(new Vector3d(1, 0, 2), result.get(2));
 	}
 
-	@Test
-	public void testPointRoiCoordinatesReturnsEmptyListIfManagerNull() {
-		final List<Vector3d> points = RoiManagerUtil.pointROICoordinates(null);
-
-		assertNotNull(points);
-		assertTrue(points.isEmpty());
+	@Test(expected = NullPointerException.class)
+	public void testPointRoiCoordinatesThrowsNPEIfRoiManagerNull() {
+		RoiManagerUtil.pointROICoordinates(null);
 	}
 
 	@BeforeClass

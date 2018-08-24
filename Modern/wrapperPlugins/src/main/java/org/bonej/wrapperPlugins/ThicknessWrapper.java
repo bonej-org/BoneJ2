@@ -180,6 +180,10 @@ public class ThicknessWrapper extends ContextCommand {
 
 		if (cropToRois) {
 			final RoiManager roiManager = RoiManager.getInstance2();
+			if (roiManager == null) {
+				cancel("Can't crop without valid ROIs in the ROIManager");
+				return null;
+			}
 			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
 				roiManager, inputImage.getStack(), true, 0x00);
 			if (!stackOptional.isPresent()) {
