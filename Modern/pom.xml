@@ -18,7 +18,7 @@
 
     <name>POM BoneJ2</name>
     <description>The parent POM for the BoneJ2 Maven packages</description>
-    <url>http://http://bonej.org/</url>
+    <url>http://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>

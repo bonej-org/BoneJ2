@@ -18,7 +18,7 @@
         The Domain Presentation Layer (DPL) of BoneJ2, i.e. the commands that wrap the needed ops,
         and present results for skeletal biologists.
     </description>
-    <url>http://http://bonej.org/</url>
+    <url>http://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>

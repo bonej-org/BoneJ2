@@ -17,7 +17,7 @@
 
     <name>POM BoneJ legacy</name>
     <description>Parent POM for the mavenized legacy BoneJ1 code.</description>
-    <url>http://http://bonej.org/</url>
+    <url>http://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>

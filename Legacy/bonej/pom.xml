@@ -14,7 +14,7 @@
 
     <name>BoneJ legacy plugins</name>
     <description> The mavenized versions of the BoneJ1 plugins</description>
-    <url>http://http://bonej.org/</url>
+    <url>http://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
