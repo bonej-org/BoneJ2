@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.utilities.AxisUtils.getSpatialUnit;
@@ -127,104 +128,38 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         statusService.showStatus("Ellipsoid Factor: initialising...");
         Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
-        final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
-
-        //find clever seed and boundary points
-        final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
-        int nSphere = 12;//estimateNSpiralPointsRequired(estimatedCharacteristicLength.get(), samplingWidth);
-        final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
-        sphereSamplingDirections.addAll(Arrays.asList(
-                new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
-                new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(12);
-
-        List<Shape> shapes = new ArrayList<>();
-        shapes.add(new HyperSphereShape(2));
-        final IterableInterval<R> open = opService.morphology().open(distanceTransform, shapes);
-        final IterableInterval<R> close = opService.morphology().close(distanceTransform, shapes);
-        final IterableInterval<R> ridge = opService.math().subtract(close, open);
-        final Cursor<R> ridgeCursor = ridge.localizingCursor();
-
-        //remove ridgepoints in BG - how does this make a difference?
-        while(ridgeCursor.hasNext()){
-            ridgeCursor.fwd();
-            long[] position = new long[3];
-            ridgeCursor.localize(position);
-            inputBitRA.setPosition(position);
-            if(!inputBitRA.get().get())
-            {
-                ridgeCursor.get().setReal(0.0f);
-            }
-        }
-
-        final double ridgePointCutOff = percentageOfRidgePoints.getRealFloat()*opService.stats().max(ridge).getRealFloat();
-        final Img<R> ridgeImg = (Img) ridge;
-        final Img<BitType> thresholdedRidge = Thresholder.threshold(ridgeImg, (R) new FloatType((float) ridgePointCutOff), true, 1);
-        ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
-
-        final List<ValuePair<List<Vector3d>, List<ValuePair<Vector3d, Vector3d>>>> starVolumes = new ArrayList<>();
-        final List<Vector3d> internalSeedPoints = new ArrayList<>();
-        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combos = new ArrayList<>();
-
-        ridgeCursor.reset();
-        while (ridgeCursor.hasNext()) {
-            ridgeCursor.fwd();
-            final double localValue = ridgeCursor.get().getRealFloat();
-            if (localValue > ridgePointCutOff) {
-                final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
-                long[] position = new long[3];
-                ridgeCursor.localize(position);
-                final Vector3d internalSeedPoint = new Vector3d(position[0]+0.5, position[1]+0.5, position[2]+0.5);
-                internalSeedPoints.add(internalSeedPoint);
-                List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
-                    final Vector3d direction = new Vector3d(d);
-                    return findFirstPointInBGAlongRay(direction, internalSeedPoint);
-                }).collect(toList());
-
-                contactPoints.forEach(c -> {
-                    Vector3d inwardDirection = new Vector3d(internalSeedPoint);
-                    inwardDirection.sub(c);
-                    inwardDirection.normalize();
-                    seedPoints.add(new ValuePair<>(c, inwardDirection));
-                });
-                combos.addAll(getAllCombosOfFour(seedPoints, internalSeedPoint));
-            }
-        }
+        final List<Vector3d> internalSeedPoints = getRidgePoints(inputAsBit);
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
-
-        final List<Ellipsoid> ellipsoids = combos.parallelStream().map(c -> findLocalEllipsoidOp.calculate(c.getA(),c.getB())).filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
+        final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
         ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
 
-        //find EF values
-        statusService.showStatus("Ellipsoid Factor: preparing assignment...");
-        final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
-        ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
+        statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
+        final Img<IntType> ellipsoidIdentityImage = assignEllipsoidID(inputAsBit, ellipsoids);
+        writeOutputImages(ellipsoids, ellipsoidIdentityImage);
+
+        long numberOfForegroundVoxels = countTrue(inputAsBit);
+        long numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
+        
+        final LogService log = uiService.log();
+        log.initialize();
+        log.info("found "+ellipsoids.size()+" ellipsoids");
+        log.info("assigned voxels = "+numberOfAssignedVoxels);
+        log.info("foreground voxels = "+numberOfForegroundVoxels);
+        double fillingPercentage = 100.0*((double) numberOfAssignedVoxels)/((double) numberOfForegroundVoxels);
+        log.info("filling percentage = "+fillingPercentage+"%");
+
+    }
+
+    private void writeOutputImages(List<Ellipsoid> ellipsoids, Img<IntType> ellipsoidIdentityImage) {
         final Img<FloatType> ellipsoidFactorImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         ellipsoidFactorImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
-
         final Img<FloatType> volumeImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         volumeImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
         final Img<FloatType> aToBImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         aToBImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
         final Img<FloatType> bToCImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         bToCImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
-
-        final Cursor<BitType> inputCursor = inputAsBit.localizingCursor();
-        long numberOfForegroundVoxels = countTrue(inputAsBit);
-        List<Vector3d> voxelCentrePoints = new ArrayList<>();
-
-        while (inputCursor.hasNext()) {
-            inputCursor.fwd();
-            if(inputCursor.get().get()) {
-                long [] coordinates = new long[3];
-                inputCursor.localize(coordinates);
-                voxelCentrePoints.add(new Vector3d(coordinates[0]+0.5, coordinates[1]+0.5, coordinates[2]+0.5));
-            }
-        }
-
-        statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-        long numberOfAssignedVoxels = voxelCentrePoints.parallelStream().filter(centrePoint -> findID(ellipsoids,ellipsoidIdentityImage,centrePoint)).count();
 
         final double[] ellipsoidFactorArray = ellipsoids.parallelStream().mapToDouble(e -> computeEllipsoidFactor(e)).toArray();
         mapValuesToImage(ellipsoidFactorArray, ellipsoidIdentityImage, ellipsoidFactorImage);
@@ -279,14 +214,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             flinnPeakPlot = (Img<FloatType>) opService.filter().gauss(flinnPeakPlot, sigma.get());
         }
 
-        final LogService log = uiService.log();
-        log.initialize();
-        log.info("found "+ellipsoids.size()+" ellipsoids");
-        log.info("assigned voxels = "+numberOfAssignedVoxels);
-        log.info("foreground voxels = "+numberOfForegroundVoxels);
-        double fillingPercentage = 100.0*((double) numberOfAssignedVoxels)/((double) numberOfForegroundVoxels);
-        log.info("filling percentage = "+fillingPercentage+"%");
-
         efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
         efImage.setChannelMaximum(0,1);
         efImage.setChannelMinimum(  0,-1);
@@ -316,6 +243,110 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         flinnPeakPlotImage = new ImgPlus<FloatType>(flinnPeakPlot, "Flinn Peak Plot");
         flinnPeakPlotImage.setChannelMaximum(0,255f);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
+    }
+
+    private long countAssignedVoxels(Img<IntType> ellipsoidIdentityImage) {
+        long numberOfAssignedVoxels = 0;
+        final Cursor<IntType> eIDCursor = ellipsoidIdentityImage.cursor();
+        while(eIDCursor.hasNext())
+        {
+            eIDCursor.fwd();
+            if(eIDCursor.get().getInteger()>-1)
+            {
+                numberOfAssignedVoxels++;
+            }
+        }
+        return numberOfAssignedVoxels;
+    }
+
+    private Img<IntType> assignEllipsoidID(Img<BitType> inputAsBit, List<Ellipsoid> ellipsoids) {
+        final Cursor<BitType> inputCursor = inputAsBit.localizingCursor();
+        List<Vector3d> voxelCentrePoints = new ArrayList<>();
+        while (inputCursor.hasNext()) {
+            inputCursor.fwd();
+            if(inputCursor.get().get()) {
+                long [] coordinates = new long[3];
+                inputCursor.localize(coordinates);
+                voxelCentrePoints.add(new Vector3d(coordinates[0]+0.5, coordinates[1]+0.5, coordinates[2]+0.5));
+            }
+        }
+        final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
+        ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
+        voxelCentrePoints.parallelStream().filter(centrePoint -> findID(ellipsoids,ellipsoidIdentityImage,centrePoint));
+        return ellipsoidIdentityImage;
+    }
+
+    private List<Ellipsoid> findEllipsoids(List<Vector3d> internalSeedPoints) {
+        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combos = new ArrayList<>();
+        int nSphere = 12;
+        final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+        sphereSamplingDirections.addAll(Arrays.asList(
+                new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
+                new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
+
+        internalSeedPoints.parallelStream().forEach( i -> {
+                    List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
+                        final Vector3d direction = new Vector3d(d);
+                        return findFirstPointInBGAlongRay(direction, i);
+                    }).collect(toList());
+                    final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
+
+                    contactPoints.forEach(c -> {
+                        Vector3d inwardDirection = new Vector3d(i);
+                        inwardDirection.sub(c);
+                        inwardDirection.normalize();
+                        seedPoints.add(new ValuePair<>(c, inwardDirection));
+                    });
+                    combos.addAll(getAllCombosOfFour(seedPoints, i));
+                });
+        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(200);
+        return combos.parallelStream().map(c -> findLocalEllipsoidOp.calculate(c.getA(),c.getB())).filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
+    }
+
+    private List<Vector3d> getRidgePoints(Img<BitType> inputAsBit) {
+        final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
+
+        //find clever seed points
+        final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
+
+        List<Shape> shapes = new ArrayList<>();
+        shapes.add(new HyperSphereShape(2));
+        final IterableInterval<R> open = opService.morphology().open(distanceTransform, shapes);
+        final IterableInterval<R> close = opService.morphology().close(distanceTransform, shapes);
+        final IterableInterval<R> ridge = opService.math().subtract(close, open);
+        final Cursor<R> ridgeCursor = ridge.localizingCursor();
+
+        //remove ridgepoints in BG - how does this make a difference?
+        while(ridgeCursor.hasNext()){
+            ridgeCursor.fwd();
+            long[] position = new long[3];
+            ridgeCursor.localize(position);
+            inputBitRA.setPosition(position);
+            if(!inputBitRA.get().get())
+            {
+                ridgeCursor.get().setReal(0.0f);
+            }
+        }
+
+        final double ridgePointCutOff = percentageOfRidgePoints.getRealFloat()*opService.stats().max(ridge).getRealFloat();
+        final Img<R> ridgeImg = (Img) ridge;
+        final Img<BitType> thresholdedRidge = Thresholder.threshold(ridgeImg, (R) new FloatType((float) ridgePointCutOff), true, 1);
+        ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
+
+        final List<Vector3d> internalSeedPoints = new ArrayList<>();
+
+        ridgeCursor.reset();
+        while (ridgeCursor.hasNext()) {
+            ridgeCursor.fwd();
+            final double localValue = ridgeCursor.get().getRealFloat();
+            if (localValue > ridgePointCutOff) {
+                long[] position = new long[3];
+                ridgeCursor.localize(position);
+                final Vector3d internalSeedPoint = new Vector3d(position[0]+0.5, position[1]+0.5, position[2]+0.5);
+                internalSeedPoints.add(internalSeedPoint);
+            }
+        }
+        return internalSeedPoints;
     }
 
     private void mapValuesToImage(double[] values, Img<IntType> ellipsoidIdentityImage, Img<FloatType> ellipsoidFactorImage) {
