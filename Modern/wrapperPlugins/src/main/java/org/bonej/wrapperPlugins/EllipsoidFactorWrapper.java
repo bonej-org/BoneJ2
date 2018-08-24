@@ -1,7 +1,7 @@
 package org.bonej.wrapperPlugins;
 
 import net.imagej.ImgPlus;
-import net.imagej.display.*;
+import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
@@ -11,11 +11,9 @@ import net.imglib2.algorithm.binary.Thresholder;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
-import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -73,7 +71,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private ImgPlus<R> inputImage;
 
     @Parameter(persist = false, required = false)
-    private DoubleType estimatedCharacteristicLength = new DoubleType(2.5);
+    private DoubleType sigma = new DoubleType(0);
 
     @Parameter(persist = false, required = false)
     private DoubleType percentageOfRidgePoints = new DoubleType(0.95);
@@ -253,7 +251,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             flinnRA.get().setOne();
         }
 
-        final Img<FloatType> flinnPeakPlot = ArrayImgs.floats(FlinnPlotDimension,FlinnPlotDimension);
+        Img<FloatType> flinnPeakPlot = ArrayImgs.floats(FlinnPlotDimension,FlinnPlotDimension);
         flinnPeakPlot.cursor().forEachRemaining(c -> c.set(0.0f));
 
         final RandomAccess<FloatType> flinnPeakPlotRA = flinnPeakPlot.randomAccess();
@@ -274,6 +272,11 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 final float currentValue = flinnPeakPlotRA.get().getRealFloat();
                 flinnPeakPlotRA.get().set(currentValue+1.0f);
             }
+        }
+
+        if(sigma.getRealDouble()>0.0)
+        {
+            flinnPeakPlot = (Img<FloatType>) opService.filter().gauss(flinnPeakPlot, sigma.get());
         }
 
         final LogService log = uiService.log();
