@@ -91,7 +91,21 @@ public class CommonTest {
 			.averageScale(0, 1), 1e-12);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testToBitTypeImgPlusThrowsNPEIfOpEnvironmentNull() {
+		final Img<DoubleType> img = ArrayImgs.doubles(3, 3);
+		final ImgPlus<DoubleType> image = new ImgPlus<>(img);
+
+		Common.toBitTypeImgPlus(null, image);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testToBitTypeImgPlusThrowsNPEIfImageNull() {
+		Common.toBitTypeImgPlus(IMAGE_J.op(), null);
+	}
+
 	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
@@ -147,6 +161,16 @@ public class CommonTest {
 		final UIService uiService = mock(UIService.class);
 
 		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testWarnAnisotropyThrowsNPEIfImageNull() {
+		Common.warnAnisotropy(null, mock(UIService.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testWarnAnisotropyThrowsNPEIfUIServiceNull() {
+		Common.warnAnisotropy(mock(ImagePlus.class), null);
 	}
 
 	@AfterClass
