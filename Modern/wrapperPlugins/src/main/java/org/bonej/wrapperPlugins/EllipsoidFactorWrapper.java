@@ -43,7 +43,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.utilities.AxisUtils.getSpatialUnit;
@@ -272,7 +271,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
         final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
-        voxelCentrePoints.parallelStream().filter(centrePoint -> findID(ellipsoids,ellipsoidIdentityImage,centrePoint));
+        voxelCentrePoints.parallelStream().forEach(centrePoint -> findID(ellipsoids,ellipsoidIdentityImage,centrePoint));
         return ellipsoidIdentityImage;
     }
 
@@ -284,7 +283,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
 
-        internalSeedPoints.parallelStream().forEach( i -> {
+        internalSeedPoints.stream().forEach( i -> {
                     List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
                         final Vector3d direction = new Vector3d(d);
                         return findFirstPointInBGAlongRay(direction, i);
