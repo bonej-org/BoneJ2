@@ -95,7 +95,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE, columns = 1)
 	private String loopSection = "-- LOOPS --";
 
-	@Parameter(label = "Prune cycle method",
+	@Parameter(label = "Cycle pruning method",
 		description = "Which method is used to prune cycles in the skeleton graph",
 		required = false, style = ChoiceWidget.LIST_BOX_STYLE, choices = { "None",
 			"Shortest branch", "Lowest intensity voxel", "Lowest intensity branch" })
