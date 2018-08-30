@@ -27,19 +27,25 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.WEIRD_SPATIAL;
 
+import java.util.stream.Stream;
+
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
+import net.imglib2.IterableInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.view.Views;
 
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
@@ -102,24 +108,32 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		statusService.showStatus("Element fraction: initializing");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
+		final Stream<Subspace<BitType>> subspaces = HyperstackUtils
+			.split3DSubspaces(bitImgPlus);
 		prepareResultDisplay();
-		// The value of each foreground element in a bit type image is 1, so we can
-		// count their number just by summing
 		statusService.showStatus("Element fraction: calculating");
-		final double foregroundSize = opService.stats().sum(bitImgPlus)
-			.getRealDouble() * elementSize;
-		final double totalSize = bitImgPlus.size() * elementSize;
-		final double ratio = foregroundSize / totalSize;
-		addResults(foregroundSize, totalSize, ratio);
+		final String name = inputImage.getName();
+		subspaces.forEach(subspace -> {
+			// The value of each foreground element in a bit type image is 1, so we
+			// can count their number just by summing
+			final IterableInterval<BitType> interval = Views.flatIterable(
+				subspace.interval);
+			final double foregroundSize = opService.stats().sum(interval)
+				.getRealDouble() * elementSize;
+			final double totalSize = interval.size() * elementSize;
+			final double ratio = foregroundSize / totalSize;
+			final String suffix = subspace.toString();
+			final String label = suffix.isEmpty() ? name : name + " " + suffix;
+			addResults(label, foregroundSize, totalSize, ratio);
+		});
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
 	}
 
-	private void addResults(final double foregroundSize, final double totalSize,
-		final double ratio)
+	private void addResults(final String label, final double foregroundSize,
+		final double totalSize, final double ratio)
 	{
-		final String label = inputImage.getName();
 		SharedTable.add(label, boneSizeHeader, foregroundSize);
 		SharedTable.add(label, totalSizeHeader, totalSize);
 		SharedTable.add(label, ratioHeader, ratio);
@@ -133,7 +147,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
 		boneSizeHeader = "Bone " + sizeDescription.toLowerCase() + " " + unitHeader;
-		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " + unitHeader;
+		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " +
+			unitHeader;
 		ratioHeader = sizeDescription + " ratio";
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
 			unitService);
