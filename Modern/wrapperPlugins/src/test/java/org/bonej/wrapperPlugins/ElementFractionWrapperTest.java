@@ -103,7 +103,8 @@ public class ElementFractionWrapperTest {
 			expectedRatios };
 		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
 			"Total volume (" + unit + "³)", "Volume ratio" };
-		// Create an hyperstack Img with a cube at (c:0, f:0) and (c:1, f:1)
+		// Create an hyperstack Img with a cube at (channel:0, frame:0) and (c:1,
+		// f:1)
 		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide, 2,
 			2);
 		Views.interval(img, new long[] { 1, 1, 1, 0, 0 }, new long[] { 5, 5, 5, 0,
@@ -134,8 +135,8 @@ public class ElementFractionWrapperTest {
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			for (int j = 0; j < expectedSize; j++) {
-				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					Double.parseDouble(column.get(j)), 1e-12);
+				assertEquals("Incorrect value at row " + j + ", column " + i,
+					expectedValues[i][j], Double.parseDouble(column.get(j)), 1e-12);
 			}
 		}
 	}
@@ -185,8 +186,8 @@ public class ElementFractionWrapperTest {
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			for (int j = 0; j < expectedSize; j++) {
-				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					Double.parseDouble(column.get(j)), 1e-12);
+				assertEquals("Incorrect value at row " + j + ", column " + i,
+					expectedValues[i][j], Double.parseDouble(column.get(j)), 1e-12);
 			}
 		}
 	}
