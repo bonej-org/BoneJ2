@@ -42,7 +42,9 @@ import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableRealInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 
@@ -68,14 +70,14 @@ import org.scijava.ui.UIService;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity",
 	headless = true)
-public class ConnectivityWrapper extends ContextCommand {
+public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
 
 	static final String NEGATIVE_CONNECTIVITY =
 		"Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
 			"Try running Purify prior to Connectivity.\n";
 
 	@Parameter(validater = "validateImage")
-	private ImgPlus<UnsignedByteType> inputImage;
+	private ImgPlus<T> inputImage;
 
 	/**
 	 * The connectivity results in a {@link Table}
@@ -84,7 +86,7 @@ public class ConnectivityWrapper extends ContextCommand {
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	@Parameter
 	private OpService opService;

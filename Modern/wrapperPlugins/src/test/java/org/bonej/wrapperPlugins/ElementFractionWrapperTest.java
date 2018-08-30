@@ -124,19 +124,19 @@ public class ElementFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Wrong number of columns", 4, table.size());
+		assertEquals("Wrong number of columns", 3, table.size());
 		for (int i = 0; i < 3; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("Column has wrong number of rows", expectedSize, column
 				.size());
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			for (int j = 0; j < expectedSize; j++) {
 				assertEquals("Incorrect value at row " + j + ", column " + i,
-					expectedValues[i][j], Double.parseDouble(column.get(j)), 1e-12);
+					expectedValues[i][j], column.get(j), 1e-12);
 			}
 		}
 	}
@@ -175,19 +175,19 @@ public class ElementFractionWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Wrong number of columns", 4, table.size());
+		assertEquals("Wrong number of columns", 3, table.size());
 		for (int i = 0; i < 3; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("Column has wrong number of rows", expectedSize, column
 				.size());
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			for (int j = 0; j < expectedSize; j++) {
 				assertEquals("Incorrect value at row " + j + ", column " + i,
-					expectedValues[i][j], Double.parseDouble(column.get(j)), 1e-12);
+					expectedValues[i][j], column.get(j), 1e-12);
 			}
 		}
 	}

@@ -80,7 +80,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	@Parameter
 	private OpService opService;

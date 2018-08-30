@@ -134,7 +134,6 @@ public class Moments implements PlugIn, DialogListener {
 		gd.addCheckbox("Align result", true);
 		gd.addCheckbox("Show axes (2D)", false);
 		gd.addCheckbox("Show axes (3D)", true);
-		gd.addHelp("http://bonej.org/moments");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		if (gd.wasCanceled()) {

@@ -113,8 +113,8 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String resultSection = "-- RESULTS AND OUTPUT --";
 
-	@Parameter(label = "Calculate largest shortest path", required = false)
-	private boolean calculateShortestPath;
+	@Parameter(label = "Calculate largest shortest paths", required = false)
+	private boolean calculateShortestPaths;
 
 	@Parameter(label = "Show detailed info", required = false)
 	private boolean verbose;
@@ -127,7 +127,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	 * results.
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>,Double> resultsTable;
 
 	/**
 	 * Additional analysis details in a {@link DefaultGenericTable}, null if
@@ -188,7 +188,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		// "Silent" parameter cannot be controlled by the user in the original
 		// plugin. We set it "true" so that no images pop open
 		final SkeletonResult results = analyzeSkeleton_.run(pruneIndex, pruneEnds,
-			calculateShortestPath, intensityImage, true, verbose, roi);
+				calculateShortestPaths, intensityImage, true, verbose, roi);
 		if (hasNoSkeletons(analyzeSkeleton_)) {
 			cancel(NO_SKELETONS);
 			return;
@@ -200,7 +200,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			labelledSkeleton = new ImagePlus(inputImage.getTitle() +
 				"-labelled-skeletons", labelledStack);
 			labelledSkeleton.setCalibration(inputImage.getCalibration());
-			if (calculateShortestPath) {
+			if (calculateShortestPaths) {
 				final ImageStack stack = analyzeSkeleton_.getResultImage(true);
 				final String title = inputImage.getShortTitle() + "-shortest-paths";
 				shortestPaths = new ImagePlus(title, stack);

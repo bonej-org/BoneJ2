@@ -141,8 +141,9 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		required = false, persistKey = "ITA_useClusters")
 	private boolean useClusters = true;
 
+	// TODO Fix typo
 	@Parameter(label = "Print centroids",
-		description = "Print the centroids of vertices at either end of each edge",
+		description = "Print the centroids of vertices at both ends of each edge",
 		required = false, persistKey = "ITA_print_centroids")
 	private boolean printCentroids;
 
@@ -153,7 +154,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	/** The ITA angles in a {@link Table}, null if there are no results */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> anglesTable;
+	private Table<DefaultColumn<Double>, Double> anglesTable;
 
 	/**
 	 * The ITA edge-end coordinates in a {@link Table}, null if there are no

@@ -174,20 +174,19 @@ public class ConnectivityWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Results table has wrong number of columns", 5, table.size());
+		assertEquals("Results table has wrong number of columns", 4, table.size());
 		for (int i = 0; i < 4; i++) {
 			// Ignore column 0, the label column
-			final DefaultColumn<String> column = table.get(i + 1);
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("A column has wrong number of rows", 4, column.size());
 			final String header = column.getHeader();
 			assertEquals("A column has an incorrect header", expectedHeaders.get(i),
 				header);
 			for (int j = 0; j < column.size(); j++) {
-				assertEquals(expectedValues[i][j], Double.parseDouble(column.get(j)),
-					1e-12);
+				assertEquals(expectedValues[i][j], column.get(j).doubleValue(),	1e-12);
 			}
 		}
 	}

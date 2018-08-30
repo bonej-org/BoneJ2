@@ -148,7 +148,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 	@Parameter
 	private LogService logService;
 	@Parameter
@@ -195,12 +195,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			suffix;
 		SharedTable.add(label, "Degree of anisotropy", anisotropy);
 		if (printRadii) {
-			SharedTable.add(label, "Radius a", String.format("%.2f", ellipsoid
-				.getA()));
-			SharedTable.add(label, "Radius b", String.format("%.2f", ellipsoid
-				.getB()));
-			SharedTable.add(label, "Radius c", String.format("%.2f", ellipsoid
-				.getC()));
+			SharedTable.add(label, "Radius a", ellipsoid.getA());
+			SharedTable.add(label, "Radius b", ellipsoid.getB());
+			SharedTable.add(label, "Radius c", ellipsoid.getC());
 		}
 	}
 
@@ -326,6 +323,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			executor.shutdownNow();
 			// Preserve interrupt status
 			Thread.currentThread().interrupt();
+			logService.trace(ie);
 		}
 	}
 
