@@ -162,38 +162,14 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testGetUnitHeaderImagePlusReturnsEmptyIfDefaultUnit() {
+	public void testGetUnitHeaderImagePlusDefaultUnit() {
 		final ImagePlus imagePlus = new ImagePlus();
 		final Calibration calibration = new Calibration();
 		imagePlus.setCalibration(calibration);
 
 		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
 
-		assertEquals("", unitHeader);
-	}
-
-	@Test
-	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitEmpty() {
-		final ImagePlus imagePlus = new ImagePlus();
-		final Calibration calibration = new Calibration();
-		calibration.setUnit("");
-		imagePlus.setCalibration(calibration);
-
-		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
-
-		assertEquals("", unitHeader);
-	}
-
-	@Test
-	public void testGetUnitHeaderImagePlusReturnsEmptyIfUnitUnit() {
-		final ImagePlus imagePlus = new ImagePlus();
-		final Calibration calibration = new Calibration();
-		calibration.setUnit("unit");
-		imagePlus.setCalibration(calibration);
-
-		final String unitHeader = ResultUtils.getUnitHeader(imagePlus);
-
-		assertEquals("", unitHeader);
+		assertEquals("(pixel)", unitHeader);
 	}
 
 	@Test(expected = NullPointerException.class)

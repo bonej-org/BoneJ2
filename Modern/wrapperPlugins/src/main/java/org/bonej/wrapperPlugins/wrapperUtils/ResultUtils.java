@@ -148,17 +148,14 @@ public final class ResultUtils {
 	 * Gets the unit of the image calibration, which can be displayed to the user.
 	 *
 	 * @param imagePlus a ImageJ1 style {@link ImagePlus}.
-	 * @return calibration unit, or empty string if there's no unit, or the
-	 *         calibration has a placeholder unit.
+	 * @return calibration unit, or empty string if there's no unit.
 	 */
 	public static String getUnitHeader(final ImagePlus imagePlus) {
 		final String unit = imagePlus.getCalibration().getUnit();
-		if (StringUtils.isNullOrEmpty(unit) || "pixel".equalsIgnoreCase(unit) ||
-			"unit".equalsIgnoreCase(unit))
+		if (StringUtils.isNullOrEmpty(unit))
 		{
 			return "";
 		}
-
 		return "(" + unit + ")";
 	}
 
