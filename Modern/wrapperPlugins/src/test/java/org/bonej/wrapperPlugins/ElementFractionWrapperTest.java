@@ -83,32 +83,38 @@ public class ElementFractionWrapperTest {
 			ElementFractionWrapper.class);
 	}
 
-	// TODO Rewrite with a hyper stack
 	@Test
-	public void testResults() throws Exception {
+	public void testResults3DHyperstack() throws Exception {
 		// SETUP
 		final String unit = "mm";
 		final double scale = 0.9;
 		final int cubeSide = 5;
-		final int padding = 1;
-		final int stackSide = cubeSide + padding * 2;
-		final double cubeVolume = cubeSide * cubeSide * cubeSide;
-		final double spaceVolume = stackSide * stackSide * stackSide;
+		final int stackSide = cubeSide + 2;
+		final int expectedSize = 4;
 		final double elementSize = scale * scale * scale;
-		final double[] expectedVolumes = { cubeVolume * elementSize };
-		final double[] expectedTotalVolumes = { spaceVolume * elementSize };
-		final double[] expectedRatios = { cubeVolume / spaceVolume };
+		final double cubeVolume = cubeSide * cubeSide * cubeSide * elementSize;
+		final double spaceVolume = stackSide * stackSide * stackSide * elementSize;
+		final double ratio = cubeVolume / spaceVolume;
+		final double[] expectedVolumes = { cubeVolume, 0, 0, cubeVolume };
+		final double[] expectedTotalVolumes = { spaceVolume, spaceVolume,
+			spaceVolume, spaceVolume };
+		final double[] expectedRatios = { ratio, 0, 0, ratio };
 		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
 			expectedRatios };
 		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
 			"Total volume (" + unit + "³)", "Volume ratio" };
-		// Create an test image of a cuboid
-		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide);
-		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 5 }).forEach(
-			BitType::setOne);
-		final double[] calibration = { scale, scale, scale };
-		final String[] units = { unit, unit, unit };
-		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z };
+		// Create an hyperstack Img with a cube at (channel:0, frame:0) and (c:1,
+		// f:1)
+		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide, 2,
+			2);
+		Views.interval(img, new long[] { 1, 1, 1, 0, 0 }, new long[] { 5, 5, 5, 0,
+			0 }).forEach(BitType::setOne);
+		Views.interval(img, new long[] { 1, 1, 1, 1, 1 }, new long[] { 5, 5, 5, 1,
+			1 }).forEach(BitType::setOne);
+		// Wrap Img in a calibrated ImgPlus
+		final double[] calibration = { scale, scale, scale, 1.0, 1.0 };
+		final String[] units = { unit, unit, unit, "", "" };
+		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z, Axes.TIME, Axes.CHANNEL };
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube", axes,
 			calibration, units);
 
@@ -124,12 +130,64 @@ public class ElementFractionWrapperTest {
 		assertEquals("Wrong number of columns", 3, table.size());
 		for (int i = 0; i < 3; i++) {
 			final DefaultColumn<Double> column = table.get(i);
-			assertEquals("Column has wrong number of rows", 1, column.size());
+			assertEquals("Column has wrong number of rows", expectedSize, column
+				.size());
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
-			for (int j = 0; j < 1; j++) {
-				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					column.get(j).doubleValue(), 1e-12);
+			for (int j = 0; j < expectedSize; j++) {
+				assertEquals("Incorrect value at row " + j + ", column " + i,
+					expectedValues[i][j], column.get(j), 1e-12);
+			}
+		}
+	}
+
+	@Test
+	public void testResultsComposite2D() throws Exception {
+		// SETUP
+		final String unit = "mm";
+		final int squareSide = 5;
+		final int stackSide = squareSide + 2;
+		final int expectedSize = 2;
+		final double squareArea = squareSide * squareSide;
+		final double spaceArea = stackSide * stackSide;
+		final double ratio = squareArea / spaceArea;
+		final double[] expectedAreas = { 0, squareArea };
+		final double[] expectedTotalAreas = { spaceArea, spaceArea };
+		final double[] expectedRatios = { 0, ratio };
+		final double[][] expectedValues = { expectedAreas, expectedTotalAreas,
+			expectedRatios };
+		final String[] expectedHeaders = { "Bone area (" + unit + "\u00B2)",
+			"Total area (" + unit + "\u00B2)", "Area ratio" };
+		// Create an 2D image with two channels with a square drawn on channel 2
+		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, 2);
+		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 1 }).forEach(
+			BitType::setOne);
+		// Wrap Img in an ImgPlus
+		final double[] calibration = { 1.0, 1.0, 1.0 };
+		final String[] units = { unit, unit, "" };
+		final AxisType[] axes = { Axes.X, Axes.Y, Axes.CHANNEL };
+		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Square", axes,
+			calibration, units);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
+		assertNotNull(table);
+		assertEquals("Wrong number of columns", 3, table.size());
+		for (int i = 0; i < 3; i++) {
+			final DefaultColumn<Double> column = table.get(i);
+			assertEquals("Column has wrong number of rows", expectedSize, column
+				.size());
+			assertEquals("Column has incorrect header", expectedHeaders[i], column
+				.getHeader());
+			for (int j = 0; j < expectedSize; j++) {
+				assertEquals("Incorrect value at row " + j + ", column " + i,
+					expectedValues[i][j], column.get(j), 1e-12);
 			}
 		}
 	}

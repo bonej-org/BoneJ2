@@ -25,8 +25,7 @@ package org.bonej.wrapperPlugins;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;
-import static org.bonej.utilities.AxisUtils.getSpatialUnit;
-import static org.bonej.utilities.Streamers.spatialAxisStream;
+import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
@@ -229,6 +228,20 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
+	@SuppressWarnings("unchecked")
+	private void matchOps(final Subspace<BitType> subspace) {
+		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
+			subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
+		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
+			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
+		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
+			Matrix4d.class, tmpPoints);
+		final Matrix4d matchingMock = new Matrix4d();
+		matchingMock.setIdentity();
+		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService,
+			QuadricToEllipsoid.class, Optional.class, matchingMock);
+	}
+
 	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
 		final List<Vector3d> pointCloud;
 		try {
@@ -249,31 +262,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel("The plug-in was interrupted");
 		}
 		return null;
-	}
-
-	// TODO Refactor into a static utility method with unit tests
-	private boolean isCalibrationIsotropic() {
-		final Optional<String> commonUnit = getSpatialUnit(inputImage, unitService);
-		if (!commonUnit.isPresent()) {
-			return false;
-		}
-		final String unit = commonUnit.get();
-		return spatialAxisStream(inputImage).map(axis -> unitService.value(axis
-			.averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
-	}
-
-	@SuppressWarnings("unchecked")
-	private void matchOps(final Subspace<BitType> subspace) {
-		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
-			subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
-		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
-			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
-		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
-			Matrix4d.class, tmpPoints);
-		final Matrix4d matchingMock = new Matrix4d();
-		matchingMock.setIdentity();
-		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService, QuadricToEllipsoid.class,
-			Optional.class, matchingMock);
 	}
 
 	private List<Vector3d> runDirectionsInParallel(
@@ -341,7 +329,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_BINARY);
 			return;
 		}
-		if (!isCalibrationIsotropic() && !calibrationWarned) {
+		if (!isSpatialCalibrationsIsotropic(inputImage, 0.01, unitService) &&
+			!calibrationWarned)
+		{
 			final Result result = uiService.showDialog(
 				"The voxels in the image are anisotropic, which may affect results. Continue anyway?",
 				WARNING_MESSAGE, OK_CANCEL_OPTION);
