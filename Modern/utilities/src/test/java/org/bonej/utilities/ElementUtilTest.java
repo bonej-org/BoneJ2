@@ -88,19 +88,6 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeNoSpatialAxes() {
-		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
-		final Img<DoubleType> img = IMAGE_J.op().create().img(new int[] { 3 });
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
-
-		final double elementSize = ElementUtil.calibratedSpatialElementSize(imgPlus,
-			unitService);
-
-		assertTrue("Element size should be NaN when there are no spatial axes",
-			Double.isNaN(elementSize));
-	}
-
-	@Test
 	public void testCalibratedSpatialElementSizeNoUnits() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, 20.0);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, 4.0);
@@ -131,14 +118,6 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testCalibratedSpatialElementSizeNullSpace() {
-		final double result = ElementUtil.calibratedSpatialElementSize(null,
-			unitService);
-
-		assertTrue("Size should be NaN when space is null", Double.isNaN(result));
-	}
-
-	@Test
 	public void testCalibratedSpatialElementSizeUnitsInconvertible() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm");
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "");
@@ -149,8 +128,7 @@ public class ElementUtilTest {
 		final double result = ElementUtil.calibratedSpatialElementSize(imgPlus,
 			unitService);
 
-		assertEquals("Size should be 1.0 if unit inconvertible", 1.0, result,
-			1e-12);
+		assertTrue(Double.isNaN(result));
 	}
 
 	@Test

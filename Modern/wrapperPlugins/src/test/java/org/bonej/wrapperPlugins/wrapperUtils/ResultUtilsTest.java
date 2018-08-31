@@ -212,13 +212,6 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testGetUnitHeaderReturnEmptyIfImageNull() {
-		final String result = ResultUtils.getUnitHeader(null, unitService, '³');
-
-		assertTrue("Unit header should be empty", result.isEmpty());
-	}
-
-	@Test
 	public void testGetUnitHeaderReturnPixelIfDefaultUnitPixel() {
 		final String unit = "pixel";
 		final String expected = "(" + unit + "³)";
