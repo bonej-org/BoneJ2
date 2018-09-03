@@ -154,8 +154,7 @@ public final class SharedTable {
 
 	@SuppressWarnings("unchecked")
 	private static Table<DefaultColumn<Double>, Double> createTable() {
-		final Table newTable = new DefaultGenericTable();
-		return newTable;
+		return (Table) new DefaultGenericTable();
 	}
 
 	private static void fillEmptyColumn(final int columnIndex) {
