@@ -26,14 +26,12 @@ package org.bonej.utilities;
 import static org.bonej.utilities.SharedTable.EMPTY_CELL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
 
 import net.imagej.table.DefaultColumn;
-import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.Table;
 
 import org.junit.After;
