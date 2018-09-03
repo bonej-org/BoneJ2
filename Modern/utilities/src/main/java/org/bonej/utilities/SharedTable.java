@@ -146,7 +146,8 @@ public final class SharedTable {
 			publicCopy.setColumnCount(0);
 		}
 		table.forEach(publicCopy::add);
-		// Just calling publicCopy::add is not enough to update size info (ThicknessWrapperTests fail)
+		// Just calling publicCopy::add is not enough to update size info
+		// (ThicknessWrapperTests fail)
 		publicCopy.setRowCount(table.getRowCount());
 		publicCopy.setColumnCount(table.getColumnCount());
 		for (int i = 0; i < table.getRowCount(); i++) {

@@ -78,11 +78,12 @@ public class SharedTableTest {
 		assertEquals("Wrong number of rows", 3, table.getRowCount());
 		final DefaultColumn<Double> column1 = table.get(header1);
 		assertEquals("Cell should be empty", EMPTY_CELL, column1.get(0));
-		assertEquals("Wrong number of empty cells", 1, column1.stream().filter(Objects::isNull).count());
+		assertEquals("Wrong number of empty cells", 1, column1.stream().filter(
+			Objects::isNull).count());
 		final DefaultColumn<Double> column2 = table.get(header2);
 		assertEquals("Cell contains wrong value", 3.0, column2.get(1), 1e-12);
 		assertEquals("Wrong number of empty cells", 0, column2.stream().filter(
-				Objects::isNull).count());
+			Objects::isNull).count());
 		assertEquals("Label on the wrong row", 0, table.getRowIndex(labelB));
 	}
 
@@ -140,20 +141,24 @@ public class SharedTableTest {
 	}
 
 	@Test
-	public void testRepeatingHeaderAndLabelAddsARow() {
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 1);
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 2);
+	public void testGetTableCopyDataCleared() {
+		final Table<DefaultColumn<Double>, Double> copy = SharedTable.getTable();
+		copy.appendRow();
+		copy.appendColumn();
+		copy.set(0, 0, 13.0);
+		final Table<DefaultColumn<Double>, Double> copy2 = SharedTable.getTable();
 
-		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
-		assertEquals(
-			"Adding data to the same column, to the row with the same label, should create a new row",
-			2, table.getRowCount());
-		assertEquals("Values in wrong order, older should be first", 1, table.get(
-				"Run").get(0), 1e-12);
-		assertEquals("Values in wrong order, older should be first", 2, table.get(
-				"Run").get(1), 1e-12);
+		assertEquals(0, copy2.size());
+		assertEquals(0, copy2.getColumnCount());
+		assertEquals(0, copy2.getRowCount());
+	}
+
+	@Test
+	public void testGetTableCopyPersists() {
+		final Table instance1 = SharedTable.getTable();
+		final Table instance2 = SharedTable.getTable();
+
+		assertSame(instance1, instance2);
 	}
 
 	@Test
@@ -166,6 +171,23 @@ public class SharedTableTest {
 	@Test
 	public void testHasDataEmptyTable() {
 		assertFalse(SharedTable.hasData());
+	}
+
+	@Test
+	public void testRepeatingHeaderAndLabelAddsARow() {
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 1);
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 2);
+
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
+		assertEquals(
+			"Adding data to the same column, to the row with the same label, should create a new row",
+			2, table.getRowCount());
+		assertEquals("Values in wrong order, older should be first", 1, table.get(
+			"Run").get(0), 1e-12);
+		assertEquals("Values in wrong order, older should be first", 2, table.get(
+			"Run").get(1), 1e-12);
 	}
 
 	@Test
@@ -210,26 +232,5 @@ public class SharedTableTest {
 		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
 		assertEquals(0, table.getColumnCount());
 		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testGetTableCopyPersists() {
-		final Table instance1 = SharedTable.getTable();
-		final Table instance2 = SharedTable.getTable();
-
-		assertSame(instance1, instance2);
-	}
-
-	@Test
-	public void testGetTableCopyDataCleared() {
-		final Table<DefaultColumn<Double>, Double> copy = SharedTable.getTable();
-		copy.appendRow();
-		copy.appendColumn();
-		copy.set(0, 0, 13.0);
-		final Table<DefaultColumn<Double>, Double> copy2 = SharedTable.getTable();
-
-		assertEquals(0, copy2.size());
-		assertEquals(0, copy2.getColumnCount());
-		assertEquals(0, copy2.getRowCount());
 	}
 }
