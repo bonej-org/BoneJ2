@@ -7,6 +7,7 @@ import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.binary.Thresholder;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
@@ -14,12 +15,15 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
+import net.imglib2.view.IntervalView;
+import net.imglib2.view.Views;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindLocalEllipsoidOp;
@@ -40,7 +44,12 @@ import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -67,14 +76,14 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private final FindLocalEllipsoidOp findLocalEllipsoidOp = new FindLocalEllipsoidOp();
 
     @SuppressWarnings("unused")
-    @Parameter(validater = "validateImage")
-    private ImgPlus<R> inputImage;
+    @Parameter()//TODO add validater! currently a hack to make scripts work!
+    private ImgPlus<IntegerType> inputImage;
 
     @Parameter(persist = false, required = false)
     private DoubleType sigma = new DoubleType(0);
 
     @Parameter(persist = false, required = false)
-    private DoubleType percentageOfRidgePoints = new DoubleType(0.95);
+    private DoubleType percentageOfRidgePoints = new DoubleType(0.8);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -120,6 +129,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter
     private UnitService unitService;
 
+    @SuppressWarnings("unused")
+    @Parameter
+    private LogService logService;
+
     private boolean calibrationWarned;
 
     @Override
@@ -140,13 +153,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         long numberOfForegroundVoxels = countTrue(inputAsBit);
         long numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
         
-        final LogService log = uiService.log();
-        log.initialize();
-        log.info("found "+ellipsoids.size()+" ellipsoids");
-        log.info("assigned voxels = "+numberOfAssignedVoxels);
-        log.info("foreground voxels = "+numberOfForegroundVoxels);
+        logService.initialize();
+        logService.info("found "+ellipsoids.size()+" ellipsoids");
+        logService.info("assigned voxels = "+numberOfAssignedVoxels);
+        logService.info("foreground voxels = "+numberOfForegroundVoxels);
         double fillingPercentage = 100.0*((double) numberOfAssignedVoxels)/((double) numberOfForegroundVoxels);
-        log.info("filling percentage = "+fillingPercentage+"%");
+        logService.info("filling percentage = "+fillingPercentage+"%");
 
     }
 
@@ -172,7 +184,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final double[] bToCArray = ellipsoids.parallelStream().mapToDouble(e -> e.getB()/e.getC()).toArray();
         mapValuesToImage(bToCArray, ellipsoidIdentityImage, bToCImage);
 
-        long FlinnPlotDimension = 101; //several ellipsoids may fall in same bin if this is too small a number! This will be ignored!
+        long FlinnPlotDimension = 501; //several ellipsoids may fall in same bin if this is too small a number! This will be ignored!
         final Img<BitType> flinnPlot = ArrayImgs.bits(FlinnPlotDimension,FlinnPlotDimension);
         flinnPlot.cursor().forEachRemaining(c -> c.setZero());
 
@@ -259,29 +271,48 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
     private Img<IntType> assignEllipsoidID(Img<BitType> inputAsBit, List<Ellipsoid> ellipsoids) {
-        final Cursor<BitType> inputCursor = inputAsBit.localizingCursor();
-        List<Vector3d> voxelCentrePoints = new ArrayList<>();
-        while (inputCursor.hasNext()) {
-            inputCursor.fwd();
-            if(inputCursor.get().get()) {
-                long [] coordinates = new long[3];
-                inputCursor.localize(coordinates);
-                voxelCentrePoints.add(new Vector3d(coordinates[0]+0.5, coordinates[1]+0.5, coordinates[2]+0.5));
-            }
-        }
         final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
-        voxelCentrePoints.parallelStream().forEach(centrePoint -> findID(ellipsoids,ellipsoidIdentityImage,centrePoint));
+
+        final LongStream zRange = LongStream.range(0, inputAsBit.dimension(2));
+
+        zRange.parallel().forEach(sliceIndex -> {
+            long[] mins = {0,0,sliceIndex};
+            long[] maxs = {inputImage.dimension(0), inputImage.dimension(1), sliceIndex};
+
+            //multiply by image unit? make more intelligent bounding box?
+            final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(e -> Math.abs(e.getCentroid().getZ() - sliceIndex) < e.getC()).collect(toList());
+
+            final IntervalView<BitType> inputslice = Views.interval(inputAsBit, mins, maxs);
+            final Cursor<BitType> inputCursor = inputslice.localizingCursor();
+            while (inputCursor.hasNext()) {
+                inputCursor.fwd();
+                if(inputCursor.get().get()) {
+                    long [] coordinates = new long[3];
+                    inputCursor.localize(coordinates);
+                    findID(localEllipsoids, Views.interval(ellipsoidIdentityImage, mins, maxs), new Vector3d(coordinates[0]+0.5, coordinates[1]+0.5, coordinates[2]+0.5));
+                }
+            }
+        });
         return ellipsoidIdentityImage;
     }
 
-    private List<Ellipsoid> findEllipsoids(List<Vector3d> internalSeedPoints) {
-        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combos = new ArrayList<>();
+
+	private List<Ellipsoid> findEllipsoids(List<Vector3d> internalSeedPoints) {
+
+        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(100);
+        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>, Vector3d>> combos = getCombos(internalSeedPoints);
+        final Stream<Optional<Ellipsoid>> optionalStream = combos.parallelStream().map(c -> findLocalEllipsoidOp.calculate(c.getA(), c.getB()));
+        return optionalStream.filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
+    }
+
+    private List<ValuePair<List<ValuePair<Vector3d, Vector3d>>, Vector3d>> getCombos(List<Vector3d> internalSeedPoints) {
         int nSphere = 12;
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
+        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combos = new ArrayList<>();
 
         internalSeedPoints.stream().forEach( i -> {
                     List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
@@ -298,8 +329,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                     });
                     combos.addAll(getAllCombosOfFour(seedPoints, i));
                 });
-        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(200);
-        return combos.parallelStream().map(c -> findLocalEllipsoidOp.calculate(c.getA(),c.getB())).filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
+        return combos;
     }
 
     private List<Vector3d> getRidgePoints(Img<BitType> inputAsBit) {
@@ -363,8 +393,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
     }
 
-    private boolean findID(List<Ellipsoid> ellipsoids, Img<IntType> ellipsoidIdentityImage, Vector3d point) {
-        boolean assigned = false;
+    private void findID(final List<Ellipsoid> ellipsoids, final RandomAccessibleInterval<IntType> ellipsoidIdentityImage, final Vector3d point) {
 
         //find largest ellipsoid containing current position
         int currentEllipsoidCounter = 0;
@@ -372,20 +401,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             currentEllipsoidCounter++;
         }
 
-        RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
-        eIDRandomAccess.setPosition(vectorToPixelGrid(point));
-
         //ignore background voxels and voxels not contained in any ellipsoid
-        if (currentEllipsoidCounter == ellipsoids.size()) {
-             eIDRandomAccess.get().set(-1);
-        } else {
+        if (currentEllipsoidCounter < ellipsoids.size()) {
+            final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
+            eIDRandomAccess.setPosition(vectorToPixelGrid(point));
             eIDRandomAccess.get().set(currentEllipsoidCounter);
-            assigned = true;
         }
-        return assigned;
     }
 
-    private boolean whollyContainedInForeground(Ellipsoid e, List<Vector3d> sphereSamplingDirections) {
+    private boolean whollyContainedInForeground(final Ellipsoid e, final List<Vector3d> sphereSamplingDirections) {
         if(!isInBounds(vectorToPixelGrid(e.getCentroid())))
         {
             return false;
@@ -403,8 +427,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         axisSamplingDirections.add(new Vector3d(ellipsoidOrientation.getM20(),ellipsoidOrientation.getM21(),ellipsoidOrientation.getM22()));
         axisSamplingDirections.add(new Vector3d(-ellipsoidOrientation.getM20(),-ellipsoidOrientation.getM21(),-ellipsoidOrientation.getM22()));
 
-        boolean ellipsoidsExtentsInForeground = !axisSamplingDirections.stream().anyMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
-        return ellipsoidsExtentsInForeground && !sphereSamplingDirections.stream().anyMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
+        axisSamplingDirections.addAll(sphereSamplingDirections);
+
+        return !axisSamplingDirections.stream().anyMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
     }
 
     private boolean ellipsoidIntersectionIsBackground(Ellipsoid e, Vector3d dir) {
@@ -427,7 +452,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         intersectionPoint.scaleAdd(surfaceIntersectionParameter,e.getCentroid());
         final long[] pixel = vectorToPixelGrid(intersectionPoint);
         if (isInBounds(pixel)) {
-            final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
+            final RandomAccess<IntegerType> inputRA = inputImage.getImg().randomAccess();
             inputRA.setPosition(pixel);
             return inputRA.get().getRealDouble() == 0;
         }
@@ -441,8 +466,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
     static boolean insideEllipsoid(final Vector3d coordinates, final Ellipsoid ellipsoid) {
+        final Vector3d centroid = ellipsoid.getCentroid();
+        double c = ellipsoid.getC();
+
+        //TODO restate in one statement with && and ||
+        if(Math.abs(coordinates.getX()-centroid.getX())>c) return false;
+        if(Math.abs(coordinates.getY()-centroid.getY())>c) return false;
+        if(Math.abs(coordinates.getZ()-centroid.getZ())>c) return false;
+
         Vector3d x = new Vector3d(coordinates);
-        Vector3d centroid = ellipsoid.getCentroid();
         x.sub(centroid);
 
         if(x.length()>ellipsoid.getC()) return false;
@@ -514,7 +546,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     Vector3d findFirstPointInBGAlongRay(final Vector3d rayIncrement,
                                         final Vector3d start) {
-        RandomAccess<R> randomAccess = inputImage.randomAccess();
+        RandomAccess<IntegerType> randomAccess = inputImage.randomAccess();
 
         Vector3d currentRealPosition = new Vector3d(start);
         long[] currentPixelPosition = vectorToPixelGrid(start);
@@ -561,7 +593,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return combos;
     }
 
-    @SuppressWarnings("unused")
+    /*@SuppressWarnings("unused")
     private void validateImage() {
         if (inputImage == null) {
             cancel(NO_IMAGE_OPEN);
@@ -586,7 +618,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 cancel(null);
             }
         }
-    }
+    }*/
 
     // TODO Refactor into a static utility method with unit tests
     private boolean isCalibrationIsotropic() {
