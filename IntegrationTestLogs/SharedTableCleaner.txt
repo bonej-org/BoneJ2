@@ -8,12 +8,12 @@ Plugin closes the results table
 Steps
 -----------------------------------------------------------------------
  1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
- 2. Run Plugins>BoneJ>Fraction>Volume/area fraction
+ 2. Run Plugins>BoneJ>Fraction>Area/volume fraction
  3. Run Plugins>BoneJ>Table>Clear BoneJ results
 
 Expected result
 -----------------------------------------------------------------------
 The table window should close
 
-Completed May 16 2017 Richard Domander
+Completed September 3 2018 Richard Domander
 -----------------------------------------------------------------------
