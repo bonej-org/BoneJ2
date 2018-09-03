@@ -26,11 +26,14 @@ package org.bonej.utilities;
 import static org.bonej.utilities.SharedTable.EMPTY_CELL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
 
 import net.imagej.table.DefaultColumn;
+import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.Table;
 
 import org.junit.After;
@@ -209,5 +212,26 @@ public class SharedTableTest {
 		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
 		assertEquals(0, table.getColumnCount());
 		assertEquals(0, table.getRowCount());
+	}
+
+	@Test
+	public void testGetTableCopyPersists() {
+		final Table instance1 = SharedTable.getTable();
+		final Table instance2 = SharedTable.getTable();
+
+		assertSame(instance1, instance2);
+	}
+
+	@Test
+	public void testGetTableCopyDataCleared() {
+		final Table<DefaultColumn<Double>, Double> copy = SharedTable.getTable();
+		copy.appendRow();
+		copy.appendColumn();
+		copy.set(0, 0, 13.0);
+		final Table<DefaultColumn<Double>, Double> copy2 = SharedTable.getTable();
+
+		assertEquals(0, copy2.size());
+		assertEquals(0, copy2.getColumnCount());
+		assertEquals(0, copy2.getRowCount());
 	}
 }
