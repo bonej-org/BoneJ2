@@ -82,7 +82,7 @@ public class SharedTableTest {
 		final DefaultColumn<Double> column2 = table.get(header2);
 		assertEquals("Cell contains wrong value", 3.0, column2.get(1), 1e-12);
 		assertEquals("Wrong number of empty cells", 0, column2.stream().filter(
-			s -> s == null).count());
+				Objects::isNull).count());
 		assertEquals("Label on the wrong row", 0, table.getRowIndex(labelB));
 	}
 
