@@ -1,0 +1,22 @@
+Integration tests for SharedTable in org.bonej.utilities.SharedTable
+
+
+Case 1
+=======================================================================
+Only one table opens
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+ 2. Run Plugins>BoneJ>Fraction>Area/volume fraction
+ 3. Run Plugins>BoneJ>Fractal Dimension
+    - Check option "Automatic Parameters"
+    - Uncheck option "Show points"
+
+Expected result
+-----------------------------------------------------------------------
+User sees one table with results from both plug-ins
+(e.g. "Bone volume" and "Fractal dimension")
+
+Completed September 3 2018 Richard Domander
+-----------------------------------------------------------------------
