@@ -82,7 +82,7 @@ public class SharedTableTest {
 		assertEquals("Cell should be empty", EMPTY_CELL, column1.get(0));
 		assertEquals("Wrong number of empty cells", 1, column1.stream().filter(Objects::isNull).count());
 		final DefaultColumn<Double> column2 = table.get(header2);
-		assertEquals("Cell contains wrong value", 3.0, column2.get(1).doubleValue(), 1e-12);
+		assertEquals("Cell contains wrong value", 3.0, column2.get(1), 1e-12);
 		assertEquals("Wrong number of empty cells", 0, column2.stream().filter(
 			s -> s == null).count());
 		assertEquals("Label on the wrong row", 0, table.getRowIndex(labelB));
@@ -138,7 +138,7 @@ public class SharedTableTest {
 		assertEquals(1, table.getColumnCount());
 		assertEquals(header, table.get(0).getHeader());
 		assertEquals(label, table.getRowHeader(0));
-		assertEquals(1.0, table.get(header).get(0).doubleValue(), 1e-12);
+		assertEquals(1.0, table.get(header).get(0), 1e-12);
 	}
 
 	@Test
@@ -153,9 +153,9 @@ public class SharedTableTest {
 			"Adding data to the same column, to the row with the same label, should create a new row",
 			2, table.getRowCount());
 		assertEquals("Values in wrong order, older should be first", 1, table.get(
-			"Run").get(0).doubleValue(), 1e-12);
+				"Run").get(0), 1e-12);
 		assertEquals("Values in wrong order, older should be first", 2, table.get(
-			"Run").get(1).doubleValue(), 1e-12);
+				"Run").get(1), 1e-12);
 	}
 
 	@Test
