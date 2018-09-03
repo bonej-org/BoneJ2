@@ -185,7 +185,7 @@ public final class SharedTable {
 			if (table.getRowHeader(i).equals(label)) {
 				//check whether there is not already a value in columnIndex
 				final Double cell = table.get(columnIndex, i); 
-				if (cell == EMPTY_CELL) {
+				if (Objects.equals(cell, EMPTY_CELL)) {
 					//add the value to the row and column
 					table.set(columnIndex, i, value);
 					return;
