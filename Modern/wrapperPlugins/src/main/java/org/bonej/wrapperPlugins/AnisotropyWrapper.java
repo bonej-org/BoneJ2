@@ -127,7 +127,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1",
 		callback = "applyMinimum")
 	private Double samplingIncrement = DEFAULT_INCREMENT;
-	@Parameter(label = "Recommended minimum",
+	@Parameter(label = "Recommended minimums",
 		description = "Apply minimum recommended values to directions, lines, and increment",
 		persist = false, required = false, callback = "applyMinimum")
 	private boolean recommendedMin;
