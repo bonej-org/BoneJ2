@@ -24,11 +24,10 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import org.apache.commons.math3.util.Combinations;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindLocalEllipsoidOp;
-import org.bonej.utilities.AxisUtils;
-import org.bonej.utilities.ElementUtil;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
@@ -38,17 +37,12 @@ import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.Matrix3d;
 import org.scijava.vecmath.Vector3d;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -56,10 +50,6 @@ import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.utilities.AxisUtils.getSpatialUnit;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
-import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 /**
  * Ellipsoid Factor
@@ -299,20 +289,20 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 
 	private List<Ellipsoid> findEllipsoids(List<Vector3d> internalSeedPoints) {
-
         final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(100);
-        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>, Vector3d>> combos = getCombos(internalSeedPoints);
-        final Stream<Optional<Ellipsoid>> optionalStream = combos.parallelStream().map(c -> findLocalEllipsoidOp.calculate(c.getA(), c.getB()));
-        return optionalStream.filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
+        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>, Vector3d>> pointCombinations = getPointCombinations(internalSeedPoints);
+        return pointCombinations.parallelStream().map(c -> findLocalEllipsoidOp.calculate(c.getA(), c.getB())).filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
     }
 
-    private List<ValuePair<List<ValuePair<Vector3d, Vector3d>>, Vector3d>> getCombos(List<Vector3d> internalSeedPoints) {
+    private List<ValuePair<List<ValuePair<Vector3d, Vector3d>>, Vector3d>> getPointCombinations(List<Vector3d> internalSeedPoints) {
         int nSphere = 12;
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combos = new ArrayList<>();
+        List<ValuePair<List<ValuePair<Vector3d, Vector3d>>,Vector3d>> combinations = new ArrayList<>();
+
+        Combinations combinationsOfFourIntegers = new Combinations(nSphere,4);
 
         internalSeedPoints.stream().forEach( i -> {
                     List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
@@ -327,9 +317,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                         inwardDirection.normalize();
                         seedPoints.add(new ValuePair<>(c, inwardDirection));
                     });
-                    combos.addAll(getAllCombosOfFour(seedPoints, i));
+                    combinations.addAll(getAllCombinationsOfFourPoints(seedPoints, i,combinationsOfFourIntegers));
                 });
-        return combos;
+        return combinations;
     }
 
     private List<Vector3d> getRidgePoints(Img<BitType> inputAsBit) {
@@ -576,21 +566,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 currentPosition.getZ()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
 
-    static List<List<ValuePair<Vector3d,Vector3d>>> getAllCombosOfThree(List<ValuePair<Vector3d,Vector3d>> points){
-        final List<List<ValuePair<Vector3d,Vector3d>>> combos = new ArrayList<>();
-        for(int i = 0; i<points.size()-2; i++)
-            for(int j = i+1; j<points.size()-1; j++)
-                for(int k = j+1; k<points.size(); k++)
-                    combos.add(Arrays.asList(points.get(i),points.get(j),points.get(k)));
-        return combos;
-    }
-
-    static List<ValuePair<List<ValuePair<Vector3d,Vector3d>>,Vector3d>> getAllCombosOfFour(List<ValuePair<Vector3d,Vector3d>> points, Vector3d centre){
-        final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(points.size(), 4);
-        final List<ValuePair<List<ValuePair<Vector3d,Vector3d>>,Vector3d>> combos = new ArrayList<>();
-        iterator.forEachRemaining(el -> combos.add(
+    static List<ValuePair<List<ValuePair<Vector3d,Vector3d>>,Vector3d>> getAllCombinationsOfFourPoints(final List<ValuePair<Vector3d,Vector3d>> points, final Vector3d centre, final Combinations combinationsOfFour){
+        final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(points.size(), 4);//combinationsOfFour.iterator();
+        final List<ValuePair<List<ValuePair<Vector3d,Vector3d>>,Vector3d>> pointCombinations = new ArrayList<>();
+        iterator.forEachRemaining(el -> pointCombinations.add(
                 new ValuePair<>(Arrays.asList(points.get(el[0]), points.get(el[1]), points.get(el[2]), points.get(el[3])), centre)));
-        return combos;
+        return pointCombinations;
     }
 
     /*@SuppressWarnings("unused")
