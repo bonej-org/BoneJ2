@@ -42,13 +42,14 @@ import org.scijava.util.StringUtils;
  * e.g. "Volume"</li>
  * <li>If there are no rows with the given label, then add a new row</li>
  * <li>If there are rows with the given label, but there is not a column with
- * the given heading, then append a column, and set its value on the last row with
- * the label.</li>
+ * the given heading, then append a column, and set its value on the last row
+ * with the label.</li>
  * <li>If there are rows with the given label, and there's a column with the
  * given heading, then find the last empty cell (equals {@link #EMPTY_CELL}),
  * and add the new value there. If there are no empty cells, then append a new
  * row.</li>
- * <li>Labels and columns are kept in the order in which they were produced.</li>
+ * <li>Labels and columns are kept in the order in which they were
+ * produced.</li>
  * </ol>
  *
  * @author Richard Domander
@@ -62,6 +63,8 @@ public final class SharedTable {
 	 * The table uses Double values. Empty cells are indicated by null
 	 */
 	private static Table<DefaultColumn<Double>, Double> table = createTable();
+
+	private static Table<DefaultColumn<Double>, Double> publicCopy;
 
 	private SharedTable() {}
 
@@ -121,16 +124,41 @@ public final class SharedTable {
 	}
 
 	/**
-	 * Gets the shared {@link Table} instance.
+	 * Gets a copy of the singleton {@link Table}.
+	 * <p>
+	 * Returns the same copy instance on every call. However, the contents of the
+	 * copy table are always cleared and copied from the actual table. That is, if
+	 * you've modified the copy after the previous call, those modifications are
+	 * lost.
+	 * </p>
 	 *
-	 * @return the singleton table.
+	 * @return the persistent copy instance.
 	 */
 	public static Table<DefaultColumn<Double>, Double> getTable() {
-		return table;
+		if (publicCopy == null) {
+			publicCopy = createTable();
+		}
+		else {
+			// Calling publicCopy.clear() would be simpler, but it breaks the tests of
+			// the class. However, the tests fail only when run together, individually
+			// they pass.
+			publicCopy.setRowCount(0);
+			publicCopy.setColumnCount(0);
+		}
+		table.forEach(publicCopy::add);
+		// Just calling publicCopy::add is not enough to update size info
+		// (ThicknessWrapperTests fail)
+		publicCopy.setRowCount(table.getRowCount());
+		publicCopy.setColumnCount(table.getColumnCount());
+		for (int i = 0; i < table.getRowCount(); i++) {
+			publicCopy.setRowHeader(i, table.getRowHeader(i));
+		}
+		return publicCopy;
 	}
 
 	public static boolean hasData() {
-		return table.stream().flatMap(Collection::stream).anyMatch(Objects::nonNull);
+		return table.stream().flatMap(Collection::stream).anyMatch(
+			Objects::nonNull);
 	}
 
 	/** Initializes the table into a new empty table */
@@ -140,27 +168,10 @@ public final class SharedTable {
 
 	// region -- Helper methods --
 
-	private static int headerIndex(final String header) {
-		final int cols = table.getColumnCount();
-		return IntStream.range(0, cols).filter(i -> table.get(i).getHeader().equals(
-			header)).findFirst().orElse(cols);
-	}
-
 	private static void appendEmptyColumn(final String header) {
 		table.appendColumn(header);
 		final int lastColumn = table.getColumnCount() - 1;
 		fillEmptyColumn(lastColumn);
-	}
-
-	@SuppressWarnings("unchecked")
-	private static Table<DefaultColumn<Double>, Double> createTable() {
-		final Table newTable = new DefaultGenericTable();
-		return newTable;
-	}
-
-	private static void fillEmptyColumn(final int columnIndex) {
-		final DefaultColumn<Double> column = table.get(columnIndex);
-		IntStream.range(0, column.size()).forEach(i -> column.set(i, EMPTY_CELL));
 	}
 
 	private static void appendEmptyRow(final String label) {
@@ -168,32 +179,48 @@ public final class SharedTable {
 		final int lastRow = table.getRowCount() - 1;
 		fillEmptyRow(label, lastRow);
 	}
-	
+
+	@SuppressWarnings("unchecked")
+	private static Table<DefaultColumn<Double>, Double> createTable() {
+		return (Table) new DefaultGenericTable();
+	}
+
+	private static void fillEmptyColumn(final int columnIndex) {
+		final DefaultColumn<Double> column = table.get(columnIndex);
+		IntStream.range(0, column.size()).forEach(i -> column.set(i, EMPTY_CELL));
+	}
+
 	private static void fillEmptyRow(final String label, final int row) {
 		table.setRowHeader(row, label);
 		final int columns = table.getColumnCount();
 		IntStream.range(0, columns).forEach(column -> table.set(column, row,
 			EMPTY_CELL));
 	}
-	
+
+	private static int headerIndex(final String header) {
+		final int cols = table.getColumnCount();
+		return IntStream.range(0, cols).filter(i -> table.get(i).getHeader().equals(
+			header)).findFirst().orElse(cols);
+	}
+
 	private static void insertIntoNextFreeRow(final String label,
 		final int columnIndex, final Double value)
 	{
 		final int rows = table.getRowCount();
-		//iterate up the table from the bottom
-		for (int i = rows-1; i >=0; i--) {
-			//if we find a row with the same label
+		// iterate up the table from the bottom
+		for (int i = rows - 1; i >= 0; i--) {
+			// if we find a row with the same label
 			if (table.getRowHeader(i).equals(label)) {
-				//check whether there is not already a value in columnIndex
-				final Double cell = table.get(columnIndex, i); 
-				if (cell == EMPTY_CELL) {
-					//add the value to the row and column
+				// check whether there is not already a value in columnIndex
+				final Double cell = table.get(columnIndex, i);
+				if (Objects.equals(cell, EMPTY_CELL)) {
+					// add the value to the row and column
 					table.set(columnIndex, i, value);
 					return;
 				}
 			}
 		}
-		//we didn't find the label in the table so make a new row
+		// we didn't find the label in the table so make a new row
 		appendEmptyRow(label);
 		table.set(columnIndex, rows, value);
 	}
