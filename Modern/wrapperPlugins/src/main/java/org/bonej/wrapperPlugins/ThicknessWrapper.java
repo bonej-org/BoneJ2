@@ -54,10 +54,8 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 
-import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.plugin.LutLoader;
 import ij.plugin.frame.RoiManager;
 import ij.process.LUT;
 import ij.process.StackStatistics;
