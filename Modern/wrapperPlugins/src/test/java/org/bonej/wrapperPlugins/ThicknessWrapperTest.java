@@ -199,10 +199,9 @@ public class ThicknessWrapperTest {
 			final DefaultColumn<Double> column = table.get(i);
 			assertEquals(expectedHeaders[i], column.getHeader());
 			assertEquals("Results table has wrong number of rows", 1, column.size());
-			for (int j = 0; j < 1; j++) {
-				assertEquals("Cell at i="+i+", j="+j+" has an incorrect value", expectedValues[i][j],
+			int j = 0;
+			assertEquals("Cell at i="+i+", j="+j+" has an incorrect value", expectedValues[i][j],
 					column.getValue(j));
-			}
 		}
 	}
 

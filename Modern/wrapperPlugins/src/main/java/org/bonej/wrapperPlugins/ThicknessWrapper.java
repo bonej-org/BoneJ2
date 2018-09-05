@@ -132,7 +132,7 @@ public class ThicknessWrapper extends ContextCommand {
 			final ImagePlus map = createMap();
 			statusService.showStatus("Thickness: calculating results");
 			final String label = inputImage.getTitle();
-			addMapResults(label, map);
+			addMapResults(map);
 			thicknessMaps.put(foreground, map);
 		});
 		if (SharedTable.hasData()) {
@@ -144,10 +144,11 @@ public class ThicknessWrapper extends ContextCommand {
 		}
 	}
 
-	private void addMapResults(String label, final ImagePlus map) {
+	private void addMapResults(final ImagePlus map) {
 		if (map == null) {
 			return;
 		}
+		final String label = inputImage.getTitle();
 		final String unitHeader = ResultUtils.getUnitHeader(map);
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
 		final StackStatistics resultStats = new StackStatistics(map);
