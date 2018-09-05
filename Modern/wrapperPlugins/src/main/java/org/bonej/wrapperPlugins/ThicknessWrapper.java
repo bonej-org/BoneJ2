@@ -147,8 +147,8 @@ public class ThicknessWrapper extends ContextCommand {
 		if (map == null) {
 			return;
 		}
+		final String label = inputImage.getTitle();
 		final String unitHeader = ResultUtils.getUnitHeader(map);
-		final String label = map.getTitle();
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
 		final StackStatistics resultStats = new StackStatistics(map);
 		double mean = resultStats.mean;
