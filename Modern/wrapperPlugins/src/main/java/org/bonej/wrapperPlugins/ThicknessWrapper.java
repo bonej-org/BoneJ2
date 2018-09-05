@@ -54,9 +54,12 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.plugin.LutLoader;
 import ij.plugin.frame.RoiManager;
+import ij.process.LUT;
 import ij.process.StackStatistics;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
@@ -138,8 +141,15 @@ public class ThicknessWrapper extends ContextCommand {
 			resultsTable = SharedTable.getTable();
 		}
 		if (showMaps) {
+			LUT fire = Common.makeFire();
 			trabecularMap = thicknessMaps.get(true);
+			StackStatistics trabecularStats = new StackStatistics(trabecularMap);
+			trabecularMap.setDisplayRange(0.0, trabecularStats.max);
+			trabecularMap.setLut(fire);
 			spacingMap = thicknessMaps.get(false);
+			StackStatistics spacingStats = new StackStatistics(spacingMap);
+			spacingMap.setDisplayRange(0.0, spacingStats.max);
+			spacingMap.setLut(fire);
 		}
 	}
 
