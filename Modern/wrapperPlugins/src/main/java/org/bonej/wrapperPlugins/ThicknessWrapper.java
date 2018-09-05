@@ -131,7 +131,6 @@ public class ThicknessWrapper extends ContextCommand {
 			statusService.showStatus("Thickness: creating thickness map");
 			final ImagePlus map = createMap();
 			statusService.showStatus("Thickness: calculating results");
-			final String label = inputImage.getTitle();
 			addMapResults(map);
 			thicknessMaps.put(foreground, map);
 		});
