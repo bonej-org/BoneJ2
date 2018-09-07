@@ -66,7 +66,6 @@ public class CommonTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@Ignore
 	@Test
 	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
