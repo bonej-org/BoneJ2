@@ -23,7 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static net.imagej.ops.stats.regression.leastSq.Quadric.MIN_DATA;
+import static net.imagej.ops.stats.regression.leastSquares.Quadric.MIN_DATA;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
@@ -33,7 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import net.imagej.ops.OpService;
-import net.imagej.ops.stats.regression.leastSq.Quadric;
+import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;

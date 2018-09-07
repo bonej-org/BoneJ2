@@ -52,7 +52,7 @@ import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
-import net.imagej.ops.stats.regression.leastSq.Quadric;
+import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;

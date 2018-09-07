@@ -30,7 +30,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import net.imagej.ImageJ;
-import net.imagej.ops.stats.regression.leastSq.Quadric;
+import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
 import org.junit.AfterClass;
 import org.junit.Test;

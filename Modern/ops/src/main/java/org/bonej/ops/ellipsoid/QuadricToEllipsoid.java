@@ -61,7 +61,7 @@ import org.scijava.plugin.Plugin;
  * </pre>
  * 
  * @author Richard Domander
- * @see net.imagej.ops.stats.regression.leastSq.Quadric
+ * @see net.imagej.ops.stats.regression.leastSquares.Quadric
  */
 @Plugin(type = Op.class)
 public class QuadricToEllipsoid extends

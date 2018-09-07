@@ -38,7 +38,7 @@ import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
-import net.imagej.ops.stats.regression.leastSq.Quadric;
+import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
 import org.joml.AxisAngle4d;
 import org.joml.Matrix4d;
