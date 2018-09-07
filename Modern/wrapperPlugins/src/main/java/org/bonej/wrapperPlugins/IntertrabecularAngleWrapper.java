@@ -88,7 +88,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  * @see sc.fiji.analyzeSkeleton.AnalyzeSkeleton_
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular Angle")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular Angles")
 public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	public static final String NO_RESULTS_MSG =
