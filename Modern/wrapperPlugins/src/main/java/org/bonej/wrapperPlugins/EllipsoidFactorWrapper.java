@@ -73,7 +73,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private DoubleType sigma = new DoubleType(0);
 
     @Parameter(persist = false, required = false)
-    private DoubleType percentageOfRidgePoints = new DoubleType(0.8);
+    private DoubleType percentageOfRidgePoints = new DoubleType(0.95);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
