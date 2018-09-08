@@ -219,7 +219,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	private static Section intersectInterval(final Vector3dc origin,
 		final Vector3dc direction, final Interval interval)
 	{
-		final Vector2d result = new Vector2d();
+		final Vector2d tValues = new Vector2d();
 		final Vector3dc o = new Vector3d(origin.x(), origin.y(), origin.z());
 		final Vector3dc d = new Vector3d(direction.x(), direction.y(), direction.z());
 		final Vector3dc min = new Vector3d(interval.min(0), interval.min(1),
@@ -227,11 +227,11 @@ public class MILPlane<B extends BooleanType<B>> extends
 		final Vector3dc max = new Vector3d(interval.max(0) + 1, interval.max(1) + 1,
 			interval.max(2) + 1);
 		final boolean intersect = Intersectiond.intersectRayAab(o, d, min, max,
-			result);
+			tValues);
 		if (!intersect) {
 			return null;
 		}
-		return new Section(origin, result.x, result.y);
+		return new Section(origin, tValues.x, tValues.y);
 	}
 
 	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
