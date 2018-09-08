@@ -212,32 +212,29 @@ public class ResultUtilsTest {
 	}
 
 	@Test
-	public void testGetUnitHeaderReturnEmptyIfDefaultUnitPixel() {
-		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "pixel");
+	public void testGetUnitHeaderReturnPixelIfDefaultUnitPixel() {
+		final String unit = "pixel";
+		final String expected = "(" + unit + "³)";
+		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, unit);
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
 		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
 
-		assertTrue("Unit header should be empty", result.isEmpty());
+		assertEquals(expected, result);
 	}
 
 	@Test
-	public void testGetUnitHeaderReturnEmptyIfDefaultUnitUnit() {
-		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, "unit");
+	public void testGetUnitHeaderReturnUnitIfDefaultUnitUnit() {
+		final String unit = "unit";
+		final String expected = "(" + unit + "³)";
+		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, unit);
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
 		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
 
-		assertTrue("Unit header should be empty", result.isEmpty());
-	}
-
-	@Test
-	public void testGetUnitHeaderReturnEmptyIfImageNull() {
-		final String result = ResultUtils.getUnitHeader(null, unitService, '³');
-
-		assertTrue("Unit header should be empty", result.isEmpty());
+		assertEquals(expected, result);
 	}
 
 	@Test

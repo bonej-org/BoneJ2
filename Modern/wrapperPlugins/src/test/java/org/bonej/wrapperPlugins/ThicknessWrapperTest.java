@@ -168,16 +168,21 @@ public class ThicknessWrapperTest {
 	@Test
 	public void testResults() throws Exception {
 		// SETUP
-		final ImagePlus imagePlus = NewImage.createByteImage("", 2, 2, 2, 1);
+		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2, 2, 1);
 		final Calibration calibration = new Calibration();
 		calibration.setUnit("mm");
 		imagePlus.setCalibration(calibration);
 		final String[] expectedHeaders = { "Tb.Th Mean (mm)", "Tb.Th Std Dev (mm)",
 			"Tb.Th Max (mm)", "Tb.Sp Mean (mm)", "Tb.Sp Std Dev (mm)",
 			"Tb.Sp Max (mm)" };
-		final String[][] expectedValues = { { "", "NaN" }, { "", "NaN" }, { "",
-			"NaN" }, { "10.392304420471191", "" }, { "0.0", "" }, {
-				"10.392304420471191", "" } };
+		final Double[][] expectedValues = {
+				{ new Double(Double.NaN)},
+				{ new Double(Double.NaN)},
+				{ new Double(Double.NaN)},
+				{ new Double(10.392304420471191) },
+				{ new Double(0.0) },
+				{ new Double(10.392304420471191) }
+				};
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
@@ -186,17 +191,17 @@ public class ThicknessWrapperTest {
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Results table has wrong number of columns", 7, table.size());
+		assertEquals("Results table has wrong number of columns", 6, table.size());
 		for (int i = 0; i < 6; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals(expectedHeaders[i], column.getHeader());
-			for (int j = 0; j < 2; j++) {
-				assertEquals("Column has an incorrect value", expectedValues[i][j],
+			assertEquals("Results table has wrong number of rows", 1, column.size());
+			int j = 0;
+			assertEquals("Cell at i="+i+", j="+j+" has an incorrect value", expectedValues[i][j],
 					column.getValue(j));
-			}
 		}
 	}
 

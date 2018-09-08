@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.scijava</groupId>
         <artifactId>pom-scijava</artifactId>
-        <version>23.1.0</version>
+        <version>23.2.0</version>
         <relativePath />
     </parent>
 
@@ -17,7 +17,7 @@
 
     <name>POM BoneJ legacy</name>
     <description>Parent POM for the mavenized legacy BoneJ1 code.</description>
-    <url>http://http://bonej.org/</url>
+    <url>http://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
@@ -42,20 +42,25 @@
             <id>mdoube</id>
             <name>Michael Doube</name>
             <email>mdoube@rvc.ac.uk</email>
-            <url>http://www.rvc.ac.uk/about/our-people/michael-doube</url>
-            <organization>Royal Veterinary College</organization>
-            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <url>https://www.researchgate.net/profile/Michael_Doube</url>
+            <organization>City University of Hong Kong</organization>
+            <organizationUrl>http://cityu.edu.hk/</organizationUrl>
             <roles>
                 <role>founder</role>
                 <role>lead</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
                 <role>support</role>
+                <role>maintainer</role>
             </roles>
-            <timezone>+0</timezone>
+            <timezone>+8</timezone>
         </developer>
         <developer>
             <id>rimadoma</id>
             <name>Richard Domander</name>
             <email>rdomander@rvc.ac.uk</email>
+            <url>http://imagej.net/User:Rdom</url>
             <organization>Royal Veterinary College</organization>
             <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>

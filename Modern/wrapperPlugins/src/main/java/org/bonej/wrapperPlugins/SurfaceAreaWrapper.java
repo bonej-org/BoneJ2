@@ -24,7 +24,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.wrapperPlugins;
 
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
@@ -73,6 +72,7 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
@@ -85,7 +85,7 @@ import org.scijava.widget.FileWidget;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Surface area")
-public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
+public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	ContextCommand
 {
 
@@ -106,7 +106,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	@Parameter(label = "Export STL file(s)",
 		description = "Create a binary STL file from the surface mesh",
@@ -115,6 +115,9 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Parameter
 	private OpService ops;
+
+	@Parameter
+	private LogService logService;
 
 	@Parameter
 	private UIService uiService;
@@ -295,9 +298,6 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	private void prepareResults() {
 		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
 
 		if (isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
@@ -320,6 +320,7 @@ public class IsosurfaceWrapper<T extends RealType<T> & NativeType<T>> extends
 			}
 			catch (final IOException e) {
 				savingErrors.put(filePath, e.getMessage());
+				logService.trace(e);
 			}
 		});
 		if (!savingErrors.isEmpty()) {

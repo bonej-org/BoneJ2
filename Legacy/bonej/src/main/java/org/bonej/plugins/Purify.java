@@ -101,7 +101,6 @@ public class Purify implements PlugIn, DialogListener {
 		gd.addNumericField("Chunk Size", 4, 0, 4, "slices");
 		gd.addCheckbox("Performance Log", false);
 		gd.addCheckbox("Make_copy", true);
-		gd.addHelp("http://bonej.org/purify");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		if (gd.wasCanceled()) return;

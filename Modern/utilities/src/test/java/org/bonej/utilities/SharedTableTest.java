@@ -24,10 +24,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.utilities;
 
 import static org.bonej.utilities.SharedTable.EMPTY_CELL;
-import static org.bonej.utilities.SharedTable.LABEL_HEADER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Objects;
 
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
@@ -39,6 +41,7 @@ import org.junit.Test;
  * Tests for {@link SharedTable}
  *
  * @author Richard Domander
+ * @author Michael Doube
  */
 public class SharedTableTest {
 
@@ -49,38 +52,39 @@ public class SharedTableTest {
 
 	/*
 	 * Test that the table is filled in the expected order:
-	 * Label    Measurement A   Measurement B
+	 *          Measurement 1   Measurement 2
+	 * Image B            -               2.0
+	 * Image A            1.0             3.0
 	 * Image A            1.0             2.0
-	 * Image A            1.0               -
-	 * Image B              -             2.0
 	 */
 	@Test
 	public void testAdd() {
 		// SETUP
-		final String label = "Image A";
-		final String label2 = "Image B";
-		final String header = "Measurement A";
-		final String header2 = "Measurement B";
+		final String labelA = "Image A";
+		final String labelB = "Image B";
+		final String header1 = "Measurement 1";
+		final String header2 = "Measurement 2";
 
 		// EXECUTE
-		SharedTable.add(label2, header2, 2.0);
-		SharedTable.add(label, header, 1.0);
-		SharedTable.add(label, header, 1.0);
-		SharedTable.add(label, header2, 2.0);
+		SharedTable.add(labelB, header2, 2.0);
+		SharedTable.add(labelA, header1, 1.0);
+		SharedTable.add(labelA, header1, 1.0);
+		SharedTable.add(labelA, header2, 2.0);
+		SharedTable.add(labelA, header2, 3.0);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals("Wrong number of rows", 3, table.size());
-		final DefaultColumn<String> columnA = table.get(header);
-		assertEquals("Cell should be empty", EMPTY_CELL, columnA.get(2));
-		assertEquals("Wrong number of empty cells", 1, columnA.stream().filter(
-			s -> s.equals(EMPTY_CELL)).count());
-		final DefaultColumn<String> columnB = table.get(header2);
-		assertEquals("Cell should be empty", EMPTY_CELL, columnB.get(1));
-		assertEquals("Wrong number of empty cells", 1, columnB.stream().filter(
-			s -> s.equals(EMPTY_CELL)).count());
-		assertEquals("Label on the wrong row", label2, table.get(LABEL_HEADER).get(
-			2));
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
+		assertEquals("Wrong number of columns", 2, table.getColumnCount());
+		assertEquals("Wrong number of rows", 3, table.getRowCount());
+		final DefaultColumn<Double> column1 = table.get(header1);
+		assertEquals("Cell should be empty", EMPTY_CELL, column1.get(0));
+		assertEquals("Wrong number of empty cells", 1, column1.stream().filter(
+			Objects::isNull).count());
+		final DefaultColumn<Double> column2 = table.get(header2);
+		assertEquals("Cell contains wrong value", 3.0, column2.get(1), 1e-12);
+		assertEquals("Wrong number of empty cells", 0, column2.stream().filter(
+			Objects::isNull).count());
+		assertEquals("Label on the wrong row", 0, table.getRowIndex(labelB));
 	}
 
 	@Test
@@ -95,7 +99,7 @@ public class SharedTableTest {
 		SharedTable.add(label, header, 1.0);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
 		assertEquals(3, table.getRowCount());
 	}
 
@@ -111,9 +115,9 @@ public class SharedTableTest {
 		SharedTable.add(label, header2, 3.0);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
 		assertEquals(1, table.getRowCount());
-		assertEquals(3, table.getColumnCount());
+		assertEquals(2, table.getColumnCount());
 
 	}
 
@@ -128,58 +132,33 @@ public class SharedTableTest {
 		SharedTable.add(label, header, value);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
 		assertEquals(1, table.getRowCount());
-		assertEquals(2, table.getColumnCount());
-		assertEquals(LABEL_HEADER, table.get(0).getHeader());
-		assertEquals(label, table.get(LABEL_HEADER).get(0));
-		assertEquals(header, table.get(1).getHeader());
-		assertEquals(String.valueOf(value), table.get(header).get(0));
+		assertEquals(1, table.getColumnCount());
+		assertEquals(header, table.get(0).getHeader());
+		assertEquals(label, table.getRowHeader(0));
+		assertEquals(1.0, table.get(header).get(0), 1e-12);
 	}
 
 	@Test
-	public void testAddRowsInsertedAlphabetically() {
-		// SETUP
-		final String label = "ZZZ";
-		final String label2 = "AAA";
-		final String label3 = "BBB";
+	public void testGetTableCopyDataCleared() {
+		final Table<DefaultColumn<Double>, Double> copy = SharedTable.getTable();
+		copy.appendRow();
+		copy.appendColumn();
+		copy.set(0, 0, 13.0);
+		final Table<DefaultColumn<Double>, Double> copy2 = SharedTable.getTable();
 
-		// EXECUTE
-		SharedTable.add(label, "Header", 3.0);
-		SharedTable.add(label2, "Header", 1.0);
-		SharedTable.add(label3, "Header", 2.0);
-		SharedTable.add(label, "Header", 4.0);
-		SharedTable.add(label, "Header 2", 4.0);
-
-		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(4, table.getRowCount());
-		assertEquals(label2, table.get(0, 0));
-		assertEquals(String.valueOf(1.0), table.get(1, 0));
-		assertEquals(label3, table.get(0, 1));
-		assertEquals(String.valueOf(2.0), table.get(1, 1));
-		assertEquals(label, table.get(0, 2));
-		assertEquals(String.valueOf(3.0), table.get(1, 2));
-		assertEquals(String.valueOf(4.0), table.get(2, 2));
-		assertEquals(label, table.get(0, 3));
-		assertEquals(String.valueOf(4.0), table.get(1, 3));
+		assertEquals(0, copy2.size());
+		assertEquals(0, copy2.getColumnCount());
+		assertEquals(0, copy2.getRowCount());
 	}
 
 	@Test
-	public void testRepeatingHeaderAndLabelAddsARow() {
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 1);
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 2);
+	public void testGetTableCopyPersists() {
+		final Table instance1 = SharedTable.getTable();
+		final Table instance2 = SharedTable.getTable();
 
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(
-			"Adding data to the same column, to the row with the same label, should create a new row",
-			2, table.getRowCount());
-		assertEquals("Values in wrong order, older should be first", "1", table.get(
-			"Run").get(0));
-		assertEquals("Values in wrong order, older should be first", "2", table.get(
-			"Run").get(1));
+		assertSame(instance1, instance2);
 	}
 
 	@Test
@@ -195,13 +174,30 @@ public class SharedTableTest {
 	}
 
 	@Test
+	public void testRepeatingHeaderAndLabelAddsARow() {
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 1);
+		SharedTable.add("Image", "Value", 1.0);
+		SharedTable.add("Image", "Run", 2);
+
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
+		assertEquals(
+			"Adding data to the same column, to the row with the same label, should create a new row",
+			2, table.getRowCount());
+		assertEquals("Values in wrong order, older should be first", 1, table.get(
+			"Run").get(0), 1e-12);
+		assertEquals("Values in wrong order, older should be first", 2, table.get(
+			"Run").get(1), 1e-12);
+	}
+
+	@Test
 	public void testSharedTableIgnoresEmptyHeader() {
 		// EXECUTE
 		SharedTable.add("Label", "", 1.0);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
+		assertEquals(0, table.getColumnCount());
 		assertEquals(0, table.getRowCount());
 	}
 
@@ -211,8 +207,8 @@ public class SharedTableTest {
 		SharedTable.add("", "Header", 1.0);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
+		assertEquals(0, table.getColumnCount());
 		assertEquals(0, table.getRowCount());
 	}
 
@@ -222,8 +218,8 @@ public class SharedTableTest {
 		SharedTable.add("Label", null, 1.0);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
+		assertEquals(0, table.getColumnCount());
 		assertEquals(0, table.getRowCount());
 	}
 
@@ -233,8 +229,8 @@ public class SharedTableTest {
 		SharedTable.add(null, "Header", 1.0);
 
 		// VERIFY
-		final Table<DefaultColumn<String>, String> table = SharedTable.getTable();
-		assertEquals(1, table.getColumnCount());
+		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
+		assertEquals(0, table.getColumnCount());
 		assertEquals(0, table.getRowCount());
 	}
 }

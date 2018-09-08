@@ -23,7 +23,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,9 +35,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.stream.IntStream;
 
@@ -143,38 +139,6 @@ public final class CommonWrapperTests {
 			.getCancelReason());
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-	}
-
-	static <C extends Command> void testNoCalibrationShowsWarning(
-		final Gateway imageJ, final Class<C> commandClass,
-		final Object... additionalInputs) throws Exception
-	{
-		// SETUP
-		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(eq(BAD_CALIBRATION), anyString(), eq(
-			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-		imageJ.ui().setDefaultUI(mockUI);
-		// Create an hyperstack with no calibration
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z);
-		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-		final Img<DoubleType> img = ArrayImgs.doubles(5, 5, 5, 2);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, zAxis, tAxis);
-		final Collection<Object> inputs = new ArrayList<>();
-		inputs.add("inputImage");
-		inputs.add(imgPlus);
-		Collections.addAll(inputs, additionalInputs);
-
-		// EXECUTE
-		imageJ.command().run(commandClass, true, inputs.toArray()).get();
-
-		// VERIFY
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(BAD_CALIBRATION),
-			anyString(), eq(WARNING_MESSAGE), any());
 	}
 
 	static <C extends Command> void testNonBinaryImagePlusCancelsPlugin(
