@@ -51,11 +51,13 @@ import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.ui.DefaultUIService;
 import org.scijava.ui.DialogPrompt.MessageType;
 import org.scijava.ui.UIService;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import org.scijava.ui.UserInterface;
 
 /**
  * Unit tests for the {@link Common} utility class.
@@ -66,8 +68,8 @@ public class CommonTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@Ignore
 	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
 		final String name = "Test image";
