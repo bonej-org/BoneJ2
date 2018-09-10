@@ -234,10 +234,10 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 			calibratedMinimumLength), unit);
 	}
 
-	private TreeMap<Integer, DoubleStream> createRadianMap(
+	private Map<Integer, DoubleStream> createRadianMap(
 		final Map<Integer, List<Vertex>> valenceMap)
 	{
-		final TreeMap<Integer, DoubleStream> radianMap = new TreeMap<>();
+		final Map<Integer, DoubleStream> radianMap = new TreeMap<>();
 		valenceMap.forEach((valence, vertices) -> {
 			final List<Vertex> centreVertices = filterBoundaryVertices(vertices);
 			final DoubleStream radians = VertexUtils.getNJunctionAngles(
