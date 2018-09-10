@@ -1,3 +1,5 @@
+Manual tests for the Connectivity plug-in
+
 Case 1
 =======================================================================
 Results should match BoneJ1
@@ -14,4 +16,23 @@ Expected result
 Results match BoneJ1
 
 Completed July 08 2016 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+Verify that the progress bar is seen
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Connectivity >
+
+Expected result
+-----------------------------------------------------------------------
+The progress bar advances in the lower right-hand corner of the ImageJ
+main window (moves very fast). Progress resets for each subspace.
+
+Completed September 10th 2018 Richard Domander
 -----------------------------------------------------------------------
