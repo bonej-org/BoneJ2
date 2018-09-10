@@ -23,3 +23,34 @@ main window. Progress resets for each subspace.
 
 Completed September 10th 2018 Richard Domander
 -----------------------------------------------------------------------
+
+
+Case 2
+=======================================================================
+Results match BoneJ1
+=======================================================================
+ Steps
+-----------------------------------------------------------------------
+ 1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+ 2. Set scale (Analyze>Set Scale)
+ 3. Set options
+    - "Distance in pixels" to "1"
+    - "Known distance" to "1.00"
+    - "Pixel aspect ratio" to "1"
+    - "Unit of length" to "mm"
+ 4. Click "OK"
+ 5. Run Plugins > BoneJ > Fraction > Area/Volume fraction
+
+Prerequisites
+-----------------------------------------------------------------------
+ I Repeat steps 1-4 for "bat-cochlea-volume.tif" in ImageJ1.
+II Run "Volume Fraction" plugin from BoneJ1 with the "voxel" option selected,
+   and "Use ROI Manager" deselected
+
+Expected result
+-----------------------------------------------------------------------
+Results match BoneJ1 (not exactly, but close - marching cubes
+implementation is different)
+
+Completed July 4 2016 Richard Domander
+-----------------------------------------------------------------------
