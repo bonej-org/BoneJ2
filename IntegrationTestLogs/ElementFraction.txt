@@ -7,15 +7,14 @@ Verify that the progress bar is seen
 Steps
 -----------------------------------------------------------------------
 1. Run File > New > Hyper stack...
-2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
-3. Create a "large enough" stack to give time to see the bar:
+2. Create a "large enough" stack to give time to see the bar:
   - Width: 500
   - Height: 500
   - Channels: 3
   - Slices: 200
   - Frames: 2
   - Uncheck "Label images"
-4. Run Plugins > BoneJ > Fraction > Area/Volume fraction
+3. Run Plugins > BoneJ > Fraction > Area/Volume fraction
 
 Expected result
 -----------------------------------------------------------------------
