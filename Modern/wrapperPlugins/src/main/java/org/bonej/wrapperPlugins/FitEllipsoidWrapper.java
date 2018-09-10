@@ -108,9 +108,11 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			return;
 		}
 		statusService.showStatus("Fit ellipsoid: solving ellipsoid equation");
+		statusService.showProgress(0, 2);
 		final Matrix4d quadric = (Matrix4d) opService.run(SolveQuadricEq.class,
 			points);
 		statusService.showStatus("Fit ellipsoid: determining ellipsoid parameters");
+		statusService.showProgress(1, 2);
 		@SuppressWarnings("unchecked")
 		final Optional<Ellipsoid> result = (Optional<Ellipsoid>) opService.run(
 			QuadricToEllipsoid.class, quadric);
