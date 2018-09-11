@@ -83,7 +83,7 @@ public final class UsageReporter {
 	private static String utmcc;
 	private static long thisTime = 0;
 	private static long lastTime = 0;
-	private static String bonejSession = Prefs.get(ReporterOptions.SESSIONKEY,
+	private static String bonejSession = Prefs.get(UsageReporterOptions.SESSIONKEY,
 		Integer.toString(new Random().nextInt(1000)));
 
 	private static String utmhid;
@@ -93,13 +93,13 @@ public final class UsageReporter {
 	 * single sessions are set here
 	 */
 	private UsageReporter() {
-		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false)) return;
-		bonejSession = Prefs.get(ReporterOptions.SESSIONKEY, Integer.toString(
+		if (!Prefs.get(UsageReporterOptions.OPTOUTKEY, false)) return;
+		bonejSession = Prefs.get(UsageReporterOptions.SESSIONKEY, Integer.toString(
 			new Random().nextInt(1000)));
 		int inc = Integer.parseInt(bonejSession);
 		inc++;
 		bonejSession = Integer.toString(inc);
-		Prefs.set(ReporterOptions.SESSIONKEY, inc);
+		Prefs.set(UsageReporterOptions.SESSIONKEY, inc);
 
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final GraphicsEnvironment ge = GraphicsEnvironment
@@ -166,7 +166,7 @@ public final class UsageReporter {
 	public static UsageReporter reportEvent(final String category,
 		final String action, final String label, final Integer value)
 	{
-		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false)) return INSTANCE;
+		if (!Prefs.get(UsageReporterOptions.OPTOUTKEY, false)) return INSTANCE;
 		utms = "utms=" + session + "&";
 		session++;
 		final String val = (value == null) ? "" : "(" + value + ")";
@@ -207,11 +207,11 @@ public final class UsageReporter {
 	private static String getCookieString() {
 		// seems to be a bug in Prefs.getInt, so are Strings wrapped in
 		// Integer.toString()
-		final String cookie = Prefs.get(ReporterOptions.COOKIE, Integer.toString(
+		final String cookie = Prefs.get(UsageReporterOptions.COOKIE, Integer.toString(
 			random.nextInt(Integer.MAX_VALUE)));
-		final String cookie2 = Prefs.get(ReporterOptions.COOKIE2, Integer.toString(
+		final String cookie2 = Prefs.get(UsageReporterOptions.COOKIE2, Integer.toString(
 			random.nextInt(Integer.MAX_VALUE)));
-		final String firstTime = Prefs.get(ReporterOptions.FIRSTTIMEKEY, Integer
+		final String firstTime = Prefs.get(UsageReporterOptions.FIRSTTIMEKEY, Integer
 			.toString(random.nextInt(Integer.MAX_VALUE)));
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
@@ -229,9 +229,9 @@ public final class UsageReporter {
 	}
 
 	private boolean isAllowed() {
-		if (!Prefs.get(ReporterOptions.OPTOUTSET, false)) new ReporterOptions().run(
+		if (!Prefs.get(UsageReporterOptions.OPTOUTSET, false)) new UsageReporterOptions().run(
 			"");
-		return Prefs.get(ReporterOptions.OPTOUTKEY, true);
+		return Prefs.get(UsageReporterOptions.OPTOUTKEY, true);
 	}
 
 	private static String userAgentString() {

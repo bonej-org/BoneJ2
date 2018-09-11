@@ -29,7 +29,7 @@ import ij.Prefs;
 import ij.gui.GenericDialog;
 import ij.plugin.PlugIn;
 
-public class ReporterOptions implements PlugIn {
+public class UsageReporterOptions implements PlugIn {
 
 	static final String OPTOUTSET = "bonej.report.option.set";
 	/** Set to false if reporting is not allowed */
