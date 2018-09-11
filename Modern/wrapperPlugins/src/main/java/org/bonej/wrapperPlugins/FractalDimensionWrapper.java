@@ -123,7 +123,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private String translationInfo =
 		"NB: translations affect runtime significantly";
 
-	// TODO persist = true and parameter enforcement in preview?
 	@Parameter(label = "Automatic parameters",
 		description = "Let the computer decide values for the parameters",
 		required = false, callback = "enforceAutoParam", persist = false,
@@ -172,18 +171,22 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		subspaceTables = new ArrayList<>();
 		subspaces.forEach(subspace -> {
 			final RandomAccessibleInterval<BitType> interval = subspace.interval;
+			statusService.showProgress(0, 3);
 			statusService.showStatus("Fractal dimension: hollowing bone");
 			final RandomAccessibleInterval<BitType> outlines = hollowOp.calculate(
 				interval);
+			statusService.showProgress(1, 3);
 			statusService.showStatus("Fractal dimension: counting boxes");
 			final List<ValuePair<DoubleType, DoubleType>> pairs = boxCountOp
 				.calculate(outlines);
+			statusService.showProgress(2, 3);
 			statusService.showStatus("Fractal dimension: fitting curve");
 			dimensions.add(fitCurve(pairs)[1]);
 			rSquared.add(getRSquared(pairs));
 			if (showPoints) {
 				addSubspaceTable(subspace, pairs);
 			}
+			statusService.showProgress(3, 3);
 		});
 		fillResultsTable(subspaces, dimensions, rSquared);
 		if (SharedTable.hasData()) {

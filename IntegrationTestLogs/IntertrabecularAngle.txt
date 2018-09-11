@@ -5,7 +5,7 @@ Case 1
 Steps
 -----------------------------------------------------------------------
 1. Open the sample: File > Open Samples > Bat Cochlea Volume
-2. Run plugin BoneJ > Inter-trabecular Angle
+2. Run Plugins > BoneJ > Inter-trabecular angles
 3. Slide "Maximum valence" to 5 
 4. Slide "Minimum valence" to 6
 
@@ -26,12 +26,12 @@ Steps
 1. Open the sample: File > Open Samples > Tree Rings
 2. Run Process > Binary > Make Binary
 3. Convert image to skeleton BoneJ > Skeletonise
-4. Run plugin BoneJ > Analyse skeleton 
+4. Run Plugins > BoneJ > Inter-trabecular angles
 	
 	pruning = None
 	all tick boxes = false
 
-5. Run plugin BoneJ > Inter-trabecular Angle
+5. Run Plugins > BoneJ > Inter-trabecular angles
 
 	valence range 3-50
 	minimum length = 0
@@ -55,7 +55,7 @@ Steps
 -----------------------------------------------------------------------
 1. Open the sample: File > Open Samples > Tree Rings
 2. Run Process > Binary > Make Binary
-3. Run plugin BoneJ > Inter-trabecular Angle with
+3. Run Plugins > BoneJ > Inter-trabecular angles with
 	- valence range 3-50
 	- minimum trabecular length = 5
 	- margin = 0
@@ -81,7 +81,7 @@ Test calibration affects the number of pruned edges
 Steps
 -----------------------------------------------------------------------
 1. Open the sample: File > Open Samples > Bat Cochlea Volume
-2. Run plugin BoneJ > Inter-trabecular Angle
+2. Run Plugins > BoneJ > Inter-trabecular angles
 	- valence range 3-50
 	- minimum trabecular length = 3
 	- margin = 0
@@ -95,7 +95,7 @@ Steps
    - Known distance: 3.0
    - Pixel aspect ratio: 3
    - Unit: mm
-4. Run plugin BoneJ > Inter-trabecular Angle with same settings
+4. Run Plugin > BoneJ > Inter-trabecular angles with same settings
 5. Click OK on the anisotropy warning
 
 Expected result
