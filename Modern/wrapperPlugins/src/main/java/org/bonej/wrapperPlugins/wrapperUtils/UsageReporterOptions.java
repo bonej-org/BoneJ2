@@ -23,53 +23,84 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import java.util.Random;
+import net.imagej.ImageJ;
 
-import ij.Prefs;
-import ij.gui.GenericDialog;
-import ij.plugin.PlugIn;
+import org.scijava.command.Command;
+import org.scijava.command.ContextCommand;
+import org.scijava.plugin.Parameter;
+import org.scijava.plugin.Plugin;
 
-public class UsageReporterOptions implements PlugIn {
+/**
+ * 
+ * @author Michael Doube
+ * @author Richard Domander
+ *
+ */
+@Plugin(type = Command.class, menuPath = "Options>BoneJ>Usage reporting")
+public class UsageReporterOptions extends ContextCommand {
 
-	static final String OPTOUTSET = "bonej.report.option.set";
+	@Parameter(label = "Opt in", description = "Can BoneJ send usage data?")
+  private boolean optIn = false;
+	
+	@Parameter
+	private ImageJ imagej;
+
+	/** */
+	static final String OPTINSET = "bonej.report.option.set";
 	/** Set to false if reporting is not allowed */
-	static final String OPTOUTKEY = "bonej.allow.reporter";
+	static final String OPTINKEY = "bonej.allow.reporter";
 	static final String COOKIE = "bonej.report.cookie";
-	static final String COOKIE2 = "bonej.report.cookie2";
+  static final String COOKIE2 = "bonej.report.cookie2";
+  /** time of first visit in ms */
 	static final String FIRSTTIMEKEY = "bonej.report.firstvisit";
 	static final String SESSIONKEY = "bonej.report.bonejsession";
 	private static final String IJSESSIONKEY = "bonej.report.ijsession";
 
 	@Override
-	public void run(final String arg) {
+	public void run() {
 
-		final GenericDialog dialog = new GenericDialog("BoneJ");
-		dialog.addMessage("Allow usage data collection?");
-		dialog.addMessage("BoneJ would like to collect data on \n" +
-			"which plugins are being used, to direct development\n" +
-			"and promote BoneJ to funders.");
-		dialog.addMessage("If you agree to participate please hit OK\n" +
-			"otherwise, cancel. For more information click Help.");
-		dialog.showDialog();
-		if (dialog.wasCanceled()) {
-			Prefs.set(OPTOUTKEY, false);
-			Prefs.set(COOKIE, "");
-			Prefs.set(COOKIE2, "");
-			Prefs.set(FIRSTTIMEKEY, "");
-			Prefs.set(SESSIONKEY, "");
-			Prefs.set(IJSESSIONKEY, "");
+//		final GenericDialog dialog = new GenericDialog("BoneJ");
+//		dialog.addMessage("Allow usage data collection?");
+//		dialog.addMessage("BoneJ would like to collect data on \n" +
+//			"which plugins are being used, to direct development\n" +
+//			"and promote BoneJ to funders.");
+//		dialog.addMessage("If you agree to participate please hit OK\n" +
+//			"otherwise, cancel. For more information click Help.");
+//		dialog.showDialog();
+		
+		//Wipe persistent data on opt-out
+		if (!optIn) {
+			imagej.prefs().put(this.getClass(), OPTINKEY, false);
+			imagej.prefs().put(this.getClass(), COOKIE, "");
+			imagej.prefs().put(this.getClass(), COOKIE2, "");
+			imagej.prefs().put(this.getClass(), FIRSTTIMEKEY, "");
+			imagej.prefs().put(this.getClass(), SESSIONKEY, "");
+			imagej.prefs().put(this.getClass(), IJSESSIONKEY, "");
 		}
 		else {
-			Prefs.set(OPTOUTKEY, true);
-			Prefs.set(COOKIE, new Random().nextInt(Integer.MAX_VALUE));
-			Prefs.set(COOKIE2, new Random().nextInt(Integer.MAX_VALUE));
-			final long time = System.currentTimeMillis() / 1000;
-			Prefs.set(FIRSTTIMEKEY, Long.toString(time));
-			Prefs.set(SESSIONKEY, 1);
+		imagej.prefs().put(this.getClass(), OPTINKEY, true);
+		imagej.prefs().put(this.getClass(), COOKIE, new Random().nextInt(Integer.MAX_VALUE));
+		imagej.prefs().put(this.getClass(), COOKIE2, new Random().nextInt(Integer.MAX_VALUE));
+		final long time = System.currentTimeMillis() / 1000;
+		imagej.prefs().put(this.getClass(), FIRSTTIMEKEY, Long.toString(time));
+		imagej.prefs().put(this.getClass(), SESSIONKEY, 1);
 		}
 
-		Prefs.set(OPTOUTSET, true);
-		Prefs.savePreferences();
-		UsageReporter.reportEvent(this).send();
+		imagej.prefs().put(this.getClass(), OPTINSET, true);
+		UsageReporter.reportEvent(this);
+	}
+	
+	/**
+	 * Check whether user as given permission to collect usage data
+	 * 
+	 * @return true only if the user has given explicit permission to send usage data
+	 */
+	public boolean isAllowed() {
+		final boolean isFirstTime = imagej.prefs().getBoolean(this.getClass(), FIRSTTIMEKEY, true);
+		if (isFirstTime)
+			run();
+		if (optIn)
+		    return true;
+		return false;
 	}
 }

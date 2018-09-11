@@ -37,8 +37,10 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
 
-import ij.IJ;
-import ij.Prefs;
+import net.imagej.ImageJ;
+
+import org.scijava.command.ContextCommand;
+import org.scijava.plugin.Parameter;
 
 /**
  * Prepare and send a report to be logged by Google Analytics event tracking
@@ -48,17 +50,21 @@ import ij.Prefs;
  * </p>
  * 
  * @author Michael Doube
+ * @author Richard Domander
  */
-// TODO Fix class design: decide if singleton or not! Does anything need to be a non-static method, and do we need to pass instance at all?
-public final class UsageReporter {
 
-	private static final UsageReporter INSTANCE = new UsageReporter();
-	/**
+public class UsageReporter extends ContextCommand {
+	
+	@Parameter
+	private ImageJ imagej;
+	
+	private UsageReporter() {}
+	
+/**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
 	 * Create a BoneJApp instead.
 	 */
-	private static final String BONEJ_VERSION = "LEGACY";
-
+	private static final String BONEJ_VERSION = "2.0.0-experimental";
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
 	private static final String utmhn = "utmhn=bonej.org&";
@@ -83,19 +89,13 @@ public final class UsageReporter {
 	private static String utmcc;
 	private static long thisTime = 0;
 	private static long lastTime = 0;
-	private static String bonejSession = Prefs.get(UsageReporterOptions.SESSIONKEY,
-		Integer.toString(new Random().nextInt(1000)));
+	private static final String bonejSession = Integer.toString(new Random().nextInt(1000));
 
 	private static String utmhid;
 
-	/**
-	 * Constructor used by singleton pattern. Report variables that relate to
-	 * single sessions are set here
-	 */
-	private UsageReporter() {
-		if (!Prefs.get(UsageReporterOptions.OPTOUTKEY, false)) return;
-		bonejSession = Prefs.get(UsageReporterOptions.SESSIONKEY, Integer.toString(
-			new Random().nextInt(1000)));
+	private static UsageReporterOptions uro;
+	
+	private void UsageReporterOld() {
 		int inc = Integer.parseInt(bonejSession);
 		inc++;
 		bonejSession = Integer.toString(inc);
@@ -126,47 +126,48 @@ public final class UsageReporter {
 	 * Send the report to Google Analytics in the form of an HTTP request for a
 	 * 1-pixel GIF with lots of parameters set
 	 */
-	public void send() {
-		if (!isAllowed()) return;
+	private static void send() {
 		try {
 			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
 				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			if (!IJ.debugMode) {
-				return;
-			}
-			IJ.log(url.toString());
-			IJ.log(uc.getRequestProperty("User-Agent"));
-			try (final BufferedReader reader = new BufferedReader(
-				new InputStreamReader(uc.getInputStream())))
-			{
-				reader.lines().forEach(IJ::log);
-			}
+			///TODO debug logging in IJ2 style
+//			if (!IJ.debugMode) {
+//				return;
+//			}
+//			IJ.log(url.toString());
+//			IJ.log(uc.getRequestProperty("User-Agent"));
+//			try (final BufferedReader reader = new BufferedReader(
+//				new InputStreamReader(uc.getInputStream())))
+//			{
+//				reader.lines().forEach(IJ::log);
+//			}
 		}
 		catch (final IOException e) {
-			if (IJ.debugMode) {
-				IJ.error(e.getMessage());
-			}
+//			if (IJ.debugMode) {
+//				IJ.error(e.getMessage());
+//			}
 		}
 	}
 
 	/**
 	 * Sets the instance variables to appropriate values based on the system
-	 * parameters and method arguments.
+	 * parameters and method arguments and makes the URL request to Google
 	 *
 	 * @param category Google Analytics event category classification
 	 * @param action Google Analytics event action classification
 	 * @param label Google Analytics event label classification
 	 * @param value Google Analytics event value - an integer used for sum and
 	 *          average statistics
-	 * @return The instance of UsageReporter ready to send() a report
 	 */
-	public static UsageReporter reportEvent(final String category,
+	public static void reportEvent(final String category,
 		final String action, final String label, final Integer value)
 	{
-		if (!Prefs.get(UsageReporterOptions.OPTOUTKEY, false)) return INSTANCE;
+		//check if user has opted in and don't run if user has opted out
+		uro = new UsageReporterOptions();
+		if (!uro.isAllowed()) return;
 		utms = "utms=" + session + "&";
 		session++;
 		final String val = (value == null) ? "" : "(" + value + ")";
@@ -183,20 +184,18 @@ public final class UsageReporter {
 		else utmcnr = "utmcr=1&";
 
 		utmcc = getCookieString();
-		return INSTANCE;
+		send();
 	}
 
 	/**
-	 * Prepare the instance for sending a report on a specific class; its name
+	 * Prepare and send a usage report on a specific class; its name
 	 * (.getClass().getName()) is added to the 'action' field of the report,
 	 * category is "Plugin Usage" and label is the BoneJ version string
 	 *
 	 * @param o Class to report on
-	 * @return The instance of UsageReporter ready to send() a report
 	 */
-	public static UsageReporter reportEvent(final Object o) {
-		return reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION,
-			null);
+	public static void reportEvent(final Object o) {
+		reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION, null);
 	}
 
 	/**
@@ -228,15 +227,12 @@ public final class UsageReporter {
 		return locale;
 	}
 
-	private boolean isAllowed() {
-		if (!Prefs.get(UsageReporterOptions.OPTOUTSET, false)) new UsageReporterOptions().run(
-			"");
-		return Prefs.get(UsageReporterOptions.OPTOUTKEY, true);
-	}
-
 	private static String userAgentString() {
 		final String os;
-		if (IJ.isMacintosh()) {
+		String osname = System.getProperty("os.name");
+		boolean isWin = osname.startsWith("Windows");
+		boolean isMac = !isWin && osname.startsWith("Mac");
+		if (isMac) {
 			// Handle Mac OSes on PPC and Intel
 			String arch = System.getProperty("os.arch");
 			if (arch.contains("x86") || arch.contains("i386")) arch = "Intel";
@@ -244,13 +240,13 @@ public final class UsageReporter {
 			os = "Macintosh; " + arch + " " + System.getProperty("os.name") + " " +
 				System.getProperty("os.version");
 		}
-		else if (IJ.isWindows()) {
+		else if (isWin) {
 			// Handle Windows using the NT version number
 			os = "Windows NT " + System.getProperty("os.version");
 		}
 		else {
 			// Handle Linux and everything else
-			os = System.getProperty("os.name") + " " + System.getProperty(
+			os = osname + " " + System.getProperty(
 				"os.version") + " " + System.getProperty("os.arch");
 		}
 
@@ -259,5 +255,11 @@ public final class UsageReporter {
 		final String locale = getLocaleString();
 
 		return browser + " (" + os + "; " + locale + ") " + vendor;
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 }
