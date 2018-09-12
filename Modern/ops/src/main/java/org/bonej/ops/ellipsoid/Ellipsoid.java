@@ -188,12 +188,8 @@ public class Ellipsoid {
 	 * Sets the coordinates of the centroid of the ellipsoid.
 	 *
 	 * @param centroid the new coordinates of the center point.
-	 * @throws NullPointerException if the parameter is null.
 	 */
-	public void setCentroid(final Vector3d centroid) throws NullPointerException {
-		if (centroid == null) {
-			throw new NullPointerException("Centroid can't be null");
-		}
+	public void setCentroid(final Vector3d centroid) {
 		this.centroid.set(centroid);
 	}
 
@@ -224,16 +220,8 @@ public class Ellipsoid {
 	 *
 	 * @param semiAxes matrix with the orientations of the semi-axes as column
 	 *          vectors.
-	 * @throws IllegalArgumentException if the column vectors of the matrix are
-	 *           not orthogonal.
-	 * @throws NullPointerException if the matrix is null.
 	 */
-	public void setOrientation(final Matrix3d semiAxes)
-		throws IllegalArgumentException, NullPointerException
-	{
-		if (semiAxes == null) {
-			throw new NullPointerException("Matrix cannot be null");
-		}
+	public void setOrientation(final Matrix3d semiAxes) {
 		final Vector3d u = new Vector3d();
 		semiAxes.getColumn(0, u);
 		final Vector3d v = new Vector3d();
@@ -273,15 +261,9 @@ public class Ellipsoid {
 	 * Initializes the ellipsoid point sampling function.
 	 *
 	 * @param ops the op environment of the current context.
-	 * @throws NullPointerException if the parameter is null
 	 */
 	@SuppressWarnings("unchecked")
-	public void initSampling(final OpEnvironment ops)
-		throws NullPointerException
-	{
-		if (ops == null) {
-			throw new NullPointerException("Op environment cannot be null");
-		}
+	public void initSampling(final OpEnvironment ops) {
 		isotropicSampling = (BinaryFunctionOp) Functions.binary(ops,
 			EllipsoidPoints.class, List.class, new double[] { a, b, c }, 0L);
 	}
@@ -317,15 +299,10 @@ public class Ellipsoid {
 	 * @param u a semi-axis of the ellipsoid.
 	 * @param v a semi-axis of the ellipsoid.
 	 * @param w a semi-axis of the ellipsoid.
-	 * @throws IllegalArgumentException if the vectors are not orthogonal.
-	 * @throws NullPointerException if any of the vectors is null.
 	 */
-	public void setSemiAxes(final Vector3d u, final Vector3d v, final Vector3d w)
-		throws IllegalArgumentException, NullPointerException
+	public void setSemiAxes(final Vector3d u, final Vector3d v,
+		final Vector3d w)
 	{
-		if (u == null || v == null || w == null) {
-			throw new NullPointerException("Vectors cannot be null.");
-		}
 		final List<Vector3d> semiAxes = Stream.of(u, v, w).map(Vector3d::new)
 			.sorted(comparingDouble(Vector3d::length)).collect(toList());
 		setC(semiAxes.get(2).length());
@@ -357,7 +334,7 @@ public class Ellipsoid {
 	}
 
 	private void setOrientation(final Vector3d u, final Vector3d v,
-		final Vector3d w)
+		final Vector3d w) throws IllegalArgumentException
 	{
 		final double eps = 1e-12;
 		if (u.dot(v) > eps || u.dot(w) > eps || v.dot(w) > eps) {

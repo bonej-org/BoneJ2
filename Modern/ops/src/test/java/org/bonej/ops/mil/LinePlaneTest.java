@@ -60,6 +60,21 @@ public class LinePlaneTest {
 	private static final Img IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
 
+	@Test(expected = NullPointerException.class)
+	public void testConstructorThrowsNPEIfIntervalNull() {
+		new LinePlane(null, IDENTITY, rotateOp);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testConstructorThrowsNPEIfRotationNull() {
+		new LinePlane(IMG, null, rotateOp);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testConstructorThrowsNPEIfOpNull() {
+		new LinePlane(IMG, IDENTITY, null);
+	}
+
 	@Test
 	public void testGetDirection() {
 		final Vector3d expectedDirection = new Vector3d(0, 0, 1);

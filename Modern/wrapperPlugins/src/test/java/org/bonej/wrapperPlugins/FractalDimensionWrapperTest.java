@@ -111,7 +111,7 @@ public class FractalDimensionWrapperTest {
 			t -> (GenericTable) t).collect(Collectors.toList());
 		for (int i = 0; i < pointTables.size(); i++) {
 			final GenericTable table = pointTables.get(i);
-			assertEquals("Table has wrong number of columns", 3, table.size());
+			assertEquals("Table has wrong number of columns", 2, table.size());
 			final DoubleColumn sizes = (DoubleColumn) table.get("-log(size)");
 			assertEquals("Size column has wrong number of rows", expectedRows, sizes
 				.size());

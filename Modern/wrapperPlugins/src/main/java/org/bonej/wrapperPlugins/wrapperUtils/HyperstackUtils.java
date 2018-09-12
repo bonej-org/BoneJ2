@@ -117,9 +117,6 @@ public final class HyperstackUtils {
 		splitSubspaces(final ImgPlus<T> hyperStack,
 			final Collection<AxisType> subspaceTypes)
 	{
-		if (subspaceTypes == null || subspaceTypes.isEmpty()) {
-			return Stream.empty();
-		}
 		final Builder<Subspace<T>> builder = Stream.builder();
 		final int[] splitIndices = findSplitAxisIndices(hyperStack, subspaceTypes);
 		final long[] typeSubscripts = mapTypeSubscripts(hyperStack, splitIndices);
