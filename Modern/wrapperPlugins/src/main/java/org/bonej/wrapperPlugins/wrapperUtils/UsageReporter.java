@@ -61,8 +61,6 @@ public class UsageReporter extends ContextCommand {
 	@Parameter
 	private static ImageJ imagej;
 	
-//	private UsageReporter() {}
-	
 /**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
 	 * Create a BoneJApp instead.
