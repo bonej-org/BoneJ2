@@ -55,6 +55,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -127,6 +128,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		UsageReporter.reportEvent(this).send();
 	}
 
 	private void addResults(final String label, final double eulerCharacteristic,
