@@ -126,8 +126,8 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		matchOps(subspaces.get(0).interval);
 		prepareResultDisplay();
 		for (int i = 0; i < subspaces.size(); i++) {
-			statusService.showProgress(i, subspaces.size() - 1);
-			calculateSubspaceVolumes(subspaces.get(i));
+			calculateSubspaceVolumes(subspaces.get(i), i + 1);
+			statusService.showProgress(i, subspaces.size());
 		}
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
@@ -153,11 +153,15 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		return new double[] { foregroundVolume, totalVolume, ratio };
 	}
 
-	private void calculateSubspaceVolumes(final Subspace<BitType> subspace) {
-		statusService.showStatus("Surface fraction: creating surfaces");
+	private void calculateSubspaceVolumes(final Subspace<BitType> subspace,
+		final int subspaceNumber)
+	{
+		statusService.showStatus(
+			"Surface fraction: creating surfaces for subspace #" + subspaceNumber);
 		final Mesh foregroundMesh = marchingCubes.calculate(subspace.interval);
 		final Mesh totalMesh = createTotalMesh(subspace.interval);
-		statusService.showStatus("Surface fraction: calculating volumes");
+		statusService.showStatus(
+			"Surface fraction: calculating volumes for subspace #" + subspaceNumber);
 		final double[] results = calculateMeshVolumes(foregroundMesh, totalMesh);
 		final String suffix = subspace.toString();
 		final String name = inputImage.getName();

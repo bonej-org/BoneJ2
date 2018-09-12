@@ -101,7 +101,7 @@ public class ThicknessWrapperTest {
 
 	@Test
 	public void testMapImages() throws Exception {
-		final ImagePlus imagePlus = NewImage.createByteImage("", 2, 2, 2, 1);
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class, true,
 			"inputImage", imagePlus, "mapChoice", "Both", "showMaps", false).get();
@@ -149,7 +149,7 @@ public class ThicknessWrapperTest {
 	public void testNullROIManagerCancelsPlugin() throws Exception {
 		// SETUP
 		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
-		final ImagePlus imagePlus = NewImage.createByteImage("", 5, 5, 5, 1);
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 5, 5, 5, 1);
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,

@@ -149,6 +149,11 @@ public class AxisUtilsTest {
 		AxisUtils.isSpatialCalibrationsIsotropic(imgPlus, 0.0, unitService);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testCountSpatialDimensionsThrowsNPEIfNullSpace() {
+		AxisUtils.countSpatialDimensions(null);
+	}
+
 	@Test
 	public void isSpatialCalibrationsIsotropicThrowsIAENanTolerance() {
 		// SETUP
@@ -230,6 +235,31 @@ public class AxisUtilsTest {
 		}
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testGetSpatialUnitThrowsIAEIfNoSpatialAxes() {
+		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
+		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
+		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", cAxis, tAxis);
+
+		AxisUtils.getSpatialUnit(imgPlus, unitService);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testGetSpatialUnitThrowsNPEIfSpaceNull() {
+		AxisUtils.getSpatialUnit(null, unitService);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testGetSpatialUnitThrowsNPEIfUnitServiceNull() {
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "µm", 1.0);
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", 5.0);
+		final Img<ByteType> img = ArrayImgs.bytes(1, 1);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis);
+
+		AxisUtils.getSpatialUnit(imgPlus, null);
+	}
+
 	@Test
 	public void testHasChannelDimensions() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
@@ -242,6 +272,11 @@ public class AxisUtilsTest {
 		final boolean result = AxisUtils.hasChannelDimensions(imgPlus);
 
 		assertTrue("Should be true when image has channel dimensions", result);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testHasChannelDimensionsThrowsNPEIfSpaceNull() {
+		AxisUtils.hasChannelDimensions(null);
 	}
 
 	@Test
@@ -257,6 +292,11 @@ public class AxisUtilsTest {
 		assertTrue("Should be true when image has spatial dimensions", result);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testHasSpatialDimensionsThrowsNPEIfSpaceNull() {
+		AxisUtils.hasSpatialDimensions(null);
+	}
+
 	@Test
 	public void testHasTimeDimensions() {
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
@@ -269,6 +309,11 @@ public class AxisUtilsTest {
 		final boolean result = AxisUtils.hasTimeDimensions(imgPlus);
 
 		assertTrue("Should be true when image has time dimensions", result);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testHasTimeDimensionsThrowsNPEIfSpaceNull() {
+		AxisUtils.hasTimeDimensions(null);
 	}
 
 	@AfterClass

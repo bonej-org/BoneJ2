@@ -12,3 +12,6 @@ The main development happens in the `Modern` module. It hosts the modernized ver
 * [BoneJ wiki](https://github.com/bonej-org/BoneJ2/wiki) for technical documentation
 * [ImageJ wiki](http://imagej.net/BoneJ#Experimental_release) for BoneJ user documentation
 * [ImageJ forum](https://forum.image.sc/tags/bonej) for questions
+
+## Contributing to BoneJ
+If you'd like to improve the code in BoneJ or add new features, we'd greatly appreciate it! To get started have a look at the [contribution guidelines](https://github.com/bonej-org/BoneJ2/blob/master/CONTRIBUTING.md). The wiki and forum are good places to find info on how to develop ImageJ based software. 

@@ -107,6 +107,8 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	private boolean negativityWarned;
 	/** The unit displayed in the results */
 	private String unitHeader;
+	private int progress;
+	private static final int PROGRESS_STEPS = 3;
 
 	@Override
 	public void run() {
@@ -120,6 +122,9 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 		determineResultUnit();
 		matchOps(subspaces.get(0).interval);
 		subspaces.forEach(subspace -> {
+			progress = 0;
+			statusService.showProgress(progress, PROGRESS_STEPS);
+			progress++;
 			final String suffix = subspace.toString();
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			subspaceConnectivity(label, subspace.interval);
@@ -170,9 +175,13 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 		final RandomAccessibleInterval<BitType> subspace)
 	{
 		statusService.showStatus("Connectivity: calculating connectivity");
+		statusService.showProgress(progress, PROGRESS_STEPS);
+		progress++;
 		final double eulerCharacteristic = eulerCharacteristicOp.calculate(subspace)
 			.get();
 		statusService.showStatus("Connectivity: calculating euler correction");
+		statusService.showProgress(progress, PROGRESS_STEPS);
+		progress++;
 		final double edgeCorrection = eulerCorrectionOp.calculate(subspace).get();
 		final double correctedEuler = eulerCharacteristic - edgeCorrection;
 		final double connectivity = 1 - correctedEuler;
@@ -181,6 +190,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 
 		addResults(label, eulerCharacteristic, correctedEuler, connectivity,
 			connectivityDensity);
+		statusService.showProgress(progress, PROGRESS_STEPS);
 	}
 
 	@SuppressWarnings("unused")

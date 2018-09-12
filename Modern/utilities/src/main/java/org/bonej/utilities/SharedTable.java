@@ -31,8 +31,6 @@ import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.Table;
 
-import org.scijava.util.StringUtils;
-
 /**
  * Stores a {@link Table}, which is ordered according to the following rules:
  * <ol>
@@ -97,21 +95,24 @@ public final class SharedTable {
 	}
 
 	/**
-	 * Adds new data to the shared table according to the policy described in
-	 * {@link SharedTable}.
-	 * <p>
-	 * Empty or null labels and headers are ignored.
-	 * </p>
+	 * Adds new data to the shared table according to the shared table policy.
 	 *
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
 	 * @param value the value of the new data.
+	 * @throws NullPointerException if value == null
 	 */
 	public static void add(final String label, final String header,
-		final Double value)
+		final Double value) throws NullPointerException
 	{
-		if (StringUtils.isNullOrEmpty(label) || StringUtils.isNullOrEmpty(header)) {
-			return;
+		if (value == null) {
+			throw new NullPointerException();
+		}
+		if (label.isEmpty()) {
+			throw new IllegalArgumentException("Label cannot be empty");
+		}
+		if (header.isEmpty()) {
+			throw new IllegalArgumentException("Header cannot be empty");
 		}
 
 		final int columns = table.getColumnCount();
@@ -211,10 +212,10 @@ public final class SharedTable {
 		for (int i = rows - 1; i >= 0; i--) {
 			// if we find a row with the same label
 			if (table.getRowHeader(i).equals(label)) {
-				// check whether there is not already a value in columnIndex
-				final Double cell = table.get(columnIndex, i);
+				//check whether there is not already a value in columnIndex
+				final Double cell = table.get(columnIndex, i); 
 				if (Objects.equals(cell, EMPTY_CELL)) {
-					// add the value to the row and column
+					//add the value to the row and column
 					table.set(columnIndex, i, value);
 					return;
 				}

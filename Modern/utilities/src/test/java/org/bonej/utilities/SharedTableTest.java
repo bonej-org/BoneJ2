@@ -35,7 +35,9 @@ import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Tests for {@link SharedTable}
@@ -44,6 +46,9 @@ import org.junit.Test;
  * @author Michael Doube
  */
 public class SharedTableTest {
+
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 
 	@After
 	public void tearDown() {
@@ -83,7 +88,7 @@ public class SharedTableTest {
 		final DefaultColumn<Double> column2 = table.get(header2);
 		assertEquals("Cell contains wrong value", 3.0, column2.get(1), 1e-12);
 		assertEquals("Wrong number of empty cells", 0, column2.stream().filter(
-			Objects::isNull).count());
+				Objects::isNull).count());
 		assertEquals("Label on the wrong row", 0, table.getRowIndex(labelB));
 	}
 
@@ -141,6 +146,35 @@ public class SharedTableTest {
 	}
 
 	@Test
+	public void testAddThrowsIAEIfEmptyLabel() {
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Label cannot be empty");
+		SharedTable.add("", "Header", 1.0);
+	}
+
+	@Test
+	public void testAddThrowsIAEIfEmptyHeader() {
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Header cannot be empty");
+		SharedTable.add("Label", "", 1.0);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testAddThrowsNPEIfNullLabel() {
+		SharedTable.add(null, "Header", 1.0);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testAddThrowsNPEIfNullHeader() {
+		SharedTable.add("Label", null, 1.0);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testAddThrowsNPEIfNullValue() {
+		SharedTable.add("Label", "Header", null);
+	}
+
+	@Test
 	public void testGetTableCopyDataCleared() {
 		final Table<DefaultColumn<Double>, Double> copy = SharedTable.getTable();
 		copy.appendRow();
@@ -171,66 +205,5 @@ public class SharedTableTest {
 	@Test
 	public void testHasDataEmptyTable() {
 		assertFalse(SharedTable.hasData());
-	}
-
-	@Test
-	public void testRepeatingHeaderAndLabelAddsARow() {
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 1);
-		SharedTable.add("Image", "Value", 1.0);
-		SharedTable.add("Image", "Run", 2);
-
-		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
-		assertEquals(
-			"Adding data to the same column, to the row with the same label, should create a new row",
-			2, table.getRowCount());
-		assertEquals("Values in wrong order, older should be first", 1, table.get(
-			"Run").get(0), 1e-12);
-		assertEquals("Values in wrong order, older should be first", 2, table.get(
-			"Run").get(1), 1e-12);
-	}
-
-	@Test
-	public void testSharedTableIgnoresEmptyHeader() {
-		// EXECUTE
-		SharedTable.add("Label", "", 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
-		assertEquals(0, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testSharedTableIgnoresEmptyLabel() {
-		// EXECUTE
-		SharedTable.add("", "Header", 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
-		assertEquals(0, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testSharedTableIgnoresNullHeader() {
-		// EXECUTE
-		SharedTable.add("Label", null, 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
-		assertEquals(0, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
-	}
-
-	@Test
-	public void testSharedTableIgnoresNullLabel() {
-		// EXECUTE
-		SharedTable.add(null, "Header", 1.0);
-
-		// VERIFY
-		final Table<DefaultColumn<Double>, Double> table = SharedTable.getTable();
-		assertEquals(0, table.getColumnCount());
-		assertEquals(0, table.getRowCount());
 	}
 }
