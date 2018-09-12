@@ -40,6 +40,9 @@ import java.util.Random;
 import net.imagej.ImageJ;
 
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogLevel;
+import org.scijava.log.LogService;
+import org.scijava.log.Logger;
 import org.scijava.plugin.Parameter;
 
 /**
@@ -60,6 +63,12 @@ public class UsageReporter extends ContextCommand {
 	
 	@Parameter
 	private static ImageJ imagej;
+	
+	@Parameter
+	private LogService logService;
+	
+	@Parameter
+	private Logger logger;
 	
 /**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
@@ -84,11 +93,13 @@ public class UsageReporter extends ContextCommand {
 	private static String utmsr;
 	private static String utmvp;
 	private static String utmsc;
+	/** iterated on each new event */
 	private static int session = 0;
 	private static String utms = "utms=" + session + "&";
 	private static String utmcc;
 	private static long thisTime = 0;
 	private static long lastTime = 0;
+	/** iterated each time a new BoneJ session starts*/
 	private static int bonejSession;
 
 	private static String utmhid;
@@ -125,7 +136,7 @@ public class UsageReporter extends ContextCommand {
 	 * Send the report to Google Analytics in the form of an HTTP request for a
 	 * 1-pixel GIF with lots of parameters set
 	 */
-	public static void send() {
+	public void send() {
 		//check if user has opted in and die if user has opted out
 		uro = new UsageReporterOptions();
 		if (!uro.isAllowed())
@@ -136,22 +147,22 @@ public class UsageReporter extends ContextCommand {
 				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			///TODO debug logging in IJ2 style
-//			if (!IJ.debugMode) {
-//				return;
-//			}
-//			IJ.log(url.toString());
-//			IJ.log(uc.getRequestProperty("User-Agent"));
-//			try (final BufferedReader reader = new BufferedReader(
-//				new InputStreamReader(uc.getInputStream())))
-//			{
-//				reader.lines().forEach(IJ::log);
-//			}
+			if (logger.getLevel() < LogLevel.INFO) {
+				return;
+			}
+			
+			logService.info(url.toString());
+			logService.info(uc.getRequestProperty("User-Agent"));
+			try (final BufferedReader reader = new BufferedReader(
+				new InputStreamReader(uc.getInputStream())))
+			{
+				logService.info(reader.lines());
+			}
 		}
 		catch (final IOException e) {
-//			if (IJ.debugMode) {
-//				IJ.error(e.getMessage());
-//			}
+			if (logger.getLevel() >= LogLevel.INFO) {
+				logService.error(e.getMessage());
+			}
 		}
 	}
 
