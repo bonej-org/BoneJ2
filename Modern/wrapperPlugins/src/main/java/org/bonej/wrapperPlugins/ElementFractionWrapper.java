@@ -114,7 +114,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		prepareResultDisplay();
 		final String name = inputImage.getName();
 		for (int i = 0; i < subspaces.size(); i++) {
-			final Subspace<BitType> subspace = subspaces.get(0);
+			final Subspace<BitType> subspace = subspaces.get(i);
 			statusService.showStatus("Element fraction: calculating subspace #" + (i +
 				1));
 			statusService.showProgress(i, subspaces.size());
