@@ -77,7 +77,6 @@ public class UsageReporter extends ContextCommand {
 	private static final String utmt = "utmt=event&";
 	private static final String utmul = "utmul=" + getLocaleString() + "&";
 	private static final String utmje = "utmje=0&";
-	private static final String utmfl = "utmfl=11.1%20r102&";
 	private static final String utmr = "utmr=-&";
 	private static final String utmp = "utmp=%2Fstats&";
 	private static final Random random = new Random();
@@ -135,7 +134,7 @@ public class UsageReporter extends ContextCommand {
 			return;
 		try {
 			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
-				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
+				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
