@@ -94,11 +94,11 @@ public class UsageReporter extends ContextCommand {
 	private static String utmhid;
 
 	private static UsageReporterOptions uro;
-	
+		
 	private void UsageReporterOld() {
-		bonejSession = imagej.prefs().getInt(uro.getClass(), uro.SESSIONKEY, 0);
+		bonejSession = imagej.prefs().getInt(uro.getClass(), UsageReporterOptions.SESSIONKEY, 0);
 		bonejSession++;
-		imagej.prefs().put(uro.getClass(), uro.SESSIONKEY, bonejSession);
+		imagej.prefs().put(uro.getClass(), UsageReporterOptions.SESSIONKEY, bonejSession);
 
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final GraphicsEnvironment ge = GraphicsEnvironment
@@ -204,11 +204,11 @@ public class UsageReporter extends ContextCommand {
 	 */
 	private static String getCookieString() {
 		final int cookie = imagej.prefs().getInt(uro.getClass(),
-			uro.COOKIE, random.nextInt(Integer.MAX_VALUE));
+			UsageReporterOptions.COOKIE, random.nextInt(Integer.MAX_VALUE));
 		final int cookie2 = imagej.prefs().getInt(uro.getClass(),
-			uro.COOKIE2, random.nextInt(Integer.MAX_VALUE));
+			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
 		final long firstTime = imagej.prefs().getInt(uro.getClass(),
-			uro.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
+			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
 			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +

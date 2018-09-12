@@ -60,7 +60,7 @@ public class UsageReporterOptions extends ContextCommand {
 	static final String FIRSTTIMEKEY = "bonej2.report.firstvisit";
 	/** unique ID for this particular BoneJ session */
 	static final String SESSIONKEY = "bonej2.report.bonejsession";
-	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
+	static final String IJSESSIONKEY = "bonej2.report.ijsession";
 
 	@Override
 	public void run() {
