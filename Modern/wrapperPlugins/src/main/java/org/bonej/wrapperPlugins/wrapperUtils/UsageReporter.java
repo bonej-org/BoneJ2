@@ -56,7 +56,7 @@ import org.scijava.plugin.Parameter;
 public class UsageReporter extends ContextCommand {
 	
 	@Parameter
-	private ImageJ imagej;
+	private static ImageJ imagej;
 	
 	private UsageReporter() {}
 	
@@ -89,17 +89,16 @@ public class UsageReporter extends ContextCommand {
 	private static String utmcc;
 	private static long thisTime = 0;
 	private static long lastTime = 0;
-	private static final String bonejSession = Integer.toString(new Random().nextInt(1000));
+	private static int bonejSession;
 
 	private static String utmhid;
 
 	private static UsageReporterOptions uro;
 	
 	private void UsageReporterOld() {
-		int inc = Integer.parseInt(bonejSession);
-		inc++;
-		bonejSession = Integer.toString(inc);
-		Prefs.set(UsageReporterOptions.SESSIONKEY, inc);
+		bonejSession = imagej.prefs().getInt(uro.getClass(), uro.SESSIONKEY, 0);
+		bonejSession++;
+		imagej.prefs().put(uro.getClass(), uro.SESSIONKEY, bonejSession);
 
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final GraphicsEnvironment ge = GraphicsEnvironment
@@ -204,14 +203,12 @@ public class UsageReporter extends ContextCommand {
 	 * @return cookie string
 	 */
 	private static String getCookieString() {
-		// seems to be a bug in Prefs.getInt, so are Strings wrapped in
-		// Integer.toString()
-		final String cookie = Prefs.get(UsageReporterOptions.COOKIE, Integer.toString(
-			random.nextInt(Integer.MAX_VALUE)));
-		final String cookie2 = Prefs.get(UsageReporterOptions.COOKIE2, Integer.toString(
-			random.nextInt(Integer.MAX_VALUE)));
-		final String firstTime = Prefs.get(UsageReporterOptions.FIRSTTIMEKEY, Integer
-			.toString(random.nextInt(Integer.MAX_VALUE)));
+		final int cookie = imagej.prefs().getInt(uro.getClass(),
+			uro.COOKIE, random.nextInt(Integer.MAX_VALUE));
+		final int cookie2 = imagej.prefs().getInt(uro.getClass(),
+			uro.COOKIE2, random.nextInt(Integer.MAX_VALUE));
+		final long firstTime = imagej.prefs().getInt(uro.getClass(),
+			uro.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
 			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +

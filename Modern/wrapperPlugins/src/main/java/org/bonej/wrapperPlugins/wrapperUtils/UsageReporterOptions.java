@@ -23,6 +23,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
+import java.util.Random;
+
 import net.imagej.ImageJ;
 
 import org.scijava.command.Command;
@@ -31,12 +33,15 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 /**
+ * Handles persistent settings such as user permission state.
+ * 
+ * Preferences are stored in their native format (long, int, boolean, etc.)
  * 
  * @author Michael Doube
  * @author Richard Domander
  *
  */
-@Plugin(type = Command.class, menuPath = "Options>BoneJ>Usage reporting")
+@Plugin(type = Command.class, menuPath = "Options>BoneJ>Usage reporting (Modern)")
 public class UsageReporterOptions extends ContextCommand {
 
 	@Parameter(label = "Opt in", description = "Can BoneJ send usage data?")
@@ -45,20 +50,22 @@ public class UsageReporterOptions extends ContextCommand {
 	@Parameter
 	private ImageJ imagej;
 
-	/** */
-	static final String OPTINSET = "bonej.report.option.set";
+	/** set to true if user permission has been requested */
+	static final String OPTINSET = "bonej2.report.option.set";
 	/** Set to false if reporting is not allowed */
-	static final String OPTINKEY = "bonej.allow.reporter";
-	static final String COOKIE = "bonej.report.cookie";
-  static final String COOKIE2 = "bonej.report.cookie2";
-  /** time of first visit in ms */
-	static final String FIRSTTIMEKEY = "bonej.report.firstvisit";
-	static final String SESSIONKEY = "bonej.report.bonejsession";
-	private static final String IJSESSIONKEY = "bonej.report.ijsession";
+	static final String OPTINKEY = "bonej2.allow.reporter";
+	static final String COOKIE = "bonej2.report.cookie";
+  static final String COOKIE2 = "bonej2.report.cookie2";
+  /** time of first visit in seconds */
+	static final String FIRSTTIMEKEY = "bonej2.report.firstvisit";
+	/** unique ID for this particular BoneJ session */
+	static final String SESSIONKEY = "bonej2.report.bonejsession";
+	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
 
 	@Override
 	public void run() {
 
+		//TODO chattier dialog box with link to info
 //		final GenericDialog dialog = new GenericDialog("BoneJ");
 //		dialog.addMessage("Allow usage data collection?");
 //		dialog.addMessage("BoneJ would like to collect data on \n" +
@@ -69,35 +76,35 @@ public class UsageReporterOptions extends ContextCommand {
 //		dialog.showDialog();
 		
 		//Wipe persistent data on opt-out
-		if (!optIn) {
-			imagej.prefs().put(this.getClass(), OPTINKEY, false);
-			imagej.prefs().put(this.getClass(), COOKIE, "");
-			imagej.prefs().put(this.getClass(), COOKIE2, "");
-			imagej.prefs().put(this.getClass(), FIRSTTIMEKEY, "");
-			imagej.prefs().put(this.getClass(), SESSIONKEY, "");
-			imagej.prefs().put(this.getClass(), IJSESSIONKEY, "");
-		}
+		if (!optIn)
+			imagej.prefs().clear(this.getClass());
+
 		else {
-		imagej.prefs().put(this.getClass(), OPTINKEY, true);
-		imagej.prefs().put(this.getClass(), COOKIE, new Random().nextInt(Integer.MAX_VALUE));
-		imagej.prefs().put(this.getClass(), COOKIE2, new Random().nextInt(Integer.MAX_VALUE));
-		final long time = System.currentTimeMillis() / 1000;
-		imagej.prefs().put(this.getClass(), FIRSTTIMEKEY, Long.toString(time));
-		imagej.prefs().put(this.getClass(), SESSIONKEY, 1);
+			imagej.prefs().put(this.getClass(), OPTINKEY, true);
+			imagej.prefs().put(this.getClass(), COOKIE,
+				new Random().nextInt(Integer.MAX_VALUE));
+			imagej.prefs().put(this.getClass(), COOKIE2,
+				new Random().nextInt(Integer.MAX_VALUE));
+			imagej.prefs().put(this.getClass(), FIRSTTIMEKEY,
+				System.currentTimeMillis() / 1000);
+			imagej.prefs().put(this.getClass(), SESSIONKEY, 1);
+			imagej.prefs().put(this.getClass(), IJSESSIONKEY, 1);
 		}
 
+		//set that user permissions have been sought
 		imagej.prefs().put(this.getClass(), OPTINSET, true);
+		
 		UsageReporter.reportEvent(this);
 	}
 	
 	/**
-	 * Check whether user as given permission to collect usage data
+	 * Check whether user has given permission to collect usage data
 	 * 
 	 * @return true only if the user has given explicit permission to send usage data
 	 */
 	public boolean isAllowed() {
-		final boolean isFirstTime = imagej.prefs().getBoolean(this.getClass(), FIRSTTIMEKEY, true);
-		if (isFirstTime)
+		final boolean permissionSought = imagej.prefs().getBoolean(this.getClass(), OPTINSET, true);
+		if (!permissionSought)
 			run();
 		if (optIn)
 		    return true;
