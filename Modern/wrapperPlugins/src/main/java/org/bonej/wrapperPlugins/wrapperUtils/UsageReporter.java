@@ -43,7 +43,9 @@ import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 
 /**
- * Prepare and send a report to be logged by Google Analytics event tracking
+ * Prepare and send a report to be logged by 
+ * <a href="https://developers.google.com/analytics/resources/concepts/gaConceptsTrackingOverview">
+ * Google Analytics event tracking</a>
  * <p>
  * Should be called in a PlugIn's run() method as
  * UsageReporter.reportEvent(this).send()
@@ -54,11 +56,12 @@ import org.scijava.plugin.Parameter;
  */
 
 public class UsageReporter extends ContextCommand {
+	public static final UsageReporter INSTANCE = new UsageReporter();
 	
 	@Parameter
 	private static ImageJ imagej;
 	
-	private UsageReporter() {}
+//	private UsageReporter() {}
 	
 /**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
@@ -95,7 +98,7 @@ public class UsageReporter extends ContextCommand {
 
 	private static UsageReporterOptions uro;
 		
-	private void UsageReporterOld() {
+	private UsageReporter() {
 		bonejSession = imagej.prefs().getInt(uro.getClass(), UsageReporterOptions.SESSIONKEY, 0);
 		bonejSession++;
 		imagej.prefs().put(uro.getClass(), UsageReporterOptions.SESSIONKEY, bonejSession);
@@ -125,7 +128,11 @@ public class UsageReporter extends ContextCommand {
 	 * Send the report to Google Analytics in the form of an HTTP request for a
 	 * 1-pixel GIF with lots of parameters set
 	 */
-	private static void send() {
+	public static void send() {
+		//check if user has opted in and die if user has opted out
+		uro = new UsageReporterOptions();
+		if (!uro.isAllowed())
+			return;
 		try {
 			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
 				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
@@ -161,12 +168,9 @@ public class UsageReporter extends ContextCommand {
 	 * @param value Google Analytics event value - an integer used for sum and
 	 *          average statistics
 	 */
-	public static void reportEvent(final String category,
+	public static UsageReporter reportEvent(final String category,
 		final String action, final String label, final Integer value)
 	{
-		//check if user has opted in and don't run if user has opted out
-		uro = new UsageReporterOptions();
-		if (!uro.isAllowed()) return;
 		utms = "utms=" + session + "&";
 		session++;
 		final String val = (value == null) ? "" : "(" + value + ")";
@@ -183,7 +187,7 @@ public class UsageReporter extends ContextCommand {
 		else utmcnr = "utmcr=1&";
 
 		utmcc = getCookieString();
-		send();
+		return INSTANCE;
 	}
 
 	/**
