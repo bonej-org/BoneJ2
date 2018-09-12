@@ -65,10 +65,10 @@ public class UsageReporter extends ContextCommand {
 	private static ImageJ imagej;
 	
 	@Parameter
-	private LogService logService;
+	private static LogService logService;
 	
 	@Parameter
-	private Logger logger;
+	private static Logger logger;
 	
 /**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
@@ -136,7 +136,7 @@ public class UsageReporter extends ContextCommand {
 	 * Send the report to Google Analytics in the form of an HTTP request for a
 	 * 1-pixel GIF with lots of parameters set
 	 */
-	public void send() {
+	public static void send() {
 		//check if user has opted in and die if user has opted out
 		uro = new UsageReporterOptions();
 		if (!uro.isAllowed())
