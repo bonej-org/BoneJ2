@@ -27,10 +27,12 @@ import java.util.Random;
 
 import net.imagej.ImageJ;
 
+import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.widget.Button;
 
 /**
  * Handles persistent settings such as user permission state.
@@ -44,8 +46,25 @@ import org.scijava.plugin.Plugin;
 @Plugin(type = Command.class, menuPath = "Edit>Options>BoneJ Usage (Modern)")
 public class UsageReporterOptions extends ContextCommand {
 
-	@Parameter(label = "Opt in", description = "Can BoneJ send usage data?")
-  private boolean optIn;
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String message1 = "Allow usage data collection?";
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String message2 = "BoneJ would like to collect data on";
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String message3 = "which plugins are being used, to direct development"; 
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String message4 = "and promote BoneJ to funders.";
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String message5 = "If you agree to participate please check the box.";		
+	
+	@Parameter(label = "Opt in to usage data collection", description = "Can BoneJ send usage data?")
+  private boolean optIn = false;
+	
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String helpMessage = "For more information click Help.";
+	
+	@Parameter(label = "Help")
+	private Button button;
 	
 	@Parameter
 	private ImageJ imagej;
@@ -65,15 +84,8 @@ public class UsageReporterOptions extends ContextCommand {
 	@Override
 	public void run() {
 
-		//TODO chattier dialog box with link to info
-//		final GenericDialog dialog = new GenericDialog("BoneJ");
-//		dialog.addMessage("Allow usage data collection?");
-//		dialog.addMessage("BoneJ would like to collect data on \n" +
-//			"which plugins are being used, to direct development\n" +
-//			"and promote BoneJ to funders.");
-//		dialog.addMessage("If you agree to participate please hit OK\n" +
-//			"otherwise, cancel. For more information click Help.");
-//		dialog.showDialog();
+		//TODO link to detailed online info
+    //For more information click Help.";
 		
 		//Wipe persistent data on opt-out
 		if (!optIn) {
