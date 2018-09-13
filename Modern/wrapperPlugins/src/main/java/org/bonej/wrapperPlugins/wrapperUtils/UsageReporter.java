@@ -39,8 +39,8 @@ import java.util.Random;
 
 import net.imagej.ImageJ;
 
+import org.scijava.Context;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogLevel;
 import org.scijava.log.LogService;
 import org.scijava.log.Logger;
 import org.scijava.plugin.Parameter;
@@ -57,9 +57,10 @@ import org.scijava.plugin.Parameter;
  * @author Michael Doube
  * @author Richard Domander
  */
-
 public class UsageReporter extends ContextCommand {
-	public static final UsageReporter INSTANCE = new UsageReporter();
+	
+	@Parameter
+	private static Context context;
 	
 	@Parameter
 	private static ImageJ imagej;
@@ -69,6 +70,8 @@ public class UsageReporter extends ContextCommand {
 	
 	@Parameter
 	private Logger logger;
+	
+	public static final UsageReporter INSTANCE = new UsageReporter();
 	
 /**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
@@ -101,68 +104,55 @@ public class UsageReporter extends ContextCommand {
 	private static long lastTime = 0;
 	/** iterated each time a new BoneJ session starts*/
 	private static int bonejSession;
+	private static boolean isFirstRun = true;
 
 	private static String utmhid;
 
 	private static UsageReporterOptions uro;
 		
-	private UsageReporter() {
-		bonejSession = imagej.prefs().getInt(uro.getClass(), UsageReporterOptions.SESSIONKEY, 0);
-		bonejSession++;
-		imagej.prefs().put(uro.getClass(), UsageReporterOptions.SESSIONKEY, bonejSession);
-
-		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		final GraphicsEnvironment ge = GraphicsEnvironment
-			.getLocalGraphicsEnvironment();
-		int width = 0;
-		int height = 0;
-		if (!ge.isHeadlessInstance()) {
-			final GraphicsDevice[] screens = ge.getScreenDevices();
-			for (final GraphicsDevice screen : screens) {
-				final GraphicsConfiguration[] gc = screen.getConfigurations();
-				for (final GraphicsConfiguration g : gc) {
-					width = Math.max(g.getBounds().x + g.getBounds().width, width);
-					height = Math.max(g.getBounds().y + g.getBounds().height, height);
-				}
-			}
-		}
-
-		utmsr = "utmsr=" + screenSize.width + "x" + screenSize.height + "&";
-		utmvp = "utmvp=" + width + "x" + height + "&";
-		utmsc = "utmsc=24-bit&";
-	}
+	private UsageReporter() {}
 
 	/**
 	 * Send the report to Google Analytics in the form of an HTTP request for a
 	 * 1-pixel GIF with lots of parameters set
 	 */
 	public void send() {
+		System.out.println("Sending report.\n");
 		//check if user has opted in and die if user has opted out
 		uro = new UsageReporterOptions();
-		if (!uro.isAllowed())
+		if (!uro.isAllowed()) {
+			System.out.println("Usage reporting forbidden by user\n");
 			return;
+		}
 		try {
+			System.out.println("Usage reporting approved by user, preparing URL");
 			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
 				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			if (logger.getLevel() < LogLevel.INFO) {
-				return;
-			}
 			
-			logService.info(url.toString());
-			logService.info(uc.getRequestProperty("User-Agent"));
+//			if (logger.getLevel() < LogLevel.INFO) {
+////				return;
+//			}
+			
+//			logService.info(url.toString());
+			System.out.println(url.toString()+"\n");
+//			logService.info(uc.getRequestProperty("User-Agent"));
+			System.out.println(uc.getRequestProperty("User-Agent")+"\n");
 			try (final BufferedReader reader = new BufferedReader(
 				new InputStreamReader(uc.getInputStream())))
 			{
-				logService.info(reader.lines());
+//				logService.info(reader.lines());
+//				System.out.println(reader.lines());
+				reader.lines().forEachOrdered(item -> System.out.println(item));
 			}
 		}
 		catch (final IOException e) {
-			if (logger.getLevel() >= LogLevel.INFO) {
-				logService.error(e.getMessage());
-			}
+//			if (logger.getLevel() >= LogLevel.INFO) {
+//				logService.error(e.getMessage());
+//			}
+			System.out.println(e.getMessage()+"\n");
 		}
 	}
 
@@ -179,6 +169,39 @@ public class UsageReporter extends ContextCommand {
 	public static UsageReporter reportEvent(final String category,
 		final String action, final String label, final Integer value)
 	{
+		//set session-invariant variables once on first run
+		if (isFirstRun) {
+			System.out.println("First run of Usage Reporter for this BoneJ session.\n");
+			context = new Context();
+			imagej = new ImageJ();
+			bonejSession = imagej.prefs().getInt(UsageReporterOptions.class,
+				UsageReporterOptions.SESSIONKEY, 0);
+			System.out.print("bonejSession = "+bonejSession+"\n");
+			bonejSession++;
+			imagej.prefs().put(UsageReporterOptions.class,
+				UsageReporterOptions.SESSIONKEY, bonejSession);
+			final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+			final GraphicsEnvironment ge = GraphicsEnvironment
+				.getLocalGraphicsEnvironment();
+			int width = 0;
+			int height = 0;
+			if (!ge.isHeadlessInstance()) {
+				final GraphicsDevice[] screens = ge.getScreenDevices();
+				for (final GraphicsDevice screen : screens) {
+					final GraphicsConfiguration[] gc = screen.getConfigurations();
+					for (final GraphicsConfiguration g : gc) {
+						width = Math.max(g.getBounds().x + g.getBounds().width, width);
+						height = Math.max(g.getBounds().y + g.getBounds().height, height);
+					}
+				}
+			}
+			utmsr = "utmsr=" + screenSize.width + "x" + screenSize.height + "&";
+			utmvp = "utmvp=" + width + "x" + height + "&";
+			utmsc = "utmsc=24-bit&";
+			isFirstRun = false;
+		}
+		
+		//set 
 		utms = "utms=" + session + "&";
 		session++;
 		final String val = (value == null) ? "" : "(" + value + ")";
@@ -199,7 +222,7 @@ public class UsageReporter extends ContextCommand {
 	}
 
 	/**
-	 * Prepare and send a usage report on a specific class; its name
+	 * Prepare a usage report on a specific class; its name
 	 * (.getClass().getName()) is added to the 'action' field of the report,
 	 * category is "Plugin Usage" and label is the BoneJ version string
 	 *
@@ -215,11 +238,11 @@ public class UsageReporter extends ContextCommand {
 	 * @return cookie string
 	 */
 	private static String getCookieString() {
-		final int cookie = imagej.prefs().getInt(uro.getClass(),
+		final int cookie = imagej.prefs().getInt(UsageReporterOptions.class,
 			UsageReporterOptions.COOKIE, random.nextInt(Integer.MAX_VALUE));
-		final int cookie2 = imagej.prefs().getInt(uro.getClass(),
+		final int cookie2 = imagej.prefs().getInt(UsageReporterOptions.class,
 			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
-		final long firstTime = imagej.prefs().getInt(uro.getClass(),
+		final long firstTime = imagej.prefs().getInt(UsageReporterOptions.class,
 			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
@@ -267,8 +290,5 @@ public class UsageReporter extends ContextCommand {
 	}
 
 	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		
-	}
+	public void run() {}
 }

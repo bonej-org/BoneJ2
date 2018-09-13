@@ -45,7 +45,7 @@ import org.scijava.plugin.Plugin;
 public class UsageReporterOptions extends ContextCommand {
 
 	@Parameter(label = "Opt in", description = "Can BoneJ send usage data?")
-  private boolean optIn = false;
+  private boolean optIn;
 	
 	@Parameter
 	private ImageJ imagej;
@@ -76,10 +76,13 @@ public class UsageReporterOptions extends ContextCommand {
 //		dialog.showDialog();
 		
 		//Wipe persistent data on opt-out
-		if (!optIn)
+		if (!optIn) {
+			System.out.print("User has opted out of data collection\n");
 			imagej.prefs().clear(this.getClass());
+		}
 
 		else {
+			System.out.print("User has opted in to data collection\n");
 			imagej.prefs().put(this.getClass(), OPTINKEY, true);
 			imagej.prefs().put(this.getClass(), COOKIE,
 				new Random().nextInt(Integer.MAX_VALUE));
@@ -92,9 +95,11 @@ public class UsageReporterOptions extends ContextCommand {
 		}
 
 		//set that user permissions have been sought
+		System.out.println("User permission has been sought.\n");
 		imagej.prefs().put(this.getClass(), OPTINSET, true);
 		
-		UsageReporter.reportEvent(this);
+		System.out.println("URO Sending usage report...");
+		UsageReporter.reportEvent(this).send();
 	}
 	
 	/**
@@ -103,11 +108,17 @@ public class UsageReporterOptions extends ContextCommand {
 	 * @return true only if the user has given explicit permission to send usage data
 	 */
 	public boolean isAllowed() {
+		imagej = new ImageJ();
 		final boolean permissionSought = imagej.prefs().getBoolean(this.getClass(), OPTINSET, true);
-		if (!permissionSought)
+		if (!permissionSought) {
+			System.out.println("User permission has not been sought, requesting it...\n");
 			run();
-		if (optIn)
-		    return true;
+		}
+			
+		if (imagej.prefs().getBoolean(this.getClass(), OPTINKEY, false)) {
+			System.out.println("User permission has been granted\n");
+		  return true;
+		}
 		return false;
 	}
 }
