@@ -133,15 +133,13 @@ public final class UsageReporter {
 				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			if (!IJ.debugMode) {
-				return;
-			}
-			IJ.log(url.toString());
-			IJ.log(uc.getRequestProperty("User-Agent"));
+			if (IJ.debugMode) IJ.log(url.toString());
+			if (IJ.debugMode) IJ.log(uc.getRequestProperty("User-Agent"));
 			try (final BufferedReader reader = new BufferedReader(
 				new InputStreamReader(uc.getInputStream())))
 			{
-				reader.lines().forEach(IJ::log);
+				if (IJ.debugMode)
+					reader.lines().forEach(IJ::log);
 			}
 		}
 		catch (final IOException e) {
