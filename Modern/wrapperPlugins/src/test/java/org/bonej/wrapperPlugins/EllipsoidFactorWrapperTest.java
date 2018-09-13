@@ -14,7 +14,9 @@ import org.bonej.utilities.SharedTable;
 import org.joml.Vector3d;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
 
@@ -36,6 +38,7 @@ import static org.mockito.Mockito.mock;
  * @author Alessandro Felder
  */
 
+@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class EllipsoidFactorWrapperTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 
