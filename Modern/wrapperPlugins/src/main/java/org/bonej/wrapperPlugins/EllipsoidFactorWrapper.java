@@ -28,6 +28,8 @@ import org.apache.commons.math3.util.Combinations;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
@@ -39,6 +41,7 @@ import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
+import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 
 import java.util.*;
@@ -50,6 +53,12 @@ import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.utilities.AxisUtils.getSpatialUnit;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 /**
  * Ellipsoid Factor
@@ -66,8 +75,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private final FindEllipsoidFromBoundaryPoints findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
 
     @SuppressWarnings("unused")
-    @Parameter()//TODO add validater! currently a hack to make scripts work!
-    private ImgPlus<IntegerType> inputImage;
+    @Parameter(validater = "validateImage")
+    private ImgPlus<R> inputImage;
 
     @Parameter(persist = false, required = false)
     private DoubleType sigma = new DoubleType(0);
@@ -450,7 +459,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         
         final long[] pixel = vectorToPixelGrid(intersectionPoint);
         if (isInBounds(pixel)) {
-            final RandomAccess<IntegerType> inputRA = inputImage.getImg().randomAccess();
+            final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
             inputRA.setPosition(pixel);
             return inputRA.get().getRealDouble() == 0;
         }
@@ -543,7 +552,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     Vector3d findFirstPointInBGAlongRay(final Vector3d rayIncrement,
                                         final Vector3d start) {
-        RandomAccess<IntegerType> randomAccess = inputImage.randomAccess();
+        RandomAccess<R> randomAccess = inputImage.randomAccess();
 
         Vector3d currentRealPosition = new Vector3d(start);
         long[] currentPixelPosition = vectorToPixelGrid(start);
@@ -589,7 +598,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return pointCombinations;
     }
 
-    /*@SuppressWarnings("unused")
+    @SuppressWarnings("unused")
     private void validateImage() {
         if (inputImage == null) {
             cancel(NO_IMAGE_OPEN);
@@ -614,7 +623,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 cancel(null);
             }
         }
-    }*/
+    }
 
     // TODO Refactor into a static utility method with unit tests
     private boolean isCalibrationIsotropic() {
