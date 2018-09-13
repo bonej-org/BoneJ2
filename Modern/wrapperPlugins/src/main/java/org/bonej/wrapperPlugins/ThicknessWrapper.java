@@ -45,6 +45,7 @@ import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -141,6 +142,7 @@ public class ThicknessWrapper extends ContextCommand {
 			trabecularMap = thicknessMaps.get(true);
 			spacingMap = thicknessMaps.get(false);
 		}
+		UsageReporter.reportEvent(this).send();
 	}
 
 	private void addMapResults(final ImagePlus map) {

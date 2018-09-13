@@ -52,6 +52,7 @@ import org.apache.commons.math3.util.MathArrays;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -216,6 +217,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 				shortestPaths.setCalibration(inputImage.getCalibration());
 			}
 		}
+		UsageReporter.reportEvent(this).send();
 	}
 
 	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {
