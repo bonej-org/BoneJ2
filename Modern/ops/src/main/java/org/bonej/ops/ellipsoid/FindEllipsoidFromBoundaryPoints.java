@@ -3,10 +3,13 @@ package org.bonej.ops.ellipsoid;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.util.ValuePair;
+import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.joml.*;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import javax.swing.text.html.Option;
+import java.lang.Math;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,52 +37,59 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
 
     @Override
     public Optional<Ellipsoid>calculate(List<ValuePair<Vector3d,Vector3d>> fourVerticesWithNormals, Vector3d centre) {
-        List<Vector3d> fourVertices = new ArrayList<>();
-        fourVerticesWithNormals.forEach(v -> fourVertices.add(v.getA()));
+        try {
+            List<Vector3d> fourVertices = new ArrayList<>();
 
-        fourVerticesWithNormals.sort(Comparator.comparingDouble(p->euclideanDistance(p.getA(),centre)));
-        VertexWithNormal p = new VertexWithNormal(fourVerticesWithNormals.get(0));
-        fourVertices.remove(p.getVertex());
+            fourVerticesWithNormals.forEach(v -> fourVertices.add(v.getA()));
 
-        ValuePair<VertexWithNormal, Double> qAndRadius = calculateQ(fourVertices, p);
-        if (qAndRadius == null || qAndRadius.getB()>calibratedLargestImageDimension) return Optional.empty();
-        fourVertices.remove(qAndRadius.getA().getVertex());
+            fourVerticesWithNormals.sort(Comparator.comparingDouble(p -> euclideanDistance(p.getA(), centre)));
+            VertexWithNormal p = new VertexWithNormal(fourVerticesWithNormals.get(0));
+            fourVertices.remove(p.getVertex());
 
-        Vector3d np = new Vector3d(p.getNormal());
-        np.mul(qAndRadius.getB());
-        p.setNormal(np);
+            ValuePair<VertexWithNormal, Double> qAndRadius = calculateQ(fourVertices, p);
+            if (qAndRadius == null || qAndRadius.getB() > calibratedLargestImageDimension) return Optional.empty();
+            fourVertices.remove(qAndRadius.getA().getVertex());
 
-        Vector3d c = new Vector3d(p.getNormal());
-        c.add(p.getVertex());
-        Matrix4d q1 = getQ1(c, qAndRadius.getB());
-        Matrix4d q2 = getQ2(p, qAndRadius.getA());
+            Vector3d np = new Vector3d(p.getNormal());
+            np.mul(qAndRadius.getB());
+            p.setNormal(np);
 
-        ValuePair<Vector3d, Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, fourVertices);
-        if (rAndAlpha == null) return Optional.empty();
-        fourVertices.remove(rAndAlpha.getA());
+            Vector3d c = new Vector3d(p.getNormal());
+            c.add(p.getVertex());
+            Matrix4d q1 = getQ1(c, qAndRadius.getB());
+            Matrix4d q2 = getQ2(p, qAndRadius.getA());
 
-        Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
-        Matrix4d fullScalingMatrix = new Matrix4d();
-        fullScalingMatrix.scaling(rAndAlpha.getB());
-        fullScalingMatrix.m33(rAndAlpha.getB());
-        q1PlusAlphaQ2.mul(fullScalingMatrix, q1PlusAlphaQ2);
-        q1PlusAlphaQ2.add(q1, q1PlusAlphaQ2);
+            ValuePair<Vector3d, Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, fourVertices);
+            if (rAndAlpha == null) return Optional.empty();
+            fourVertices.remove(rAndAlpha.getA());
 
-        Optional<Ellipsoid> ellipsoid = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
-        if(!ellipsoid.isPresent()) return ellipsoid;
+            Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
+            Matrix4d fullScalingMatrix = new Matrix4d();
+            fullScalingMatrix.scaling(rAndAlpha.getB());
+            fullScalingMatrix.m33(rAndAlpha.getB());
+            q1PlusAlphaQ2.mul(fullScalingMatrix, q1PlusAlphaQ2);
+            q1PlusAlphaQ2.add(q1, q1PlusAlphaQ2);
 
-        Matrix4d q3 = getQ3(Arrays.asList(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()), ellipsoid.get());
+            Optional<Ellipsoid> ellipsoid = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
+            if (!ellipsoid.isPresent()) return ellipsoid;
 
-        ValuePair<Vector3d, Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, fourVertices);
-        if (sAndBeta == null) return ellipsoid;
+            Matrix4d q3 = getQ3(Arrays.asList(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()), ellipsoid.get());
 
-        Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
-        fullScalingMatrix.scaling(sAndBeta.getB());
-        fullScalingMatrix.m33(sAndBeta.getB());
-        q1PlusAlphaQ2plusBetaQ3.mul(fullScalingMatrix, q1PlusAlphaQ2plusBetaQ3);
-        q1PlusAlphaQ2plusBetaQ3.add(q1PlusAlphaQ2);
+            ValuePair<Vector3d, Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, fourVertices);
+            if (sAndBeta == null) return ellipsoid;
 
-        return quadricToEllipsoid.calculate(q1PlusAlphaQ2plusBetaQ3);
+            Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
+            fullScalingMatrix.scaling(sAndBeta.getB());
+            fullScalingMatrix.m33(sAndBeta.getB());
+            q1PlusAlphaQ2plusBetaQ3.mul(fullScalingMatrix, q1PlusAlphaQ2plusBetaQ3);
+            q1PlusAlphaQ2plusBetaQ3.add(q1PlusAlphaQ2);
+
+            return quadricToEllipsoid.calculate(q1PlusAlphaQ2plusBetaQ3);
+        }
+        catch (MaxCountExceededException e)
+        {
+            return Optional.empty();
+        }
     }
 
     /**
