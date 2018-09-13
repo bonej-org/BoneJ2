@@ -56,12 +56,11 @@ public class UsageReporterOptions extends ContextCommand {
 	private String message4 = "and promote BoneJ to funders.";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String message5 = "If you agree to participate please check the box.";		
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String helpMessage = "For more information click Help.";
 	
 	@Parameter(label = "Opt in to usage data collection", description = "Can BoneJ send usage data?")
   private boolean optIn = false;
-	
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String helpMessage = "For more information click Help.";
 	
 	@Parameter(label = "Help")
 	private Button button;
