@@ -41,7 +41,7 @@ import org.scijava.plugin.Plugin;
  * @author Richard Domander
  *
  */
-@Plugin(type = Command.class, menuPath = "Edit>Options>BoneJ>BoneJ Usage (Modern)")
+@Plugin(type = Command.class, menuPath = "Edit>Options>BoneJ Usage (Modern)")
 public class UsageReporterOptions extends ContextCommand {
 
 	@Parameter(label = "Opt in", description = "Can BoneJ send usage data?")
