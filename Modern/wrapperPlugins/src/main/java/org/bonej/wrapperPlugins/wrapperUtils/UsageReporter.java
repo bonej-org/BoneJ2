@@ -124,14 +124,25 @@ public class UsageReporter extends ContextCommand {
 			System.out.println("Usage reporting forbidden by user\n");
 			return;
 		}
+		
+		final URL url;
+		final URLConnection uc;
 		try {
 			System.out.println("Usage reporting approved by user, preparing URL");
-			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
+			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
 				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
-			final URLConnection uc = url.openConnection();
-			uc.setRequestProperty("User-Agent", userAgentString());
-			
+			uc = url.openConnection();
+		}
+		catch (final IOException e) {
+			System.out.println(e.getMessage()+"\n");
+			throw new AssertionError("Check your static Strings!");
+//			if (logger.getLevel() >= LogLevel.INFO) {
+//				logService.error(e.getMessage());
+//			}
+		}
+		
+		uc.setRequestProperty("User-Agent", userAgentString());
 //			if (logger.getLevel() < LogLevel.INFO) {
 ////				return;
 //			}
@@ -140,13 +151,12 @@ public class UsageReporter extends ContextCommand {
 			System.out.println(url.toString()+"\n");
 //			logService.info(uc.getRequestProperty("User-Agent"));
 			System.out.println(uc.getRequestProperty("User-Agent")+"\n");
-			try (final BufferedReader reader = new BufferedReader(
+		try (final BufferedReader reader = new BufferedReader(
 				new InputStreamReader(uc.getInputStream())))
-			{
+		{
 //				logService.info(reader.lines());
 //				System.out.println(reader.lines());
 				reader.lines().forEachOrdered(item -> System.out.println(item));
-			}
 		}
 		catch (final IOException e) {
 //			if (logger.getLevel() >= LogLevel.INFO) {
