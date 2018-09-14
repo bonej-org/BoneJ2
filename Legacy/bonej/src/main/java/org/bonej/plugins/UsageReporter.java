@@ -56,7 +56,7 @@ public final class UsageReporter {
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
 	 * Create a BoneJApp instead.
 	 */
-	private static final String BONEJ_VERSION = "2.0.0-experimental";
+	private static final String BONEJ_VERSION = "legacy-placeholder";
 
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
