@@ -139,15 +139,19 @@ public class ThicknessWrapper extends ContextCommand {
 			resultsTable = SharedTable.getTable();
 		}
 		if (showMaps) {
-			LUT fire = Common.makeFire();
+			final LUT fire = Common.makeFire();
 			trabecularMap = thicknessMaps.get(true);
-			StackStatistics trabecularStats = new StackStatistics(trabecularMap);
-			trabecularMap.setDisplayRange(0.0, trabecularStats.max);
-			trabecularMap.setLut(fire);
+			if (trabecularMap != null) {
+				final StackStatistics trabecularStats = new StackStatistics(trabecularMap);
+				trabecularMap.setDisplayRange(0.0, trabecularStats.max);
+				trabecularMap.setLut(fire);	
+			}
 			spacingMap = thicknessMaps.get(false);
-			StackStatistics spacingStats = new StackStatistics(spacingMap);
-			spacingMap.setDisplayRange(0.0, spacingStats.max);
-			spacingMap.setLut(fire);
+			if (spacingMap != null) {
+				final StackStatistics spacingStats = new StackStatistics(spacingMap);
+				spacingMap.setDisplayRange(0.0, spacingStats.max);
+				spacingMap.setLut(fire);
+			}
 		}
 	}
 
