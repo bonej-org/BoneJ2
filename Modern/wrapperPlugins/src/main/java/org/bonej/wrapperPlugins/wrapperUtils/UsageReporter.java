@@ -108,8 +108,6 @@ public class UsageReporter extends ContextCommand {
 
 	private static String utmhid;
 
-	private static UsageReporterOptions uro;
-		
 	private UsageReporter() {}
 
 	/**
@@ -119,8 +117,7 @@ public class UsageReporter extends ContextCommand {
 	public void send() {
 		System.out.println("Sending report.\n");
 		//check if user has opted in and die if user has opted out
-		uro = new UsageReporterOptions();
-		if (!uro.isAllowed()) {
+		if (!isAllowed()) {
 			System.out.println("Usage reporting forbidden by user\n");
 			return;
 		}
@@ -299,6 +296,21 @@ public class UsageReporter extends ContextCommand {
 		return browser + " (" + os + "; " + locale + ") " + vendor;
 	}
 
+	/**
+	 * Check whether user has given permission to collect usage data
+	 * 
+	 * @return true only if the user has given explicit permission to send usage data
+	 */
+	private boolean isAllowed() {
+		final boolean permissionSought = imagej.prefs().getBoolean(getClass(),
+			UsageReporterOptions.OPTINSET, false);
+		if (!permissionSought) {
+			System.out.println("User permission has not been sought, requesting it...\n");
+			run();
+		}
+		return imagej.prefs().getBoolean(getClass(), UsageReporterOptions.OPTINKEY, false);
+	}
+	
 	@Override
 	public void run() {}
 }

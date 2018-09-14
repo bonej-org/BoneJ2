@@ -109,24 +109,4 @@ public class UsageReporterOptions extends ContextCommand {
 		System.out.println("URO Sending usage report...");
 		UsageReporter.reportEvent(this).send();
 	}
-	
-	/**
-	 * Check whether user has given permission to collect usage data
-	 * 
-	 * @return true only if the user has given explicit permission to send usage data
-	 */
-	public boolean isAllowed() {
-		imagej = new ImageJ();
-		final boolean permissionSought = imagej.prefs().getBoolean(this.getClass(), OPTINSET, true);
-		if (!permissionSought) {
-			System.out.println("User permission has not been sought, requesting it...\n");
-			run();
-		}
-			
-		if (imagej.prefs().getBoolean(this.getClass(), OPTINKEY, false)) {
-			System.out.println("User permission has been granted\n");
-		  return true;
-		}
-		return false;
-	}
 }
