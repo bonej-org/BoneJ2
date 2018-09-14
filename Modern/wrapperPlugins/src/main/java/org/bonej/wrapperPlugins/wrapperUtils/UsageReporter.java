@@ -42,8 +42,8 @@ import net.imagej.ImageJ;
 import org.scijava.Context;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
-import org.scijava.log.Logger;
 import org.scijava.plugin.Parameter;
+import org.scijava.prefs.PrefService;
 
 /**
  * Prepare and send a report to be logged by 
@@ -61,15 +61,6 @@ public class UsageReporter extends ContextCommand {
 	
 	@Parameter
 	private static Context context;
-	
-	@Parameter
-	private static ImageJ imagej;
-	
-	@Parameter
-	private LogService logService;
-	
-	@Parameter
-	private Logger logger;
 	
 	public static final UsageReporter INSTANCE = new UsageReporter();
 	
@@ -115,12 +106,78 @@ public class UsageReporter extends ContextCommand {
 	 * 1-pixel GIF with lots of parameters set
 	 */
 	public void send() {
-		System.out.println("Sending report.\n");
+	}
+
+	/**
+	 * Sets the instance variables to appropriate values based on the system
+	 * parameters and method arguments and makes the URL request to Google
+	 *
+	 * @param category Google Analytics event category classification
+	 * @param action Google Analytics event action classification
+	 * @param label Google Analytics event label classification
+	 * @param value Google Analytics event value - an integer used for sum and
+	 *          average statistics
+	 */
+	private static UsageReporter reportEvent(final String category,
+		final String action, final String label, final Integer value,
+		final PrefService prefs, final LogService log)
+	{
 		//check if user has opted in and die if user has opted out
-		if (!isAllowed()) {
+		if (!isAllowed(prefs)) {
 			System.out.println("Usage reporting forbidden by user\n");
-			return;
+			return INSTANCE;
 		}
+		//set session-invariant variables once on first run
+		if (isFirstRun) {
+			System.out.println("First run of Usage Reporter for this BoneJ session.\n");
+			context = new Context();
+			bonejSession = prefs.getInt(UsageReporterOptions.class,
+				UsageReporterOptions.SESSIONKEY, 0);
+			System.out.print("bonejSession = "+bonejSession+"\n");
+			bonejSession++;
+			prefs.put(UsageReporterOptions.class,
+				UsageReporterOptions.SESSIONKEY, bonejSession);
+			final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+			final GraphicsEnvironment ge = GraphicsEnvironment
+				.getLocalGraphicsEnvironment();
+			int width = 0;
+			int height = 0;
+			if (!ge.isHeadlessInstance()) {
+				final GraphicsDevice[] screens = ge.getScreenDevices();
+				for (final GraphicsDevice screen : screens) {
+					final GraphicsConfiguration[] gc = screen.getConfigurations();
+					for (final GraphicsConfiguration g : gc) {
+						width = Math.max(g.getBounds().x + g.getBounds().width, width);
+						height = Math.max(g.getBounds().y + g.getBounds().height, height);
+					}
+				}
+			}
+			utmsr = "utmsr=" + screenSize.width + "x" + screenSize.height + "&";
+			utmvp = "utmvp=" + width + "x" + height + "&";
+			utmsc = "utmsc=24-bit&";
+			isFirstRun = false;
+		}
+		
+		//set 
+		utms = "utms=" + session + "&";
+		session++;
+		final String val = (value == null) ? "" : "(" + value + ")";
+		utme = "utme=5(" + category + "*" + action + "*" + label + ")" + val + "&";
+		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
+		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
+
+		final long time = System.currentTimeMillis() / 1000;
+		lastTime = thisTime;
+		if (lastTime == 0) lastTime = time;
+		thisTime = time;
+
+		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
+		else utmcnr = "utmcr=1&";
+
+		utmcc = getCookieString(prefs);
+		
+		//make the connection and send the report as a long URL
+		System.out.println("Sending report.\n");
 		
 		final URL url;
 		final URLConnection uc;
@@ -161,70 +218,7 @@ public class UsageReporter extends ContextCommand {
 //			}
 			System.out.println(e.getMessage()+"\n");
 		}
-	}
-
-	/**
-	 * Sets the instance variables to appropriate values based on the system
-	 * parameters and method arguments and makes the URL request to Google
-	 *
-	 * @param category Google Analytics event category classification
-	 * @param action Google Analytics event action classification
-	 * @param label Google Analytics event label classification
-	 * @param value Google Analytics event value - an integer used for sum and
-	 *          average statistics
-	 */
-	public static UsageReporter reportEvent(final String category,
-		final String action, final String label, final Integer value)
-	{
-		//set session-invariant variables once on first run
-		if (isFirstRun) {
-			System.out.println("First run of Usage Reporter for this BoneJ session.\n");
-			context = new Context();
-			imagej = new ImageJ();
-			bonejSession = imagej.prefs().getInt(UsageReporterOptions.class,
-				UsageReporterOptions.SESSIONKEY, 0);
-			System.out.print("bonejSession = "+bonejSession+"\n");
-			bonejSession++;
-			imagej.prefs().put(UsageReporterOptions.class,
-				UsageReporterOptions.SESSIONKEY, bonejSession);
-			final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-			final GraphicsEnvironment ge = GraphicsEnvironment
-				.getLocalGraphicsEnvironment();
-			int width = 0;
-			int height = 0;
-			if (!ge.isHeadlessInstance()) {
-				final GraphicsDevice[] screens = ge.getScreenDevices();
-				for (final GraphicsDevice screen : screens) {
-					final GraphicsConfiguration[] gc = screen.getConfigurations();
-					for (final GraphicsConfiguration g : gc) {
-						width = Math.max(g.getBounds().x + g.getBounds().width, width);
-						height = Math.max(g.getBounds().y + g.getBounds().height, height);
-					}
-				}
-			}
-			utmsr = "utmsr=" + screenSize.width + "x" + screenSize.height + "&";
-			utmvp = "utmvp=" + width + "x" + height + "&";
-			utmsc = "utmsc=24-bit&";
-			isFirstRun = false;
-		}
 		
-		//set 
-		utms = "utms=" + session + "&";
-		session++;
-		final String val = (value == null) ? "" : "(" + value + ")";
-		utme = "utme=5(" + category + "*" + action + "*" + label + ")" + val + "&";
-		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
-		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
-
-		final long time = System.currentTimeMillis() / 1000;
-		lastTime = thisTime;
-		if (lastTime == 0) lastTime = time;
-		thisTime = time;
-
-		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
-		else utmcnr = "utmcr=1&";
-
-		utmcc = getCookieString();
 		return INSTANCE;
 	}
 
@@ -235,8 +229,9 @@ public class UsageReporter extends ContextCommand {
 	 *
 	 * @param o Class to report on
 	 */
-	public static UsageReporter reportEvent(final Object o) {
-		return reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION, null);
+	public static UsageReporter reportEvent(final Object o,
+		final PrefService prefs, final LogService log) {
+		return reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION, null, prefs, log);
 	}
 
 	/**
@@ -244,12 +239,12 @@ public class UsageReporter extends ContextCommand {
 	 *
 	 * @return cookie string
 	 */
-	private static String getCookieString() {
-		final int cookie = imagej.prefs().getInt(UsageReporterOptions.class,
+	private static String getCookieString(final PrefService prefs) {
+		final int cookie = prefs.getInt(UsageReporterOptions.class,
 			UsageReporterOptions.COOKIE, random.nextInt(Integer.MAX_VALUE));
-		final int cookie2 = imagej.prefs().getInt(UsageReporterOptions.class,
+		final int cookie2 = prefs.getInt(UsageReporterOptions.class,
 			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
-		final long firstTime = imagej.prefs().getInt(UsageReporterOptions.class,
+		final long firstTime = prefs.getInt(UsageReporterOptions.class,
 			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
@@ -301,14 +296,15 @@ public class UsageReporter extends ContextCommand {
 	 * 
 	 * @return true only if the user has given explicit permission to send usage data
 	 */
-	private boolean isAllowed() {
-		final boolean permissionSought = imagej.prefs().getBoolean(getClass(),
+	private static boolean isAllowed(final PrefService prefs) {
+		final boolean permissionSought = prefs.getBoolean(UsageReporterOptions.class,
 			UsageReporterOptions.OPTINSET, false);
 		if (!permissionSought) {
 			System.out.println("User permission has not been sought, requesting it...\n");
 			new UsageReporterOptions().run();
 		}
-		return imagej.prefs().getBoolean(getClass(), UsageReporterOptions.OPTINKEY, false);
+		return prefs.getBoolean(UsageReporterOptions.class,
+			UsageReporterOptions.OPTINKEY, false);
 	}
 	
 	@Override
