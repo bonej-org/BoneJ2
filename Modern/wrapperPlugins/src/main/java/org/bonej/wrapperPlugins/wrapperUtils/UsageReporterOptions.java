@@ -90,25 +90,22 @@ public class UsageReporterOptions extends ContextCommand {
 		if (!optIn) {
 			System.out.print("User has opted out of data collection\n");
 			imagej.prefs().clear(this.getClass());
+			imagej.prefs().put(this.getClass(), OPTINSET, true);
+			return;
 		}
 
-		else {
-			System.out.print("User has opted in to data collection\n");
-			imagej.prefs().put(this.getClass(), OPTINKEY, true);
-			imagej.prefs().put(this.getClass(), COOKIE,
-				new Random().nextInt(Integer.MAX_VALUE));
-			imagej.prefs().put(this.getClass(), COOKIE2,
-				new Random().nextInt(Integer.MAX_VALUE));
-			imagej.prefs().put(this.getClass(), FIRSTTIMEKEY,
-				System.currentTimeMillis() / 1000);
-			imagej.prefs().put(this.getClass(), SESSIONKEY, 1);
-			imagej.prefs().put(this.getClass(), IJSESSIONKEY, 1);
-		}
-
-		//set that user permissions have been sought
-		System.out.println("User permission has been sought.\n");
+		System.out.print("User has opted in to data collection\n");
+		imagej.prefs().put(this.getClass(), OPTINKEY, true);
+		imagej.prefs().put(this.getClass(), COOKIE,
+			new Random().nextInt(Integer.MAX_VALUE));
+		imagej.prefs().put(this.getClass(), COOKIE2,
+			new Random().nextInt(Integer.MAX_VALUE));
+		imagej.prefs().put(this.getClass(), FIRSTTIMEKEY,
+			System.currentTimeMillis() / 1000);
+		imagej.prefs().put(this.getClass(), SESSIONKEY, 1);
+		imagej.prefs().put(this.getClass(), IJSESSIONKEY, 1);
 		imagej.prefs().put(this.getClass(), OPTINSET, true);
-		
+
 		System.out.println("URO Sending usage report...");
 		UsageReporter.reportEvent(this).send();
 	}
