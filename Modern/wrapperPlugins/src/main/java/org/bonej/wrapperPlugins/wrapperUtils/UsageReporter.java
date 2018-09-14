@@ -306,7 +306,7 @@ public class UsageReporter extends ContextCommand {
 			UsageReporterOptions.OPTINSET, false);
 		if (!permissionSought) {
 			System.out.println("User permission has not been sought, requesting it...\n");
-			run();
+			new UsageReporterOptions().run();
 		}
 		return imagej.prefs().getBoolean(getClass(), UsageReporterOptions.OPTINKEY, false);
 	}
