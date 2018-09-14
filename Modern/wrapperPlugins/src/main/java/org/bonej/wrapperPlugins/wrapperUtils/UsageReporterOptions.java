@@ -89,22 +89,22 @@ public class UsageReporterOptions extends ContextCommand {
 		//Wipe persistent data on opt-out
 		if (!optIn) {
 			System.out.print("User has opted out of data collection\n");
-			imagej.prefs().clear(this.getClass());
-			imagej.prefs().put(this.getClass(), OPTINSET, true);
+			imagej.prefs().clear(getClass());
+			imagej.prefs().put(getClass(), OPTINSET, true);
 			return;
 		}
 
 		System.out.print("User has opted in to data collection\n");
-		imagej.prefs().put(this.getClass(), OPTINKEY, true);
-		imagej.prefs().put(this.getClass(), COOKIE,
+		imagej.prefs().put(getClass(), OPTINKEY, true);
+		imagej.prefs().put(getClass(), COOKIE,
 			new Random().nextInt(Integer.MAX_VALUE));
-		imagej.prefs().put(this.getClass(), COOKIE2,
+		imagej.prefs().put(getClass(), COOKIE2,
 			new Random().nextInt(Integer.MAX_VALUE));
-		imagej.prefs().put(this.getClass(), FIRSTTIMEKEY,
+		imagej.prefs().put(getClass(), FIRSTTIMEKEY,
 			System.currentTimeMillis() / 1000);
-		imagej.prefs().put(this.getClass(), SESSIONKEY, 1);
-		imagej.prefs().put(this.getClass(), IJSESSIONKEY, 1);
-		imagej.prefs().put(this.getClass(), OPTINSET, true);
+		imagej.prefs().put(getClass(), SESSIONKEY, 1);
+		imagej.prefs().put(getClass(), IJSESSIONKEY, 1);
+		imagej.prefs().put(getClass(), OPTINSET, true);
 
 		System.out.println("URO Sending usage report...");
 		UsageReporter.reportEvent(this).send();
