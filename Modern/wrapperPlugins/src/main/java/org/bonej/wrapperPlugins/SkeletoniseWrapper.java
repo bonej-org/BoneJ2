@@ -32,6 +32,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import net.imagej.patcher.LegacyInjector;
 
 import org.bonej.utilities.ImagePlusUtil;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -79,6 +80,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
+		UsageReporter.reportEvent(this).send();
 	}
 
 	@SuppressWarnings("unused")
