@@ -168,21 +168,16 @@ public class ThicknessWrapperTest {
 	@Test
 	public void testResults() throws Exception {
 		// SETUP
-		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2, 2, 1);
+		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
+			2, 1);
 		final Calibration calibration = new Calibration();
 		calibration.setUnit("mm");
 		imagePlus.setCalibration(calibration);
 		final String[] expectedHeaders = { "Tb.Th Mean (mm)", "Tb.Th Std Dev (mm)",
 			"Tb.Th Max (mm)", "Tb.Sp Mean (mm)", "Tb.Sp Std Dev (mm)",
 			"Tb.Sp Max (mm)" };
-		final Double[][] expectedValues = {
-				{ new Double(Double.NaN)},
-				{ new Double(Double.NaN)},
-				{ new Double(Double.NaN)},
-				{ new Double(10.392304420471191) },
-				{ new Double(0.0) },
-				{ new Double(10.392304420471191) }
-				};
+		final Double[][] expectedValues = { { Double.NaN }, { Double.NaN }, {
+			Double.NaN }, { 10.392304420471191 }, { 0.0 }, { 10.392304420471191 } };
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
@@ -199,9 +194,9 @@ public class ThicknessWrapperTest {
 			final DefaultColumn<Double> column = table.get(i);
 			assertEquals(expectedHeaders[i], column.getHeader());
 			assertEquals("Results table has wrong number of rows", 1, column.size());
-			int j = 0;
-			assertEquals("Cell at i="+i+", j="+j+" has an incorrect value", expectedValues[i][j],
-					column.getValue(j));
+			final int j = 0;
+			assertEquals("Cell at i=" + i + ", j=" + j + " has an incorrect value",
+				expectedValues[i][j], column.getValue(j));
 		}
 	}
 
