@@ -104,6 +104,48 @@ public class ThicknessWrapperTest {
 	}
 
 	@Test
+	public void testMapImageLUTs() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final LUT fireLUT = Common.makeFire();
+		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
+			2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			.get();
+
+		// VERIFY
+		final LUT trabecularMap = ((ImagePlus) module.getOutput("trabecularMap"))
+			.getLuts()[0];
+		final LUT spacingMap = ((ImagePlus) module.getOutput("spacingMap"))
+			.getLuts()[0];
+		assertTrue("Trabecular map doesn't have the 'fire' LUT", Arrays.equals(
+			fireLUT.getBytes(), trabecularMap.getBytes()));
+		assertTrue("Spacing map doesn't have the 'fire' LUT", Arrays.equals(fireLUT
+			.getBytes(), spacingMap.getBytes()));
+	}
+
+	@Test
+	public void testMapImagesBoth() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			.get();
+
+		// VERIFY
+		assertNotNull(module.getOutput("trabecularMap"));
+		assertNotNull(module.getOutput("spacingMap"));
+	}
+
+	@Test
 	public void testMapImagesShowMapsFalse() throws ExecutionException,
 		InterruptedException
 	{
@@ -118,6 +160,26 @@ public class ThicknessWrapperTest {
 		// VERIFY
 		assertNull(module.getOutput("trabecularMap"));
 		assertNull(module.getOutput("spacingMap"));
+	}
+
+	@Test
+	public void testMapImagesTrabecularSpacing() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
+			"showMaps", true).get();
+
+		// VERIFY
+		final ImagePlus spacingMap = (ImagePlus) module.getOutput("spacingMap");
+		assertNotNull(spacingMap);
+		assertNull(module.getOutput("trabecularMap"));
+		assertNotSame("Original image should not have been overwritten", imagePlus,
+			spacingMap);
 	}
 
 	@Test
@@ -139,65 +201,6 @@ public class ThicknessWrapperTest {
 		assertNull(module.getOutput("spacingMap"));
 		assertNotSame("Original image should not have been overwritten", imagePlus,
 			trabecularMap);
-	}
-
-	@Test
-	public void testMapImagesTrabecularSpacing() throws ExecutionException, InterruptedException {
-		// SETUP
-		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
-				true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
-				"showMaps", true).get();
-
-		// VERIFY
-		final ImagePlus spacingMap = (ImagePlus) module.getOutput(
-				"spacingMap");
-		assertNotNull(spacingMap);
-		assertNull(module.getOutput("trabecularMap"));
-		assertNotSame("Original image should not have been overwritten", imagePlus,
-				spacingMap);
-	}
-
-	@Test
-	public void testMapImagesBoth() throws ExecutionException,
-		InterruptedException
-	{
-		// SETUP
-		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
-			.get();
-
-		// VERIFY
-		assertNotNull(module.getOutput("trabecularMap"));
-		assertNotNull(module.getOutput("spacingMap"));
-	}
-
-	@Test
-	public void testMapImageLUTs() throws ExecutionException, InterruptedException {
-		// SETUP
-		final LUT fireLUT = Common.makeFire();
-		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
-			2, 1);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
-			.get();
-
-		// VERIFY
-		final LUT trabecularMap = ((ImagePlus) module.getOutput("trabecularMap"))
-			.getLuts()[0];
-		final LUT spacingMap = ((ImagePlus) module.getOutput("spacingMap"))
-			.getLuts()[0];
-		assertTrue("Trabecular map doesn't have the 'fire' LUT", Arrays.equals(
-			fireLUT.getBytes(), trabecularMap.getBytes()));
-		assertTrue("Spacing map doesn't have the 'fire' LUT", Arrays.equals(fireLUT
-			.getBytes(), spacingMap.getBytes()));
 	}
 
 	@Test
