@@ -38,6 +38,7 @@ import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import java.util.stream.IntStream;
 
+import ij.process.LUT;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
@@ -63,6 +64,13 @@ import ij.measure.Calibration;
  * @author Richard Domander
  */
 public class CommonTest {
+	@Test
+	public void makeFire() {
+		final LUT lut = Common.makeFire();
+
+		assertEquals(3 * 256, lut.getBytes().length);
+		assertEquals(8, lut.getPixelSize());
+	}
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
