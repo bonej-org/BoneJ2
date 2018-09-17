@@ -33,12 +33,15 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import net.imagej.ImageJ;
 import net.imagej.table.DefaultColumn;
 
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -51,6 +54,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
+import ij.process.LUT;
 
 /**
  * Tests for {@link ThicknessWrapper}
@@ -131,6 +135,29 @@ public class ThicknessWrapperTest {
 			spacingMap);
 		assertNotSame("Map images should be independent", trabecularMap,
 			spacingMap);
+	}
+
+	@Test
+	public void testMapImageLUTs() throws ExecutionException, InterruptedException {
+		// SETUP
+		final LUT fireLUT = Common.makeFire();
+		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
+			2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			.get();
+
+		// VERIFY
+		final LUT trabecularMap = ((ImagePlus) module.getOutput("trabecularMap"))
+			.getLuts()[0];
+		final LUT spacingMap = ((ImagePlus) module.getOutput("spacingMap"))
+			.getLuts()[0];
+		assertTrue("Trabecular map doesn't have the 'fire' LUT", Arrays.equals(
+			fireLUT.getBytes(), trabecularMap.getBytes()));
+		assertTrue("Spacing map doesn't have the 'fire' LUT", Arrays.equals(fireLUT
+			.getBytes(), spacingMap.getBytes()));
 	}
 
 	@Test
