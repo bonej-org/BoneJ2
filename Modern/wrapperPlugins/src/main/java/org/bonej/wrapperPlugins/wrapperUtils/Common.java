@@ -45,6 +45,7 @@ import ij.process.LUT;
  * Miscellaneous utility methods.
  *
  * @author Richard Domander
+ * @author Michael Doube
  */
 public final class Common {
 
