@@ -104,37 +104,77 @@ public class ThicknessWrapperTest {
 	}
 
 	@Test
-	public void testMapImages() throws Exception {
+	public void testMapImagesShowMapsFalse() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
-		CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class, true,
-			"inputImage", imagePlus, "mapChoice", "Both", "showMaps", false).get();
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", false)
+			.get();
+
+		// VERIFY
 		assertNull(module.getOutput("trabecularMap"));
 		assertNull(module.getOutput("spacingMap"));
+	}
 
-		module = IMAGE_J.command().run(ThicknessWrapper.class, true, "inputImage",
-			imagePlus, "mapChoice", "Trabecular thickness", "showMaps", true).get();
-		assertNotNull(module.getOutput("trabecularMap"));
-		assertNull(module.getOutput("spacingMap"));
+	@Test
+	public void testMapImagesTrabecularThickness() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
-		module = IMAGE_J.command().run(ThicknessWrapper.class, true, "inputImage",
-			imagePlus, "mapChoice", "Trabecular spacing", "showMaps", true).get();
-		assertNull(module.getOutput("trabecularMap"));
-		assertNotNull(module.getOutput("spacingMap"));
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Trabecular thickness",
+			"showMaps", true).get();
 
-		module = IMAGE_J.command().run(ThicknessWrapper.class, true, "inputImage",
-			imagePlus, "mapChoice", "Both", "showMaps", true).get();
+		// VERIFY
 		final ImagePlus trabecularMap = (ImagePlus) module.getOutput(
 			"trabecularMap");
-		final ImagePlus spacingMap = (ImagePlus) module.getOutput("spacingMap");
 		assertNotNull(trabecularMap);
-		assertNotNull(spacingMap);
+		assertNull(module.getOutput("spacingMap"));
 		assertNotSame("Original image should not have been overwritten", imagePlus,
 			trabecularMap);
+	}
+
+	@Test
+	public void testMapImagesTrabecularSpacing() throws ExecutionException, InterruptedException {
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+				true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
+				"showMaps", true).get();
+
+		// VERIFY
+		final ImagePlus spacingMap = (ImagePlus) module.getOutput(
+				"spacingMap");
+		assertNotNull(spacingMap);
+		assertNull(module.getOutput("trabecularMap"));
 		assertNotSame("Original image should not have been overwritten", imagePlus,
-			spacingMap);
-		assertNotSame("Map images should be independent", trabecularMap,
-			spacingMap);
+				spacingMap);
+	}
+
+	@Test
+	public void testMapImagesBoth() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			.get();
+
+		// VERIFY
+		assertNotNull(module.getOutput("trabecularMap"));
+		assertNotNull(module.getOutput("spacingMap"));
 	}
 
 	@Test
