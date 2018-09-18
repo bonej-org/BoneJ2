@@ -46,6 +46,7 @@ import org.scijava.ui.UIService;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -250,7 +251,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         flinnPlotImage.setChannelMaximum(0,255);
         flinnPlotImage.setChannelMinimum(0, 0);
 
-        flinnPeakPlotImage = new ImgPlus<FloatType>(flinnPeakPlot, "Flinn Peak Plot");
+        flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, "Flinn Peak Plot");
         flinnPeakPlotImage.setChannelMaximum(0,255f);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
     }
@@ -299,12 +300,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private List<Ellipsoid> findEllipsoids(List<Vector3d> internalSeedPoints) {
         final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(100);
-        List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>, Vector3d>> pointCombinations = getPointCombinations(internalSeedPoints);
-        return pointCombinations.parallelStream().map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB())).filter(Optional::isPresent).map(Optional::get).filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
+        return internalSeedPoints.stream().map(sp -> getPointCombinationsForOneSeedPoint(sp)).flatMap(l -> l.stream())
+                .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
+                .filter(Optional::isPresent).map(Optional::get)
+                .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
     }
 
-    private List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>, Vector3d>> getPointCombinations(List<Vector3d> internalSeedPoints) {
-        int nSphere = 12;
+    private List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>, Vector3d>> getPointCombinationsForOneSeedPoint(Vector3d internalSeedPoint)
+    {
+        int nSphere = 18;
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
@@ -313,21 +317,19 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         Combinations combinationsOfFourIntegers = new Combinations(nSphere,4);
 
-        internalSeedPoints.stream().forEach( i -> {
-            List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
-                final Vector3d direction = new Vector3d(d);
-                return findFirstPointInBGAlongRay(direction, i);
-            }).collect(toList());
-            final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
+        List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
+            final Vector3d direction = new Vector3d(d);
+            return findFirstPointInBGAlongRay(direction, internalSeedPoint);
+        }).collect(toList());
+        final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
 
-            contactPoints.forEach(c -> {
-                Vector3d inwardDirection = new Vector3d(i);
-                inwardDirection.sub(c);
-                inwardDirection.normalize();
-                seedPoints.add(new ValuePair<>(c, inwardDirection));
-            });
-            combinations.addAll(getAllUniqueCombinationsOfFourPoints(seedPoints, i,combinationsOfFourIntegers));
+        contactPoints.forEach(c -> {
+            Vector3d inwardDirection = new Vector3d(internalSeedPoint);
+            inwardDirection.sub(c);
+            inwardDirection.normalize();
+            seedPoints.add(new ValuePair<>(c, inwardDirection));
         });
+        combinations.addAll(getAllUniqueCombinationsOfFourPoints(seedPoints, internalSeedPoint,combinationsOfFourIntegers));
         return combinations;
     }
 
@@ -587,8 +589,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final List<ValuePair<Set<ValuePair<Vector3d,Vector3d>>,Vector3d>> pointCombinations = new ArrayList<>();
         iterator.forEachRemaining(el ->
                 {
-                    Set pointCombination = new HashSet<>();
-                    pointCombination.addAll(Arrays.asList(points.get(el[0]), points.get(el[1]), points.get(el[2]), points.get(el[3])));
+                    final Set<ValuePair<Vector3d, Vector3d>> pointCombination =  IntStream.range(0, 4).mapToObj(i -> points.get(el[i])).collect(Collectors.toSet());
                     if(pointCombination.size()==4)
                     {
                         pointCombinations.add(new ValuePair<>(pointCombination,centre));
