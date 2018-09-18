@@ -101,8 +101,8 @@ public class EllipsoidFactorWrapperTest {
 
         // VERIFY
         final ImgPlus<FloatType> volumeImage = (ImgPlus) module.getOutput("vImage");
-        double expectedValue = 5575.27976;
-        assertFiniteImageEntriesMatchValue(volumeImage,expectedValue,1e-4);
+        double expectedValue = 4.0*Math.PI/3.0*11*11*11;
+        assertFiniteImageEntriesMatchValue(volumeImage,expectedValue,0.2);
     }
 
 
