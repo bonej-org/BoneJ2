@@ -66,7 +66,7 @@ public class EllipsoidPlaneIntersection extends AbstractBinaryFunctionOp<Ellipso
         return ellipse3D;
     }
 
-    public List<Vector3d> findAxisAlignedCentredIntersectionEllipse(final Vector3dc semiAxisLengths, final ValuePair<Vector3dc, Vector3dc> transformedPlane) {
+    List<Vector3d> findAxisAlignedCentredIntersectionEllipse(final Vector3dc semiAxisLengths, final ValuePair<Vector3dc, Vector3dc> transformedPlane) {
         final Vector3dc n = transformedPlane.getB();
         final List<Vector3dc> basis = completeBasis(semiAxisLengths, n);
 
@@ -81,7 +81,7 @@ public class EllipsoidPlaneIntersection extends AbstractBinaryFunctionOp<Ellipso
         return Stream.of(ellipseCentre, ellipseFirstAxis, ellipseSecondAxis).collect(Collectors.toList());
     }
 
-    public ValuePair<Vector2d, Vector2d> getParametricAxes(final Vector3dc semiAxisLengths, final List<Vector3dc> basis, final Vector3dc q) {
+    private ValuePair<Vector2d, Vector2d> getParametricAxes(final Vector3dc semiAxisLengths, final List<Vector3dc> basis, final Vector3dc q) {
         final Matrix3d diagonal = getDiagonalMatrix(semiAxisLengths);
 
         final Vector3d diagonalTimesR = new Vector3d();
@@ -137,7 +137,7 @@ public class EllipsoidPlaneIntersection extends AbstractBinaryFunctionOp<Ellipso
         return new Vector2d(tCoordinate, uCoordinate);
     }
 
-    public static List<Vector3dc> completeBasis(final Vector3dc semiAxisLengths, final Vector3dc n) {
+    static List<Vector3dc> completeBasis(final Vector3dc semiAxisLengths, final Vector3dc n) {
         final Vector3d r = getOrthogonalUnitVector(n);
         final Vector3d s = new Vector3d();
         r.cross(n,s);
