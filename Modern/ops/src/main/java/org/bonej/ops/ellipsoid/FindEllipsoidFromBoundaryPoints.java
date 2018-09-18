@@ -202,12 +202,12 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
 		A2.add(A1);
 		quadric.set3x3(A2);
 
-		final Vector3d translationVector1 = getTranslationContribution(a0, a1);
-		final Vector3d translationVector2 = getTranslationContribution(a0, a2);
-		translationVector2.add(translationVector1);
+		final Vector3d translation = getTranslationContribution(a0, a1);
+		final Vector3d translation2 = getTranslationContribution(a0, a2);
+		translation2.add(translation);
 
-		quadric.setRow(3, new Vector4d(translationVector2, 0));
-		quadric.setColumn(3, new Vector4d(translationVector2, 0));
+		quadric.setRow(3, new Vector4d(translation2, 0));
+		quadric.setColumn(3, new Vector4d(translation2, 0));
 
 		quadric.m33(getConstantContribution(a0, a1) + getConstantContribution(a0,
 			a2) - 1.0);
@@ -218,11 +218,11 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
     private static Vector3d getTranslationContribution(final Vector3dc centre, final Vector3dc axis) {
         final Vector3d unitAxis = new Vector3d(axis);
         unitAxis.normalize();
-        final Vector3d translationVector = new Vector3d(unitAxis);
-        translationVector.negate();
-        translationVector.mul(centre.dot(unitAxis));
+        final Vector3d translation = new Vector3d(unitAxis);
+        translation.negate();
+        translation.mul(centre.dot(unitAxis));
 		final double radius = axis.length();
-        return translationVector.div(radius * radius);
+        return translation.div(radius * radius);
     }
 
     private static double getConstantContribution(final Vector3dc centre, final Vector3dc axis) {
