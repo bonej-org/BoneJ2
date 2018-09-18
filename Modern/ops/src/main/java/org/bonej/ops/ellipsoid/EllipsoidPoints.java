@@ -40,8 +40,8 @@ import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
+import org.joml.Vector3d;
 import org.scijava.plugin.Plugin;
-import org.scijava.vecmath.Vector3d;
 
 /**
  * Generates isotropically located random points on an ellipsoid surface.
@@ -102,8 +102,10 @@ public class EllipsoidPoints extends
 	}
 
 	private List<Vector3d> sampleEllipsoidPoints(final long n) {
-		final Supplier<Vector3d> spherePoint = () -> new Vector3d(sphereRng
-			.nextVector());
+		final Supplier<Vector3d> spherePoint = () -> {
+			final double[] v = sphereRng.nextVector();
+			return new Vector3d(v[0], v[1], v[2]);
+		};
 		// Probability function to keep a sphere point
 		final double muMax = b * c;
 		final Predicate<Vector3d> p = v -> rng.nextDouble() <= mu(v) / muMax;

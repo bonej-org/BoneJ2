@@ -52,6 +52,7 @@ import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
@@ -60,8 +61,8 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 
-import org.bonej.ops.RotateAboutAxis;
-import org.bonej.ops.SolveQuadricEq;
+import org.apache.commons.math3.random.RandomVectorGenerator;
+import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
 import org.bonej.ops.mil.MILPlane;
@@ -71,6 +72,11 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
+import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
+import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -81,9 +87,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
-import org.scijava.vecmath.AxisAngle4d;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
 import org.scijava.widget.NumberWidget;
 
 /**
@@ -97,6 +100,14 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 {
 
 	/**
+	 * Generates four normally distributed values between [0, 1] that describe a
+	 * unit quaternion. These can be used to create isotropically distributed
+	 * rotations.
+	 */
+	private static final RandomVectorGenerator qGenerator =
+		new UnitSphereRandomVectorGenerator(4);
+
+	/**
 	 * Default directions is 2_000 since that's roughly the number of points in
 	 * Poisson distributed sampling that'd give points about 5 degrees apart).
 	 */
@@ -105,9 +116,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	// with data at hand. Other data may need a different number.
 	private static final int DEFAULT_LINES = 100;
 	private static final double DEFAULT_INCREMENT = 1.0;
-	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, AxisAngle4d, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4d, Optional<Ellipsoid>> quadricToEllipsoidOp;
-	private static UnaryFunctionOp<List<Vector3d>, Matrix4d> solveQuadricOp;
+	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, Quaterniondc, Vector3d> milOp;
+	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<List<Vector3d>, Matrix4dc> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
 	@SuppressWarnings("unused")
@@ -225,26 +236,20 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3d> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
-		final Matrix4d quadric = solveQuadricOp.calculate(pointCloud);
+		final Matrix4dc quadric = solveQuadricOp.calculate(pointCloud);
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
 	}
 
 	@SuppressWarnings("unchecked")
 	private void matchOps(final Subspace<BitType> subspace) {
-		if (seed != null) {
-			milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
-					subspace.interval, new AxisAngle4d(), lines, samplingIncrement, seed);
-		} else {
-			milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
-					subspace.interval, new AxisAngle4d(), lines, samplingIncrement);
-		}
+		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
+			subspace.interval, new Quaterniond(), lines, samplingIncrement);
 		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
-			SolveQuadricEq.QUADRIC_TERMS).collect(toList());
-		solveQuadricOp = Functions.unary(opService, SolveQuadricEq.class,
-			Matrix4d.class, tmpPoints);
-		final Matrix4d matchingMock = new Matrix4d();
-		matchingMock.setIdentity();
+			Quadric.MIN_DATA).collect(toList());
+		solveQuadricOp = Functions.unary(opService, Quadric.class, Matrix4dc.class,
+			tmpPoints);
+		final Matrix4dc matchingMock = new Matrix4d();
 		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService,
 			QuadricToEllipsoid.class, Optional.class, matchingMock);
 	}
@@ -253,7 +258,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final List<Vector3d> pointCloud;
 		try {
 			pointCloud = runDirectionsInParallel(subspace.interval);
-			if (pointCloud.size() < SolveQuadricEq.QUADRIC_TERMS) {
+			if (pointCloud.size() < Quadric.MIN_DATA) {
 				cancel("Anisotropy could not be calculated - too few points");
 				return null;
 			}
@@ -271,6 +276,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		return null;
 	}
 
+	/**
+	 * Creates a random isotropically distributed quaternion.
+	 *
+	 * @return a (rotation) quaternion which can be used as a parameter for the
+	 *         op.
+	 */
+	private static synchronized Quaterniondc randomQuaternion() {
+		final double[] v = qGenerator.nextVector();
+		return new Quaterniond(v[0], v[1], v[2], v[3]);
+	}
+
 	private List<Vector3d> runDirectionsInParallel(
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
@@ -284,7 +300,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final int nThreads = Math.max(5, cores);
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
-			RotateAboutAxis.randomAxisAngle());
+			randomQuaternion());
 		final List<Future<Vector3d>> futures = generate(() -> milTask).limit(
 			directions).map(executor::submit).collect(toList());
 		final List<Vector3d> pointCloud = Collections.synchronizedList(
@@ -293,8 +309,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final AtomicInteger progress = new AtomicInteger();
 		for (final Future<Vector3d> future : futures) {
 			statusService.showProgress(progress.getAndIncrement(), futuresSize);
-			final Vector3d milVector = future.get();
-			pointCloud.add(milVector);
+			pointCloud.add(future.get());
 		}
 		shutdownAndAwaitTermination(executor);
 		return pointCloud;

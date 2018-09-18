@@ -147,6 +147,8 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
+            <!-- Remove explicit version when pom-scijava has this or newer stable version -->
+            <version>0.42.0</version>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
@@ -194,10 +196,6 @@
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>scijava-ui-swing</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>vecmath</artifactId>
         </dependency>
 
         <!-- Other dependencies -->

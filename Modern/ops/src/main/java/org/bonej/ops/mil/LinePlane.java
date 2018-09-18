@@ -32,10 +32,9 @@ import java.util.stream.Stream.Builder;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imglib2.Interval;
 
-import org.scijava.vecmath.AxisAngle4d;
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Tuple3d;
-import org.scijava.vecmath.Vector3d;
+import org.joml.Quaterniondc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 /**
  * A class that describes a set of parallel lines normal to a plane. The plane
@@ -46,12 +45,12 @@ import org.scijava.vecmath.Vector3d;
 class LinePlane {
 
 	private final double size;
-	private final Vector3d translation = new Vector3d();
-	private final Point3d centroid;
-	private final Vector3d direction;
+	private final Vector3dc translation;
+	private final Vector3dc centroid;
+	private final Vector3dc direction;
 	private final Random random = new Random();
-	private final AxisAngle4d rotation;
-	private final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
+	private final Quaterniondc rotation;
+	private final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 
 	/**
 	 * Creates an instance of LinePlane, and initializes it for generating lines.
@@ -61,11 +60,11 @@ class LinePlane {
 	 * @param rotateOp the Op used to rotate the origin points and direction.
 	 * @param <I> type of the interval.
 	 */
-	<I extends Interval> LinePlane(final I interval, final AxisAngle4d rotation,
-		final BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp)
+	<I extends Interval> LinePlane(final I interval, final Quaterniondc rotation,
+		final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp)
 	{
 		size = findPlaneSize(interval);
-		translation.set(-size * 0.5, -size * 0.5, 0.0);
+		translation = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
 		centroid = findCentroid(interval);
 		this.rotateOp = rotateOp;
 		this.rotation = rotation;
@@ -73,26 +72,26 @@ class LinePlane {
 	}
 
 	// region -- Helper methods --
-	private Vector3d createDirection() {
-		final Vector3d newDirection = new Vector3d(0, 0, 1);
-		rotateOp.mutate1(newDirection, rotation);
-		return newDirection;
+	private Vector3dc createDirection() {
+		final Vector3d direction = new Vector3d(0, 0, 1);
+		rotateOp.mutate1(direction, rotation);
+		return direction;
 	}
 
-	private Point3d createOrigin(final double t, final double u) {
+	private Vector3dc createOrigin(final double t, final double u) {
 		final double x = t * size;
 		final double y = u * size;
-		final Point3d origin = new Point3d(x, y, 0);
+		final Vector3d origin = new Vector3d(x, y, 0);
 		origin.add(translation);
 		rotateOp.mutate1(origin, rotation);
 		origin.add(centroid);
 		return origin;
 	}
 
-	private static <I extends Interval> Point3d findCentroid(final I interval) {
+	private static <I extends Interval> Vector3dc findCentroid(final I interval) {
 		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
 			.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
-		return new Point3d(coordinates);
+		return new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
 	}
 
 	private static <I extends Interval> double findPlaneSize(final I interval) {
@@ -122,8 +121,8 @@ class LinePlane {
 	 *          points, one from each quadrant of the plane.
 	 * @return a finite stream of origin points on the plane.
 	 */
-	Stream<Point3d> getOrigins(final Long bins) {
-		final Builder<Point3d> builder = Stream.builder();
+	Stream<Vector3dc> getOrigins(final Long bins) {
+		final Builder<Vector3dc> builder = Stream.builder();
 		final double step = 1.0 / bins;
 		final double uOffset = random.nextDouble() * step;
 		final double tOffset = random.nextDouble() * step;
@@ -131,7 +130,7 @@ class LinePlane {
 			final double u = i * step + uOffset;
 			for (long j = 0; j < bins; j++) {
 				final double t = j * step + tOffset;
-				final Point3d origin = createOrigin(t, u);
+				final Vector3dc origin = createOrigin(t, u);
 				builder.add(origin);
 			}
 		}
@@ -143,7 +142,7 @@ class LinePlane {
 	 *
 	 * @return direction of the lines passing through the plane.
 	 */
-	Vector3d getDirection() {
+	Vector3dc getDirection() {
 		return direction;
 	}
 

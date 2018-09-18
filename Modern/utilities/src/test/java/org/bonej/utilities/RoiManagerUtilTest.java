@@ -36,9 +36,9 @@ import java.awt.Rectangle;
 import java.util.List;
 import java.util.Optional;
 
+import org.joml.Vector3d;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.scijava.vecmath.Vector3d;
 
 import ij.IJ;
 import ij.ImagePlus;

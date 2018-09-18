@@ -23,7 +23,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.ops.SolveQuadricEq.QUADRIC_TERMS;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -31,6 +30,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import net.imagej.ImageJ;
+import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -85,7 +85,7 @@ public class FitEllipsoidWrapperTest {
 			.isCanceled());
 		assertTrue("Cancel reason is incorrect", module.getCancelReason()
 			.startsWith("Please populate ROI Manager with at least " +
-				QUADRIC_TERMS));
+				Quadric.MIN_DATA));
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}

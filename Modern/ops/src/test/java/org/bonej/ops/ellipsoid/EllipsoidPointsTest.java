@@ -32,9 +32,9 @@ import java.util.function.Function;
 
 import net.imagej.ImageJ;
 
+import org.joml.Vector3d;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.scijava.vecmath.Vector3d;
 
 /**
  * Tests for {@link EllipsoidPoints}.
