@@ -34,6 +34,7 @@ import org.scijava.plugin.Plugin;
  * </p>
  *
  * @author Alessandro Felder
+ * @author Richard Domander
  */
 @Plugin(type = Op.class)
 public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<List<ValuePair<Vector3dc,Vector3dc>>,Vector3dc,Optional<Ellipsoid>> {
