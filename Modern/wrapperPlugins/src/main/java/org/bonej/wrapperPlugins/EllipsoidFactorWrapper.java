@@ -15,7 +15,6 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -24,7 +23,6 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
-import org.apache.commons.math3.util.Combinations;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
@@ -55,9 +53,7 @@ import static java.util.stream.Collectors.toList;
 import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.utilities.AxisUtils.getSpatialUnit;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
-import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
@@ -142,9 +138,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         statusService.showStatus("Ellipsoid Factor: initialising...");
         Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
         final List<Vector3dc> internalSeedPoints = getRidgePoints(inputAsBit);
+        //final List<Vector3d> internalSeedPoints = new ArrayList<>();
+        //internalSeedPoints.add(new Vector3d(58.5,95.5, 128));
+        //internalSeedPoints.add(new Vector3d(70.5,70.5,15.5));
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
         final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
+        //TODO fail loudly if ellipsoids.size()==0
         ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
 
         statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
@@ -300,8 +300,14 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 
     private List<Ellipsoid> findEllipsoids(List<Vector3dc> internalSeedPoints) {
-        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(100);
-        return internalSeedPoints.stream().map(sp -> getPointCombinationsForOneSeedPoint(sp)).flatMap(l -> l.stream())
+        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(30);
+        filterSamplingDirections.addAll(Arrays.asList(
+                new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
+                new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
+
+
+        List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>,Vector3d>> combinations = new ArrayList<>();
+        return internalSeedPoints.parallelStream().map(sp -> getPointCombinationsForOneSeedPoint(sp)).flatMap(l -> l.stream())
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
                 .filter(Optional::isPresent).map(Optional::get)
                 .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
@@ -309,14 +315,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(Vector3dc internalSeedPoint)
     {
-        int nSphere = 18;
+        int nSphere = 30;
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+        //sphereSamplingDirections.clear();
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
         List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>,Vector3dc>> combinations = new ArrayList<>();
-
-        Combinations combinationsOfFourIntegers = new Combinations(nSphere,4);
 
         List<Vector3dc> contactPoints = sphereSamplingDirections.stream().map(d -> {
             final Vector3d direction = new Vector3d(d);
@@ -330,7 +335,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             inwardDirection.normalize();
             seedPoints.add(new ValuePair<>(c, inwardDirection));
         });
-        combinations.addAll(getAllUniqueCombinationsOfFourPoints(seedPoints, internalSeedPoint,combinationsOfFourIntegers));
+        combinations.addAll(getAllUniqueCombinationsOfFourPoints(seedPoints, internalSeedPoint));
         return combinations;
     }
 
@@ -585,8 +590,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
 
-    static List<ValuePair<Set<ValuePair<Vector3dc,Vector3dc>>,Vector3dc>> getAllUniqueCombinationsOfFourPoints(final List<ValuePair<Vector3dc,Vector3dc>> points, final Vector3dc centre, final Combinations combinationsOfFour){
-        final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(points.size(), 4);//combinationsOfFour.iterator();
+    static List<ValuePair<Set<ValuePair<Vector3dc,Vector3dc>>,Vector3dc>> getAllUniqueCombinationsOfFourPoints(final List<ValuePair<Vector3dc,Vector3dc>> points, final Vector3dc centre){
+        final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(points.size(), 4);
         final List<ValuePair<Set<ValuePair<Vector3dc,Vector3dc>>,Vector3dc>> pointCombinations = new ArrayList<>();
         iterator.forEachRemaining(el ->
                 {
