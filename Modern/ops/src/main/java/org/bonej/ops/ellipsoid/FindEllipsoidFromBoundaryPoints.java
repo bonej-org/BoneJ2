@@ -52,19 +52,19 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
             fourVerticesWithNormals.forEach(v -> fourVertices.add(v.getA()));
 
             fourVerticesWithNormals.sort(Comparator.comparingDouble(p -> euclideanDistance(p.getA(), centre)));
-            final VertexWithNormal p = new VertexWithNormal(fourVerticesWithNormals.get(0));
-            fourVertices.remove(p.getVertex());
+            ValuePair<Vector3dc,Vector3dc> p = fourVerticesWithNormals.get(0);
+            fourVertices.remove(p.a);
 
-            final ValuePair<VertexWithNormal, Double> qAndRadius = calculateQ(fourVertices, p);
+            final ValuePair<ValuePair<Vector3dc,Vector3dc>, Double> qAndRadius = calculateQ(fourVertices, p);
             if (qAndRadius == null || qAndRadius.getB() > calibratedLargestImageDimension) return Optional.empty();
-            fourVertices.remove(qAndRadius.getA().getVertex());
+            fourVertices.remove(qAndRadius.getA().a);
 
-            final Vector3d np = new Vector3d(p.getNormal());
+            final Vector3d np = new Vector3d(p.b);
             np.mul(qAndRadius.getB());
-            p.setNormal(np);
+            p  = new ValuePair<>(p.a, np);
 
-            final Vector3d c = new Vector3d(p.getNormal());
-            c.add(p.getVertex());
+            final Vector3d c = new Vector3d(p.b);
+            c.add(p.a);
             final Matrix4d q1 = getQ1(c, qAndRadius.getB());
             final Matrix4d q2 = getQ2(p, qAndRadius.getA());
 
@@ -82,7 +82,7 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
             final Optional<Ellipsoid> ellipsoid = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
             if (!ellipsoid.isPresent()) return ellipsoid;
 
-            final Matrix4d q3 = getQ3(Arrays.asList(p.getVertex(), qAndRadius.getA().getVertex(), rAndAlpha.getA()), ellipsoid.get());
+            final Matrix4d q3 = getQ3(Arrays.asList(p.a, qAndRadius.getA().a, rAndAlpha.getA()), ellipsoid.get());
 
             final ValuePair<Vector3d, Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, fourVertices);
             if (sAndBeta == null) return ellipsoid;
@@ -126,43 +126,43 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
      * @param qnq q and normal at q
      * @return the 4x4 matrix Q_2
      */
-    static Matrix4d getQ2(final VertexWithNormal pnp, final VertexWithNormal qnq) {
-        final Vector3d p = pnp.getVertex();
-        final Vector3d np = pnp.getNormal();
-        final Vector3d q = qnq.getVertex();
-        final Vector3d nq = qnq.getNormal();
+	static Matrix4d getQ2(final ValuePair<Vector3dc, Vector3dc> pnp,
+		final ValuePair<Vector3dc, Vector3dc> qnq)
+	{
 
-        final Matrix3d NRotation = new Matrix3d();
+		final Matrix3d NRotation = new Matrix3d();
 
-        NRotation.m00 = -np.x() * nq.x();
-        NRotation.m01 = -np.x() * nq.y();
-        NRotation.m02 = -np.x() * nq.z();
+		NRotation.m00 = -pnp.b.x() * qnq.b.x();
+		NRotation.m01 = -pnp.b.x() * qnq.b.y();
+		NRotation.m02 = -pnp.b.x() * qnq.b.z();
 
-        NRotation.m10 = -np.y() * nq.x();
-        NRotation.m11 = -np.y() * nq.y();
-        NRotation.m12 = -np.y() * nq.z();
+		NRotation.m10 = -pnp.b.y() * qnq.b.x();
+		NRotation.m11 = -pnp.b.y() * qnq.b.y();
+		NRotation.m12 = -pnp.b.y() * qnq.b.z();
 
-        NRotation.m20 = -np.z() * nq.x();
-        NRotation.m21 = -np.z() * nq.y();
-        NRotation.m22 = -np.z() * nq.z();
+		NRotation.m20 = -pnp.b.z() * qnq.b.x();
+		NRotation.m21 = -pnp.b.z() * qnq.b.y();
+		NRotation.m22 = -pnp.b.z() * qnq.b.z();
 
-        final Matrix3d NRotationTransposed = new Matrix3d(NRotation);
-        NRotationTransposed.transpose();
-        final Matrix3d q2Rotation = new Matrix3d(NRotation);
-        q2Rotation.add(NRotationTransposed);
-        q2Rotation.scale(0.5);
+		final Matrix3d NRotationTransposed = new Matrix3d(NRotation);
+		NRotationTransposed.transpose();
+		final Matrix3d q2Rotation = new Matrix3d(NRotation);
+		q2Rotation.add(NRotationTransposed);
+		q2Rotation.scale(0.5);
 
-        final double nqDotqHalf = nq.dot(q) / 2.0;
-        final double npDotpHalf = np.dot(p) / 2.0;
+		final double nqDotqHalf = qnq.b.dot(qnq.a) / 2.0;
+		final double npDotpHalf = pnp.b.dot(pnp.a) / 2.0;
 
-        final Vector3d q2Translation = new Vector3d(np.x() * nqDotqHalf + nq.x() * npDotpHalf, np.y() * nqDotqHalf + nq.y() * npDotpHalf, np.z() * nqDotqHalf + nq.z() * npDotpHalf);
+		final Vector3d q2Translation = new Vector3d(pnp.b.x() * nqDotqHalf + qnq.b
+			.x() * npDotpHalf, pnp.b.y() * nqDotqHalf + qnq.b.y() * npDotpHalf, pnp.b
+				.z() * nqDotqHalf + qnq.b.z() * npDotpHalf);
 
-        final Matrix4d quadric2 = new Matrix4d(q2Rotation);
-        quadric2.setColumn(3, new Vector4d(q2Translation,1));
-        quadric2.setRow(3, new Vector4d(q2Translation,1));
-        quadric2.m33(-np.dot(p) * nq.dot(q));
-        return quadric2;
-    }
+		final Matrix4d quadric2 = new Matrix4d(q2Rotation);
+		quadric2.setColumn(3, new Vector4d(q2Translation, 1));
+		quadric2.setRow(3, new Vector4d(q2Translation, 1));
+		quadric2.m33(-pnp.b.dot(pnp.a) * qnq.b.dot(qnq.a));
+		return quadric2;
+	}
 
 
     /**
@@ -273,8 +273,8 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
     }
 
 
-    private static ValuePair<VertexWithNormal,Double> calculateQ(final Collection<Vector3dc> candidateQs, final VertexWithNormal p) {
-        final List<ValuePair<VertexWithNormal, Double>> candidateQAndRs = candidateQs.stream().map(q -> calculatePossibleQAndR(q,p)).filter(qnr -> qnr.getB()>0).collect(Collectors.toList());
+    private static ValuePair<ValuePair<Vector3dc,Vector3dc>,Double> calculateQ(final Collection<Vector3dc> candidateQs, final ValuePair<Vector3dc,Vector3dc> p) {
+        final List<ValuePair<ValuePair<Vector3dc,Vector3dc>, Double>> candidateQAndRs = candidateQs.stream().map(q -> calculatePossibleQAndR(q,p)).filter(qnr -> qnr.getB()>0).collect(Collectors.toList());
 
         candidateQAndRs.sort(Comparator.comparingDouble(ValuePair::getB));
 
@@ -290,29 +290,29 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
         return distance.length();
     }
 
-    private static ValuePair<VertexWithNormal,Double> calculatePossibleQAndR(final Vector3dc x, final VertexWithNormal p)
+    private static ValuePair<ValuePair<Vector3dc,Vector3dc>,Double> calculatePossibleQAndR(final Vector3dc x, final ValuePair<Vector3dc,Vector3dc> p)
     {
-        final Vector3d xMinusP = new Vector3d(p.getVertex());
+        final Vector3d xMinusP = new Vector3d(p.a);
         xMinusP.mul(-1);
         xMinusP.add(x);
         final double distanceSquared = xMinusP.lengthSquared();
-        final double scalarProduct = xMinusP.dot(p.getNormal());
+        final double scalarProduct = xMinusP.dot(p.b);
 
         if(scalarProduct<=0.0) return new ValuePair<>(null,-1.0);
 
         final double radius = distanceSquared/(2*scalarProduct);
 
-        final Vector3d centre = new Vector3d(p.getNormal());
+        final Vector3d centre = new Vector3d(p.b);
         centre.mul(radius);
-        centre.add(p.getVertex());
+        centre.add(p.a);
 
         final Vector3d cMinusX = new Vector3d(x);
         cMinusX.mul(-1);
         cMinusX.add(centre);
-        return new ValuePair<>(new VertexWithNormal(new ValuePair<>(x,cMinusX)),radius);
+        return new ValuePair<>(new ValuePair<>(x,cMinusX),radius);
     }
 
-    private static ValuePair<Vector3d, Double> calculateSurfacePointAndGreekCoefficient(final Matrix4dc Q1, final Matrix4dc Q2, final List<Vector3dc> vertices)
+    private static ValuePair<Vector3d, Double> calculateSurfacePointAndGreekCoefficient(final Matrix4dc Q1, final Matrix4dc Q2, final Collection<Vector3dc> vertices)
     {
         final List<ValuePair<Vector3d,Double>> candidatePointsAndCoefficients = vertices.stream().map(v -> calculateCandidateSurfacePointAndGreekCoefficient(Q1, Q2, v)).filter(a -> !a.getB().isNaN()).collect(Collectors.toList());
         candidatePointsAndCoefficients.sort(Comparator.comparingDouble(ValuePair::getB));
@@ -340,23 +340,4 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
     }
 
 
-}
-
-class VertexWithNormal {
-
-    private ValuePair<Vector3dc,Vector3dc> vwn;
-
-    VertexWithNormal(final ValuePair<Vector3dc,Vector3dc> vwn){
-        this.vwn = vwn;
-    }
-
-    public Vector3d getVertex() {
-        return new Vector3d(vwn.getA());
-    }
-
-    public Vector3d getNormal() {
-        return new Vector3d(vwn.getB());
-    }
-
-    public void setNormal(final Vector3d n) {this.vwn = new ValuePair<>(this.vwn.getA(), new Vector3d(n));}
 }

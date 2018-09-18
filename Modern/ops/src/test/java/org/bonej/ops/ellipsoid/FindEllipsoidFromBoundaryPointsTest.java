@@ -201,7 +201,7 @@ public class FindEllipsoidFromBoundaryPointsTest {
         );
         // @formatter:on
 
-        final Matrix4d q2 = FindEllipsoidFromBoundaryPoints.getQ2(new VertexWithNormal(new ValuePair<>(p, np)), new VertexWithNormal(new ValuePair<>(q, nq)));
+        final Matrix4d q2 = FindEllipsoidFromBoundaryPoints.getQ2(new ValuePair<>(p, np), new ValuePair<>(q, nq));
 
         assertEquals(q2.m00(),expected.m00(),1.0e-12);
         assertEquals(q2.m01(),expected.m01(),1.0e-12);
