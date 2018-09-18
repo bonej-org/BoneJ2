@@ -33,6 +33,7 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -140,7 +141,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         statusService.showStatus("Ellipsoid Factor: initialising...");
         Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
-        final List<Vector3d> internalSeedPoints = getRidgePoints(inputAsBit);
+        final List<Vector3dc> internalSeedPoints = getRidgePoints(inputAsBit);
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
         final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
@@ -298,7 +299,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
 
-    private List<Ellipsoid> findEllipsoids(List<Vector3d> internalSeedPoints) {
+    private List<Ellipsoid> findEllipsoids(List<Vector3dc> internalSeedPoints) {
         final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(100);
         return internalSeedPoints.stream().map(sp -> getPointCombinationsForOneSeedPoint(sp)).flatMap(l -> l.stream())
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
@@ -306,22 +307,22 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
     }
 
-    private List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>, Vector3d>> getPointCombinationsForOneSeedPoint(Vector3d internalSeedPoint)
+    private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(Vector3dc internalSeedPoint)
     {
         int nSphere = 18;
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-        List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>,Vector3d>> combinations = new ArrayList<>();
+        List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>,Vector3dc>> combinations = new ArrayList<>();
 
         Combinations combinationsOfFourIntegers = new Combinations(nSphere,4);
 
-        List<Vector3d> contactPoints = sphereSamplingDirections.stream().map(d -> {
+        List<Vector3dc> contactPoints = sphereSamplingDirections.stream().map(d -> {
             final Vector3d direction = new Vector3d(d);
             return findFirstPointInBGAlongRay(direction, internalSeedPoint);
         }).collect(toList());
-        final List<ValuePair<Vector3d, Vector3d>> seedPoints = new ArrayList<>();
+        final List<ValuePair<Vector3dc, Vector3dc>> seedPoints = new ArrayList<>();
 
         contactPoints.forEach(c -> {
             Vector3d inwardDirection = new Vector3d(internalSeedPoint);
@@ -333,7 +334,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return combinations;
     }
 
-    private List<Vector3d> getRidgePoints(Img<BitType> inputAsBit) {
+    private List<Vector3dc> getRidgePoints(Img<BitType> inputAsBit) {
         final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
 
         //find clever seed points
@@ -363,7 +364,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Img<BitType> thresholdedRidge = Thresholder.threshold(ridgeImg, (R) new FloatType((float) ridgePointCutOff), true, 1);
         ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
 
-        final List<Vector3d> internalSeedPoints = new ArrayList<>();
+        final List<Vector3dc> internalSeedPoints = new ArrayList<>();
 
         ridgeCursor.reset();
         while (ridgeCursor.hasNext()) {
@@ -372,7 +373,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             if (localValue > ridgePointCutOff) {
                 long[] position = new long[3];
                 ridgeCursor.localize(position);
-                final Vector3d internalSeedPoint = new Vector3d(position[0]+0.5, position[1]+0.5, position[2]+0.5);
+                final Vector3dc internalSeedPoint = new Vector3d(position[0]+0.5, position[1]+0.5, position[2]+0.5);
                 internalSeedPoints.add(internalSeedPoint);
             }
         }
@@ -552,8 +553,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return (int) Math.ceil(Math.pow(searchRadius * 3.809 / pixelWidth, 2));
     }
 
-    Vector3d findFirstPointInBGAlongRay(final Vector3d rayIncrement,
-                                        final Vector3d start) {
+    Vector3d findFirstPointInBGAlongRay(final Vector3dc rayIncrement,
+                                        final Vector3dc start) {
         RandomAccess<R> randomAccess = inputImage.randomAccess();
 
         Vector3d currentRealPosition = new Vector3d(start);
@@ -579,17 +580,17 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 currentPixelPosition[2] < 0 || currentPixelPosition[2] >= depth);
     }
 
-    private static long[] vectorToPixelGrid(Vector3d currentPosition) {
+    private static long[] vectorToPixelGrid(Vector3dc currentPosition) {
         return Stream.of(currentPosition.x(), currentPosition.y(),
                 currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
 
-    static List<ValuePair<Set<ValuePair<Vector3d,Vector3d>>,Vector3d>> getAllUniqueCombinationsOfFourPoints(final List<ValuePair<Vector3d,Vector3d>> points, final Vector3d centre, final Combinations combinationsOfFour){
+    static List<ValuePair<Set<ValuePair<Vector3dc,Vector3dc>>,Vector3dc>> getAllUniqueCombinationsOfFourPoints(final List<ValuePair<Vector3dc,Vector3dc>> points, final Vector3dc centre, final Combinations combinationsOfFour){
         final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(points.size(), 4);//combinationsOfFour.iterator();
-        final List<ValuePair<Set<ValuePair<Vector3d,Vector3d>>,Vector3d>> pointCombinations = new ArrayList<>();
+        final List<ValuePair<Set<ValuePair<Vector3dc,Vector3dc>>,Vector3dc>> pointCombinations = new ArrayList<>();
         iterator.forEachRemaining(el ->
                 {
-                    final Set<ValuePair<Vector3d, Vector3d>> pointCombination =  IntStream.range(0, 4).mapToObj(i -> points.get(el[i])).collect(Collectors.toSet());
+                    final Set<ValuePair<Vector3dc, Vector3dc>> pointCombination =  IntStream.range(0, 4).mapToObj(i -> points.get(el[i])).collect(Collectors.toSet());
                     if(pointCombination.size()==4)
                     {
                         pointCombinations.add(new ValuePair<>(pointCombination,centre));
