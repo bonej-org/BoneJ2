@@ -1,17 +1,26 @@
 package org.bonej.ops.ellipsoid;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.util.ValuePair;
+
 import org.apache.commons.math3.exception.MaxCountExceededException;
-import org.joml.*;
+import org.joml.Matrix3d;
+import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
+import org.joml.Vector4d;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-
-import javax.swing.text.html.Option;
-import java.lang.Math;
-import java.util.*;
-import java.util.stream.Collectors;
 
 
 /**
