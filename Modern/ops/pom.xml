@@ -127,7 +127,7 @@
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
             <!-- Remove explicit version when pom-scijava has this or newer stable version -->
-            <version>0.42.0-SNAPSHOT</version>
+            <version>0.42.0</version>
         </dependency>
 
         <!-- Scijava dependencies -->
