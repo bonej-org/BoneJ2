@@ -25,13 +25,19 @@ import org.scijava.plugin.Plugin;
 
 
 /**
- * Tries to do one step of an {@link Ellipsoid} decomposition, starting from a point and a list of possible other points to collide with
+ * Tries to do one step of an {@link Ellipsoid} decomposition, starting from a
+ * point and a list of possible other points to collide with
  * <p>
- * The ellipsoid decomposition is drawn from the paper of Bischoff and Kobbelt, 2002 (https://www.graphics.rwth-aachen.de/media/papers/ellipsoids1.pdf)
- * The variable naming widely follows Bischoff and Kobbelt's nomenclature, it is recommended to read this code in conjunction with the paper.
- * The Ellipsoid-Plane intersection is done slightly differently, using the {@link EllipsoidPlaneIntersection}. This op starts growing an ellipsoid
- * from the starting point p, and keeps growing in various directions until it hits three more points (q,r,s). If less than four distinct points are found,
- * the op returns an empty ellipsoid. More details on the growing process are in the original publication.
+ * The ellipsoid decomposition is drawn from the paper of Bischoff and Kobbelt,
+ * 2002 (https://www.graphics.rwth-aachen.de/media/papers/ellipsoids1.pdf) The
+ * variable naming widely follows Bischoff and Kobbelt's nomenclature, it is
+ * recommended to read this code in conjunction with the paper. The
+ * Ellipsoid-Plane intersection is done slightly differently, using the
+ * {@link EllipsoidPlaneIntersection}. This op starts growing an ellipsoid from
+ * the starting point <b>p</b>, and keeps growing in various directions until it
+ * hits three more points (<b>q</b>, <b>r</b>, <b>s</b>). If less than four
+ * distinct points are found, the op returns an empty ellipsoid. More details on
+ * the growing process are in the original publication.
  * </p>
  *
  * @author Alessandro Felder

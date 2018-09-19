@@ -18,14 +18,17 @@ import org.joml.Vector3dc;
 import org.scijava.plugin.Plugin;
 
 /**
- * Finds the intersection between an {@link Ellipsoid} and a plane given by a point and a normal vector.
+ * Finds the intersection between an {@link Ellipsoid} and a plane given by a
+ * point and a normal vector.
  * <p>
- * Valid for any ellipsoid, the calculation is based on the closed-form solution for an
- * axis-aligned ellipsoid given by P. P. Klein (http://dx.doi.org/10.4236/am.2012.311226).
- * The input point on the plane has to be an interior point of the ellipsoid!
+ * Valid for any ellipsoid, the calculation is based on the closed-form solution
+ * for an axis-aligned ellipsoid given by P. P. Klein
+ * (http://dx.doi.org/10.4236/am.2012.311226). The input point on the plane has
+ * to be an interior point of the ellipsoid!
  * </p>
  *
  * @author Alessandro Felder
+ * @author Richard Domander
  */
 @Plugin(type = Op.class)
 public class EllipsoidPlaneIntersection extends AbstractBinaryFunctionOp<Ellipsoid, ValuePair<Vector3dc,Vector3dc>, List<Vector3d>>

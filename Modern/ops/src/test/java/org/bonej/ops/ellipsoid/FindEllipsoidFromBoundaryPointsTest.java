@@ -1,9 +1,17 @@
 package org.bonej.ops.ellipsoid;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 import net.imagej.ImageJ;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imglib2.util.ValuePair;
+
 import org.joml.Matrix3d;
 import org.joml.Matrix4d;
 import org.joml.Matrix4dc;
@@ -12,19 +20,15 @@ import org.joml.Vector3dc;
 import org.joml.Vector4d;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 /**
- *Tests for {@link FindEllipsoidFromBoundaryPoints}
- *lots of expected values calculated with pen and paper or sympy.
- *TODO: put calculations in javadoc and user documentation
+ * Tests for {@link FindEllipsoidFromBoundaryPoints}
+ * <p>
+ * A lot of the expected values were calculated with pen &amp; paper and sympy.
+ * </p>
+ *
+ * @author Alessandro Felder
  */
-
+// TODO: put calculations in javadoc and user documentation
 public class FindEllipsoidFromBoundaryPointsTest {
     private static final ImageJ IMAGE_J = new ImageJ();
 

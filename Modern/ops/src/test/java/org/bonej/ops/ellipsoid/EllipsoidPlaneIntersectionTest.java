@@ -12,6 +12,11 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 
+/**
+ * Tests for {@link EllipsoidPlaneIntersection}
+ *
+ * @author Alessandro Felder
+ */
 public class EllipsoidPlaneIntersectionTest {
 
     UnitSphereRandomVectorGenerator sphereRNG = new UnitSphereRandomVectorGenerator(3);
