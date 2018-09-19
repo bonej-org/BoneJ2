@@ -205,9 +205,4 @@ public class EllipsoidFactorWrapperTest {
 
     }
 
-    // main method for manual visual testing
-    public static void main(String[] args) {
-
-    }
-
 }
