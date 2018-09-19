@@ -8,7 +8,9 @@ import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.util.ValuePair;
 
 import org.joml.Matrix3d;
+import org.joml.Matrix3dc;
 import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
 import org.joml.Vector2d;
 import org.joml.Vector2dc;
 import org.joml.Vector3d;
@@ -31,32 +33,45 @@ public class EllipsoidPlaneIntersection extends AbstractBinaryFunctionOp<Ellipso
 
     @Override
     public List<Vector3d> calculate(final Ellipsoid ellipsoid, final ValuePair<Vector3dc, Vector3dc> plane) {
-        //transform to axis-aligned coordinates
-        final Matrix4d orientation = ellipsoid.getOrientation();
-        Matrix3d toAxisAlignedRotation = new Matrix3d(orientation);
-        if(Math.abs(toAxisAlignedRotation.determinant()-1.0) > 1e-12)
-        {
-            toAxisAlignedRotation.setColumn(2, -toAxisAlignedRotation.m02, -toAxisAlignedRotation.m12, -toAxisAlignedRotation.m22);
-        }
-        toAxisAlignedRotation = toAxisAlignedRotation.transpose();
-
-        //find intersections
-        final Vector3d translation = ellipsoid.getCentroid();
-        translation.negate();
-        final Vector3d interiorPointOnPlane = new Vector3d(plane.getA());
-        interiorPointOnPlane.add(translation);
-        final Vector3d transformedInteriorPointOnPlane = toAxisAlignedRotation.transform(interiorPointOnPlane);
-        final Vector3d planeNormal = new Vector3d(plane.getB());
-        planeNormal.normalize();
-        final Vector3d transformedPlaneNormal = toAxisAlignedRotation.transform(planeNormal);
-        final Vector3dc semiAxisLengths = new Vector3d(ellipsoid.getA(), ellipsoid.getB(), ellipsoid.getC());
-        final List<Vector3d> ellipse3D = findAxisAlignedCentredIntersectionEllipse(semiAxisLengths, new ValuePair<>(transformedInteriorPointOnPlane, transformedPlaneNormal));
-
-        //transform back
-        ellipse3D.forEach(orientation::transformDirection);
-        ellipse3D.get(0).add(ellipsoid.getCentroid());
-        return ellipse3D;
+        final Matrix3dc axisAlignedRotation = getInverseRotation(ellipsoid.getOrientation());
+        final List<Vector3d> ellipse3D = intersectionEllipse(ellipsoid, plane, axisAlignedRotation);
+        return alignToEllipsoid(ellipse3D, ellipsoid);
     }
+
+	private List<Vector3d> alignToEllipsoid(final List<Vector3d> ellipse3D,
+		final Ellipsoid ellipsoid)
+	{
+		final Matrix4d orientation = ellipsoid.getOrientation();
+		ellipse3D.forEach(orientation::transformDirection);
+		ellipse3D.get(0).add(ellipsoid.getCentroid());
+		return ellipse3D;
+	}
+
+	private Matrix3d getInverseRotation(final Matrix4dc orientation) {
+		final Matrix3d rotation = new Matrix3d(orientation);
+		if (Math.abs(rotation.determinant() - 1.0) > 1e-12) {
+			rotation.setColumn(2, -rotation.m02, -rotation.m12, -rotation.m22);
+		}
+		return rotation.transpose();
+	}
+
+	private List<Vector3d> intersectionEllipse(final Ellipsoid ellipsoid,
+		final ValuePair<Vector3dc, Vector3dc> plane, final Matrix3dc rotation)
+	{
+		final Vector3d translation = ellipsoid.getCentroid();
+		translation.negate();
+		final Vector3d interiorPointOnPlane = new Vector3d(plane.getA());
+		interiorPointOnPlane.add(translation);
+		final Vector3d transformedInteriorPointOnPlane = rotation.transform(
+			interiorPointOnPlane);
+		final Vector3d planeNormal = new Vector3d(plane.getB());
+		planeNormal.normalize();
+		final Vector3d transformedPlaneNormal = rotation.transform(planeNormal);
+		final Vector3dc semiAxisLengths = new Vector3d(ellipsoid.getA(), ellipsoid
+			.getB(), ellipsoid.getC());
+		return findAxisAlignedCentredIntersectionEllipse(semiAxisLengths,
+			new ValuePair<>(transformedInteriorPointOnPlane, transformedPlaneNormal));
+	}
 
     List<Vector3d> findAxisAlignedCentredIntersectionEllipse(final Vector3dc semiAxisLengths, final ValuePair<Vector3dc, Vector3dc> transformedPlane) {
         final Vector3dc n = transformedPlane.getB();
