@@ -24,6 +24,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.ops.ellipsoid;
 
 import net.imglib2.util.ValuePair;
+import org.apache.commons.math3.random.RandomVectorGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
@@ -42,10 +43,10 @@ import static org.junit.Assert.*;
  */
 public class EllipsoidPlaneIntersectionTest {
 
-    UnitSphereRandomVectorGenerator sphereRNG = new UnitSphereRandomVectorGenerator(3);
+    private static final RandomVectorGenerator sphereRNG = new UnitSphereRandomVectorGenerator(3);
 
     @Test
-    public void testGeneralEllipsoidAndPlane() throws Exception {
+    public void testGeneralEllipsoidAndPlane() {
         final Ellipsoid ellipsoid = new Ellipsoid(1,2,3);
 
         final double oneOverSqrtThree = 1.0/Math.sqrt(3.0);
@@ -69,7 +70,7 @@ public class EllipsoidPlaneIntersectionTest {
         final EllipsoidPlaneIntersection intersection = new EllipsoidPlaneIntersection();
         final List<Vector3d> intersectionEllipse = intersection.calculate(ellipsoid, plane);
 
-        assertTrue(intersectionEllipse.size()==3);
+        assertEquals(3, intersectionEllipse.size());
 
         final Vector3d ellipseCentre = intersectionEllipse.get(0);
         final Vector3d ellipseAxisA = intersectionEllipse.get(1);
@@ -88,7 +89,7 @@ public class EllipsoidPlaneIntersectionTest {
     }
 
     @Test
-    public void testAxisAlignedEllipsoidWithObliquePlane() throws Exception {
+    public void testAxisAlignedEllipsoidWithObliquePlane() {
         final Ellipsoid axisAligned = new Ellipsoid(1,2,3);
         final double oneOverSqrtThree = 1.0/Math.sqrt(3.0);
         final ValuePair<Vector3dc,Vector3dc> obliquePlane = new ValuePair<>(new Vector3d(0,0,0.5),new Vector3d(oneOverSqrtThree,oneOverSqrtThree,oneOverSqrtThree));
@@ -96,7 +97,7 @@ public class EllipsoidPlaneIntersectionTest {
         final EllipsoidPlaneIntersection intersection = new EllipsoidPlaneIntersection();
         final List<Vector3d> axisAlignedIntersectionEllipse = intersection.findAxisAlignedCentredIntersectionEllipse(new Vector3d(axisAligned.getA(), axisAligned.getB(), axisAligned.getC()), obliquePlane);
 
-        assertTrue(axisAlignedIntersectionEllipse.size()==3);
+        assertEquals(3, axisAlignedIntersectionEllipse.size());
 
         final Vector3d ellipseCentre = axisAlignedIntersectionEllipse.get(0);
         final Vector3d ellipseAxisA = axisAlignedIntersectionEllipse.get(1);
@@ -115,14 +116,14 @@ public class EllipsoidPlaneIntersectionTest {
     }
 
     @Test
-    public void testAxisAlignedEllipsoidWithParallelPlane() throws Exception {
+    public void testAxisAlignedEllipsoidWithParallelPlane() {
         final Ellipsoid axisAligned = new Ellipsoid(1,2,3);
         final ValuePair<Vector3dc,Vector3dc> XYPlane = new ValuePair<>(new Vector3d(0,0,0.25),new Vector3d(0,0,1));
 
         final EllipsoidPlaneIntersection intersection = new EllipsoidPlaneIntersection();
         final List<Vector3d> axisAlignedIntersectionEllipse = intersection.findAxisAlignedCentredIntersectionEllipse(new Vector3d(axisAligned.getA(), axisAligned.getB(), axisAligned.getC()), XYPlane);
 
-        assertTrue(axisAlignedIntersectionEllipse.size()==3);
+        assertEquals(3, axisAlignedIntersectionEllipse.size());
 
         final Vector3d ellipseCentre = axisAlignedIntersectionEllipse.get(0);
         assertEquals(ellipseCentre.x, 0, 1.0e-12);
@@ -174,7 +175,7 @@ public class EllipsoidPlaneIntersectionTest {
     }
 
     @Test
-    public void testGenerationOfBasis() throws Exception {
+    public void testGenerationOfBasis() {
         for(int i=0; i<10; i++) {
             final double[] randomVector = sphereRNG.nextVector();
             final Vector3d planeNormal = new Vector3d(randomVector[0], randomVector[1], randomVector[2]);
