@@ -110,3 +110,23 @@ Expected results
 
 Completed March 12 2018 Richard Domander
 -----------------------------------------------------------------------
+
+
+Case 5
+=======================================================================
+Verify that the progress bar is seen
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Anisotropy >
+4. Check "Recommended minimum"
+
+Expected result
+-----------------------------------------------------------------------
+The progress bar advances in the lower right-hand corner of the ImageJ
+main window. Progress resets for each subspace.
+
+Completed September 10th 2018 Richard Domander
+-----------------------------------------------------------------------

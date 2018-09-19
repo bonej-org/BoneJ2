@@ -75,9 +75,19 @@ public class DistanceFromEllipsoidSurfaceOp extends
 	 * @param ellipsoid the ellipsoid in question
 	 * @param point the point in question
 	 * @return shortest distance
+	 * @throws IllegalArgumentException if {@link #tolerance} is negative, or
+	 *           {@link #maxIterations} is not positive.
 	 */
 	@Override
-	public DoubleType calculate(final Ellipsoid ellipsoid, final Vector3dc point) {
+	public DoubleType calculate(final Ellipsoid ellipsoid, final Vector3dc point)
+		throws IllegalArgumentException
+	{
+		if (tolerance < 0.0) {
+			throw new IllegalArgumentException("Tolerance cannot be negative");
+		}
+		if (maxIterations < 1) {
+			throw new IllegalArgumentException("Max iterations must be positive");
+		}
 		final double a = ellipsoid.getA();
 		final double b = ellipsoid.getB();
 		final double c = ellipsoid.getC();
@@ -96,7 +106,7 @@ public class DistanceFromEllipsoidSurfaceOp extends
 			anglesKPlus1 = new Vector2d(anglesK.x(), anglesK.y());
 			anglesKPlus1.add(inverseJacobian(anglesK, ellipsoid,
 				pointInEllipsoidCoordinates));
-			if (getDifference(anglesK, anglesKPlus1) < tolerance) {
+			if (getDifference(anglesK, anglesKPlus1) <= tolerance) {
 				break;
 			}
 			anglesK = new Vector2d(anglesKPlus1.x, anglesKPlus1.y);

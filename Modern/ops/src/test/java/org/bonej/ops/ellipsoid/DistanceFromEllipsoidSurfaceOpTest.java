@@ -39,7 +39,9 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Tests for {@link DistanceFromEllipsoidSurfaceOp}.
@@ -59,6 +61,9 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 		final double[] c = sphereRng.nextVector();
 		return new Vector3d(c[0], c[1], c[2]);
 	};
+
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 
 	@Test(expected = ArithmeticException.class)
 	public void testArithmeticExceptionForZeroDeterminant() {
@@ -186,6 +191,22 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 		assertEquals(0.0, translated.y(), 1.0e-12);
 		assertEquals(1.0, translated.z(), 1.0e-12);
 
+	}
+
+	@Test
+	public void testCalculateThrowsIAEIfMaxIterationsNegative() {
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Max iterations must be positive");
+		IMAGE_J.op().run(DistanceFromEllipsoidSurfaceOp.class, sphere, new Vector3d(
+			2, 0, 0), 1.0, -1);
+	}
+
+	@Test
+	public void testCalculateThrowsIAEIfToleranceNegative() {
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Tolerance cannot be negative");
+		IMAGE_J.op().run(DistanceFromEllipsoidSurfaceOp.class, sphere, new Vector3d(
+			2, 0, 0), -1.0, 100);
 	}
 
 	@BeforeClass

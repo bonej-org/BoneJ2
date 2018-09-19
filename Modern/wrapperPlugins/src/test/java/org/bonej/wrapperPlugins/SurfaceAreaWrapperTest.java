@@ -23,7 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.IsosurfaceWrapper.STL_WRITE_ERROR;
+import static org.bonej.wrapperPlugins.SurfaceAreaWrapper.STL_WRITE_ERROR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -74,12 +74,12 @@ import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 /**
- * Tests for {@link IsosurfaceWrapper}
+ * Tests for {@link SurfaceAreaWrapper}
  *
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class IsosurfaceWrapperTest {
+public class SurfaceAreaWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
 
@@ -91,7 +91,7 @@ public class IsosurfaceWrapperTest {
 	@Test
 	public void test2DImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
-			IsosurfaceWrapper.class);
+			SurfaceAreaWrapper.class);
 	}
 
 	@Test
@@ -119,7 +119,7 @@ public class IsosurfaceWrapperTest {
 		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Run plugin
-		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,
+		IMAGE_J.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
 			"exportSTL", true).get();
 
 		// Verify that write error dialog got shown
@@ -138,7 +138,7 @@ public class IsosurfaceWrapperTest {
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis);
 
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
 			imgPlus);
 
 		assertTrue("Axes should have matching calibration", result);
@@ -154,7 +154,7 @@ public class IsosurfaceWrapperTest {
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis);
 
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
 			imgPlus);
 
 		assertFalse(
@@ -172,7 +172,7 @@ public class IsosurfaceWrapperTest {
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis);
 
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
 			imgPlus);
 
 		assertFalse(
@@ -190,7 +190,7 @@ public class IsosurfaceWrapperTest {
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis);
 
-		final boolean result = IsosurfaceWrapper.isAxesMatchingSpatialCalibration(
+		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
 			imgPlus);
 
 		assertTrue("No units should mean matching calibration", result);
@@ -211,35 +211,29 @@ public class IsosurfaceWrapperTest {
 		// Mock UI
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(eq(IsosurfaceWrapper.BAD_SCALING), anyString(), eq(
+		when(mockUI.dialogPrompt(eq(SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Run plugin
-		IMAGE_J.command().run(IsosurfaceWrapper.class, true, "inputImage", imgPlus,
+		IMAGE_J.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
 			"exportSTL", false).get();
 
 		// Verify that warning dialog about result scaling got shown once
 		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
-			IsosurfaceWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
-	}
-
-	@Test
-	public void testNoCalibrationShowsWarning() throws Exception {
-		CommonWrapperTests.testNoCalibrationShowsWarning(IMAGE_J,
-			IsosurfaceWrapper.class, "exportSTL", false);
+			SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
-			IsosurfaceWrapper.class);
+			SurfaceAreaWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsIsosurface() throws Exception {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
-			IsosurfaceWrapper.class);
+			SurfaceAreaWrapper.class);
 	}
 
 	@Test
@@ -285,23 +279,22 @@ public class IsosurfaceWrapperTest {
 		}
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(IsosurfaceWrapper.class,
+		final CommandModule module = IMAGE_J.command().run(SurfaceAreaWrapper.class,
 			true, "inputImage", imgPlus, "exportSTL", false).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Wrong number of columns", 2, table.size());
+		assertEquals("Wrong number of columns", 1, table.size());
 		for (int i = 0; i < 1; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("A column has wrong number of rows", 4, column.size());
 			assertEquals("A column has an incorrect header", expectedHeaders[i],
 				column.getHeader());
 			for (int j = 0; j < column.size(); j++) {
-				assertEquals("Column has an incorrect value", expectedValues[j], Double
-					.parseDouble(column.get(j)), 1e-12);
+				assertEquals("Column has an incorrect value", expectedValues[j], column.get(j).doubleValue(), 1e-12);
 			}
 		}
 	}
@@ -332,7 +325,7 @@ public class IsosurfaceWrapperTest {
 
 		// Write test mesh to a file
 		final String filePath = "./test_file.stl";
-		IsosurfaceWrapper.writeBinarySTLFile(filePath, mesh);
+		SurfaceAreaWrapper.writeBinarySTLFile(filePath, mesh);
 
 		// Read and delete the test file
 		final Path path = Paths.get(filePath);
@@ -343,7 +336,7 @@ public class IsosurfaceWrapperTest {
 		assertEquals("Size of STL file is incorrect", expectedLength, bytes.length);
 
 		final String header = new String(Arrays.copyOfRange(bytes, 0, 80));
-		assertEquals("File header is incorrect", IsosurfaceWrapper.STL_HEADER,
+		assertEquals("File header is incorrect", SurfaceAreaWrapper.STL_HEADER,
 			header);
 
 		final int numFacets = ByteBuffer.wrap(bytes, 80, 4).order(
@@ -376,19 +369,19 @@ public class IsosurfaceWrapperTest {
 	public void testWriteBinarySTLFileEmptyNameThrowsIAE() throws Exception {
 		final Mesh mesh = new NaiveFloatMesh();
 
-		IsosurfaceWrapper.writeBinarySTLFile("", mesh);
+		SurfaceAreaWrapper.writeBinarySTLFile("", mesh);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testWriteBinarySTLFileNullMeshThrowsNPE() throws Exception {
-		IsosurfaceWrapper.writeBinarySTLFile("Mesh", null);
+		SurfaceAreaWrapper.writeBinarySTLFile("Mesh", null);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testWriteBinarySTLFileNullNameThrowsIAE() throws Exception {
 		final Mesh mesh = new NaiveFloatMesh();
 
-		IsosurfaceWrapper.writeBinarySTLFile(null, mesh);
+		SurfaceAreaWrapper.writeBinarySTLFile(null, mesh);
 	}
 
 	@AfterClass

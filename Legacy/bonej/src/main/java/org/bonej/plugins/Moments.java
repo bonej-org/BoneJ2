@@ -127,10 +127,13 @@ public class Moments implements PlugIn, DialogListener {
 		gd.addMessage("Density calibration coefficients");
 		gd.addNumericField("Slope", 0, 4, 6, "g.cm^-3 / " + pixUnits + " ");
 		gd.addNumericField("Y_Intercept", 1.8, 4, 6, "g.cm^-3");
+		if (isInvalidUnit(cal.getUnits())) {
+			gd.addMessage(
+				"Spatial dimensions uncalibrated.\nAssuming 1 mm pixel spacing.");
+		}
 		gd.addCheckbox("Align result", true);
 		gd.addCheckbox("Show axes (2D)", false);
 		gd.addCheckbox("Show axes (3D)", true);
-		gd.addHelp("http://bonej.org/moments");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		if (gd.wasCanceled()) {
@@ -550,16 +553,19 @@ public class Moments implements PlugIn, DialogListener {
 	}/* end findCentroid3D */
 
 	/**
-	 * Get a scale factor because density is in g / cm<sup>3</sup> but our units
-	 * are mm so density is 1000* too high
+	 * Get a scale factor because density is in g / cm³ but our units are mm,
+	 * microns or pixels so density is wrong leading to wrong mass and moments.
 	 *
 	 * @param imp an image.
-	 * @return divisor to convert calibration values to g / cm<sup>3</sup>
+	 * @return divisor to convert calibration values to g / cm<sup>3</sup>.
 	 */
 	private static double getDensityFactor(final ImagePlus imp) {
-		final String units = imp.getCalibration().getUnits();
-		if (units.contains("mm")) {
+		final String unit = imp.getCalibration().getUnit();
+		if (unit.contains("mm") || unit.contains("pixel")) {
 			return 1000;
+		}
+		if (unit.contains("micron") || unit.contains("µm")) {
+			return 1e12;
 		}
 		return 1;
 	}
@@ -655,6 +661,10 @@ public class Moments implements PlugIn, DialogListener {
 		final int tD = (int) Math.floor(2 * zTmax / vS) + 5;
 
 		return new int[] { tW, tH, tD };
+	}
+
+	private static boolean isInvalidUnit(final String units) {
+		return units.contains("pixels");
 	}
 
 	/**

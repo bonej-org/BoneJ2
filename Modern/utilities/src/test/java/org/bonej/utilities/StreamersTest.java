@@ -23,16 +23,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.utilities;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
-
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
@@ -41,8 +31,13 @@ import net.imagej.axis.TypedAxis;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
-
 import org.junit.Test;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Unit tests for {@link Streamers}
@@ -73,11 +68,8 @@ public class StreamersTest {
 			1));
 	}
 
-	@Test
-	public void testSpatialAxisStreamReturnsEmptyIfSpaceNull() {
-		final Stream<TypedAxis> result = Streamers.spatialAxisStream(null);
-
-		assertNotNull("Stream should not be null", result);
-		assertFalse("Stream should be empty", result.findAny().isPresent());
+	@Test(expected = NullPointerException.class)
+	public void testAxisStreamThrowsNPEIfSpaceNull() {
+		Streamers.axisStream(null);
 	}
 }

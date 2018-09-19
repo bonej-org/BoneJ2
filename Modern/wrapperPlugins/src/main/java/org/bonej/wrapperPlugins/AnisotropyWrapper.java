@@ -25,8 +25,7 @@ package org.bonej.wrapperPlugins;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;
-import static org.bonej.utilities.AxisUtils.getSpatialUnit;
-import static org.bonej.utilities.Streamers.spatialAxisStream;
+import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
@@ -38,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -139,7 +139,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1",
 		callback = "applyMinimum")
 	private Double samplingIncrement = DEFAULT_INCREMENT;
-	@Parameter(label = "Recommended minimum",
+	@Parameter(label = "Recommended minimums",
 		description = "Apply minimum recommended values to directions, lines, and increment",
 		persist = false, required = false, callback = "applyMinimum")
 	private boolean recommendedMin;
@@ -151,6 +151,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		description = "Show the radii of the fitted ellipsoid in the results",
 		required = false)
 	private boolean printRadii;
+	private static Long seed;
 
 	/**
 	 * The anisotropy results in a {@link Table}.
@@ -159,7 +160,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 	@Parameter
 	private LogService logService;
 	@Parameter
@@ -206,12 +207,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			suffix;
 		SharedTable.add(label, "Degree of anisotropy", anisotropy);
 		if (printRadii) {
-			SharedTable.add(label, "Radius a", String.format("%.2f", ellipsoid
-				.getA()));
-			SharedTable.add(label, "Radius b", String.format("%.2f", ellipsoid
-				.getB()));
-			SharedTable.add(label, "Radius c", String.format("%.2f", ellipsoid
-				.getC()));
+			SharedTable.add(label, "Radius a", ellipsoid.getA());
+			SharedTable.add(label, "Radius b", ellipsoid.getB());
+			SharedTable.add(label, "Radius c", ellipsoid.getC());
 		}
 	}
 
@@ -241,17 +239,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final Matrix4dc quadric = solveQuadricOp.calculate(pointCloud);
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
 		return quadricToEllipsoidOp.calculate(quadric);
-	}
-
-	// TODO Refactor into a static utility method with unit tests
-	private boolean isCalibrationIsotropic() {
-		final Optional<String> commonUnit = getSpatialUnit(inputImage, unitService);
-		if (!commonUnit.isPresent()) {
-			return false;
-		}
-		final String unit = commonUnit.get();
-		return spatialAxisStream(inputImage).map(axis -> unitService.value(axis
-			.averageScale(0, 1), axis.unit(), unit)).distinct().count() == 1;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -346,6 +333,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			executor.shutdownNow();
 			// Preserve interrupt status
 			Thread.currentThread().interrupt();
+			logService.trace(ie);
 		}
 	}
 
@@ -363,7 +351,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_BINARY);
 			return;
 		}
-		if (!isCalibrationIsotropic() && !calibrationWarned) {
+		if (!isSpatialCalibrationsIsotropic(inputImage, 0.01, unitService) &&
+			!calibrationWarned)
+		{
 			final Result result = uiService.showDialog(
 				"The voxels in the image are anisotropic, which may affect results. Continue anyway?",
 				WARNING_MESSAGE, OK_CANCEL_OPTION);
@@ -374,6 +364,21 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				cancel(null);
 			}
 		}
+	}
+	// endregion
+
+	// region -- Utility methods --
+	/**
+	 * Sets the seed used in the random generation of MIL sampling lines.
+	 * <p>
+	 * The method's here only to enable reproducible unit test.
+	 * </p>
+	 * 
+	 * @param seed a seed number.
+	 * @see Random#setSeed
+	 */
+	static void setSeed(final long seed) {
+		AnisotropyWrapper.seed = seed;
 	}
 	// endregion
 }

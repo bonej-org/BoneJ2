@@ -314,7 +314,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		CommandModule module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class,
 			true, "inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons",
-			false, "calculateShortestPath", true).get();
+			false, "calculateShortestPaths", true).get();
 
 		// VERIFY
 		assertNull(module.getOutput("labelledSkeleton"));
@@ -323,7 +323,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
-			"calculateShortestPath", false).get();
+			"calculateShortestPaths", false).get();
 
 		// VERIFY
 		assertNotNull(module.getOutput("labelledSkeleton"));
@@ -332,7 +332,7 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
-			"calculateShortestPath", true).get();
+			"calculateShortestPaths", true).get();
 
 		// VERIFY
 		final ImagePlus labelledSkeleton = (ImagePlus) module.getOutput(
@@ -360,31 +360,31 @@ public class AnalyseSkeletonWrapperTest {
 			"# Junctions", "# End-point voxels", "# Junction voxels", "# Slab voxels",
 			"Average Branch Length", "# Triple points", "# Quadruple points",
 			"Maximum Branch Length", "Longest Shortest Path", "spx", "spy", "spz" };
-		final String[][] expectedValues = { { "1", "2" }, { "0", "0" }, { "0",
-			"0" }, { "1", "1" }, { "0", "0" }, { "0", "0" }, { "0.0", "0.0" }, { "0",
-				"0" }, { "0", "0" }, { "0.0", "0.0" }, { "0.0", "0.0" }, { "1.0",
-					"3.0" }, { "1.0", "3.0" }, { "0.0", "0.0" } };
+		final double[][] expectedValues = { { 1, 2 }, { 0, 0 }, { 0,
+			0 }, { 1, 1 }, { 0, 0 }, { 0, 0 }, { 0.0, 0.0 }, { 0,
+				0 }, { 0, 0 }, { 0.0, 0.0 }, { 0.0, 0.0 }, { 1.0,
+					3.0 }, { 1.0, 3.0 }, { 0.0, 0.0 } };
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixels,
-			"pruneCycleMethod", "None", "calculateShortestPath", true).get();
+			"pruneCycleMethod", "None", "calculateShortestPaths", true).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final List<DefaultColumn<String>> table =
-			(List<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals("Results table has wrong number of columns",
-			expectedHeaders.length + 1, table.size());
-		for (int i = 0; i < table.size() - 1; i++) {
-			final DefaultColumn<String> column = table.get(i + 1);
+			expectedHeaders.length, table.size());
+		for (int i = 0; i < table.size(); i++) {
+			final DefaultColumn<Double> column = table.get(i);
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			assertEquals("Column has wrong number of rows", 2, column.size());
 			for (int j = 0; j < 2; j++) {
 				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					column.get(j));
+					column.get(j).doubleValue(), 1e-12);
 			}
 		}
 	}
@@ -403,14 +403,14 @@ public class AnalyseSkeletonWrapperTest {
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
-			"pruneCycleMethod", "None", "calculateShortestPath", false).get();
+			"pruneCycleMethod", "None", "calculateShortestPaths", false).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
-		final Collection<DefaultColumn<String>> table =
-			(Collection<DefaultColumn<String>>) module.getOutput("resultsTable");
+		final Collection<DefaultColumn<Double>> table =
+			(Collection<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
-		assertEquals("Results table has wrong number of columns", 11, table.size());
+		assertEquals("Results table has wrong number of columns", 10, table.size());
 	}
 
 	/**
