@@ -164,7 +164,7 @@ public class FindEllipsoidFromBoundaryPointsTest {
         final Vector3dc sphereCentre = new Vector3d(3, 4, 5);
         final double radius = 7.77;
 
-        final Matrix4d q1 = FindEllipsoidFromBoundaryPoints.getQ1(sphereCentre, radius);
+        final Matrix4d q1 = FindEllipsoidFromBoundaryPoints.getQ1(new ValuePair<>(sphereCentre, new Vector3d()), radius);
 
         Matrix3d identity = new Matrix3d();
         identity = identity.identity();
