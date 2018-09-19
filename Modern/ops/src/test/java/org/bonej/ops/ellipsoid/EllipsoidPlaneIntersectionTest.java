@@ -23,6 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.ellipsoid;
 
+import static org.bonej.ops.ellipsoid.EllipsoidPlaneIntersection.findAxisAlignedCentredIntersectionEllipse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -110,8 +111,7 @@ public class EllipsoidPlaneIntersectionTest {
         final double oneOverSqrtThree = 1.0/Math.sqrt(3.0);
         final ValuePair<Vector3dc,Vector3dc> obliquePlane = new ValuePair<>(new Vector3d(0,0,0.5),new Vector3d(oneOverSqrtThree,oneOverSqrtThree,oneOverSqrtThree));
 
-        final EllipsoidPlaneIntersection intersection = new EllipsoidPlaneIntersection();
-        final List<Vector3d> axisAlignedIntersectionEllipse = intersection.findAxisAlignedCentredIntersectionEllipse(new Vector3d(axisAligned.getA(), axisAligned.getB(), axisAligned.getC()), obliquePlane);
+        final List<Vector3d> axisAlignedIntersectionEllipse = findAxisAlignedCentredIntersectionEllipse(new Vector3d(axisAligned.getA(), axisAligned.getB(), axisAligned.getC()), obliquePlane);
 
         assertEquals(3, axisAlignedIntersectionEllipse.size());
 
@@ -136,8 +136,7 @@ public class EllipsoidPlaneIntersectionTest {
         final Ellipsoid axisAligned = new Ellipsoid(1,2,3);
         final ValuePair<Vector3dc,Vector3dc> XYPlane = new ValuePair<>(new Vector3d(0,0,0.25),new Vector3d(0,0,1));
 
-        final EllipsoidPlaneIntersection intersection = new EllipsoidPlaneIntersection();
-        final List<Vector3d> axisAlignedIntersectionEllipse = intersection.findAxisAlignedCentredIntersectionEllipse(new Vector3d(axisAligned.getA(), axisAligned.getB(), axisAligned.getC()), XYPlane);
+        final List<Vector3d> axisAlignedIntersectionEllipse = findAxisAlignedCentredIntersectionEllipse(new Vector3d(axisAligned.getA(), axisAligned.getB(), axisAligned.getC()), XYPlane);
 
         assertEquals(3, axisAlignedIntersectionEllipse.size());
 
@@ -159,7 +158,6 @@ public class EllipsoidPlaneIntersectionTest {
         assertTrue(fulfillsEllipsoidEquation(pointOnPlaneAndEllipsoidA, axisAligned));
         assertTrue(fulfillsPlaneEquation(pointOnPlaneAndEllipsoidB, XYPlane));
         assertTrue(fulfillsEllipsoidEquation(pointOnPlaneAndEllipsoidB, axisAligned));
-
     }
 
 
