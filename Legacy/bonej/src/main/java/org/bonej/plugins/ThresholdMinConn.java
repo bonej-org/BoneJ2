@@ -328,7 +328,6 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		gd.addNumericField("Subvolume Size", subVolume, 0);
 		gd.addNumericField("Erosion Cycles", nErodes, 0);
 		gd.addNumericField("Dilation Cycles", nDilates, 0);
-		gd.addHelp("http://bonej.org/threshold");
 		gd.addDialogListener(this);
 		gd.showDialog();
 

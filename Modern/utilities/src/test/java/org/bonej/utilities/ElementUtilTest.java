@@ -87,17 +87,13 @@ public class ElementUtilTest {
 		}
 	}
 
-	@Test
-	public void testCalibratedSpatialElementSizeNoSpatialAxes() {
+	@Test(expected = IllegalArgumentException.class)
+	public void testCalibratedSpatialElementSizeThrowsIAEIfNoSpatialAxes() {
 		final DefaultLinearAxis cAxis = new DefaultLinearAxis(Axes.CHANNEL);
 		final Img<DoubleType> img = IMAGE_J.op().create().img(new int[] { 3 });
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", cAxis);
 
-		final double elementSize = ElementUtil.calibratedSpatialElementSize(imgPlus,
-			unitService);
-
-		assertTrue("Element size should be NaN when there are no spatial axes",
-			Double.isNaN(elementSize));
+		ElementUtil.calibratedSpatialElementSize(imgPlus, unitService);
 	}
 
 	@Test
@@ -130,12 +126,21 @@ public class ElementUtilTest {
 			result));
 	}
 
-	@Test
-	public void testCalibratedSpatialElementSizeNullSpace() {
-		final double result = ElementUtil.calibratedSpatialElementSize(null,
-			unitService);
+	@Test(expected = NullPointerException.class)
+	public void testCalibratedSpatialElementSizeThrowsNPIfENullSpace() {
+		ElementUtil.calibratedSpatialElementSize(null, unitService);
+	}
 
-		assertTrue("Size should be NaN when space is null", Double.isNaN(result));
+	@Test(expected = NullPointerException.class)
+	public void testCalibratedSpatialElementSizeThrowsNPEIfNullUnitService() {
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm");
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "kg");
+		final Img<ByteType> img = ArrayImgs.bytes(1, 1, 1);
+		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", xAxis, yAxis,
+				zAxis);
+
+		ElementUtil.calibratedSpatialElementSize(imgPlus, null);
 	}
 
 	@Test
@@ -149,7 +154,7 @@ public class ElementUtilTest {
 		final double result = ElementUtil.calibratedSpatialElementSize(imgPlus,
 			unitService);
 
-		assertEquals("Size should be 1.0 if unit inconvertible", 1.0, result,
+		assertEquals("Size should be NaN if unit inconvertible", Double.NaN, result,
 			1e-12);
 	}
 
@@ -175,8 +180,8 @@ public class ElementUtilTest {
 		assertTrue("A BitType image should be binary", isBinary);
 	}
 
-	@Test
-	public void testIsColorsBinaryFalseWhenIntervalNull() {
+	@Test(expected = NullPointerException.class)
+	public void testIsColorsBinaryThrowsNPEIfIntervalNull() {
 		final boolean result = ElementUtil.isColorsBinary(null);
 
 		assertFalse("A null interval should not be binary color", result);

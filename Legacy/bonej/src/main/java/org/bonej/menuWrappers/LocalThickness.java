@@ -59,7 +59,6 @@ public class LocalThickness implements PlugIn {
 	private static final boolean GRAPHIC_DEFAULT = true;
 	private static final boolean ROI_DEFAULT = false;
 	private static final boolean MASK_DEFAULT = true;
-	private static final String HELP_URL = "http://bonej.org/thickness";
 	private static final String TRABECULAR_THICKNESS = "Tb.Th";
 	private static final String TRABECULAR_SPACING = "Tb.Sp";
 
@@ -195,7 +194,6 @@ public class LocalThickness implements PlugIn {
 		}
 
 		setupDialog.addCheckbox("Mask thickness map", doMask);
-		setupDialog.addHelp(HELP_URL);
 	}
 
 	private void getSettingsFromDialog() {

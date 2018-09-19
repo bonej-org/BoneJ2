@@ -24,54 +24,52 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.utilities;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.Table;
 
-import org.scijava.util.StringUtils;
-
 /**
  * Stores a {@link Table}, which is ordered according to the following rules:
  * <ol>
- * <li>Each row starts with "Label" column. The labels identify the rows, and
- * tell you which image was measured, e.g. "bat-cochlea-volume.tif"</li>
+ * <li>Each row has a header label, which tells you which image was measured,
+ * e.g. "bat-cochlea-volume.tif"</li>
  * <li>Each column has a header, which tells you the type of the measurement,
  * e.g. "Volume"</li>
  * <li>If there are no rows with the given label, then add a new row</li>
  * <li>If there are rows with the given label, but there is not a column with
- * the given heading, then add a column, and set its value on the first row with
- * the label.</li>
+ * the given heading, then append a column, and set its value on the last row
+ * with the label.</li>
  * <li>If there are rows with the given label, and there's a column with the
- * given heading, then find the first empty cell (equals {@link #EMPTY_CELL}),
- * and add the new value there. If there are no empty cells, then add a new
+ * given heading, then find the last empty cell (equals {@link #EMPTY_CELL}),
+ * and add the new value there. If there are no empty cells, then append a new
  * row.</li>
- * <li>Labels and columns are kept in alphabetical order</li>
- * <li>If there are multiple rows with the same labels &amp; non-empty cells,
- * the last inserted value comes last</li>
+ * <li>Labels and columns are kept in the order in which they were
+ * produced.</li>
  * </ol>
  *
  * @author Richard Domander
+ * @author Michael Doube
  */
 public final class SharedTable {
 
-	public static final String LABEL_HEADER = "Label";
-	public static final String EMPTY_CELL = "";
+	public static final Double EMPTY_CELL = null;
 
 	/**
-	 * The table uses String values, so that we can mark empty cells with empty
-	 * Strings. Numerical columns cannot have empty cells. Unfortunately this
-	 * causes sorting in UI to work alphabetically, i.e. "1", "11", "2".
+	 * The table uses Double values. Empty cells are indicated by null
 	 */
-	private static Table<DefaultColumn<String>, String> table = createTable();
+	private static Table<DefaultColumn<Double>, Double> table = createTable();
+
+	private static Table<DefaultColumn<Double>, Double> publicCopy;
 
 	private SharedTable() {}
 
 	/**
-	 * Adds new value as a {@link String} to the shared table.
+	 * Adds new value as a {@link Double} to the shared table.
 	 *
-	 * @see #add(String, String, String)
+	 * @see #add(String, String, Double)
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
 	 * @param value the value of the new data.
@@ -79,13 +77,13 @@ public final class SharedTable {
 	public static void add(final String label, final String header,
 		final long value)
 	{
-		add(label, header, String.valueOf(value));
+		add(label, header, new Double(value));
 	}
 
 	/**
-	 * Adds new value as a {@link String} to the shared table
+	 * Adds new value as a {@link Double} to the shared table
 	 *
-	 * @see #add(String, String, String)
+	 * @see #add(String, String, Double)
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
 	 * @param value the value of the new data.
@@ -93,52 +91,75 @@ public final class SharedTable {
 	public static void add(final String label, final String header,
 		final double value)
 	{
-		add(label, header, String.valueOf(value));
+		add(label, header, new Double(value));
 	}
 
 	/**
-	 * Adds new data to the shared table according to the policy described in
-	 * {@link SharedTable}.
-	 * <p>
-	 * Empty or null labels and headers are ignored.
-	 * </p>
+	 * Adds new data to the shared table according to the shared table policy.
 	 *
 	 * @param label the row label of the new data.
 	 * @param header the column heading of the new data.
 	 * @param value the value of the new data.
+	 * @throws NullPointerException if value == null
 	 */
 	public static void add(final String label, final String header,
-		final String value)
+		final Double value) throws NullPointerException
 	{
-		if (StringUtils.isNullOrEmpty(label) || StringUtils.isNullOrEmpty(header)) {
-			return;
+		if (value == null) {
+			throw new NullPointerException();
+		}
+		if (label.isEmpty()) {
+			throw new IllegalArgumentException("Label cannot be empty");
+		}
+		if (header.isEmpty()) {
+			throw new IllegalArgumentException("Header cannot be empty");
 		}
 
 		final int columns = table.getColumnCount();
-		final int columnIndex = alphabeticalHeaderIndex(header);
+		final int columnIndex = headerIndex(header);
 
 		if (columnIndex == columns) {
 			appendEmptyColumn(header);
 		}
-		else if (!table.get(columnIndex).getHeader().equals(header)) {
-			insertEmptyColumn(columnIndex, header);
-		}
-
 		insertIntoNextFreeRow(label, columnIndex, value);
 	}
 
 	/**
-	 * Gets the shared {@link Table} instance.
+	 * Gets a copy of the singleton {@link Table}.
+	 * <p>
+	 * Returns the same copy instance on every call. However, the contents of the
+	 * copy table are always cleared and copied from the actual table. That is, if
+	 * you've modified the copy after the previous call, those modifications are
+	 * lost.
+	 * </p>
 	 *
-	 * @return the singleton table.
+	 * @return the persistent copy instance.
 	 */
-	public static Table<DefaultColumn<String>, String> getTable() {
-		return table;
+	public static Table<DefaultColumn<Double>, Double> getTable() {
+		if (publicCopy == null) {
+			publicCopy = createTable();
+		}
+		else {
+			// Calling publicCopy.clear() would be simpler, but it breaks the tests of
+			// the class. However, the tests fail only when run together, individually
+			// they pass.
+			publicCopy.setRowCount(0);
+			publicCopy.setColumnCount(0);
+		}
+		table.forEach(publicCopy::add);
+		// Just calling publicCopy::add is not enough to update size info
+		// (ThicknessWrapperTests fail)
+		publicCopy.setRowCount(table.getRowCount());
+		publicCopy.setColumnCount(table.getColumnCount());
+		for (int i = 0; i < table.getRowCount(); i++) {
+			publicCopy.setRowHeader(i, table.getRowHeader(i));
+		}
+		return publicCopy;
 	}
 
 	public static boolean hasData() {
-		return table.stream().flatMap(Collection::stream).anyMatch(s -> s != null &&
-			!EMPTY_CELL.equals(s));
+		return table.stream().flatMap(Collection::stream).anyMatch(
+			Objects::nonNull);
 	}
 
 	/** Initializes the table into a new empty table */
@@ -148,66 +169,61 @@ public final class SharedTable {
 
 	// region -- Helper methods --
 
-	private static int alphabeticalHeaderIndex(final String header) {
-		final int cols = table.getColumnCount();
-		return IntStream.range(1, cols).filter(i -> table.get(i).getHeader().equals(
-			header)).findFirst().orElse(cols);
-	}
-
 	private static void appendEmptyColumn(final String header) {
 		table.appendColumn(header);
 		final int lastColumn = table.getColumnCount() - 1;
 		fillEmptyColumn(lastColumn);
 	}
 
+	private static void appendEmptyRow(final String label) {
+		table.appendRow(label);
+		final int lastRow = table.getRowCount() - 1;
+		fillEmptyRow(label, lastRow);
+	}
+
 	@SuppressWarnings("unchecked")
-	private static Table<DefaultColumn<String>, String> createTable() {
-		final Table newTable = new DefaultGenericTable();
-		newTable.appendColumn(LABEL_HEADER);
-		return newTable;
+	private static Table<DefaultColumn<Double>, Double> createTable() {
+		return (Table) new DefaultGenericTable();
 	}
 
 	private static void fillEmptyColumn(final int columnIndex) {
-		final DefaultColumn<String> column = table.get(columnIndex);
+		final DefaultColumn<Double> column = table.get(columnIndex);
 		IntStream.range(0, column.size()).forEach(i -> column.set(i, EMPTY_CELL));
 	}
 
 	private static void fillEmptyRow(final String label, final int row) {
-		table.get(LABEL_HEADER).set(row, label);
+		table.setRowHeader(row, label);
 		final int columns = table.getColumnCount();
-		IntStream.range(1, columns).forEach(column -> table.set(column, row,
+		IntStream.range(0, columns).forEach(column -> table.set(column, row,
 			EMPTY_CELL));
 	}
 
-	private static void insertEmptyColumn(final int column, final String header) {
-		table.insertColumn(column, header);
-		fillEmptyColumn(column);
-	}
-
-	private static void insertEmptyRow(final String label, final int rowIndex) {
-		table.insertRow(rowIndex);
-		fillEmptyRow(label, rowIndex);
+	private static int headerIndex(final String header) {
+		final int cols = table.getColumnCount();
+		return IntStream.range(0, cols).filter(i -> table.get(i).getHeader().equals(
+			header)).findFirst().orElse(cols);
 	}
 
 	private static void insertIntoNextFreeRow(final String label,
-		final int columnIndex, final String value)
+		final int columnIndex, final Double value)
 	{
 		final int rows = table.getRowCount();
-		final DefaultColumn<String> labelColumn = table.get(LABEL_HEADER);
-		int alphabeticalIndex = IntStream.range(0, rows).filter(i -> labelColumn
-			.get(i).compareTo(label) >= 0).findFirst().orElse(rows);
-		while (alphabeticalIndex < rows && labelColumn.get(alphabeticalIndex)
-			.equals(label))
-		{
-			final String cell = table.get(columnIndex).get(alphabeticalIndex);
-			if (cell == null || EMPTY_CELL.equals(cell)) {
-				table.set(columnIndex, alphabeticalIndex, value);
-				return;
+		// iterate up the table from the bottom
+		for (int i = rows - 1; i >= 0; i--) {
+			// if we find a row with the same label
+			if (table.getRowHeader(i).equals(label)) {
+				//check whether there is not already a value in columnIndex
+				final Double cell = table.get(columnIndex, i); 
+				if (Objects.equals(cell, EMPTY_CELL)) {
+					//add the value to the row and column
+					table.set(columnIndex, i, value);
+					return;
+				}
 			}
-			alphabeticalIndex++;
 		}
-		insertEmptyRow(label, alphabeticalIndex);
-		table.set(columnIndex, alphabeticalIndex, value);
+		// we didn't find the label in the table so make a new row
+		appendEmptyRow(label);
+		table.set(columnIndex, rows, value);
 	}
 	// endregion
 }

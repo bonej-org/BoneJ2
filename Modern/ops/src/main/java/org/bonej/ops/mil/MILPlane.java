@@ -219,7 +219,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	private static Section intersectInterval(final Vector3dc origin,
 		final Vector3dc direction, final Interval interval)
 	{
-		final Vector2d result = new Vector2d();
+		final Vector2d tValues = new Vector2d();
 		final Vector3dc o = new Vector3d(origin.x(), origin.y(), origin.z());
 		final Vector3dc d = new Vector3d(direction.x(), direction.y(), direction.z());
 		final Vector3dc min = new Vector3d(interval.min(0), interval.min(1),
@@ -227,17 +227,17 @@ public class MILPlane<B extends BooleanType<B>> extends
 		final Vector3dc max = new Vector3d(interval.max(0) + 1, interval.max(1) + 1,
 			interval.max(2) + 1);
 		final boolean intersect = Intersectiond.intersectRayAab(o, d, min, max,
-			result);
+			tValues);
 		if (!intersect) {
 			return null;
 		}
-		return new Section(origin, result.x, result.y);
+		return new Section(origin, direction, tValues.x, tValues.y);
 	}
 
 	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
-		final Section section, final Vector3dc direction, final double increment)
+		final Section section, final double increment)
 	{
-		final long intercepts = sampleSection(interval, section, direction,
+		final long intercepts = sampleSection(interval, section, section.direction,
 			increment);
 		if (intercepts < 0) {
 			return null;
@@ -257,7 +257,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	{
 		final DoubleType totalLength = new DoubleType();
 		final LongType totalIntercepts = new LongType();
-		sections.map(s -> mILValues(interval, s, direction, increment)).filter(
+		sections.map(s -> mILValues(interval, s, increment)).filter(
 			Objects::nonNull).forEach(p -> {
 				totalLength.set(p.a + totalLength.get());
 				totalIntercepts.set(p.b + totalIntercepts.get());
@@ -301,13 +301,14 @@ public class MILPlane<B extends BooleanType<B>> extends
 		private final double tMin;
 		private final double tMax;
 		private final Vector3dc origin;
+		private final Vector3dc direction;
 
-		private Section(final Vector3dc origin, final double tMin,
-			final double tMax)
-		{
+		private Section(final Vector3dc origin, final Vector3dc direction, final double tMin,
+						final double tMax) {
 			this.tMin = tMin;
 			this.tMax = tMax;
 			this.origin = origin;
+			this.direction = direction;
 		}
 	}
 
