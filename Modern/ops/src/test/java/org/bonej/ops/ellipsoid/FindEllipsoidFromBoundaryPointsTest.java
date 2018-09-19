@@ -41,6 +41,7 @@ import org.joml.Matrix4dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.Vector4d;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 /**
@@ -59,6 +60,11 @@ public class FindEllipsoidFromBoundaryPointsTest {
     private static final BinaryFunctionOp<List<ValuePair<Vector3dc, Vector3dc>>, Vector3dc, Optional<Ellipsoid>> findEllipsoidOp =
             (BinaryFunctionOp) Functions.binary(IMAGE_J.op(), FindEllipsoidFromBoundaryPoints.class,
                     Optional.class, List.class, Vector3dc.class);
+
+    @AfterClass
+    public static void oneTimeTearDown() {
+        IMAGE_J.context().dispose();
+    }
 
     @Test
     public void testFittingEllipsoidToEquidistantCollisionPoints() {
