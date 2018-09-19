@@ -80,7 +80,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private DoubleType sigma = new DoubleType(0);
 
     @Parameter(persist = false, required = false)
-    private DoubleType percentageOfRidgePoints = new DoubleType(0.8);
+    private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.95);
+
+    @Parameter(persist = false, required = false)
+    private IntType approximateNumberOfInternalSeeds = new IntType(250);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -132,15 +135,17 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private boolean calibrationWarned;
 
+    private Random rng;
+
     @Override
     public void run() {
 
         statusService.showStatus("Ellipsoid Factor: initialising...");
+        rng = new Random();
         Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
         final List<Vector3dc> internalSeedPoints = getRidgePoints(inputAsBit);
-        //final List<Vector3d> internalSeedPoints = new ArrayList<>();
-        //internalSeedPoints.add(new Vector3d(58.5,95.5, 128));
-        //internalSeedPoints.add(new Vector3d(70.5,70.5,15.5));
+        //final List<Vector3dc> internalSeedPoints = new ArrayList<>();
+        //internalSeedPoints.add(new Vector3d(93,99,101));
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
         final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
@@ -160,6 +165,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         logService.info("foreground voxels = "+numberOfForegroundVoxels);
         double fillingPercentage = 100.0*((double) numberOfAssignedVoxels)/((double) numberOfForegroundVoxels);
         logService.info("filling percentage = "+fillingPercentage+"%");
+        logService.info("number of seed points = " + internalSeedPoints.size());
 
     }
 
@@ -300,12 +306,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 
     private List<Ellipsoid> findEllipsoids(List<Vector3dc> internalSeedPoints) {
-        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(30);
-        filterSamplingDirections.addAll(Arrays.asList(
-                new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
-                new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-
-
+        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(250);
         List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>,Vector3d>> combinations = new ArrayList<>();
         return internalSeedPoints.parallelStream().map(sp -> getPointCombinationsForOneSeedPoint(sp)).flatMap(l -> l.stream())
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
@@ -315,26 +316,28 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(Vector3dc internalSeedPoint)
     {
-        int nSphere = 30;
+        int nSphere = 40;
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         //sphereSamplingDirections.clear();
-        sphereSamplingDirections.addAll(Arrays.asList(
-                new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
-                new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-        List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>,Vector3dc>> combinations = new ArrayList<>();
+        /*sphereSamplingDirections.addAll(Arrays.asList(
+                new Vector3d(1,0,1),new Vector3d(0,1,1),new Vector3d(0,0,1),
+                new Vector3d(-1,0,1)));//,new Vector3d(0,-1,0),new Vector3d(0,0,-1)));*/
+        //sphereSamplingDirections.forEach(v -> v.normalize());
 
-        List<Vector3dc> contactPoints = sphereSamplingDirections.stream().map(d -> {
+        List<Vector3dc> contactPoints = sphereSamplingDirections.parallelStream().map(d -> {
             final Vector3d direction = new Vector3d(d);
             return findFirstPointInBGAlongRay(direction, internalSeedPoint);
         }).collect(toList());
-        final List<ValuePair<Vector3dc, Vector3dc>> seedPoints = new ArrayList<>();
 
+        final List<ValuePair<Vector3dc, Vector3dc>> seedPoints = new ArrayList<>();
         contactPoints.forEach(c -> {
             Vector3d inwardDirection = new Vector3d(internalSeedPoint);
             inwardDirection.sub(c);
             inwardDirection.normalize();
             seedPoints.add(new ValuePair<>(c, inwardDirection));
         });
+
+        List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>,Vector3dc>> combinations = new ArrayList<>();
         combinations.addAll(getAllUniqueCombinationsOfFourPoints(seedPoints, internalSeedPoint));
         return combinations;
     }
@@ -364,7 +367,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             }
         }
 
-        final double ridgePointCutOff = percentageOfRidgePoints.getRealFloat()*opService.stats().max(ridge).getRealFloat();
+        final double ridgePointCutOff = thresholdForBeingARidgePoint.getRealFloat()*opService.stats().max(ridge).getRealFloat();
         final Img<R> ridgeImg = (Img) ridge;
         final Img<BitType> thresholdedRidge = Thresholder.threshold(ridgeImg, (R) new FloatType((float) ridgePointCutOff), true, 1);
         ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
@@ -381,6 +384,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 final Vector3dc internalSeedPoint = new Vector3d(position[0]+0.5, position[1]+0.5, position[2]+0.5);
                 internalSeedPoints.add(internalSeedPoint);
             }
+        }
+
+        //reduce number of internal seeds
+        if(internalSeedPoints.size()>approximateNumberOfInternalSeeds.getInt())
+        {
+            double probabilityOfAcceptingSeed = ((double) approximateNumberOfInternalSeeds.getInt())/((double) internalSeedPoints.size());
+            internalSeedPoints.removeIf(i -> rng.nextDouble()>probabilityOfAcceptingSeed);
         }
         return internalSeedPoints;
     }
@@ -436,7 +446,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         axisSamplingDirections.addAll(sphereSamplingDirections);
 
-        return !axisSamplingDirections.stream().anyMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
+        return axisSamplingDirections.stream().noneMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
     }
 
     private boolean ellipsoidIntersectionIsBackground(Ellipsoid e, Vector3d dir) {
@@ -451,14 +461,14 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Matrix3d lambda = new Matrix3d();
         lambda.scaling(1.0/(a*a),1.0/(b*b),1.0/(c*c));
         
-        Matrix3d LambdaQ = new Matrix3d(lambda);
-        LambdaQ.mul(Q);
+        Matrix3d LambdaQT = new Matrix3d(lambda);
         Matrix3d QT = Q.transpose();
-        Matrix3d QTLambdaQ = new Matrix3d(QT);
-        QTLambdaQ.mul(LambdaQ);
+        LambdaQT.mul(QT);
+        Matrix3d QLambdaQT = new Matrix3d(Q);
+        QLambdaQT.mul(LambdaQT);
         
         Vector3d ATimesDir = new Vector3d();
-        QTLambdaQ.transform(dir,ATimesDir);
+        QLambdaQT.transform(dir,ATimesDir);
         double surfaceIntersectionParameter = Math.sqrt(1.0/dir.dot(ATimesDir));
         
         Vector3d intersectionPoint = new Vector3d(dir);
