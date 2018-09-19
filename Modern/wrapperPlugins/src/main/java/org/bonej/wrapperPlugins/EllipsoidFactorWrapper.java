@@ -196,10 +196,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Img<FloatType> bToCImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         bToCImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
 
-        final double[] ellipsoidFactorArray = ellipsoids.parallelStream().mapToDouble(e -> computeEllipsoidFactor(e)).toArray();
+        final double[] ellipsoidFactorArray = ellipsoids.parallelStream().mapToDouble(EllipsoidFactorWrapper::computeEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactorArray, ellipsoidIdentityImage, ellipsoidFactorImage);
 
-        final double[] volumeArray = ellipsoids.parallelStream().mapToDouble(e -> e.getVolume()).toArray();
+        final double[] volumeArray = ellipsoids.parallelStream().mapToDouble(Ellipsoid::getVolume).toArray();
         mapValuesToImage(volumeArray, ellipsoidIdentityImage, volumeImage);
 
         final double[] aToBArray = ellipsoids.parallelStream().mapToDouble(e -> e.getA()/e.getB()).toArray();
@@ -210,7 +210,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         final long FlinnPlotDimension = 501; //several ellipsoids may fall in same bin if this is too small a number! This will be ignored!
         final Img<BitType> flinnPlot = ArrayImgs.bits(FlinnPlotDimension,FlinnPlotDimension);
-        flinnPlot.cursor().forEachRemaining(c -> c.setZero());
+        flinnPlot.cursor().forEachRemaining(BitType::setZero);
 
         final RandomAccess<BitType> flinnRA = flinnPlot.randomAccess();
         for(int i=0; i<aToBArray.length; i++)
@@ -324,7 +324,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private List<Ellipsoid> findEllipsoids(final List<Vector3dc> internalSeedPoints) {
         final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(100);
-        return internalSeedPoints.stream().map(sp -> getPointCombinationsForOneSeedPoint(sp)).flatMap(l -> l.stream())
+        return internalSeedPoints.stream().map(this::getPointCombinationsForOneSeedPoint).flatMap(Collection::stream)
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
                 .filter(Optional::isPresent).map(Optional::get)
                 .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
@@ -454,7 +454,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         axisSamplingDirections.addAll(sphereSamplingDirections);
 
-        return !axisSamplingDirections.stream().anyMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
+        return axisSamplingDirections.stream().noneMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
     }
 
     private boolean ellipsoidIntersectionIsBackground(final Ellipsoid e, final Vector3d dir) {
@@ -540,7 +540,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
      * @param n : number of points required (has to be > 2)
      * </p>
      */
-    // TODO Can this be done with 
+    // TODO Can this be done with
     static List<Vector3d> getGeneralizedSpiralSetOnSphere(final int n) {
         final List<Vector3d> spiralSet = new ArrayList<>();
 
