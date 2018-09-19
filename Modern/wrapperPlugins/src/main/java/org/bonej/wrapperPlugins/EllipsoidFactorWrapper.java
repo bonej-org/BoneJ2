@@ -163,7 +163,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     public void run() {
 
         statusService.showStatus("Ellipsoid Factor: initialising...");
-        Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
+        final Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
         final List<Vector3dc> internalSeedPoints = getRidgePoints(inputAsBit);
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
@@ -174,19 +174,19 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Img<IntType> ellipsoidIdentityImage = assignEllipsoidID(inputAsBit, ellipsoids);
         writeOutputImages(ellipsoids, ellipsoidIdentityImage);
 
-        long numberOfForegroundVoxels = countTrue(inputAsBit);
-        long numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
+        final double numberOfForegroundVoxels = countTrue(inputAsBit);
+        final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
 
         logService.initialize();
         logService.info("found "+ellipsoids.size()+" ellipsoids");
         logService.info("assigned voxels = "+numberOfAssignedVoxels);
         logService.info("foreground voxels = "+numberOfForegroundVoxels);
-        double fillingPercentage = 100.0*((double) numberOfAssignedVoxels)/((double) numberOfForegroundVoxels);
+        final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
         logService.info("filling percentage = "+fillingPercentage+"%");
 
     }
 
-    private void writeOutputImages(List<Ellipsoid> ellipsoids, Img<IntType> ellipsoidIdentityImage) {
+    private void writeOutputImages(final List<Ellipsoid> ellipsoids, final Img<IntType> ellipsoidIdentityImage) {
         final Img<FloatType> ellipsoidFactorImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         ellipsoidFactorImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
         final Img<FloatType> volumeImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
@@ -208,15 +208,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final double[] bToCArray = ellipsoids.parallelStream().mapToDouble(e -> e.getB()/e.getC()).toArray();
         mapValuesToImage(bToCArray, ellipsoidIdentityImage, bToCImage);
 
-        long FlinnPlotDimension = 501; //several ellipsoids may fall in same bin if this is too small a number! This will be ignored!
+        final long FlinnPlotDimension = 501; //several ellipsoids may fall in same bin if this is too small a number! This will be ignored!
         final Img<BitType> flinnPlot = ArrayImgs.bits(FlinnPlotDimension,FlinnPlotDimension);
         flinnPlot.cursor().forEachRemaining(c -> c.setZero());
 
         final RandomAccess<BitType> flinnRA = flinnPlot.randomAccess();
         for(int i=0; i<aToBArray.length; i++)
         {
-            long x = Math.round(aToBArray[i]*(FlinnPlotDimension-1));
-            long y = Math.round(bToCArray[i]*(FlinnPlotDimension-1));
+            final long x = Math.round(aToBArray[i]*(FlinnPlotDimension-1));
+            final long y = Math.round(bToCArray[i]*(FlinnPlotDimension-1));
             flinnRA.setPosition(new long[]{x,FlinnPlotDimension-y-1});
             flinnRA.get().setOne();
         }
@@ -232,12 +232,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             idCursor.fwd();
             if(idCursor.get().getInteger()>=0)
             {
-                long[] position = new long[3];
+                final long[] position = new long[3];
                 idCursor.localize(position);
                 idAccess.setPosition(position);
-                int localMaxEllipsoidID = idAccess.get().getInteger();
-                long x = Math.round(aToBArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
-                long y = Math.round(bToCArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
+                final int localMaxEllipsoidID = idAccess.get().getInteger();
+                final long x = Math.round(aToBArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
+                final long y = Math.round(bToCArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
                 flinnPeakPlotRA.setPosition(new long[]{x,FlinnPlotDimension-y-1});
                 final float currentValue = flinnPeakPlotRA.get().getRealFloat();
                 flinnPeakPlotRA.get().set(currentValue+1.0f);
@@ -280,7 +280,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
     }
 
-    private long countAssignedVoxels(Img<IntType> ellipsoidIdentityImage) {
+    private long countAssignedVoxels(final Img<IntType> ellipsoidIdentityImage) {
         long numberOfAssignedVoxels = 0;
         final Cursor<IntType> eIDCursor = ellipsoidIdentityImage.cursor();
         while(eIDCursor.hasNext())
@@ -294,15 +294,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return numberOfAssignedVoxels;
     }
 
-    private Img<IntType> assignEllipsoidID(Img<BitType> inputAsBit, List<Ellipsoid> ellipsoids) {
+    private Img<IntType> assignEllipsoidID(final Img<BitType> inputAsBit, final List<Ellipsoid> ellipsoids) {
         final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
         ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
 
         final LongStream zRange = LongStream.range(0, inputAsBit.dimension(2));
 
         zRange.parallel().forEach(sliceIndex -> {
-            long[] mins = {0,0,sliceIndex};
-            long[] maxs = {inputImage.dimension(0), inputImage.dimension(1), sliceIndex};
+            final long[] mins = {0,0,sliceIndex};
+            final long[] maxs = {inputImage.dimension(0), inputImage.dimension(1), sliceIndex};
 
             //multiply by image unit? make more intelligent bounding box?
             final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(e -> Math.abs(e.getCentroid().z() - sliceIndex) < e.getC()).collect(toList());
@@ -312,7 +312,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             while (inputCursor.hasNext()) {
                 inputCursor.fwd();
                 if(inputCursor.get().get()) {
-                    long [] coordinates = new long[3];
+                    final long [] coordinates = new long[3];
                     inputCursor.localize(coordinates);
                     findID(localEllipsoids, Views.interval(ellipsoidIdentityImage, mins, maxs), new Vector3d(coordinates[0]+0.5, coordinates[1]+0.5, coordinates[2]+0.5));
                 }
@@ -322,7 +322,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
 
-    private List<Ellipsoid> findEllipsoids(List<Vector3dc> internalSeedPoints) {
+    private List<Ellipsoid> findEllipsoids(final List<Vector3dc> internalSeedPoints) {
         final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(100);
         return internalSeedPoints.stream().map(sp -> getPointCombinationsForOneSeedPoint(sp)).flatMap(l -> l.stream())
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
@@ -330,25 +330,25 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
     }
 
-    private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(Vector3dc internalSeedPoint)
+    private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(final Vector3dc internalSeedPoint)
     {
-        int nSphere = 18;
+        final int nSphere = 18;
         final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         sphereSamplingDirections.addAll(Arrays.asList(
                 new Vector3d(1,0,0),new Vector3d(0,1,0),new Vector3d(0,0,1),
                 new Vector3d(-1,0,0),new Vector3d(0,-1,0),new Vector3d(0,0,-1)));
-        List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>,Vector3dc>> combinations = new ArrayList<>();
+        final List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>,Vector3dc>> combinations = new ArrayList<>();
 
-        Combinations combinationsOfFourIntegers = new Combinations(nSphere,4);
+        final Combinations combinationsOfFourIntegers = new Combinations(nSphere,4);
 
-        List<Vector3dc> contactPoints = sphereSamplingDirections.stream().map(d -> {
+        final List<Vector3dc> contactPoints = sphereSamplingDirections.stream().map(d -> {
             final Vector3d direction = new Vector3d(d);
             return findFirstPointInBGAlongRay(direction, internalSeedPoint);
         }).collect(toList());
         final List<ValuePair<Vector3dc, Vector3dc>> seedPoints = new ArrayList<>();
 
         contactPoints.forEach(c -> {
-            Vector3d inwardDirection = new Vector3d(internalSeedPoint);
+            final Vector3d inwardDirection = new Vector3d(internalSeedPoint);
             inwardDirection.sub(c);
             inwardDirection.normalize();
             seedPoints.add(new ValuePair<>(c, inwardDirection));
@@ -357,13 +357,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return combinations;
     }
 
-    private List<Vector3dc> getRidgePoints(Img<BitType> inputAsBit) {
+    private List<Vector3dc> getRidgePoints(final Img<BitType> inputAsBit) {
         final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
 
         //find clever seed points
         final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
 
-        List<Shape> shapes = new ArrayList<>();
+        final List<Shape> shapes = new ArrayList<>();
         shapes.add(new HyperSphereShape(2));
         final IterableInterval<R> open = opService.morphology().open(distanceTransform, shapes);
         final IterableInterval<R> close = opService.morphology().close(distanceTransform, shapes);
@@ -373,7 +373,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         //remove ridgepoints in BG - how does this make a difference?
         while(ridgeCursor.hasNext()){
             ridgeCursor.fwd();
-            long[] position = new long[3];
+            final long[] position = new long[3];
             ridgeCursor.localize(position);
             inputBitRA.setPosition(position);
             if(!inputBitRA.get().get())
@@ -394,7 +394,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             ridgeCursor.fwd();
             final double localValue = ridgeCursor.get().getRealFloat();
             if (localValue > ridgePointCutOff) {
-                long[] position = new long[3];
+                final long[] position = new long[3];
                 ridgeCursor.localize(position);
                 final Vector3dc internalSeedPoint = new Vector3d(position[0]+0.5, position[1]+0.5, position[2]+0.5);
                 internalSeedPoints.add(internalSeedPoint);
@@ -403,13 +403,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return internalSeedPoints;
     }
 
-    private void mapValuesToImage(double[] values, Img<IntType> ellipsoidIdentityImage, Img<FloatType> ellipsoidFactorImage) {
+    private void mapValuesToImage(final double[] values, final Img<IntType> ellipsoidIdentityImage, final Img<FloatType> ellipsoidFactorImage) {
         final RandomAccess<FloatType> ef = ellipsoidFactorImage.randomAccess();
         final Cursor<IntType> id = ellipsoidIdentityImage.localizingCursor();
         while(id.hasNext()){
             id.fwd();
             if(id.get().getInteger()!=-1){
-                long[] position = new long[3];
+                final long[] position = new long[3];
                 id.localize(position);
                 final double value = values[id.get().getInteger()];
                 ef.setPosition(position);
@@ -440,8 +440,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             return false;
         }
 
-        List<Vector3d> axisSamplingDirections = new ArrayList<>();
-        Matrix3d ellipsoidOrientation = new Matrix3d();
+        final List<Vector3d> axisSamplingDirections = new ArrayList<>();
+        final Matrix3d ellipsoidOrientation = new Matrix3d();
         e.getOrientation().get3x3(ellipsoidOrientation);
         axisSamplingDirections.add(new Vector3d(ellipsoidOrientation.m00(),ellipsoidOrientation.m01(),ellipsoidOrientation.m02()));
         axisSamplingDirections.add(new Vector3d(-ellipsoidOrientation.m00(),-ellipsoidOrientation.m01(),-ellipsoidOrientation.m02()));
@@ -457,11 +457,11 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return !axisSamplingDirections.stream().anyMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
     }
 
-    private boolean ellipsoidIntersectionIsBackground(Ellipsoid e, Vector3d dir) {
-        double axisReduction = Math.sqrt(3);
-        double a = e.getA()-axisReduction;
-        double b = e.getB()-axisReduction;
-        double c = e.getC()-axisReduction;
+    private boolean ellipsoidIntersectionIsBackground(final Ellipsoid e, final Vector3d dir) {
+        final double axisReduction = Math.sqrt(3);
+        final double a = e.getA()-axisReduction;
+        final double b = e.getB()-axisReduction;
+        final double c = e.getC()-axisReduction;
         
         final Matrix3d Q = new Matrix3d();
         e.getOrientation().get3x3(Q);
@@ -469,17 +469,17 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Matrix3d lambda = new Matrix3d();
         lambda.scaling(1.0/(a*a),1.0/(b*b),1.0/(c*c));
         
-        Matrix3d LambdaQ = new Matrix3d(lambda);
+        final Matrix3d LambdaQ = new Matrix3d(lambda);
         LambdaQ.mul(Q);
-        Matrix3d QT = Q.transpose();
-        Matrix3d QTLambdaQ = new Matrix3d(QT);
+        final Matrix3d QT = Q.transpose();
+        final Matrix3d QTLambdaQ = new Matrix3d(QT);
         QTLambdaQ.mul(LambdaQ);
         
-        Vector3d ATimesDir = new Vector3d();
+        final Vector3d ATimesDir = new Vector3d();
         QTLambdaQ.transform(dir,ATimesDir);
-        double surfaceIntersectionParameter = Math.sqrt(1.0/dir.dot(ATimesDir));
+        final double surfaceIntersectionParameter = Math.sqrt(1.0/dir.dot(ATimesDir));
         
-        Vector3d intersectionPoint = new Vector3d(dir);
+        final Vector3d intersectionPoint = new Vector3d(dir);
         intersectionPoint.mul(surfaceIntersectionParameter);
         intersectionPoint.add(e.getCentroid());
         
@@ -500,29 +500,29 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     static boolean insideEllipsoid(final Vector3d coordinates, final Ellipsoid ellipsoid) {
         final Vector3d centroid = ellipsoid.getCentroid();
-        double c = ellipsoid.getC();
+        final double c = ellipsoid.getC();
 
         //TODO restate in one statement with && and ||
         if(Math.abs(coordinates.x()-centroid.x())>c) return false;
         if(Math.abs(coordinates.y()-centroid.y())>c) return false;
         if(Math.abs(coordinates.z()-centroid.z())>c) return false;
 
-        Vector3d x = new Vector3d(coordinates);
+        final Vector3d x = new Vector3d(coordinates);
         x.sub(centroid);
 
         if(x.length()>ellipsoid.getC()) return false;
 
-        Matrix3d orientation = new Matrix3d();
+        final Matrix3d orientation = new Matrix3d();
         ellipsoid.getOrientation().get3x3(orientation);
 
-        Matrix3d eigenMatrix = new Matrix3d();
+        final Matrix3d eigenMatrix = new Matrix3d();
         eigenMatrix.scaling(1.0 / (ellipsoid.getA() * ellipsoid.getA()),1.0 / (ellipsoid.getB() * ellipsoid.getB()),1.0 / (ellipsoid.getC() * ellipsoid.getC()));
 
         eigenMatrix.mul(orientation, eigenMatrix);
         final Matrix3d orientationTransposed = orientation.transpose();
         orientationTransposed.mul(eigenMatrix, eigenMatrix);
 
-        Vector3d Ax = new Vector3d();
+        final Vector3d Ax = new Vector3d();
         eigenMatrix.transform(x, Ax);
 
         return x.dot(Ax) < 1;
@@ -540,20 +540,21 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
      * @param n : number of points required (has to be > 2)
      * </p>
      */
-    static List<Vector3d> getGeneralizedSpiralSetOnSphere(int n) {
-        List<Vector3d> spiralSet = new ArrayList<>();
+    // TODO Can this be done with 
+    static List<Vector3d> getGeneralizedSpiralSetOnSphere(final int n) {
+        final List<Vector3d> spiralSet = new ArrayList<>();
 
-        List<Double> phi = new ArrayList<>();
+        final List<Double> phi = new ArrayList<>();
         phi.add(0.0);
         for (int k = 1; k < n - 1; k++) {
-            double h = -1.0 + 2.0 * ((double) k) / (n - 1);
+            final double h = -1.0 + 2.0 * ((double) k) / (n - 1);
             phi.add(getPhiByRecursion(n, phi.get(k - 1), h));
         }
         phi.add(0.0);
 
         for (int k = 0; k < n; k++) {
-            double h = -1.0 + 2.0 * ((double) k) / (n - 1);
-            double theta = Math.acos(h);
+            final double h = -1.0 + 2.0 * ((double) k) / (n - 1);
+            final double theta = Math.acos(h);
             spiralSet.add(new Vector3d(Math.sin(theta) * Math.cos(phi.get(k)), Math
                     .sin(theta) * Math.sin(phi.get(k)), Math.cos(theta)));
 
@@ -562,25 +563,25 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return spiralSet;
     }
 
-    private static double getPhiByRecursion(double n, double phiKMinus1,
-                                            double hk) {
-        double phiK = phiKMinus1 + 3.6 / Math.sqrt(n) * 1.0 / Math.sqrt(1 - hk *
+    private static double getPhiByRecursion(final double n, final double phiKMinus1,
+                                            final double hk) {
+        final double phiK = phiKMinus1 + 3.6 / Math.sqrt(n) * 1.0 / Math.sqrt(1 - hk *
                 hk);
         // modulo 2pi calculation works for positive numbers only, which is not a
         // problem in this case.
         return phiK - Math.floor(phiK / (2 * Math.PI)) * 2 * Math.PI;
     }
 
-    private static int estimateNSpiralPointsRequired(double searchRadius,
-                                                     double pixelWidth) {
+    private static int estimateNSpiralPointsRequired(final double searchRadius,
+                                                     final double pixelWidth) {
         return (int) Math.ceil(Math.pow(searchRadius * 3.809 / pixelWidth, 2));
     }
 
     Vector3d findFirstPointInBGAlongRay(final Vector3dc rayIncrement,
                                         final Vector3dc start) {
-        RandomAccess<R> randomAccess = inputImage.randomAccess();
+        final RandomAccess<R> randomAccess = inputImage.randomAccess();
 
-        Vector3d currentRealPosition = new Vector3d(start);
+        final Vector3d currentRealPosition = new Vector3d(start);
         long[] currentPixelPosition = vectorToPixelGrid(start);
         randomAccess.setPosition(currentPixelPosition);
 
@@ -594,16 +595,16 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
 
-    private boolean isInBounds(long[] currentPixelPosition) {
-        long width = inputImage.dimension(0);
-        long height = inputImage.dimension(1);
-        long depth = inputImage.dimension(2);
+    private boolean isInBounds(final long[] currentPixelPosition) {
+        final long width = inputImage.dimension(0);
+        final long height = inputImage.dimension(1);
+        final long depth = inputImage.dimension(2);
         return !(currentPixelPosition[0] < 0 || currentPixelPosition[0] >= width ||
                 currentPixelPosition[1] < 0 || currentPixelPosition[1] >= height ||
                 currentPixelPosition[2] < 0 || currentPixelPosition[2] >= depth);
     }
 
-    private static long[] vectorToPixelGrid(Vector3dc currentPosition) {
+    private static long[] vectorToPixelGrid(final Vector3dc currentPosition) {
         return Stream.of(currentPosition.x(), currentPosition.y(),
                 currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
