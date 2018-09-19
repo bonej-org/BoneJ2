@@ -23,17 +23,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.ellipsoid;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+
+import net.imagej.ImageJ;
+import net.imagej.ops.special.function.BinaryFunctionOp;
+import net.imagej.ops.special.function.Functions;
 import net.imglib2.util.ValuePair;
+
 import org.apache.commons.math3.random.RandomVectorGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
+import org.junit.AfterClass;
 import org.junit.Test;
-
-import java.util.List;
-
-import static org.junit.Assert.*;
 
 
 /**
@@ -42,8 +48,19 @@ import static org.junit.Assert.*;
  * @author Alessandro Felder
  */
 public class EllipsoidPlaneIntersectionTest {
+    private static final ImageJ IMAGE_J = new ImageJ();
+
+    @AfterClass
+    public static void oneTimeTearDown() {
+        IMAGE_J.context().dispose();
+    }
 
     private static final RandomVectorGenerator sphereRNG = new UnitSphereRandomVectorGenerator(3);
+    @SuppressWarnings("unchecked")
+	private final BinaryFunctionOp<Ellipsoid, ValuePair<Vector3dc, Vector3dc>, List<Vector3d>> intersectionOp =
+		(BinaryFunctionOp) Functions.binary(IMAGE_J.op(),
+			EllipsoidPlaneIntersection.class, List.class, Ellipsoid.class,
+			ValuePair.class);
 
     @Test
     public void testGeneralEllipsoidAndPlane() {
@@ -67,8 +84,7 @@ public class EllipsoidPlaneIntersectionTest {
 
         final ValuePair<Vector3dc,Vector3dc> plane = new ValuePair<>(new Vector3d(0,0,0.5),new Vector3d(0,0,1));
 
-        final EllipsoidPlaneIntersection intersection = new EllipsoidPlaneIntersection();
-        final List<Vector3d> intersectionEllipse = intersection.calculate(ellipsoid, plane);
+        final List<Vector3d> intersectionEllipse = intersectionOp.calculate(ellipsoid, plane);
 
         assertEquals(3, intersectionEllipse.size());
 
