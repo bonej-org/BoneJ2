@@ -266,8 +266,7 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
         final Vector3d translation = new Vector3d(unitAxis);
         translation.negate();
         translation.mul(centre.dot(unitAxis));
-		final double radius = axis.length();
-        return translation.div(radius * radius);
+        return translation.div(axis.lengthSquared());
     }
 
     private static double getConstantContribution(final Vector3dc centre, final Vector3dc axis) {
@@ -280,13 +279,10 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
 					.y() * unitAxis.x * unitAxis.y + 2.0 * centre.x() * centre.z() *
 						unitAxis.x * unitAxis.z + 2.0 * centre.y() * centre.z() *
 							unitAxis.y * unitAxis.z;
-
-		final double radius = axis.length();
-        return constantComponent/(radius*radius);
+        return constantComponent/(axis.lengthSquared());
     }
 
     private static Matrix3d getAxisContribution(final Vector3dc axis) {
-        final double radius = axis.length();
         final Vector3d normalizedAxis = new Vector3d(axis);
         normalizedAxis.normalize();
         final Matrix3d axisContribution = new Matrix3d();
@@ -299,7 +295,7 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
         axisContribution.m20(normalizedAxis.x()*normalizedAxis.z());
         axisContribution.m12(normalizedAxis.y()*normalizedAxis.z());
         axisContribution.m21(normalizedAxis.y()*normalizedAxis.z());
-        return axisContribution.scale(1.0 / (radius * radius));
+        return axisContribution.scale(1.0 / axis.lengthSquared());
     }
 
 
