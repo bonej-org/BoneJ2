@@ -300,19 +300,17 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return numberOfAssignedVoxels;
     }
 
-    private Img<IntType> assignEllipsoidID(final Img<BitType> inputAsBit, final List<Ellipsoid> ellipsoids) {
-        final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
+    private static Img<IntType> assignEllipsoidID(final Img<BitType> inputAsBit, final List<Ellipsoid> ellipsoids) {
+        final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputAsBit.dimension(0), inputAsBit.dimension(1), inputAsBit.dimension(2));
         ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
 
-        final LongStream zRange = LongStream.rangeClosed(0, inputAsBit.dimension(2));
+        final LongStream zRange = LongStream.range(0, inputAsBit.dimension(2));
 
         zRange.parallel().forEach(sliceIndex -> {
-            final long[] mins = {0,0,sliceIndex};
-            final long[] maxs = {inputImage.dimension(0) + 1, inputImage.dimension(1) + 1, sliceIndex};
-
             //multiply by image unit? make more intelligent bounding box?
             final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(e -> Math.abs(e.getCentroid().z() - sliceIndex) < e.getC()).collect(toList());
-
+            final long[] mins = {0,0,sliceIndex};
+            final long[] maxs = {inputAsBit.dimension(0) - 1, inputAsBit.dimension(1) - 1, sliceIndex};
             final IntervalView<BitType> inputslice = Views.interval(inputAsBit, mins, maxs);
             final Cursor<BitType> inputCursor = inputslice.localizingCursor();
             while (inputCursor.hasNext()) {
@@ -431,7 +429,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
     }
 
-    private void findID(final List<Ellipsoid> ellipsoids, final RandomAccessibleInterval<IntType> ellipsoidIdentityImage, final Vector3d point) {
+    private static void findID(final List<Ellipsoid> ellipsoids, final RandomAccessibleInterval<IntType> ellipsoidIdentityImage, final Vector3d point) {
 
         //find largest ellipsoid containing current position
         int currentEllipsoidCounter = 0;
@@ -609,9 +607,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 
     private boolean isInBounds(final long[] currentPixelPosition) {
-        final long width = inputImage.dimension(0) + 1;
-        final long height = inputImage.dimension(1) + 1;
-        final long depth = inputImage.dimension(2) + 1;
+        final long width = inputImage.dimension(0);
+        final long height = inputImage.dimension(1);
+        final long depth = inputImage.dimension(2);
         return !(currentPixelPosition[0] < 0 || currentPixelPosition[0] >= width ||
                 currentPixelPosition[1] < 0 || currentPixelPosition[1] >= height ||
                 currentPixelPosition[2] < 0 || currentPixelPosition[2] >= depth);
