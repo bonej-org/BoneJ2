@@ -18,7 +18,7 @@
         The Domain Presentation Layer (DPL) of BoneJ2, i.e. the commands that wrap the needed ops,
         and present results for skeletal biologists.
     </description>
-    <url>http://http://bonej.org/</url>
+    <url>http://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
@@ -43,20 +43,25 @@
             <id>mdoube</id>
             <name>Michael Doube</name>
             <email>mdoube@rvc.ac.uk</email>
-            <url>http://www.rvc.ac.uk/about/our-people/michael-doube</url>
-            <organization>Royal Veterinary College</organization>
-            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <url>https://www.researchgate.net/profile/Michael_Doube</url>
+            <organization>City University of Hong Kong</organization>
+            <organizationUrl>http://cityu.edu.hk/</organizationUrl>
             <roles>
                 <role>founder</role>
                 <role>lead</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
                 <role>support</role>
+                <role>maintainer</role>
             </roles>
-            <timezone>+0</timezone>
+            <timezone>+8</timezone>
         </developer>
         <developer>
             <id>rimadoma</id>
             <name>Richard Domander</name>
             <email>rdomander@rvc.ac.uk</email>
+            <url>http://imagej.net/User:Rdom</url>
             <organization>Royal Veterinary College</organization>
             <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
             <roles>
@@ -142,7 +147,7 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
-            <!-- Remove explicit version when pom-scijava has this or newer stable version -->
+            <!-- TODO Remove explicit version when pom-scijava has this or newer stable version -->
             <version>0.42.0</version>
         </dependency>
         <dependency>
@@ -162,7 +167,7 @@
             <artifactId>imagej-plugins-commands</artifactId>
         </dependency>
         <dependency>
-            <!-- Needed for legacy things like ImagePlus UI. Do not remove. -->
+            <!-- Needed for legacy UI. Do not remove. -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
             <scope>runtime</scope>
@@ -173,8 +178,6 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
-            <!-- TODO Remove explicit version when pom-scijava declares new enough release -->
-            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
@@ -195,14 +198,24 @@
             <artifactId>scijava-ui-swing</artifactId>
         </dependency>
 
+        <!-- ImgLib2 dependencies -->
+        <dependency>
+            <groupId>net.imglib2</groupId>
+            <artifactId>imglib2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imglib2</groupId>
+            <artifactId>imglib2-roi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imglib2</groupId>
+            <artifactId>imglib2-algorithm</artifactId>
+        </dependency>
+
         <!-- Other dependencies -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.imglib2</groupId>
-            <artifactId>imglib2</artifactId>
         </dependency>
         <dependency>
             <groupId>io.scif</groupId>
@@ -229,7 +242,6 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>2.9.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>

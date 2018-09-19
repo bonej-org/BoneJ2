@@ -99,7 +99,6 @@ public class SphereFitter implements PlugIn, DialogListener {
 		gd.addNumericField("Crop Factor", 1.0, 2, 4, "");
 		gd.addCheckbox("Add_to_ROI_Manager", false);
 		gd.addCheckbox("Clear_ROI_Manager", false);
-		gd.addHelp("http://bonej.org/sphere");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		if (gd.wasCanceled()) {

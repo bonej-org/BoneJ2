@@ -88,11 +88,12 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  * @see sc.fiji.analyzeSkeleton.AnalyzeSkeleton_
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular Angle")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular angles")
 public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	public static final String NO_RESULTS_MSG =
 		"There were no results - try changing valence range or minimum trabecular length";
+	private static final int PROGRESS_STEPS = 5;
 
 	static {
 		// NB: Needed if you mix-and-match IJ1 and IJ2 classes.
@@ -102,85 +103,69 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	@Parameter(validater = "imageValidater")
 	private ImagePlus inputImage;
-
 	@Parameter(label = "Minimum valence", min = "3", max = "50", stepSize = "1",
 		description = "Minimum number of outgoing branches needed for a trabecular node to be included in analysis",
 		style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_min_valence",
 		callback = "enforceValidRange")
 	private int minimumValence = 3;
-
 	@Parameter(label = "Maximum valence", min = "3", max = "50", stepSize = "1",
 		description = "Maximum number of outgoing branches needed for a trabecular node to be included in analysis",
 		style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_max_valence",
 		callback = "enforceValidRange")
 	private int maximumValence = 3;
-
 	@Parameter(label = "Minimum trabecular length (px)", min = "0",
 		stepSize = "1",
 		description = "Minimum length for a trabecula to be kept from being fused into a node",
 		style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength",
 		persist = false, initializer = "initRealLength")
 	private int minimumTrabecularLength;
-
 	@Parameter(label = "Margin (px)", min = "0", stepSize = "1",
 		description = "Nodes with centroids closer than this value to any image boundary will not be included in results",
 		style = NumberWidget.SPINNER_STYLE)
 	private int marginCutOff;
-
 	@Parameter(label = "Calibrated minimum length",
 		visibility = ItemVisibility.MESSAGE, persist = false)
 	private String realLength = "";
-
 	@Parameter(label = "Iterate pruning",
 		description = "If true, iterate pruning as long as short edges remain, or stop after a single pass",
 		required = false, persistKey = "ITA_iterate")
 	private boolean iteratePruning;
-
 	@Parameter(label = "Use clusters",
 		description = "If true, considers connected components together as a cluster, otherwise only looks at single short edges (order-dependent!)",
 		required = false, persistKey = "ITA_useClusters")
 	private boolean useClusters = true;
-
+	// TODO Fix typo
 	@Parameter(label = "Print centroids",
-		description = "Print the centroids of vertices at either end of each edge",
+		description = "Print the centroids of vertices at both ends of each edge",
 		required = false, persistKey = "ITA_print_centroids")
 	private boolean printCentroids;
-
 	@Parameter(label = "Print % culled edges",
 		description = "Print the percentage of each of the type of edges that were culled after calling analyseSkeleton",
 		required = false, persistKey = "ITA_print_culled_edges")
 	private boolean printCulledEdgePercentages;
-
 	/** The ITA angles in a {@link Table}, null if there are no results */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> anglesTable;
-
+	private Table<DefaultColumn<Double>, Double> anglesTable;
 	/**
 	 * The ITA edge-end coordinates in a {@link Table}, null if there are no
 	 * results
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "Edge endpoints")
 	private ResultsTable centroidTable;
-
 	@Parameter(type = ItemIO.OUTPUT, label = "Edge culling percentages")
 	private ResultsTable culledEdgePercentagesTable;
-
 	@SuppressWarnings("unused")
 	@Parameter
 	private OpService opService;
-
 	@SuppressWarnings("unused")
 	@Parameter
 	private StatusService statusService;
-
 	@SuppressWarnings("unused")
 	@Parameter
 	private UIService uiService;
-
 	@SuppressWarnings("unused")
 	@Parameter
 	private PrefService prefService;
-
 	private double[] coefficients;
 	private double calibratedMinimumLength;
 	private boolean anisotropyWarned;
@@ -191,6 +176,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		statusService.showStatus("Intertrabecular angles: skeletonising");
 		final ImagePlus skeleton = skeletonise();
 		statusService.showStatus("Intertrabecular angles: analysing skeletons");
+		statusService.showProgress(0, PROGRESS_STEPS);
 		final Graph[] graphs = analyzeSkeleton(skeleton);
 		if (graphs == null || graphs.length == 0) {
 			cancel(NO_SKELETONS);
@@ -200,15 +186,18 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		final Graph largestGraph = Arrays.stream(graphs).max(Comparator
 			.comparingInt(a -> a.getVertices().size())).orElse(new Graph());
 		statusService.showStatus("Intertrabecular angles: pruning graph");
+		statusService.showProgress(1, PROGRESS_STEPS);
 		final ValuePair<Graph, double[]> pruningResult = GraphPruning
 			.pruneShortEdges(largestGraph, minimumTrabecularLength, iteratePruning,
 				useClusters, coefficients);
 		final Graph cleanGraph = pruningResult.a;
 		statusService.showStatus(
 			"Intertrabecular angles: valence sorting trabeculae");
+		statusService.showProgress(3, PROGRESS_STEPS);
 		final Map<Integer, List<Vertex>> valenceMap = VertexUtils.groupByValence(
 			cleanGraph.getVertices(), minimumValence, maximumValence);
 		statusService.showStatus("Intertrabecular angles: calculating angles");
+		statusService.showProgress(4, PROGRESS_STEPS);
 		final Map<Integer, DoubleStream> radianMap = createRadianMap(valenceMap);
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
@@ -245,10 +234,10 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 			calibratedMinimumLength), unit);
 	}
 
-	private TreeMap<Integer, DoubleStream> createRadianMap(
+	private Map<Integer, DoubleStream> createRadianMap(
 		final Map<Integer, List<Vertex>> valenceMap)
 	{
-		final TreeMap<Integer, DoubleStream> radianMap = new TreeMap<>();
+		final Map<Integer, DoubleStream> radianMap = new TreeMap<>();
 		valenceMap.forEach((valence, vertices) -> {
 			final List<Vertex> centreVertices = filterBoundaryVertices(vertices);
 			final DoubleStream radians = VertexUtils.getNJunctionAngles(

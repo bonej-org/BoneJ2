@@ -38,6 +38,7 @@ import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import java.util.stream.IntStream;
 
+import ij.process.LUT;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
@@ -51,11 +52,13 @@ import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.ui.DefaultUIService;
 import org.scijava.ui.DialogPrompt.MessageType;
 import org.scijava.ui.UIService;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import org.scijava.ui.UserInterface;
 
 /**
  * Unit tests for the {@link Common} utility class.
@@ -63,11 +66,18 @@ import ij.measure.Calibration;
  * @author Richard Domander
  */
 public class CommonTest {
+	@Test
+	public void makeFire() {
+		final LUT lut = Common.makeFire();
+
+		assertEquals(3 * 256, lut.getBytes().length);
+		assertEquals(8, lut.getPixelSize());
+	}
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 
-	@Ignore
 	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
 		final String name = "Test image";
@@ -91,7 +101,21 @@ public class CommonTest {
 			.averageScale(0, 1), 1e-12);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testToBitTypeImgPlusThrowsNPEIfOpEnvironmentNull() {
+		final Img<DoubleType> img = ArrayImgs.doubles(3, 3);
+		final ImgPlus<DoubleType> image = new ImgPlus<>(img);
+
+		Common.toBitTypeImgPlus(null, image);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testToBitTypeImgPlusThrowsNPEIfImageNull() {
+		Common.toBitTypeImgPlus(IMAGE_J.op(), null);
+	}
+
 	@Test
+	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testWarnAnisotropyReturnsFalseIfAnisotropicImageAndUserCancels() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
 		final Calibration anisotropicCalibration = new Calibration();
@@ -147,6 +171,16 @@ public class CommonTest {
 		final UIService uiService = mock(UIService.class);
 
 		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testWarnAnisotropyThrowsNPEIfImageNull() {
+		Common.warnAnisotropy(null, mock(UIService.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testWarnAnisotropyThrowsNPEIfUIServiceNull() {
+		Common.warnAnisotropy(mock(ImagePlus.class), null);
 	}
 
 	@AfterClass

@@ -38,18 +38,16 @@ public final class ImagePlusUtil {
 	private ImagePlusUtil() {}
 
 	/**
-	 * Calculates the degree of anisotropy in the image, i.e. the maximum
-	 * difference in the calibrations of the dimensions.
+	 * Calculates the degree of spatial calibration anisotropy.
+	 * <p>
+	 * Spatial calibration is anisotropic if pixel width, height and depth are not
+	 * equal.
+	 * </p>
 	 *
 	 * @param image an ImageJ1 style {@link ImagePlus}.
-	 * @return Anisotropy fraction [0.0, Double.MAX_VALUE], an isotropic image
-	 *         returns 0.0 Returns Double.NaN if image == null.
+	 * @return Percentage of anisotropy. An isotropic image returns 0.0
 	 */
 	public static double anisotropy(final ImagePlus image) {
-		if (image == null) {
-			return Double.NaN;
-		}
-
 		final Calibration cal = image.getCalibration();
 		final double w = cal.pixelWidth;
 		final double h = cal.pixelHeight;
@@ -92,11 +90,10 @@ public final class ImagePlusUtil {
 	 * Checks if the image is 3D.
 	 *
 	 * @param image an ImageJ1 style {@link ImagePlus}.
-	 * @return true if the image has more than one slice, false if not, or image
-	 *         is null.
+	 * @return true if the image has more than one slice.
 	 */
 	public static boolean is3D(final ImagePlus image) {
-		return image != null && image.getNSlices() > 1;
+		return image.getNSlices() > 1;
 	}
 
 	/**
@@ -104,10 +101,10 @@ public final class ImagePlusUtil {
 	 *
 	 * @param image an ImageJ1 style {@link ImagePlus}.
 	 * @return true if there are only two distinct pixel values present in the
-	 *         image, false if more, or the image is null.
+	 *         image, false if more.
 	 */
 	public static boolean isBinaryColour(final ImagePlus image) {
-		return image != null && Arrays.stream(image.getStatistics().histogram)
-			.filter(p -> p > 0).count() <= 2;
+		return Arrays.stream(image.getStatistics().histogram).filter(p -> p > 0)
+			.count() <= 2;
 	}
 }

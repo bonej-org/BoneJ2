@@ -50,7 +50,6 @@ public class ReporterOptions implements PlugIn {
 			"and promote BoneJ to funders.");
 		dialog.addMessage("If you agree to participate please hit OK\n" +
 			"otherwise, cancel. For more information click Help.");
-		dialog.addHelp("http://bonej.org/stats");
 		dialog.showDialog();
 		if (dialog.wasCanceled()) {
 			Prefs.set(OPTOUTKEY, false);

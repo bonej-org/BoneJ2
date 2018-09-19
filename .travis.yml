@@ -6,6 +6,10 @@ branches:
   - "/.*-[0-9]+\\..*/"
 install: true
 script: ".travis/build.sh"
+notifications:
+  email:
+    - afelder@rvc.ac.uk
+    - mdoube@cityu.edu.hkm
 env:
   global:
     secure: f5FHlhUlcXSRJudZHVcHZrLg59Gl+qPIrlAEKlfJnt6Bjc8DpBs2HI10E3iioejlw2Iefrovc4QczRwjdWxGU/ky1SWkW//t1Rc5xKQ/vlvNAm+ibU8/EYHFffeXQkv5TzTE3FIdfvDhRQSpwV66CCyYekTGBNYMwxXAa+kEYWA1CsK7+bSXDPn9qb5upQ+ONT4TCAvQsRO5i9JAwwYXU+i5idO7YXp+Jne3oF4h8OSPuDK+myBz/rbZHZIXRvb8WTElxYQ/8GUBwb+5vsMhbJ0aepeifjNUm4eegi0HsIiaNaaMNmZqljr0vKPHCfRMt8k+z/G4IASDrfjer1IUtxHR5Fz2CoC7v/jI2JvT0DKICk5cFvU7SJubHG/6ajsS9ZYYQv6CrJPbWFNjmq4Vhl4Mzwl0qMi3KNYeHpCk31MO9zc9JvnMBGChnSM9GOTcPsyipydLmepys/KvEvz3pFtrgFlxDmvbYUz7rb3BMQAefF4KHANyX6tKOvpaqLoZWCuqa4+RrNJX23kI1k+linAONgpNgyO8ECuKCty+8hvB7gnxcFerRBzhjUGIksW0KJ+LCYRcR/kLySlOcxzR2+0I4MGVr/kBGhzJ4KvJTz0wRu63h7HwKnB0HfSndytHYcg5lqLyg0kYtdqL4acjQWQnNSHkG+GLHh9RgyaBYLw=

@@ -57,6 +57,7 @@ import org.scijava.widget.ChoiceWidget;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.plugin.frame.RoiManager;
+import ij.process.LUT;
 import ij.process.StackStatistics;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
@@ -109,7 +110,7 @@ public class ThicknessWrapper extends ContextCommand {
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	@Parameter
 	private UIService uiService;
@@ -138,8 +139,19 @@ public class ThicknessWrapper extends ContextCommand {
 			resultsTable = SharedTable.getTable();
 		}
 		if (showMaps) {
+			final LUT fire = Common.makeFire();
 			trabecularMap = thicknessMaps.get(true);
+			if (trabecularMap != null) {
+				final StackStatistics trabecularStats = new StackStatistics(trabecularMap);
+				trabecularMap.setDisplayRange(0.0, trabecularStats.max);
+				trabecularMap.setLut(fire);	
+			}
 			spacingMap = thicknessMaps.get(false);
+			if (spacingMap != null) {
+				final StackStatistics spacingStats = new StackStatistics(spacingMap);
+				spacingMap.setDisplayRange(0.0, spacingStats.max);
+				spacingMap.setLut(fire);
+			}
 		}
 	}
 
@@ -147,8 +159,8 @@ public class ThicknessWrapper extends ContextCommand {
 		if (map == null) {
 			return;
 		}
+		final String label = inputImage.getTitle();
 		final String unitHeader = ResultUtils.getUnitHeader(map);
-		final String label = map.getTitle();
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
 		final StackStatistics resultStats = new StackStatistics(map);
 		double mean = resultStats.mean;
@@ -180,6 +192,10 @@ public class ThicknessWrapper extends ContextCommand {
 
 		if (cropToRois) {
 			final RoiManager roiManager = RoiManager.getInstance2();
+			if (roiManager == null) {
+				cancel("Can't crop without valid ROIs in the ROIManager");
+				return null;
+			}
 			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
 				roiManager, inputImage.getStack(), true, 0x00);
 			if (!stackOptional.isPresent()) {

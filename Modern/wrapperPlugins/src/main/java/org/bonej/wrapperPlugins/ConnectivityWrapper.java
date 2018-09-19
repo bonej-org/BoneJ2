@@ -23,12 +23,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.CommonMessages.BAD_CALIBRATION;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,7 +42,9 @@ import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableRealInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 
@@ -70,14 +70,14 @@ import org.scijava.ui.UIService;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity",
 	headless = true)
-public class ConnectivityWrapper extends ContextCommand {
+public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
 
 	static final String NEGATIVE_CONNECTIVITY =
 		"Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
 			"Try running Purify prior to Connectivity.\n";
 
 	@Parameter(validater = "validateImage")
-	private ImgPlus<UnsignedByteType> inputImage;
+	private ImgPlus<T> inputImage;
 
 	/**
 	 * The connectivity results in a {@link Table}
@@ -86,7 +86,7 @@ public class ConnectivityWrapper extends ContextCommand {
 	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<String>, String> resultsTable;
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	@Parameter
 	private OpService opService;
@@ -107,6 +107,8 @@ public class ConnectivityWrapper extends ContextCommand {
 	private boolean negativityWarned;
 	/** The unit displayed in the results */
 	private String unitHeader;
+	private int progress;
+	private static final int PROGRESS_STEPS = 3;
 
 	@Override
 	public void run() {
@@ -120,6 +122,9 @@ public class ConnectivityWrapper extends ContextCommand {
 		determineResultUnit();
 		matchOps(subspaces.get(0).interval);
 		subspaces.forEach(subspace -> {
+			progress = 0;
+			statusService.showProgress(progress, PROGRESS_STEPS);
+			progress++;
 			final String suffix = subspace.toString();
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			subspaceConnectivity(label, subspace.interval);
@@ -155,9 +160,6 @@ public class ConnectivityWrapper extends ContextCommand {
 
 	private void determineResultUnit() {
 		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
-		if (unitHeader.isEmpty()) {
-			uiService.showDialog(BAD_CALIBRATION, WARNING_MESSAGE);
-		}
 	}
 
 	// region -- Helper methods --
@@ -173,9 +175,13 @@ public class ConnectivityWrapper extends ContextCommand {
 		final RandomAccessibleInterval<BitType> subspace)
 	{
 		statusService.showStatus("Connectivity: calculating connectivity");
+		statusService.showProgress(progress, PROGRESS_STEPS);
+		progress++;
 		final double eulerCharacteristic = eulerCharacteristicOp.calculate(subspace)
 			.get();
 		statusService.showStatus("Connectivity: calculating euler correction");
+		statusService.showProgress(progress, PROGRESS_STEPS);
+		progress++;
 		final double edgeCorrection = eulerCorrectionOp.calculate(subspace).get();
 		final double correctedEuler = eulerCharacteristic - edgeCorrection;
 		final double connectivity = 1 - correctedEuler;
@@ -184,6 +190,7 @@ public class ConnectivityWrapper extends ContextCommand {
 
 		addResults(label, eulerCharacteristic, correctedEuler, connectivity,
 			connectivityDensity);
+		statusService.showProgress(progress, PROGRESS_STEPS);
 	}
 
 	@SuppressWarnings("unused")
