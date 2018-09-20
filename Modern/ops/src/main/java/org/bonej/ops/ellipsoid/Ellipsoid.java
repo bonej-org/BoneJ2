@@ -344,5 +344,18 @@ public class Ellipsoid {
 		orientation.setColumn(1, new Vector3d(v).normalize());
 		orientation.setColumn(2, new Vector3d(w).normalize());
 	}
+
+	@Override
+	public String toString() {
+		String centroidString  = "centre:\n"+this.getCentroid().toString()+"\n";
+
+		String lambdaString  = "axis lengths:\n( "+this.getA()+" "+this.getB()+" "+this.getC()+" )\n";
+
+		Matrix3d a = new Matrix3d();
+		this.getOrientation().get3x3(a);
+		String orientationSting  = "unit axis directions:\n"+a.toString();
+
+		return centroidString+lambdaString+orientationSting;
+	}
 	// endregion
 }
