@@ -52,6 +52,7 @@ import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
+import net.imglib2.Dimensions;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
@@ -506,7 +507,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e,
 		final Collection<Vector3dc> sphereSamplingDirections)
 	{
-		if (!isInBounds(vectorToPixelGrid(e.getCentroid()))) {
+		if (outOfBounds(inputImage, vectorToPixelGrid(e.getCentroid()))) {
 			return false;
 		}
 		final Builder<Vector3dc> builder = Stream.builder();
@@ -546,7 +547,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		intersectionPoint.mul(surfaceIntersectionParameter);
 		intersectionPoint.add(centroid);
 		final long[] pixel = vectorToPixelGrid(intersectionPoint);
-		if (!isInBounds(pixel)) {
+		if (outOfBounds(inputImage, pixel)) {
 			return true;
 		}
 		final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
@@ -642,20 +643,21 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         while (randomAccess.get().getRealDouble() > 0) {
             currentRealPosition.add(rayIncrement);
             currentPixelPosition = vectorToPixelGrid(currentRealPosition);
-            if (!isInBounds(currentPixelPosition)) break;
+            if (outOfBounds(inputImage, currentPixelPosition)) break;
             randomAccess.setPosition(currentPixelPosition);
         }
         return currentRealPosition;
     }
 
-
-    private boolean isInBounds(final long[] currentPixelPosition) {
-        final long width = inputImage.dimension(0);
-        final long height = inputImage.dimension(1);
-        final long depth = inputImage.dimension(2);
-        return !(currentPixelPosition[0] < 0 || currentPixelPosition[0] >= width ||
-                currentPixelPosition[1] < 0 || currentPixelPosition[1] >= height ||
-                currentPixelPosition[2] < 0 || currentPixelPosition[2] >= depth);
+	// TODO make into a utility method, and see where else needed in BoneJ
+    private static boolean outOfBounds(final Dimensions dimensions, final long[] currentPixelPosition) {
+		for (int i = 0; i < currentPixelPosition.length; i++) {
+			final long position = currentPixelPosition[i];
+			if (position < 0 || position >= dimensions.dimension(i)) {
+				return true;
+			}
+		}
+        return false;
     }
 
     // TODO make a utility method, similar used in MILPlane op
