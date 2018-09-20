@@ -364,35 +364,30 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return ellipsoidIdentityImage;
     }
 
+    private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
+		final List<Vector3dc> filterSamplingDirections =
+			getGeneralizedSpiralSetOnSphere(250).collect(toList());
+		final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
+			.parallelStream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
+				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
+					seed)));
+		return ellipsoidCandidates.filter(Optional::isPresent).map(Optional::get)
+			.filter(e -> isEllipsoidWhollyInForeground(e, filterSamplingDirections))
+			.collect(toList());
+	}
 
-    private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> internalSeedPoints) {
-        final List<Vector3dc> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(250);
-        return internalSeedPoints.parallelStream().map(this::getPointCombinationsForOneSeedPoint).flatMap(Collection::stream)
-                .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
-                .filter(Optional::isPresent).map(Optional::get)
-                .filter(e -> isEllipsoidWhollyInForeground(e, filterSamplingDirections)).collect(toList());
-    }
-
-    private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(final Vector3dc internalSeedPoint)
-    {
-        final int nSphere = 40;
-        final List<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
-
-        final List<Vector3dc> contactPoints = sphereSamplingDirections.parallelStream().map(d -> {
-            final Vector3dc direction = new Vector3d(d);
-            return findFirstPointInBGAlongRay(direction, internalSeedPoint);
-        }).collect(toList());
-
-        final List<ValuePair<Vector3dc, Vector3dc>> seedPoints = new ArrayList<>();
-        contactPoints.forEach(c -> {
-            final Vector3d inwardDirection = new Vector3d(internalSeedPoint);
-            inwardDirection.sub(c);
-            inwardDirection.normalize();
-            seedPoints.add(new ValuePair<>(c, inwardDirection));
-        });
-
-        return new ArrayList<>(getAllUniqueCombinationsOfFourPoints(seedPoints, internalSeedPoint));
-    }
+	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
+		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
+	{
+		final int nSphere = 40;
+		final Stream<Vector3dc> sphereSamplingDirections =
+			getGeneralizedSpiralSetOnSphere(nSphere);
+		final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
+			final Vector3dc direction = new Vector3d(d);
+			return findFirstPointInBGAlongRay(direction, centre);
+		}).collect(toList());
+		return getAllUniqueCombinationsOfFourPoints(contactPoints, centre);
+	}
 
 	private IterableInterval<R> createRidge(
 		final RandomAccessibleInterval<BitType> image)
@@ -595,9 +590,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
      * @param n : number of points required (has to be > 2)
      * </p>
      */
-    private static List<Vector3dc> getGeneralizedSpiralSetOnSphere(final int n) {
-        final List<Vector3dc> spiralSet = new ArrayList<>();
-
+    private static Stream<Vector3dc> getGeneralizedSpiralSetOnSphere(final int n) {
+        final Builder<Vector3dc> spiralSet = Stream.builder();
         final List<Double> phi = new ArrayList<>();
         phi.add(0.0);
         for (int k = 1; k < n - 1; k++) {
@@ -613,8 +607,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                     .sin(theta) * Math.sin(phi.get(k)), Math.cos(theta)));
 
         }
-
-        return spiralSet;
+        return spiralSet.build();
     }
 
     private static double getPhiByRecursion(final double n, final double phiKMinus1,
@@ -659,25 +652,27 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
 
-	private static
-		List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>>
-		getAllUniqueCombinationsOfFourPoints(
-			final List<ValuePair<Vector3dc, Vector3dc>> points,
+	private static Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
+		getAllUniqueCombinationsOfFourPoints(final List<Vector3dc> points,
 			final Vector3dc centre)
 	{
 		final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(
 			points.size(), 4);
-		final List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> pointCombinations =
-			new ArrayList<>();
+		final Builder<Set<ValuePair<Vector3dc, Vector3dc>>> pointCombinations = Stream.builder();
 		iterator.forEachRemaining(el -> {
-			final Set<ValuePair<Vector3dc, Vector3dc>> pointCombination = IntStream
-				.range(0, 4).mapToObj(i -> points.get(el[i])).collect(Collectors
-					.toSet());
-			if (pointCombination.size() == 4) {
-				pointCombinations.add(new ValuePair<>(pointCombination, centre));
+			final Stream<Vector3dc> pointCombo = IntStream.range(0, 4).mapToObj(
+				i -> points.get(el[i]));
+			final Set<ValuePair<Vector3dc, Vector3dc>> dirPoints = pointCombo.map(
+				p -> {
+					final Vector3dc inwardDir = centre.sub(p, new Vector3d());
+					final Vector3dc unitDir = inwardDir.normalize(new Vector3d());
+					return new ValuePair<>(p, unitDir);
+				}).collect(Collectors.toSet());
+			if (dirPoints.size() == 4) {
+				pointCombinations.add(dirPoints);
 			}
 		});
-		return pointCombinations;
+		return pointCombinations.build();
 	}
 
     @SuppressWarnings("unused")
