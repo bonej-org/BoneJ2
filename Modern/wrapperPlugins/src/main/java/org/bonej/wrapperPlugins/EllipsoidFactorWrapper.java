@@ -91,7 +91,6 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.prefs.PrefService;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 
@@ -160,10 +159,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @SuppressWarnings("unused")
     @Parameter
     private UIService uiService;
-
-    @SuppressWarnings("unused")
-    @Parameter
-    private PrefService prefService;
 
     @SuppressWarnings("unused")
     @Parameter
