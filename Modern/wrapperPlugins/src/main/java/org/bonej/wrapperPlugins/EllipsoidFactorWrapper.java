@@ -60,7 +60,9 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
@@ -89,7 +91,6 @@ import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
-import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 
@@ -191,6 +192,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final double numberOfForegroundVoxels = countTrue(bitImage);
         final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
 
+        // TODO Should this be logService.debug?
         logService.info("found "+ellipsoids.size()+" ellipsoids");
         logService.info("assigned voxels = "+numberOfAssignedVoxels);
         logService.info("foreground voxels = "+numberOfForegroundVoxels);
@@ -199,15 +201,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         logService.info("number of seed points = " + internalSeedPoints.size());
     }
 
+	private Img<FloatType> createNaNCopy() {
+		final ArrayImg<FloatType, FloatArray> copy = ArrayImgs.floats(inputImage
+			.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
+		copy.forEach(e -> e.setReal(Float.NaN));
+		return copy;
+	}
+
     private void writeOutputImages(final List<Ellipsoid> ellipsoids, final Img<IntType> ellipsoidIdentityImage) {
-        final Img<FloatType> ellipsoidFactorImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
-        ellipsoidFactorImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
-        final Img<FloatType> volumeImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
-        volumeImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
-        final Img<FloatType> aToBImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
-        aToBImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
-        final Img<FloatType> bToCImage = ArrayImgs.floats(inputImage.dimension(0), inputImage.dimension(1), inputImage.dimension(2));
-        bToCImage.cursor().forEachRemaining(c -> c.setReal(Double.NaN));
+        final Img<FloatType> ellipsoidFactorImage = createNaNCopy();
+        final Img<FloatType> volumeImage = createNaNCopy();
+        final Img<FloatType> aToBImage = createNaNCopy();
+        final Img<FloatType> bToCImage = createNaNCopy();
 
         final double[] ellipsoidFactorArray = ellipsoids.parallelStream().mapToDouble(EllipsoidFactorWrapper::computeEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactorArray, ellipsoidIdentityImage, ellipsoidFactorImage);
