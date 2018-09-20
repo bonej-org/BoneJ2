@@ -26,9 +26,6 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
@@ -50,7 +47,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.UserInterface;
 
 /**
  * Tests for {@link EllipsoidFactorWrapper}.
@@ -94,9 +90,6 @@ public class EllipsoidFactorWrapperTest {
     @Test
     public void testSphereVoxelsHaveEFZero() throws Exception {
         // SETUP
-        final UserInterface mockUI = mock(UserInterface.class);
-        doNothing().when(mockUI).show(any(ImgPlus.class));
-        IMAGE_J.ui().setDefaultUI(mockUI);
         final ImgPlus<BitType> sphereImgPlus = getSphereImage();
 
         // EXECUTE
@@ -113,9 +106,6 @@ public class EllipsoidFactorWrapperTest {
     @Test
     public void testSphereVoxelsHaveCorrectVolume() throws Exception {
         // SETUP
-        final UserInterface mockUI = mock(UserInterface.class);
-        doNothing().when(mockUI).show(any(ImgPlus.class));
-        IMAGE_J.ui().setDefaultUI(mockUI);
         final ImgPlus<BitType> sphereImgPlus = getSphereImage();
 
         // EXECUTE
@@ -133,9 +123,6 @@ public class EllipsoidFactorWrapperTest {
     @Test
     public void testSphereVoxelsHaveCorrectAxisRatios() throws Exception {
         // SETUP
-        final UserInterface mockUI = mock(UserInterface.class);
-        doNothing().when(mockUI).show(any(ImgPlus.class));
-        IMAGE_J.ui().setDefaultUI(mockUI);
         final ImgPlus<BitType> sphereImgPlus = getSphereImage();
         final double expectedRatio = 1.0;
 
