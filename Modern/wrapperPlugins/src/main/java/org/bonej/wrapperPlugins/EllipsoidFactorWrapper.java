@@ -38,7 +38,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -488,7 +487,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private static void colourID(final List<Ellipsoid> ellipsoids,
 								 final RandomAccessible<IntType> ellipsoidIdentityImage,
-								 final Vector3d point)
+								 final Vector3dc point)
 	{
 		final int id = IntStream.range(0, ellipsoids.size()).filter(i -> isInside(
 			point, ellipsoids.get(i))).findFirst().orElse(-1);
@@ -557,37 +556,42 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
     // TODO Make a method of the Ellipsoid class
-    static boolean isInside(final Vector3d coordinates, final Ellipsoid ellipsoid) {
-        final Vector3d centroid = ellipsoid.getCentroid();
-        final double c = ellipsoid.getC();
-
-        //TODO restate in one statement with && and ||
-        if(Math.abs(coordinates.x()-centroid.x())>c) return false;
-        if(Math.abs(coordinates.y()-centroid.y())>c) return false;
-        if(Math.abs(coordinates.z()-centroid.z())>c) return false;
-
-        final Vector3d x = new Vector3d(coordinates);
-        x.sub(centroid);
-
-        if(x.length()>ellipsoid.getC()) return false;
-
-        final Matrix3d orientation = new Matrix3d();
+    static boolean isInside(final Vector3dc coordinates, final Ellipsoid ellipsoid) {
+    	if(!isInBoundingBox(coordinates, ellipsoid) || !isInMaximalSphere(coordinates, ellipsoid)) {
+    		return false;
+		}
+		final Matrix3d orientation = new Matrix3d();
         ellipsoid.getOrientation().get3x3(orientation);
-
         final Matrix3d eigenMatrix = new Matrix3d();
         eigenMatrix.scaling(1.0 / (ellipsoid.getA() * ellipsoid.getA()),1.0 / (ellipsoid.getB() * ellipsoid.getB()),1.0 / (ellipsoid.getC() * ellipsoid.getC()));
-
         eigenMatrix.mul(orientation, eigenMatrix);
         final Matrix3d orientationTransposed = orientation.transpose();
         orientationTransposed.mul(eigenMatrix, eigenMatrix);
-
-        final Vector3d Ax = new Vector3d();
-        eigenMatrix.transform(x, Ax);
-
+        final Vector3dc x = new Vector3d(coordinates).sub(ellipsoid.getCentroid());
+        final Vector3dc Ax = eigenMatrix.transform(x, new Vector3d());
         return x.dot(Ax) < 1;
     }
 
-    /**
+	// TODO Make a method of Ellipsoid
+	private static boolean isInMaximalSphere(final Vector3dc coordinates,
+		final Ellipsoid ellipsoid)
+	{
+		final Vector3dc x = coordinates.sub(ellipsoid.getCentroid(),
+			new Vector3d());
+		return x.length() <= ellipsoid.getC();
+	}
+
+	// TODO Make a method of Ellipsoid
+	private static boolean isInBoundingBox(final Vector3dc point, final Ellipsoid ellipsoid) {
+		final Vector3dc centroid = ellipsoid.getCentroid();
+		final Vector3d diff = point.sub(centroid, new Vector3d());
+		diff.absolute();
+		final double c = ellipsoid.getC();
+		// TODO Use a better bounding box (project semi-axes to x, y, z)
+		return diff.x <= c && diff.y <= c && diff.z <= c;
+	}
+
+	/**
      * Method to numerically approximate equidistantly spaced points on the
      * surface of a sphere
      * <p>
