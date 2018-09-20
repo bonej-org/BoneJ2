@@ -196,13 +196,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         logService.info("filling percentage = " + fillingPercentage + "%");
 
         //debugging
-        logService.debug("found " + ellipsoids.size() + " ellipsoids");
-        logService.debug("assigned voxels = " + numberOfAssignedVoxels);
-        logService.debug("foreground voxels = " + numberOfForegroundVoxels);
-        logService.debug("number of seed points = " + internalSeedPoints.size());
-        for (int i = 0; i < ellipsoids.size(); i++)
+        logService.info("found " + ellipsoids.size() + " ellipsoids");
+        logService.info("assigned voxels = " + numberOfAssignedVoxels);
+        logService.info("foreground voxels = " + numberOfForegroundVoxels);
+        logService.info("number of seed points = " + internalSeedPoints.size());
+        for (int i = 0; i < 100; i++)
         {
-            logService.debug("ellipsoid("+i+"): "+ellipsoids.get(i).toString());
+            logService.info("ellipsoid("+i+"):\n"+ellipsoids.get(i).toString());
         }
     }
 
@@ -539,8 +539,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final Matrix3dc lambda = new Matrix3d(scales[0], 0, 0, 0, scales[1], 0, 0,
 			0, scales[2]);
 		final Matrix3dc QT = Q.transpose(new Matrix3d());
-		final Matrix3dc LambdaQT = lambda.mul(QT, new Matrix3d());
-		return Q.mul(LambdaQT, new Matrix3d());
+		final Matrix3dc LambdaQ = lambda.mul(Q, new Matrix3d());
+		return QT.mul(LambdaQ, new Matrix3d());
 	}
 
 	private boolean isEllipsoidIntersectionBackground(final Matrix3dc a,
