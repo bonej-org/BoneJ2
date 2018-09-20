@@ -214,27 +214,27 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Img<FloatType> aToBImage = createNaNCopy();
         final Img<FloatType> bToCImage = createNaNCopy();
 
-        final double[] ellipsoidFactorArray = ellipsoids.parallelStream().mapToDouble(EllipsoidFactorWrapper::computeEllipsoidFactor).toArray();
-        mapValuesToImage(ellipsoidFactorArray, ellipsoidIdentityImage, ellipsoidFactorImage);
+        final double[] ellipsoidFactors = ellipsoids.parallelStream().mapToDouble(EllipsoidFactorWrapper::computeEllipsoidFactor).toArray();
+        mapValuesToImage(ellipsoidFactors, ellipsoidIdentityImage, ellipsoidFactorImage);
 
-        final double[] volumeArray = ellipsoids.parallelStream().mapToDouble(Ellipsoid::getVolume).toArray();
-        mapValuesToImage(volumeArray, ellipsoidIdentityImage, volumeImage);
+        final double[] volumes = ellipsoids.parallelStream().mapToDouble(Ellipsoid::getVolume).toArray();
+        mapValuesToImage(volumes, ellipsoidIdentityImage, volumeImage);
 
-        final double[] aToBArray = ellipsoids.parallelStream().mapToDouble(e -> e.getA()/e.getB()).toArray();
-        mapValuesToImage(aToBArray, ellipsoidIdentityImage, aToBImage);
+        final double[] aBRatios = ellipsoids.parallelStream().mapToDouble(e -> e.getA()/e.getB()).toArray();
+        mapValuesToImage(aBRatios, ellipsoidIdentityImage, aToBImage);
 
-        final double[] bToCArray = ellipsoids.parallelStream().mapToDouble(e -> e.getB()/e.getC()).toArray();
-        mapValuesToImage(bToCArray, ellipsoidIdentityImage, bToCImage);
+        final double[] bCRatios = ellipsoids.parallelStream().mapToDouble(e -> e.getB()/e.getC()).toArray();
+        mapValuesToImage(bCRatios, ellipsoidIdentityImage, bToCImage);
 
         final long FlinnPlotDimension = 501; //several ellipsoids may fall in same bin if this is too small a number! This will be ignored!
         final Img<BitType> flinnPlot = ArrayImgs.bits(FlinnPlotDimension,FlinnPlotDimension);
         flinnPlot.cursor().forEachRemaining(BitType::setZero);
 
         final RandomAccess<BitType> flinnRA = flinnPlot.randomAccess();
-        for(int i=0; i<aToBArray.length; i++)
+        for(int i=0; i<aBRatios.length; i++)
         {
-            final long x = Math.round(aToBArray[i]*(FlinnPlotDimension-1));
-            final long y = Math.round(bToCArray[i]*(FlinnPlotDimension-1));
+            final long x = Math.round(aBRatios[i]*(FlinnPlotDimension-1));
+            final long y = Math.round(bCRatios[i]*(FlinnPlotDimension-1));
             flinnRA.setPosition(new long[]{x,FlinnPlotDimension-y-1});
             flinnRA.get().setOne();
         }
@@ -254,8 +254,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 idCursor.localize(position);
                 idAccess.setPosition(position);
                 final int localMaxEllipsoidID = idAccess.get().getInteger();
-                final long x = Math.round(aToBArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
-                final long y = Math.round(bToCArray[localMaxEllipsoidID]*(FlinnPlotDimension-1));
+                final long x = Math.round(aBRatios[localMaxEllipsoidID]*(FlinnPlotDimension-1));
+                final long y = Math.round(bCRatios[localMaxEllipsoidID]*(FlinnPlotDimension-1));
                 flinnPeakPlotRA.setPosition(new long[]{x,FlinnPlotDimension-y-1});
                 final float currentValue = flinnPeakPlotRA.get().getRealFloat();
                 flinnPeakPlotRA.get().set(currentValue+1.0f);
@@ -343,7 +343,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return internalSeedPoints.parallelStream().map(this::getPointCombinationsForOneSeedPoint).flatMap(Collection::stream)
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
                 .filter(Optional::isPresent).map(Optional::get)
-                .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(toList());
+                .filter(e -> isEllipsoidWhollyInForeground(e, filterSamplingDirections)).collect(toList());
     }
 
     private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(final Vector3dc internalSeedPoint)
@@ -439,7 +439,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         //find largest ellipsoid containing current position
         int currentEllipsoidCounter = 0;
-        while (currentEllipsoidCounter < ellipsoids.size() && !insideEllipsoid(point, ellipsoids.get(currentEllipsoidCounter))) {
+        while (currentEllipsoidCounter < ellipsoids.size() && !isInside(point, ellipsoids.get(currentEllipsoidCounter))) {
             currentEllipsoidCounter++;
         }
 
@@ -451,7 +451,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
     }
 
-    private boolean whollyContainedInForeground(final Ellipsoid e, final Collection<Vector3dc> sphereSamplingDirections) {
+    private boolean isEllipsoidWhollyInForeground(final Ellipsoid e, final Collection<Vector3dc> sphereSamplingDirections) {
         if(!isInBounds(vectorToPixelGrid(e.getCentroid())))
         {
             return false;
@@ -464,10 +464,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             builder.add(v.negate(new Vector3d()));
         }
         final Stream<Vector3dc> directions = Stream.concat(sphereSamplingDirections.stream(), builder.build());
-        return directions.noneMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
+        return directions.noneMatch(dir -> isEllipsoidIntersectionBackground(e,dir));
     }
 
-    private boolean ellipsoidIntersectionIsBackground(final Ellipsoid e, final Vector3dc dir) {
+    private boolean isEllipsoidIntersectionBackground(final Ellipsoid e, final Vector3dc dir) {
         final double axisReduction = Math.sqrt(3);
         final double a = e.getA()-axisReduction;
         final double b = e.getB()-axisReduction;
@@ -506,7 +506,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return (float) (ellipsoid.getA() / ellipsoid.getB() - ellipsoid.getB() / ellipsoid.getC());
     }
 
-    static boolean insideEllipsoid(final Vector3d coordinates, final Ellipsoid ellipsoid) {
+    // TODO Make a method of the Ellipsoid class
+    static boolean isInside(final Vector3d coordinates, final Ellipsoid ellipsoid) {
         final Vector3d centroid = ellipsoid.getCentroid();
         final double c = ellipsoid.getC();
 
@@ -606,6 +607,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 currentPixelPosition[2] < 0 || currentPixelPosition[2] >= depth);
     }
 
+    // TODO make a utility method, similar used in MILPlane op
     private static long[] vectorToPixelGrid(final Vector3dc currentPosition) {
         return Stream.of(currentPosition.x(), currentPosition.y(),
                 currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();

@@ -37,7 +37,6 @@ import org.bonej.utilities.SharedTable;
 import org.joml.Vector3d;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -198,10 +197,10 @@ public class EllipsoidFactorWrapperTest {
 
 
         //EXECUTE AND VERIFY
-        assertTrue(EllipsoidFactorWrapper.insideEllipsoid(origin,axisAligned));
-        assertTrue(!EllipsoidFactorWrapper.insideEllipsoid(definitelyOutside,axisAligned));
-        assertTrue(EllipsoidFactorWrapper.insideEllipsoid(justInside,axisAligned));
-        assertTrue(!EllipsoidFactorWrapper.insideEllipsoid(justOutside,axisAligned));
+        assertTrue(EllipsoidFactorWrapper.isInside(origin,axisAligned));
+        assertTrue(!EllipsoidFactorWrapper.isInside(definitelyOutside,axisAligned));
+        assertTrue(EllipsoidFactorWrapper.isInside(justInside,axisAligned));
+        assertTrue(!EllipsoidFactorWrapper.isInside(justOutside,axisAligned));
 
     }
 
