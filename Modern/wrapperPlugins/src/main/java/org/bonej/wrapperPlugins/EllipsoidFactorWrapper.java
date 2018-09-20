@@ -80,6 +80,7 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Matrix3d;
+import org.joml.Matrix3dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.ItemIO;
@@ -246,22 +247,23 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			.randomAccess();
 		final RandomAccess<IntType> idAccess = ellipsoidIDs.randomAccess();
 		final Cursor<IntType> idCursor = ellipsoidIDs.localizingCursor();
+		final long[] position = new long[3];
 		while (idCursor.hasNext()) {
 			idCursor.fwd();
-			if (idCursor.get().getInteger() >= 0) {
-				final long[] position = new long[3];
-				idCursor.localize(position);
-				idAccess.setPosition(position);
-				final int localMaxEllipsoidID = idAccess.get().getInteger();
-				final long x = Math.round(aBRatios[localMaxEllipsoidID] *
-					(FLINN_PLOT_DIMENSION - 1));
-				final long y = Math.round(bCRatios[localMaxEllipsoidID] *
-					(FLINN_PLOT_DIMENSION - 1));
-				flinnPeakPlotRA.setPosition(new long[] { x, FLINN_PLOT_DIMENSION - y -
-					1 });
-				final float currentValue = flinnPeakPlotRA.get().getRealFloat();
-				flinnPeakPlotRA.get().set(currentValue + 1.0f);
+			if (idCursor.get().getInteger() < 0) {
+				continue;
 			}
+			idCursor.localize(position);
+			idAccess.setPosition(position);
+			final int localMaxEllipsoidID = idAccess.get().getInteger();
+			final long x = Math.round(aBRatios[localMaxEllipsoidID] *
+				(FLINN_PLOT_DIMENSION - 1));
+			final long y = Math.round(bCRatios[localMaxEllipsoidID] *
+				(FLINN_PLOT_DIMENSION - 1));
+			flinnPeakPlotRA.setPosition(new long[] { x, FLINN_PLOT_DIMENSION - y -
+				1 });
+			final float currentValue = flinnPeakPlotRA.get().getRealFloat();
+			flinnPeakPlotRA.get().set(currentValue + 1.0f);
 		}
 		if (sigma.getRealDouble() > 0.0) {
 			flinnPeakPlot = (Img<FloatType>) opService.filter().gauss(flinnPeakPlot,
@@ -340,7 +342,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private static Img<IntType> assignEllipsoidID(final Img<BitType> inputAsBit, final Collection<Ellipsoid> ellipsoids) {
         final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputAsBit.dimension(0), inputAsBit.dimension(1), inputAsBit.dimension(2));
-        ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
+        ellipsoidIdentityImage.forEach(c -> c.setInteger(-1));
 
         final LongStream zRange = LongStream.range(0, inputAsBit.dimension(2));
 
@@ -353,12 +355,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             final Cursor<BitType> inputCursor = inputslice.localizingCursor();
             while (inputCursor.hasNext()) {
                 inputCursor.fwd();
-                if(inputCursor.get().get()) {
-                    final long [] coordinates = new long[3];
-                    inputCursor.localize(coordinates);
-                    findID(localEllipsoids, Views.interval(ellipsoidIdentityImage, mins, maxs), new Vector3d(coordinates[0]+0.5, coordinates[1]+0.5, coordinates[2]+0.5));
-                }
-            }
+				if (!inputCursor.get().get()) {
+					continue;
+				}
+				final long [] coordinates = new long[3];
+				inputCursor.localize(coordinates);
+				final Vector3d point = new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
+				point.add(0.5 , 0.5, 0.5);
+				findID(localEllipsoids, Views.interval(ellipsoidIdentityImage, mins, maxs), point);
+			}
         });
         return ellipsoidIdentityImage;
     }
@@ -461,72 +466,76 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
     }
 
-    private static void findID(final List<Ellipsoid> ellipsoids, final RandomAccessible<IntType> ellipsoidIdentityImage, final Vector3d point) {
+    // TODO Write Javadoc
+	// find largest ellipsoid containing current position
+	private static void findID(final List<Ellipsoid> ellipsoids,
+		final RandomAccessible<IntType> ellipsoidIdentityImage,
+		final Vector3d point)
+	{
+		final int id = IntStream.range(0, ellipsoids.size()).filter(i -> isInside(
+			point, ellipsoids.get(i))).findFirst().orElse(-1);
+		if (id < 0) {
+			return;
+		}
+		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage
+			.randomAccess();
+		eIDRandomAccess.setPosition(vectorToPixelGrid(point));
+		eIDRandomAccess.get().set(id);
+	}
 
-        //find largest ellipsoid containing current position
-        int currentEllipsoidCounter = 0;
-        while (currentEllipsoidCounter < ellipsoids.size() && !isInside(point, ellipsoids.get(currentEllipsoidCounter))) {
-            currentEllipsoidCounter++;
-        }
+	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e,
+		final Collection<Vector3dc> sphereSamplingDirections)
+	{
+		if (!isInBounds(vectorToPixelGrid(e.getCentroid()))) {
+			return false;
+		}
+		final Builder<Vector3dc> builder = Stream.builder();
+		final Matrix3d orientation = e.getOrientation().get3x3(new Matrix3d());
+		for (int i = 0; i < 3; i++) {
+			final Vector3dc v = orientation.getColumn(i, new Vector3d());
+			builder.add(v);
+			builder.add(v.negate(new Vector3d()));
+		}
+		final Stream<Vector3dc> directions = Stream.concat(sphereSamplingDirections
+			.stream(), builder.build());
+		final Matrix3d reconstruction = reconstructMatrix(e);
+		return directions.noneMatch(dir -> isEllipsoidIntersectionBackground(
+			reconstruction, e.getCentroid(), dir));
+	}
 
-        //ignore background voxels and voxels not contained in any ellipsoid
-        if (currentEllipsoidCounter < ellipsoids.size()) {
-            final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
-            eIDRandomAccess.setPosition(vectorToPixelGrid(point));
-            eIDRandomAccess.get().set(currentEllipsoidCounter);
-        }
-    }
+	private Matrix3d reconstructMatrix(final Ellipsoid e) {
+		final double axisReduction = Math.sqrt(3);
+		final double a = e.getA() - axisReduction;
+		final double b = e.getB() - axisReduction;
+		final double c = e.getC() - axisReduction;
+		final Matrix3dc Q = e.getOrientation().get3x3(new Matrix3d());
+		final Matrix3d lambda = new Matrix3d();
+		lambda.scaling(1.0 / (a * a), 1.0 / (b * b), 1.0 / (c * c));
+		final Matrix3dc QT = Q.transpose(new Matrix3d());
+		final Matrix3dc LambdaQT = lambda.mul(QT, new Matrix3d());
+		return Q.mul(LambdaQT, new Matrix3d());
+	}
 
-    private boolean isEllipsoidWhollyInForeground(final Ellipsoid e, final Collection<Vector3dc> sphereSamplingDirections) {
-        if(!isInBounds(vectorToPixelGrid(e.getCentroid())))
-        {
-            return false;
-        }
-        final Builder<Vector3dc> builder = Stream.builder();
-        final Matrix3d orientation = e.getOrientation().get3x3(new Matrix3d());
-        for (int i = 0; i < 3; i++) {
-            final Vector3dc v = orientation.getColumn(i, new Vector3d());
-            builder.add(v);
-            builder.add(v.negate(new Vector3d()));
-        }
-        final Stream<Vector3dc> directions = Stream.concat(sphereSamplingDirections.stream(), builder.build());
-        return directions.noneMatch(dir -> isEllipsoidIntersectionBackground(e,dir));
-    }
+	private boolean isEllipsoidIntersectionBackground(final Matrix3d a,
+		final Vector3dc centroid, final Vector3dc dir)
+	{
+		final Vector3d ATimesDir = new Vector3d();
+		a.transform(dir, ATimesDir);
+		final double surfaceIntersectionParameter = Math.sqrt(1.0 / dir.dot(
+			ATimesDir));
 
-    private boolean isEllipsoidIntersectionBackground(final Ellipsoid e, final Vector3dc dir) {
-        final double axisReduction = Math.sqrt(3);
-        final double a = e.getA()-axisReduction;
-        final double b = e.getB()-axisReduction;
-        final double c = e.getC()-axisReduction;
-        
-        final Matrix3d Q = new Matrix3d();
-        e.getOrientation().get3x3(Q);
-        
-        final Matrix3d lambda = new Matrix3d();
-        lambda.scaling(1.0/(a*a),1.0/(b*b),1.0/(c*c));
-        
-        final Matrix3d LambdaQT = new Matrix3d(lambda);
-        final Matrix3d QT = Q.transpose();
-        LambdaQT.mul(QT);
-        final Matrix3d QLambdaQT = new Matrix3d(Q);
-        QLambdaQT.mul(LambdaQT);
-        
-        final Vector3d ATimesDir = new Vector3d();
-        QLambdaQT.transform(dir,ATimesDir);
-        final double surfaceIntersectionParameter = Math.sqrt(1.0/dir.dot(ATimesDir));
-        
-        final Vector3d intersectionPoint = new Vector3d(dir);
-        intersectionPoint.mul(surfaceIntersectionParameter);
-        intersectionPoint.add(e.getCentroid());
-        
-        final long[] pixel = vectorToPixelGrid(intersectionPoint);
-        if (isInBounds(pixel)) {
-            final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
-            inputRA.setPosition(pixel);
-            return inputRA.get().getRealDouble() == 0;
-        }
-        return true;
-    }
+		final Vector3d intersectionPoint = new Vector3d(dir);
+		intersectionPoint.mul(surfaceIntersectionParameter);
+		intersectionPoint.add(centroid);
+
+		final long[] pixel = vectorToPixelGrid(intersectionPoint);
+		if (isInBounds(pixel)) {
+			final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
+			inputRA.setPosition(pixel);
+			return inputRA.get().getRealDouble() == 0;
+		}
+		return true;
+	}
 
     private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
         return (float) (ellipsoid.getA() / ellipsoid.getB() - ellipsoid.getB() / ellipsoid.getC());
