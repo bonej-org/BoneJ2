@@ -23,6 +23,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
@@ -32,21 +39,18 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.FloatType;
+
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.SharedTable;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 
 /**
  * Tests for {@link EllipsoidFactorWrapper}.
@@ -56,7 +60,7 @@ import static org.mockito.Mockito.mock;
 
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class EllipsoidFactorWrapperTest {
-    private static final ImageJ IMAGE_J = new ImageJ();
+    private static final Gateway IMAGE_J = new ImageJ();
 
     @After
     public void tearDown() {
@@ -85,6 +89,8 @@ public class EllipsoidFactorWrapperTest {
         CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J, EllipsoidFactorWrapper.class);
     }
 
+    // TODO Add test about anisotropy warning being shown
+
     @Test
     public void testSphereVoxelsHaveEFZero() throws Exception {
         // SETUP
@@ -98,8 +104,9 @@ public class EllipsoidFactorWrapperTest {
                 EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
 
         // VERIFY
-        final ImgPlus<FloatType> efImage = (ImgPlus) module.getOutput("efImage");
-        double expectedValue = 0.0;
+        @SuppressWarnings("unchecked")
+        final ImgPlus<FloatType> efImage = (ImgPlus<FloatType>) module.getOutput("efImage");
+        final double expectedValue = 0.0;
         assertFiniteImageEntriesMatchValue(efImage, expectedValue, 1e-5);
     }
 
@@ -116,8 +123,9 @@ public class EllipsoidFactorWrapperTest {
                 EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
 
         // VERIFY
-        final ImgPlus<FloatType> volumeImage = (ImgPlus) module.getOutput("vImage");
-        double expectedValue = 4.0*Math.PI/3.0*11*11*11;
+        @SuppressWarnings("unchecked")
+        final ImgPlus<FloatType> volumeImage = (ImgPlus<FloatType>) module.getOutput("vImage");
+        final double expectedValue = 4.0*Math.PI/3.0*11*11*11;
         assertFiniteImageEntriesMatchValue(volumeImage,expectedValue,0.2);
     }
 
@@ -129,79 +137,73 @@ public class EllipsoidFactorWrapperTest {
         doNothing().when(mockUI).show(any(ImgPlus.class));
         IMAGE_J.ui().setDefaultUI(mockUI);
         final ImgPlus<BitType> sphereImgPlus = getSphereImage();
+        final double expectedRatio = 1.0;
 
         // EXECUTE
         final CommandModule module = IMAGE_J.command().run(
                 EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
 
         // VERIFY
-        double expectedValue = 1.0;
 
-        final ImgPlus<FloatType> aToB = (ImgPlus) module.getOutput("aToBAxisRatioImage");
-        assertFiniteImageEntriesMatchValue(aToB,expectedValue,1e-4);
-
-        final ImgPlus<FloatType> bToC = (ImgPlus) module.getOutput("bToCAxisRatioImage");
-        assertFiniteImageEntriesMatchValue(bToC,expectedValue,1e-4);
+        @SuppressWarnings("unchecked")
+        final ImgPlus<FloatType> aToB = (ImgPlus<FloatType>) module.getOutput("aToBAxisRatioImage");
+        assertFiniteImageEntriesMatchValue(aToB,expectedRatio,1e-4);
+        @SuppressWarnings("unchecked")
+        final ImgPlus<FloatType> bToC = (ImgPlus<FloatType>) module.getOutput("bToCAxisRatioImage");
+        assertFiniteImageEntriesMatchValue(bToC,expectedRatio,1e-4);
     }
 
-    // TODO check image has any finite entries!
-    private void assertFiniteImageEntriesMatchValue(ImgPlus<FloatType> efImage, double expectedValue, double tolerance) {
-        Cursor<FloatType> efCursor = efImage.getImg().localizingCursor();
-        while (efCursor.hasNext())
-        {
-            efCursor.fwd();
-            if(Double.isFinite(efCursor.get().getRealDouble()))
-            {
-                long [] coordinates = new long[3];
-                efCursor.localize(coordinates);
-                assertEquals(expectedValue, efCursor.get().getRealDouble(),tolerance);
-            }
-        }
-    }
+	private void assertFiniteImageEntriesMatchValue(
+		final ImgPlus<FloatType> efImage, final double expectedValue,
+		final double tolerance)
+	{
+		efImage.forEach(e -> {
+			final double value = e.getRealDouble();
+			if (Double.isFinite(value)) {
+				assertEquals(expectedValue, value, tolerance);
+			}
+		});
+	}
 
-    private static ImgPlus<BitType> getSphereImage() {
-        long[] imageDimensions = {101,101,101};
-        Vector3d centre = new Vector3d(Math.floor(imageDimensions[0]/2.0),Math.floor(imageDimensions[1]/2.0),Math.floor(imageDimensions[2]/2.0));
-        int radius = 10;
+	private static ImgPlus<BitType> getSphereImage() {
+		final long[] imageDimensions = { 101, 101, 101 };
+		final Vector3dc centre = new Vector3d(Math.floor(imageDimensions[0] / 2.0),
+			Math.floor(imageDimensions[1] / 2.0), Math.floor(imageDimensions[2] /
+				2.0));
+		final int radius = 10;
+		final Img<BitType> sphereImg = ArrayImgs.bits(imageDimensions[0],
+			imageDimensions[1], imageDimensions[2]);
+		final ImgPlus<BitType> sphereImgPlus = new ImgPlus<>(sphereImg,
+			"Sphere test image", new AxisType[] { Axes.X, Axes.Y, Axes.Z },
+			new double[] { 1.0, 1.0, 1.0 }, new String[] { "", "", "" });
+		final Cursor<BitType> cursor = sphereImgPlus.localizingCursor();
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			final long[] coordinates = new long[3];
+			cursor.localize(coordinates);
+			final Vector3d v = centre.add(-coordinates[0], -coordinates[1],
+				-coordinates[2], new Vector3d());
+			if (v.lengthSquared() <= radius * radius) {
+				cursor.get().setOne();
+			}
+		}
+		return sphereImgPlus;
+	}
 
-        final Img<BitType> sphereImg = ArrayImgs.bits(imageDimensions[0], imageDimensions[1], imageDimensions[2]);
-        final ImgPlus<BitType> sphereImgPlus = new ImgPlus<>(sphereImg, "Sphere test image",
-                new AxisType[]{Axes.X,Axes.Y, Axes.Z},
-                new double[]{1.0,1.0,1.0},
-                new String[]{"","",""});
-        Cursor<BitType> cursor = sphereImgPlus.localizingCursor();
+	@Test
+	public void testInsideEllipsoidEasy() {
+		// SETUP
+		final Ellipsoid axisAligned = new Ellipsoid(1, 2, 3);
+		final Vector3dc origin = new Vector3d(0, 0, 0);
+		final Vector3dc definitelyOutside = new Vector3d(4, 4, 4);
+		final Vector3dc justInside = new Vector3d(0, 0, 2);
+		final Vector3dc justOutside = new Vector3d(0, 2, 0);
 
-        while(cursor.hasNext())
-        {
-            cursor.fwd();
-            long [] coordinates = new long[3];
-            cursor.localize(coordinates);
-            double x = centre.x()-coordinates[0];
-            double y = centre.y()-coordinates[1];
-            double z = centre.z()-coordinates[2];
-            double distanceFromCentre = x*x+y*y+z*z;
-            if(distanceFromCentre <= radius*radius)
-                cursor.get().setOne();
-        }
-        return sphereImgPlus;
-    }
-
-    @Test
-    public void testInsideEllipsoidEasy() throws Exception {
-        //SETUP
-        Ellipsoid axisAligned = new Ellipsoid(1,2,3);
-        Vector3d origin = new Vector3d(0,0,0);
-        Vector3d definitelyOutside = new Vector3d(4,4,4);
-        Vector3d justInside = new Vector3d(0,0,2);
-        Vector3d justOutside = new Vector3d(0,2,0);
-
-
-        //EXECUTE AND VERIFY
-        assertTrue(EllipsoidFactorWrapper.isInside(origin,axisAligned));
-        assertTrue(!EllipsoidFactorWrapper.isInside(definitelyOutside,axisAligned));
-        assertTrue(EllipsoidFactorWrapper.isInside(justInside,axisAligned));
-        assertTrue(!EllipsoidFactorWrapper.isInside(justOutside,axisAligned));
-
-    }
-
+		// EXECUTE AND VERIFY
+		assertTrue(EllipsoidFactorWrapper.isInside(origin, axisAligned));
+		assertFalse(EllipsoidFactorWrapper.isInside(definitelyOutside,
+			axisAligned));
+		assertTrue(EllipsoidFactorWrapper.isInside(justInside, axisAligned));
+		assertFalse(EllipsoidFactorWrapper.isInside(justOutside, axisAligned));
+	}
 }
