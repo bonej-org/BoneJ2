@@ -71,7 +71,6 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import org.apache.commons.math3.util.CombinatoricsUtils;
@@ -185,7 +184,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
 
         statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-        final Img<IntType> ellipsoidIdentityImage = assignEllipsoidID(bitImage, ellipsoids);
+        final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(bitImage, ellipsoids);
         createOutputImages(ellipsoids, ellipsoidIdentityImage);
 
         final double numberOfForegroundVoxels = countTrue(bitImage);
@@ -336,35 +335,47 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return assignedVoxels.get();
     }
 
-    private static Img<IntType> assignEllipsoidID(final Img<BitType> inputAsBit, final Collection<Ellipsoid> ellipsoids) {
-        final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputAsBit.dimension(0), inputAsBit.dimension(1), inputAsBit.dimension(2));
-        ellipsoidIdentityImage.forEach(c -> c.setInteger(-1));
+	private static Img<IntType> assignEllipsoidIDs(final Img<BitType> mask,
+		final Collection<Ellipsoid> ellipsoids)
+	{
+		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask
+			.dimension(1), mask.dimension(2));
+		idImage.forEach(c -> c.setInteger(-1));
+		final LongStream zRange = LongStream.range(0, mask.dimension(2));
+		zRange.parallel().forEach(sliceIndex -> {
+			// multiply by image unit? make more intelligent bounding box?
+			final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(
+				e -> Math.abs(e.getCentroid().z() - sliceIndex) < e.getC()).collect(
+					toList());
+			final long[] mins = { 0, 0, sliceIndex };
+			final long[] maxs = { mask.dimension(0) - 1, mask.dimension(1) - 1,
+				sliceIndex };
+			final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs)
+				.localizingCursor();
+			colourSlice(idImage, maskSlice, localEllipsoids);
+		});
+		return idImage;
+	}
 
-        final LongStream zRange = LongStream.range(0, inputAsBit.dimension(2));
-
-        zRange.parallel().forEach(sliceIndex -> {
-            //multiply by image unit? make more intelligent bounding box?
-            final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(e -> Math.abs(e.getCentroid().z() - sliceIndex) < e.getC()).collect(toList());
-            final long[] mins = {0,0,sliceIndex};
-            final long[] maxs = {inputAsBit.dimension(0) - 1, inputAsBit.dimension(1) - 1, sliceIndex};
-            final IntervalView<BitType> inputslice = Views.interval(inputAsBit, mins, maxs);
-            final Cursor<BitType> inputCursor = inputslice.localizingCursor();
-            while (inputCursor.hasNext()) {
-                inputCursor.fwd();
-				if (!inputCursor.get().get()) {
-					continue;
-				}
-				final long [] coordinates = new long[3];
-				inputCursor.localize(coordinates);
-				final Vector3d point = new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
-				point.add(0.5 , 0.5, 0.5);
-				findID(localEllipsoids, Views.interval(ellipsoidIdentityImage, mins, maxs), point);
+	private static void colourSlice(final RandomAccessible<IntType> idImage,
+		final Cursor<BitType> mask, final List<Ellipsoid> localEllipsoids)
+	{
+		while (mask.hasNext()) {
+			mask.fwd();
+			if (!mask.get().get()) {
+				continue;
 			}
-        });
-        return ellipsoidIdentityImage;
-    }
+			final long[] coordinates = new long[3];
+			mask.localize(coordinates);
+			final Vector3d point = new Vector3d(coordinates[0], coordinates[1],
+				coordinates[2]);
+			point.add(0.5, 0.5, 0.5);
+			colourID(localEllipsoids, idImage, point);
+		}
+	}
 
-    private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
+	// TODO Refactor this and sub-functions into an Op
+	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
 		final List<Vector3dc> filterSamplingDirections =
 			getGeneralizedSpiralSetOnSphere(250).collect(toList());
 		final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
@@ -427,6 +438,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			thresholdedRidge), "Seeding Points");
 	}
 
+	// TODO Could this be an op?
 	private List<Vector3dc> getRidgeSeedPoints(
 		final RandomAccessibleInterval<BitType> bitImage)
 	{
@@ -476,11 +488,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		}
     }
 
-    // TODO Write Javadoc
-	// find largest ellipsoid containing current position
-	private static void findID(final List<Ellipsoid> ellipsoids,
-		final RandomAccessible<IntType> ellipsoidIdentityImage,
-		final Vector3d point)
+    private static void colourID(final List<Ellipsoid> ellipsoids,
+								 final RandomAccessible<IntType> ellipsoidIdentityImage,
+								 final Vector3d point)
 	{
 		final int id = IntStream.range(0, ellipsoids.size()).filter(i -> isInside(
 			point, ellipsoids.get(i))).findFirst().orElse(-1);
@@ -513,6 +523,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			reconstruction, e.getCentroid(), dir));
 	}
 
+	// TODO Make a method of Ellipsoid?
 	private Matrix3d reconstructMatrix(final Ellipsoid e) {
 		final double axisReduction = Math.sqrt(3);
 		final double[] scales = DoubleStream.of(e.getA(), e.getB(), e.getC()).map(
@@ -590,6 +601,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
      * @param n : number of points required (has to be > 2)
      * </p>
      */
+    // TODO Is there an implementation for this in Apache Commons?
     private static Stream<Vector3dc> getGeneralizedSpiralSetOnSphere(final int n) {
         final Builder<Vector3dc> spiralSet = Stream.builder();
         final List<Double> phi = new ArrayList<>();
