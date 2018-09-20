@@ -192,12 +192,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
 
         // TODO Should this be logService.debug?
-        logService.info("found "+ellipsoids.size()+" ellipsoids");
-        logService.info("assigned voxels = "+numberOfAssignedVoxels);
-        logService.info("foreground voxels = "+numberOfForegroundVoxels);
         final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
-        logService.info("filling percentage = "+fillingPercentage+"%");
-        logService.info("number of seed points = " + internalSeedPoints.size());
+        logService.info("filling percentage = " + fillingPercentage + "%");
+
+        //debugging
+        logService.debug("found " + ellipsoids.size() + " ellipsoids");
+        logService.debug("assigned voxels = " + numberOfAssignedVoxels);
+        logService.debug("foreground voxels = " + numberOfForegroundVoxels);
+        logService.debug("number of seed points = " + internalSeedPoints.size());
+        for (int i = 0; i < ellipsoids.size(); i++)
+        {
+            logService.debug("ellipsoid("+i+"): "+ellipsoids.get(i).toString());
+        }
     }
 
 	private void createAToBImage(final double[] aBRatios,

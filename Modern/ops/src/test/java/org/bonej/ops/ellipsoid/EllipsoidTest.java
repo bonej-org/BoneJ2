@@ -493,6 +493,23 @@ public class EllipsoidTest {
 		ellipsoid.setSemiAxes(new Vector3d(), new Vector3d(), null);
 	}
 
+	@Test
+	public void testToString()
+	{
+		final Ellipsoid ellipsoid = new Ellipsoid(1,2,3);
+
+		final String expected = "centre:\n" +
+				"( 0.000E+0  0.000E+0  0.000E+0)\n" +
+				"axis lengths:\n" +
+				"( 1.0 2.0 3.0 )\n" +
+				"unit axis directions:\n" +
+				" 1.000E+0  0.000E+0  0.000E+0\n" +
+				" 0.000E+0  1.000E+0  0.000E+0\n" +
+				" 0.000E+0  0.000E+0  1.000E+0\n";
+
+		assertEquals(expected, ellipsoid.toString());
+	}
+
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
