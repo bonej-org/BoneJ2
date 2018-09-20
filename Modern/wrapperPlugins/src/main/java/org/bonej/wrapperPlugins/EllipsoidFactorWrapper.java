@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
@@ -89,6 +90,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.DialogPrompt;
+import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 
 /**
@@ -269,27 +271,27 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         efImage.setColorTable(ColorTables.FIRE, 0);
 
         eIdImage = new ImgPlus<>(ellipsoidIdentityImage, "ID");
-        eIdImage.setChannelMaximum(0,ellipsoids.size()/10.0);
-        eIdImage.setChannelMinimum(0, -1.0);
+        eIdImage.setChannelMaximum(0,ellipsoids.size()/10.0f);
+        eIdImage.setChannelMinimum(0, -1.0f);
 
         vImage = new ImgPlus<>(volumeImage, "Volume");
         vImage.setChannelMaximum(0,ellipsoids.get(0).getVolume());
-        vImage.setChannelMinimum(0, -1.0);
+        vImage.setChannelMinimum(0, -1.0f);
 
         aToBAxisRatioImage = new ImgPlus<>(aToBImage, "a/b");
-        aToBAxisRatioImage.setChannelMaximum(0,1.0);
-        aToBAxisRatioImage.setChannelMinimum(0, 0.0);
+        aToBAxisRatioImage.setChannelMaximum(0,1.0f);
+        aToBAxisRatioImage.setChannelMinimum(0, 0.0f);
 
         bToCAxisRatioImage = new ImgPlus<>(bToCImage, "b/c");
-        bToCAxisRatioImage.setChannelMaximum(0,1.0);
-        bToCAxisRatioImage.setChannelMinimum(0, 0.0);
+        bToCAxisRatioImage.setChannelMaximum(0,1.0f);
+        bToCAxisRatioImage.setChannelMinimum(0, 0.0f);
 
         flinnPlotImage = new ImgPlus<>(flinnPlot, "Unweighted Flinn Plot");
-        flinnPlotImage.setChannelMaximum(0,255);
-        flinnPlotImage.setChannelMinimum(0, 0);
+        flinnPlotImage.setChannelMaximum(0,255.0f);
+        flinnPlotImage.setChannelMinimum(0, 0.0f);
 
         flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, "Flinn Peak Plot");
-        flinnPeakPlotImage.setChannelMaximum(0,255f);
+        flinnPeakPlotImage.setChannelMaximum(0,255.0f);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
     }
 
@@ -334,23 +336,17 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 
     private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> internalSeedPoints) {
-        final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(250);
-        final List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>,Vector3d>> combinations = new ArrayList<>();
+        final List<Vector3dc> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(250);
         return internalSeedPoints.parallelStream().map(this::getPointCombinationsForOneSeedPoint).flatMap(Collection::stream)
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c.getA()), c.getB()))
                 .filter(Optional::isPresent).map(Optional::get)
-                .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(Collectors.toList());
+                .filter(e -> whollyContainedInForeground(e, filterSamplingDirections)).collect(toList());
     }
 
     private List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> getPointCombinationsForOneSeedPoint(final Vector3dc internalSeedPoint)
     {
         final int nSphere = 40;
-        final List<Vector3d> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
-        //sphereSamplingDirections.clear();
-        /*sphereSamplingDirections.addAll(Arrays.asList(
-                new Vector3d(1,0,1),new Vector3d(0,1,1),new Vector3d(0,0,1),
-                new Vector3d(-1,0,1)));//,new Vector3d(0,-1,0),new Vector3d(0,0,-1)));*/
-        //sphereSamplingDirections.forEach(v -> v.normalize());
+        final List<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
 
         final List<Vector3dc> contactPoints = sphereSamplingDirections.parallelStream().map(d -> {
             final Vector3dc direction = new Vector3d(d);
@@ -415,7 +411,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         //reduce number of internal seeds
         if(internalSeedPoints.size()>approximateNumberOfInternalSeeds.getInt())
         {
-            final double probabilityOfAcceptingSeed = ((double) approximateNumberOfInternalSeeds.getInt())/((double) internalSeedPoints.size());
+            final double probabilityOfAcceptingSeed = ((double) approximateNumberOfInternalSeeds.getInt())/ internalSeedPoints.size();
             internalSeedPoints.removeIf(i -> rng.nextDouble()>probabilityOfAcceptingSeed);
         }
         return internalSeedPoints;
@@ -436,7 +432,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
     }
 
-    private static void findID(final List<Ellipsoid> ellipsoids, final RandomAccessibleInterval<IntType> ellipsoidIdentityImage, final Vector3d point) {
+    private static void findID(final List<Ellipsoid> ellipsoids, final RandomAccessible<IntType> ellipsoidIdentityImage, final Vector3d point) {
 
         //find largest ellipsoid containing current position
         int currentEllipsoidCounter = 0;
@@ -452,30 +448,23 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
     }
 
-    private boolean whollyContainedInForeground(final Ellipsoid e, final List<Vector3d> sphereSamplingDirections) {
+    private boolean whollyContainedInForeground(final Ellipsoid e, final Collection<Vector3dc> sphereSamplingDirections) {
         if(!isInBounds(vectorToPixelGrid(e.getCentroid())))
         {
             return false;
         }
-
-        final List<Vector3d> axisSamplingDirections = new ArrayList<>();
-        final Matrix3d ellipsoidOrientation = new Matrix3d();
-        e.getOrientation().get3x3(ellipsoidOrientation);
-        axisSamplingDirections.add(new Vector3d(ellipsoidOrientation.m00(),ellipsoidOrientation.m01(),ellipsoidOrientation.m02()));
-        axisSamplingDirections.add(new Vector3d(-ellipsoidOrientation.m00(),-ellipsoidOrientation.m01(),-ellipsoidOrientation.m02()));
-
-        axisSamplingDirections.add(new Vector3d(ellipsoidOrientation.m10(),ellipsoidOrientation.m11(),ellipsoidOrientation.m12()));
-        axisSamplingDirections.add(new Vector3d(-ellipsoidOrientation.m10(),-ellipsoidOrientation.m11(),-ellipsoidOrientation.m12()));
-
-        axisSamplingDirections.add(new Vector3d(ellipsoidOrientation.m20(),ellipsoidOrientation.m21(),ellipsoidOrientation.m22()));
-        axisSamplingDirections.add(new Vector3d(-ellipsoidOrientation.m20(),-ellipsoidOrientation.m21(),-ellipsoidOrientation.m22()));
-
-        axisSamplingDirections.addAll(sphereSamplingDirections);
-
-        return axisSamplingDirections.stream().noneMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
+        final Builder<Vector3dc> builder = Stream.builder();
+        final Matrix3d orientation = e.getOrientation().get3x3(new Matrix3d());
+        for (int i = 0; i < 3; i++) {
+            final Vector3dc v = orientation.getColumn(i, new Vector3d());
+            builder.add(v);
+            builder.add(v.negate(new Vector3d()));
+        }
+        final Stream<Vector3dc> directions = Stream.concat(sphereSamplingDirections.stream(), builder.build());
+        return directions.noneMatch(dir -> ellipsoidIntersectionIsBackground(e,dir));
     }
 
-    private boolean ellipsoidIntersectionIsBackground(final Ellipsoid e, final Vector3d dir) {
+    private boolean ellipsoidIntersectionIsBackground(final Ellipsoid e, final Vector3dc dir) {
         final double axisReduction = Math.sqrt(3);
         final double a = e.getA()-axisReduction;
         final double b = e.getB()-axisReduction;
@@ -507,9 +496,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             inputRA.setPosition(pixel);
             return inputRA.get().getRealDouble() == 0;
         }
-        else {
-            return true;//false to have outside input image equals foreground
-        }
+        return true;
     }
 
     private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
@@ -558,20 +545,19 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
      * @param n : number of points required (has to be > 2)
      * </p>
      */
-    // TODO Can this be done with 
-    static List<Vector3d> getGeneralizedSpiralSetOnSphere(final int n) {
-        final List<Vector3d> spiralSet = new ArrayList<>();
+    private static List<Vector3dc> getGeneralizedSpiralSetOnSphere(final int n) {
+        final List<Vector3dc> spiralSet = new ArrayList<>();
 
         final List<Double> phi = new ArrayList<>();
         phi.add(0.0);
         for (int k = 1; k < n - 1; k++) {
-            final double h = -1.0 + 2.0 * ((double) k) / (n - 1);
+            final double h = -1.0 + 2.0 * k / (n - 1);
             phi.add(getPhiByRecursion(n, phi.get(k - 1), h));
         }
         phi.add(0.0);
 
         for (int k = 0; k < n; k++) {
-            final double h = -1.0 + 2.0 * ((double) k) / (n - 1);
+            final double h = -1.0 + 2.0 * k / (n - 1);
             final double theta = Math.acos(h);
             spiralSet.add(new Vector3d(Math.sin(theta) * Math.cos(phi.get(k)), Math
                     .sin(theta) * Math.sin(phi.get(k)), Math.cos(theta)));
@@ -590,13 +576,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return phiK - Math.floor(phiK / (2 * Math.PI)) * 2 * Math.PI;
     }
 
-    private static int estimateNSpiralPointsRequired(final double searchRadius,
-                                                     final double pixelWidth) {
-        return (int) Math.ceil(Math.pow(searchRadius * 3.809 / pixelWidth, 2));
-    }
-
-    Vector3d findFirstPointInBGAlongRay(final Vector3dc rayIncrement,
-                                        final Vector3dc start) {
+    private Vector3d findFirstPointInBGAlongRay(final Vector3dc rayIncrement,
+                                                final Vector3dc start) {
         final RandomAccess<R> randomAccess = inputImage.randomAccess();
 
         final Vector3d currentRealPosition = new Vector3d(start);
@@ -627,20 +608,26 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
                 currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
 
-    static List<ValuePair<Set<ValuePair<Vector3dc,Vector3dc>>,Vector3dc>> getAllUniqueCombinationsOfFourPoints(final List<ValuePair<Vector3dc,Vector3dc>> points, final Vector3dc centre){
-        final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(points.size(), 4);
-        final List<ValuePair<Set<ValuePair<Vector3dc,Vector3dc>>,Vector3dc>> pointCombinations = new ArrayList<>();
-        iterator.forEachRemaining(el ->
-                {
-                    final Set<ValuePair<Vector3dc, Vector3dc>> pointCombination =  IntStream.range(0, 4).mapToObj(i -> points.get(el[i])).collect(Collectors.toSet());
-                    if(pointCombination.size()==4)
-                    {
-                        pointCombinations.add(new ValuePair<>(pointCombination,centre));
-                    }
-                }
-        );
-        return pointCombinations;
-    }
+	private static
+		List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>>
+		getAllUniqueCombinationsOfFourPoints(
+			final List<ValuePair<Vector3dc, Vector3dc>> points,
+			final Vector3dc centre)
+	{
+		final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(
+			points.size(), 4);
+		final List<ValuePair<Set<ValuePair<Vector3dc, Vector3dc>>, Vector3dc>> pointCombinations =
+			new ArrayList<>();
+		iterator.forEachRemaining(el -> {
+			final Set<ValuePair<Vector3dc, Vector3dc>> pointCombination = IntStream
+				.range(0, 4).mapToObj(i -> points.get(el[i])).collect(Collectors
+					.toSet());
+			if (pointCombination.size() == 4) {
+				pointCombinations.add(new ValuePair<>(pointCombination, centre));
+			}
+		});
+		return pointCombinations;
+	}
 
     @SuppressWarnings("unused")
     private void validateImage() {
@@ -657,7 +644,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             return;
         }
         if (!isCalibrationIsotropic() && !calibrationWarned) {
-            final DialogPrompt.Result result = uiService.showDialog(
+            final Result result = uiService.showDialog(
                     "The voxels in the image are anisotropic, which may affect results. Continue anyway?",
                     WARNING_MESSAGE, OK_CANCEL_OPTION);
             // Avoid showing warning more than once (validator gets called before and
