@@ -23,6 +23,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
+import static java.util.stream.Collectors.toList;
+import static net.imglib2.roi.Regions.countTrue;
+import static org.bonej.utilities.AxisUtils.getSpatialUnit;
+import static org.bonej.utilities.Streamers.spatialAxisStream;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
+
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
@@ -46,6 +70,7 @@ import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
@@ -65,21 +90,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
-import static net.imglib2.roi.Regions.countTrue;
-import static org.bonej.utilities.AxisUtils.getSpatialUnit;
-import static org.bonej.utilities.Streamers.spatialAxisStream;
-import static org.bonej.wrapperPlugins.CommonMessages.*;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
-import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 /**
  * Ellipsoid Factor
