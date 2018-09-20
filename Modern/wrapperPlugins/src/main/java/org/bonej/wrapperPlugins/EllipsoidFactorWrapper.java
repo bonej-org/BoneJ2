@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -181,7 +182,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         statusService.showStatus("Ellipsoid Factor: initialising...");
         rng = new Random();
         final ImgPlus<BitType> bitImage = Common.toBitTypeImgPlus(opService, inputImage);
-        final List<Vector3dc> internalSeedPoints = getRidgePoints(bitImage);
+        final List<Vector3dc> internalSeedPoints = getRidgeSeedPoints(bitImage);
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
         final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
@@ -398,72 +399,91 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return new ArrayList<>(getAllUniqueCombinationsOfFourPoints(seedPoints, internalSeedPoint));
     }
 
-    private List<Vector3dc> getRidgePoints(final RandomAccessibleInterval<BitType> bitImage) {
-        //find clever seed points
-        final RandomAccessibleInterval<R> distanceTransform = opService.image().distancetransform(bitImage);
+	private IterableInterval<R> createRidge(
+		final RandomAccessibleInterval<BitType> image)
+	{
+		final RandomAccessibleInterval<R> distanceTransform = opService.image()
+			.distancetransform(image);
+		final List<Shape> shapes = new ArrayList<>();
+		shapes.add(new HyperSphereShape(2));
+		final IterableInterval<R> open = opService.morphology().open(
+			distanceTransform, shapes);
+		final IterableInterval<R> close = opService.morphology().close(
+			distanceTransform, shapes);
+		final IterableInterval<R> ridge = opService.math().subtract(close, open);
+		final Cursor<R> ridgeCursor = ridge.localizingCursor();
+		// remove ridgepoints in BG - how does this make a difference?
+		final RandomAccess<BitType> inputBitRA = image.randomAccess();
+		final long[] position = new long[3];
+		while (ridgeCursor.hasNext()) {
+			ridgeCursor.fwd();
+			ridgeCursor.localize(position);
+			inputBitRA.setPosition(position);
+			if (!inputBitRA.get().get()) {
+				ridgeCursor.get().setReal(0.0f);
+			}
+		}
+		return ridge;
+	}
 
-        final List<Shape> shapes = new ArrayList<>();
-        shapes.add(new HyperSphereShape(2));
-        final IterableInterval<R> open = opService.morphology().open(distanceTransform, shapes);
-        final IterableInterval<R> close = opService.morphology().close(distanceTransform, shapes);
-        final IterableInterval<R> ridge = opService.math().subtract(close, open);
-        final Cursor<R> ridgeCursor = ridge.localizingCursor();
+	private void createRidgePointsImage(final IterableInterval<R> ridge,
+		final double ridgePointCutOff)
+	{
+		final R threshold = ridge.cursor().get().createVariable();
+		threshold.setReal(ridgePointCutOff);
+		final IterableInterval<BitType> thresholdedRidge = opService.threshold()
+			.apply(ridge, threshold);
+		ridgePointsImage = new ImgPlus<>(opService.convert().uint8(
+			thresholdedRidge), "Seeding Points");
+	}
 
-        //remove ridgepoints in BG - how does this make a difference?
-        final RandomAccess<BitType> inputBitRA = bitImage.randomAccess();
-        final long[] position = new long[3];
-        while(ridgeCursor.hasNext()){
-            ridgeCursor.fwd();
-            ridgeCursor.localize(position);
-            inputBitRA.setPosition(position);
-            if(!inputBitRA.get().get())
-            {
-                ridgeCursor.get().setReal(0.0f);
-            }
-        }
+	private List<Vector3dc> getRidgeSeedPoints(
+		final RandomAccessibleInterval<BitType> bitImage)
+	{
+		final IterableInterval<R> ridge = createRidge(bitImage);
+		final double threshold = thresholdForBeingARidgePoint.getRealFloat() *
+			opService.stats().max(ridge).getRealFloat();
+		createRidgePointsImage(ridge, threshold);
+		final List<Vector3dc> seeds = new ArrayList<>();
+		final Cursor<R> ridgeCursor = ridge.cursor();
+		final long[] position = new long[3];
+		while (ridgeCursor.hasNext()) {
+			ridgeCursor.fwd();
+			final double localValue = ridgeCursor.get().getRealFloat();
+			if (localValue <= threshold) {
+				continue;
+			}
+			ridgeCursor.localize(position);
+			final Vector3d seed = new Vector3d(position[0], position[1], position[2]);
+			seed.add(0.5, 0.5, 0.5);
+			seeds.add(seed);
+		}
+		if (seeds.size() > approximateNumberOfInternalSeeds.getInt()) {
+			reduceSeedPoints(seeds);
+		}
+		return seeds;
+	}
 
-        final double ridgePointCutOff = thresholdForBeingARidgePoint.getRealFloat()*opService.stats().max(ridge).getRealFloat();
-        final R threshold = ridge.cursor().get().createVariable();
-        threshold.setReal(ridgePointCutOff);
-        final IterableInterval<BitType> thresholdedRidge = opService.threshold().apply(ridge, threshold);
-        ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
+	private void reduceSeedPoints(final Collection<Vector3dc> seeds) {
+		final double probabilityOfAcceptingSeed =
+			((double) approximateNumberOfInternalSeeds.getInt()) / seeds.size();
+		seeds.removeIf(i -> rng.nextDouble() > probabilityOfAcceptingSeed);
+	}
 
-        final List<Vector3dc> internalSeedPoints = new ArrayList<>();
-
-        ridgeCursor.reset();
-        while (ridgeCursor.hasNext()) {
-            ridgeCursor.fwd();
-            final double localValue = ridgeCursor.get().getRealFloat();
-            if (localValue > ridgePointCutOff) {
-                ridgeCursor.localize(position);
-                final Vector3d internalSeedPoint = new Vector3d(position[0], position[1], position[2]);
-                internalSeedPoint.add(0.5, 0.5, 0.5);
-                internalSeedPoints.add(internalSeedPoint);
-            }
-        }
-
-        //reduce number of internal seeds
-        if(internalSeedPoints.size()>approximateNumberOfInternalSeeds.getInt())
-        {
-            final double probabilityOfAcceptingSeed = ((double) approximateNumberOfInternalSeeds.getInt())/ internalSeedPoints.size();
-            internalSeedPoints.removeIf(i -> rng.nextDouble()>probabilityOfAcceptingSeed);
-        }
-        return internalSeedPoints;
-    }
-
-    private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
+	private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
         final RandomAccess<FloatType> ef = ellipsoidFactorImage.randomAccess();
         final Cursor<IntType> id = ellipsoidIdentityImage.localizingCursor();
+		final long[] position = new long[3];
         while(id.hasNext()){
             id.fwd();
-            if(id.get().getInteger()!=-1){
-                final long[] position = new long[3];
-                id.localize(position);
-                final double value = values[id.get().getInteger()];
-                ef.setPosition(position);
-                ef.get().setReal(value);
-            }
-        }
+			if (id.get().getInteger() < 0) {
+				continue;
+			}
+			id.localize(position);
+			final double value = values[id.get().getInteger()];
+			ef.setPosition(position);
+			ef.get().setReal(value);
+		}
     }
 
     // TODO Write Javadoc
@@ -505,36 +525,32 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 	private Matrix3d reconstructMatrix(final Ellipsoid e) {
 		final double axisReduction = Math.sqrt(3);
-		final double a = e.getA() - axisReduction;
-		final double b = e.getB() - axisReduction;
-		final double c = e.getC() - axisReduction;
+		final double[] scales = DoubleStream.of(e.getA(), e.getB(), e.getC()).map(
+			s -> s - axisReduction).map(s -> s * s).map(s -> 1.0 / s).toArray();
 		final Matrix3dc Q = e.getOrientation().get3x3(new Matrix3d());
-		final Matrix3d lambda = new Matrix3d();
-		lambda.scaling(1.0 / (a * a), 1.0 / (b * b), 1.0 / (c * c));
+		final Matrix3dc lambda = new Matrix3d(scales[0], 0, 0, 0, scales[1], 0, 0,
+			0, scales[2]);
 		final Matrix3dc QT = Q.transpose(new Matrix3d());
 		final Matrix3dc LambdaQT = lambda.mul(QT, new Matrix3d());
 		return Q.mul(LambdaQT, new Matrix3d());
 	}
 
-	private boolean isEllipsoidIntersectionBackground(final Matrix3d a,
+	private boolean isEllipsoidIntersectionBackground(final Matrix3dc a,
 		final Vector3dc centroid, final Vector3dc dir)
 	{
-		final Vector3d ATimesDir = new Vector3d();
-		a.transform(dir, ATimesDir);
+		final Vector3dc aTimesDir = a.transform(dir, new Vector3d());
 		final double surfaceIntersectionParameter = Math.sqrt(1.0 / dir.dot(
-			ATimesDir));
-
+			aTimesDir));
 		final Vector3d intersectionPoint = new Vector3d(dir);
 		intersectionPoint.mul(surfaceIntersectionParameter);
 		intersectionPoint.add(centroid);
-
 		final long[] pixel = vectorToPixelGrid(intersectionPoint);
-		if (isInBounds(pixel)) {
-			final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
-			inputRA.setPosition(pixel);
-			return inputRA.get().getRealDouble() == 0;
+		if (!isInBounds(pixel)) {
+			return true;
 		}
-		return true;
+		final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
+		inputRA.setPosition(pixel);
+		return inputRA.get().getRealDouble() == 0;
 	}
 
     private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
