@@ -169,9 +169,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private boolean calibrationWarned;
 
+    private Random rng;
+
     @Override
     public void run() {
         statusService.showStatus("Ellipsoid Factor: initialising...");
+        rng = new Random(23);
         final ImgPlus<BitType> bitImage = Common.toBitTypeImgPlus(opService, inputImage);
         final List<Vector3dc> internalSeedPoints = getRidgeSeedPoints(bitImage);
 
@@ -466,7 +469,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private void reduceSeedPoints(final Collection<Vector3dc> seeds) {
 		final double probabilityOfAcceptingSeed =
 			((double) approximateNumberOfInternalSeeds.getInt()) / seeds.size();
-		seeds.removeIf(i -> Math.random() > probabilityOfAcceptingSeed);
+		seeds.removeIf(i -> rng.nextDouble() > probabilityOfAcceptingSeed);
 	}
 
 	private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
