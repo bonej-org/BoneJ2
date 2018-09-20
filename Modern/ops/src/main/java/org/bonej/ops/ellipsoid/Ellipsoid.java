@@ -347,15 +347,8 @@ public class Ellipsoid {
 
 	@Override
 	public String toString() {
-		String centroidString  = "centre:\n"+this.getCentroid().toString()+"\n";
-
-		String lambdaString  = "axis lengths:\n( "+this.getA()+" "+this.getB()+" "+this.getC()+" )\n";
-
-		Matrix3d a = new Matrix3d();
-		this.getOrientation().get3x3(a);
-		String orientationSting  = "unit axis directions:\n"+a.toString();
-
-		return centroidString+lambdaString+orientationSting;
+		return "centre:\n" + centroid + "\naxis lengths:\n( " + a + " " + b + " " +
+			c + " )\n" + "unit axis directions:\n" + orientation;
 	}
 	// endregion
 }
