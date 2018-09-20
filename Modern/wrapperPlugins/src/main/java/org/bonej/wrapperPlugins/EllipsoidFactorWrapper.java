@@ -54,8 +54,8 @@ import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.algorithm.binary.Thresholder;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
@@ -172,13 +172,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     @Override
     public void run() {
-
         statusService.showStatus("Ellipsoid Factor: initialising...");
         rng = new Random();
-        final Img<BitType> inputAsBit = Common.toBitTypeImgPlus(opService,inputImage);
-        final List<Vector3dc> internalSeedPoints = getRidgePoints(inputAsBit);
-        //final List<Vector3dc> internalSeedPoints = new ArrayList<>();
-        //internalSeedPoints.add(new Vector3d(93,99,101));
+        final ImgPlus<BitType> bitImage = Common.toBitTypeImgPlus(opService, inputImage);
+        final List<Vector3dc> internalSeedPoints = getRidgePoints(bitImage);
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
         final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
@@ -186,10 +183,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
 
         statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-        final Img<IntType> ellipsoidIdentityImage = assignEllipsoidID(inputAsBit, ellipsoids);
+        final Img<IntType> ellipsoidIdentityImage = assignEllipsoidID(bitImage, ellipsoids);
         writeOutputImages(ellipsoids, ellipsoidIdentityImage);
 
-        final double numberOfForegroundVoxels = countTrue(inputAsBit);
+        final double numberOfForegroundVoxels = countTrue(bitImage);
         final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
 
         logService.initialize();
@@ -296,7 +293,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
     }
 
-    private long countAssignedVoxels(final Img<IntType> ellipsoidIdentityImage) {
+    private long countAssignedVoxels(final IterableInterval<IntType> ellipsoidIdentityImage) {
         long numberOfAssignedVoxels = 0;
         final Cursor<IntType> eIDCursor = ellipsoidIdentityImage.cursor();
         while(eIDCursor.hasNext())
@@ -310,7 +307,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return numberOfAssignedVoxels;
     }
 
-    private static Img<IntType> assignEllipsoidID(final Img<BitType> inputAsBit, final List<Ellipsoid> ellipsoids) {
+    private static Img<IntType> assignEllipsoidID(final Img<BitType> inputAsBit, final Collection<Ellipsoid> ellipsoids) {
         final Img<IntType> ellipsoidIdentityImage = ArrayImgs.ints(inputAsBit.dimension(0), inputAsBit.dimension(1), inputAsBit.dimension(2));
         ellipsoidIdentityImage.cursor().forEachRemaining(c -> c.setInteger(-1));
 
@@ -336,7 +333,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
 
-    private List<Ellipsoid> findEllipsoids(final List<Vector3dc> internalSeedPoints) {
+    private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> internalSeedPoints) {
         final List<Vector3d> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(250);
         final List<ValuePair<Set<ValuePair<Vector3d, Vector3d>>,Vector3d>> combinations = new ArrayList<>();
         return internalSeedPoints.parallelStream().map(this::getPointCombinationsForOneSeedPoint).flatMap(Collection::stream)
@@ -356,7 +353,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         //sphereSamplingDirections.forEach(v -> v.normalize());
 
         final List<Vector3dc> contactPoints = sphereSamplingDirections.parallelStream().map(d -> {
-            final Vector3d direction = new Vector3d(d);
+            final Vector3dc direction = new Vector3d(d);
             return findFirstPointInBGAlongRay(direction, internalSeedPoint);
         }).collect(toList());
 
@@ -371,11 +368,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return new ArrayList<>(getAllUniqueCombinationsOfFourPoints(seedPoints, internalSeedPoint));
     }
 
-    private List<Vector3dc> getRidgePoints(final Img<BitType> inputAsBit) {
-        final RandomAccess<BitType> inputBitRA = inputAsBit.randomAccess();
-
+    private List<Vector3dc> getRidgePoints(final RandomAccessibleInterval<BitType> bitImage) {
         //find clever seed points
-        final Img<R> distanceTransform = (Img<R>) opService.image().distancetransform(inputAsBit);
+        final RandomAccessibleInterval<R> distanceTransform = opService.image().distancetransform(bitImage);
 
         final List<Shape> shapes = new ArrayList<>();
         shapes.add(new HyperSphereShape(2));
@@ -385,6 +380,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Cursor<R> ridgeCursor = ridge.localizingCursor();
 
         //remove ridgepoints in BG - how does this make a difference?
+        final RandomAccess<BitType> inputBitRA = bitImage.randomAccess();
         while(ridgeCursor.hasNext()){
             ridgeCursor.fwd();
             final long[] position = new long[3];
@@ -397,8 +393,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         }
 
         final double ridgePointCutOff = thresholdForBeingARidgePoint.getRealFloat()*opService.stats().max(ridge).getRealFloat();
-        final Img<R> ridgeImg = (Img) ridge;
-        final Img<BitType> thresholdedRidge = Thresholder.threshold(ridgeImg, (R) new FloatType((float) ridgePointCutOff), true, 1);
+        final R threshold = ridge.cursor().get().createVariable();
+        threshold.setReal(ridgePointCutOff);
+        final IterableInterval<BitType> thresholdedRidge = opService.threshold().apply(ridge, threshold);
         ridgePointsImage = new ImgPlus<>(opService.convert().uint8(thresholdedRidge), "Seeding Points");
 
         final List<Vector3dc> internalSeedPoints = new ArrayList<>();
@@ -424,7 +421,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return internalSeedPoints;
     }
 
-    private void mapValuesToImage(final double[] values, final Img<IntType> ellipsoidIdentityImage, final Img<FloatType> ellipsoidFactorImage) {
+    private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
         final RandomAccess<FloatType> ef = ellipsoidFactorImage.randomAccess();
         final Cursor<IntType> id = ellipsoidIdentityImage.localizingCursor();
         while(id.hasNext()){
@@ -561,7 +558,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
      * @param n : number of points required (has to be > 2)
      * </p>
      */
-    // TODO Can this be done with
+    // TODO Can this be done with 
     static List<Vector3d> getGeneralizedSpiralSetOnSphere(final int n) {
         final List<Vector3d> spiralSet = new ArrayList<>();
 
