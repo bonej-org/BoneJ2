@@ -191,14 +191,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final double numberOfForegroundVoxels = countTrue(bitImage);
         final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
 
-        logService.initialize();
         logService.info("found "+ellipsoids.size()+" ellipsoids");
         logService.info("assigned voxels = "+numberOfAssignedVoxels);
         logService.info("foreground voxels = "+numberOfForegroundVoxels);
         final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
         logService.info("filling percentage = "+fillingPercentage+"%");
         logService.info("number of seed points = " + internalSeedPoints.size());
-
     }
 
     private void writeOutputImages(final List<Ellipsoid> ellipsoids, final Img<IntType> ellipsoidIdentityImage) {
