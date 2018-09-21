@@ -32,14 +32,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
@@ -50,6 +43,7 @@ import java.util.stream.Stream.Builder;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
@@ -122,7 +116,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.95);
 
     @Parameter(persist = false, required = false)
-    private IntType approximateNumberOfInternalSeeds = new IntType(250);
+    private IntType approximateNumberOfInternalSeeds = new IntType(300000);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -343,15 +337,20 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
 	private static Img<IntType> assignEllipsoidIDs(final Img<BitType> mask,
-		final Collection<Ellipsoid> ellipsoids)
+		final List<Ellipsoid> ellipsoids)
 	{
 		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask
 			.dimension(1), mask.dimension(2));
 		idImage.forEach(c -> c.setInteger(-1));
 		final LongStream zRange = LongStream.range(0, mask.dimension(2));
-		zRange.parallel().forEach(sliceIndex -> {
+        final HashMap<Ellipsoid, Long> toGlobalIDMap = new HashMap<>();
+
+        final LongStream globalIDs = LongStream.range(0, ellipsoids.size());
+        globalIDs.forEach(id -> toGlobalIDMap.put(ellipsoids.get((int) id), id));
+
+        zRange.parallel().forEach(sliceIndex -> {
 			// multiply by image unit? make more intelligent bounding box?
-			final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(
+            final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(
 				e -> Math.abs(e.getCentroid().z() - sliceIndex) < e.getC()).collect(
 					toList());
 			final long[] mins = { 0, 0, sliceIndex };
@@ -359,13 +358,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 				sliceIndex };
 			final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs)
 				.localizingCursor();
-			colourSlice(idImage, maskSlice, localEllipsoids);
+			colourSlice(idImage, maskSlice, localEllipsoids, toGlobalIDMap);
 		});
 		return idImage;
 	}
 
 	private static void colourSlice(final RandomAccessible<IntType> idImage,
-		final Cursor<BitType> mask, final List<Ellipsoid> localEllipsoids)
+                                    final Cursor<BitType> mask, final List<Ellipsoid> localEllipsoids, HashMap<Ellipsoid, Long> toGlobalIDMap)
 	{
 		while (mask.hasNext()) {
 			mask.fwd();
@@ -377,7 +376,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			final Vector3d point = new Vector3d(coordinates[0], coordinates[1],
 				coordinates[2]);
 			point.add(0.5, 0.5, 0.5);
-			colourID(localEllipsoids, idImage, point);
+			colourID(localEllipsoids, idImage, point, toGlobalIDMap);
 		}
 	}
 
@@ -397,9 +396,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
 		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
 	{
-		final int nSphere = 40;
-		final Stream<Vector3dc> sphereSamplingDirections =
-			getGeneralizedSpiralSetOnSphere(nSphere);
+		//final int nSphere = 6;
+		//final Stream<Vector3dc> sphereSamplingDirections =
+		//getGeneralizedSpiralSetOnSphere(nSphere);
+        final Stream<Vector3d> sphereSamplingDirections = Arrays.asList(new Vector3d(1,0,0), new Vector3d(-1,0,0),new Vector3d(0,1,0), new Vector3d(0,-1,0),new Vector3d(0,0,1), new Vector3d(0,0,-1)).stream();
 		final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
 			final Vector3dc direction = new Vector3d(d);
 			return findFirstPointInBGAlongRay(direction, centre);
@@ -495,19 +495,19 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		}
     }
 
-    private static void colourID(final List<Ellipsoid> ellipsoids,
-								 final RandomAccessible<IntType> ellipsoidIdentityImage,
-								 final Vector3dc point)
+    private static void colourID(final List<Ellipsoid> localEllipsoids,
+                                 final RandomAccessible<IntType> ellipsoidIdentityImage,
+                                 final Vector3dc point, HashMap<Ellipsoid, Long> toGlobalIDMap)
 	{
-		final int id = IntStream.range(0, ellipsoids.size()).filter(i -> isInside(
-			point, ellipsoids.get(i))).findFirst().orElse(-1);
+		final int id = IntStream.range(0, localEllipsoids.size()).filter(i -> isInside(
+			point, localEllipsoids.get(i))).findFirst().orElse(-1);
 		if (id < 0) {
 			return;
 		}
 		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage
 			.randomAccess();
 		eIDRandomAccess.setPosition(vectorToPixelGrid(point));
-		eIDRandomAccess.get().set(id);
+		eIDRandomAccess.get().set(Math.toIntExact(toGlobalIDMap.get(localEllipsoids.get(id))));
 	}
 
 	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e,
