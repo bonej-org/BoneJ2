@@ -37,23 +37,33 @@ import org.scijava.prefs.PrefService;
 import org.scijava.widget.Button;
 
 /**
- * Handles persistent settings such as user permission state.
- * 
- * Preferences are stored in their native format (long, int, boolean, etc.)
+ * Handles persistent settings such as user permission state. Preferences are
+ * stored in their native format (long, int, boolean, etc.)
  * 
  * @author Michael Doube
  * @author Richard Domander
- *
  */
 @Plugin(type = Command.class, menuPath = "Edit>Options>BoneJ Usage (Modern)")
 public class UsageReporterOptions extends ContextCommand {
 
+	/** set to true if user permission has been requested */
+	static final String OPTINSET = "bonej2.report.option.set";
+	/** Set to false if reporting is not allowed */
+	static final String OPTINKEY = "bonej2.allow.reporter";
+	static final String COOKIE = "bonej2.report.cookie";
+	static final String COOKIE2 = "bonej2.report.cookie2";
+	/** time of first visit in seconds */
+	static final String FIRSTTIMEKEY = "bonej2.report.firstvisit";
+	/** unique ID for this particular BoneJ session */
+	static final String SESSIONKEY = "bonej2.report.bonejsession";
+	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String message1 = "Allow usage data collection?";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String message2 = "BoneJ would like to collect data on";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String message3 = "which plugins are being used, to direct development"; 
+	private String message3 =
+		"which plugins are being used, to direct development";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String message4 = "and promote BoneJ to funders.";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
@@ -73,24 +83,12 @@ public class UsageReporterOptions extends ContextCommand {
 	private PluginService pluginService;
 	@Parameter
 	private CommandService commandService;
-
-	/** set to true if user permission has been requested */
-	static final String OPTINSET = "bonej2.report.option.set";
-	/** Set to false if reporting is not allowed */
-	static final String OPTINKEY = "bonej2.allow.reporter";
-	static final String COOKIE = "bonej2.report.cookie";
-  static final String COOKIE2 = "bonej2.report.cookie2";
-  /** time of first visit in seconds */
-	static final String FIRSTTIMEKEY = "bonej2.report.firstvisit";
-	/** unique ID for this particular BoneJ session */
-	static final String SESSIONKEY = "bonej2.report.bonejsession";
-	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
 	private UsageReporter reporter;
 
 	@Override
 	public void run() {
 		if (!optIn) {
-			//Wipe persistent data on opt-out
+			// Wipe persistent data on opt-out
 			logService.debug("User has opted out of data collection\n");
 			prefs.clear(getClass());
 			prefs.put(getClass(), OPTINSET, true);
@@ -99,17 +97,15 @@ public class UsageReporterOptions extends ContextCommand {
 
 		logService.debug("User has opted in to data collection\n");
 		prefs.put(getClass(), OPTINKEY, true);
-		prefs.put(getClass(), COOKIE,
-			new Random().nextInt(Integer.MAX_VALUE));
-		prefs.put(getClass(), COOKIE2,
-			new Random().nextInt(Integer.MAX_VALUE));
-		prefs.put(getClass(), FIRSTTIMEKEY,
-			System.currentTimeMillis() / 1000);
+		prefs.put(getClass(), COOKIE, new Random().nextInt(Integer.MAX_VALUE));
+		prefs.put(getClass(), COOKIE2, new Random().nextInt(Integer.MAX_VALUE));
+		prefs.put(getClass(), FIRSTTIMEKEY, System.currentTimeMillis() / 1000);
 		prefs.put(getClass(), SESSIONKEY, 1);
 		prefs.put(getClass(), IJSESSIONKEY, 1);
 		prefs.put(getClass(), OPTINSET, true);
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+			reporter = UsageReporter.getInstance(prefs, pluginService,
+				commandService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

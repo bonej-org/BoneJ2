@@ -44,8 +44,8 @@ import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
 /**
- * Prepares and sends a report about BoneJ usage to be logged by
- * <a href="https://developers.google.com/analytics/resources/concepts/gaConceptsTrackingOverview">
+ * Prepares and sends a report about BoneJ usage to be logged by <a href=
+ * "https://developers.google.com/analytics/resources/concepts/gaConceptsTrackingOverview">
  * Google Analytics event tracking</a>
  *
  * @author Michael Doube
@@ -89,6 +89,20 @@ public class UsageReporter {
 
 	private UsageReporter() {}
 
+	/**
+	 * Reports a the usage of a plug-in to bonej.org
+	 *
+	 * @param className Name of the reporting plug-in's class
+	 */
+	public void reportEvent(final String className) {
+		if (!isAllowed()) {
+			System.out.println("Usage reporting forbidden by user\n");
+			return;
+		}
+		final String version = plugins.getPlugin(className).getVersion();
+		reportEvent(className, version);
+	}
+
 	public static UsageReporter getInstance(final PrefService prefs,
 		final PluginService plugins, final CommandService commandService)
 	{
@@ -111,77 +125,44 @@ public class UsageReporter {
 	}
 
 	/**
-	 * Send the report to Google Analytics in the form of an HTTP request for a
-	 * 1-pixel GIF with lots of parameters set
+	 * Create a string of cookie data for the gif URL
+	 *
+	 * @return cookie string
 	 */
-	private static void send() {
-		System.out.println("Sending report.\n");
-		final URL url;
-		final URLConnection uc;
-		try {
-			System.out.println("Usage reporting approved by user, preparing URL");
-			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
-					utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt +
-					utmhid + utmr + utmp + utmac + utmcc);
-			uc = url.openConnection();
-		}
-		catch (final IOException e) {
-			System.out.println(e.getMessage()+"\n");
-			throw new AssertionError("Check your static Strings!");
-		}
-		uc.setRequestProperty("User-Agent", userAgentString());
-		System.out.println(url +"\n");
-		System.out.println(uc.getRequestProperty("User-Agent")+"\n");
-		try (final BufferedReader reader = new BufferedReader(
-				new InputStreamReader(uc.getInputStream())))
-		{
-			reader.lines().forEachOrdered(System.out::println);
-		}
-		catch (final IOException e) {
-			System.out.println(e.getMessage()+"\n");
-		}
+	private static String getCookieString(final PrefService prefs) {
+		final int cookie = prefs.getInt(UsageReporterOptions.class,
+			UsageReporterOptions.COOKIE, random.nextInt(Integer.MAX_VALUE));
+		final int cookie2 = prefs.getInt(UsageReporterOptions.class,
+			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
+		final long firstTime = prefs.getInt(UsageReporterOptions.class,
+			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
+		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
+			UsageReporterOptions.SESSIONKEY, 0);
+		// thisTime is not correct, but a best guess
+		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
+			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +
+			cookie + "." + thisTime +
+			".79.42.utmcsr%3Dgoogle%7Cutmccn%3D(organic)%7C" +
+			"utmcmd%3Dorganic%7Cutmctr%3DBoneJ%20Usage%20Reporter%3B";
 	}
 
-	/**
-	 * Sets the instance variables to appropriate values based on the system
-	 * parameters and method arguments and makes the URL request to Google
-	 * @param action Google Analytics event action classification
-	 * @param label Google Analytics event label classification
-	 */
-	private static void reportEvent(final String action, final String label)
-	{
-		if (isFirstRun) {
-			initSessionVariables(prefs);
-		}
-		session++;
-		//set 
-		utms = "utms=" + session + "&";
-		utme = "utme=5(" + "Plugin%20Usage" + "*" + action + "*" + label + ")&";
-		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
-		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
-
-		final long time = System.currentTimeMillis() / 1000;
-		lastTime = thisTime;
-		if (lastTime == 0) lastTime = time;
-		thisTime = time;
-
-		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
-		else utmcnr = "utmcr=1&";
-
-		utmcc = getCookieString(prefs);
-		send();
+	private static String getLocaleString() {
+		String locale = Locale.getDefault().toString();
+		locale = locale.replace("_", "-");
+		locale = locale.toLowerCase(Locale.ENGLISH);
+		return locale;
 	}
 
 	private static void initSessionVariables(final PrefService prefs) {
 		System.out.println("First run of Usage Reporter for this BoneJ session.\n");
 		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
-				UsageReporterOptions.SESSIONKEY, 0);
-		System.out.print("bonejSession = "+bonejSession+"\n");
-		prefs.put(UsageReporterOptions.class,
-				UsageReporterOptions.SESSIONKEY, bonejSession + 1);
+			UsageReporterOptions.SESSIONKEY, 0);
+		System.out.print("bonejSession = " + bonejSession + "\n");
+		prefs.put(UsageReporterOptions.class, UsageReporterOptions.SESSIONKEY,
+			bonejSession + 1);
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final GraphicsEnvironment ge = GraphicsEnvironment
-				.getLocalGraphicsEnvironment();
+			.getLocalGraphicsEnvironment();
 		int width = 0;
 		int height = 0;
 		if (!ge.isHeadlessInstance()) {
@@ -201,46 +182,65 @@ public class UsageReporter {
 	}
 
 	/**
-	 * Reports a the usage of a plug-in to bonej.org
+	 * Sets the instance variables to appropriate values based on the system
+	 * parameters and method arguments and makes the URL request to Google
 	 *
-	 * @param className Name of the reporting plug-in's class
+	 * @param action Google Analytics event action classification
+	 * @param label Google Analytics event label classification
 	 */
-	public void reportEvent(final String className) {
-		if (!isAllowed()) {
-			System.out.println("Usage reporting forbidden by user\n");
-			return;
+	private static void reportEvent(final String action, final String label) {
+		if (isFirstRun) {
+			initSessionVariables(prefs);
 		}
-		final String version = plugins.getPlugin(className).getVersion();
-		reportEvent(className, version);
+		session++;
+		// set
+		utms = "utms=" + session + "&";
+		utme = "utme=5(" + "Plugin%20Usage" + "*" + action + "*" + label + ")&";
+		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
+		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
+
+		final long time = System.currentTimeMillis() / 1000;
+		lastTime = thisTime;
+		if (lastTime == 0) lastTime = time;
+		thisTime = time;
+
+		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
+		else utmcnr = "utmcr=1&";
+
+		utmcc = getCookieString(prefs);
+		send();
 	}
 
 	/**
-	 * Create a string of cookie data for the gif URL
-	 *
-	 * @return cookie string
+	 * Send the report to Google Analytics in the form of an HTTP request for a
+	 * 1-pixel GIF with lots of parameters set
 	 */
-	private static String getCookieString(final PrefService prefs) {
-		final int cookie = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.COOKIE, random.nextInt(Integer.MAX_VALUE));
-		final int cookie2 = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
-		final long firstTime = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
-		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
-				UsageReporterOptions.SESSIONKEY, 0);
-		// thisTime is not correct, but a best guess
-		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
-			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +
-			cookie + "." + thisTime +
-			".79.42.utmcsr%3Dgoogle%7Cutmccn%3D(organic)%7C" +
-			"utmcmd%3Dorganic%7Cutmctr%3DBoneJ%20Usage%20Reporter%3B";
-	}
-
-	private static String getLocaleString() {
-		String locale = Locale.getDefault().toString();
-		locale = locale.replace("_", "-");
-		locale = locale.toLowerCase(Locale.ENGLISH);
-		return locale;
+	private static void send() {
+		System.out.println("Sending report.\n");
+		final URL url;
+		final URLConnection uc;
+		try {
+			System.out.println("Usage reporting approved by user, preparing URL");
+			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
+				utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt + utmhid + utmr +
+				utmp + utmac + utmcc);
+			uc = url.openConnection();
+		}
+		catch (final IOException e) {
+			System.out.println(e.getMessage() + "\n");
+			throw new AssertionError("Check your static Strings!");
+		}
+		uc.setRequestProperty("User-Agent", userAgentString());
+		System.out.println(url + "\n");
+		System.out.println(uc.getRequestProperty("User-Agent") + "\n");
+		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+			uc.getInputStream())))
+		{
+			reader.lines().forEachOrdered(System.out::println);
+		}
+		catch (final IOException e) {
+			System.out.println(e.getMessage() + "\n");
+		}
 	}
 
 	private static String userAgentString() {
@@ -262,8 +262,8 @@ public class UsageReporter {
 		}
 		else {
 			// Handle Linux and everything else
-			os = osName + " " + System.getProperty(
-				"os.version") + " " + System.getProperty("os.arch");
+			os = osName + " " + System.getProperty("os.version") + " " + System
+				.getProperty("os.arch");
 		}
 
 		final String browser = "Java/" + System.getProperty("java.version");

@@ -127,12 +127,12 @@ public final class UsageReporter {
 	 */
 	public void send() {
 		if (!isAllowed()) return;
-		
+
 		URL url = null;
 		URLConnection uc = null;
 		try {
-			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
-				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
+			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
+				utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
 			uc = url.openConnection();
 		}
@@ -142,16 +142,15 @@ public final class UsageReporter {
 			}
 			throw new AssertionError("Check your static Strings!");
 		}
-		
+
 		uc.setRequestProperty("User-Agent", userAgentString());
 		if (IJ.debugMode) IJ.log(url.toString());
 		if (IJ.debugMode) IJ.log(uc.getRequestProperty("User-Agent"));
-		
-		try (final BufferedReader reader = new BufferedReader(
-				new InputStreamReader(uc.getInputStream())))
-			{
-				if (IJ.debugMode)
-					reader.lines().forEach(IJ::log);
+
+		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+			uc.getInputStream())))
+		{
+			if (IJ.debugMode) reader.lines().forEach(IJ::log);
 		}
 		catch (final IOException e) {
 			if (IJ.debugMode) {
