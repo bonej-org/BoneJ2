@@ -24,16 +24,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.ops.mil;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
+import net.imagej.ops.linalg.rotate.Rotate3d;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
-import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.Interval;
@@ -45,14 +43,14 @@ import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.ValuePair;
 
-import org.bonej.ops.BoxIntersect;
-import org.bonej.ops.RotateAboutAxis;
+import org.joml.Intersectiond;
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
+import org.joml.Vector2d;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.vecmath.AxisAngle4d;
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Tuple3d;
-import org.scijava.vecmath.Vector3d;
 
 /**
  * An op that finds the mean intercept length (MIL) vector of an interval.
@@ -89,12 +87,11 @@ import org.scijava.vecmath.Vector3d;
  */
 @Plugin(type = Op.class)
 public class MILPlane<B extends BooleanType<B>> extends
-	AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, AxisAngle4d, Vector3d>
+	AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Quaterniondc, Vector3d>
 	implements Contingent
 {
 
-	private static BinaryHybridCFI1<Tuple3d, AxisAngle4d, Tuple3d> rotateOp;
-	private static BinaryFunctionOp<ValuePair<Point3d, Vector3d>, Interval, Optional<ValuePair<DoubleType, DoubleType>>> intersectOp;
+	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	private final Random random = new Random();
 	/**
 	 * Number of sampling lines generated per dimension.
@@ -152,9 +149,9 @@ public class MILPlane<B extends BooleanType<B>> extends
 	 */
 	@Override
 	public Vector3d calculate(final RandomAccessibleInterval<B> interval,
-		final AxisAngle4d rotation)
+		final Quaterniondc rotation)
 	{
-		matchOps(interval);
+		matchOps();
 		final LinePlane samplingPlane = new LinePlane(interval, rotation, rotateOp);
 		if (seed != null) {
 			random.setSeed(seed);
@@ -178,8 +175,9 @@ public class MILPlane<B extends BooleanType<B>> extends
 
 	// region -- Helper methods --
 	private static <B extends BooleanType<B>> long countPhaseChanges(
-		final RandomAccessible<B> interval, final Vector3d start, final Tuple3d gap,
-		final long samples)
+		final RandomAccessible<B> interval, final Vector3d start,
+		final Vector3dc gap, final long samples)
+
 	{
 		final RandomAccess<B> access = interval.randomAccess();
 		boolean previous = false;
@@ -204,7 +202,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 	private Stream<Section> findIntersectingSections(final LinePlane plane,
 		final Interval interval)
 	{
-		final Vector3d direction = plane.getDirection();
+		final Vector3dc direction = plane.getDirection();
 		return plane.getOrigins(bins).map(origin -> intersectInterval(origin,
 			direction, interval)).filter(Objects::nonNull);
 	}
@@ -218,26 +216,28 @@ public class MILPlane<B extends BooleanType<B>> extends
 		return access.get().get();
 	}
 
-	private static Section intersectInterval(final Point3d origin,
-		final Vector3d direction, final Interval interval)
+	private static Section intersectInterval(final Vector3dc origin,
+		final Vector3dc direction, final Interval interval)
 	{
-		final ValuePair<Point3d, Vector3d> line = new ValuePair<>(origin,
-			direction);
-		final Optional<ValuePair<DoubleType, DoubleType>> result = intersectOp
-			.calculate(line, interval);
-		if (!result.isPresent()) {
+		final Vector2d tValues = new Vector2d();
+		final Vector3dc o = new Vector3d(origin.x(), origin.y(), origin.z());
+		final Vector3dc d = new Vector3d(direction.x(), direction.y(), direction.z());
+		final Vector3dc min = new Vector3d(interval.min(0), interval.min(1),
+			interval.min(2));
+		final Vector3dc max = new Vector3d(interval.max(0) + 1, interval.max(1) + 1,
+			interval.max(2) + 1);
+		final boolean intersect = Intersectiond.intersectRayAab(o, d, min, max,
+			tValues);
+		if (!intersect) {
 			return null;
 		}
-		final ValuePair<DoubleType, DoubleType> scalars = result.get();
-		final double tMin = scalars.getA().get();
-		final double tMax = scalars.getB().get();
-		return new Section(line.a, tMin, tMax);
+		return new Section(origin, direction, tValues.x, tValues.y);
 	}
 
 	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
-		final Section section, final Vector3d direction, final double increment)
+		final Section section, final double increment)
 	{
-		final long intercepts = sampleSection(interval, section, direction,
+		final long intercepts = sampleSection(interval, section, section.direction,
 			increment);
 		if (intercepts < 0) {
 			return null;
@@ -247,40 +247,37 @@ public class MILPlane<B extends BooleanType<B>> extends
 	}
 
 	@SuppressWarnings("unchecked")
-	private void matchOps(final RandomAccessibleInterval<B> interval) {
-		rotateOp = Hybrids.binaryCFI1(ops(), RotateAboutAxis.class, Tuple3d.class,
-			new Vector3d(), new AxisAngle4d());
-		intersectOp = (BinaryFunctionOp) Functions.binary(ops(), BoxIntersect.class,
-			Optional.class, ValuePair.class, interval);
+	private void matchOps() {
+		rotateOp = Hybrids.binaryCFI1(ops(), Rotate3d.class, Vector3d.class,
+			new Vector3d(), new Quaterniond());
 	}
 
 	private Vector3d sampleMILVector(final RandomAccessible<B> interval,
-		final Stream<Section> sections, final Vector3d direction)
+		final Stream<Section> sections, final Vector3dc direction)
 	{
 		final DoubleType totalLength = new DoubleType();
 		final LongType totalIntercepts = new LongType();
-		sections.map(s -> mILValues(interval, s, direction, increment)).filter(
+		sections.map(s -> mILValues(interval, s, increment)).filter(
 			Objects::nonNull).forEach(p -> {
 				totalLength.set(p.a + totalLength.get());
 				totalIntercepts.set(p.b + totalIntercepts.get());
 			});
 		totalIntercepts.set(Math.max(totalIntercepts.get(), 1));
 		final Vector3d milVector = new Vector3d(direction);
-		milVector.scale(totalLength.get() / totalIntercepts.get());
-		return milVector;
+		return milVector.mul(totalLength.get() / totalIntercepts.get());
 	}
 
 	private long sampleSection(final RandomAccessible<B> interval,
-		final Section section, final Vector3d direction, final double increment)
+		final Section section, final Vector3dc direction, final double increment)
 	{
 		// Add a random offset so that sampling doesn't always start from the same
 		// plane
 		final double startT = section.tMin + random.nextDouble() * increment;
 		final Vector3d samplePoint = new Vector3d(direction);
-		samplePoint.scale(startT);
+		samplePoint.mul(startT);
 		samplePoint.add(section.origin);
 		final Vector3d gap = new Vector3d(direction);
-		gap.scale(increment);
+		gap.mul(increment);
 		final long samples = (long) Math.ceil((section.tMax - startT) / increment);
 		if (samples < 1) {
 			return -1;
@@ -303,14 +300,15 @@ public class MILPlane<B extends BooleanType<B>> extends
 
 		private final double tMin;
 		private final double tMax;
-		private final Point3d origin;
+		private final Vector3dc origin;
+		private final Vector3dc direction;
 
-		private Section(final Point3d origin, final double tMin,
-			final double tMax)
-		{
+		private Section(final Vector3dc origin, final Vector3dc direction, final double tMin,
+						final double tMax) {
 			this.tMin = tMin;
 			this.tMax = tMax;
 			this.origin = origin;
+			this.direction = direction;
 		}
 	}
 

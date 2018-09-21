@@ -27,7 +27,8 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.WEIRD_SPATIAL;
 
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
@@ -119,12 +120,15 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		statusService.showStatus("Element fraction: initializing");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
-		final Stream<Subspace<BitType>> subspaces = HyperstackUtils
-			.split3DSubspaces(bitImgPlus);
+		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
+			bitImgPlus).collect(Collectors.toList());
 		prepareResultDisplay();
-		statusService.showStatus("Element fraction: calculating");
 		final String name = inputImage.getName();
-		subspaces.forEach(subspace -> {
+		for (int i = 0; i < subspaces.size(); i++) {
+			final Subspace<BitType> subspace = subspaces.get(i);
+			statusService.showStatus("Element fraction: calculating subspace #" + (i +
+				1));
+			statusService.showProgress(i, subspaces.size());
 			// The value of each foreground element in a bit type image is 1, so we
 			// can count their number just by summing
 			final IterableInterval<BitType> interval = Views.flatIterable(
@@ -136,7 +140,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 			final String suffix = subspace.toString();
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			addResults(label, foregroundSize, totalSize, ratio);
-		});
+		}
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}

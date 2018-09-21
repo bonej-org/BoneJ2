@@ -35,12 +35,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import net.imagej.ImageJ;
 import net.imagej.table.DefaultColumn;
 
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -55,6 +58,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
+import ij.process.LUT;
 
 /**
  * Tests for {@link ThicknessWrapper}
@@ -112,37 +116,103 @@ public class ThicknessWrapperTest {
 	}
 
 	@Test
-	public void testMapImages() throws Exception {
-		final ImagePlus imagePlus = NewImage.createByteImage("", 2, 2, 2, 1);
+	public void testMapImageLUTs() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final LUT fireLUT = Common.makeFire();
+		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
+			2, 1);
 
-		CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class, true,
-			"inputImage", imagePlus, "mapChoice", "Both", "showMaps", false).get();
-		assertNull(module.getOutput("trabecularMap"));
-		assertNull(module.getOutput("spacingMap"));
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			.get();
 
-		module = IMAGE_J.command().run(ThicknessWrapper.class, true, "inputImage",
-			imagePlus, "mapChoice", "Trabecular thickness", "showMaps", true).get();
+		// VERIFY
+		final LUT trabecularMap = ((ImagePlus) module.getOutput("trabecularMap"))
+			.getLuts()[0];
+		final LUT spacingMap = ((ImagePlus) module.getOutput("spacingMap"))
+			.getLuts()[0];
+		assertTrue("Trabecular map doesn't have the 'fire' LUT", Arrays.equals(
+			fireLUT.getBytes(), trabecularMap.getBytes()));
+		assertTrue("Spacing map doesn't have the 'fire' LUT", Arrays.equals(fireLUT
+			.getBytes(), spacingMap.getBytes()));
+	}
+
+	@Test
+	public void testMapImagesBoth() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			.get();
+
+		// VERIFY
 		assertNotNull(module.getOutput("trabecularMap"));
-		assertNull(module.getOutput("spacingMap"));
-
-		module = IMAGE_J.command().run(ThicknessWrapper.class, true, "inputImage",
-			imagePlus, "mapChoice", "Trabecular spacing", "showMaps", true).get();
-		assertNull(module.getOutput("trabecularMap"));
 		assertNotNull(module.getOutput("spacingMap"));
+	}
 
-		module = IMAGE_J.command().run(ThicknessWrapper.class, true, "inputImage",
-			imagePlus, "mapChoice", "Both", "showMaps", true).get();
+	@Test
+	public void testMapImagesShowMapsFalse() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", false)
+			.get();
+
+		// VERIFY
+		assertNull(module.getOutput("trabecularMap"));
+		assertNull(module.getOutput("spacingMap"));
+	}
+
+	@Test
+	public void testMapImagesTrabecularSpacing() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
+			"showMaps", true).get();
+
+		// VERIFY
+		final ImagePlus spacingMap = (ImagePlus) module.getOutput("spacingMap");
+		assertNotNull(spacingMap);
+		assertNull(module.getOutput("trabecularMap"));
+		assertNotSame("Original image should not have been overwritten", imagePlus,
+			spacingMap);
+	}
+
+	@Test
+	public void testMapImagesTrabecularThickness() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+			true, "inputImage", imagePlus, "mapChoice", "Trabecular thickness",
+			"showMaps", true).get();
+
+		// VERIFY
 		final ImagePlus trabecularMap = (ImagePlus) module.getOutput(
 			"trabecularMap");
-		final ImagePlus spacingMap = (ImagePlus) module.getOutput("spacingMap");
 		assertNotNull(trabecularMap);
-		assertNotNull(spacingMap);
+		assertNull(module.getOutput("spacingMap"));
 		assertNotSame("Original image should not have been overwritten", imagePlus,
 			trabecularMap);
-		assertNotSame("Original image should not have been overwritten", imagePlus,
-			spacingMap);
-		assertNotSame("Map images should be independent", trabecularMap,
-			spacingMap);
 	}
 
 	@Test
@@ -161,7 +231,7 @@ public class ThicknessWrapperTest {
 	public void testNullROIManagerCancelsPlugin() throws Exception {
 		// SETUP
 		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
-		final ImagePlus imagePlus = NewImage.createByteImage("", 5, 5, 5, 1);
+		final ImagePlus imagePlus = NewImage.createByteImage("image", 5, 5, 5, 1);
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
@@ -180,21 +250,16 @@ public class ThicknessWrapperTest {
 	@Test
 	public void testResults() throws Exception {
 		// SETUP
-		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2, 2, 1);
+		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
+			2, 1);
 		final Calibration calibration = new Calibration();
 		calibration.setUnit("mm");
 		imagePlus.setCalibration(calibration);
 		final String[] expectedHeaders = { "Tb.Th Mean (mm)", "Tb.Th Std Dev (mm)",
 			"Tb.Th Max (mm)", "Tb.Sp Mean (mm)", "Tb.Sp Std Dev (mm)",
 			"Tb.Sp Max (mm)" };
-		final Double[][] expectedValues = {
-				{ new Double(Double.NaN)},
-				{ new Double(Double.NaN)},
-				{ new Double(Double.NaN)},
-				{ new Double(10.392304420471191) },
-				{ new Double(0.0) },
-				{ new Double(10.392304420471191) }
-				};
+		final Double[][] expectedValues = { { Double.NaN }, { Double.NaN }, {
+			Double.NaN }, { 10.392304420471191 }, { 0.0 }, { 10.392304420471191 } };
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
@@ -211,9 +276,9 @@ public class ThicknessWrapperTest {
 			final DefaultColumn<Double> column = table.get(i);
 			assertEquals(expectedHeaders[i], column.getHeader());
 			assertEquals("Results table has wrong number of rows", 1, column.size());
-			int j = 0;
-			assertEquals("Cell at i="+i+", j="+j+" has an incorrect value", expectedValues[i][j],
-					column.getValue(j));
+			final int j = 0;
+			assertEquals("Cell at i=" + i + ", j=" + j + " has an incorrect value",
+				expectedValues[i][j], column.getValue(j));
 		}
 	}
 

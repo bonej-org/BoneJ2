@@ -62,6 +62,7 @@ import org.scijava.widget.ChoiceWidget;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.plugin.frame.RoiManager;
+import ij.process.LUT;
 import ij.process.StackStatistics;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
@@ -151,8 +152,19 @@ public class ThicknessWrapper extends ContextCommand {
 			resultsTable = SharedTable.getTable();
 		}
 		if (showMaps) {
+			final LUT fire = Common.makeFire();
 			trabecularMap = thicknessMaps.get(true);
+			if (trabecularMap != null) {
+				final StackStatistics trabecularStats = new StackStatistics(trabecularMap);
+				trabecularMap.setDisplayRange(0.0, trabecularStats.max);
+				trabecularMap.setLut(fire);	
+			}
 			spacingMap = thicknessMaps.get(false);
+			if (spacingMap != null) {
+				final StackStatistics spacingStats = new StackStatistics(spacingMap);
+				spacingMap.setDisplayRange(0.0, spacingStats.max);
+				spacingMap.setLut(fire);
+			}
 		}
 		if (reporter == null) {
 			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
@@ -204,6 +216,10 @@ public class ThicknessWrapper extends ContextCommand {
 
 		if (cropToRois) {
 			final RoiManager roiManager = RoiManager.getInstance2();
+			if (roiManager == null) {
+				cancel("Can't crop without valid ROIs in the ROIManager");
+				return null;
+			}
 			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
 				roiManager, inputImage.getStack(), true, 0x00);
 			if (!stackOptional.isPresent()) {

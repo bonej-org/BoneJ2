@@ -100,20 +100,23 @@ Fitting results
 Steps
 -----------------------------------------------------------------------
  1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume).
- 2. Open ROI Manager (Analyze>Tools>RoiManager).
- 3. Select the Point ROI tool.
- 4. Draw a Point ROIs on the image.
+ 2. Select the Point ROI tool.
+ 3. Draw a Point ROIs on the image.
     - Draw lots of points in a roughly spherical cluster on 
 	  different slices.
-	- Press "Add" on the ROI Manager window after each point.
+	- Press T-key after each point to add it to the ROI Manager
  5. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid)
+
+Notes
+-----------------------------------------------------------------------
+If fitting fails, empty manager, and try drawing the points again.
 
 Expected result
 -----------------------------------------------------------------------
 User sees the BoneJ results table with the radii and centroid 
 coordinates of an ellipsoid.
 
-Completed: July 6 2017 Richard Domander
+Completed: August 3 2018 Richard Domander
 -----------------------------------------------------------------------
 
 
@@ -141,4 +144,31 @@ Expected result
 Results are half from Case 5.
 
 Completed: November 12th 2017 Richard Domander
+-----------------------------------------------------------------------
+
+
+Case 7
+=======================================================================
+Verify that the progress bar is seen
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Open "bat-cochlea-volume.tif" (File>Open Samples>Bat Cochlea Volume)
+2. Select the Point ROI tool.
+3. Draw a Point ROIs on the image.
+    - Draw lots of points in a roughly spherical cluster on
+	  different slices.
+    - Press T-key after each point to add it to the ROI Manager
+4. Run Fit Ellipsoid (Plugins>BoneJ>Fit Ellipsoid)
+
+Notes
+-----------------------------------------------------------------------
+If fitting fails, empty manager, and try drawing the points again.
+
+Expected result
+-----------------------------------------------------------------------
+The progress bar advances in the lower right-hand corner of the ImageJ
+main window (moves very fast).
+
+Completed September 10th 2018 Richard Domander
 -----------------------------------------------------------------------

@@ -300,17 +300,19 @@ public class HyperstackUtilsTest {
 		assertEquals(0, subspaces.count());
 	}
 
-	@Test
-	public void testSplitSubspacesNullTypes() {
+	@Test(expected = NullPointerException.class)
+	public void testSplitSubspacesThrowsNPEIfTypesNull() {
 		// SETUP
 		final Img<ByteType> img = ArrayImgs.bytes(2, 2);
 		final ImgPlus<ByteType> imgPlus = new ImgPlus<>(img, "", X_AXIS, Y_AXIS);
 
 		// EXECUTE
-		final Stream<Subspace<ByteType>> subspaces = splitSubspaces(imgPlus, null);
+		splitSubspaces(imgPlus, null);
+	}
 
-		// VERIFY
-		assertEquals(0, subspaces.count());
+	@Test(expected = NullPointerException.class)
+	public void testSplitSubspacesThrowsNPEIfImgPlusNull() {
+		splitSubspaces(null, Arrays.asList(Axes.X, Axes.Y));
 	}
 
 	@Test

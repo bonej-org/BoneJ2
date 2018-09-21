@@ -79,12 +79,9 @@ public class ImagePlusUtilTest {
 		assertEquals("Anisotropy should be " + expected, expected, result, 1e-12);
 	}
 
-	@Test
-	public void testAnisotropyReturnsNaNIfImageIsNull() {
-		final double anisotropy = ImagePlusUtil.anisotropy(null);
-
-		assertTrue("Anisotropy should be NaN for a null image", Double.isNaN(
-			anisotropy));
+	@Test(expected = NullPointerException.class)
+	public void testAnisotropyThrowsNPEIfImageNull() {
+		ImagePlusUtil.anisotropy(null);
 	}
 
 	@Test
@@ -108,6 +105,11 @@ public class ImagePlusUtilTest {
 			.getRoi());
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testCleanDuplicateThrowsNPEIfImageNull() {
+		ImagePlusUtil.cleanDuplicate(null);
+	}
+
 	@Test
 	public void testIs3D() throws AssertionError {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
@@ -118,6 +120,11 @@ public class ImagePlusUtilTest {
 		assertTrue("Image with more than 1 slice should be 3D", result);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void testIs3DThrowsNPEIfImageNull() {
+		ImagePlusUtil.is3D(null);
+	}
+
 	@Test
 	public void testIs3DFalseIfImage2D() {
 		final ImagePlus imagePlus = mock(ImagePlus.class);
@@ -126,13 +133,6 @@ public class ImagePlusUtilTest {
 		final boolean result = ImagePlusUtil.is3D(imagePlus);
 
 		assertFalse("2D image should not be 3D", result);
-	}
-
-	@Test
-	public void testIs3DFalseIfImageNull() {
-		final boolean result = ImagePlusUtil.is3D(null);
-
-		assertFalse("Null image should not be 3D", result);
 	}
 
 	@Test
@@ -151,14 +151,13 @@ public class ImagePlusUtilTest {
 			result);
 	}
 
-	@Test
-	public void testIsBinaryColourReturnsFalseIfImageIsNull() {
-		final boolean result = ImagePlusUtil.isBinaryColour(null);
-		assertFalse("Null image should not be binary", result);
+	@Test(expected = NullPointerException.class)
+	public void testIsBinaryColourThrowsNPEIfImageNull() {
+		ImagePlusUtil.isBinaryColour(null);
 	}
 
 	@Test
-	public void testMonochromeIsBinaryColour() {
+	public void testIsBinaryColourMonochrome() {
 		final ImagePlus testImage = mock(ImagePlus.class);
 		final ImageStatistics binaryStats = new ImageStatistics();
 		binaryStats.pixelCount = 1;
@@ -172,7 +171,7 @@ public class ImagePlusUtilTest {
 	}
 
 	@Test
-	public void testMulticolorIsNotBinaryColour() {
+	public void testIsBinaryColourMulticolor() {
 		final ImagePlus testImage = mock(ImagePlus.class);
 		final ImageStatistics binaryStats = new ImageStatistics();
 		binaryStats.pixelCount = 3;

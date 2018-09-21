@@ -26,8 +26,7 @@ package org.bonej.ops.ellipsoid;
 import java.util.Collection;
 
 import net.imagej.ImageJ;
-
-import org.scijava.vecmath.Vector3d;
+import org.joml.Vector3d;
 
 /**
  * A simple class to demonstrate the proof of concept for

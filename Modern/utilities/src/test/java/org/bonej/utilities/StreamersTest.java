@@ -23,24 +23,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.utilities;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.axis.TypedAxis;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
-
 import org.junit.Test;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Unit tests for {@link Streamers}
@@ -71,20 +68,8 @@ public class StreamersTest {
 			1));
 	}
 
-	@Test
-	public void testSpatialAxisStreamNoSpatialAxes() {
-		final Img<DoubleType> img = ArrayImgs.doubles(10, 10, 10);
-		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "", new AxisType[] {
-			Axes.unknown(), Axes.unknown(), Axes.unknown() });
-
-		final Stream<CalibratedAxis> result = Streamers.spatialAxisStream(imgPlus);
-
-		assertNotNull(result);
-		assertEquals(0, result.count());
-	}
-
 	@Test(expected = NullPointerException.class)
-	public void testSpatialAxisStreamThrowsNPEIfSpaceNull() {
-		Streamers.spatialAxisStream(null);
+	public void testAxisStreamThrowsNPEIfSpaceNull() {
+		Streamers.axisStream(null);
 	}
 }

@@ -23,7 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.ops.SolveQuadricEq.QUADRIC_TERMS;
+import static net.imagej.ops.stats.regression.leastSquares.Quadric.MIN_DATA;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
@@ -33,11 +33,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import net.imagej.ops.OpService;
+import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 
-import org.bonej.ops.SolveQuadricEq;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
 import org.bonej.utilities.ImagePlusUtil;
@@ -46,6 +46,9 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
+import org.joml.Matrix4dc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -57,8 +60,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Vector3d;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -115,14 +116,15 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	@Override
 	public void run() {
 		if (!initPointROIs()) {
-			cancel("Please populate ROI Manager with at least " + QUADRIC_TERMS +
+			cancel("Please populate ROI Manager with at least " + MIN_DATA +
 				" point ROIs");
 			return;
 		}
 		statusService.showStatus("Fit ellipsoid: solving ellipsoid equation");
-		final Matrix4d quadric = (Matrix4d) opService.run(SolveQuadricEq.class,
-			points);
+		statusService.showProgress(0, 2);
+		final Matrix4dc quadric = (Matrix4dc) opService.run(Quadric.class, points);
 		statusService.showStatus("Fit ellipsoid: determining ellipsoid parameters");
+		statusService.showProgress(1, 2);
 		@SuppressWarnings("unchecked")
 		final Optional<Ellipsoid> result = (Optional<Ellipsoid>) opService.run(
 			QuadricToEllipsoid.class, quadric);
@@ -151,10 +153,10 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	private void addResults(final Ellipsoid ellipsoid) {
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage);
 		final String label = inputImage.getTitle();
-		final Vector3d centroid = ellipsoid.getCentroid();
-		SharedTable.add(label, "Centroid x " + unitHeader, centroid.getX());
-		SharedTable.add(label, "Centroid y " + unitHeader, centroid.getY());
-		SharedTable.add(label, "Centroid z " + unitHeader, centroid.getZ());
+		final Vector3dc centroid = ellipsoid.getCentroid();
+		SharedTable.add(label, "Centroid x " + unitHeader, centroid.x());
+		SharedTable.add(label, "Centroid y " + unitHeader, centroid.y());
+		SharedTable.add(label, "Centroid z " + unitHeader, centroid.z());
 		SharedTable.add(label, "Radius a " + unitHeader, ellipsoid.getA());
 		SharedTable.add(label, "Radius b " + unitHeader, ellipsoid.getB());
 		SharedTable.add(label, "Radius c " + unitHeader, ellipsoid.getC());
@@ -176,7 +178,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		points = RoiManagerUtil.pointROICoordinates(manager).stream().filter(
 			p -> !RoiManagerUtil.isActiveOnAllSlices((int) p.z)).map(calibrate)
 			.collect(Collectors.toList());
-		return points.size() >= QUADRIC_TERMS;
+		return points.size() >= MIN_DATA;
 	}
 
 	@SuppressWarnings("unused")

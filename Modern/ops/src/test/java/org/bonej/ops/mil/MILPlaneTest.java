@@ -34,11 +34,14 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
+import org.joml.AxisAngle4d;
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.scijava.vecmath.AxisAngle4d;
-import org.scijava.vecmath.Vector3d;
 
 /**
  * Tests for {@link MILPlane}.
@@ -50,7 +53,7 @@ public class MILPlaneTest {
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static final long SIZE = 100;
 	private static final Img<BitType> SHEETS = ArrayImgs.bits(SIZE, SIZE, SIZE);
-	private static final AxisAngle4d IDENTITY_ROTATION = new AxisAngle4d();
+	private static final Quaterniondc IDENTITY_ROTATION = new Quaterniond();
 	private static final Long SEED = 0xc0ffeeL;
 
 	/**
@@ -73,9 +76,9 @@ public class MILPlaneTest {
 		});
 
 		// EXECUTE
-		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			noiseImg, IDENTITY_ROTATION, 1L, 1.0, seed);
-		final Vector3d milVector2 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			noiseImg, IDENTITY_ROTATION, 16L, 1.0, seed);
 
 		// VERIFY
@@ -92,9 +95,9 @@ public class MILPlaneTest {
 	@Test
 	public void testIncrementParameter() {
 		// EXECUTE
-		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, IDENTITY_ROTATION, 2L, 1.0, SEED);
-		final Vector3d milVector2 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, IDENTITY_ROTATION, 2L, 4.0, SEED);
 
 		// VERIFY
@@ -115,11 +118,12 @@ public class MILPlaneTest {
 
 	@Test
 	public void testRotationParameter() {
-		final AxisAngle4d rotation = new AxisAngle4d(0, 1, 0, Math.PI / 2.0);
-		final Vector3d expectedDirection = new Vector3d(1, 0, 0);
+		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 2.0,
+			0, 1, 0));
+		final Vector3dc expectedDirection = new Vector3d(1, 0, 0);
 
 		// EXECUTE
-		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, rotation, 2L, 1.0, SEED);
 
 		assertTrue("Changing the rotation parameter had no effect", isParallel(
@@ -132,14 +136,15 @@ public class MILPlaneTest {
 		final long seed2 = 0x70ffee;
 		// Drawing lines in an angle where they're likely to encounter different
 		// number of sheets based on where they start
-		final AxisAngle4d rotation = new AxisAngle4d(1, 1, 0, Math.PI / 3.0);
+		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 3.0,
+			1, 1, 0));
 
 		// EXECUTE
-		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, rotation, 4L, 1.0, SEED);
-		final Vector3d milVector2 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, rotation, 4L, 1.0, SEED);
-		final Vector3d milVector3 = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector3 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, rotation, 4L, 1.0, seed2);
 
 		// VERIFY
@@ -156,7 +161,7 @@ public class MILPlaneTest {
 	 */
 	@Test
 	public void testXYSheets() {
-		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, IDENTITY_ROTATION, 2L, 1.0, SEED);
 
 		assertEquals(2.0, milVector.length(), 1e-12);
@@ -179,7 +184,7 @@ public class MILPlaneTest {
 		}
 
 		// EXECUTE
-		final Vector3d milVector = (Vector3d) IMAGE_J.op().run(MILPlane.class,
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			xzSheets, IDENTITY_ROTATION, 2L, 1.0, SEED);
 
 		// VERIFY
@@ -205,11 +210,12 @@ public class MILPlaneTest {
 		}
 	}
 
-	private boolean isParallel(final Vector3d u, final Vector3d v) {
-		final Vector3d product = new Vector3d();
-		product.cross(u, v);
-		final Vector3d zeroVector = new Vector3d(0, 0, 0);
-		return product.epsilonEquals(zeroVector, 1e-12);
+	private boolean isParallel(final Vector3dc u, final Vector3dc v) {
+		final Vector3d product = new Vector3d(u);
+		product.cross(v);
+
+		return Math.abs(product.x) < 1e-12 && Math.abs(product.y) < 1e-12 && Math
+			.abs(product.z) < 1e-12;
 	}
 	// endregion
 }

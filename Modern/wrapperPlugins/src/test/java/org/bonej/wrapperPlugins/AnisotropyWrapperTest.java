@@ -220,6 +220,7 @@ public class AnisotropyWrapperTest {
 			Views.interval(hyperSheets, new long[] { 0, 0, z, 1, 1 }, new long[] { 99,
 				99, z, 0, 0 }).forEach(BitType::setOne);
 		}
+		AnisotropyWrapper.setSeed(0xc0ff33);
 	}
 
 	@AfterClass

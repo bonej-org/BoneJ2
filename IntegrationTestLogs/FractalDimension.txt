@@ -98,3 +98,23 @@ Results match BoneJ1 (considering rounding)
 
 Completed May 24 2017 Richard Domander
 -----------------------------------------------------------------------
+
+
+Case 6
+=======================================================================
+Verify that the progress bar is seen
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntergrationTestLogs/AnisotropicHyperStack.zip
+3. Run Plugins > BoneJ > Fractal dimension
+4. Check "Automatic parameters"
+
+Expected result
+-----------------------------------------------------------------------
+The progress bar advances in the lower right-hand corner of the ImageJ
+main window. Progress resets for each subspace.
+
+Completed September 10th 2018 Richard Domander
+-----------------------------------------------------------------------

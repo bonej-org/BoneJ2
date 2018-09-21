@@ -2,8 +2,9 @@
 
 ## Prerequisites
 * Familiarize yourself with GitHub
-* [Maven](https://github.com/bonej-org/BoneJ2/wiki/Maven)
-* [Git](https://git-scm.com)
+* [Java 8]() (newer version is fine, but the project still uses 1.8 bytecode)
+* [Maven](http://imagej.net/Maven)
+* [Git](http://imagej.net/Git)
 * Preferrably an IDE such as [Eclipse](https://www.eclipse.org), [IntelliJ](https://www.jetbrains.com/idea/) or [NetBeans](https://netbeans.org)
   * Eclipse requires the m2e-egit connector to be installed so that you can seamlessly import your BoneJ2 fork from GitHub, but the version in the marketplace is often too old: you may need to [install it from the repository](https://stackoverflow.com/questions/51359823/m2e-egit-connector-for-scm-on-eclipse-photon-failure).
 
@@ -26,7 +27,8 @@
 1) Before creating a PR:
   * Your code should have tests
   * At least `public` API should have [Javadoc](http://drjava.org/docs/user/ch10.html)
-  * Check that [Maven](https://github.com/bonej-org/BoneJ2/wiki/Maven) can build BoneJ by running `mvn clean package`
+    - You can check that your Javadoc is valid by running `mvn javadoc:javadoc`
+  * Check that Maven can build BoneJ without errors by running `mvn clean package`
 2) Create a PR and wait for a review
 3) If team members request changes to your code, add commits until PR is accepted
 

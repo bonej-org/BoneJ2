@@ -59,6 +59,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.DoubleType;
 
 import org.bonej.utilities.AxisUtils;
@@ -275,14 +276,17 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private Map<String, Mesh> createMeshes(
-		final Iterable<Subspace<BitType>> subspaces)
+		final List<Subspace<BitType>> subspaces)
 	{
-		statusService.showStatus("Surface area: creating meshes");
 		final Map<String, Mesh> meshes = new HashMap<>();
-		for (final Subspace<BitType> subspace : subspaces) {
+		for (int i = 0; i < subspaces.size(); i++) {
+			statusService.showStatus("Surface area: creating mesh for subspace " + (i + 1));
+			final Subspace<BitType> subspace = subspaces.get(i);
 			final Mesh mesh = marchingCubesOp.calculate(subspace.interval);
 			meshes.put(subspace.toString(), mesh);
+			statusService.showProgress(i, subspaces.size());
 		}
+		statusService.showProgress(subspaces.size(), subspaces.size());
 		return meshes;
 	}
 

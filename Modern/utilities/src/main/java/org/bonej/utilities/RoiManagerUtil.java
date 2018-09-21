@@ -31,12 +31,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.scijava.vecmath.Vector3d;
-
 import ij.ImageStack;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import org.joml.Vector3d;
 
 /**
  * A class containing utility methods for the ImageJ RoiManager
@@ -62,8 +61,7 @@ public final class RoiManagerUtil {
 	 * @param fillBackground if true, fill the background of the cropped image.
 	 * @param fillColor color of the background of the cropped image.
 	 * @return an Optional with the cropped stack of the given image. The Optional
-	 *         is empty if roiMan == null, or sourceStack == null, or roiMan is
-	 *         empty.
+	 *         is empty if roiMan is empty.
 	 */
 	public static Optional<ImageStack> cropToRois(final RoiManager roiMan,
 		final ImageStack sourceStack, final boolean fillBackground,
@@ -93,9 +91,6 @@ public final class RoiManagerUtil {
 	 * @return point ROI coordinates.
 	 */
 	public static List<Vector3d> pointROICoordinates(final RoiManager manager) {
-		if (manager == null) {
-			return Collections.emptyList();
-		}
 		final Roi[] rois = manager.getRoisAsArray();
 		return Arrays.stream(rois).filter(roi -> roi.getType() == Roi.POINT).map(
 			roi -> {
@@ -269,13 +264,16 @@ public final class RoiManagerUtil {
 	 * @param roiMan the collection of all the current ROIs.
 	 * @param stack the stack inside which the ROIs must fit (max limits).
 	 * @return returns an Optional with the limits in an int array {x0, x1, y0,
-	 *         y1, z0, z1}. Returns an empty Optional if roiMan == null or stack
-	 *         == null or roiMan is empty.
+	 *         y1, z0, z1}. Returns an empty Optional if roiMan is empty.
+	 * @throws NullPointerException if stack is null.
 	 */
 	static Optional<int[]> getLimits(final RoiManager roiMan,
-		final ImageStack stack)
+		final ImageStack stack) throws NullPointerException
 	{
-		if (roiMan == null || roiMan.getCount() == 0 || stack == null) {
+		if (stack == null) {
+			throw new NullPointerException();
+		}
+		if (roiMan.getCount() == 0) {
 			return Optional.empty();
 		}
 
@@ -368,17 +366,12 @@ public final class RoiManagerUtil {
 	 * @param padding number of pixels added to the each side of the resulting
 	 *          image.
 	 * @return an Optional with the cropped stack of the given image. The Optional
-	 *         is empty if roiMan == null, or sourceStack == null, or roiMan is
-	 *         empty.
+	 *         is empty roiMan is empty.
 	 */
 	static Optional<ImageStack> cropToRois(final RoiManager roiMan,
 		final ImageStack sourceStack, final boolean fillBackground,
 		final int fillColor, final int padding)
 	{
-		if (roiMan == null || sourceStack == null) {
-			return Optional.empty();
-		}
-
 		final Optional<int[]> optionalLimits = getLimits(roiMan, sourceStack);
 		if (!optionalLimits.isPresent()) {
 			return Optional.empty();

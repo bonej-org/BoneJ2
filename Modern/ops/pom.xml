@@ -126,16 +126,14 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
+            <!-- TODO Remove explicit version when pom-scijava has this or newer stable version -->
+            <version>0.42.0</version>
         </dependency>
 
         <!-- Scijava dependencies -->
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>scijava-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>vecmath</artifactId>
         </dependency>
 
         <!-- Other dependencies -->
@@ -146,6 +144,10 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.joml</groupId>
+            <artifactId>joml</artifactId>
         </dependency>
 
         <!-- Testing dependencies -->

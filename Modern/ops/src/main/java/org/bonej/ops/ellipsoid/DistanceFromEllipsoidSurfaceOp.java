@@ -27,13 +27,13 @@ import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.type.numeric.real.DoubleType;
 
+import org.joml.Matrix4dc;
+import org.joml.Vector2d;
+import org.joml.Vector2dc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.vecmath.Matrix4d;
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Tuple3d;
-import org.scijava.vecmath.Vector2d;
-import org.scijava.vecmath.Vector3d;
 
 /**
  * An Op that calculates the distance between a point and an ellipsoid surface
@@ -51,8 +51,8 @@ import org.scijava.vecmath.Vector3d;
  */
 
 @Plugin(name = "Distance from Point to Ellipsoid Surface", type = Op.class)
-public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
-	AbstractBinaryFunctionOp<Ellipsoid, T, DoubleType>
+public class DistanceFromEllipsoidSurfaceOp extends
+	AbstractBinaryFunctionOp<Ellipsoid, Vector3dc, DoubleType>
 {
 
 	/**
@@ -75,28 +75,38 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
 	 * @param ellipsoid the ellipsoid in question
 	 * @param point the point in question
 	 * @return shortest distance
+	 * @throws IllegalArgumentException if {@link #tolerance} is negative, or
+	 *           {@link #maxIterations} is not positive.
 	 */
 	@Override
-	public DoubleType calculate(final Ellipsoid ellipsoid, final T point) {
+	public DoubleType calculate(final Ellipsoid ellipsoid, final Vector3dc point)
+		throws IllegalArgumentException
+	{
+		if (tolerance < 0.0) {
+			throw new IllegalArgumentException("Tolerance cannot be negative");
+		}
+		if (maxIterations < 1) {
+			throw new IllegalArgumentException("Max iterations must be positive");
+		}
 		final double a = ellipsoid.getA();
 		final double b = ellipsoid.getB();
 		final double c = ellipsoid.getC();
-		final Point3d pointInEllipsoidCoordinates = toEllipsoidCoordinates(point,
+		final Vector3dc pointInEllipsoidCoordinates = toEllipsoidCoordinates(point,
 			ellipsoid);
 
-		final double rootTerm = Math.sqrt(pointInEllipsoidCoordinates.x *
-			pointInEllipsoidCoordinates.x / (a * a) + pointInEllipsoidCoordinates.y *
-				pointInEllipsoidCoordinates.y / (b * b));
-		Vector2d anglesK = new Vector2d(Math.atan2(a *
-			pointInEllipsoidCoordinates.y, b * pointInEllipsoidCoordinates.x), Math
-				.atan2(pointInEllipsoidCoordinates.z, c * rootTerm));
+		final double rootTerm = Math.sqrt(pointInEllipsoidCoordinates.x() *
+			pointInEllipsoidCoordinates.x() / (a * a) + pointInEllipsoidCoordinates.y() *
+				pointInEllipsoidCoordinates.y() / (b * b));
+		Vector2dc anglesK = new Vector2d(Math.atan2(a *
+			pointInEllipsoidCoordinates.y(), b * pointInEllipsoidCoordinates.x()), Math
+				.atan2(pointInEllipsoidCoordinates.z(), c * rootTerm));
 		Vector2d anglesKPlus1 = new Vector2d(0.0, 0.0);
 		long iterations = 0;
 		while (iterations < maxIterations) {
-			anglesKPlus1 = new Vector2d(anglesK.x, anglesK.y);
+			anglesKPlus1 = new Vector2d(anglesK.x(), anglesK.y());
 			anglesKPlus1.add(inverseJacobian(anglesK, ellipsoid,
 				pointInEllipsoidCoordinates));
-			if (getDifference(anglesK, anglesKPlus1) < tolerance) {
+			if (getDifference(anglesK, anglesKPlus1) <= tolerance) {
 				break;
 			}
 			anglesK = new Vector2d(anglesKPlus1.x, anglesKPlus1.y);
@@ -105,8 +115,10 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
 
 		final Vector3d closestPointOnEllipsoidSurface =
 			getCartesianCoordinatesFromAngleParametrization(anglesKPlus1, ellipsoid);
-		closestPointOnEllipsoidSurface.scaleAdd(-1.0, pointInEllipsoidCoordinates);
-		return new DoubleType(closestPointOnEllipsoidSurface.length());
+		final Vector3d v = new Vector3d(closestPointOnEllipsoidSurface);
+		v.negate();
+		v.add(pointInEllipsoidCoordinates);
+		return new DoubleType(v.length());
 	}
 
 	/**
@@ -120,18 +132,18 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
 	 * @return x(theta,phi)
 	 */
 	private static Vector3d getCartesianCoordinatesFromAngleParametrization(
-		final Vector2d angles, final Ellipsoid ellipsoid)
+		final Vector2dc angles, final Ellipsoid ellipsoid)
 	{
-		final double theta = angles.x;
-		final double phi = angles.y;
+		final double theta = angles.x();
+		final double phi = angles.y();
 		final double x = ellipsoid.getA() * Math.cos(phi) * Math.cos(theta);
 		final double y = ellipsoid.getB() * Math.cos(phi) * Math.sin(theta);
 		final double z = ellipsoid.getC() * Math.sin(phi);
 		return new Vector3d(x, y, z);
 	}
 
-	private static double getDifference(final Vector2d angles1,
-		final Vector2d angles2)
+	private static double getDifference(final Vector2dc angles1,
+		final Vector2dc angles2)
 	{
 		final Vector2d difference = new Vector2d(angles1);
 		difference.sub(angles2);
@@ -149,25 +161,25 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
 	 *          should be found
 	 * @return inverse Jacobian matrix DF^{-1} times F(angles)
 	 */
-	private static Vector2d inverseJacobian(final Vector2d angles,
-		final Ellipsoid ellipsoid, final Point3d point)
+	private static Vector2d inverseJacobian(final Vector2dc angles,
+		final Ellipsoid ellipsoid, final Vector3dc point)
 	{
 		final double a = ellipsoid.getA();
 		final double b = ellipsoid.getB();
 		final double c = ellipsoid.getC();
 		final double a2mb2 = (a * a - b * b);
 
-		final double x = point.x;
-		final double y = point.y;
-		final double z = point.z;
+		final double x = point.x();
+		final double y = point.y();
+		final double z = point.z();
 
-		final double theta = angles.x;
+		final double theta = angles.x();
 		final double sinTheta = Math.sin(theta);
 		final double sinThetaSq = sinTheta * sinTheta;
 		final double cosTheta = Math.cos(theta);
 		final double cosThetaSq = cosTheta * cosTheta;
 
-		final double phi = angles.y;
+		final double phi = angles.y();
 		final double sinPhi = Math.sin(phi);
 		final double cosPhi = Math.cos(phi);
 
@@ -205,20 +217,20 @@ public class DistanceFromEllipsoidSurfaceOp<T extends Tuple3d> extends
 	 * @param ellipsoid ellipsoid determining coordinates
 	 * @return point in ellipsoid coordinates
 	 */
-	static Point3d toEllipsoidCoordinates(final Tuple3d point,
+	static Vector3dc toEllipsoidCoordinates(final Vector3dc point,
 		final Ellipsoid ellipsoid)
 	{
-		final Point3d translated = new Point3d(ellipsoid.getCentroid());
-		translated.scale(-1.0);
+		final Vector3d translated = new Vector3d(ellipsoid.getCentroid());
+		translated.mul(-1.0);
 		translated.add(point);
 
-		final Matrix4d orientation = ellipsoid.getOrientation();
-		final double x = orientation.m00 * translated.x + orientation.m10 *
-			translated.y + orientation.m20 * translated.z;
-		final double y = orientation.m01 * translated.x + orientation.m11 *
-			translated.y + orientation.m21 * translated.z;
-		final double z = orientation.m02 * translated.x + orientation.m12 *
-			translated.y + orientation.m22 * translated.z;
-		return new Point3d(x, y, z);
+		final Matrix4dc orientation = ellipsoid.getOrientation();
+		final double x = orientation.m00() * translated.x + orientation.m10() *
+			translated.y + orientation.m20() * translated.z;
+		final double y = orientation.m01() * translated.x + orientation.m11() *
+			translated.y + orientation.m21() * translated.z;
+		final double z = orientation.m02() * translated.x + orientation.m12() *
+			translated.y + orientation.m22() * translated.z;
+		return new Vector3d(x, y, z);
 	}
 }
