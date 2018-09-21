@@ -43,6 +43,7 @@ import org.scijava.plugin.Plugin;
 
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
@@ -77,6 +78,8 @@ public class SkeletoniseWrapper extends ContextCommand {
 	private PrefService prefs;
 	@Parameter
 	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
 	private static UsageReporter reporter;
 
 	@Override
@@ -88,7 +91,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs);
+			reporter = UsageReporter.getInstance(prefs, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

@@ -53,6 +53,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
@@ -122,6 +123,8 @@ public class ThicknessWrapper extends ContextCommand {
 	private PrefService prefs;
 	@Parameter
 	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
@@ -149,7 +152,7 @@ public class ThicknessWrapper extends ContextCommand {
 			spacingMap = thicknessMaps.get(false);
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs);
+			reporter = UsageReporter.getInstance(prefs, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

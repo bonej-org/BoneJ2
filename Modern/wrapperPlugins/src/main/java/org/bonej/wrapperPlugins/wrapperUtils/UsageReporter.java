@@ -37,6 +37,7 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
 
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
 /**
@@ -51,12 +52,8 @@ import org.scijava.prefs.PrefService;
  * @author Michael Doube
  * @author Richard Domander
  */
-public final class UsageReporter {
-	/**
-	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
-	 * Create a BoneJApp instead.
-	 */
-	private static final String BONEJ_VERSION = "2.0.0-experimental";
+public class UsageReporter {
+
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
 	private static final String utmhn = "utmhn=bonej.org&";
@@ -79,17 +76,22 @@ public final class UsageReporter {
 	private static long lastTime;
 	private static boolean isFirstRun = true;
 	private static PrefService prefs;
+	private static PluginService plugins;
 	private static UsageReporter instance;
 
 	private UsageReporter() {}
 
-	public static UsageReporter getInstance(final PrefService prefs) {
+	public static UsageReporter getInstance(final PrefService prefs, final PluginService plugins) {
 		if (prefs == null) {
 			throw new NullPointerException("PrefService cannot be null");
+		}
+		if (plugins == null) {
+			throw new NullPointerException("PluginService cannot be null");
 		}
 		if (instance == null) {
 			instance = new UsageReporter();
 		}
+		UsageReporter.plugins = plugins;
 		UsageReporter.prefs = prefs;
 		return instance;
 	}
@@ -200,7 +202,8 @@ public final class UsageReporter {
 	 * @param className Name of the reporting plug-in's class
 	 */
 	public void reportEvent(final String className) {
-		reportEvent(className, BONEJ_VERSION, prefs);
+		final String version = plugins.getPlugin(className).getVersion();
+		reportEvent(className, version, prefs);
 	}
 
 	/**

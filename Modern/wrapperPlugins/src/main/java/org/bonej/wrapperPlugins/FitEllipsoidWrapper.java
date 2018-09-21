@@ -53,6 +53,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.Matrix4d;
@@ -102,6 +103,8 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	private PrefService prefs;
 	@Parameter
 	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
 
 	private List<Vector3d> points;
 	private static UsageReporter reporter;
@@ -130,7 +133,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 			resultsTable = SharedTable.getTable();
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs);
+			reporter = UsageReporter.getInstance(prefs, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

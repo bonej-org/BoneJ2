@@ -63,6 +63,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 
@@ -103,6 +104,8 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	private PrefService prefs;
 	@Parameter
 	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
 
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCharacteristicOp;
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCorrectionOp;
@@ -133,7 +136,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 			resultsTable = SharedTable.getTable();
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs);
+			reporter = UsageReporter.getInstance(prefs, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

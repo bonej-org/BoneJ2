@@ -63,6 +63,7 @@ import org.scijava.io.IOService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
@@ -183,6 +184,8 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 
 	@Parameter
 	private PrefService prefService;
+	@Parameter
+	private PluginService pluginService;
 
 	private ImagePlus intensityImage;
 
@@ -224,7 +227,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			}
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefService);
+			reporter = UsageReporter.getInstance(prefService, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

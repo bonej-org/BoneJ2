@@ -31,6 +31,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.widget.Button;
 
@@ -67,6 +68,8 @@ public class UsageReporterOptions extends ContextCommand {
 	private PrefService prefs;
 	@Parameter
 	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
 
 	/** set to true if user permission has been requested */
 	static final String OPTINSET = "bonej2.report.option.set";
@@ -86,7 +89,7 @@ public class UsageReporterOptions extends ContextCommand {
 
 		//TODO link to detailed online info
     //For more information click Help.";
-		
+
 		//Wipe persistent data on opt-out
 		if (!optIn) {
 			System.out.print("User has opted out of data collection\n");
@@ -109,7 +112,7 @@ public class UsageReporterOptions extends ContextCommand {
 
 		System.out.println("URO Sending usage report...");
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs);
+			reporter = UsageReporter.getInstance(prefs, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

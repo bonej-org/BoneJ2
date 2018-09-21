@@ -55,6 +55,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 
@@ -97,6 +98,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private PrefService prefs;
 	@Parameter
 	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
 
 	/** Header of the foreground (bone) volume column in the results table */
 	private String boneSizeHeader;
@@ -135,7 +138,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 			resultsTable = SharedTable.getTable();
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs);
+			reporter = UsageReporter.getInstance(prefs, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

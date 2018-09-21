@@ -79,6 +79,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
@@ -162,6 +163,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UnitService unitService;
 	@Parameter
 	private PrefService prefService;
+	@Parameter
+	private PluginService pluginService;
 	private static UsageReporter reporter;
 
 	@Override
@@ -187,7 +190,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			resultsTable = SharedTable.getTable();
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefService);
+			reporter = UsageReporter.getInstance(prefService, pluginService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}
