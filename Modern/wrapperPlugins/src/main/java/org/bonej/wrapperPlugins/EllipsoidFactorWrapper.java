@@ -113,10 +113,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private DoubleType sigma = new DoubleType(0);
 
     @Parameter(persist = false, required = false)
-    private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.95);
+    private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.8);
 
     @Parameter(persist = false, required = false)
-    private IntType approximateNumberOfInternalSeeds = new IntType(300000);
+    private IntType approximateNumberOfInternalSeeds = new IntType(33000);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -383,7 +383,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	// TODO Refactor this and sub-functions into an Op
 	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
 		final List<Vector3dc> filterSamplingDirections =
-			getGeneralizedSpiralSetOnSphere(250).collect(toList());
+			getGeneralizedSpiralSetOnSphere(200).collect(toList());
 		final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
 			.parallelStream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
 				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
@@ -396,11 +396,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
 		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
 	{
-		//final int nSphere = 6;
-		//final Stream<Vector3dc> sphereSamplingDirections =
-		//getGeneralizedSpiralSetOnSphere(nSphere);
-        final Stream<Vector3d> sphereSamplingDirections = Arrays.asList(new Vector3d(1,0,0), new Vector3d(-1,0,0),new Vector3d(0,1,0), new Vector3d(0,-1,0),new Vector3d(0,0,1), new Vector3d(0,0,-1)).stream();
-		final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
+		final int nSphere = 24;
+		final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+        final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
 			final Vector3dc direction = new Vector3d(d);
 			return findFirstPointInBGAlongRay(direction, centre);
 		}).collect(toList());
