@@ -162,6 +162,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UnitService unitService;
 	@Parameter
 	private PrefService prefService;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -185,10 +186,19 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefService, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefService);
+		}
+		reporter.reportEvent(getClass().getName());
 	}
 
 	// region -- Helper methods --
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		AnisotropyWrapper.reporter = reporter;
+	}
 
 	private void addResult(final Subspace<BitType> subspace,
 		final double anisotropy, final Ellipsoid ellipsoid)

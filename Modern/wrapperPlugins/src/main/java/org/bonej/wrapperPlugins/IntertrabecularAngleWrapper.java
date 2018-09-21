@@ -186,6 +186,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private double[] coefficients;
 	private double calibratedMinimumLength;
 	private boolean anisotropyWarned;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -215,7 +216,17 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		IntertrabecularAngleWrapper.reporter = reporter;
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {

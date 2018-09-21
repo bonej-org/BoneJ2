@@ -164,6 +164,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private BinaryHybridCF<RandomAccessibleInterval<BitType>, Boolean, RandomAccessibleInterval<BitType>> hollowOp;
 	private UnaryFunctionOp<RandomAccessibleInterval<BitType>, List<ValuePair<DoubleType, DoubleType>>> boxCountOp;
 	private long autoMax;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -195,7 +196,17 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		FractalDimensionWrapper.reporter = reporter;
 	}
 
 	// region -- Helper methods --

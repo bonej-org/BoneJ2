@@ -25,6 +25,9 @@ package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -48,8 +51,10 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
@@ -64,6 +69,14 @@ import org.scijava.command.CommandModule;
 public class FractalDimensionWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private UsageReporter mockReporter;
+
+	@Before
+	public void setup() {
+		mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		FractalDimensionWrapper.setReporter(mockReporter);
+	}
 
 	@After
 	public void tearDown() {

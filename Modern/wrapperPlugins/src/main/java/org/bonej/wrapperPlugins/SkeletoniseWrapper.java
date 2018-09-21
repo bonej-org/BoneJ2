@@ -77,6 +77,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 	private PrefService prefs;
 	@Parameter
 	private LogService logService;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -86,7 +87,17 @@ public class SkeletoniseWrapper extends ContextCommand {
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		SkeletoniseWrapper.reporter = reporter;
 	}
 
 	@SuppressWarnings("unused")

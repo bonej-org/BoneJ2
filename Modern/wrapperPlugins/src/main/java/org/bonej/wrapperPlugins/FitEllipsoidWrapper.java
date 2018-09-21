@@ -104,6 +104,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	private LogService logService;
 
 	private List<Vector3d> points;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -128,7 +129,17 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		FitEllipsoidWrapper.reporter = reporter;
 	}
 
 	private void addResults(final Ellipsoid ellipsoid) {

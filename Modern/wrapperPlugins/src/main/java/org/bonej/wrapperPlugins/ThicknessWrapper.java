@@ -126,6 +126,7 @@ public class ThicknessWrapper extends ContextCommand {
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
 	private boolean anisotropyWarned;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -147,7 +148,17 @@ public class ThicknessWrapper extends ContextCommand {
 			trabecularMap = thicknessMaps.get(true);
 			spacingMap = thicknessMaps.get(false);
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		ThicknessWrapper.reporter = reporter;
 	}
 
 	private void addMapResults(final ImagePlus map) {

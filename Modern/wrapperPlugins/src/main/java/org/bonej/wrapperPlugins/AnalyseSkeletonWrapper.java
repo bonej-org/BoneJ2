@@ -90,6 +90,8 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		LegacyInjector.preinit();
 	}
 
+	private static UsageReporter reporter;
+
 	@Parameter(label = "Input image", validater = "validateImage",
 		persist = false)
 	private ImagePlus inputImage;
@@ -221,7 +223,17 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 				shortestPaths.setCalibration(inputImage.getCalibration());
 			}
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefService, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		AnalyseSkeletonWrapper.reporter = reporter;
 	}
 
 	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {

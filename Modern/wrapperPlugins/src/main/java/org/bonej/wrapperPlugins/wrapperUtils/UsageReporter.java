@@ -37,11 +37,6 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
 
-import org.scijava.Context;
-import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
-import org.scijava.plugin.Parameter;
-import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
 /**
@@ -56,14 +51,8 @@ import org.scijava.prefs.PrefService;
  * @author Michael Doube
  * @author Richard Domander
  */
-public class UsageReporter extends ContextCommand {
-	
-	@Parameter
-	private static Context context;
-	
-	public static final UsageReporter INSTANCE = new UsageReporter();
-	
-/**
+public class UsageReporter {
+	/**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
 	 * Create a BoneJApp instead.
 	 */
@@ -92,19 +81,31 @@ public class UsageReporter extends ContextCommand {
 	private static String utmcc;
 	private static long thisTime = 0;
 	private static long lastTime = 0;
-	/** iterated each time a new BoneJ session starts*/
-	private static int bonejSession;
+
 	private static boolean isFirstRun = true;
 
 	private static String utmhid;
+	private static PrefService prefs;
+	private static UsageReporter instance;
 
 	private UsageReporter() {}
+
+	public static UsageReporter getInstance(final PrefService prefs) {
+		if (prefs == null) {
+			throw new NullPointerException("PrefService cannot be null");
+		}
+		if (instance == null) {
+			instance = new UsageReporter();
+		}
+		UsageReporter.prefs = prefs;
+		return instance;
+	}
 
 	/**
 	 * Send the report to Google Analytics in the form of an HTTP request for a
 	 * 1-pixel GIF with lots of parameters set
 	 */
-	public void send() {
+	private void send() {
 	}
 
 	/**
@@ -117,44 +118,17 @@ public class UsageReporter extends ContextCommand {
 	 * @param value Google Analytics event value - an integer used for sum and
 	 *          average statistics
 	 */
-	private static UsageReporter reportEvent(final String category,
-		final String action, final String label, final Integer value,
-		final PrefService prefs, final LogService log)
+	private void reportEvent(final String category,
+							 final String action, final String label, final Integer value,
+							 final PrefService prefs)
 	{
 		//check if user has opted in and die if user has opted out
 		if (!isAllowed(prefs)) {
 			System.out.println("Usage reporting forbidden by user\n");
-			return INSTANCE;
+			return;
 		}
-		//set session-invariant variables once on first run
 		if (isFirstRun) {
-			System.out.println("First run of Usage Reporter for this BoneJ session.\n");
-			context = new Context();
-			bonejSession = prefs.getInt(UsageReporterOptions.class,
-				UsageReporterOptions.SESSIONKEY, 0);
-			System.out.print("bonejSession = "+bonejSession+"\n");
-			bonejSession++;
-			prefs.put(UsageReporterOptions.class,
-				UsageReporterOptions.SESSIONKEY, bonejSession);
-			final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-			final GraphicsEnvironment ge = GraphicsEnvironment
-				.getLocalGraphicsEnvironment();
-			int width = 0;
-			int height = 0;
-			if (!ge.isHeadlessInstance()) {
-				final GraphicsDevice[] screens = ge.getScreenDevices();
-				for (final GraphicsDevice screen : screens) {
-					final GraphicsConfiguration[] gc = screen.getConfigurations();
-					for (final GraphicsConfiguration g : gc) {
-						width = Math.max(g.getBounds().x + g.getBounds().width, width);
-						height = Math.max(g.getBounds().y + g.getBounds().height, height);
-					}
-				}
-			}
-			utmsr = "utmsr=" + screenSize.width + "x" + screenSize.height + "&";
-			utmvp = "utmvp=" + width + "x" + height + "&";
-			utmsc = "utmsc=24-bit&";
-			isFirstRun = false;
+			initSessionVariables(prefs);
 		}
 		
 		//set 
@@ -217,23 +191,44 @@ public class UsageReporter extends ContextCommand {
 //			}
 			System.out.println(e.getMessage()+"\n");
 		}
-		
-		return INSTANCE;
+		send();
+	}
+
+	private static void initSessionVariables(final PrefService prefs) {
+		System.out.println("First run of Usage Reporter for this BoneJ session.\n");
+		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
+				UsageReporterOptions.SESSIONKEY, 0);
+		System.out.print("bonejSession = "+bonejSession+"\n");
+		prefs.put(UsageReporterOptions.class,
+				UsageReporterOptions.SESSIONKEY, bonejSession + 1);
+		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		final GraphicsEnvironment ge = GraphicsEnvironment
+				.getLocalGraphicsEnvironment();
+		int width = 0;
+		int height = 0;
+		if (!ge.isHeadlessInstance()) {
+			final GraphicsDevice[] screens = ge.getScreenDevices();
+			for (final GraphicsDevice screen : screens) {
+				final GraphicsConfiguration[] gc = screen.getConfigurations();
+				for (final GraphicsConfiguration g : gc) {
+					width = Math.max(g.getBounds().x + g.getBounds().width, width);
+					height = Math.max(g.getBounds().y + g.getBounds().height, height);
+				}
+			}
+		}
+		utmsr = "utmsr=" + screenSize.width + "x" + screenSize.height + "&";
+		utmvp = "utmvp=" + width + "x" + height + "&";
+		utmsc = "utmsc=24-bit&";
+		isFirstRun = false;
 	}
 
 	/**
-	 * Prepare a usage report on a specific class; its name
-	 * (.getClass().getName()) is added to the 'action' field of the report,
-	 * category is "Plugin Usage" and label is the BoneJ version string
+	 * Reports a the usage of a plug-in to bonej.org
 	 *
-	 * @param className Name of the reporting class
+	 * @param className Name of the reporting plug-in's class
 	 */
-	public static UsageReporter reportEvent(final String className,
-		final PrefService prefs, final LogService log)
-	{
-
-		return reportEvent("Plugin%20Usage", className, BONEJ_VERSION, null, prefs,
-			log);
+	public void reportEvent(final String className) {
+		reportEvent("Plugin%20Usage", className, BONEJ_VERSION, null, prefs);
 	}
 
 	/**
@@ -248,6 +243,8 @@ public class UsageReporter extends ContextCommand {
 			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
 		final long firstTime = prefs.getInt(UsageReporterOptions.class,
 			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
+		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
+				UsageReporterOptions.SESSIONKEY, 0);
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
 			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +
@@ -308,7 +305,4 @@ public class UsageReporter extends ContextCommand {
 		return prefs.getBoolean(UsageReporterOptions.class,
 			UsageReporterOptions.OPTINKEY, false);
 	}
-	
-	@Override
-	public void run() {}
 }

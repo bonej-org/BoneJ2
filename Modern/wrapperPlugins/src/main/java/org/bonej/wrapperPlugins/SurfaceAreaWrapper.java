@@ -134,6 +134,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
 	private String unitHeader = "";
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -155,7 +156,17 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		SurfaceAreaWrapper.reporter = reporter;
 	}
 
 	/**

@@ -111,6 +111,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	private boolean negativityWarned;
 	/** The unit displayed in the results */
 	private String unitHeader;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -131,7 +132,17 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		ConnectivityWrapper.reporter = reporter;
 	}
 
 	private void addResults(final String label, final double eulerCharacteristic,

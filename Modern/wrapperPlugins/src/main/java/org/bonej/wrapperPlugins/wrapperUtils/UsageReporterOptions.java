@@ -80,6 +80,7 @@ public class UsageReporterOptions extends ContextCommand {
 	/** unique ID for this particular BoneJ session */
 	static final String SESSIONKEY = "bonej2.report.bonejsession";
 	static final String IJSESSIONKEY = "bonej2.report.ijsession";
+	private UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -108,6 +109,9 @@ public class UsageReporterOptions extends ContextCommand {
 		prefs.put(getClass(), OPTINSET, true);
 
 		System.out.println("URO Sending usage report...");
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
 	}
 }

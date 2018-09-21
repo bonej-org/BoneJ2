@@ -119,6 +119,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private String tVHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -136,7 +137,17 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		SurfaceFractionWrapper.reporter = reporter;
 	}
 
 	// region -- Helper methods --
