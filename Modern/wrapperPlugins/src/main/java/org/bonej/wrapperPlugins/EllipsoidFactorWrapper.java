@@ -43,7 +43,6 @@ import java.util.stream.Stream.Builder;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
@@ -87,6 +86,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
+import org.scijava.widget.NumberWidget;
 
 /**
  * Ellipsoid Factor
@@ -112,11 +112,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(persist = false, required = false)
     private DoubleType sigma = new DoubleType(0);
 
-    @Parameter(persist = false, required = false)
-    private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.8);
+    @Parameter(label = "Maximum internal seeds", min = "0", stepSize = "1",
+            description = "Approximate maximum of internal seed points allowed. If more seeds are found, they are filtered with probability 1-Maximum internal seeds/total internal seeds found.",
+            style = NumberWidget.SPINNER_STYLE)
+    private long approximateMaximumNumberOfSeeds = 10000;
+
+    @Parameter(label = "Sampling directions", min = "0", stepSize = "1",
+            description = "Number of directions (evenly spaced on the surface of a sphere) that internal seed points will search for contact points.",
+            style = NumberWidget.SPINNER_STYLE)
+    private int nSphere = 20;
 
     @Parameter(persist = false, required = false)
-    private IntType approximateNumberOfInternalSeeds = new IntType(33000);
+    private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.8);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -396,7 +403,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
 		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
 	{
-		final int nSphere = 24;
 		final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
 			final Vector3dc direction = new Vector3d(d);
@@ -465,7 +471,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			seed.add(0.5, 0.5, 0.5);
 			seeds.add(seed);
 		}
-		if (seeds.size() > approximateNumberOfInternalSeeds.getInt()) {
+		if (seeds.size() > approximateMaximumNumberOfSeeds) {
 			reduceSeedPoints(seeds);
 		}
 		return seeds;
@@ -473,7 +479,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 	private void reduceSeedPoints(final Collection<Vector3dc> seeds) {
 		final double probabilityOfAcceptingSeed =
-			((double) approximateNumberOfInternalSeeds.getInt()) / seeds.size();
+			((double) approximateMaximumNumberOfSeeds / seeds.size());
 		seeds.removeIf(i -> rng.nextDouble() > probabilityOfAcceptingSeed);
 	}
 
@@ -725,6 +731,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 				cancel(null);
 			}
 		}
+    }
+
+    @SuppressWarnings("unused")
+    private void enforceValidRange() {
+        if (approximateMaximumNumberOfSeeds > inputImage.dimension(0)*inputImage.dimension(1)*inputImage.dimension(2)) {
+            approximateMaximumNumberOfSeeds = inputImage.dimension(0)*inputImage.dimension(1)*inputImage.dimension(3);
+        }
     }
 
     // endregion
