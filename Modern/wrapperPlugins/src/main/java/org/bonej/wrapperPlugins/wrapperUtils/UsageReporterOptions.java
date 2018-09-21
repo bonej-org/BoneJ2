@@ -86,19 +86,15 @@ public class UsageReporterOptions extends ContextCommand {
 
 	@Override
 	public void run() {
-
-		//TODO link to detailed online info
-    //For more information click Help.";
-
-		//Wipe persistent data on opt-out
 		if (!optIn) {
-			System.out.print("User has opted out of data collection\n");
+			//Wipe persistent data on opt-out
+			logService.debug("User has opted out of data collection\n");
 			prefs.clear(getClass());
 			prefs.put(getClass(), OPTINSET, true);
 			return;
 		}
 
-		System.out.print("User has opted in to data collection\n");
+		logService.debug("User has opted in to data collection\n");
 		prefs.put(getClass(), OPTINKEY, true);
 		prefs.put(getClass(), COOKIE,
 			new Random().nextInt(Integer.MAX_VALUE));
@@ -109,8 +105,6 @@ public class UsageReporterOptions extends ContextCommand {
 		prefs.put(getClass(), SESSIONKEY, 1);
 		prefs.put(getClass(), IJSESSIONKEY, 1);
 		prefs.put(getClass(), OPTINSET, true);
-
-		System.out.println("URO Sending usage report...");
 		if (reporter == null) {
 			reporter = UsageReporter.getInstance(prefs, pluginService);
 		}
