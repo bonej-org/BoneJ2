@@ -26,13 +26,17 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import net.imagej.ImageJ;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
@@ -51,6 +55,14 @@ import ij.gui.NewImage;
 public class FitEllipsoidWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private UsageReporter mockReporter;
+
+	@Before
+	public void setup() {
+		mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		FitEllipsoidWrapper.setReporter(mockReporter);
+	}
 
 	@Test
 	public void test2DImageCancelsPlugin() throws Exception {

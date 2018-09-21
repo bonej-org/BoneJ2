@@ -51,14 +51,18 @@ import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
@@ -165,10 +169,18 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private UIService uiService;
 	@SuppressWarnings("unused")
 	@Parameter
-	private PrefService prefService;
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
+
 	private double[] coefficients;
 	private double calibratedMinimumLength;
 	private boolean anisotropyWarned;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -202,6 +214,17 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		IntertrabecularAngleWrapper.reporter = reporter;
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {

@@ -69,13 +69,17 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.util.StringUtils;
 import org.scijava.widget.FileWidget;
@@ -116,18 +120,20 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Parameter
 	private OpService ops;
-
 	@Parameter
 	private LogService logService;
-
 	@Parameter
 	private UIService uiService;
-
 	@Parameter
 	private UnitService unitService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private String path = "";
 	private String extension = "";
@@ -135,6 +141,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
 	private String unitHeader = "";
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -156,6 +163,17 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		SurfaceAreaWrapper.reporter = reporter;
 	}
 
 	/**

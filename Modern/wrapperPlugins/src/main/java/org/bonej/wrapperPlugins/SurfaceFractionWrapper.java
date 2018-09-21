@@ -57,12 +57,17 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 
 /**
@@ -99,15 +104,20 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@Parameter
 	private OpService opService;
-
 	@Parameter
 	private UIService uiService;
-
 	@Parameter
 	private UnitService unitService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	/** Header of the thresholded volume column in the results table */
 	private String bVHeader;
@@ -115,6 +125,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private String tVHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -132,6 +143,17 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		SurfaceFractionWrapper.reporter = reporter;
 	}
 
 	// region -- Helper methods --

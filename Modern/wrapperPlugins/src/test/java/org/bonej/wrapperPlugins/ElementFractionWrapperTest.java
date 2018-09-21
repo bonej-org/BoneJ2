@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -48,8 +49,10 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -65,6 +68,14 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 public class ElementFractionWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
+	private UsageReporter mockReporter;
+
+	@Before
+	public void setup() {
+		mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		ElementFractionWrapper.setReporter(mockReporter);
+	}
 
 	@After
 	public void tearDown() {

@@ -63,13 +63,18 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
 import org.scijava.widget.NumberWidget;
 
 /**
@@ -150,13 +155,21 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@Parameter
 	private OpService opService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private BinaryHybridCF<RandomAccessibleInterval<BitType>, Boolean, RandomAccessibleInterval<BitType>> hollowOp;
 	private UnaryFunctionOp<RandomAccessibleInterval<BitType>, List<ValuePair<DoubleType, DoubleType>>> boxCountOp;
 	private long autoMax;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -192,6 +205,17 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		FractalDimensionWrapper.reporter = reporter;
 	}
 
 	// region -- Helper methods --
