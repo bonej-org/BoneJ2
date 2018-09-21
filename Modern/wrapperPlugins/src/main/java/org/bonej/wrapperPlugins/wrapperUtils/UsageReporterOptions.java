@@ -25,8 +25,6 @@ package org.bonej.wrapperPlugins.wrapperUtils;
 
 import java.util.Random;
 
-import net.imagej.ImageJ;
-
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
@@ -57,11 +55,12 @@ public class UsageReporterOptions extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String message4 = "and promote BoneJ to funders.";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String message5 = "If you agree to participate please check the box.";		
+	private String message5 = "If you agree to participate please check the box.";
+	@Parameter(label = "Opt in to usage data collection",
+		description = "Can BoneJ send usage data?", persistKey = OPTINKEY)
+	private boolean optIn;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String helpMessage = "For more information click Help.";
-	@Parameter(label = "Opt in to usage data collection", description = "Can BoneJ send usage data?")
-    private boolean optIn;
 	@Parameter(label = "Help")
 	private Button button;
 	@Parameter
