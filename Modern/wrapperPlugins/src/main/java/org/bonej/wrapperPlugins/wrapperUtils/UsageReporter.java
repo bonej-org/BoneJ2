@@ -192,9 +192,10 @@ public class UsageReporter {
 		if (isFirstRun) {
 			initSessionVariables(prefs);
 		}
-		session++;
+
 		// set
 		utms = "utms=" + session + "&";
+		session++;
 		utme = "utme=5(" + "Plugin%20Usage" + "*" + action + "*" + label + ")&";
 		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
 		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
