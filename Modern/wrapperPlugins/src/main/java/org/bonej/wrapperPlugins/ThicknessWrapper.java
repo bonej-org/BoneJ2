@@ -50,8 +50,10 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 
@@ -114,9 +116,12 @@ public class ThicknessWrapper extends ContextCommand {
 
 	@Parameter
 	private UIService uiService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
@@ -142,7 +147,7 @@ public class ThicknessWrapper extends ContextCommand {
 			trabecularMap = thicknessMaps.get(true);
 			spacingMap = thicknessMaps.get(false);
 		}
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
 	}
 
 	private void addMapResults(final ImagePlus map) {

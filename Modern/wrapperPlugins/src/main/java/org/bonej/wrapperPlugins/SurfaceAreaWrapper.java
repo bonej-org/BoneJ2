@@ -76,6 +76,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.util.StringUtils;
 import org.scijava.widget.FileWidget;
@@ -116,18 +117,16 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Parameter
 	private OpService ops;
-
 	@Parameter
 	private LogService logService;
-
 	@Parameter
 	private UIService uiService;
-
 	@Parameter
 	private UnitService unitService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
 
 	private String path = "";
 	private String extension = "";
@@ -156,7 +155,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
 	}
 
 	/**

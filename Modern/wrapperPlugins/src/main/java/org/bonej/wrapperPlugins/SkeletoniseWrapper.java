@@ -37,11 +37,13 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
+import org.scijava.prefs.PrefService;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
@@ -71,6 +73,10 @@ public class SkeletoniseWrapper extends ContextCommand {
 
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
 
 	@Override
 	public void run() {
@@ -80,7 +86,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
 	}
 
 	@SuppressWarnings("unused")

@@ -63,6 +63,7 @@ import org.scijava.io.IOService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 import org.scijava.widget.FileWidget;
@@ -178,6 +179,9 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter
 	private StatusService statusService;
 
+	@Parameter
+	private PrefService prefService;
+
 	private ImagePlus intensityImage;
 
 	@Override
@@ -217,7 +221,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 				shortestPaths.setCalibration(inputImage.getCalibration());
 			}
 		}
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefService, logService).send();
 	}
 
 	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {

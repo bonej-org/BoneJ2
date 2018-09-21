@@ -58,6 +58,7 @@ import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.prefs.PrefService;
@@ -170,18 +171,17 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	@Parameter
 	private OpService opService;
-
 	@SuppressWarnings("unused")
 	@Parameter
 	private StatusService statusService;
-
 	@SuppressWarnings("unused")
 	@Parameter
 	private UIService uiService;
-
 	@SuppressWarnings("unused")
 	@Parameter
-	private PrefService prefService;
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
 
 	private double[] coefficients;
 	private double calibratedMinimumLength;
@@ -215,7 +215,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {

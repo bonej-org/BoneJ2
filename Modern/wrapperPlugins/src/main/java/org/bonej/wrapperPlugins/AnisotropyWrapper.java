@@ -79,6 +79,7 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.prefs.PrefService;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.vecmath.AxisAngle4d;
@@ -159,6 +160,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UIService uiService;
 	@Parameter
 	private UnitService unitService;
+	@Parameter
+	private PrefService prefService;
 
 	@Override
 	public void run() {
@@ -182,7 +185,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefService, logService).send();
 	}
 
 	// region -- Helper methods --

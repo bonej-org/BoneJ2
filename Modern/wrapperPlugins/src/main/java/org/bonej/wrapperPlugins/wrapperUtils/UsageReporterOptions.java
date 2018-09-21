@@ -30,8 +30,10 @@ import net.imagej.ImageJ;
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.prefs.PrefService;
 import org.scijava.widget.Button;
 
 /**
@@ -58,15 +60,14 @@ public class UsageReporterOptions extends ContextCommand {
 	private String message5 = "If you agree to participate please check the box.";		
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String helpMessage = "For more information click Help.";
-	
 	@Parameter(label = "Opt in to usage data collection", description = "Can BoneJ send usage data?")
-  private boolean optIn = false;
-	
+    private boolean optIn = false;
 	@Parameter(label = "Help")
 	private Button button;
-	
 	@Parameter
-	private ImageJ imagej;
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
 
 	/** set to true if user permission has been requested */
 	static final String OPTINSET = "bonej2.report.option.set";
@@ -89,24 +90,24 @@ public class UsageReporterOptions extends ContextCommand {
 		//Wipe persistent data on opt-out
 		if (!optIn) {
 			System.out.print("User has opted out of data collection\n");
-			imagej.prefs().clear(getClass());
-			imagej.prefs().put(getClass(), OPTINSET, true);
+			prefs.clear(getClass());
+			prefs.put(getClass(), OPTINSET, true);
 			return;
 		}
 
 		System.out.print("User has opted in to data collection\n");
-		imagej.prefs().put(getClass(), OPTINKEY, true);
-		imagej.prefs().put(getClass(), COOKIE,
+		prefs.put(getClass(), OPTINKEY, true);
+		prefs.put(getClass(), COOKIE,
 			new Random().nextInt(Integer.MAX_VALUE));
-		imagej.prefs().put(getClass(), COOKIE2,
+		prefs.put(getClass(), COOKIE2,
 			new Random().nextInt(Integer.MAX_VALUE));
-		imagej.prefs().put(getClass(), FIRSTTIMEKEY,
+		prefs.put(getClass(), FIRSTTIMEKEY,
 			System.currentTimeMillis() / 1000);
-		imagej.prefs().put(getClass(), SESSIONKEY, 1);
-		imagej.prefs().put(getClass(), IJSESSIONKEY, 1);
-		imagej.prefs().put(getClass(), OPTINSET, true);
+		prefs.put(getClass(), SESSIONKEY, 1);
+		prefs.put(getClass(), IJSESSIONKEY, 1);
+		prefs.put(getClass(), OPTINSET, true);
 
 		System.out.println("URO Sending usage report...");
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
 	}
 }

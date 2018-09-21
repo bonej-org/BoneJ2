@@ -37,12 +37,11 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
 
-import net.imagej.ImageJ;
-
 import org.scijava.Context;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
 /**
@@ -227,11 +226,14 @@ public class UsageReporter extends ContextCommand {
 	 * (.getClass().getName()) is added to the 'action' field of the report,
 	 * category is "Plugin Usage" and label is the BoneJ version string
 	 *
-	 * @param o Class to report on
+	 * @param className Name of the reporting class
 	 */
-	public static UsageReporter reportEvent(final Object o,
-		final PrefService prefs, final LogService log) {
-		return reportEvent("Plugin%20Usage", o.getClass().getName(), BONEJ_VERSION, null, prefs, log);
+	public static UsageReporter reportEvent(final String className,
+		final PrefService prefs, final LogService log)
+	{
+
+		return reportEvent("Plugin%20Usage", className, BONEJ_VERSION, null, prefs,
+			log);
 	}
 
 	/**

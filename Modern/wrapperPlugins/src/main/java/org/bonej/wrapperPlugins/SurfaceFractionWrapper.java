@@ -62,8 +62,10 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.prefs.PrefService;
 import org.scijava.ui.UIService;
 
 /**
@@ -100,15 +102,16 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@Parameter
 	private OpService opService;
-
 	@Parameter
 	private UIService uiService;
-
 	@Parameter
 	private UnitService unitService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private LogService logService;
 
 	/** Header of the thresholded volume column in the results table */
 	private String bVHeader;
@@ -133,7 +136,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		UsageReporter.reportEvent(this).send();
+		UsageReporter.reportEvent(getClass().getName(), prefs, logService).send();
 	}
 
 	// region -- Helper methods --
