@@ -44,14 +44,10 @@ import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
 /**
- * Prepare and send a report to be logged by 
+ * Prepares and sends a report about BoneJ usage to be logged by
  * <a href="https://developers.google.com/analytics/resources/concepts/gaConceptsTrackingOverview">
  * Google Analytics event tracking</a>
- * <p>
- * Should be called in a PlugIn's run() method as
- * UsageReporter.reportEvent(this).send()
- * </p>
- * 
+ *
  * @author Michael Doube
  * @author Richard Domander
  */
@@ -97,6 +93,9 @@ public class UsageReporter {
 		if (plugins == null) {
 			throw new NullPointerException("PluginService cannot be null");
 		}
+		if (commandService == null) {
+			throw new NullPointerException("CommandService cannot be null");
+		}
 		if (instance == null) {
 			instance = new UsageReporter();
 		}
@@ -119,11 +118,10 @@ public class UsageReporter {
 	 * @param action Google Analytics event action classification
 	 * @param label Google Analytics event label classification
 	 */
-	private void reportEvent(final String action, final String label,
-							 final PrefService prefs)
+	private void reportEvent(final String action, final String label)
 	{
 		//check if user has opted in and die if user has opted out
-		if (!isAllowed(prefs)) {
+		if (!isAllowed()) {
 			System.out.println("Usage reporting forbidden by user\n");
 			return;
 		}
@@ -213,7 +211,7 @@ public class UsageReporter {
 	 */
 	public void reportEvent(final String className) {
 		final String version = plugins.getPlugin(className).getVersion();
-		reportEvent(className, version, prefs);
+		reportEvent(className, version);
 	}
 
 	/**
@@ -281,7 +279,7 @@ public class UsageReporter {
 	 * @return true only if the user has given explicit permission to send usage
 	 *         data
 	 */
-	private static boolean isAllowed(final PrefService prefs) {
+	boolean isAllowed() {
 		final boolean permissionSought = prefs.getBoolean(
 			UsageReporterOptions.class, UsageReporterOptions.OPTINSET, false);
 		if (!permissionSought) {
@@ -290,6 +288,9 @@ public class UsageReporter {
 			try {
 				final CommandModule module = commandService.run(
 					UsageReporterOptions.class, true).get();
+				if (module.isCanceled()) {
+					return false;
+				}
 			}
 			catch (final InterruptedException | ExecutionException e) {
 				// TODO log with logService.trace
