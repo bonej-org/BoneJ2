@@ -51,7 +51,7 @@ import org.scijava.prefs.PrefService;
  * @author Michael Doube
  * @author Richard Domander
  */
-public class UsageReporter {
+public final class UsageReporter {
 	/**
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
 	 * Create a BoneJApp instead.
@@ -70,21 +70,14 @@ public class UsageReporter {
 	private static final String utmp = "utmp=%2Fstats&";
 	private static final Random random = new Random();
 	private static String utmcnr = "";
-	private static String utme;
-	private static String utmn;
 	private static String utmsr;
 	private static String utmvp;
 	private static String utmsc;
-	/** iterated on each new event */
-	private static int session = 0;
-	private static String utms = "utms=" + session + "&";
-	private static String utmcc;
-	private static long thisTime = 0;
-	private static long lastTime = 0;
-
+	/** Incremented on each new event */
+	private int session;
+	private static long thisTime;
+	private static long lastTime;
 	private static boolean isFirstRun = true;
-
-	private static String utmhid;
 	private static PrefService prefs;
 	private static UsageReporter instance;
 
@@ -111,15 +104,10 @@ public class UsageReporter {
 	/**
 	 * Sets the instance variables to appropriate values based on the system
 	 * parameters and method arguments and makes the URL request to Google
-	 *
-	 * @param category Google Analytics event category classification
 	 * @param action Google Analytics event action classification
 	 * @param label Google Analytics event label classification
-	 * @param value Google Analytics event value - an integer used for sum and
-	 *          average statistics
 	 */
-	private void reportEvent(final String category,
-							 final String action, final String label, final Integer value,
+	private void reportEvent(final String action, final String label,
 							 final PrefService prefs)
 	{
 		//check if user has opted in and die if user has opted out
@@ -130,14 +118,12 @@ public class UsageReporter {
 		if (isFirstRun) {
 			initSessionVariables(prefs);
 		}
-		
-		//set 
-		utms = "utms=" + session + "&";
 		session++;
-		final String val = (value == null) ? "" : "(" + value + ")";
-		utme = "utme=5(" + category + "*" + action + "*" + label + ")" + val + "&";
-		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
-		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
+		//set 
+		final String utms = "utms=" + session + "&";
+		final String utme = "utme=5(" + "Plugin%20Usage" + "*" + action + "*" + label + ")&";
+		final String utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
+		final String utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
 
 		final long time = System.currentTimeMillis() / 1000;
 		lastTime = thisTime;
@@ -147,7 +133,7 @@ public class UsageReporter {
 		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
 		else utmcnr = "utmcr=1&";
 
-		utmcc = getCookieString(prefs);
+		final String utmcc = getCookieString(prefs);
 		
 		//make the connection and send the report as a long URL
 		System.out.println("Sending report.\n");
@@ -158,37 +144,23 @@ public class UsageReporter {
 			System.out.println("Usage reporting approved by user, preparing URL");
 			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
 				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt +
-				utmhid + utmr + utmp + utmac + utmcc);
+					utmhid + utmr + utmp + utmac + utmcc);
 			uc = url.openConnection();
 		}
 		catch (final IOException e) {
 			System.out.println(e.getMessage()+"\n");
 			throw new AssertionError("Check your static Strings!");
-//			if (logger.getLevel() >= LogLevel.INFO) {
-//				logService.error(e.getMessage());
-//			}
 		}
 		
 		uc.setRequestProperty("User-Agent", userAgentString());
-//			if (logger.getLevel() < LogLevel.INFO) {
-////				return;
-//			}
-			
-//			logService.info(url.toString());
-			System.out.println(url.toString()+"\n");
-//			logService.info(uc.getRequestProperty("User-Agent"));
+			System.out.println(url +"\n");
 			System.out.println(uc.getRequestProperty("User-Agent")+"\n");
 		try (final BufferedReader reader = new BufferedReader(
 				new InputStreamReader(uc.getInputStream())))
 		{
-//				logService.info(reader.lines());
-//				System.out.println(reader.lines());
 				reader.lines().forEachOrdered(item -> System.out.println(item));
 		}
 		catch (final IOException e) {
-//			if (logger.getLevel() >= LogLevel.INFO) {
-//				logService.error(e.getMessage());
-//			}
 			System.out.println(e.getMessage()+"\n");
 		}
 		send();
@@ -228,7 +200,7 @@ public class UsageReporter {
 	 * @param className Name of the reporting plug-in's class
 	 */
 	public void reportEvent(final String className) {
-		reportEvent("Plugin%20Usage", className, BONEJ_VERSION, null, prefs);
+		reportEvent(className, BONEJ_VERSION, prefs);
 	}
 
 	/**
@@ -262,9 +234,9 @@ public class UsageReporter {
 
 	private static String userAgentString() {
 		final String os;
-		String osname = System.getProperty("os.name");
-		boolean isWin = osname.startsWith("Windows");
-		boolean isMac = !isWin && osname.startsWith("Mac");
+		final String osName = System.getProperty("os.name");
+		final boolean isWin = osName.startsWith("Windows");
+		final boolean isMac = !isWin && osName.startsWith("Mac");
 		if (isMac) {
 			// Handle Mac OSes on PPC and Intel
 			String arch = System.getProperty("os.arch");
@@ -279,7 +251,7 @@ public class UsageReporter {
 		}
 		else {
 			// Handle Linux and everything else
-			os = osname + " " + System.getProperty(
+			os = osName + " " + System.getProperty(
 				"os.version") + " " + System.getProperty("os.arch");
 		}
 

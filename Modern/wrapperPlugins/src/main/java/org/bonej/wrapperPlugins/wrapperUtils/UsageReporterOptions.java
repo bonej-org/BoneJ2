@@ -61,7 +61,7 @@ public class UsageReporterOptions extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String helpMessage = "For more information click Help.";
 	@Parameter(label = "Opt in to usage data collection", description = "Can BoneJ send usage data?")
-    private boolean optIn = false;
+    private boolean optIn;
 	@Parameter(label = "Help")
 	private Button button;
 	@Parameter
@@ -79,7 +79,7 @@ public class UsageReporterOptions extends ContextCommand {
 	static final String FIRSTTIMEKEY = "bonej2.report.firstvisit";
 	/** unique ID for this particular BoneJ session */
 	static final String SESSIONKEY = "bonej2.report.bonejsession";
-	static final String IJSESSIONKEY = "bonej2.report.ijsession";
+	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
 	private UsageReporter reporter;
 
 	@Override
