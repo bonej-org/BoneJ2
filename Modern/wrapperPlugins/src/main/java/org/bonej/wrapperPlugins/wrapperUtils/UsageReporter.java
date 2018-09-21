@@ -52,6 +52,7 @@ import org.scijava.prefs.PrefService;
  * @author Michael Doube
  * @author Richard Domander
  */
+// Don't make class final - breaks Mockito
 public class UsageReporter {
 
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
