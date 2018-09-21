@@ -36,7 +36,10 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
+import org.scijava.command.CommandModule;
+import org.scijava.command.CommandService;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
@@ -52,6 +55,8 @@ import org.scijava.prefs.PrefService;
  * @author Michael Doube
  * @author Richard Domander
  */
+// TODO Instead of System.out print debug stuff with LogService
+// TODO Instead of System.out print status messages with StatusService
 // Don't make class final - breaks Mockito
 public class UsageReporter {
 
@@ -78,11 +83,14 @@ public class UsageReporter {
 	private static boolean isFirstRun = true;
 	private static PrefService prefs;
 	private static PluginService plugins;
+	private static CommandService commandService;
 	private static UsageReporter instance;
 
 	private UsageReporter() {}
 
-	public static UsageReporter getInstance(final PrefService prefs, final PluginService plugins) {
+	public static UsageReporter getInstance(final PrefService prefs,
+		final PluginService plugins, final CommandService commandService)
+	{
 		if (prefs == null) {
 			throw new NullPointerException("PrefService cannot be null");
 		}
@@ -92,6 +100,7 @@ public class UsageReporter {
 		if (instance == null) {
 			instance = new UsageReporter();
 		}
+		UsageReporter.commandService = commandService;
 		UsageReporter.plugins = plugins;
 		UsageReporter.prefs = prefs;
 		return instance;
@@ -137,10 +146,10 @@ public class UsageReporter {
 		else utmcnr = "utmcr=1&";
 
 		final String utmcc = getCookieString(prefs);
-		
+
 		//make the connection and send the report as a long URL
 		System.out.println("Sending report.\n");
-		
+
 		final URL url;
 		final URLConnection uc;
 		try {
@@ -154,7 +163,7 @@ public class UsageReporter {
 			System.out.println(e.getMessage()+"\n");
 			throw new AssertionError("Check your static Strings!");
 		}
-		
+
 		uc.setRequestProperty("User-Agent", userAgentString());
 			System.out.println(url +"\n");
 			System.out.println(uc.getRequestProperty("User-Agent")+"\n");
@@ -269,14 +278,23 @@ public class UsageReporter {
 	/**
 	 * Check whether user has given permission to collect usage data
 	 * 
-	 * @return true only if the user has given explicit permission to send usage data
+	 * @return true only if the user has given explicit permission to send usage
+	 *         data
 	 */
 	private static boolean isAllowed(final PrefService prefs) {
-		final boolean permissionSought = prefs.getBoolean(UsageReporterOptions.class,
-			UsageReporterOptions.OPTINSET, false);
+		final boolean permissionSought = prefs.getBoolean(
+			UsageReporterOptions.class, UsageReporterOptions.OPTINSET, false);
 		if (!permissionSought) {
-			System.out.println("User permission has not been sought, requesting it...\n");
-			new UsageReporterOptions().run();
+			System.out.println(
+				"User permission has not been sought, requesting it...\n");
+			try {
+				final CommandModule module = commandService.run(
+					UsageReporterOptions.class, true).get();
+			}
+			catch (final InterruptedException | ExecutionException e) {
+				// TODO log with logService.trace
+				return false;
+			}
 		}
 		return prefs.getBoolean(UsageReporterOptions.class,
 			UsageReporterOptions.OPTINKEY, false);

@@ -49,6 +49,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -125,6 +126,8 @@ public class ThicknessWrapper extends ContextCommand {
 	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
@@ -152,7 +155,7 @@ public class ThicknessWrapper extends ContextCommand {
 			spacingMap = thicknessMaps.get(false);
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService);
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

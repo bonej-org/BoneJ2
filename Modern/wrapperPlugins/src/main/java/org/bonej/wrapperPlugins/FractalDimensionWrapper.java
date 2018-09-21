@@ -68,6 +68,7 @@ import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -163,6 +164,8 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private BinaryHybridCF<RandomAccessibleInterval<BitType>, Boolean, RandomAccessibleInterval<BitType>> hollowOp;
 	private UnaryFunctionOp<RandomAccessibleInterval<BitType>, List<ValuePair<DoubleType, DoubleType>>> boxCountOp;
@@ -200,7 +203,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 			resultsTable = SharedTable.getTable();
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService);
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

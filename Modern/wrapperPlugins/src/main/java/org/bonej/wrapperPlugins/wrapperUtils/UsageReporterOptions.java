@@ -27,6 +27,7 @@ import java.util.Random;
 
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -70,6 +71,8 @@ public class UsageReporterOptions extends ContextCommand {
 	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	/** set to true if user permission has been requested */
 	static final String OPTINSET = "bonej2.report.option.set";
@@ -106,7 +109,7 @@ public class UsageReporterOptions extends ContextCommand {
 		prefs.put(getClass(), IJSESSIONKEY, 1);
 		prefs.put(getClass(), OPTINSET, true);
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService);
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

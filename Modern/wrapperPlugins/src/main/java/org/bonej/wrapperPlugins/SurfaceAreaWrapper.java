@@ -72,6 +72,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -130,6 +131,8 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	private PrefService prefs;
 	@Parameter
 	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private String path = "";
 	private String extension = "";
@@ -160,7 +163,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 			resultsTable = SharedTable.getTable();
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService);
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

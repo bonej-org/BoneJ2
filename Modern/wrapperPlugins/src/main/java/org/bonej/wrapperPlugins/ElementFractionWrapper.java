@@ -51,6 +51,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -100,6 +101,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	/** Header of the foreground (bone) volume column in the results table */
 	private String boneSizeHeader;
@@ -138,7 +141,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 			resultsTable = SharedTable.getTable();
 		}
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService);
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}
