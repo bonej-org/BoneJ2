@@ -73,7 +73,7 @@ public class UsageReporter {
 	private static String utmvp;
 	private static String utmsc;
 	/** Incremented on each new event */
-	private int session;
+	private static int session;
 	private static long thisTime;
 	private static long lastTime;
 	private static boolean isFirstRun = true;
@@ -81,6 +81,11 @@ public class UsageReporter {
 	private static PluginService plugins;
 	private static CommandService commandService;
 	private static UsageReporter instance;
+	private static String utms;
+	private static String utmn;
+	private static String utme;
+	private static String utmhid;
+	private static String utmcc;
 
 	private UsageReporter() {}
 
@@ -109,7 +114,32 @@ public class UsageReporter {
 	 * Send the report to Google Analytics in the form of an HTTP request for a
 	 * 1-pixel GIF with lots of parameters set
 	 */
-	private void send() {
+	private static void send() {
+		System.out.println("Sending report.\n");
+		final URL url;
+		final URLConnection uc;
+		try {
+			System.out.println("Usage reporting approved by user, preparing URL");
+			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
+					utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt +
+					utmhid + utmr + utmp + utmac + utmcc);
+			uc = url.openConnection();
+		}
+		catch (final IOException e) {
+			System.out.println(e.getMessage()+"\n");
+			throw new AssertionError("Check your static Strings!");
+		}
+		uc.setRequestProperty("User-Agent", userAgentString());
+		System.out.println(url +"\n");
+		System.out.println(uc.getRequestProperty("User-Agent")+"\n");
+		try (final BufferedReader reader = new BufferedReader(
+				new InputStreamReader(uc.getInputStream())))
+		{
+			reader.lines().forEachOrdered(System.out::println);
+		}
+		catch (final IOException e) {
+			System.out.println(e.getMessage()+"\n");
+		}
 	}
 
 	/**
@@ -118,22 +148,17 @@ public class UsageReporter {
 	 * @param action Google Analytics event action classification
 	 * @param label Google Analytics event label classification
 	 */
-	private void reportEvent(final String action, final String label)
+	private static void reportEvent(final String action, final String label)
 	{
-		//check if user has opted in and die if user has opted out
-		if (!isAllowed()) {
-			System.out.println("Usage reporting forbidden by user\n");
-			return;
-		}
 		if (isFirstRun) {
 			initSessionVariables(prefs);
 		}
 		session++;
 		//set 
-		final String utms = "utms=" + session + "&";
-		final String utme = "utme=5(" + "Plugin%20Usage" + "*" + action + "*" + label + ")&";
-		final String utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
-		final String utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
+		utms = "utms=" + session + "&";
+		utme = "utme=5(" + "Plugin%20Usage" + "*" + action + "*" + label + ")&";
+		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
+		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
 
 		final long time = System.currentTimeMillis() / 1000;
 		lastTime = thisTime;
@@ -143,36 +168,7 @@ public class UsageReporter {
 		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
 		else utmcnr = "utmcr=1&";
 
-		final String utmcc = getCookieString(prefs);
-
-		//make the connection and send the report as a long URL
-		System.out.println("Sending report.\n");
-
-		final URL url;
-		final URLConnection uc;
-		try {
-			System.out.println("Usage reporting approved by user, preparing URL");
-			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
-				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt +
-					utmhid + utmr + utmp + utmac + utmcc);
-			uc = url.openConnection();
-		}
-		catch (final IOException e) {
-			System.out.println(e.getMessage()+"\n");
-			throw new AssertionError("Check your static Strings!");
-		}
-
-		uc.setRequestProperty("User-Agent", userAgentString());
-			System.out.println(url +"\n");
-			System.out.println(uc.getRequestProperty("User-Agent")+"\n");
-		try (final BufferedReader reader = new BufferedReader(
-				new InputStreamReader(uc.getInputStream())))
-		{
-				reader.lines().forEachOrdered(item -> System.out.println(item));
-		}
-		catch (final IOException e) {
-			System.out.println(e.getMessage()+"\n");
-		}
+		utmcc = getCookieString(prefs);
 		send();
 	}
 
@@ -210,6 +206,10 @@ public class UsageReporter {
 	 * @param className Name of the reporting plug-in's class
 	 */
 	public void reportEvent(final String className) {
+		if (!isAllowed()) {
+			System.out.println("Usage reporting forbidden by user\n");
+			return;
+		}
 		final String version = plugins.getPlugin(className).getVersion();
 		reportEvent(className, version);
 	}
