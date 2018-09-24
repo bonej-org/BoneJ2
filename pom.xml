@@ -5,12 +5,12 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>bonej-aggregator</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>8.0.1</version>
     <packaging>pom</packaging>
 
     <modules>
         <module>Modern</module>
-        <module>Legacy</module>
+        <!-- <module>Legacy</module> -->
     </modules>
 
     <properties>
