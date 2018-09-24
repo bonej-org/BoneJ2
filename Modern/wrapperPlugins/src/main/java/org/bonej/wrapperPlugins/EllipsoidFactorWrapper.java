@@ -23,23 +23,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static java.util.stream.Collectors.toList;
-import static net.imglib2.roi.Regions.countTrue;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
-import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
-import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
-import java.util.stream.Stream.Builder;
-
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
@@ -66,7 +49,6 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
 import net.imglib2.view.Views;
-
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
@@ -87,6 +69,33 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static net.imglib2.roi.Regions.countTrue;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 /**
  * Ellipsoid Factor
@@ -349,29 +358,26 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask
 			.dimension(1), mask.dimension(2));
 		idImage.forEach(c -> c.setInteger(-1));
+		final Map<Ellipsoid, Integer> iDs =
+				IntStream.range(0, ellipsoids.size()).boxed().collect(toMap(ellipsoids::get, Function.identity()));
 		final LongStream zRange = LongStream.range(0, mask.dimension(2));
-        final HashMap<Ellipsoid, Long> toGlobalIDMap = new HashMap<>();
-
-        final LongStream globalIDs = LongStream.range(0, ellipsoids.size());
-        globalIDs.forEach(id -> toGlobalIDMap.put(ellipsoids.get((int) id), id));
-
-        zRange.parallel().forEach(sliceIndex -> {
+		zRange.parallel().forEach(z -> {
 			// multiply by image unit? make more intelligent bounding box?
             final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(
-				e -> Math.abs(e.getCentroid().z() - sliceIndex) < e.getC()).collect(
+				e -> Math.abs(e.getCentroid().z() - z) < e.getC()).collect(
 					toList());
-			final long[] mins = { 0, 0, sliceIndex };
+			final long[] mins = { 0, 0, z };
 			final long[] maxs = { mask.dimension(0) - 1, mask.dimension(1) - 1,
-				sliceIndex };
+				z };
 			final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs)
 				.localizingCursor();
-			colourSlice(idImage, maskSlice, localEllipsoids, toGlobalIDMap);
+			colourSlice(idImage, maskSlice, localEllipsoids, iDs);
 		});
 		return idImage;
 	}
 
 	private static void colourSlice(final RandomAccessible<IntType> idImage,
-                                    final Cursor<BitType> mask, final List<Ellipsoid> localEllipsoids, HashMap<Ellipsoid, Long> toGlobalIDMap)
+									final Cursor<BitType> mask, final List<Ellipsoid> localEllipsoids, Map<Ellipsoid, Integer> iDs)
 	{
 		while (mask.hasNext()) {
 			mask.fwd();
@@ -383,7 +389,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			final Vector3d point = new Vector3d(coordinates[0], coordinates[1],
 				coordinates[2]);
 			point.add(0.5, 0.5, 0.5);
-			colourID(localEllipsoids, idImage, point, toGlobalIDMap);
+			colourID(localEllipsoids, idImage, point, iDs);
 		}
 	}
 
@@ -500,18 +506,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
     private static void colourID(final List<Ellipsoid> localEllipsoids,
-                                 final RandomAccessible<IntType> ellipsoidIdentityImage,
-                                 final Vector3dc point, HashMap<Ellipsoid, Long> toGlobalIDMap)
+								 final RandomAccessible<IntType> ellipsoidIdentityImage,
+								 final Vector3dc point, Map<Ellipsoid, Integer> iDs)
 	{
-		final int id = IntStream.range(0, localEllipsoids.size()).filter(i -> isInside(
-			point, localEllipsoids.get(i))).findFirst().orElse(-1);
-		if (id < 0) {
+		final Optional<Ellipsoid> candidate = localEllipsoids.stream().filter(e -> isInside(point, e)).findFirst();
+		if (!candidate.isPresent()) {
 			return;
 		}
 		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage
 			.randomAccess();
 		eIDRandomAccess.setPosition(vectorToPixelGrid(point));
-		eIDRandomAccess.get().set(Math.toIntExact(toGlobalIDMap.get(localEllipsoids.get(id))));
+		final Ellipsoid ellipsoid = candidate.get();
+		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
 
 	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e,
