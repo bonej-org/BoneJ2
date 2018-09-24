@@ -23,6 +23,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.Random;
 
 import org.scijava.ItemVisibility;
@@ -30,10 +32,12 @@ import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
+import org.scijava.ui.UIService;
 import org.scijava.widget.Button;
 
 /**
@@ -73,7 +77,7 @@ public class UsageReporterOptions extends ContextCommand {
 	private boolean optIn;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String helpMessage = "For more information click Help.";
-	@Parameter(label = "Help")
+	@Parameter(label = "Help", description = "More about data collection", callback = "showHelpPage")
 	private Button button;
 	@Parameter
 	private PrefService prefs;
@@ -83,6 +87,10 @@ public class UsageReporterOptions extends ContextCommand {
 	private PluginService pluginService;
 	@Parameter
 	private CommandService commandService;
+	@Parameter
+	private UIService uiService;
+	@Parameter
+	private PlatformService platformService;
 	private UsageReporter reporter;
 
 	@Override
@@ -108,5 +116,14 @@ public class UsageReporterOptions extends ContextCommand {
 				commandService);
 		}
 		reporter.reportEvent(getClass().getName());
+	}
+
+	private void showHelpPage() {
+		try {
+			platformService.open(new URL("http://bonej.org/stats"));
+		} catch (IOException e) {
+			uiService.showDialog("Something went wrong while opening the help page. Please try again.");
+			logService.trace(e);
+		}
 	}
 }
