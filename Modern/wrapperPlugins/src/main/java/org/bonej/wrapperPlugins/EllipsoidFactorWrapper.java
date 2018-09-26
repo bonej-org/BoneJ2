@@ -23,6 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
+import edu.mines.jtk.opt.Vect;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
@@ -70,15 +71,7 @@ import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -182,6 +175,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private Random rng;
 
+    private int nFilterSampling = 200;
+
     @Override
     public void run() {
         statusService.showStatus("Ellipsoid Factor: initialising...");
@@ -210,10 +205,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         logService.info("assigned voxels = " + numberOfAssignedVoxels);
         logService.info("foreground voxels = " + numberOfForegroundVoxels);
         logService.info("number of seed points = " + internalSeedPoints.size());
-        for (int i = 0; i < 100; i++)
-        {
-            logService.info("ellipsoid("+i+"):\n"+ellipsoids.get(i).toString());
-        }
+        logService.info("initial sampling directions = " + nSphere);
+		logService.info("threshold for ridge point inclusions = " + thresholdForBeingARidgePoint);
+		logService.info("filtering sampling directions = " + nFilterSampling);
     }
 
 	private void createAToBImage(final double[] aBRatios,
@@ -396,7 +390,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	// TODO Refactor this and sub-functions into an Op
 	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
 		final List<Vector3dc> filterSamplingDirections =
-			getGeneralizedSpiralSetOnSphere(200).collect(toList());
+			getGeneralizedSpiralSetOnSphere(nFilterSampling).collect(toList());
 		final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
 			.parallelStream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
 				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
@@ -409,7 +403,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
 		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
 	{
-		final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+		Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
 			final Vector3dc direction = new Vector3d(d);
 			return findFirstPointInBGAlongRay(direction, centre);
