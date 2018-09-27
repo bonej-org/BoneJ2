@@ -23,10 +23,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import edu.mines.jtk.opt.Vect;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
+import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
@@ -42,6 +42,7 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.ComplexType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -71,7 +72,15 @@ import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -105,14 +114,14 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     // Several ellipsoids may fall in same bin if this is too small a number!
     // This will be ignored!
     private static final long FLINN_PLOT_DIMENSION = 501;
-    private final FindEllipsoidFromBoundaryPoints findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
+    private final BinaryFunctionOp<List<ValuePair<Vector3dc, Vector3dc>>, Vector3dc, Optional<Ellipsoid>> findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
 
     @SuppressWarnings("unused")
     @Parameter(validater = "validateImage")
     private ImgPlus<R> inputImage;
 
     @Parameter(persist = false, required = false)
-    private DoubleType sigma = new DoubleType(0);
+    private final DoubleType sigma = new DoubleType(0);
 
     @Parameter(label = "Maximum internal seeds", min = "0", stepSize = "1",
             description = "Approximate maximum of internal seed points allowed. If more seeds are found, they are filtered with probability 1-Maximum internal seeds/total internal seeds found.",
@@ -122,10 +131,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(label = "Sampling directions", min = "0", stepSize = "1",
             description = "Number of directions (evenly spaced on the surface of a sphere) that internal seed points will search for contact points.",
             style = NumberWidget.SPINNER_STYLE)
-    private int nSphere = 20;
+    private final int nSphere = 20;
 
     @Parameter(persist = false, required = false)
-    private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.8);
+    private final ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -175,7 +184,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private Random rng;
 
-    private int nFilterSampling = 200;
+    private final int nFilterSampling = 200;
 
     @Override
     public void run() {
@@ -371,7 +380,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	}
 
 	private static void colourSlice(final RandomAccessible<IntType> idImage,
-									final Cursor<BitType> mask, final List<Ellipsoid> localEllipsoids, Map<Ellipsoid, Integer> iDs)
+									final Cursor<BitType> mask, final Collection<Ellipsoid> localEllipsoids, final Map<Ellipsoid, Integer> iDs)
 	{
 		while (mask.hasNext()) {
 			mask.fwd();
@@ -403,7 +412,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
 		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
 	{
-		Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+		final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
 			final Vector3dc direction = new Vector3d(d);
 			return findFirstPointInBGAlongRay(direction, centre);
@@ -499,9 +508,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		}
     }
 
-    private static void colourID(final List<Ellipsoid> localEllipsoids,
+    private static void colourID(final Collection<Ellipsoid> localEllipsoids,
 								 final RandomAccessible<IntType> ellipsoidIdentityImage,
-								 final Vector3dc point, Map<Ellipsoid, Integer> iDs)
+								 final Vector3dc point, final Map<Ellipsoid, Integer> iDs)
 	{
 		final Optional<Ellipsoid> candidate = localEllipsoids.stream().filter(e -> isInside(point, e)).findFirst();
 		if (!candidate.isPresent()) {
