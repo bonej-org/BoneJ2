@@ -45,7 +45,6 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 
 import org.bonej.utilities.AxisUtils;
@@ -61,7 +60,6 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
@@ -103,8 +101,6 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	private StatusService statusService;
 	@Parameter
 	private PrefService prefs;
-	@Parameter
-	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
 	@Parameter

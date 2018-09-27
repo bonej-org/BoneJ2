@@ -44,7 +44,6 @@ import net.imagej.ops.special.hybrid.Hybrids;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.DoubleColumn;
-import net.imagej.table.GenericColumn;
 import net.imagej.table.GenericTable;
 import net.imagej.table.Table;
 import net.imglib2.RandomAccessibleInterval;
@@ -62,7 +61,6 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
-import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -70,7 +68,6 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
@@ -159,8 +156,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private StatusService statusService;
 	@Parameter
 	private PrefService prefs;
-	@Parameter
-	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
 	@Parameter

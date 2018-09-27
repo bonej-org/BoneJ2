@@ -61,6 +61,7 @@ public class UsageReporterOptions extends ContextCommand {
 	/** unique ID for this particular BoneJ session */
 	static final String SESSIONKEY = "bonej2.report.bonejsession";
 	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
+	// TODO Make into one string (format with HTML)
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String message1 = "Allow usage data collection?";
 	@Parameter(visibility = ItemVisibility.MESSAGE)
@@ -118,10 +119,11 @@ public class UsageReporterOptions extends ContextCommand {
 		reporter.reportEvent(getClass().getName());
 	}
 
+	@SuppressWarnings("unused")
 	private void showHelpPage() {
 		try {
 			platformService.open(new URL("http://bonej.org/stats"));
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			uiService.showDialog("Something went wrong while opening the help page. Please try again.");
 			logService.trace(e);
 		}

@@ -63,12 +63,10 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
-import org.scijava.ui.UIService;
 
 /**
  * First this command creates a surface mesh from both all foreground voxels
@@ -105,15 +103,11 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@Parameter
 	private OpService opService;
 	@Parameter
-	private UIService uiService;
-	@Parameter
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
 	@Parameter
 	private PrefService prefs;
-	@Parameter
-	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
 	@Parameter

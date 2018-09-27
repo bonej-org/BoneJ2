@@ -54,7 +54,6 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
@@ -103,8 +102,6 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	private UIService uiService;
 	@Parameter
 	private PrefService prefs;
-	@Parameter
-	private LogService logService;
 	@Parameter
 	private PluginService pluginService;
 	@Parameter

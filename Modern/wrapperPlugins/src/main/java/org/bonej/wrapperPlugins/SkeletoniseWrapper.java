@@ -78,8 +78,6 @@ public class SkeletoniseWrapper extends ContextCommand {
 	@Parameter
 	private PrefService prefs;
 	@Parameter
-	private LogService logService;
-	@Parameter
 	private PluginService pluginService;
 	@Parameter
 	private CommandService commandService;
