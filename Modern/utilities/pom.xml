@@ -55,22 +55,6 @@
             <timezone>+8</timezone>
         </developer>
         <developer>
-            <id>rimadoma</id>
-            <name>Richard Domander</name>
-            <email>rdomander@rvc.ac.uk</email>
-            <url>http://imagej.net/User:Rdom</url>
-            <organization>Royal Veterinary College</organization>
-            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
-            <roles>
-                <role>developer</role>
-                <role>debugger</role>
-                <role>reviewer</role>
-                <role>support</role>
-                <role>maintainer</role>
-            </roles>
-            <timezone>+0</timezone>
-        </developer>
-        <developer>
             <id>alessandrofelder</id>
             <name>Alessandro Felder</name>
             <email>afelder@rvc.ac.uk</email>
@@ -98,10 +82,11 @@
             <timezone>-6</timezone>
         </developer>
     </developers>
-    <!-- NB: Added to make the enforcer happy -->
     <contributors>
         <contributor>
-            <name>N/A</name>
+            <name>Richard Domander</name>
+            <url>http://imagej.net/User:Rdom</url>
+            <properties><id>rimadoma</id></properties>
         </contributor>
     </contributors>
 
