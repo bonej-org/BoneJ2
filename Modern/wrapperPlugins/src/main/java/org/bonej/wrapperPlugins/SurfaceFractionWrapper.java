@@ -77,7 +77,7 @@ import org.scijava.prefs.PrefService;
  * @author Richard Domander
  */
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BoneJ>Fraction>Surface fraction", headless = true)
+	menuPath = "Plugins>BoneJ>Fraction>Surface fraction")
 public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	extends ContextCommand
 {

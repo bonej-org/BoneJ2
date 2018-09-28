@@ -71,8 +71,7 @@ import org.scijava.ui.UIService;
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity",
-	headless = true)
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity")
 public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
 
 	static final String NEGATIVE_CONNECTIVITY =

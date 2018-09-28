@@ -69,7 +69,7 @@ import org.scijava.prefs.PrefService;
  * @author Richard Domander
  */
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction", headless = true)
+	menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction")
 public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	extends ContextCommand
 {
