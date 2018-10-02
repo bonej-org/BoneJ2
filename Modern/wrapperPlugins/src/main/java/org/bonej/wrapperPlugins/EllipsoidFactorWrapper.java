@@ -202,10 +202,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         logService.info("assigned voxels = " + numberOfAssignedVoxels);
         logService.info("foreground voxels = " + numberOfForegroundVoxels);
         logService.info("number of seed points = " + internalSeedPoints.size());
-        for (int i = 0; i < Math.min(100, ellipsoids.size()); i++)
-        {
-            logService.info("ellipsoid("+i+"):\n"+ellipsoids.get(i).toString());
-        }
+
+        if(logService.isDebug()) {
+			for (int i = 0; i < Math.min(100, ellipsoids.size()); i++) {
+				logService.debug("ellipsoid(" + i + "):\n" + ellipsoids.get(i).toString());
+			}
+		}
     }
 
 	private void createAToBImage(final double[] aBRatios,
