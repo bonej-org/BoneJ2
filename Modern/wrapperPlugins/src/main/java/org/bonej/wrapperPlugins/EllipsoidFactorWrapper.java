@@ -69,6 +69,7 @@ import net.imglib2.view.Views;
 
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
+import org.bonej.ops.ellipsoid.EllipsoidPoints;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
@@ -201,7 +202,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         logService.info("assigned voxels = " + numberOfAssignedVoxels);
         logService.info("foreground voxels = " + numberOfForegroundVoxels);
         logService.info("number of seed points = " + internalSeedPoints.size());
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < Math.min(100, ellipsoids.size()); i++)
         {
             logService.info("ellipsoid("+i+"):\n"+ellipsoids.get(i).toString());
         }
@@ -389,14 +390,14 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 	// TODO Refactor this and sub-functions into an Op
 	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
-		final List<Vector3dc> filterSamplingDirections =
-			getGeneralizedSpiralSetOnSphere(200).collect(toList());
-		final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
-			.parallelStream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
+        final List<Vector3dc> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(250).collect(toList());
+
+        final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
+			.stream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
 				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
 					seed)));
 		return ellipsoidCandidates.filter(Optional::isPresent).map(Optional::get)
-			.filter(e -> isEllipsoidWhollyInForeground(e, filterSamplingDirections))
+			.filter(e -> isEllipsoidWhollyInForeground(e,filterSamplingDirections))
 			.collect(toList());
 	}
 
@@ -533,6 +534,20 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		return directions.noneMatch(dir -> isEllipsoidIntersectionBackground(
 			reconstruction, e.getCentroid(), dir));
 	}
+
+	//using points uniformly distributed on ellipsoid surface
+	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e)
+    {
+        EllipsoidPoints points = new EllipsoidPoints();
+        final List<Vector3d> directionsUniformOnEllipsoid = points.calculate(DoubleStream.of(e.getA(), e.getB(), e.getC()).toArray(), 100L);
+        final Matrix3d Q = new Matrix3d();
+        e.getOrientation().get3x3(Q);
+        directionsUniformOnEllipsoid.forEach(sp -> Q.transpose().transform(sp));
+        directionsUniformOnEllipsoid.forEach(Vector3d::normalize);
+        final Matrix3d eMatrix = reconstructMatrix(e);
+        return directionsUniformOnEllipsoid.stream().noneMatch(dir -> isEllipsoidIntersectionBackground(
+                eMatrix, e.getCentroid(), dir));
+    }
 
 	// TODO Make a method of Ellipsoid?
 	private Matrix3d reconstructMatrix(final Ellipsoid e) {
