@@ -40,6 +40,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
+import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.ComplexType;
@@ -136,8 +137,11 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(persist = false, required = false)
     private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
 
-    @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
-    private ImgPlus<UnsignedByteType> ridgePointsImage;
+	@Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
+	private ImgPlus<UnsignedByteType> seedPointsImage;
+
+	@Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
+	private ImgPlus<R> ridgePointsImage;
 
     @Parameter(label = "EF image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> efImage;
@@ -458,8 +462,20 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 					randomAccess.get().setOne();
 				}
 		);
-		ridgePointsImage = new ImgPlus<>(opService.convert().uint8(
+		seedPointsImage = new ImgPlus<>(opService.convert().uint8(
 			seedPointImage), "Seeding Points");
+	}
+
+	private void createRidgePointsImage(final Img<R> ridge,
+										final double ridgePointCutOff)
+	{
+		final R threshold = ridge.cursor().get().createVariable();
+		threshold.setReal(ridgePointCutOff);
+		final IterableInterval<BitType> thresholdedRidge = opService.threshold()
+				.apply(ridge, threshold);
+		//ridgePointsImage = new ImgPlus<>(opService.convert().uint8(
+		//		thresholdedRidge), "Ridge Points");
+		ridgePointsImage = new ImgPlus<R>(ridge, "Ridge Points");
 	}
 
 	// TODO Could this be an op?
@@ -487,6 +503,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			reduceSeedPoints(seeds);
 		}
 		createSeedPointImage(ridge, seeds);
+		createRidgePointsImage(ridge, threshold);
 		return seeds;
 	}
 
