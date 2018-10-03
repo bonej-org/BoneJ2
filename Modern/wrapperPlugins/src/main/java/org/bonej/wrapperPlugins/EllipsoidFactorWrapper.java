@@ -40,6 +40,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
+import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.ComplexType;
@@ -122,7 +123,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private ImgPlus<R> inputImage;
 
     @Parameter(persist = false, required = false)
-    private final DoubleType sigma = new DoubleType(0);
+    private DoubleType sigma = new DoubleType(0);
 
     @Parameter(label = "Maximum internal seeds", min = "0", stepSize = "1",
             description = "Approximate maximum of internal seed points allowed. If more seeds are found, they are filtered with probability 1-Maximum internal seeds/total internal seeds found.",
@@ -132,15 +133,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(label = "Sampling directions", min = "0", stepSize = "1",
             description = "Number of directions (evenly spaced on the surface of a sphere) that internal seed points will search for contact points.",
             style = NumberWidget.SPINNER_STYLE)
-    private final int nSphere = 20;
+    private int nSphere = 20;
 
     @Parameter(persist = false, required = false)
-    private final ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
+    private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
 
-    @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
-    private ImgPlus<UnsignedByteType> ridgePointsImage;
+	@Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
+	private ImgPlus<UnsignedByteType> seedPointsImage;
 
-    @Parameter(label = "EF image", type = ItemIO.OUTPUT)
+	@Parameter(label = "EF image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> efImage;
 
     @Parameter(label = "ID image", type = ItemIO.OUTPUT)
@@ -435,44 +436,48 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final List<Shape> shapes = new ArrayList<>();
 		shapes.add(new HyperSphereShape(2));
 		final IterableInterval<R> open = opService.morphology().open(
-			distanceTransform, shapes);
+				distanceTransform, shapes);
 		final IterableInterval<R> close = opService.morphology().close(
 			distanceTransform, shapes);
 		final IterableInterval<R> ridge = opService.math().subtract(close, open);
 		final Cursor<R> ridgeCursor = ridge.localizingCursor();
-		// remove ridgepoints in BG - how does this make a difference?
-		final RandomAccess<BitType> inputBitRA = image.randomAccess();
+		final Img openImg = (Img) open;
+		final RandomAccess<R> openedRA = openImg.randomAccess();
 		final long[] position = new long[3];
 		while (ridgeCursor.hasNext()) {
 			ridgeCursor.fwd();
 			ridgeCursor.localize(position);
-			inputBitRA.setPosition(position);
-			if (!inputBitRA.get().get()) {
+			openedRA.setPosition(position);
+			if (openedRA.get().getRealDouble()<1.0+1e-12)//avoids false ridge points on edge of FG
+			{
 				ridgeCursor.get().setReal(0.0f);
 			}
 		}
 		return ridge;
 	}
 
-	private void createRidgePointsImage(final IterableInterval<R> ridge,
-		final double ridgePointCutOff)
+	private void createSeedPointImage(final Img<R> seedPointImage,
+									  final List<Vector3dc> seedPoints)
 	{
-		final R threshold = ridge.cursor().get().createVariable();
-		threshold.setReal(ridgePointCutOff);
-		final IterableInterval<BitType> thresholdedRidge = opService.threshold()
-			.apply(ridge, threshold);
-		ridgePointsImage = new ImgPlus<>(opService.convert().uint8(
-			thresholdedRidge), "Seeding Points");
+		RandomAccess<R> randomAccess = seedPointImage.randomAccess();
+		seedPoints.forEach(seed ->
+				{
+					long[] seedPixel = vectorToPixelGrid(seed);
+					randomAccess.setPosition(seedPixel);
+					randomAccess.get().setOne();
+				}
+		);
+		seedPointsImage = new ImgPlus<>(opService.convert().uint8(
+			seedPointImage), "Seeding Points");
 	}
 
 	// TODO Could this be an op?
 	private List<Vector3dc> getRidgeSeedPoints(
 		final RandomAccessibleInterval<BitType> bitImage)
 	{
-		final IterableInterval<R> ridge = createRidge(bitImage);
+		final Img<R> ridge = (Img<R>) createRidge(bitImage);
 		final double threshold = thresholdForBeingARidgePoint.getRealFloat() *
 			opService.stats().max(ridge).getRealFloat();
-		createRidgePointsImage(ridge, threshold);
 		final List<Vector3dc> seeds = new ArrayList<>();
 		final Cursor<R> ridgeCursor = ridge.cursor();
 		final long[] position = new long[3];
@@ -490,6 +495,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		if (seeds.size() > approximateMaximumNumberOfSeeds) {
 			reduceSeedPoints(seeds);
 		}
+		createSeedPointImage(ridge, seeds);
 		return seeds;
 	}
 
