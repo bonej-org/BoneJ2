@@ -50,6 +50,7 @@ public class ReporterOptions implements PlugIn {
 			"and promote BoneJ to funders.");
 		dialog.addMessage("If you agree to participate please hit OK\n" +
 			"otherwise, cancel. For more information click Help.");
+		dialog.addHelp("https://imagej.net/BoneJ2#Usage_reporting");
 		dialog.showDialog();
 		if (dialog.wasCanceled()) {
 			Prefs.set(OPTOUTKEY, false);

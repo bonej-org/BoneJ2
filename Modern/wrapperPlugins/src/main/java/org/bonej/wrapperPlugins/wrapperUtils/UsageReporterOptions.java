@@ -122,7 +122,7 @@ public class UsageReporterOptions extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void showHelpPage() {
 		try {
-			platformService.open(new URL("http://bonej.org/stats"));
+			platformService.open(new URL("https://imagej.net/BoneJ2#Usage_reporting"));
 		} catch (final IOException e) {
 			uiService.showDialog("Something went wrong while opening the help page. Please try again.");
 			logService.trace(e);
