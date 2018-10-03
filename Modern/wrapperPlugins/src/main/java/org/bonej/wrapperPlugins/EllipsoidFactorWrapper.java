@@ -23,26 +23,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static java.util.stream.Collectors.toList;
-import static net.imglib2.roi.Regions.countTrue;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
-import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
-import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
-import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
-import java.util.stream.Stream.Builder;
-
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
+import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
@@ -58,6 +42,7 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.ComplexType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -66,7 +51,6 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
 import net.imglib2.view.Views;
-
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.EllipsoidPoints;
@@ -89,6 +73,33 @@ import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static net.imglib2.roi.Regions.countTrue;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
+import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
+import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
+
 /**
  * Ellipsoid Factor
  * <p>
@@ -104,14 +115,14 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     // Several ellipsoids may fall in same bin if this is too small a number!
     // This will be ignored!
     private static final long FLINN_PLOT_DIMENSION = 501;
-    private final FindEllipsoidFromBoundaryPoints findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
+    private final BinaryFunctionOp<List<ValuePair<Vector3dc, Vector3dc>>, Vector3dc, Optional<Ellipsoid>> findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
 
     @SuppressWarnings("unused")
     @Parameter(validater = "validateImage")
     private ImgPlus<R> inputImage;
 
     @Parameter(persist = false, required = false)
-    private DoubleType sigma = new DoubleType(0);
+    private final DoubleType sigma = new DoubleType(0);
 
     @Parameter(label = "Maximum internal seeds", min = "0", stepSize = "1",
             description = "Approximate maximum of internal seed points allowed. If more seeds are found, they are filtered with probability 1-Maximum internal seeds/total internal seeds found.",
@@ -121,10 +132,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(label = "Sampling directions", min = "0", stepSize = "1",
             description = "Number of directions (evenly spaced on the surface of a sphere) that internal seed points will search for contact points.",
             style = NumberWidget.SPINNER_STYLE)
-    private int nSphere = 20;
+    private final int nSphere = 20;
 
     @Parameter(persist = false, required = false)
-    private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.8);
+    private final ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
 
     @Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> ridgePointsImage;
@@ -174,6 +185,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private Random rng;
 
+    private final int nFilterSampling = 200;
+
     @Override
     public void run() {
         statusService.showStatus("Ellipsoid Factor: initialising...");
@@ -196,18 +209,21 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         // TODO Should this be logService.debug?
         final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
         logService.info("filling percentage = " + fillingPercentage + "%");
-
-        //debugging
         logService.info("found " + ellipsoids.size() + " ellipsoids");
-        logService.info("assigned voxels = " + numberOfAssignedVoxels);
-        logService.info("foreground voxels = " + numberOfForegroundVoxels);
         logService.info("number of seed points = " + internalSeedPoints.size());
-
+		logService.info("initial sampling directions = " + nSphere);
+		logService.info("threshold for ridge point inclusions = " + thresholdForBeingARidgePoint);
+		logService.info("filtering sampling directions = " + nFilterSampling);
         if(logService.isDebug()) {
+			logService.debug("assigned voxels = " + numberOfAssignedVoxels);
+			logService.debug("foreground voxels = " + numberOfForegroundVoxels);
 			for (int i = 0; i < Math.min(100, ellipsoids.size()); i++) {
 				logService.debug("ellipsoid(" + i + "):\n" + ellipsoids.get(i).toString());
 			}
 		}
+
+
+
     }
 
 	private void createAToBImage(final double[] aBRatios,
@@ -352,29 +368,26 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask
 			.dimension(1), mask.dimension(2));
 		idImage.forEach(c -> c.setInteger(-1));
+		final Map<Ellipsoid, Integer> iDs =
+				IntStream.range(0, ellipsoids.size()).boxed().collect(toMap(ellipsoids::get, Function.identity()));
 		final LongStream zRange = LongStream.range(0, mask.dimension(2));
-        final HashMap<Ellipsoid, Long> toGlobalIDMap = new HashMap<>();
-
-        final LongStream globalIDs = LongStream.range(0, ellipsoids.size());
-        globalIDs.forEach(id -> toGlobalIDMap.put(ellipsoids.get((int) id), id));
-
-        zRange.parallel().forEach(sliceIndex -> {
+		zRange.parallel().forEach(z -> {
 			// multiply by image unit? make more intelligent bounding box?
             final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(
-				e -> Math.abs(e.getCentroid().z() - sliceIndex) < e.getC()).collect(
+				e -> Math.abs(e.getCentroid().z() - z) < e.getC()).collect(
 					toList());
-			final long[] mins = { 0, 0, sliceIndex };
+			final long[] mins = { 0, 0, z };
 			final long[] maxs = { mask.dimension(0) - 1, mask.dimension(1) - 1,
-				sliceIndex };
+				z };
 			final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs)
 				.localizingCursor();
-			colourSlice(idImage, maskSlice, localEllipsoids, toGlobalIDMap);
+			colourSlice(idImage, maskSlice, localEllipsoids, iDs);
 		});
 		return idImage;
 	}
 
 	private static void colourSlice(final RandomAccessible<IntType> idImage,
-                                    final Cursor<BitType> mask, final List<Ellipsoid> localEllipsoids, HashMap<Ellipsoid, Long> toGlobalIDMap)
+									final Cursor<BitType> mask, final Collection<Ellipsoid> localEllipsoids, final Map<Ellipsoid, Integer> iDs)
 	{
 		while (mask.hasNext()) {
 			mask.fwd();
@@ -386,16 +399,16 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			final Vector3d point = new Vector3d(coordinates[0], coordinates[1],
 				coordinates[2]);
 			point.add(0.5, 0.5, 0.5);
-			colourID(localEllipsoids, idImage, point, toGlobalIDMap);
+			colourID(localEllipsoids, idImage, point, iDs);
 		}
 	}
 
 	// TODO Refactor this and sub-functions into an Op
 	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
-        final List<Vector3dc> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(250).collect(toList());
-
-        final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
-			.stream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
+		final List<Vector3dc> filterSamplingDirections =
+			getGeneralizedSpiralSetOnSphere(nFilterSampling).collect(toList());
+		final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
+			.parallelStream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
 				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
 					seed)));
 		return ellipsoidCandidates.filter(Optional::isPresent).map(Optional::get)
@@ -502,19 +515,19 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		}
     }
 
-    private static void colourID(final List<Ellipsoid> localEllipsoids,
-                                 final RandomAccessible<IntType> ellipsoidIdentityImage,
-                                 final Vector3dc point, HashMap<Ellipsoid, Long> toGlobalIDMap)
+    private static void colourID(final Collection<Ellipsoid> localEllipsoids,
+								 final RandomAccessible<IntType> ellipsoidIdentityImage,
+								 final Vector3dc point, final Map<Ellipsoid, Integer> iDs)
 	{
-		final int id = IntStream.range(0, localEllipsoids.size()).filter(i -> isInside(
-			point, localEllipsoids.get(i))).findFirst().orElse(-1);
-		if (id < 0) {
+		final Optional<Ellipsoid> candidate = localEllipsoids.stream().filter(e -> isInside(point, e)).findFirst();
+		if (!candidate.isPresent()) {
 			return;
 		}
 		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage
 			.randomAccess();
 		eIDRandomAccess.setPosition(vectorToPixelGrid(point));
-		eIDRandomAccess.get().set(Math.toIntExact(toGlobalIDMap.get(localEllipsoids.get(id))));
+		final Ellipsoid ellipsoid = candidate.get();
+		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
 
 	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e,
