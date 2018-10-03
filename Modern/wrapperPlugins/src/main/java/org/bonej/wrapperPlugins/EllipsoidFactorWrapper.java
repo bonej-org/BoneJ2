@@ -137,13 +137,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(persist = false, required = false)
     private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
 
-	@Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
+	@Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
 	private ImgPlus<UnsignedByteType> seedPointsImage;
 
-	@Parameter(label = "Ridge image", type = ItemIO.OUTPUT)
-	private ImgPlus<R> ridgePointsImage;
-
-    @Parameter(label = "EF image", type = ItemIO.OUTPUT)
+	@Parameter(label = "EF image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> efImage;
 
     @Parameter(label = "ID image", type = ItemIO.OUTPUT)
@@ -432,19 +429,20 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final List<Shape> shapes = new ArrayList<>();
 		shapes.add(new HyperSphereShape(2));
 		final IterableInterval<R> open = opService.morphology().open(
-			distanceTransform, shapes);
+				distanceTransform, shapes);
 		final IterableInterval<R> close = opService.morphology().close(
 			distanceTransform, shapes);
 		final IterableInterval<R> ridge = opService.math().subtract(close, open);
 		final Cursor<R> ridgeCursor = ridge.localizingCursor();
-		// remove ridgepoints in BG - how does this make a difference?
-		final RandomAccess<BitType> inputBitRA = image.randomAccess();
+		final Img openImg = (Img) open;
+		final RandomAccess<R> openedRA = openImg.randomAccess();
 		final long[] position = new long[3];
 		while (ridgeCursor.hasNext()) {
 			ridgeCursor.fwd();
 			ridgeCursor.localize(position);
-			inputBitRA.setPosition(position);
-			if (!inputBitRA.get().get()) {
+			openedRA.setPosition(position);
+			if (openedRA.get().getRealDouble()<1.0+1e-12)//avoids false ridge points on edge of FG
+			{
 				ridgeCursor.get().setReal(0.0f);
 			}
 		}
@@ -464,18 +462,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		);
 		seedPointsImage = new ImgPlus<>(opService.convert().uint8(
 			seedPointImage), "Seeding Points");
-	}
-
-	private void createRidgePointsImage(final Img<R> ridge,
-										final double ridgePointCutOff)
-	{
-		final R threshold = ridge.cursor().get().createVariable();
-		threshold.setReal(ridgePointCutOff);
-		final IterableInterval<BitType> thresholdedRidge = opService.threshold()
-				.apply(ridge, threshold);
-		//ridgePointsImage = new ImgPlus<>(opService.convert().uint8(
-		//		thresholdedRidge), "Ridge Points");
-		ridgePointsImage = new ImgPlus<R>(ridge, "Ridge Points");
 	}
 
 	// TODO Could this be an op?
@@ -503,7 +489,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			reduceSeedPoints(seeds);
 		}
 		createSeedPointImage(ridge, seeds);
-		createRidgePointsImage(ridge, threshold);
 		return seeds;
 	}
 
