@@ -40,7 +40,6 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
-import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.ComplexType;
@@ -135,8 +134,11 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             style = NumberWidget.SPINNER_STYLE)
     private int nSphere = 20;
 
-    @Parameter(persist = false, required = false)
-    private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
+	@Parameter(persist = false, required = false)
+	private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
+
+	@Parameter(persist = false, required = false)
+	private boolean showSecondaryImages = false;
 
 	@Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
 	private ImgPlus<UnsignedByteType> seedPointsImage;
@@ -202,7 +204,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
         final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(bitImage, ellipsoids);
-        createOutputImages(ellipsoids, ellipsoidIdentityImage);
+        createPrimaryOutputImages(ellipsoids, ellipsoidIdentityImage);
+        if(showSecondaryImages) createSecondaryOutputImages(ellipsoids,ellipsoidIdentityImage);
 
         final double numberOfForegroundVoxels = countTrue(bitImage);
         final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
@@ -323,11 +326,14 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		return copy;
 	}
 
-	private void createOutputImages(final List<Ellipsoid> ellipsoids,
-		final Img<IntType> ellipsoidIDs)
-	{
+	private void createPrimaryOutputImages(final List<Ellipsoid> ellipsoids,
+										   final Img<IntType> ellipsoidIDs) {
 		createEFImage(ellipsoids, ellipsoidIDs);
 		createVolumeImage(ellipsoids, ellipsoidIDs);
+	}
+
+	private void createSecondaryOutputImages(final List<Ellipsoid> ellipsoids, final Img<IntType> ellipsoidIDs)
+	{
 		final double[] aBRatios = ellipsoids.parallelStream().mapToDouble(e -> e
 			.getA() / e.getB()).toArray();
 		createAToBImage(aBRatios, ellipsoidIDs);
