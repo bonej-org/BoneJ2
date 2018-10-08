@@ -27,6 +27,8 @@ import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
+import net.imagej.table.DefaultColumn;
+import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
@@ -57,6 +59,7 @@ import org.bonej.ops.ellipsoid.EllipsoidPoints;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Matrix3d;
 import org.joml.Matrix3dc;
@@ -116,9 +119,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     // This will be ignored!
     private static final long FLINN_PLOT_DIMENSION = 501;
     private final BinaryFunctionOp<List<ValuePair<Vector3dc, Vector3dc>>, Vector3dc, Optional<Ellipsoid>> findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
-	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found. Try allowing more sampling directions and/or more seedpoints.";
+	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try allowing more sampling directions and/or more seedpoints.";
 
-    @SuppressWarnings("unused")
+	@SuppressWarnings("unused")
     @Parameter(validater = "validateImage")
     private ImgPlus<R> inputImage;
 
@@ -164,6 +167,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     @Parameter(label = "Flinn Peak Plot", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> flinnPeakPlotImage;
+
+	/** The EF results in a {@link Table}, null if there are no results */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<Double>, Double> resultsTable;
 
     @SuppressWarnings("unused")
     @Parameter
@@ -214,16 +221,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         final double numberOfForegroundVoxels = countTrue(bitImage);
         final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
+		final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
+		addResults(ellipsoids,fillingPercentage);
 
-        // TODO Should this be logService.debug?
-        final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
-        logService.info("filling percentage = " + fillingPercentage + "%");
-        logService.info("found " + ellipsoids.size() + " ellipsoids");
-        logService.info("number of seed points = " + internalSeedPoints.size());
-		logService.info("initial sampling directions = " + nSphere);
-		logService.info("threshold for ridge point inclusions = " + thresholdForBeingARidgePoint);
-		logService.info("filtering sampling directions = " + nFilterSampling);
         if(logService.isDebug()) {
+			logService.debug("initial sampling directions = " + nSphere);
+			logService.debug("threshold for ridge point inclusions = " + thresholdForBeingARidgePoint);
+			logService.debug("filtering sampling directions = " + nFilterSampling);
 			logService.debug("assigned voxels = " + numberOfAssignedVoxels);
 			logService.debug("foreground voxels = " + numberOfForegroundVoxels);
 			for (int i = 0; i < Math.min(100, ellipsoids.size()); i++) {
@@ -396,6 +400,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			colourSlice(idImage, maskSlice, localEllipsoids, iDs);
 		});
 		return idImage;
+	}
+
+	private void addResults(final List<Ellipsoid> ellipsoids, double fillingPercentage) {
+		final String label = inputImage.getName();
+		SharedTable.add(label,"filling percentage", fillingPercentage);
+		SharedTable.add(label, "number of ellipsoids found", ellipsoids.size());
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
+		else {
+			cancel(NO_ELLIPSOIDS_FOUND);
+		}
 	}
 
 	private static void colourSlice(final RandomAccessible<IntType> idImage,

@@ -31,6 +31,7 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
+import net.imagej.table.DefaultColumn;
 import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -47,6 +48,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
+
+import java.util.List;
 
 /**
  * Tests for {@link EllipsoidFactorWrapper}.
@@ -86,6 +89,25 @@ public class EllipsoidFactorWrapperTest {
     }
 
     // TODO Add test about anisotropy warning being shown
+
+    @Test
+    public void testResultsTable() throws Exception {
+        // SETUP
+        final ImgPlus<BitType> sphereImgPlus = getSphereImage();
+
+        // EXECUTE
+        final CommandModule module = IMAGE_J.command().run(
+                EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus, "nSphere", 10, "approximateMaximumNumberOfSeeds", 10).get();
+
+        // VERIFY
+        final List<DefaultColumn<Double>> table =
+                (List<DefaultColumn<Double>>) module.getOutput("resultsTable");
+        assertEquals("Filling percentage header wrong!","filling percentage",table.get(0).getHeader());
+        assertEquals("Filling percentage wrong", 100.0, table.get(0).getValue(0).doubleValue(), 1e-12);
+        assertEquals("Number of ellipsoids header wrong!","number of ellipsoids found",table.get(1).getHeader());
+        assertEquals("Number of ellipsoids wrong", 87.0, table.get(1).getValue(0).doubleValue(), 1e-12);
+
+    }
 
     @Test
     public void testSphereVoxelsHaveEFZero() throws Exception {
