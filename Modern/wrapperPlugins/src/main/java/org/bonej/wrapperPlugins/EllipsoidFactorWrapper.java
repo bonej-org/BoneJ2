@@ -116,6 +116,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     // This will be ignored!
     private static final long FLINN_PLOT_DIMENSION = 501;
     private final BinaryFunctionOp<List<ValuePair<Vector3dc, Vector3dc>>, Vector3dc, Optional<Ellipsoid>> findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
+	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found. Try allowing more sampling directions and/or more seedpoints.";
 
     @SuppressWarnings("unused")
     @Parameter(validater = "validateImage")
@@ -199,7 +200,11 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
         final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
-        //TODO fail loudly if ellipsoids.size()==0
+        if(ellipsoids.isEmpty())
+        {
+        	cancel(NO_ELLIPSOIDS_FOUND);
+        	return;
+		}
         ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
 
         statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
