@@ -25,8 +25,10 @@ package org.bonej.ops.ellipsoid;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -58,6 +60,7 @@ import org.junit.rules.ExpectedException;
  * Tests for {@link Ellipsoid}.
  *
  * @author Richard Domander
+ * @author Alessandro Felder
  */
 public class EllipsoidTest {
 
@@ -496,9 +499,9 @@ public class EllipsoidTest {
 	@Test
 	public void testToString()
 	{
+	    // SETUP
 		final Ellipsoid ellipsoid = new Ellipsoid(1,2,3);
-
-		final String expected = "centre:\n" +
+        final String expected = "centre:\n" +
 				"( 0.000E+0  0.000E+0  0.000E+0)\n" +
 				"axis lengths:\n" +
 				"( 1.0 2.0 3.0 )\n" +
@@ -507,8 +510,42 @@ public class EllipsoidTest {
 				" 0.000E+0  1.000E+0  0.000E+0\n" +
 				" 0.000E+0  0.000E+0  1.000E+0\n";
 
-		assertEquals(expected, ellipsoid.toString());
+        // EXECUTE AND VERIFY
+        assertEquals(expected, ellipsoid.toString());
 	}
+
+	@Test
+	public void testInside()
+	{
+	    // SETUP
+        final Ellipsoid ellipsoid = new Ellipsoid(1,1,1);
+		ellipsoid.setCentroid(new Vector3d(5,0,0));
+		ellipsoid.setSemiAxes(new Vector3d(1,1,0), new Vector3d(0,0,2), new Vector3d(-1,1,0));
+
+		final Vector3dc inside = new Vector3d(5.5, 0.5, 0);
+		final Vector3dc outside = new Vector3d(0, 0, 3);
+
+		// EXECUTE AND VERIFY
+        assertTrue(ellipsoid.inside(inside));
+		assertFalse(ellipsoid.inside(outside));
+	}
+
+
+    @Test
+    public void testInsideAxisAligned() {
+        // SETUP
+        final Ellipsoid axisAligned = new Ellipsoid(1, 2, 3);
+        final Vector3dc origin = new Vector3d(0, 0, 0);
+        final Vector3dc definitelyOutside = new Vector3d(4, 4, 4);
+        final Vector3dc justInside = new Vector3d(0, 0, 2);
+        final Vector3dc justOutside = new Vector3d(0, 2, 0);
+
+        // EXECUTE AND VERIFY
+        assertTrue(axisAligned.inside(origin));
+        assertFalse(axisAligned.inside(definitelyOutside));
+        assertTrue(axisAligned.inside(justInside));
+        assertFalse(axisAligned.inside(justOutside));
+    }
 
 	@AfterClass
 	public static void oneTimeTearDown() {

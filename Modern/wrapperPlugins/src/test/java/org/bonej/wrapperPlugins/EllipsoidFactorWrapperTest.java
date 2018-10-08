@@ -128,7 +128,7 @@ public class EllipsoidFactorWrapperTest {
 
         // EXECUTE
         final CommandModule module = IMAGE_J.command().run(
-                EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus).get();
+                EllipsoidFactorWrapper.class, true, "inputImage", sphereImgPlus, "showSecondaryImages", true).get();
 
         // VERIFY
 
@@ -175,22 +175,5 @@ public class EllipsoidFactorWrapperTest {
 			}
 		}
 		return sphereImgPlus;
-	}
-
-	@Test
-	public void testInsideEllipsoidEasy() {
-		// SETUP
-		final Ellipsoid axisAligned = new Ellipsoid(1, 2, 3);
-		final Vector3dc origin = new Vector3d(0, 0, 0);
-		final Vector3dc definitelyOutside = new Vector3d(4, 4, 4);
-		final Vector3dc justInside = new Vector3d(0, 0, 2);
-		final Vector3dc justOutside = new Vector3d(0, 2, 0);
-
-		// EXECUTE AND VERIFY
-		assertTrue(EllipsoidFactorWrapper.isInside(origin, axisAligned));
-		assertFalse(EllipsoidFactorWrapper.isInside(definitelyOutside,
-			axisAligned));
-		assertTrue(EllipsoidFactorWrapper.isInside(justInside, axisAligned));
-		assertFalse(EllipsoidFactorWrapper.isInside(justOutside, axisAligned));
 	}
 }
