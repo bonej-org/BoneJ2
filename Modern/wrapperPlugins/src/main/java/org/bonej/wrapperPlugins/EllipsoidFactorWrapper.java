@@ -440,7 +440,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
 					seed)));
 		return ellipsoidCandidates.filter(Optional::isPresent).map(Optional::get)
-			.filter(e -> isEllipsoidWhollyInForeground(e,filterSamplingDirections))
+			.filter(e -> isEllipsoidWhollyInForeground(e))
 			.collect(toList());
 	}
 
@@ -561,26 +561,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		eIDRandomAccess.setPosition(vectorToPixelGrid(point));
 		final Ellipsoid ellipsoid = candidate.get();
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
-	}
-
-	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e,
-		final Collection<Vector3dc> sphereSamplingDirections)
-	{
-		if (outOfBounds(inputImage, vectorToPixelGrid(e.getCentroid()))) {
-			return false;
-		}
-		final Builder<Vector3dc> builder = Stream.builder();
-		final Matrix3d orientation = e.getOrientation().get3x3(new Matrix3d());
-		for (int i = 0; i < 3; i++) {
-			final Vector3dc v = orientation.getColumn(i, new Vector3d());
-			builder.add(v);
-			builder.add(v.negate(new Vector3d()));
-		}
-		final Stream<Vector3dc> directions = Stream.concat(sphereSamplingDirections
-			.stream(), builder.build());
-		final Matrix3d reconstruction = reconstructMatrixOfSlightlySmallerEllipsoid(e,Math.sqrt(3.0));
-		return directions.noneMatch(dir -> isEllipsoidIntersectionBackground(
-			reconstruction, e.getCentroid(), dir));
 	}
 
 	public Matrix3d reconstructMatrixOfSlightlySmallerEllipsoid(Ellipsoid e, final double reduction) {
