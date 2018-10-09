@@ -88,7 +88,11 @@ public class EllipsoidFactorWrapperTest {
         CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J, EllipsoidFactorWrapper.class);
     }
 
-    // TODO Add test about anisotropy warning being shown
+    @Test
+    public void testAnisotropicImageShowsWarningDialog() throws Exception {
+        CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
+                IntertrabecularAngleWrapper.class);
+    }
 
     @Test
     public void testResultsTable() throws Exception {
