@@ -593,19 +593,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final Matrix3dc LambdaQ = lambda.mul(Q, new Matrix3d());
 		return QT.mul(LambdaQ, new Matrix3d());
 	}
-	//using points uniformly distributed on ellipsoid surface
-	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e)
-    {
-        EllipsoidPoints points = new EllipsoidPoints();
-        final List<Vector3d> directionsUniformOnEllipsoid = points.calculate(DoubleStream.of(e.getA(), e.getB(), e.getC()).toArray(), 100L);
-        final Matrix3d Q = new Matrix3d();
-        e.getOrientation().get3x3(Q);
-        directionsUniformOnEllipsoid.forEach(sp -> Q.transpose().transform(sp));
-        directionsUniformOnEllipsoid.forEach(Vector3d::normalize);
-        final Matrix3d eMatrix = reconstructMatrixOfSlightlySmallerEllipsoid(e, Math.sqrt(3.0));
-        return directionsUniformOnEllipsoid.stream().noneMatch(dir -> isEllipsoidIntersectionBackground(
-                eMatrix, e.getCentroid(), dir));
-    }
 
 	private boolean isEllipsoidIntersectionBackground(final Matrix3dc a,
 		final Vector3dc centroid, final Vector3dc dir)
