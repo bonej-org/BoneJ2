@@ -12,7 +12,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej-legacy</artifactId>
-    <version>5.0.2</version>
+    <version>5.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>POM BoneJ legacy</name>
