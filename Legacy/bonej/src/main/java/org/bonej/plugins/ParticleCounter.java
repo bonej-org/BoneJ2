@@ -133,11 +133,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final Checkbox vvvBox = (Checkbox) checkboxes.get(9);
 		vvvBox.setEnabled(elBox.getState() || momBox.getState());
 		// link show stack 3d to volume resampling
-		final Checkbox box = (Checkbox) checkboxes.get(16);
+		final Checkbox box = (Checkbox) checkboxes.get(17);
 		final TextField numb = (TextField) numbers.get(4);
 		numb.setEnabled(box.getState());
 		// link show surfaces, gradient choice and split value
-		final Checkbox surfbox = (Checkbox) checkboxes.get(12);
+		final Checkbox surfbox = (Checkbox) checkboxes.get(13);
 		final Choice col = (Choice) choices.get(0);
 		final TextField split = (TextField) numbers.get(3);
 		col.setEnabled(surfbox.getState());
