@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -552,13 +551,17 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param lut a look-up table.
 	 * @return total number of duplicate values found.
 	 */
-	private static long countDuplicates(final int[] counter,
-		final List<HashSet<Integer>> map, final int[] lut)
+	private static int countDuplicates(int[] counter,
+		final ArrayList<HashSet<Integer>> map, final int[] lut)
 	{
+		//reset to 0 the counter array
+		final int l = counter.length;
+		counter = new int[l];
+		HashSet<Integer> set = null;
 		for (int i = 1; i < map.size(); i++) {
-			final Set<Integer> set = map.get(i);
+			set = map.get(i);
 			for (final Integer val : set) {
-				final int v = val;
+				final int v = val.intValue();
 				// every time a value is seen, log it
 				counter[v]++;
 				// update its LUT value if value was
@@ -570,7 +573,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		minimiseLutArray(lut);
 		// all values should be seen only once,
 		// count how many >1s there are.
-		return Arrays.stream(counter).filter(i -> i > 1).count();
+		int count = 0;
+		for (int i = 1; i < l; i++) {
+			if (counter[i] > 1) count++;
+		}
+		return count;
 	}
 
 	/**
@@ -1961,7 +1968,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 
-		final List<HashSet<Integer>> map = new ArrayList<>(nParticles + 1);
+		final ArrayList<HashSet<Integer>> map = new ArrayList<>(nParticles + 1);
 
 		final int[] lut = new int[nParticles + 1];
 		// set each label to be its own root
@@ -1998,11 +2005,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// map now contains for every value the set of first degree neighbours
 
 		IJ.showStatus("Minimising list and generating LUT...");
-
+		// place to store counts of each label
+		final int[] counter = new int[lut.length];
+		
 		// place to map lut values and targets
 		// lutList lists the indexes which point to each transformed lutvalue
 		// for quick updating
-		final List<HashSet<Integer>> lutList = new ArrayList<>(nParticles);
+		final ArrayList<HashSet<Integer>> lutList = new ArrayList<>(nParticles);
 
 		// initialise the lutList
 		for (int i = 0; i <= nParticles; i++) {
@@ -2025,7 +2034,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		// de-chain the lut array
 		minimiseLutArray(lut);
 
-		long duplicates = Long.MAX_VALUE;
+		int duplicates = Integer.MAX_VALUE;
 		boolean snowball = true;
 		boolean merge = true;
 		boolean update = true;
@@ -2036,7 +2045,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			minimise && inconsistent)
 		{
 			snowball = snowballLUT(lut, map, lutList);
-			final int[] counter = new int[lut.length];
 			duplicates = countDuplicates(counter, map, lut);
 
 			// merge duplicates
@@ -2125,12 +2133,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	private static boolean mergeDuplicates(final List<HashSet<Integer>> map,
-		final int[] counter, final long duplicates, final int[] lut,
+		final int[] counter, final int duplicates, final int[] lut,
 		final List<HashSet<Integer>> lutList)
 	{
 		boolean changed = false;
 		// create a list of duplicate values to check for
-		final int[] dupList = new int[(int) duplicates];
+		final int[] dupList = new int[duplicates];
 		final int l = counter.length;
 		int dup = 0;
 		for (int i = 1; i < l; i++) {

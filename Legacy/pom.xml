@@ -12,7 +12,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej-legacy</artifactId>
-    <version>6.0.0-SNAPSHOT</version>
+    <version>5.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>POM BoneJ legacy</name>
@@ -88,12 +88,12 @@
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>bonej-legacy-plugins_</artifactId>
-                <version>${legacy-plugins.version}</version>
+                <version>5.0.2</version>
             </dependency>
             <dependency>
                 <groupId>org.bonej</groupId>
                 <artifactId>bonej-legacy-util_</artifactId>
-                <version>${legacy-util.version}</version>
+                <version>5.0.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -114,15 +114,15 @@
     </ciManagement>
 
     <properties>
-        <legacy-util.version>6.0.0-SNAPSHOT</legacy-util.version>
-        <legacy-plugins.version>6.0.0-SNAPSHOT</legacy-plugins.version>
+        <legacy-util.version>5.0.2</legacy-util.version>
+        <legacy-plugins.version>5.0.1</legacy-plugins.version>
         <license.licenseName>BSD-2-Clause</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
     </properties>
 
     <modules>
         <module>bonej</module>
-        <module>util</module>
+        <!--<module>util</module>-->
     </modules>
 
     <repositories>
