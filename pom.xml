@@ -12,6 +12,13 @@
         <module>Legacy</module>
     </modules>
 
+    <scm>
+        <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
+        <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/bonej-org/BoneJ2</url>
+    </scm>
+
     <properties>
         <addClasspath>true</addClasspath>
         <maven.deploy.skip>true</maven.deploy.skip>
