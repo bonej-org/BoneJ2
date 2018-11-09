@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>pom-bonej2</artifactId>
         <groupId>org.bonej</groupId>
+        <artifactId>pom-bonej2</artifactId>
         <version>0.6.0-SNAPSHOT</version>
     </parent>
 
@@ -27,13 +25,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <mailingLists>
-        <mailingList>
-            <name>Image.sc Forum</name>
-            <subscribe>https://forum.image.sc/</subscribe>
-            <post>http://forum.image.sc/tags/bonej</post>
-        </mailingList>
-    </mailingLists>
 
     <developers>
         <developer>
@@ -90,6 +81,14 @@
         </contributor>
     </contributors>
 
+    <mailingLists>
+        <mailingList>
+            <name>Image.sc Forum</name>
+            <subscribe>https://forum.image.sc/</subscribe>
+            <post>http://forum.image.sc/tags/bonej</post>
+        </mailingList>
+    </mailingLists>
+
     <scm>
         <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
         <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
@@ -104,6 +103,11 @@
         <system>Travis CI</system>
         <url>https://travis-ci.org/bonej-org/BoneJ2</url>
     </ciManagement>
+
+    <properties>
+        <license.licenseName>BSD-2-Clause</license.licenseName>
+        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
+    </properties>
 
     <dependencies>
         <!-- ImageJ dependencies -->
@@ -154,9 +158,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <properties>
-        <license.licenseName>BSD-2-Clause</license.licenseName>
-        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
-    </properties>
 </project>

@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -30,13 +28,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <mailingLists>
-        <mailingList>
-            <name>Image.sc Forum</name>
-            <subscribe>https://forum.image.sc/</subscribe>
-            <post>http://forum.image.sc/tags/bonej</post>
-        </mailingList>
-    </mailingLists>
 
     <developers>
         <developer>
@@ -98,31 +89,19 @@
         </contributor>
     </contributors>
 
+    <mailingLists>
+        <mailingList>
+            <name>Image.sc Forum</name>
+            <subscribe>https://forum.image.sc/</subscribe>
+            <post>http://forum.image.sc/tags/bonej</post>
+        </mailingList>
+    </mailingLists>
+
     <modules>
         <module>wrapperPlugins</module>
         <module>utilities</module>
         <module>ops</module>
     </modules>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.bonej</groupId>
-                <artifactId>bonej-plugins</artifactId>
-                <version>${wrapperPlugins.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bonej</groupId>
-                <artifactId>bonej-utilities</artifactId>
-                <version>${utilities.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bonej</groupId>
-                <artifactId>bonej-ops</artifactId>
-                <version>${ops.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <scm>
         <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
@@ -153,6 +132,26 @@
             <url>http://maven.imagej.net/content/groups/public</url>
         </repository>
     </repositories>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.bonej</groupId>
+                <artifactId>bonej-plugins</artifactId>
+                <version>${wrapperPlugins.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bonej</groupId>
+                <artifactId>bonej-utilities</artifactId>
+                <version>${utilities.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bonej</groupId>
+                <artifactId>bonej-ops</artifactId>
+                <version>${ops.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
