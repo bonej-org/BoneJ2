@@ -2,14 +2,101 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.scijava</groupId>
+        <artifactId>pom-scijava</artifactId>
+        <version>23.2.0</version>
+        <relativePath />
+    </parent>
+
     <groupId>org.bonej</groupId>
-    <artifactId>bonej-aggregator</artifactId>
-    <version>8.0.2</version>
+    <artifactId>pom-bonej</artifactId>
+    <version>6.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>BoneJ Parent POM</name>
+    <description>Parent POM for BoneJ components</description>
+    <url>https://imagej.net/BoneJ2</url>
+    <inceptionYear>2016</inceptionYear>
+    <organization>
+        <name>Royal Veterinary College</name>
+        <url>http://http://www.rvc.ac.uk/</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>Simplified BSD License</name>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>mdoube</id>
+            <name>Michael Doube</name>
+            <email>mdoube@cityu.edu.hk</email>
+            <url>https://www.researchgate.net/profile/Michael_Doube</url>
+            <organization>City University of Hong Kong</organization>
+            <organizationUrl>https://www.cityu.edu.hk/</organizationUrl>
+            <roles>
+                <role>founder</role>
+                <role>lead</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+8</timezone>
+        </developer>
+        <developer>
+            <id>alessandrofelder</id>
+            <name>Alessandro Felder</name>
+            <email>afelder@rvc.ac.uk</email>
+            <organization>Royal Veterinary College</organization>
+            <organizationUrl>https://www.rvc.ac.uk/</organizationUrl>
+            <roles>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+            <timezone>+0</timezone>
+        </developer>
+    </developers>
+    <contributors>
+        <contributor>
+            <name>Richard Domander</name>
+            <url>https://imagej.net/User:Rdom</url>
+            <properties><id>rimadoma</id></properties>
+            <roles><role>founder</role></roles>
+        </contributor>
+        <contributor>
+            <name>Curtis Rueden</name>
+            <url>https://imagej.net/User:Rueden</url>
+            <properties><id>ctrueden</id></properties>
+        </contributor>
+        <contributor>
+            <name>Mark Hiner</name>
+            <url>https://imagej.net/User:Hinerm</url>
+            <properties><id>hinerm</id></properties>
+        </contributor>
+    </contributors>
+
+    <mailingLists>
+        <mailingList>
+            <name>Image.sc Forum</name>
+            <subscribe>https://forum.image.sc/</subscribe>
+            <post>http://forum.image.sc/tags/bonej</post>
+        </mailingList>
+    </mailingLists>
+
     <modules>
-        <module>Modern</module>
-        <module>Legacy</module>
+        <module>Legacy/bonej</module>
+        <module>Legacy/util</module>
+        <module>Modern/ops</module>
+        <module>Modern/utilities</module>
+        <module>Modern/wrapperPlugins</module>
     </modules>
 
     <scm>
@@ -18,10 +105,28 @@
         <tag>HEAD</tag>
         <url>https://github.com/bonej-org/BoneJ2</url>
     </scm>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/bonej-org/BoneJ2/issues</url>
+    </issueManagement>
+    <ciManagement>
+        <system>Travis CI</system>
+        <url>https://travis-ci.org/bonej-org/BoneJ2</url>
+    </ciManagement>
 
     <properties>
-        <addClasspath>true</addClasspath>
-        <maven.deploy.skip>true</maven.deploy.skip>
+        <license.licenseName>bsd_2</license.licenseName>
+        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>deploy-to-imagej</releaseProfiles>
+
+        <!-- NB: For linalg ops, until pom-scijava catches up. -->
+        <imagej-ops.version>0.43.0</imagej-ops.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>imagej.public</id>
+            <url>https://maven.imagej.net/content/groups/public</url>
+        </repository>
+    </repositories>
 </project>

@@ -1,25 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.bonej</groupId>
-        <artifactId>pom-bonej-legacy</artifactId>
-        <version>5.0.3-SNAPSHOT</version>
+        <artifactId>pom-bonej</artifactId>
+        <version>6.0.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
     </parent>
 
     <artifactId>bonej-legacy-util_</artifactId>
-    <version>6.0.0-SNAPSHOT</version>
 
     <name>BoneJ legacy utilities</name>
     <description>Utility classes for BoneJ1 plugins</description>
-    <url>http://imagej.net/BoneJ_experimental</url>
+    <url>https://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
-        <url>http://http://www.rvc.ac.uk/</url>
+        <url>https://www.rvc.ac.uk/</url>
     </organization>
     <licenses>
         <license>
@@ -27,13 +25,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <mailingLists>
-        <mailingList>
-            <name>Image.sc Forum</name>
-            <subscribe>https://forum.image.sc/</subscribe>
-            <post>http://forum.image.sc/tags/bonej</post>
-        </mailingList>
-    </mailingLists>
 
     <developers>
         <developer>
@@ -42,7 +33,7 @@
             <email>mdoube@rvc.ac.uk</email>
             <url>https://www.researchgate.net/profile/Michael_Doube</url>
             <organization>City University of Hong Kong</organization>
-            <organizationUrl>http://cityu.edu.hk/</organizationUrl>
+            <organizationUrl>https://www.cityu.edu.hk/</organizationUrl>
             <roles>
                 <role>founder</role>
                 <role>lead</role>
@@ -54,31 +45,52 @@
             </roles>
             <timezone>+8</timezone>
         </developer>
-        <developer>
-            <id>ctrueden</id>
-            <name>Curtis Rueden</name>
-            <email>ctrueden@wisc.edu</email>
-            <url>http://loci.wisc.edu/people/curtis-rueden</url>
-            <organization>UW-Madison LOCI</organization>
-            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
-            <roles>
-                <role>maintainer</role>
-            </roles>
-            <timezone>-6</timezone>
-        </developer>
     </developers>
     <contributors>
         <contributor>
-            <name>Mark Hiner</name>
-            <url>http://imagej.net/User:Hinerm</url>
-            <properties><id>hinerm</id></properties>
-        </contributor>
-        <contributor>
             <name>Richard Domander</name>
-            <url>http://imagej.net/User:Rdom</url>
+            <url>https://imagej.net/User:Rdom</url>
             <properties><id>rimadoma</id></properties>
         </contributor>
+        <contributor>
+            <name>Curtis Rueden</name>
+            <url>https://imagej.net/User:Rueden</url>
+            <properties><id>ctrueden</id></properties>
+        </contributor>
+        <contributor>
+            <name>Mark Hiner</name>
+            <url>https://imagej.net/User:Hinerm</url>
+            <properties><id>hinerm</id></properties>
+        </contributor>
     </contributors>
+
+    <mailingLists>
+        <mailingList>
+            <name>Image.sc Forum</name>
+            <subscribe>https://forum.image.sc/</subscribe>
+            <post>https://forum.image.sc/tags/bonej</post>
+        </mailingList>
+    </mailingLists>
+
+    <scm>
+        <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
+        <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/bonej-org/BoneJ2</url>
+    </scm>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/bonej-org/BoneJ2/issues</url>
+    </issueManagement>
+    <ciManagement>
+        <system>Travis CI</system>
+        <url>https://travis-ci.org/bonej-org/BoneJ2</url>
+    </ciManagement>
+
+    <properties>
+        <license.licenseName>bsd_2</license.licenseName>
+        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
+    </properties>
 
     <dependencies>
         <!-- ImageJ dependencies -->
@@ -111,24 +123,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <scm>
-        <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
-        <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
-        <tag>HEAD</tag>
-        <url>https://github.com/bonej-org/BoneJ2</url>
-    </scm>
-    <issueManagement>
-        <system>GitHub Issues</system>
-        <url>https://github.com/bonej-org/BoneJ2/issues</url>
-    </issueManagement>
-    <ciManagement>
-        <system>Travis CI</system>
-        <url>https://travis-ci.org/bonej-org/BoneJ2</url>
-    </ciManagement>
-
-    <properties>
-        <license.licenseName>BSD-2-Clause</license.licenseName>
-        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
-    </properties>
 </project>

@@ -4,23 +4,23 @@
 
     <parent>
         <groupId>org.bonej</groupId>
-        <artifactId>pom-bonej2</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
+        <artifactId>pom-bonej</artifactId>
+        <version>6.0.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
     </parent>
 
     <artifactId>bonej-plugins</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
 
     <name>BoneJ2 wrapper plugins</name>
     <description>
         The Domain Presentation Layer (DPL) of BoneJ2, i.e. the commands that wrap the needed ops,
         and present results for skeletal biologists.
     </description>
-    <url>http://imagej.net/BoneJ_experimental</url>
+    <url>https://imagej.net/BoneJ_experimental</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
-        <url>http://http://www.rvc.ac.uk/</url>
+        <url>https://www.rvc.ac.uk/</url>
     </organization>
     <licenses>
         <license>
@@ -36,7 +36,7 @@
             <email>mdoube@rvc.ac.uk</email>
             <url>https://www.researchgate.net/profile/Michael_Doube</url>
             <organization>City University of Hong Kong</organization>
-            <organizationUrl>http://cityu.edu.hk/</organizationUrl>
+            <organizationUrl>https://www.cityu.edu.hk/</organizationUrl>
             <roles>
                 <role>founder</role>
                 <role>lead</role>
@@ -53,7 +53,7 @@
             <name>Alessandro Felder</name>
             <email>afelder@rvc.ac.uk</email>
             <organization>Royal Veterinary College</organization>
-            <organizationUrl>http://www.rvc.ac.uk/</organizationUrl>
+            <organizationUrl>https://www.rvc.ac.uk/</organizationUrl>
             <roles>
                 <role>developer</role>
                 <role>debugger</role>
@@ -63,29 +63,22 @@
             </roles>
             <timezone>+0</timezone>
         </developer>
-        <developer>
-            <id>ctrueden</id>
-            <name>Curtis Rueden</name>
-            <email>ctrueden@wisc.edu</email>
-            <url>http://loci.wisc.edu/people/curtis-rueden</url>
-            <organization>UW-Madison LOCI</organization>
-            <organizationUrl>http://loci.wisc.edu/</organizationUrl>
-            <roles>
-                <role>maintainer</role>
-            </roles>
-            <timezone>-6</timezone>
-        </developer>
     </developers>
     <contributors>
         <contributor>
-            <name>Mark Hiner</name>
-            <url>http://imagej.net/User:Hinerm</url>
-            <properties><id>hinerm</id></properties>
+            <name>Richard Domander</name>
+            <url>https://imagej.net/User:Rdom</url>
+            <properties><id>rimadoma</id></properties>
         </contributor>
         <contributor>
-            <name>Richard Domander</name>
-            <url>http://imagej.net/User:Rdom</url>
-            <properties><id>rimadoma</id></properties>
+            <name>Curtis Rueden</name>
+            <url>https://imagej.net/User:Rueden</url>
+            <properties><id>ctrueden</id></properties>
+        </contributor>
+        <contributor>
+            <name>Mark Hiner</name>
+            <url>https://imagej.net/User:Hinerm</url>
+            <properties><id>hinerm</id></properties>
         </contributor>
     </contributors>
 
@@ -93,7 +86,7 @@
         <mailingList>
             <name>Image.sc Forum</name>
             <subscribe>https://forum.image.sc/</subscribe>
-            <post>http://forum.image.sc/tags/bonej</post>
+            <post>https://forum.image.sc/tags/bonej</post>
         </mailingList>
     </mailingLists>
 
@@ -113,8 +106,12 @@
     </ciManagement>
 
     <properties>
-        <license.licenseName>BSD-2-Clause</license.licenseName>
+        <license.licenseName>bsd_2</license.licenseName>
+        <license.projectName>High-level BoneJ2 commands.</license.projectName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
+
+        <!-- HACK: Avoid exception during test phase. -->
+        <junit.version>4.10</junit.version>
     </properties>
 
     <dependencies>
@@ -122,10 +119,12 @@
         <dependency>
             <groupId>org.bonej</groupId>
             <artifactId>bonej-utilities</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bonej</groupId>
             <artifactId>bonej-ops</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- ImageJ dependencies -->
@@ -140,8 +139,6 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
-            <!-- TODO Remove explicit version when pom-scijava has this or newer stable version -->
-            <version>0.42.0</version>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
@@ -214,7 +211,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.9</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
