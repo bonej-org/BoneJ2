@@ -131,7 +131,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     @Parameter(label = "Maximum internal seeds", min = "0", stepSize = "1",
             description = "Approximate maximum of internal seed points allowed. If more seeds are found, they are filtered with probability 1-Maximum internal seeds/total internal seeds found.",
             style = NumberWidget.SPINNER_STYLE)
-    private long approximateMaximumNumberOfSeeds = 10000;
+    private long approximateMaximumNumberOfSeeds = 20000;
 
     @Parameter(label = "Sampling directions", min = "0", stepSize = "1",
             description = "Number of directions (evenly spaced on the surface of a sphere) that internal seed points will search for contact points.",
