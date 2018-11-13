@@ -22,5 +22,6 @@
     <properties>
         <addClasspath>true</addClasspath>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <releaseProfiles>deploy-to-imagej</releaseProfiles>
     </properties>
 </project>
