@@ -118,6 +118,7 @@
         <license.licenseName>bsd_2</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>deploy-to-imagej</releaseProfiles>
+        <tagNameFormat>bonej-@{project.version}</tagNameFormat>
 
         <!-- NB: For linalg ops, until pom-scijava catches up. -->
         <imagej-ops.version>0.43.0</imagej-ops.version>
