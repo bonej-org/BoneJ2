@@ -10,5 +10,5 @@ if [ "$1" = "" ]
   then
     echo "No ImageJ directory specified"
 else
-    mvn -Dimagej.app.directory="$1" -Ddelete.other.versions=true clean install
+    mvn -Dimagej.app.directory="$1" -Dimagej.deleteOtherVersions=true clean install
 fi
