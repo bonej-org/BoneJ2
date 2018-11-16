@@ -515,6 +515,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 				continue;
 			}
 			ridgeCursor.localize(position);
+
+			boolean seedOnBoundary = false;
+			for (int i = 0; i < position.length; i++) {
+				final long pos = position[i];
+				if (pos < 1 || pos > bitImage.dimension(i) - 2) {
+					seedOnBoundary = true;
+				}
+			}
+			if(seedOnBoundary) {
+				continue;
+			}
+
 			final Vector3d seed = new Vector3d(position[0], position[1], position[2]);
 			seed.add(0.5, 0.5, 0.5);
 			seeds.add(seed);
@@ -665,6 +677,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Vector3d currentRealPosition = new Vector3d(start);
         long[] currentPixelPosition = vectorToPixelGrid(start);
         randomAccess.setPosition(currentPixelPosition);
+		if (outOfBounds(inputImage, currentPixelPosition)) return currentRealPosition;
 
         while (randomAccess.get().getRealDouble() > 0) {
             currentRealPosition.add(rayIncrement);
@@ -679,7 +692,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private static boolean outOfBounds(final Dimensions dimensions, final long[] currentPixelPosition) {
 		for (int i = 0; i < currentPixelPosition.length; i++) {
 			final long position = currentPixelPosition[i];
-			if (position < 0 || position >= dimensions.dimension(i)) {
+			if (position < 0 || position > dimensions.dimension(i)-1) {
 				return true;
 			}
 		}
