@@ -51,6 +51,7 @@ import ij.process.ImageProcessor;
 import process3d.Dilate_;
 import process3d.Erode_;
 
+@Deprecated
 public class ThresholdMinConn implements PlugIn, DialogListener {
 
 	private int testCount = 11;
@@ -109,7 +110,7 @@ public class ThresholdMinConn implements PlugIn, DialogListener {
 		return true;
 	}
 
-	@Override
+	@Override @Deprecated
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
 		final ImageProcessor ip = imp.getProcessor();
