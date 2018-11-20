@@ -122,26 +122,8 @@
 
         <!-- NB: For linalg ops, until pom-scijava catches up. -->
         <imagej-ops.version>0.43.0</imagej-ops.version>
+        <imagej-maven-plugin.version>0.7.1</imagej-maven-plugin.version>
     </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>net.imagej</groupId>
-                <artifactId>imagej-maven-plugin</artifactId>
-                <version>0.6.0</version>
-                <executions>
-                    <execution>
-                        <id>copy-jars</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>copy-jars</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
     <repositories>
         <repository>
