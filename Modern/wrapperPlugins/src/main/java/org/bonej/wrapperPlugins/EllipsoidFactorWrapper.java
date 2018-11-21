@@ -30,12 +30,7 @@ import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
-import net.imglib2.Cursor;
-import net.imglib2.Dimensions;
-import net.imglib2.IterableInterval;
-import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessible;
-import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
@@ -508,6 +503,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final List<Vector3dc> seeds = new ArrayList<>();
 		final Cursor<R> ridgeCursor = ridge.cursor();
 		final long[] position = new long[3];
+		final long[] dimensionsMinusOne = new long[]{bitImage.dimension(0)-1, bitImage.dimension(1)-1, bitImage.dimension(2)-1};
+		final Dimensions innerImageDimensions = new FinalDimensions(dimensionsMinusOne);
 		while (ridgeCursor.hasNext()) {
 			ridgeCursor.fwd();
 			final double localValue = ridgeCursor.get().getRealFloat();
@@ -515,6 +512,10 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 				continue;
 			}
 			ridgeCursor.localize(position);
+			if(outOfBounds(innerImageDimensions, position))
+			{
+			//	continue;
+			}
 			final Vector3d seed = new Vector3d(position[0], position[1], position[2]);
 			seed.add(0.5, 0.5, 0.5);
 			seeds.add(seed);
@@ -687,7 +688,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
     // TODO make a utility method, similar used in MILPlane op
-    private static long[] vectorToPixelGrid(final Vector3dc currentPosition) {
+    public static long[] vectorToPixelGrid(final Vector3dc currentPosition) {
         return Stream.of(currentPosition.x(), currentPosition.y(),
                 currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }

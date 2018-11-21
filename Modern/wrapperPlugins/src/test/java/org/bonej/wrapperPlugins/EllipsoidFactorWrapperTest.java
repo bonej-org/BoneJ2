@@ -23,6 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
+import static org.bonej.wrapperPlugins.EllipsoidFactorWrapper.vectorToPixelGrid;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -164,6 +165,18 @@ public class EllipsoidFactorWrapperTest {
         @SuppressWarnings("unchecked")
         final ImgPlus<FloatType> bToC = (ImgPlus<FloatType>) module.getOutput("bToCAxisRatioImage");
         assertFiniteImageEntriesMatchValue(bToC,expectedRatio,1e-4);
+    }
+
+    @Test
+    public void testVectorToPixelGrid() throws Exception {
+        final Vector3dc position = new Vector3d(3.25, 3.5, 3.75);
+
+        final long[] expected = {3,3,3};
+        final long[] actual = vectorToPixelGrid(position);
+
+        assertEquals("Conversion to pixel grid failed", expected[0], actual[0]);
+        assertEquals("Conversion to pixel grid failed", expected[1], actual[1]);
+        assertEquals("Conversion to pixel grid failed", expected[2], actual[2]);
     }
 
 	private void assertFiniteImageEntriesMatchValue(
