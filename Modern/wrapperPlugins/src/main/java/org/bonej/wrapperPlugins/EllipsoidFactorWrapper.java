@@ -481,12 +481,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private void createSeedPointImage(final Img<R> seedPointImage,
 									  final List<Vector3dc> seedPoints)
 	{
+		seedPointImage.cursor().forEachRemaining( c -> c.setZero());
 		RandomAccess<R> randomAccess = seedPointImage.randomAccess();
 		seedPoints.forEach(seed ->
 				{
 					long[] seedPixel = vectorToPixelGrid(seed);
 					randomAccess.setPosition(seedPixel);
-					randomAccess.get().setOne();
+					randomAccess.get().setReal(255);
 				}
 		);
 		seedPointsImage = new ImgPlus<>(opService.convert().uint8(
