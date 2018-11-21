@@ -47,6 +47,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
@@ -134,7 +135,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private int nSphere = 20;
 
 	@Parameter(persist = false, required = false)
-	private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.8);
+	private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.6);
 
 	@Parameter(persist = false, required = false)
 	private boolean showSecondaryImages = false;
@@ -453,8 +454,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private IterableInterval<R> createRidge(
 		final RandomAccessibleInterval<BitType> image)
 	{
+		final long[] borderExpansion = new long[]{1,1,1};
+		final long[] offset = new long[]{-1,-1,-1};
+		final IntervalView<BitType> offsetImage = Views.offset(image, offset);
+		final IntervalView<BitType> expandedImage = Views.expandZero(offsetImage, borderExpansion);
 		final RandomAccessibleInterval<R> distanceTransform = opService.image()
-			.distancetransform(image);
+			.distancetransform(expandedImage);
 		final List<Shape> shapes = new ArrayList<>();
 		shapes.add(new HyperSphereShape(2));
 		final IterableInterval<R> open = opService.morphology().open(
