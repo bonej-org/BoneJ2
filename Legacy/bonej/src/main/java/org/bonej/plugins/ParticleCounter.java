@@ -208,7 +208,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		labels2[7] = "Show_stack (3D)";
 		defaultValues2[7] = true;
 		gd.addCheckboxGroup(4, 2, labels2, defaultValues2, headers2);
-		final String[] items = { "Gradient", "Split" };
+		final String[] items = { "Gradient", "Split", "Orientation"};
 		gd.addChoice("Surface colours", items, items[0]);
 		gd.addNumericField("Split value", 0, 3, 7, units + "³");
 		gd.addNumericField("Volume_resampling", 2, 0);
@@ -240,6 +240,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		int colourMode = GRADIENT;
 		if (gd.getNextChoice().equals(items[1])) {
 			colourMode = SPLIT;
+		}
+		if (gd.getNextChoice().equals(items[2])) {
+			colourMode = ORIENTATION;
 		}
 		final double splitValue = gd.getNextNumber();
 		final boolean doCentroidImage = gd.getNextBoolean();
