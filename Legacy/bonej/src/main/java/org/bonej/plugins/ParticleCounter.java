@@ -886,14 +886,35 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
+	/**
+	 * Convert rotation matrix of particle to axis-angle representation and generate a colour
+	 * based on it.
+	 * 
+	 * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
+	 * https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis%E2%80%93angle
+	 * @param Eigendecomposition of the particle
+	 * @return Colour scaling in red for axis and green for angle
+	 */
 	private static Color3f colourFromEigenVector(EigenvalueDecomposition eigen)
 	{
 		final Matrix rotation = eigen.getV();
-		/*
-		 * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
-		 * https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis%E2%80%93angle
-		 */
-		float red = 0, green = 0, blue = 0;
+		
+		//convert the rotation matrix into axis-angle representation
+		//calculate the axis
+		final double u0 = rotation.get(2, 1) - rotation.get(1, 2);
+		final double u1 = rotation.get(2, 0) - rotation.get(0, 2);
+		final double u2 = rotation.get(1, 0) - rotation.get(0, 1);
+		final double magnitudeU = Math.sqrt(u0 * u0 + u1 * u1 + u2 * u2);
+		final double axis = Math.asin(magnitudeU / 2);
+		
+		//calculate the angle from the trace (sum of diagonals)
+		final double trace = rotation.trace();
+		final double angle = Math.acos((trace - 1)/2);
+		
+		//scale the axis and angle values to be between 0.0f and 1.0f
+		final float red = (float) ((axis + Math.PI/2)/Math.PI);
+		final float green = (float)(angle/Math.PI);
+		final float blue = 0;
 		return new Color3f(red, green, blue);
 	}
 
