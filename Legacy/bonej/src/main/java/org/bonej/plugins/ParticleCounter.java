@@ -112,6 +112,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/** Surface colour style */
 	private static final int GRADIENT = 0;
 	private static final int SPLIT = 1;
+	private static final int ORIENTATION = 2;
 	private String sPhase = "";
 	private String chunkString = "";
 	private JOINING labelMethod = JOINING.MAPPED;
@@ -418,7 +419,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			final Image3DUniverse univ = new Image3DUniverse();
 			if (doSurfaceImage) {
 				displayParticleSurfaces(univ, surfacePoints, colourMode, volumes,
-					splitValue);
+					splitValue, eigens);
 			}
 			if (doCentroidImage) {
 				displayCentroids(centroids, univ);
@@ -842,7 +843,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 */
 	private static void displayParticleSurfaces(final Image3DUniverse univ,
 		final Collection<List<Point3f>> surfacePoints, final int colourMode,
-		final double[] volumes, final double splitValue)
+		final double[] volumes, final double splitValue,
+		final EigenvalueDecomposition[] eigens)
 	{
 		int p = 0;
 		final int nParticles = surfacePoints.size();
@@ -867,6 +869,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						pColour = new Color3f(1.0f, 1.0f, 0.0f);
 					}
 				}
+				else if (colourMode == ORIENTATION) {
+					pColour = colourFromEigenVector(eigens[p]);
+				}
 				// Add the mesh
 				try {
 					univ.addTriangleMesh(surfacePoint, pColour, "Surface " + p).setLocked(
@@ -879,6 +884,17 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 			p++;
 		}
+	}
+
+	private static Color3f colourFromEigenVector(EigenvalueDecomposition eigen)
+	{
+		final Matrix rotation = eigen.getV();
+		/*
+		 * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
+		 * https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis%E2%80%93angle
+		 */
+		float red = 0, green = 0, blue = 0;
+		return new Color3f(red, green, blue);
 	}
 
 	/**
