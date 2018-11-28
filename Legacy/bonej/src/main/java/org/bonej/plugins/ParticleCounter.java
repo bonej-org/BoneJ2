@@ -209,7 +209,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues2[7] = true;
 		gd.addCheckboxGroup(4, 2, labels2, defaultValues2, headers2);
 		final String[] items = { "Gradient", "Split", "Orientation"};
-		gd.addChoice("Surface colours", items, items[0]);
+		gd.addChoice("Surface colours", items, items[2]);
 		gd.addNumericField("Split value", 0, 3, 7, units + "³");
 		gd.addNumericField("Volume_resampling", 2, 0);
 		final String[] items2 = { "Multithreaded", "Linear", "Mapped" };
@@ -237,13 +237,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean doParticleSizeImage = gd.getNextBoolean();
 		final boolean doThickImage = gd.getNextBoolean();
 		final boolean doSurfaceImage = gd.getNextBoolean();
-		int colourMode = GRADIENT;
-		if (gd.getNextChoice().equals(items[1])) {
-			colourMode = SPLIT;
-		}
-		if (gd.getNextChoice().equals(items[2])) {
-			colourMode = ORIENTATION;
-		}
+		final int colourMode = gd.getNextChoiceIndex();
 		final double splitValue = gd.getNextNumber();
 		final boolean doCentroidImage = gd.getNextBoolean();
 		final boolean doAxesImage = gd.getNextBoolean();
@@ -893,8 +887,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * Convert rotation matrix of particle to axis-angle representation and generate a colour
 	 * based on it.
 	 * 
-	 * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
-	 * https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis%E2%80%93angle
+	 * @see http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
+	 * @see https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis%E2%80%93angle
 	 * @param Eigendecomposition of the particle
 	 * @return Colour scaling in red for axis and green for angle
 	 */
@@ -905,19 +899,24 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		//convert the rotation matrix into axis-angle representation
 		//calculate the axis
 		final double u0 = rotation.get(2, 1) - rotation.get(1, 2);
-		final double u1 = rotation.get(2, 0) - rotation.get(0, 2);
+		final double u1 = rotation.get(0, 2) - rotation.get(2, 0);
 		final double u2 = rotation.get(1, 0) - rotation.get(0, 1);
 		final double magnitudeU = Math.sqrt(u0 * u0 + u1 * u1 + u2 * u2);
 		final double axis = Math.asin(magnitudeU / 2);
 		
 		//calculate the angle from the trace (sum of diagonals)
-		final double trace = rotation.trace();
-		final double angle = Math.acos((trace - 1)/2);
+		double trace = rotation.trace();
+		//wrap-around overflows & underflows
+		if (trace > 3) trace -= 4; //alternative is to clip to 3
+		if (trace < -1) trace += 4; //alternative is to clip to -1
+		final double angle = Math.acos((trace - 1.0)/2.0);
 		
 		//scale the axis and angle values to be between 0.0f and 1.0f
+//	IJ.log("trace = "+trace+", axis is "+axis+" and angle is "+angle);
 		final float red = (float) ((axis + Math.PI/2)/Math.PI);
 		final float green = (float)(angle/Math.PI);
-		final float blue = 0;
+		final float blue = (float)(1 - angle/Math.PI);
+//		IJ.log("red = "+red+", green = "+green+", blue = "+blue);
 		return new Color3f(red, green, blue);
 	}
 
