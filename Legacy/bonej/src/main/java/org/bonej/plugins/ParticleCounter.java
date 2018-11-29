@@ -26,6 +26,7 @@ package org.bonej.plugins;
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.Choice;
+import java.awt.Color;
 import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -884,11 +885,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	}
 
 	/**
-	 * Convert rotation matrix of particle to axis-angle representation and generate a colour
-	 * based on it.
+	 * Generate a colour based on the inertia tensor's eigenvector
 	 * 
-	 * @see http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
-	 * @see https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis%E2%80%93angle
 	 * @param Eigendecomposition of the particle
 	 * @return Colour scaling in red for axis and green for angle
 	 */
@@ -913,10 +911,22 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		
 		//scale the axis and angle values to be between 0.0f and 1.0f
 //	IJ.log("trace = "+trace+", axis is "+axis+" and angle is "+angle);
-		final float red = (float) ((axis + Math.PI/2)/Math.PI);
-		final float green = (float)(angle/Math.PI);
-		final float blue = (float)(1 - angle/Math.PI);
+//		final float red = (float) ((axis + Math.PI/2)/Math.PI);
+//		final float green = (float)(angle/Math.PI);
+//		final float blue = (float)(1 - angle/Math.PI);
 //		IJ.log("red = "+red+", green = "+green+", blue = "+blue);
+		
+//		final float hue = (float)(360 * ((axis + Math.PI / 2) * 2) / (2 * Math.PI));
+	  final float hue = (float)(360 * angle / Math.PI);
+		final float saturation = 1.0f;
+		final float brightness = 1.0f;
+		
+		final int rgb = Color.HSBtoRGB(hue, saturation, brightness);
+		final Color color = new Color(rgb);
+		float red = (float)(color.getRed()/255d);
+    float green = (float)(color.getGreen()/255d);
+    float blue = (float)(color.getBlue()/255d);
+		
 		return new Color3f(red, green, blue);
 	}
 
