@@ -887,6 +887,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Generate a colour based on the inertia tensor's eigenvector
 	 * 
+	 * Colour is from the HSB colour wheel scaled by 0.5 to fit
+	 * into pi radians (rather than the 2 pi it normally occupies),
+	 * so that red is at 0, pi and 2pi radians.
+	 * 
+	 * Colour is mapped to the axis-angle representation of the tensor
+	 * so hue varies as a function of second axis rotation around the
+	 * first.
+	 * 
 	 * @param Eigendecomposition of the particle
 	 * @return Colour scaling in red for axis and green for angle
 	 */
@@ -908,19 +916,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		
 		//calculate the angle from the trace (sum of diagonals)
 		double trace = rotation.trace();
-	  if (trace > 3 || trace < -1) IJ.log("trace = "+trace);
+
 		//clip overflows & underflows
 		if (trace > 3) trace = 3; //alternative is to wrap around
 		if (trace < -1) trace = -1; //alternative is to wrap around
 		double angle = Math.acos((trace - 1.0)/2.0);
-    IJ.log("axis is "+axis+" and angle is "+angle);
-//		if (axis < 0) angle += Math.PI;
-//		if (angle > Math.PI) angle -= Math.PI;
-		
-		//scale the axis and angle values to be between 0.0f and 1.0f
-//		final float red = (float) ((axis + Math.PI/2)/Math.PI);
-//		final float green = (float)(angle/Math.PI);
-//		final float blue = (float)(1 - angle/Math.PI);
 		
 	  final float hue = (float)(angle / Math.PI);
 		final float saturation = (float) axisNormed;
@@ -932,8 +932,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
     float green = (float)(color.getGreen()/255d);
     float blue = (float)(color.getBlue()/255d);
 	
-    IJ.log("red = "+red+", green = "+green+", blue = "+blue);
-		
 		return new Color3f(red, green, blue);
 	}
 
