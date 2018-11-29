@@ -900,32 +900,38 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final double u1 = rotation.get(0, 2) - rotation.get(2, 0);
 		final double u2 = rotation.get(1, 0) - rotation.get(0, 1);
 		final double magnitudeU = Math.sqrt(u0 * u0 + u1 * u1 + u2 * u2);
+		//axis ranges from -pi/2 to +pi/2
 		final double axis = Math.asin(magnitudeU / 2);
+		
+		//axis normed ranges from 0 to 1
+		final double axisNormed = ((axis + Math.PI/2) / 2)/(Math.PI/2);
 		
 		//calculate the angle from the trace (sum of diagonals)
 		double trace = rotation.trace();
 		//wrap-around overflows & underflows
 		if (trace > 3) trace -= 4; //alternative is to clip to 3
 		if (trace < -1) trace += 4; //alternative is to clip to -1
-		final double angle = Math.acos((trace - 1.0)/2.0);
+		double angle = Math.acos((trace - 1.0)/2.0);
+//		if (axis < 0) angle += Math.PI;
+//		if (angle > Math.PI) angle -= Math.PI;
 		
 		//scale the axis and angle values to be between 0.0f and 1.0f
 //	IJ.log("trace = "+trace+", axis is "+axis+" and angle is "+angle);
 //		final float red = (float) ((axis + Math.PI/2)/Math.PI);
 //		final float green = (float)(angle/Math.PI);
 //		final float blue = (float)(1 - angle/Math.PI);
-//		IJ.log("red = "+red+", green = "+green+", blue = "+blue);
 		
-//		final float hue = (float)(360 * ((axis + Math.PI / 2) * 2) / (2 * Math.PI));
-	  final float hue = (float)(360 * angle / Math.PI);
+	  final float hue = (float)(angle / Math.PI);
 		final float saturation = 1.0f;
-		final float brightness = 1.0f;
+		final float brightness = (float) axisNormed;
 		
 		final int rgb = Color.HSBtoRGB(hue, saturation, brightness);
 		final Color color = new Color(rgb);
 		float red = (float)(color.getRed()/255d);
     float green = (float)(color.getGreen()/255d);
     float blue = (float)(color.getBlue()/255d);
+	
+    IJ.log("red = "+red+", green = "+green+", blue = "+blue);
 		
 		return new Color3f(red, green, blue);
 	}
