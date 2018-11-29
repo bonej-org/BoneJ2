@@ -908,22 +908,23 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		
 		//calculate the angle from the trace (sum of diagonals)
 		double trace = rotation.trace();
-		//wrap-around overflows & underflows
-		if (trace > 3) trace -= 4; //alternative is to clip to 3
-		if (trace < -1) trace += 4; //alternative is to clip to -1
+	  if (trace > 3 || trace < -1) IJ.log("trace = "+trace);
+		//clip overflows & underflows
+		if (trace > 3) trace = 3; //alternative is to wrap around
+		if (trace < -1) trace = -1; //alternative is to wrap around
 		double angle = Math.acos((trace - 1.0)/2.0);
+    IJ.log("axis is "+axis+" and angle is "+angle);
 //		if (axis < 0) angle += Math.PI;
 //		if (angle > Math.PI) angle -= Math.PI;
 		
 		//scale the axis and angle values to be between 0.0f and 1.0f
-//	IJ.log("trace = "+trace+", axis is "+axis+" and angle is "+angle);
 //		final float red = (float) ((axis + Math.PI/2)/Math.PI);
 //		final float green = (float)(angle/Math.PI);
 //		final float blue = (float)(1 - angle/Math.PI);
 		
 	  final float hue = (float)(angle / Math.PI);
-		final float saturation = 1.0f;
-		final float brightness = (float) axisNormed;
+		final float saturation = (float) axisNormed;
+		final float brightness = 1.0f;
 		
 		final int rgb = Color.HSBtoRGB(hue, saturation, brightness);
 		final Color color = new Color(rgb);
