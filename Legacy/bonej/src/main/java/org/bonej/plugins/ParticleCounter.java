@@ -924,7 +924,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		
 	  final float hue = (float)(angle / Math.PI);
 		final float saturation = (float) axisNormed;
-		final float brightness = 1.0f;
+		final float brightness = (float) axisNormed;
 		
 		final int rgb = Color.HSBtoRGB(hue, saturation, brightness);
 		final Color color = new Color(rgb);
