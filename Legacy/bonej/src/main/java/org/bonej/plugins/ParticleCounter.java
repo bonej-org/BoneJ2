@@ -210,7 +210,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues2[7] = true;
 		gd.addCheckboxGroup(4, 2, labels2, defaultValues2, headers2);
 		final String[] items = { "Gradient", "Split", "Orientation"};
-		gd.addChoice("Surface colours", items, items[2]);
+		gd.addChoice("Surface colours", items, items[0]);
 		gd.addNumericField("Split value", 0, 3, 7, units + "³");
 		gd.addNumericField("Volume_resampling", 2, 0);
 		final String[] items2 = { "Multithreaded", "Linear", "Mapped" };
@@ -275,7 +275,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				nParticles);
 		}
 		EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
-		if (doMoments || doAxesImage) {
+		if (doMoments || doAxesImage || colourMode == ORIENTATION) {
 			eigens = getEigens(imp, particleLabels, centroids);
 		}
 		// calculate dimensions
