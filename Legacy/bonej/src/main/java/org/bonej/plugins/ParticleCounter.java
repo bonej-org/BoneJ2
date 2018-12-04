@@ -423,9 +423,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				displayCentroids(centroids, univ);
 			}
 			if (doAxesImage) {
-				final double[][] lengths = (double[][]) getMaxDistances(imp,
-					particleLabels, centroids, eigens)[1];
-				displayPrincipalAxes(univ, eigens, centroids, lengths);
+				displayPrincipalAxes(univ, eigens, centroids, particleSizes);
 			}
 			if (doEllipsoidImage) {
 				displayEllipsoids(ellipsoids, univ);
@@ -971,14 +969,22 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	private static void displayPrincipalAxes(final Image3DUniverse univ,
 		final EigenvalueDecomposition[] eigens, final double[][] centroids,
-		final double[][] lengths)
+		long[] particleSizes)
 	{
 		final int nEigens = eigens.length;
+				
 		for (int p = 1; p < nEigens; p++) {
 			IJ.showStatus("Rendering principal axes...");
 			IJ.showProgress(p, nEigens);
+			
+			final long size = particleSizes[p];
 			final Matrix eVec = eigens[p].getV();
-			displayAxes(univ, centroids[p], eVec.getArray(), lengths[p], 0.0f,
+			final Matrix eVal = eigens[p].getD();
+			double[] lengths = new double[3];
+			for (int i = 0; i < 3; i++) {
+				lengths[i] = 2 * Math.sqrt(eVal.get(2 - i, 2 - i) / size);
+			}
+			displayAxes(univ, centroids[p], eVec.getArray(), lengths, 0.0f,
 				"Principal Axes " + p);
 		}
 	}
