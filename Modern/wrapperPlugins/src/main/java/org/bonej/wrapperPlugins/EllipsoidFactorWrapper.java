@@ -65,6 +65,9 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.display.DefaultDisplayService;
+import org.scijava.display.Display;
+import org.scijava.display.DisplayService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -135,7 +138,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     private int nSphere = 20;
 
 	@Parameter(persist = false, required = false)
-	private ComplexType<DoubleType> thresholdForBeingARidgePoint = new DoubleType(0.6);
+	private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.6);
 
 	@Parameter(persist = false, required = false)
 	private boolean showSecondaryImages = false;
