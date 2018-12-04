@@ -31,13 +31,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
 
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 
 /**
  * Tests for {@link SharedTable}

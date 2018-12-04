@@ -30,6 +30,9 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
+import ij.ImagePlus;
+import ij.measure.Calibration;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -39,11 +42,8 @@ import java.util.TreeMap;
 import java.util.stream.DoubleStream;
 
 import net.imagej.patcher.LegacyInjector;
-import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultResultsTable;
-import net.imagej.table.DoubleColumn;
 import net.imagej.table.ResultsTable;
-import net.imagej.table.Table;
 import net.imglib2.util.ValuePair;
 
 import org.bonej.utilities.ImagePlusUtil;
@@ -62,11 +62,12 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.DoubleColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
 
-import ij.ImagePlus;
-import ij.measure.Calibration;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Edge;
 import sc.fiji.analyzeSkeleton.Graph;

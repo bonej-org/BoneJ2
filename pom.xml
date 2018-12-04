@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.scijava</groupId>
         <artifactId>pom-scijava</artifactId>
-        <version>23.2.0</version>
+        <version>24.0.0</version>
         <relativePath />
     </parent>
 
@@ -119,10 +119,6 @@
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>deploy-to-imagej</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
-
-        <!-- NB: For linalg ops, until pom-scijava catches up. -->
-        <imagej-ops.version>0.43.0</imagej-ops.version>
-        <imagej-maven-plugin.version>0.7.1</imagej-maven-plugin.version>
     </properties>
 
     <repositories>
