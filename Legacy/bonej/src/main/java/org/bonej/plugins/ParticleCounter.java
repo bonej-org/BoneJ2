@@ -893,7 +893,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * so hue varies as a function of second axis rotation around the
 	 * first.
 	 * 
-	 * @param Eigendecomposition of the particle
+	 * @param eigen Eigenvalue decomposition of the particle
 	 * @return Colour scaling in red for axis and green for angle
 	 */
 	private static Color3f colourFromEigenVector(EigenvalueDecomposition eigen)
@@ -1542,65 +1542,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			i++;
 		}
 		return ferets;
-	}
-
-	/**
-	 * Get the maximum distances from the centroid in x, y, and z axes, and
-	 * transformed x, y and z axes
-	 *
-	 * @param imp an image.
-	 * @param particleLabels labelled particles in the image.
-	 * @param centroids centroids of the particles.
-	 * @param E transformation eigenvectors and values of the particles.
-	 * @return array containing two nPoints * 3 arrays with max and max
-	 *         transformed distances respectively
-	 */
-	private static Object[] getMaxDistances(final ImagePlus imp,
-		final int[][] particleLabels, final double[][] centroids,
-		final EigenvalueDecomposition[] E)
-	{
-		final Calibration cal = imp.getCalibration();
-		final double vW = cal.pixelWidth;
-		final double vH = cal.pixelHeight;
-		final double vD = cal.pixelDepth;
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final int nParticles = centroids.length;
-		final double[][] maxD = new double[nParticles][3];
-		final double[][] maxDt = new double[nParticles][3];
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int p = particleLabels[z][index + x];
-					if (p > 0) {
-						final double dX = x * vW - centroids[p][0];
-						final double dY = y * vH - centroids[p][1];
-						final double dZ = z * vD - centroids[p][2];
-						maxD[p][0] = Math.max(maxD[p][0], Math.abs(dX));
-						maxD[p][1] = Math.max(maxD[p][1], Math.abs(dY));
-						maxD[p][2] = Math.max(maxD[p][2], Math.abs(dZ));
-						final double[][] eV = E[p].getV().getArray();
-						final double dXt = dX * eV[0][0] + dY * eV[0][1] + dZ * eV[0][2];
-						final double dYt = dX * eV[1][0] + dY * eV[1][1] + dZ * eV[1][2];
-						final double dZt = dX * eV[2][0] + dY * eV[2][1] + dZ * eV[2][2];
-						maxDt[p][0] = Math.max(maxDt[p][0], Math.abs(dXt));
-						maxDt[p][1] = Math.max(maxDt[p][1], Math.abs(dYt));
-						maxDt[p][2] = Math.max(maxDt[p][2], Math.abs(dZt));
-					}
-				}
-			}
-		}
-		for (int p = 0; p < nParticles; p++) {
-			Arrays.sort(maxDt[p]);
-			final double[] temp = new double[3];
-			for (int i = 0; i < 3; i++) {
-				temp[i] = maxDt[p][2 - i];
-			}
-			maxDt[p] = temp.clone();
-		}
-		return new Object[] { maxD, maxDt };
 	}
 
 	/**
