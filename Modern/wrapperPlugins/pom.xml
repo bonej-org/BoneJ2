@@ -187,6 +187,10 @@
             <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
         </dependency>
+        <dependency>
+            <groupId>sc.iview</groupId>
+            <artifactId>sciview</artifactId>
+        </dependency>
 
         <!-- SciJava dependencies -->
         <dependency>

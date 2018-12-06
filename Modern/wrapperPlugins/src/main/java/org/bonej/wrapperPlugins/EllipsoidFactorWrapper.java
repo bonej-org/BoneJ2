@@ -23,6 +23,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
+import cleargl.GLVector;
+import com.jogamp.opengl.math.Quaternion;
+import graphics.scenery.Icosphere;
+import graphics.scenery.Node;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
@@ -30,7 +34,13 @@ import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.table.DefaultColumn;
 import net.imagej.table.Table;
 import net.imagej.units.UnitService;
-import net.imglib2.*;
+import net.imglib2.Cursor;
+import net.imglib2.Dimensions;
+import net.imglib2.FinalDimensions;
+import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
@@ -39,7 +49,6 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.ComplexType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -51,7 +60,6 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
-import org.bonej.ops.ellipsoid.EllipsoidPoints;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
@@ -65,15 +73,13 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
-import org.scijava.display.DefaultDisplayService;
-import org.scijava.display.Display;
-import org.scijava.display.DisplayService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
+import sc.iview.SciView;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -143,6 +149,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	@Parameter(persist = false, required = false)
 	private boolean showSecondaryImages = false;
 
+	@Parameter(persist = false, required = false)
+	private boolean showEllipsoids = false;
+
 	@Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
 	private ImgPlus<UnsignedByteType> seedPointsImage;
 
@@ -166,6 +175,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     @Parameter(label = "Flinn Peak Plot", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> flinnPeakPlotImage;
+
 
 	/** The EF results in a {@link Table}, null if there are no results */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
@@ -217,6 +227,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(bitImage, ellipsoids);
         createPrimaryOutputImages(ellipsoids, ellipsoidIdentityImage);
         if(showSecondaryImages) createSecondaryOutputImages(ellipsoids,ellipsoidIdentityImage);
+        if(showEllipsoids) createEllipsoidsScene(ellipsoids);
 
         final double numberOfForegroundVoxels = countTrue(bitImage);
         final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
@@ -237,6 +248,30 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 
     }
+
+	private void createEllipsoidsScene(List<Ellipsoid> ellipsoids) {
+    	final Node superNode = new Node();
+		Icosphere sphere = new Icosphere(1,1);
+
+		sphere.setRotation(new Quaternion(0,0,0,1));
+
+		//GLVector pos = new GLVector((float) ellipsoids.get(0).getCentroid().get(0), (float) ellipsoids.get(0).getCentroid().get(1), (float) ellipsoids.get(0).getCentroid().get(2));
+		GLVector pos = new GLVector(0.0f,0.0f,0.0f);
+		sphere.setPosition(pos);
+
+		GLVector scale = new GLVector(1,2,3);
+		sphere.setScale(scale);
+		superNode.addChild(sphere);
+
+		SciView sciView = new SciView(context());
+		sciView.addChild(superNode);
+
+		//generate list of transformations from ellipsoids
+		ellipsoids.get(0).getOrientation();
+		//make instances from those transformations
+		//draw ellipsoids
+		//show display
+	}
 
 	private void createAToBImage(final double[] aBRatios,
 		final IterableInterval<IntType> ellipsoidIDs)
