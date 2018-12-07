@@ -914,10 +914,19 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		
 		//calculate the angle from the trace (sum of diagonals)
 		double trace = rotation.trace();
+		
+		//spin the rotation 180° around its long axis
+		//if trace is out of range
+		if (trace > 3 || trace < -1) {
+			Matrix turn = new Matrix(3, 3);
+			turn.set(0, 0, -1);
+			turn.set(1, 1, -1);
+			turn.set(1, 1, 1);
+			trace = rotation.times(turn).trace();
+		}
+		if (trace > 3 || trace < -1)
+			IJ.log("The rotation didn't fix the out of bounds trace :-(");
 
-		//clip overflows & underflows
-		if (trace > 3) trace = 3; //alternative is to wrap around
-		if (trace < -1) trace = -1; //alternative is to wrap around
 		double angle = Math.acos((trace - 1.0)/2.0);
 		
 	  final float hue = (float)(angle / Math.PI);
