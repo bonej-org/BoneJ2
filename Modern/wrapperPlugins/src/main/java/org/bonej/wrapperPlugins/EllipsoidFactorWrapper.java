@@ -23,10 +23,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import cleargl.GLVector;
+/*import cleargl.GLVector;
 import com.jogamp.opengl.math.Quaternion;
 import graphics.scenery.Icosphere;
-import graphics.scenery.Node;
+import graphics.scenery.Node;*/
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
@@ -79,7 +79,7 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
-import sc.iview.SciView;
+//import sc.iview.SciView;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -250,7 +250,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
 	private void createEllipsoidsScene(List<Ellipsoid> ellipsoids) {
-    	final Node superNode = new Node();
+    	/*final Node superNode = new Node();
 		Icosphere sphere = new Icosphere(1,1);
 
 		sphere.setRotation(new Quaternion(0,0,0,1));
@@ -270,7 +270,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		ellipsoids.get(0).getOrientation();
 		//make instances from those transformations
 		//draw ellipsoids
-		//show display
+		//show display*/
 	}
 
 	private void createAToBImage(final double[] aBRatios,

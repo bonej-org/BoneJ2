@@ -189,7 +189,7 @@
         </dependency>
 
         <!--SciView dependencies-->
-        <dependency>
+        <!--<dependency>
             <groupId>sc.iview</groupId>
             <artifactId>sciview</artifactId>
         </dependency>
@@ -200,7 +200,7 @@
         <dependency>
             <groupId>graphics.scenery</groupId>
             <artifactId>scenery</artifactId>
-        </dependency>
+        </dependency>-->
 
         <!-- SciJava dependencies -->
         <dependency>
