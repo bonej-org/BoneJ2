@@ -111,7 +111,7 @@ import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
  * @author Alessandro Felder
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2", headless = true)
 public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> extends ContextCommand {
 
     // Several ellipsoids may fall in same bin if this is too small a number!
