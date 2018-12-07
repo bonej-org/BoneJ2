@@ -187,9 +187,19 @@
             <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
         </dependency>
+
+        <!--SciView dependencies-->
         <dependency>
             <groupId>sc.iview</groupId>
             <artifactId>sciview</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.clearvolume</groupId>
+            <artifactId>cleargl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>graphics.scenery</groupId>
+            <artifactId>scenery</artifactId>
         </dependency>
 
         <!-- SciJava dependencies -->
