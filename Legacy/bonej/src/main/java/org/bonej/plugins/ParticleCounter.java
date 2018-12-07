@@ -921,7 +921,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			Matrix turn = new Matrix(3, 3);
 			turn.set(0, 0, -1);
 			turn.set(1, 1, -1);
-			turn.set(1, 1, 1);
+			turn.set(2, 2, 1);
 			trace = rotation.times(turn).trace();
 		}
 		if (trace > 3 || trace < -1)
