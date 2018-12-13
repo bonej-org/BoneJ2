@@ -30,6 +30,12 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.plugin.frame.RoiManager;
+import ij.process.LUT;
+import ij.process.StackStatistics;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,28 +43,27 @@ import java.util.Map;
 import java.util.Optional;
 
 import net.imagej.patcher.LegacyInjector;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.plugin.frame.RoiManager;
-import ij.process.LUT;
-import ij.process.StackStatistics;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
 /**
@@ -114,13 +119,19 @@ public class ThicknessWrapper extends ContextCommand {
 
 	@Parameter
 	private UIService uiService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
 	private boolean anisotropyWarned;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -153,6 +164,17 @@ public class ThicknessWrapper extends ContextCommand {
 				spacingMap.setLut(fire);
 			}
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		ThicknessWrapper.reporter = reporter;
 	}
 
 	private void addMapResults(final ImagePlus map) {

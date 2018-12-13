@@ -49,7 +49,6 @@ import ij.Prefs;
  * 
  * @author Michael Doube
  */
-// TODO Fix class design: decide if singleton or not! Does anything need to be a non-static method, and do we need to pass instance at all?
 public final class UsageReporter {
 
 	private static final UsageReporter INSTANCE = new UsageReporter();
@@ -57,7 +56,7 @@ public final class UsageReporter {
 	 * BoneJ version FIXME: it is fragile to have the version hard-coded here.
 	 * Create a BoneJApp instead.
 	 */
-	private static final String BONEJ_VERSION = "LEGACY";
+	private static final String BONEJ_VERSION = "legacy-placeholder";
 
 	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
@@ -128,22 +127,30 @@ public final class UsageReporter {
 	 */
 	public void send() {
 		if (!isAllowed()) return;
+
+		URL url = null;
+		URLConnection uc = null;
 		try {
-			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme +
-				utmcs + utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
+			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
+				utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
-			final URLConnection uc = url.openConnection();
-			uc.setRequestProperty("User-Agent", userAgentString());
-			if (!IJ.debugMode) {
-				return;
+			uc = url.openConnection();
+		}
+		catch (final IOException e) {
+			if (IJ.debugMode) {
+				IJ.error(e.getMessage());
 			}
-			IJ.log(url.toString());
-			IJ.log(uc.getRequestProperty("User-Agent"));
-			try (final BufferedReader reader = new BufferedReader(
-				new InputStreamReader(uc.getInputStream())))
-			{
-				reader.lines().forEach(IJ::log);
-			}
+			throw new AssertionError("Check your static Strings!");
+		}
+
+		uc.setRequestProperty("User-Agent", userAgentString());
+		if (IJ.debugMode) IJ.log(url.toString());
+		if (IJ.debugMode) IJ.log(uc.getRequestProperty("User-Agent"));
+
+		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+			uc.getInputStream())))
+		{
+			if (IJ.debugMode) reader.lines().forEach(IJ::log);
 		}
 		catch (final IOException e) {
 			if (IJ.debugMode) {

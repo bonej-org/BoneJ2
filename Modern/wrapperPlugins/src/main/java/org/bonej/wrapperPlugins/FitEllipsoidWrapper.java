@@ -27,6 +27,10 @@ import static net.imagej.ops.stats.regression.leastSquares.Quadric.MIN_DATA;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
+import ij.ImagePlus;
+import ij.measure.Calibration;
+import ij.plugin.frame.RoiManager;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -35,8 +39,6 @@ import java.util.stream.Collectors;
 import net.imagej.ops.OpService;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.patcher.LegacyInjector;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
@@ -45,20 +47,22 @@ import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.joml.Matrix4dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
-
-import ij.ImagePlus;
-import ij.measure.Calibration;
-import ij.plugin.frame.RoiManager;
 
 /**
  * A command that takes point ROIs from the ROI manager, and tries to fit an
@@ -92,14 +96,19 @@ public class FitEllipsoidWrapper extends ContextCommand {
 
 	@Parameter
 	private OpService opService;
-
 	@Parameter
 	private StatusService statusService;
-
 	@Parameter
 	private UIService uiService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private List<Vector3d> points;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -125,6 +134,17 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		FitEllipsoidWrapper.reporter = reporter;
 	}
 
 	private void addResults(final Ellipsoid ellipsoid) {
