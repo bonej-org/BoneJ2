@@ -96,6 +96,7 @@ public class LocalThickness implements PlugIn {
 			if (cancel) {
 				return;
 			}
+			UsageReporter.reportEvent(this).send();
 		}
 
 		createSetupDialog();

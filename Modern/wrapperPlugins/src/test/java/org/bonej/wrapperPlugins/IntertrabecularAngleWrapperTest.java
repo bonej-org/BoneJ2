@@ -41,6 +41,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.NewImage;
+
 import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
@@ -49,22 +53,20 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
-import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultResultsTable;
 
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
+import org.scijava.table.DefaultColumn;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
-
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.NewImage;
 
 /**
  * Tests for {@link IntertrabecularAngleWrapper}
@@ -76,6 +78,14 @@ import ij.gui.NewImage;
 public class IntertrabecularAngleWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private UsageReporter mockReporter;
+
+	@Before
+	public void setup() {
+		mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		IntertrabecularAngleWrapper.setReporter(mockReporter);
+	}
 
 	@After
 	public void tearDown() {

@@ -30,6 +30,9 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
+import ij.ImagePlus;
+import ij.measure.Calibration;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -38,33 +41,33 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.DoubleStream;
 
-import net.imagej.ops.OpService;
 import net.imagej.patcher.LegacyInjector;
-import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultResultsTable;
-import net.imagej.table.DoubleColumn;
 import net.imagej.table.ResultsTable;
-import net.imagej.table.Table;
 import net.imglib2.util.ValuePair;
 
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.DoubleColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
 
-import ij.ImagePlus;
-import ij.measure.Calibration;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Edge;
 import sc.fiji.analyzeSkeleton.Graph;
@@ -134,7 +137,6 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		description = "If true, considers connected components together as a cluster, otherwise only looks at single short edges (order-dependent!)",
 		required = false, persistKey = "ITA_useClusters")
 	private boolean useClusters = true;
-	// TODO Fix typo
 	@Parameter(label = "Print centroids",
 		description = "Print the centroids of vertices at both ends of each edge",
 		required = false, persistKey = "ITA_print_centroids")
@@ -154,21 +156,20 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private ResultsTable centroidTable;
 	@Parameter(type = ItemIO.OUTPUT, label = "Edge culling percentages")
 	private ResultsTable culledEdgePercentagesTable;
-	@SuppressWarnings("unused")
-	@Parameter
-	private OpService opService;
-	@SuppressWarnings("unused")
 	@Parameter
 	private StatusService statusService;
-	@SuppressWarnings("unused")
 	@Parameter
 	private UIService uiService;
-	@SuppressWarnings("unused")
 	@Parameter
-	private PrefService prefService;
+	private PrefService prefs;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
+
 	private double[] coefficients;
-	private double calibratedMinimumLength;
 	private boolean anisotropyWarned;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -202,6 +203,17 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		IntertrabecularAngleWrapper.reporter = reporter;
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {
@@ -228,7 +240,8 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 
 	@SuppressWarnings("unused")
 	private void calculateRealLength() {
-		calibratedMinimumLength = minimumTrabecularLength * coefficients[0];
+		final double calibratedMinimumLength = minimumTrabecularLength *
+			coefficients[0];
 		final String unit = ResultUtils.getUnitHeader(inputImage);
 		realLength = String.join(" ", String.format("%.2g",
 			calibratedMinimumLength), unit);
@@ -282,7 +295,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		if (inputImage.getNFrames() > 1) {
 			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
-
+		// Without anisotropyWarned the warning is shown twice
 		if (!anisotropyWarned) {
 			if (!Common.warnAnisotropy(inputImage, uiService)) {
 				cancel(null);

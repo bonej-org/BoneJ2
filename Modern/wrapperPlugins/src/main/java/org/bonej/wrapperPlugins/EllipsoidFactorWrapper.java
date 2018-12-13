@@ -27,20 +27,18 @@ package org.bonej.wrapperPlugins;
 import com.jogamp.opengl.math.Quaternion;
 import graphics.scenery.Icosphere;
 import graphics.scenery.Node;*/
+
+import cleargl.GLVector;
+import graphics.scenery.Icosphere;
+import graphics.scenery.Mesh;
+import graphics.scenery.ShaderMaterial;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imagej.units.UnitService;
-import net.imglib2.Cursor;
-import net.imglib2.Dimensions;
-import net.imglib2.FinalDimensions;
-import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessible;
-import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
@@ -76,37 +74,29 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
-//import sc.iview.SciView;
+import sc.iview.SciView;
+import sc.iview.SciViewService;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
+import java.util.stream.*;
 import java.util.stream.Stream.Builder;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static net.imglib2.roi.Regions.countTrue;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
-import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
+
+//import sc.iview.SciView;
 
 /**
  * Ellipsoid Factor
@@ -250,27 +240,63 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
 
 	private void createEllipsoidsScene(List<Ellipsoid> ellipsoids) {
-    	/*final Node superNode = new Node();
-		Icosphere sphere = new Icosphere(1,1);
+    boolean instancing = false;
+    // ask the SciViewService for a new SciView
+	  // you might want to store that and re-use, instead of getOrCreateActiveSciView(),
+		// as there might be others open.
+		SciViewService sciViewService = context().getService(SciViewService.class);
+		SciView sciView = sciViewService.getOrCreateActiveSciView();
 
-		sphere.setRotation(new Quaternion(0,0,0,1));
-
-		//GLVector pos = new GLVector((float) ellipsoids.get(0).getCentroid().get(0), (float) ellipsoids.get(0).getCentroid().get(1), (float) ellipsoids.get(0).getCentroid().get(2));
-		GLVector pos = new GLVector(0.0f,0.0f,0.0f);
-		sphere.setPosition(pos);
-
-		GLVector scale = new GLVector(1,2,3);
-		sphere.setScale(scale);
-		superNode.addChild(sphere);
-
-		SciView sciView = new SciView(context());
+    final Mesh superNode = new Mesh();
+    superNode.setScale(new GLVector(0.01f, 0.01f, 0.01f));
 		sciView.addChild(superNode);
 
-		//generate list of transformations from ellipsoids
-		ellipsoids.get(0).getOrientation();
-		//make instances from those transformations
-		//draw ellipsoids
-		//show display*/
+    if(!instancing) {
+			// iterate over ellipsoids, this is without instancing.
+			ellipsoids.forEach(ellipsoid -> {
+			// create a new Icosphere for each ellipsoid
+			Icosphere s = new Icosphere(1.0f, 3);
+			GLVector pos = new GLVector((float) ellipsoid.getCentroid().get(0),
+								(float) ellipsoid.getCentroid().get(1),
+								(float) ellipsoid.getCentroid().get(2));
+
+			GLVector scale = new GLVector((float) ellipsoid.getA(),
+								(float) ellipsoid.getB(),
+								(float) ellipsoid.getC());
+
+			s.setPosition(pos);
+			s.setScale(scale);
+
+			// add as children
+			superNode.addChild(s);
+			});
+		} else {
+			// iterate over ellipsoids, this is _with_ instancing.
+			final Icosphere master = new Icosphere(1.0f, 3);
+			master.setMaterial(ShaderMaterial.Companion.fromFiles("DefaultDeferredInstanced.vert", "DefaultDeferred.frag"));
+			master.setInstanceMaster(true);
+			master.getInstancedProperties().put("ModelMatrix", master::getModel);
+
+			ellipsoids.forEach(ellipsoid -> {
+				// here, we do not add geometry for each individual mesh, they are just empty.
+				Mesh s = new Mesh();
+				s.setInstanceOf(master);
+				GLVector pos = new GLVector((float) ellipsoid.getCentroid().get(0),
+								(float) ellipsoid.getCentroid().get(1),
+								(float) ellipsoid.getCentroid().get(2));
+
+				GLVector scale = new GLVector((float) ellipsoid.getA(),
+								(float) ellipsoid.getB(),
+								(float) ellipsoid.getC());
+
+				s.setPosition(pos);
+				s.setScale(scale);
+
+				// instead of adding it to the node's children, we add it to its instances.
+				master.getInstances().add(s);
+				sciView.addChild(master);
+			});
+		}
 	}
 
 	private void createAToBImage(final double[] aBRatios,

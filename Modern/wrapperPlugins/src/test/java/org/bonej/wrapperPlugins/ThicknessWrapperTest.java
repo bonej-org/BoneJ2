@@ -30,31 +30,35 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import net.imagej.ImageJ;
-import net.imagej.table.DefaultColumn;
-
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.scijava.Gateway;
-import org.scijava.command.CommandModule;
-import org.scijava.ui.UserInterface;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
 import ij.process.LUT;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import net.imagej.ImageJ;
+
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.scijava.Gateway;
+import org.scijava.command.CommandModule;
+import org.scijava.table.DefaultColumn;
+import org.scijava.ui.UserInterface;
 
 /**
  * Tests for {@link ThicknessWrapper}
@@ -65,6 +69,14 @@ import ij.process.LUT;
 public class ThicknessWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private UsageReporter mockReporter;
+
+	@Before
+	public void setup() {
+		mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		ThicknessWrapper.setReporter(mockReporter);
+	}
 
 	@After
 	public void tearDown() {
