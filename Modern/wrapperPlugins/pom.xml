@@ -189,11 +189,11 @@
         </dependency>
 
         <!--SciView dependencies-->
-        <!--<dependency>
+        <dependency>
             <groupId>sc.iview</groupId>
             <artifactId>sciview</artifactId>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>net.clearvolume</groupId>
             <artifactId>cleargl</artifactId>
         </dependency>
