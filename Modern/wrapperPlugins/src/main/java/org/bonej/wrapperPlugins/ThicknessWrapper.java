@@ -30,6 +30,12 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.plugin.frame.RoiManager;
+import ij.process.LUT;
+import ij.process.StackStatistics;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,8 +43,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import net.imagej.patcher.LegacyInjector;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
@@ -51,19 +55,15 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.plugin.frame.RoiManager;
-import ij.process.LUT;
-import ij.process.StackStatistics;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
 /**

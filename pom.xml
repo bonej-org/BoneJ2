@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.scijava</groupId>
         <artifactId>pom-scijava</artifactId>
-        <version>23.2.0</version>
+        <version>24.0.0</version>
         <relativePath />
     </parent>
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej</artifactId>
-    <version>6.0.1-SNAPSHOT</version>
+    <version>6.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>BoneJ Parent POM</name>
@@ -119,29 +119,7 @@
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>deploy-to-imagej</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
-
-        <!-- NB: For linalg ops, until pom-scijava catches up. -->
-        <imagej-ops.version>0.43.0</imagej-ops.version>
     </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>net.imagej</groupId>
-                <artifactId>imagej-maven-plugin</artifactId>
-                <version>0.6.0</version>
-                <executions>
-                    <execution>
-                        <id>copy-jars</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>copy-jars</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
     <repositories>
         <repository>

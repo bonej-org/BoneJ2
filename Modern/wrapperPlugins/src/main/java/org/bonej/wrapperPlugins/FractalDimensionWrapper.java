@@ -41,11 +41,6 @@ import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCF;
 import net.imagej.ops.special.hybrid.Hybrids;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.DefaultGenericTable;
-import net.imagej.table.DoubleColumn;
-import net.imagej.table.GenericTable;
-import net.imagej.table.Table;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -72,6 +67,11 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.DefaultGenericTable;
+import org.scijava.table.DoubleColumn;
+import org.scijava.table.GenericTable;
+import org.scijava.table.Table;
 import org.scijava.widget.NumberWidget;
 
 /**

@@ -35,12 +35,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.NewImage;
+import ij.measure.Calibration;
+import ij.process.LUT;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import net.imagej.ImageJ;
-import net.imagej.table.DefaultColumn;
 
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
@@ -52,13 +57,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
+import org.scijava.table.DefaultColumn;
 import org.scijava.ui.UserInterface;
-
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.NewImage;
-import ij.measure.Calibration;
-import ij.process.LUT;
 
 /**
  * Tests for {@link ThicknessWrapper}

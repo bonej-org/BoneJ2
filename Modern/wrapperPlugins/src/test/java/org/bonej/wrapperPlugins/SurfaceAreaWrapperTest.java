@@ -58,7 +58,6 @@ import net.imagej.mesh.Mesh;
 import net.imagej.mesh.Triangle;
 import net.imagej.mesh.Triangles;
 import net.imagej.mesh.naive.NaiveFloatMesh;
-import net.imagej.table.DefaultColumn;
 import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -73,6 +72,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
+import org.scijava.table.DefaultColumn;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
