@@ -34,6 +34,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import net.imagej.ImageJ;
 import net.imagej.table.DefaultColumn;
@@ -49,8 +51,11 @@ import net.imagej.table.DefaultGenericTable;
 import net.imagej.table.PrimitiveColumn;
 
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -69,6 +74,7 @@ import ij.gui.NewImage;
 public class AnalyseSkeletonWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
+	private UsageReporter mockReporter;
 
 	@After
 	public void tearDown() {
@@ -458,6 +464,55 @@ public class AnalyseSkeletonWrapperTest {
 			.getCancelReason());
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
+	}
+
+	@Test
+	public void testCancelledRunDoesNotReport() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		// run() should cancel, when an image has no skeletons
+		final ImagePlus blank = NewImage.createByteImage("Blank", 4, 4, 1,
+			FILL_BLACK);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			AnalyseSkeletonWrapper.class, true, "inputImage", blank).get();
+
+		// VERIFY
+		assertTrue("Sanity check failed: method didn't cancel", module
+			.isCanceled());
+		verify(mockReporter, timeout(1000).times(0)).reportEvent(anyString());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testSetReporterThrowsNPEIfNull() {
+		AnalyseSkeletonWrapper.setReporter(null);
+	}
+
+	@Test
+	public void testSuccessfulRunReports() throws ExecutionException,
+		InterruptedException
+	{
+		// SETUP
+		final ImagePlus image = NewImage.createByteImage("Test", 4, 4, 1,
+			FILL_BLACK);
+		image.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
+
+		// EXECUTE
+		final CommandModule module = IMAGE_J.command().run(
+			AnalyseSkeletonWrapper.class, true, "inputImage", image).get();
+
+		// VERIFY
+		assertFalse("Sanity check failed: method cancelled", module.isCanceled());
+		verify(mockReporter, timeout(1000)).reportEvent(anyString());
+	}
+
+	@Before
+	public void setup() {
+		mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		AnalyseSkeletonWrapper.setReporter(mockReporter);
 	}
 
 	@AfterClass

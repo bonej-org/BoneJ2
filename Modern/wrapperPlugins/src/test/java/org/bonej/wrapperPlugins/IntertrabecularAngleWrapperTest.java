@@ -53,8 +53,10 @@ import net.imagej.table.DefaultColumn;
 import net.imagej.table.DefaultResultsTable;
 
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
@@ -76,6 +78,14 @@ import ij.gui.NewImage;
 public class IntertrabecularAngleWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private UsageReporter mockReporter;
+
+	@Before
+	public void setup() {
+		mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		IntertrabecularAngleWrapper.setReporter(mockReporter);
+	}
 
 	@After
 	public void tearDown() {
