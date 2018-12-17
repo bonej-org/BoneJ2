@@ -53,6 +53,7 @@ import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.utilities.VectorUtil;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.*;
 import org.scijava.ItemIO;
@@ -478,7 +479,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		RandomAccess<R> randomAccess = seedPointImage.randomAccess();
 		seedPoints.forEach(seed ->
 				{
-					long[] seedPixel = vectorToPixelGrid(seed);
+					long[] seedPixel = VectorUtil.toPixelGrid(seed);
 					randomAccess.setPosition(seedPixel);
 					randomAccess.get().setReal(255);
 				}
@@ -553,7 +554,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		}
 		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage
 			.randomAccess();
-		eIDRandomAccess.setPosition(vectorToPixelGrid(point));
+		eIDRandomAccess.setPosition(VectorUtil.toPixelGrid(point));
 		final Ellipsoid ellipsoid = candidate.get();
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
@@ -596,7 +597,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final Vector3d intersectionPoint = new Vector3d(dir);
 		intersectionPoint.mul(surfaceIntersectionParameter);
 		intersectionPoint.add(centroid);
-		final long[] pixel = vectorToPixelGrid(intersectionPoint);
+		final long[] pixel = VectorUtil.toPixelGrid(intersectionPoint);
 		if (outOfBounds(inputImage, pixel)) {
 			return false;
 		}
@@ -605,7 +606,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		return inputRA.get().getRealDouble() == 0;
 	}
 
-	private boolean moreThanHalfEllipsoidSurfaceOutside(Ellipsoid e, Collection<Vector3dc> samplingDirections)
+	/**
+	 * @param e Ellipsoid that may have more than half its volume outside the image boundary
+	 * @param samplingDirections directions in which to perform the inside/outside test
+	 * @return true if more than half the ellipsoid sampling points are outside the input image boundary
+	 */
+	public boolean moreThanHalfEllipsoidSurfaceOutside(Ellipsoid e, Collection<Vector3dc> samplingDirections)
 	{
 		final Matrix3d a = new Matrix3d();
 		e.getOrientation().get3x3(a);
@@ -617,7 +623,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			final Vector3d intersectionPoint = new Vector3d(dir);
 			intersectionPoint.mul(surfaceIntersectionParameter);
 			intersectionPoint.add(centroid);
-			final long[] pixel = vectorToPixelGrid(intersectionPoint);
+			final long[] pixel = VectorUtil.toPixelGrid(intersectionPoint);
 			if (outOfBounds(inputImage, pixel)) {
 				return true;
 			} else {
@@ -680,12 +686,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final RandomAccess<R> randomAccess = inputImage.randomAccess();
 
         final Vector3d currentRealPosition = new Vector3d(start);
-        long[] currentPixelPosition = vectorToPixelGrid(start);
+        long[] currentPixelPosition = VectorUtil.toPixelGrid(start);
         randomAccess.setPosition(currentPixelPosition);
 
         while (randomAccess.get().getRealDouble() > 0) {
             currentRealPosition.add(rayIncrement);
-            currentPixelPosition = vectorToPixelGrid(currentRealPosition);
+            currentPixelPosition = VectorUtil.toPixelGrid(currentRealPosition);
             if (outOfBounds(inputImage, currentPixelPosition)) break;
             randomAccess.setPosition(currentPixelPosition);
         }
@@ -701,12 +707,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			}
 		}
         return false;
-    }
-
-    // TODO make a utility method, similar used in MILPlane op
-    public static long[] vectorToPixelGrid(final Vector3dc currentPosition) {
-        return Stream.of(currentPosition.x(), currentPosition.y(),
-                currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
 
 	private static Stream<Set<ValuePair<Vector3dc, Vector3dc>>>

@@ -33,6 +33,7 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.FloatType;
 import org.bonej.utilities.SharedTable;
+import org.bonej.utilities.VectorUtil;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.junit.After;
@@ -45,7 +46,6 @@ import org.scijava.table.DefaultColumn;
 
 import java.util.List;
 
-import static org.bonej.wrapperPlugins.EllipsoidFactorWrapper.vectorToPixelGrid;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -168,7 +168,7 @@ public class EllipsoidFactorWrapperTest {
         final Vector3dc position = new Vector3d(3.25, 3.5, 3.75);
 
         final long[] expected = {3,3,3};
-        final long[] actual = vectorToPixelGrid(position);
+        final long[] actual = VectorUtil.toPixelGrid(position);
 
         assertEquals("Conversion to pixel grid failed", expected[0], actual[0]);
         assertEquals("Conversion to pixel grid failed", expected[1], actual[1]);
