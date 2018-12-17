@@ -23,11 +23,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.wrapperPlugins.EllipsoidFactorWrapper.vectorToPixelGrid;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
@@ -37,8 +32,6 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.FloatType;
-
-import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.SharedTable;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -51,6 +44,9 @@ import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
 
 import java.util.List;
+
+import static org.bonej.wrapperPlugins.EllipsoidFactorWrapper.vectorToPixelGrid;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link EllipsoidFactorWrapper}.
