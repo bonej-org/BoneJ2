@@ -12,13 +12,16 @@ import org.joml.Vector3dc;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Plugin(type = Op.class)
-public class ellipsoidSamplingPointsOutsideRatio extends AbstractBinaryFunctionOp<Img,Ellipsoid,Boolean> {
+public class HalfOrMoreSamplingPointsOutOfBounds extends AbstractBinaryFunctionOp<Img,Ellipsoid,Boolean> {
 
-    @Parameter
-    private List<Vector3dc> samplingDirections;
+    @Parameter(required = false)
+    private List<Vector3dc> samplingDirections = Arrays.asList(
+            new Vector3d(1, 0, 0), new Vector3d(0, 1, 0), new Vector3d(0, 0, 1),
+                new Vector3d(-1, 0, 0), new Vector3d(0, -1, 0), new Vector3d(0, 0, -1));;
 
     @Override
     public Boolean calculate(Img img, Ellipsoid ellipsoid) {
@@ -40,9 +43,9 @@ public class ellipsoidSamplingPointsOutsideRatio extends AbstractBinaryFunctionO
             }
         }).count();
 
-        return 0.5<((double) surfacePointsOutside/((double) samplingDirections.size()));
+        return 0.5<=((double) surfacePointsOutside/((double) samplingDirections.size()));
     }
-    
+
     // TODO make into a utility method, and see where else needed in BoneJ
     private static boolean outOfBounds(final Dimensions dimensions, final long[] currentPixelPosition) {
         for (int i = 0; i < currentPixelPosition.length; i++) {
