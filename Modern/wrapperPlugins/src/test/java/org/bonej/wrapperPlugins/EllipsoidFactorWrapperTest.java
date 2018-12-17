@@ -32,7 +32,6 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
-import net.imagej.table.DefaultColumn;
 import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
@@ -49,6 +48,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
+import org.scijava.table.DefaultColumn;
 
 import java.util.List;
 

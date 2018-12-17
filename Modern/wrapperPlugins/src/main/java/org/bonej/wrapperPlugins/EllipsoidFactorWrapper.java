@@ -27,8 +27,6 @@ import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.*;
 import net.imglib2.RandomAccess;
@@ -67,6 +65,8 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 
 import java.lang.Math;
 import java.util.*;
