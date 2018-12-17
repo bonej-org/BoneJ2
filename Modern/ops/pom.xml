@@ -145,5 +145,10 @@
             <artifactId>imagej</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>bonej-utilities</artifactId>
+            <version>6.1.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
