@@ -606,6 +606,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		return inputRA.get().getRealDouble() == 0;
 	}
 
+	//TODO use the appropriate op
 	/**
 	 * @param e Ellipsoid that may have more than half its volume outside the image boundary
 	 * @param samplingDirections directions in which to perform the inside/outside test
@@ -631,7 +632,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			}
 		}).count();
 
-		return 0.5<((double) surfacePointsOutside/((double) samplingDirections.size()));
+		return 0.5<=((double) surfacePointsOutside/((double) samplingDirections.size()));
 	}
 
     private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
