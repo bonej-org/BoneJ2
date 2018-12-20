@@ -612,10 +612,9 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	 * @param samplingDirections directions in which to perform the inside/outside test
 	 * @return true if more than half the ellipsoid sampling points are outside the input image boundary
 	 */
-	public boolean moreThanHalfEllipsoidSurfaceOutside(Ellipsoid e, Collection<Vector3dc> samplingDirections)
+	public boolean moreThanHalfEllipsoidSurfaceOutside(final Ellipsoid e, final Collection<Vector3dc> samplingDirections)
 	{
-		final Matrix3d a = new Matrix3d();
-		e.getOrientation().get3x3(a);
+		final Matrix3d a = reconstructMatrixOfSlightlySmallerEllipsoid(e,0.0);
 		final Vector3dc centroid = e.getCentroid();
 		final long surfacePointsOutside = samplingDirections.stream().filter(dir -> {
 			final Vector3dc aTimesDir = a.transform(dir, new Vector3d());
