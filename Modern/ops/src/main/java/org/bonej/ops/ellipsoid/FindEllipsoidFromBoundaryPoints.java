@@ -351,7 +351,7 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractBinaryFunctionOp<Li
         return new ValuePair<>(new Vector3d(x),-xtQ1X/xtQ2X);
     }
 
-
+	//TODO FIX THIS!!
 	private boolean isValidSphere(
 			final ValuePair<ValuePair<Vector3dc, Vector3dc>, Double> qAndRadius)
 	{

@@ -23,6 +23,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
+import ij.ImagePlus;
+
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -31,13 +33,10 @@ import net.imagej.axis.AxisType;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
-import net.imagej.table.GenericColumn;
 import net.imagej.units.UnitService;
 
 import org.bonej.utilities.AxisUtils;
 import org.scijava.util.StringUtils;
-
-import ij.ImagePlus;
 
 /**
  * Static utility methods that help display results to the user

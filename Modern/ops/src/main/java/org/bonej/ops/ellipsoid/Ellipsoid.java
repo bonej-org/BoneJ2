@@ -405,5 +405,6 @@ public class Ellipsoid {
 		return "centre:\n" + centroid + "\naxis lengths:\n( " + a + " " + b + " " +
 			c + " )\n" + "unit axis directions:\n" + orientation;
 	}
-	// endregion
+
+    // endregion
 }

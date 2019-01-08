@@ -52,14 +52,11 @@ import net.imagej.ops.Ops.Geometric.MarchingCubes;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.space.AnnotatedSpace;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.real.DoubleType;
 
 import org.bonej.utilities.AxisUtils;
@@ -69,13 +66,19 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.util.StringUtils;
 import org.scijava.widget.FileWidget;
@@ -116,18 +119,20 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Parameter
 	private OpService ops;
-
 	@Parameter
 	private LogService logService;
-
 	@Parameter
 	private UIService uiService;
-
 	@Parameter
 	private UnitService unitService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	private String path = "";
 	private String extension = "";
@@ -135,6 +140,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
 	private String unitHeader = "";
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -156,6 +162,17 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		SurfaceAreaWrapper.reporter = reporter;
 	}
 
 	/**

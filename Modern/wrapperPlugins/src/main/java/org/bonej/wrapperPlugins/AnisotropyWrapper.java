@@ -53,8 +53,6 @@ import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -72,6 +70,7 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.joml.Matrix4d;
 import org.joml.Matrix4dc;
 import org.joml.Quaterniond;
@@ -81,10 +80,15 @@ import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
@@ -171,6 +175,13 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UIService uiService;
 	@Parameter
 	private UnitService unitService;
+	@Parameter
+	private PrefService prefService;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -194,9 +205,19 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefService, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
 	}
 
 	// region -- Helper methods --
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		AnisotropyWrapper.reporter = reporter;
+	}
 
 	private void addResult(final Subspace<BitType> subspace,
 		final double anisotropy, final Ellipsoid ellipsoid)

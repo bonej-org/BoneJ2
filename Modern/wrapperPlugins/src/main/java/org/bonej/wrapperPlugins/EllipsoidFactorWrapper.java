@@ -27,10 +27,9 @@ import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.*;
+import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
@@ -39,7 +38,6 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.ComplexType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -51,16 +49,13 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
-import org.bonej.ops.ellipsoid.EllipsoidPoints;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.utilities.VectorUtil;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.joml.Matrix3d;
-import org.joml.Matrix3dc;
-import org.joml.Vector3d;
-import org.joml.Vector3dc;
+import org.joml.*;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -74,16 +69,13 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
+import java.lang.Math;
+import java.util.*;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -233,9 +225,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 				logService.debug("ellipsoid(" + i + "):\n" + ellipsoids.get(i).toString());
 			}
 		}
-
-
-
     }
 
 	private void createAToBImage(final double[] aBRatios,
@@ -439,7 +428,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
 					seed)));
 		return ellipsoidCandidates.filter(Optional::isPresent).map(Optional::get)
-			.filter(e -> isEllipsoidWhollyInForeground(e,filterSamplingDirections))
+			.filter(e -> isEllipsoidNonBackground(e,filterSamplingDirections))
 			.collect(toList());
 	}
 
@@ -449,8 +438,8 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
         final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
 			final Vector3dc direction = new Vector3d(d);
-			return findFirstPointInBGAlongRay(direction, centre);
-		}).collect(toList());
+			return findFirstNonForegroundPointAlongRay(direction, centre);
+		}).filter(Objects::nonNull).collect(toList());
 		return getAllUniqueCombinationsOfFourPoints(contactPoints, centre);
 	}
 
@@ -493,7 +482,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		RandomAccess<R> randomAccess = seedPointImage.randomAccess();
 		seedPoints.forEach(seed ->
 				{
-					long[] seedPixel = vectorToPixelGrid(seed);
+					long[] seedPixel = VectorUtil.toPixelGrid(seed);
 					randomAccess.setPosition(seedPixel);
 					randomAccess.get().setReal(255);
 				}
@@ -526,7 +515,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			//	continue;
 			}
 			final Vector3d seed = new Vector3d(position[0], position[1], position[2]);
-			seed.add(0.5, 0.5, 0.5);
+			seed.sub(0.5, 0.5, 0.5);//add 0.5 to centre of pixel, and subtract 1.0 because of ridge calculated on 1-expanded image!
 			seeds.add(seed);
 		}
 		if (seeds.size() > approximateMaximumNumberOfSeeds) {
@@ -568,17 +557,15 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		}
 		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage
 			.randomAccess();
-		eIDRandomAccess.setPosition(vectorToPixelGrid(point));
+		eIDRandomAccess.setPosition(VectorUtil.toPixelGrid(point));
 		final Ellipsoid ellipsoid = candidate.get();
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
 
-	private boolean isEllipsoidWhollyInForeground(final Ellipsoid e,
-		final Collection<Vector3dc> sphereSamplingDirections)
+	//non-background includes foreground + space outside image boundary
+	private boolean isEllipsoidNonBackground(final Ellipsoid e,
+											 final Collection<Vector3dc> sphereSamplingDirections)
 	{
-		if (outOfBounds(inputImage, vectorToPixelGrid(e.getCentroid()))) {
-			return false;
-		}
 		final Builder<Vector3dc> builder = Stream.builder();
 		final Matrix3d orientation = e.getOrientation().get3x3(new Matrix3d());
 		for (int i = 0; i < 3; i++) {
@@ -590,7 +577,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			.stream(), builder.build());
 		final Matrix3d reconstruction = reconstructMatrixOfSlightlySmallerEllipsoid(e,Math.sqrt(3.0));
 		return directions.noneMatch(dir -> isEllipsoidIntersectionBackground(
-			reconstruction, e.getCentroid(), dir));
+			reconstruction, e.getCentroid(), dir)) && !moreThanHalfEllipsoidSurfaceOutside(e,sphereSamplingDirections);
 	}
 
 	public Matrix3d reconstructMatrixOfSlightlySmallerEllipsoid(Ellipsoid e, final double reduction) {
@@ -613,13 +600,41 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		final Vector3d intersectionPoint = new Vector3d(dir);
 		intersectionPoint.mul(surfaceIntersectionParameter);
 		intersectionPoint.add(centroid);
-		final long[] pixel = vectorToPixelGrid(intersectionPoint);
+		final long[] pixel = VectorUtil.toPixelGrid(intersectionPoint);
 		if (outOfBounds(inputImage, pixel)) {
-			return true;
+			return false;
 		}
 		final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
 		inputRA.setPosition(pixel);
 		return inputRA.get().getRealDouble() == 0;
+	}
+
+	//TODO use the appropriate op
+	/**
+	 * @param e Ellipsoid that may have more than half its volume outside the image boundary
+	 * @param samplingDirections directions in which to perform the inside/outside test
+	 * @return true if more than half the ellipsoid sampling points are outside the input image boundary
+	 */
+	public boolean moreThanHalfEllipsoidSurfaceOutside(final Ellipsoid e, final Collection<Vector3dc> samplingDirections)
+	{
+		final Matrix3d a = reconstructMatrixOfSlightlySmallerEllipsoid(e,0.0);
+		final Vector3dc centroid = e.getCentroid();
+		final long surfacePointsOutside = samplingDirections.stream().filter(dir -> {
+			final Vector3dc aTimesDir = a.transform(dir, new Vector3d());
+			final double surfaceIntersectionParameter = Math.sqrt(1.0 / dir.dot(
+					aTimesDir));
+			final Vector3d intersectionPoint = new Vector3d(dir);
+			intersectionPoint.mul(surfaceIntersectionParameter);
+			intersectionPoint.add(centroid);
+			final long[] pixel = VectorUtil.toPixelGrid(intersectionPoint);
+			if (outOfBounds(inputImage, pixel)) {
+				return true;
+			} else {
+				return false;
+			}
+		}).count();
+
+		return 0.5<=((double) surfacePointsOutside/((double) samplingDirections.size()));
 	}
 
     private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
@@ -668,17 +683,18 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         return phiK - Math.floor(phiK / (2 * Math.PI)) * 2 * Math.PI;
     }
 
-    private Vector3d findFirstPointInBGAlongRay(final Vector3dc rayIncrement,
-                                                final Vector3dc start) {
+    // non-foreground = background **or** outside stack
+    private Vector3d findFirstNonForegroundPointAlongRay(final Vector3dc rayIncrement,
+														 final Vector3dc start) {
         final RandomAccess<R> randomAccess = inputImage.randomAccess();
 
         final Vector3d currentRealPosition = new Vector3d(start);
-        long[] currentPixelPosition = vectorToPixelGrid(start);
+        long[] currentPixelPosition = VectorUtil.toPixelGrid(start);
         randomAccess.setPosition(currentPixelPosition);
 
         while (randomAccess.get().getRealDouble() > 0) {
             currentRealPosition.add(rayIncrement);
-            currentPixelPosition = vectorToPixelGrid(currentRealPosition);
+            currentPixelPosition = VectorUtil.toPixelGrid(currentRealPosition);
             if (outOfBounds(inputImage, currentPixelPosition)) break;
             randomAccess.setPosition(currentPixelPosition);
         }
@@ -694,12 +710,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			}
 		}
         return false;
-    }
-
-    // TODO make a utility method, similar used in MILPlane op
-    public static long[] vectorToPixelGrid(final Vector3dc currentPosition) {
-        return Stream.of(currentPosition.x(), currentPosition.y(),
-                currentPosition.z()).mapToLong(x -> (long) x.doubleValue()).toArray();
     }
 
 	private static Stream<Set<ValuePair<Vector3dc, Vector3dc>>>

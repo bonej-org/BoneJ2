@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.Table;
 import net.imagej.units.UnitService;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.NativeType;
@@ -48,13 +46,18 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.UIService;
+import org.scijava.plugin.PluginService;
+import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 
 /**
  * This command estimates the size of the given sample by counting its
@@ -66,7 +69,7 @@ import org.scijava.ui.UIService;
  * @author Richard Domander
  */
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction", headless = true)
+	menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction")
 public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	extends ContextCommand
 {
@@ -85,15 +88,16 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 
 	@Parameter
 	private OpService opService;
-
-	@Parameter
-	private UIService uiService;
-
 	@Parameter
 	private UnitService unitService;
-
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PrefService prefs;
+	@Parameter
+	private PluginService pluginService;
+	@Parameter
+	private CommandService commandService;
 
 	/** Header of the foreground (bone) volume column in the results table */
 	private String boneSizeHeader;
@@ -103,6 +107,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private String ratioHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
+	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -133,6 +138,17 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
+	}
+
+	static void setReporter(final UsageReporter reporter) {
+		if (reporter == null) {
+			throw new NullPointerException("Reporter cannot be null");
+		}
+		ElementFractionWrapper.reporter = reporter;
 	}
 
 	private void addResults(final String label, final double foregroundSize,
