@@ -187,6 +187,7 @@ public class EllipsoidFactorWrapperTest {
 		});
 	}
 
+	//TODO make this a (test) utitility function
 	private static ImgPlus<BitType> getSphereImage() {
 		final long[] imageDimensions = { 101, 101, 101 };
 		final Vector3dc centre = new Vector3d(Math.floor(imageDimensions[0] / 2.0),
