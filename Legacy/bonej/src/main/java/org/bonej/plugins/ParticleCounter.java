@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bonej.geometry.FitEllipsoid;
+import org.bonej.geometry.Vectors;
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
@@ -900,38 +901,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	{
 		final Matrix rotation = eigen.getV();
 		
-		//convert the rotation matrix into axis-angle representation
-		//calculate the axis
-		final double u0 = rotation.get(2, 1) - rotation.get(1, 2);
-		final double u1 = rotation.get(0, 2) - rotation.get(2, 0);
-		final double u2 = rotation.get(1, 0) - rotation.get(0, 1);
-		final double magnitudeU = Math.sqrt(u0 * u0 + u1 * u1 + u2 * u2);
-		//axis ranges from -pi/2 to +pi/2
-		final double axis = Math.asin(magnitudeU / 2);
-		
-		//axis normed ranges from 0 to 1
-		final double axisNormed = ((axis + Math.PI/2) / 2)/(Math.PI/2);
-		
-		//calculate the angle from the trace (sum of diagonals)
-		double trace = rotation.trace();
-		
-		//spin the rotation 180° around its long axis
-		//if trace is out of range
-		if (trace > 3 || trace < -1) {
-			Matrix turn = new Matrix(3, 3);
-			turn.set(0, 0, -1);
-			turn.set(1, 1, -1);
-			turn.set(2, 2, 1);
-			trace = rotation.times(turn).trace();
-		}
-		if (trace > 3 || trace < -1)
-			IJ.log("The rotation didn't fix the out of bounds trace :-(");
-
-		double angle = Math.acos((trace - 1.0)/2.0);
+		//deflection of long axis from image z axis, 0 - pi radians
+		final double angle = Math.acos(Math.abs(rotation.get(2, 0)));
 		
 	  final float hue = (float)(angle / Math.PI);
-		final float saturation = (float) axisNormed;
-		final float brightness = (float) axisNormed;
+		final float saturation = 1.0f;
+		final float brightness = 1.0f;
 		
 		final int rgb = Color.HSBtoRGB(hue, saturation, brightness);
 		final Color color = new Color(rgb);
