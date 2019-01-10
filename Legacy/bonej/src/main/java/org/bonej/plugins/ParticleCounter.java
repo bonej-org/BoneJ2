@@ -902,7 +902,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final Matrix rotation = eigen.getV();
 		
 		//deflection of long axis from image z axis, 0 - pi radians
-		final double angle = Math.acos(Math.abs(rotation.get(2, 0)));
+		final double angle = Math.acos(-Math.abs(rotation.get(2, 0)));
 		
 	  final float hue = (float)(angle / Math.PI);
 		final float saturation = 1.0f;
