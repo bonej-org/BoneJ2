@@ -150,5 +150,20 @@
             <artifactId>bonej-utilities</artifactId>
             <version>6.1.1-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
+            <version>0.41.1-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
+        </dependency>
     </dependencies>
 </project>

@@ -3,17 +3,30 @@ package org.bonej.ops.skeletonize;
 import net.imagej.ImgPlus;
 import net.imagej.ops.Op;
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Morphology;
+import net.imagej.ops.Ops.Morphology.Close;
+import net.imagej.ops.convert.ConvertImages;
+import net.imagej.ops.image.distancetransform.DistanceTransform3D;
+import net.imagej.ops.math.BinaryRealTypeMath;
+import net.imagej.ops.morphology.close.ListClose;
+import net.imagej.ops.morphology.open.ListOpen;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
+import net.imagej.ops.stats.IterableMax;
 import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.algorithm.neighborhood.Shape;
 import net.imglib2.img.Img;
+import net.imglib2.img.ImgFactory;
+import net.imglib2.img.array.ArrayImg;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
+import net.imglib2.view.IterableRandomAccessibleInterval;
 import net.imglib2.view.Views;
 import org.bonej.utilities.VectorUtil;
 import org.joml.Vector3d;
@@ -39,10 +52,6 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
     @Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> seedPointsImage;
 
-    @SuppressWarnings("unused")
-    @Parameter
-    private OpService opService;
-
     private Random rng;
 
     @Override
@@ -51,8 +60,11 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
         rng = new Random(23);
 
         final Img<R> ridge = (Img<R>) createRidge(bitImage);
+
+        IterableMax<R> iterableMax = new IterableMax<>();
         final double threshold = thresholdForBeingARidgePoint.getRealFloat() *
-                opService.stats().max(ridge).getRealFloat();
+                iterableMax.calculate(ridge).getRealFloat();
+
         final List<Vector3dc> seeds = new ArrayList<>();
         final Cursor<R> ridgeCursor = ridge.cursor();
         final long[] position = new long[3];
@@ -87,15 +99,16 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
         final long[] offset = new long[]{-1,-1,-1};
         final IntervalView<BitType> offsetImage = Views.offset(image, offset);
         final IntervalView<BitType> expandedImage = Views.expandZero(offsetImage, borderExpansion);
-        final RandomAccessibleInterval<R> distanceTransform = opService.image()
-                .distancetransform(expandedImage);
+
+        final RandomAccessibleInterval<R> distanceMap = ops().image().distancetransform(expandedImage);
+
         final List<Shape> shapes = new ArrayList<>();
         shapes.add(new HyperSphereShape(2));
-        final IterableInterval<R> open = opService.morphology().open(
-                distanceTransform, shapes);
-        final IterableInterval<R> close = opService.morphology().close(
-                distanceTransform, shapes);
-        final IterableInterval<R> ridge = opService.math().subtract(close, open);
+
+        final IterableInterval<R> open =  ops().morphology().open(distanceMap, shapes);
+        final IterableInterval<R> close =  ops().morphology().close(distanceMap, shapes);
+        final IterableInterval<R> ridge = ops().math().subtract(close, open);
+
         final Cursor<R> ridgeCursor = ridge.localizingCursor();
         final Img openImg = (Img) open;
         final RandomAccess<R> openedRA = openImg.randomAccess();
@@ -124,8 +137,7 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
                     randomAccess.get().setReal(255);
                 }
         );
-        seedPointsImage = new ImgPlus<>(opService.convert().uint8(
-                seedPointImage), "Seeding Points");
+        seedPointsImage = new ImgPlus<>(ops().convert().uint8(seedPointImage), "Seeding Points");
     }
 
     private void reduceSeedPoints(final Collection<Vector3dc> seeds) {
