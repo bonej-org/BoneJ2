@@ -50,6 +50,7 @@ import net.imglib2.view.Views;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
+import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
@@ -186,7 +187,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         statusService.showStatus("Ellipsoid Factor: initialising...");
         rng = new Random(23);
         final ImgPlus<BitType> bitImage = Common.toBitTypeImgPlus(opService, inputImage);
-        final List<Vector3dc> internalSeedPoints = getRidgeSeedPoints(bitImage);
+        final List<Vector3dc> internalSeedPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class,bitImage)).get(0);
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
         final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
@@ -413,16 +414,23 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
 	// TODO Refactor this and sub-functions into an Op
 	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
-		final List<Vector3dc> filterSamplingDirections =
-			getGeneralizedSpiralSetOnSphere(nFilterSampling).collect(toList());
-		final Stream<Optional<Ellipsoid>> ellipsoidCandidates = seeds
-			.parallelStream().flatMap(seed -> getPointCombinationsForOneSeedPoint(
-				seed).map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c),
-					seed)));
-		return ellipsoidCandidates.filter(Optional::isPresent).map(Optional::get)
-			.filter(e -> isEllipsoidNonBackground(e,filterSamplingDirections))
-			.collect(toList());
-	}
+        final List<Vector3dc> filterSamplingDirections =
+                getGeneralizedSpiralSetOnSphere(nFilterSampling).collect(toList());
+		/*return seeds.stream().flatMap(seed ->
+                getPointCombinationsForOneSeedPoint(seed)
+                .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c), seed)))
+                .filter(Optional::isPresent).map(Optional::get)
+                .filter(e -> isEllipsoidNonBackground(e,filterSamplingDirections))
+                .collect(toList());*/
+         return seeds.stream().flatMap(seed ->
+                getPointCombinationsForOneSeedPoint(seed)
+                        .map(c ->
+                                (Optional<Ellipsoid>) (opService.run(FindEllipsoidFromBoundaryPoints.class, new ArrayList<>(c), seed))))
+                .filter(Optional::isPresent).map(Optional::get)
+                .filter(e -> isEllipsoidNonBackground(e, filterSamplingDirections))
+                .collect(toList());
+    }
+
 
 	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
 		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
@@ -433,38 +441,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 			return findFirstNonForegroundPointAlongRay(direction, centre);
 		}).filter(Objects::nonNull).collect(toList());
 		return getAllUniqueCombinationsOfFourPoints(contactPoints, centre);
-	}
-
-	private IterableInterval<R> createRidge(
-		final RandomAccessibleInterval<BitType> image)
-	{
-		final long[] borderExpansion = new long[]{1,1,1};
-		final long[] offset = new long[]{-1,-1,-1};
-		final IntervalView<BitType> offsetImage = Views.offset(image, offset);
-		final IntervalView<BitType> expandedImage = Views.expandZero(offsetImage, borderExpansion);
-		final RandomAccessibleInterval<R> distanceTransform = opService.image()
-			.distancetransform(expandedImage);
-		final List<Shape> shapes = new ArrayList<>();
-		shapes.add(new HyperSphereShape(2));
-		final IterableInterval<R> open = opService.morphology().open(
-				distanceTransform, shapes);
-		final IterableInterval<R> close = opService.morphology().close(
-			distanceTransform, shapes);
-		final IterableInterval<R> ridge = opService.math().subtract(close, open);
-		final Cursor<R> ridgeCursor = ridge.localizingCursor();
-		final Img openImg = (Img) open;
-		final RandomAccess<R> openedRA = openImg.randomAccess();
-		final long[] position = new long[3];
-		while (ridgeCursor.hasNext()) {
-			ridgeCursor.fwd();
-			ridgeCursor.localize(position);
-			openedRA.setPosition(position);
-			if (openedRA.get().getRealDouble()<1.0+1e-12)//avoids false ridge points on edge of FG
-			{
-				ridgeCursor.get().setReal(0.0f);
-			}
-		}
-		return ridge;
 	}
 
 	private void createSeedPointImage(final Img<R> seedPointImage,
@@ -481,46 +457,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		);
 		seedPointsImage = new ImgPlus<>(opService.convert().uint8(
 			seedPointImage), "Seeding Points");
-	}
-
-	// TODO Could this be an op?
-	private List<Vector3dc> getRidgeSeedPoints(
-		final RandomAccessibleInterval<BitType> bitImage)
-	{
-		final Img<R> ridge = (Img<R>) createRidge(bitImage);
-		final double threshold = thresholdForBeingARidgePoint.getRealFloat() *
-			opService.stats().max(ridge).getRealFloat();
-		final List<Vector3dc> seeds = new ArrayList<>();
-		final Cursor<R> ridgeCursor = ridge.cursor();
-		final long[] position = new long[3];
-		final long[] dimensionsMinusOne = new long[]{bitImage.dimension(0)-1, bitImage.dimension(1)-1, bitImage.dimension(2)-1};
-		final Dimensions innerImageDimensions = new FinalDimensions(dimensionsMinusOne);
-		while (ridgeCursor.hasNext()) {
-			ridgeCursor.fwd();
-			final double localValue = ridgeCursor.get().getRealFloat();
-			if (localValue <= threshold) {
-				continue;
-			}
-			ridgeCursor.localize(position);
-			if(outOfBounds(innerImageDimensions, position))
-			{
-			//	continue;
-			}
-			final Vector3d seed = new Vector3d(position[0], position[1], position[2]);
-			seed.sub(0.5, 0.5, 0.5);//add 0.5 to centre of pixel, and subtract 1.0 because of ridge calculated on 1-expanded image!
-			seeds.add(seed);
-		}
-		if (seeds.size() > approximateMaximumNumberOfSeeds) {
-			reduceSeedPoints(seeds);
-		}
-		createSeedPointImage(ridge, seeds);
-		return seeds;
-	}
-
-	private void reduceSeedPoints(final Collection<Vector3dc> seeds) {
-		final double probabilityOfAcceptingSeed =
-			((double) approximateMaximumNumberOfSeeds / seeds.size());
-		seeds.removeIf(i -> rng.nextDouble() > probabilityOfAcceptingSeed);
 	}
 
 	private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
