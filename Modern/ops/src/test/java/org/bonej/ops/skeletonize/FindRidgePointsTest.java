@@ -61,15 +61,23 @@ public class FindRidgePointsTest {
 
     @Test
     public void testSphereRidge() throws Exception {
+        //SET UP
         final ImgPlus<BitType> sphereImage = getSphereImage();
+        final Vector3dc expectedSingleRidgePoint = new Vector3d(50.5, 50.5, 50.5);
 
+        //EXECUTE
         final List<Object> outputs = (List) ops.run(FindRidgePoints.class, sphereImage);
         final List<Vector3dc> ridgePointList = (List<Vector3dc>) outputs.get(0);
 
+        //VERIFY
         assertEquals(1, ridgePointList.size());
+        assertEquals("Ridge point x-coordinate is wrong", expectedSingleRidgePoint.x(), ridgePointList.get(0).x(),0);
+        assertEquals("Ridge point y-coordinate is wrong", expectedSingleRidgePoint.y(), ridgePointList.get(0).y(),0);
+        assertEquals("Ridge point z-coordinate is wrong", expectedSingleRidgePoint.z(), ridgePointList.get(0).z(),0);
     }
 
 
+    //TODO move to somewhere where all tests can find this.
     private static ImgPlus<BitType> getSphereImage() {
         final long[] imageDimensions = { 101, 101, 101 };
         final Vector3dc centre = new Vector3d(Math.floor(imageDimensions[0] / 2.0),
