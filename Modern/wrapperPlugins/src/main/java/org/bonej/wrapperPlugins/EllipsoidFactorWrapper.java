@@ -28,10 +28,8 @@ import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.units.UnitService;
-import net.imglib2.*;
 import net.imglib2.RandomAccess;
-import net.imglib2.algorithm.neighborhood.HyperSphereShape;
-import net.imglib2.algorithm.neighborhood.Shape;
+import net.imglib2.*;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -45,7 +43,6 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.ValuePair;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
@@ -73,8 +70,11 @@ import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
 
-import java.util.*;
 import java.util.Iterator;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.*;
 import java.util.stream.Stream.Builder;
@@ -416,18 +416,11 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
         final List<Vector3dc> filterSamplingDirections =
                 getGeneralizedSpiralSetOnSphere(nFilterSampling).collect(toList());
-		/*return seeds.stream().flatMap(seed ->
+		return seeds.stream().flatMap(seed ->
                 getPointCombinationsForOneSeedPoint(seed)
                 .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c), seed)))
                 .filter(Optional::isPresent).map(Optional::get)
                 .filter(e -> isEllipsoidNonBackground(e,filterSamplingDirections))
-                .collect(toList());*/
-         return seeds.stream().flatMap(seed ->
-                getPointCombinationsForOneSeedPoint(seed)
-                        .map(c ->
-                                (Optional<Ellipsoid>) (opService.run(FindEllipsoidFromBoundaryPoints.class, new ArrayList<>(c), seed))))
-                .filter(Optional::isPresent).map(Optional::get)
-                .filter(e -> isEllipsoidNonBackground(e, filterSamplingDirections))
                 .collect(toList());
     }
 
@@ -698,6 +691,5 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
             approximateMaximumNumberOfSeeds = inputImage.dimension(0)*inputImage.dimension(1)*inputImage.dimension(3);
         }
     }
-
     // endregion
 }
