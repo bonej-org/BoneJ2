@@ -26,10 +26,12 @@ package org.bonej.wrapperPlugins;
 import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
-import net.imagej.ops.special.function.BinaryFunctionOp;
+import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.units.UnitService;
+import net.imglib2.Cursor;
+import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccess;
-import net.imglib2.*;
+import net.imglib2.RandomAccessible;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -42,9 +44,7 @@ import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.ValuePair;
 import net.imglib2.view.Views;
-import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.FindEllipsoidFromBoundaryPoints;
 import org.bonej.ops.skeletonize.FindRidgePoints;
@@ -53,8 +53,6 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.utilities.VectorUtil;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.joml.Matrix3d;
-import org.joml.Matrix3dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.ItemIO;
@@ -70,14 +68,11 @@ import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
 
-import java.util.Iterator;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.*;
-import java.util.stream.Stream.Builder;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -102,7 +97,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     // Several ellipsoids may fall in same bin if this is too small a number!
     // This will be ignored!
     private static final long FLINN_PLOT_DIMENSION = 501;
-    private final BinaryFunctionOp<List<ValuePair<Vector3dc, Vector3dc>>, Vector3dc, Optional<Ellipsoid>> findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
+    private final UnaryFunctionOp< Vector3dc, Stream<Ellipsoid>> findLocalEllipsoidOp = new FindEllipsoidFromBoundaryPoints();
 	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try allowing more sampling directions and/or more seedpoints.";
 
 	@SuppressWarnings("unused")
@@ -180,7 +175,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 
     private Random rng;
 
-    private final int nFilterSampling = 200;
 
     @Override
     public void run() {
@@ -190,7 +184,7 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         final List<Vector3dc> internalSeedPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class,bitImage)).get(0);
 
         statusService.showStatus("Ellipsoid Factor: finding ellipsoids...");
-        final List<Ellipsoid> ellipsoids = findEllipsoids(internalSeedPoints);
+        final List<Ellipsoid> ellipsoids = findEllipsoids(bitImage, internalSeedPoints);
         if(ellipsoids.isEmpty())
         {
         	cancel(NO_ELLIPSOIDS_FOUND);
@@ -211,7 +205,6 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
         if(logService.isDebug()) {
 			logService.debug("initial sampling directions = " + nSphere);
 			logService.debug("threshold for ridge point inclusions = " + thresholdForBeingARidgePoint);
-			logService.debug("filtering sampling directions = " + nFilterSampling);
 			logService.debug("assigned voxels = " + numberOfAssignedVoxels);
 			logService.debug("foreground voxels = " + numberOfForegroundVoxels);
 			for (int i = 0; i < Math.min(100, ellipsoids.size()); i++) {
@@ -412,45 +405,13 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		}
 	}
 
-	// TODO Refactor this and sub-functions into an Op
-	private List<Ellipsoid> findEllipsoids(final Collection<Vector3dc> seeds) {
-        final List<Vector3dc> filterSamplingDirections =
-                getGeneralizedSpiralSetOnSphere(nFilterSampling).collect(toList());
-		return seeds.stream().flatMap(seed ->
-                getPointCombinationsForOneSeedPoint(seed)
-                .map(c -> findLocalEllipsoidOp.calculate(new ArrayList<>(c), seed)))
-                .filter(Optional::isPresent).map(Optional::get)
-                .filter(e -> isEllipsoidNonBackground(e,filterSamplingDirections))
-                .collect(toList());
+	private List<Ellipsoid> findEllipsoids(ImgPlus<BitType> bitImage, final List<Vector3dc> seeds) {
+    	return seeds.parallelStream().flatMap(
+    			seed -> (Stream<Ellipsoid>) opService.run(
+    					FindEllipsoidFromBoundaryPoints.class, seed,bitImage.getImg(),nSphere))
+				.collect(toList());
     }
 
-
-	private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
-		getPointCombinationsForOneSeedPoint(final Vector3dc centre)
-	{
-		final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
-        final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
-			final Vector3dc direction = new Vector3d(d);
-			return findFirstNonForegroundPointAlongRay(direction, centre);
-		}).filter(Objects::nonNull).collect(toList());
-		return getAllUniqueCombinationsOfFourPoints(contactPoints, centre);
-	}
-
-	private void createSeedPointImage(final Img<R> seedPointImage,
-									  final List<Vector3dc> seedPoints)
-	{
-		seedPointImage.cursor().forEachRemaining( c -> c.setZero());
-		RandomAccess<R> randomAccess = seedPointImage.randomAccess();
-		seedPoints.forEach(seed ->
-				{
-					long[] seedPixel = VectorUtil.toPixelGrid(seed);
-					randomAccess.setPosition(seedPixel);
-					randomAccess.get().setReal(255);
-				}
-		);
-		seedPointsImage = new ImgPlus<>(opService.convert().uint8(
-			seedPointImage), "Seeding Points");
-	}
 
 	private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
         final RandomAccess<FloatType> ef = ellipsoidFactorImage.randomAccess();
@@ -483,178 +444,12 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
 
-	//non-background includes foreground + space outside image boundary
-	private boolean isEllipsoidNonBackground(final Ellipsoid e,
-											 final Collection<Vector3dc> sphereSamplingDirections)
-	{
-		final Builder<Vector3dc> builder = Stream.builder();
-		final Matrix3d orientation = e.getOrientation().get3x3(new Matrix3d());
-		for (int i = 0; i < 3; i++) {
-			final Vector3dc v = orientation.getColumn(i, new Vector3d());
-			builder.add(v);
-			builder.add(v.negate(new Vector3d()));
-		}
-		final Stream<Vector3dc> directions = Stream.concat(sphereSamplingDirections
-			.stream(), builder.build());
-		final Matrix3d reconstruction = reconstructMatrixOfSlightlySmallerEllipsoid(e,Math.sqrt(3.0));
-		return directions.noneMatch(dir -> isEllipsoidIntersectionBackground(
-			reconstruction, e.getCentroid(), dir)) && !moreThanHalfEllipsoidSurfaceOutside(e,sphereSamplingDirections);
-	}
-
-	public Matrix3d reconstructMatrixOfSlightlySmallerEllipsoid(Ellipsoid e, final double reduction) {
-		final double[] scales = DoubleStream.of(e.getA(), e.getB(), e.getC()).map(
-				s -> s - reduction).map(s -> s * s).map(s -> 1.0 / s).toArray();
-		final Matrix3dc Q = e.getOrientation().get3x3(new Matrix3d());
-		final Matrix3dc lambda = new Matrix3d(scales[0], 0, 0, 0, scales[1], 0, 0,
-				0, scales[2]);
-		final Matrix3dc QT = Q.transpose(new Matrix3d());
-		final Matrix3dc LambdaQ = lambda.mul(Q, new Matrix3d());
-		return QT.mul(LambdaQ, new Matrix3d());
-	}
-
-	private boolean isEllipsoidIntersectionBackground(final Matrix3dc a,
-		final Vector3dc centroid, final Vector3dc dir)
-	{
-		final Vector3dc aTimesDir = a.transform(dir, new Vector3d());
-		final double surfaceIntersectionParameter = Math.sqrt(1.0 / dir.dot(
-			aTimesDir));
-		final Vector3d intersectionPoint = new Vector3d(dir);
-		intersectionPoint.mul(surfaceIntersectionParameter);
-		intersectionPoint.add(centroid);
-		final long[] pixel = VectorUtil.toPixelGrid(intersectionPoint);
-		if (outOfBounds(inputImage, pixel)) {
-			return false;
-		}
-		final RandomAccess<R> inputRA = inputImage.getImg().randomAccess();
-		inputRA.setPosition(pixel);
-		return inputRA.get().getRealDouble() == 0;
-	}
-
-	//TODO use the appropriate op
-	/**
-	 * @param e Ellipsoid that may have more than half its volume outside the image boundary
-	 * @param samplingDirections directions in which to perform the inside/outside test
-	 * @return true if more than half the ellipsoid sampling points are outside the input image boundary
-	 */
-	public boolean moreThanHalfEllipsoidSurfaceOutside(final Ellipsoid e, final Collection<Vector3dc> samplingDirections)
-	{
-		final Matrix3d a = reconstructMatrixOfSlightlySmallerEllipsoid(e,0.0);
-		final Vector3dc centroid = e.getCentroid();
-		final long surfacePointsOutside = samplingDirections.stream().filter(dir -> {
-			final Vector3dc aTimesDir = a.transform(dir, new Vector3d());
-			final double surfaceIntersectionParameter = Math.sqrt(1.0 / dir.dot(
-					aTimesDir));
-			final Vector3d intersectionPoint = new Vector3d(dir);
-			intersectionPoint.mul(surfaceIntersectionParameter);
-			intersectionPoint.add(centroid);
-			final long[] pixel = VectorUtil.toPixelGrid(intersectionPoint);
-			if (outOfBounds(inputImage, pixel)) {
-				return true;
-			} else {
-				return false;
-			}
-		}).count();
-
-		return 0.5<=((double) surfacePointsOutside/((double) samplingDirections.size()));
-	}
 
     private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
         return (float) (ellipsoid.getA() / ellipsoid.getB() - ellipsoid.getB() / ellipsoid.getC());
     }
 
-	/**
-     * Method to numerically approximate equidistantly spaced points on the
-     * surface of a sphere
-     * <p>
-     * The implementation follows the description of the theoretical work by
-     * Rakhmanov et al., 1994 in Saff and Kuijlaars, 1997
-     * (<a href="doi:10.1007/BF03024331">dx.doi.org/10.1007/BF03024331</a>), but k
-     * is shifted by one to the left for more convenient indexing.
-     *
-     * @param n : number of points required (has to be > 2)
-     * </p>
-     */
-    // TODO Is there an implementation for this in Apache Commons?
-    private static Stream<Vector3dc> getGeneralizedSpiralSetOnSphere(final int n) {
-        final Builder<Vector3dc> spiralSet = Stream.builder();
-        final List<Double> phi = new ArrayList<>();
-        phi.add(0.0);
-        for (int k = 1; k < n - 1; k++) {
-            final double h = -1.0 + 2.0 * k / (n - 1);
-            phi.add(getPhiByRecursion(n, phi.get(k - 1), h));
-        }
-        phi.add(0.0);
 
-        for (int k = 0; k < n; k++) {
-            final double h = -1.0 + 2.0 * k / (n - 1);
-            final double theta = Math.acos(h);
-            spiralSet.add(new Vector3d(Math.sin(theta) * Math.cos(phi.get(k)), Math
-                    .sin(theta) * Math.sin(phi.get(k)), Math.cos(theta)));
-
-        }
-        return spiralSet.build();
-    }
-
-    private static double getPhiByRecursion(final double n, final double phiKMinus1,
-                                            final double hk) {
-        final double phiK = phiKMinus1 + 3.6 / Math.sqrt(n) * 1.0 / Math.sqrt(1 - hk *
-                hk);
-        // modulo 2pi calculation works for positive numbers only, which is not a
-        // problem in this case.
-        return phiK - Math.floor(phiK / (2 * Math.PI)) * 2 * Math.PI;
-    }
-
-    // non-foreground = background **or** outside stack
-    private Vector3d findFirstNonForegroundPointAlongRay(final Vector3dc rayIncrement,
-														 final Vector3dc start) {
-        final RandomAccess<R> randomAccess = inputImage.randomAccess();
-
-        final Vector3d currentRealPosition = new Vector3d(start);
-        long[] currentPixelPosition = VectorUtil.toPixelGrid(start);
-        randomAccess.setPosition(currentPixelPosition);
-
-        while (randomAccess.get().getRealDouble() > 0) {
-            currentRealPosition.add(rayIncrement);
-            currentPixelPosition = VectorUtil.toPixelGrid(currentRealPosition);
-            if (outOfBounds(inputImage, currentPixelPosition)) break;
-            randomAccess.setPosition(currentPixelPosition);
-        }
-        return currentRealPosition;
-    }
-
-	// TODO make into a utility method, and see where else needed in BoneJ
-    private static boolean outOfBounds(final Dimensions dimensions, final long[] currentPixelPosition) {
-		for (int i = 0; i < currentPixelPosition.length; i++) {
-			final long position = currentPixelPosition[i];
-			if (position < 0 || position >= dimensions.dimension(i)) {
-				return true;
-			}
-		}
-        return false;
-    }
-
-	private static Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
-		getAllUniqueCombinationsOfFourPoints(final List<Vector3dc> points,
-			final Vector3dc centre)
-	{
-		final Iterator<int[]> iterator = CombinatoricsUtils.combinationsIterator(
-			points.size(), 4);
-		final Builder<Set<ValuePair<Vector3dc, Vector3dc>>> pointCombinations = Stream.builder();
-		iterator.forEachRemaining(el -> {
-			final Stream<Vector3dc> pointCombo = IntStream.range(0, 4).mapToObj(
-				i -> points.get(el[i]));
-			final Set<ValuePair<Vector3dc, Vector3dc>> dirPoints = pointCombo.map(
-				p -> {
-					final Vector3dc inwardDir = centre.sub(p, new Vector3d());
-					final Vector3dc unitDir = inwardDir.normalize(new Vector3d());
-					return new ValuePair<>(p, unitDir);
-				}).collect(Collectors.toSet());
-			if (dirPoints.size() == 4) {
-				pointCombinations.add(dirPoints);
-			}
-		});
-		return pointCombinations.build();
-	}
 
     @SuppressWarnings("unused")
     private void validateImage() {
@@ -693,3 +488,5 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
     }
     // endregion
 }
+
+
