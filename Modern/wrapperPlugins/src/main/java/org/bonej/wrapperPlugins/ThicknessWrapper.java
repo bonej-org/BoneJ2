@@ -31,8 +31,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
 import ij.ImagePlus;
-//import ij.ImageStack;
-//import ij.plugin.frame.RoiManager;
 import ij.process.LUT;
 import ij.process.StackStatistics;
 
