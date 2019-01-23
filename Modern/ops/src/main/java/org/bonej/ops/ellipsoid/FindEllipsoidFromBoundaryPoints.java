@@ -88,8 +88,12 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractUnaryFunctionOp<Vec
 		final List<ArrayList<ValuePair<Vector3dc, Vector3dc>>> verticesWithNormals = getSurfacePoints(internalSeedPoint).map(set -> new ArrayList<>(set)).collect(toList());
 
 		return verticesWithNormals.stream().map(c -> getEllipsoidStream(internalSeedPoint, c))
-				.filter(Optional::isPresent).map(Optional::get)
+				.filter(Optional::isPresent).map(Optional::get).filter(e -> !tooLarge(e))
 				.filter(e -> isEllipsoidNonBackground(e,filterSamplingDirections));
+	}
+
+	private boolean tooLarge(Ellipsoid ellipsoid) {
+    	return ellipsoid.getC()>Math.sqrt(inputImage.dimension(0)*inputImage.dimension(0)+inputImage.dimension(1)*inputImage.dimension(1)+inputImage.dimension(2)*inputImage.dimension(2));
 	}
 
 	private Optional<Ellipsoid> getEllipsoidStream(Vector3dc internalSeedPoint, ArrayList<ValuePair<Vector3dc, Vector3dc>> verticesWithNormals) {
