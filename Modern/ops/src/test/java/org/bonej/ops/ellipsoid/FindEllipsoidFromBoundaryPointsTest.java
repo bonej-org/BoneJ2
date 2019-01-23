@@ -26,13 +26,16 @@ package org.bonej.ops.ellipsoid;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
+import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.util.ValuePair;
 
 import org.joml.Matrix3d;
@@ -55,11 +58,6 @@ import org.junit.Test;
 // TODO: put calculations in javadoc and user documentation
 public class FindEllipsoidFromBoundaryPointsTest {
     private static final ImageJ IMAGE_J = new ImageJ();
-
-    @SuppressWarnings("unchecked")
-    private static final BinaryFunctionOp<List<ValuePair<Vector3dc, Vector3dc>>, Vector3dc, Optional<Ellipsoid>> findEllipsoidOp =
-            (BinaryFunctionOp) Functions.binary(IMAGE_J.op(), FindEllipsoidFromBoundaryPoints.class,
-                    Optional.class, List.class, Vector3dc.class);
 
     @AfterClass
     public static void oneTimeTearDown() {
@@ -88,7 +86,7 @@ public class FindEllipsoidFromBoundaryPointsTest {
 
         final List<ValuePair<Vector3dc, Vector3dc>> fourVertices = Arrays.asList(p, q, r, s);
 
-        final Optional<Ellipsoid> ellipsoid = findEllipsoidOp.calculate(fourVertices,new Vector3d(0,0,0));
+        final Optional<Ellipsoid> ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(0,0,0), fourVertices);
 
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
@@ -120,7 +118,7 @@ public class FindEllipsoidFromBoundaryPointsTest {
 
         final List<ValuePair<Vector3dc, Vector3dc>> fourVertices = Arrays.asList(p, q, r, s);
 
-        final Optional<Ellipsoid> ellipsoid = findEllipsoidOp.calculate(fourVertices, new Vector3d(0,3,0));
+        final Optional<Ellipsoid> ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(0,3,0), fourVertices);
 
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
@@ -152,7 +150,7 @@ public class FindEllipsoidFromBoundaryPointsTest {
 
         final List<ValuePair<Vector3dc, Vector3dc>> fourVertices = Arrays.asList(p, q, r, s);
 
-        final Optional<Ellipsoid> ellipsoid = findEllipsoidOp.calculate(fourVertices, new Vector3d(-1,2,0));
+        final Optional<Ellipsoid> ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(-1,2,0),fourVertices);
 
         assertTrue(ellipsoid.isPresent());
         assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
