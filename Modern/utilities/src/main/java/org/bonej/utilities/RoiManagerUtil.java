@@ -63,6 +63,7 @@ public final class RoiManagerUtil {
 	 * @return an Optional with the cropped stack of the given image. The Optional
 	 *         is empty if roiMan is empty.
 	 */
+	@Deprecated
 	public static Optional<ImageStack> cropToRois(final RoiManager roiMan,
 		final ImageStack sourceStack, final boolean fillBackground,
 		final int fillColor)
