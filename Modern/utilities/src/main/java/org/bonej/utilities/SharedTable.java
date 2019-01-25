@@ -27,9 +27,9 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.DefaultGenericTable;
-import net.imagej.table.Table;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.DefaultGenericTable;
+import org.scijava.table.Table;
 
 /**
  * Stores a {@link Table}, which is ordered according to the following rules:

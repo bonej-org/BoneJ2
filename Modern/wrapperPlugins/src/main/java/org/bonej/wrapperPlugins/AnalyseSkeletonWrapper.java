@@ -30,6 +30,10 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.gui.Roi;
+
 import io.scif.FormatException;
 import io.scif.services.FormatService;
 
@@ -41,12 +45,6 @@ import java.util.List;
 
 import net.imagej.Dataset;
 import net.imagej.patcher.LegacyInjector;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.DefaultGenericTable;
-import net.imagej.table.DoubleColumn;
-import net.imagej.table.IntColumn;
-import net.imagej.table.PrimitiveColumn;
-import net.imagej.table.Table;
 
 import org.apache.commons.math3.util.MathArrays;
 import org.bonej.utilities.AxisUtils;
@@ -66,13 +64,16 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.DefaultGenericTable;
+import org.scijava.table.DoubleColumn;
+import org.scijava.table.IntColumn;
+import org.scijava.table.PrimitiveColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 import org.scijava.widget.FileWidget;
 
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.gui.Roi;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.Edge;
 import sc.fiji.analyzeSkeleton.Graph;

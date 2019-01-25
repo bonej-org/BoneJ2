@@ -35,12 +35,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.NewImage;
+import ij.measure.Calibration;
+import ij.process.LUT;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import net.imagej.ImageJ;
-import net.imagej.table.DefaultColumn;
 
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
@@ -52,13 +57,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
+import org.scijava.table.DefaultColumn;
 import org.scijava.ui.UserInterface;
-
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.NewImage;
-import ij.measure.Calibration;
-import ij.process.LUT;
 
 /**
  * Tests for {@link ThicknessWrapper}
@@ -228,26 +228,6 @@ public class ThicknessWrapperTest {
 	}
 
 	@Test
-	public void testNullROIManagerCancelsPlugin() throws Exception {
-		// SETUP
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
-		final ImagePlus imagePlus = NewImage.createByteImage("image", 5, 5, 5, 1);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "cropToRois", true).get();
-
-		// VERIFY
-		assertTrue("No ROI Manager should have cancelled the plugin", module
-			.isCanceled());
-		assertEquals("Cancel reason is incorrect",
-			"Can't crop without valid ROIs in the ROIManager", module
-				.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
-	}
-
-	@Test
 	public void testResults() throws Exception {
 		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
@@ -264,7 +244,7 @@ public class ThicknessWrapperTest {
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "maskArtefacts",
-			false, "cropToRois", false, "showMaps", false).get();
+			false, "showMaps", false).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")

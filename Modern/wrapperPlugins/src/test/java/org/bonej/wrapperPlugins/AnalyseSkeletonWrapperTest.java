@@ -40,30 +40,29 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.NewImage;
+
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import net.imagej.ImageJ;
-import net.imagej.table.DefaultColumn;
-import net.imagej.table.DefaultGenericTable;
-import net.imagej.table.PrimitiveColumn;
 
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.DefaultGenericTable;
+import org.scijava.table.PrimitiveColumn;
 import org.scijava.ui.UserInterface;
-
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.NewImage;
 
 /**
  * Tests for {@link AnalyseSkeletonWrapper}
