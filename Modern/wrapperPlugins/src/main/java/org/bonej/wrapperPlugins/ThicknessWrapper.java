@@ -31,8 +31,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 
 import ij.ImagePlus;
-import ij.ImageStack;
-import ij.plugin.frame.RoiManager;
 import ij.process.LUT;
 import ij.process.StackStatistics;
 
@@ -40,12 +38,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import net.imagej.patcher.LegacyInjector;
 
 import org.bonej.utilities.ImagePlusUtil;
-import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
@@ -96,11 +92,6 @@ public class ThicknessWrapper extends ContextCommand {
 		description = "Remove pixel artifacts from the thickness maps",
 		required = false)
 	private boolean maskArtefacts = true;
-
-	@Parameter(label = "Crop to ROI manager",
-		description = "Limit the maps to the ROIs in the ROI manager",
-		persist = false, required = false)
-	private boolean cropToRois;
 
 	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
 	private ImagePlus trabecularMap;
@@ -212,23 +203,7 @@ public class ThicknessWrapper extends ContextCommand {
 	private ImagePlus createMap() {
 		final ImagePlus image;
 
-		if (cropToRois) {
-			final RoiManager roiManager = RoiManager.getInstance2();
-			if (roiManager == null) {
-				cancel("Can't crop without valid ROIs in the ROIManager");
-				return null;
-			}
-			final Optional<ImageStack> stackOptional = RoiManagerUtil.cropToRois(
-				roiManager, inputImage.getStack(), true, 0x00);
-			if (!stackOptional.isPresent()) {
-				cancel("Can't crop without valid ROIs in the ROIManager");
-				return null;
-			}
-			image = new ImagePlus(inputImage.getTitle(), stackOptional.get());
-		}
-		else {
-			image = cleanDuplicate(inputImage);
-		}
+		image = cleanDuplicate(inputImage);
 
 		return localThickness.processImage(image);
 	}

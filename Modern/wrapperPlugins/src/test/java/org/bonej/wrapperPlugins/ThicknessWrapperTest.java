@@ -228,26 +228,6 @@ public class ThicknessWrapperTest {
 	}
 
 	@Test
-	public void testNullROIManagerCancelsPlugin() throws Exception {
-		// SETUP
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
-		final ImagePlus imagePlus = NewImage.createByteImage("image", 5, 5, 5, 1);
-
-		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "cropToRois", true).get();
-
-		// VERIFY
-		assertTrue("No ROI Manager should have cancelled the plugin", module
-			.isCanceled());
-		assertEquals("Cancel reason is incorrect",
-			"Can't crop without valid ROIs in the ROIManager", module
-				.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
-	}
-
-	@Test
 	public void testResults() throws Exception {
 		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
@@ -264,7 +244,7 @@ public class ThicknessWrapperTest {
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "maskArtefacts",
-			false, "cropToRois", false, "showMaps", false).get();
+			false, "showMaps", false).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
