@@ -406,11 +406,25 @@ public class EllipsoidFactorWrapper<R extends RealType<R> & NativeType<R>> exten
 	}
 
 	private List<Ellipsoid> findEllipsoids(ImgPlus<BitType> bitImage, final List<Vector3dc> seeds) {
+    	if(seeds.size()>=approximateMaximumNumberOfSeeds)
+		{
+			reduceSeedPoints(seeds);
+		}
     	return seeds.parallelStream().flatMap(
     			seed -> (Stream<Ellipsoid>) opService.run(
     					FindEllipsoidFromBoundaryPoints.class, seed,bitImage.getImg(),nSphere))
 				.collect(toList());
     }
+
+	private void reduceSeedPoints(final List<Vector3dc> seeds) {
+    	Set<Vector3dc> seedsToKeep = new HashSet();
+    	while(seedsToKeep.size()<approximateMaximumNumberOfSeeds)
+		{
+			seedsToKeep.add(seeds.get(rng.nextInt(seeds.size()-1)));
+		}
+		seeds.clear();
+    	seeds.addAll(seedsToKeep);
+	}
 
 
 	private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
