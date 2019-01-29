@@ -23,29 +23,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.ellipsoid;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import net.imagej.ImageJ;
+import net.imglib2.util.ValuePair;
+import org.joml.*;
+import org.junit.AfterClass;
+import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
-import net.imagej.ImageJ;
-import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.ops.special.function.Functions;
-import net.imagej.ops.special.function.UnaryFunctionOp;
-import net.imglib2.util.ValuePair;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import org.joml.Matrix3d;
-import org.joml.Matrix4d;
-import org.joml.Matrix4dc;
-import org.joml.Vector3d;
-import org.joml.Vector3dc;
-import org.joml.Vector4d;
-import org.junit.AfterClass;
-import org.junit.Test;
+import java.lang.Math;
 
 /**
  * Tests for {@link FindEllipsoidFromBoundaryPoints}

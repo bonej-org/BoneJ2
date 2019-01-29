@@ -32,6 +32,7 @@ import java.util.stream.IntStream;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 
+import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.EigenDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -59,8 +60,16 @@ import org.scijava.plugin.Plugin;
  * [e, f, c, i]
  * [g, h, i, -1]
  * </pre>
+ *
+ * <p>
+ *  Failure to create an ellipsoid can be due to both the
+ *  eigensolver not converging and the equation defining
+ *  a different quadric surface (e.g. a hyperboloid).
+ *  In these cases, an empty {@link Optional} is returned.
+ * </p>
  * 
  * @author Richard Domander
+ * @author Alessandro Felder
  * @see net.imagej.ops.stats.regression.leastSquares.Quadric
  */
 @Plugin(type = Op.class)
@@ -72,8 +81,17 @@ public class QuadricToEllipsoid extends
 	public Optional<Ellipsoid> calculate(final Matrix4dc quadricSolution) {
 		final Vector3dc center = findCenter(quadricSolution);
 		final Matrix4dc translated = translateToCenter(quadricSolution, center);
-		final EigenDecomposition decomposition = solveEigenDecomposition(
-			translated);
+		final EigenDecomposition decomposition;
+
+		try {
+			decomposition = solveEigenDecomposition(
+					translated);
+		}
+		catch (final MaxCountExceededException e)
+		{
+			return Optional.empty();
+		}
+
 		final boolean invalidEv = Arrays.stream(decomposition.getRealEigenvalues())
 			.anyMatch(e -> e <= 0.0);
 		if (invalidEv) {
