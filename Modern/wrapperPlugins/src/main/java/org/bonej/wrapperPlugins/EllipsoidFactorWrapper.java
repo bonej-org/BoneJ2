@@ -1,24 +1,43 @@
 package org.bonej.wrapperPlugins;
 
 import ij.ImagePlus;
+import ij.ImageStack;
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
+import net.imagej.ops.OpService;
+import net.imagej.ops.Ops;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.units.UnitService;
+import net.imglib2.RandomAccess;
+import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImg;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.basictypeaccess.array.IntArray;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
+import org.scijava.convert.ConvertService;
+import org.scijava.convert.DefaultConvertService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
@@ -119,13 +138,23 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Parameter
     CommandService cs;
 
+    @Parameter
+    OpService opService;
+
     @Parameter(type = ItemIO.OUTPUT)
     ImagePlus skeletonization;
+
+    @Parameter(type = ItemIO.OUTPUT)
+    Img<UnsignedIntType> skeletonPointsImage;
 
     @Override
     public void run() {
         regularVectors = getRegularVectors(nVectors);
+        final List<Vector3dc> skeletonPoints = getSkeletonPoints();
 
+    }
+
+    private List<Vector3dc> getSkeletonPoints() {
         ImagePlus skeleton = null;
         try {
             final CommandModule skeletonizationModule = cs.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true, inputImage).get();
@@ -136,6 +165,21 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             e.printStackTrace();
         }
         skeletonization = skeleton;
+
+        final ImageStack skeletonStack = skeleton.getImageStack();
+        final List<Vector3dc> skeletonPoints = new ArrayList<>();
+        for (int z = 0; z < skeleton.getStackSize(); z++) {
+            final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z+1);
+            for(int x = 0; x<skeleton.getWidth();x++) {
+                for (int y = 0; y < skeleton.getHeight(); y++) {
+                    if(slicePixels[y*skeleton.getWidth()+x]!=0)
+                    {
+                        skeletonPoints.add(new Vector3d(x,y,z));
+                    }
+                }
+            }
+        }
+        return skeletonPoints;
     }
 
     /**
