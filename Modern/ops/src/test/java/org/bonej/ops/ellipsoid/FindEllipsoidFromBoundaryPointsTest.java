@@ -29,14 +29,12 @@ import org.joml.*;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import java.lang.Math;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import java.lang.Math;
 
 /**
  * Tests for {@link FindEllipsoidFromBoundaryPoints}
@@ -77,14 +75,14 @@ public class FindEllipsoidFromBoundaryPointsTest {
 
         final List<ValuePair<Vector3dc, Vector3dc>> fourVertices = Arrays.asList(p, q, r, s);
 
-        final Optional<Ellipsoid> ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(0,0,0), fourVertices);
+        final Ellipsoid ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(0,0,0), fourVertices).get(1);
 
-        assertTrue(ellipsoid.isPresent());
-        assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid.get()));
-        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
+        assertTrue(ellipsoid!=null);
+        assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid));
+        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid));
     }
 
     @Test
@@ -109,14 +107,14 @@ public class FindEllipsoidFromBoundaryPointsTest {
 
         final List<ValuePair<Vector3dc, Vector3dc>> fourVertices = Arrays.asList(p, q, r, s);
 
-        final Optional<Ellipsoid> ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(0,3,0), fourVertices);
+        final Ellipsoid ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(0,3,0), fourVertices).get(1);
 
-        assertTrue(ellipsoid.isPresent());
-        assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid.get()));
-        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
+        assertTrue(ellipsoid!=null);
+        assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid));
+        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid));
     }
 
     @Test
@@ -141,14 +139,14 @@ public class FindEllipsoidFromBoundaryPointsTest {
 
         final List<ValuePair<Vector3dc, Vector3dc>> fourVertices = Arrays.asList(p, q, r, s);
 
-        final Optional<Ellipsoid> ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(-1,2,0),fourVertices);
+        final Ellipsoid ellipsoid = FindEllipsoidFromBoundaryPoints.tryToFindEllipsoid(new Vector3d(-1,2,0),fourVertices).get(1);
 
-        assertTrue(ellipsoid.isPresent());
-        assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid.get()));
-        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid.get()));
-        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid.get()));
+        assertTrue(ellipsoid!=null);
+        assertTrue(testPointIsOnEllipsoidSurface(vertexP, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexQ, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexR, ellipsoid));
+        assertTrue(testPointIsOnEllipsoidSurface(vertexS, ellipsoid));
+        assertTrue(!testPointIsOnEllipsoidSurface(vertexTooFarAway, ellipsoid));
     }
 
     private boolean testPointIsOnEllipsoidSurface(final Vector3dc point, final Ellipsoid ellipsoid) {

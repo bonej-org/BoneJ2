@@ -25,6 +25,7 @@ package org.bonej.ops.ellipsoid;
 
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
+import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.util.ValuePair;
@@ -35,12 +36,14 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import java.lang.Math;
+import java.util.Random;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.lang.Double.max;
 import static java.util.Comparator.comparingDouble;
 import static java.util.stream.Collectors.toList;
 import static org.bonej.utilities.ImageBoundsUtil.outOfBounds;
@@ -76,12 +79,16 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractUnaryFunctionOp<Vec
     @Parameter(persist = false, required = false)
     private int nSphere = 20;
 
-    static Optional<Ellipsoid> tryToFindEllipsoid(Vector3dc internalSeedPoint, List<ValuePair<Vector3dc, Vector3dc>> verticesWithNormals) {
+    private static double rotationAngle = -Math.PI/2.0;
+    private static Vector3d rotationAxis = new Vector3d(0,1,0);
+
+    static List<Ellipsoid> tryToFindEllipsoid(Vector3dc internalSeedPoint, List<ValuePair<Vector3dc, Vector3dc>> verticesWithNormals) {
+        final ArrayList<Ellipsoid> ellipsoids = new ArrayList<>();
         verticesWithNormals.sort(comparingDouble(p -> p.getA().distance(internalSeedPoint)));
         ValuePair<Vector3dc, Vector3dc> p = verticesWithNormals.get(0);
         final List<Vector3dc> vertices = verticesWithNormals.stream().map(ValuePair::getA).skip(1).collect(toList());
         final ValuePair<ValuePair<Vector3dc, Vector3dc>, Double> qAndRadius = calculateQ(vertices, p);
-        if (!isValidSphere(qAndRadius)) return Optional.empty();
+        if (!isValidSphere(qAndRadius)) return ellipsoids;
         vertices.remove(qAndRadius.getA().a);
 
         final Vector3d np = new Vector3d(p.b);
@@ -92,7 +99,7 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractUnaryFunctionOp<Vec
         final Matrix4d q2 = getQ2(p, qAndRadius.getA());
 
         final ValuePair<Vector3d, Double> rAndAlpha = calculateSurfacePointAndGreekCoefficient(q1, q2, vertices);
-        if (rAndAlpha == null) return Optional.empty();
+        if (rAndAlpha == null) return ellipsoids;
         vertices.remove(rAndAlpha.getA());
 
         final Matrix4d q1PlusAlphaQ2 = new Matrix4d(q2);
@@ -102,13 +109,15 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractUnaryFunctionOp<Vec
         q1PlusAlphaQ2.mul(fullScalingMatrix);
         q1PlusAlphaQ2.add(q1);
 
-        final Optional<Ellipsoid> ellipsoid = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
-        if (!ellipsoid.isPresent()) return ellipsoid;
+        Optional<Ellipsoid> optional = quadricToEllipsoid.calculate(q1PlusAlphaQ2);
+        if (!optional.isPresent()) return ellipsoids;
+        final Ellipsoid ellipsoid = optional.get();
+        ellipsoids.add(ellipsoid);
 
-        final Matrix4d q3 = getQ3(p.a, qAndRadius.getA().a, rAndAlpha.getA(), ellipsoid.get());
+        final Matrix4d q3 = getQ3(p.a, qAndRadius.getA().a, rAndAlpha.getA(), ellipsoid);
 
         final ValuePair<Vector3d, Double> sAndBeta = calculateSurfacePointAndGreekCoefficient(q1PlusAlphaQ2, q3, vertices);
-        if (sAndBeta == null) return ellipsoid;
+        if (sAndBeta == null) return ellipsoids;
 
         final Matrix4d q1PlusAlphaQ2plusBetaQ3 = new Matrix4d(q3);
         fullScalingMatrix.scaling(sAndBeta.getB());
@@ -116,7 +125,11 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractUnaryFunctionOp<Vec
         q1PlusAlphaQ2plusBetaQ3.mul(fullScalingMatrix);
         q1PlusAlphaQ2plusBetaQ3.add(q1PlusAlphaQ2);
 
-        return quadricToEllipsoid.calculate(q1PlusAlphaQ2plusBetaQ3);
+        optional = quadricToEllipsoid.calculate(q1PlusAlphaQ2plusBetaQ3);
+        if(!optional.isPresent()) return ellipsoids;
+
+        ellipsoids.add(optional.get());
+        return ellipsoids;
     }
 
     private static Matrix3d reconstructMatrixOfSlightlySmallerEllipsoid(Ellipsoid e, final double reduction) {
@@ -210,7 +223,7 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractUnaryFunctionOp<Vec
                     .sin(theta) * Math.sin(phi.get(k)), Math.cos(theta)));
 
         }
-        return spiralSet.build();
+        return spiralSet.build().map(s -> s.rotateAxis(rotationAngle, rotationAxis.get(0), rotationAxis.get(1), rotationAxis.get(2), new Vector3d(s)));
     }
 
     private static double getPhiByRecursion(final double n, final double phiKMinus1,
@@ -416,27 +429,91 @@ public class FindEllipsoidFromBoundaryPoints extends AbstractUnaryFunctionOp<Vec
     @Override
     public Stream<Ellipsoid> calculate(final Vector3dc internalSeedPoint) {
 
+        final Random rng = new Random(23);
+        List<Vector3dc> edgePoints = getEdgePoints(inputImage);
+        edgePoints.removeIf(ep -> rng.nextDouble()<=1.0-1.0/64.0);
+
+        final List<Vector3dc> contactPoints = getContactPoints(internalSeedPoint, nSphere);
+        final List<Vector3dc> filterPoints = getContactPoints(internalSeedPoint, nFilterSampling);
+        final List<ArrayList<ValuePair<Vector3dc, Vector3dc>>> contactPointCombinations = getAllUniqueCombinationsOfFourPoints(contactPoints, internalSeedPoint).map(ArrayList::new).collect(toList());
+
+        final List<Ellipsoid> ellipsoids = contactPointCombinations.stream().map(c -> tryToFindEllipsoid(internalSeedPoint, c))
+                .filter(l -> !l.isEmpty())
+                .flatMap(Collection::stream)
+                .peek(e -> {
+                    e.setA(max(1.0,e.getA()-1.7));
+                    e.setB(max(1.0,e.getB()-1.7));
+                    e.setC(max(1.0,e.getC()-1.7));
+                }).collect(toList());
+        ellipsoids.removeIf(e -> contactPoints.stream().anyMatch(e::inside));
+        //filterPoints.forEach(ep -> ellipsoids.removeIf(e -> e.inside(ep)));
+        ellipsoids.removeIf(e -> edgePoints.parallelStream().anyMatch(e::inside));
+
         final List<Vector3dc> filterSamplingDirections = getGeneralizedSpiralSetOnSphere(nFilterSampling).collect(toList());
-
-        final List<ArrayList<ValuePair<Vector3dc, Vector3dc>>> verticesWithNormals = getSurfacePoints(internalSeedPoint).map(ArrayList::new).collect(toList());
-
-        return verticesWithNormals.stream().map(c -> tryToFindEllipsoid(internalSeedPoint, c))
-                .filter(Optional::isPresent).map(Optional::get).filter(e -> !tooLarge(e))
+        return  ellipsoids.stream()
+                .filter(e -> !tooLarge(e))
                 .filter(e -> isEllipsoidNonBackground(e, filterSamplingDirections));
+    }
+
+    private List<Vector3dc> getEdgePoints(Img<BitType> inputImage) {
+        List<Vector3dc> edgePoints = new ArrayList<>();
+
+        final Cursor<BitType> cursor = inputImage.localizingCursor();
+        final net.imglib2.RandomAccess<BitType> neighbourAccess = inputImage.randomAccess();
+        final long[] position = new long[3];
+
+        while (cursor.hasNext())
+        {
+            cursor.next();
+            if(!cursor.get().get()) continue;
+            cursor.localize(position); //foreground position
+            if(onImageBoundary(position)) continue; //avoid peeking out of bounds
+
+            //check 27-neighbourhood for background
+            long[] increments = {-1,0,1};
+            for(int counter0=0; counter0<increments.length; counter0++)
+            {
+                for(int counter1=0; counter1<increments.length; counter1++)
+                {
+                    for(int counter2=0; counter2<increments.length; counter2++)
+                    {
+                        neighbourAccess.setPosition(position[0]+increments[counter0],0);
+                        neighbourAccess.setPosition(position[1]+increments[counter1],1);
+                        neighbourAccess.setPosition(position[2]+increments[counter2],2);
+                        if(!neighbourAccess.get().get())
+                        {
+                            edgePoints.add(new Vector3d(position[0],position[1],position[2]));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return edgePoints;
+    }
+
+    private boolean onImageBoundary(long[] position) {
+        if(position[0]<1) return true;
+        if(position[1]<1) return true;
+        if(position[2]<1) return true;
+        if(position[0]>=inputImage.dimension(0)) return true;
+        if(position[1]>=inputImage.dimension(1)) return true;
+        if(position[2]>=inputImage.dimension(2)) return true;
+        return false;
     }
 
     private boolean tooLarge(Ellipsoid ellipsoid) {
         return ellipsoid.getC() > Math.sqrt(inputImage.dimension(0) * inputImage.dimension(0) + inputImage.dimension(1) * inputImage.dimension(1) + inputImage.dimension(2) * inputImage.dimension(2));
     }
 
-    private Stream<Set<ValuePair<Vector3dc, Vector3dc>>>
-    getSurfacePoints(final Vector3dc centre) {
-        final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nSphere);
+    private List<Vector3dc>
+    getContactPoints(final Vector3dc centre, int nDirections) {
+        final Stream<Vector3dc> sphereSamplingDirections = getGeneralizedSpiralSetOnSphere(nDirections);
         final List<Vector3dc> contactPoints = sphereSamplingDirections.map(d -> {
             final Vector3dc direction = new Vector3d(d);
             return findFirstNonForegroundPointAlongRay(direction, centre);
         }).filter(Objects::nonNull).collect(toList());
-        return getAllUniqueCombinationsOfFourPoints(contactPoints, centre);
+        return contactPoints;
     }
 
     //non-background includes foreground + space outside image boundary

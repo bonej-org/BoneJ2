@@ -276,14 +276,26 @@ public class Ellipsoid {
 	 * @return true if point is inside the ellipsoid, false otherwise
 	 */
 	public boolean inside(final Vector3dc point) {
-		if(!inBoundingBox(point) || !inMaximalSphere(point)) {
+		if(!inMaximalSphere(point))
+		{
 			return false;
+		}
+		if(inMinimalSphere(point))
+		{
+			return true;
 		}
 
 		Matrix3d eigenMatrix = reconstructMatrix();
 		final Vector3dc x = new Vector3d(point).sub(getCentroid());
 		final Vector3dc Ax = eigenMatrix.transform(x, new Vector3d());
 		return x.dot(Ax) < 1;
+	}
+
+	//TODO write tests for Ellipsoid class functions
+	private boolean inMinimalSphere(Vector3dc point) {
+		final Vector3dc x = point.sub(getCentroid(),
+				new Vector3d());
+		return x.length() <= getA();
 	}
 
 	/**
