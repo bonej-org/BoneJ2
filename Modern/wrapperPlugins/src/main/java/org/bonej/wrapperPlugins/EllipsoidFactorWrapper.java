@@ -17,29 +17,32 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
+import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.convert.ConvertService;
 import org.scijava.convert.DefaultConvertService;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static java.util.stream.Collectors.toList;
 import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.wrapperPlugins.CommonMessages.*;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
@@ -141,6 +144,12 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Parameter
     OpService opService;
 
+    @Parameter
+    LogService logService;
+
+    @Parameter
+    StatusService statusService;
+
     @Parameter(type = ItemIO.OUTPUT)
     ImagePlus skeletonization;
 
@@ -150,8 +159,29 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Override
     public void run() {
         regularVectors = getRegularVectors(nVectors);
-        final List<Vector3dc> skeletonPoints = getSkeletonPoints();
 
+        final List<Vector3dc> skeletonPoints = getSkeletonPoints();
+        logService.info("Found "+skeletonPoints.size()+" skeleton points");
+
+        long start = System.currentTimeMillis();
+        final List<Ellipsoid> ellipsoids = findEllipsoids(inputImage, skeletonPoints);
+        long stop = System.currentTimeMillis();
+
+        logService.info("Found " + ellipsoids.size() + " ellipsoids in " + (stop - start) +
+                " ms");
+
+
+    }
+
+    private List<Ellipsoid> findEllipsoids(ImgPlus<T> inputImage, List<Vector3dc> skeletonPoints) {
+        statusService.showStatus("Optimising ellipsoids...");
+        final List<Ellipsoid> ellipsoids = new ArrayList<>();
+        skeletonPoints.stream().skip(skipRatio).forEach(sp -> ellipsoids.add(optimiseEllipsoid(inputImage, sp)));
+        return ellipsoids.stream().filter(Objects::nonNull).sorted(Comparator.comparingDouble(e -> -e.getVolume())).collect(toList());
+    }
+
+    private Ellipsoid optimiseEllipsoid(ImgPlus<T> inputImage, Vector3dc sp) {
+        return null;
     }
 
     private List<Vector3dc> getSkeletonPoints() {
