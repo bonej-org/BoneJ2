@@ -156,6 +156,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         logService.info("Found "+skeletonPoints.size()+" skeleton points");
 
         long start = System.currentTimeMillis();
+        stackVolume = inputImage.dimension(0)*inputImage.dimension(1)*inputImage.dimension(2);
         final List<Ellipsoid> ellipsoids = findEllipsoids(inputImage, skeletonPoints);
         long stop = System.currentTimeMillis();
 
