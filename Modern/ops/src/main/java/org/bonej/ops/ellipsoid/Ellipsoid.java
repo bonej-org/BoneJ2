@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import net.imagej.ops.OpEnvironment;
@@ -343,6 +344,73 @@ public class Ellipsoid {
 		orientation.setColumn(0, new Vector3d(u).normalize());
 		orientation.setColumn(1, new Vector3d(v).normalize());
 		orientation.setColumn(2, new Vector3d(w).normalize());
+	}
+
+
+	/**
+	 * Determines whether a point is contained inside the ellipsoid or not.
+	 *
+	 * @param point a Vector3d detailing the position of the point
+	 * @return true if point is inside the ellipsoid, false otherwise
+	 */
+	public boolean inside(final Vector3dc point) {
+		if(!inMaximalSphere(point))
+		{
+			return false;
+		}
+		if(inMinimalSphere(point))
+		{
+			return true;
+		}
+
+		Matrix3d eigenMatrix = reconstructMatrix();
+		final Vector3dc x = new Vector3d(point).sub(getCentroid());
+		final Vector3dc Ax = eigenMatrix.transform(x, new Vector3d());
+		return x.dot(Ax) < 1;
+	}
+
+	private Matrix3d reconstructMatrix() {
+		final double[] scales = DoubleStream.of(getA(), getB(), getC()).map(s -> s * s).map(s -> 1.0 / s).toArray();
+		final Matrix3dc Q = getOrientation().get3x3(new Matrix3d());
+		final Matrix3dc lambda = new Matrix3d(scales[0], 0, 0, 0, scales[1], 0, 0,
+				0, scales[2]);
+		final Matrix3dc QT = Q.transpose(new Matrix3d());
+		final Matrix3dc LambdaQ = lambda.mul(Q, new Matrix3d());
+		return QT.mul(LambdaQ, new Matrix3d());
+	}
+
+	//TODO write tests for Ellipsoid class functions
+	private boolean inMinimalSphere(Vector3dc point) {
+		final Vector3dc x = point.sub(getCentroid(),
+				new Vector3d());
+		return x.length() <= getA();
+	}
+
+	/**
+	 * Determines whether a point is contained inside the ellipsoid's axis aligned bounding box (AABB) or not.
+	 *
+	 * @param point a Vector3d detailing the position of the point
+	 * @return true if point is inside the AABB, false otherwise
+	 */
+	private boolean inBoundingBox(final Vector3dc point) {
+		final Vector3dc centroid = getCentroid();
+		final Vector3d diff = point.sub(centroid, new Vector3d());
+		diff.absolute();
+		final double c = getC();
+		// TODO Use a better bounding box (project semi-axes to x, y, z)
+		return diff.x <= c && diff.y <= c && diff.z <= c;
+	}
+
+	/**
+	 * Determines whether a point is contained inside the ellipsoid's maximal sphere or not.
+	 *
+	 * @param point a Vector3d detailing the position of the point
+	 * @return true if point is inside the maximal sphere, false otherwise
+	 */
+	private boolean inMaximalSphere(final Vector3dc point) {
+		final Vector3dc x = point.sub(getCentroid(),
+				new Vector3d());
+		return x.length() <= getC();
 	}
 	// endregion
 }
