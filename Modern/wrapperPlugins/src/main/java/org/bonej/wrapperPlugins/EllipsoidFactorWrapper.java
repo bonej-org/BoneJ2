@@ -1,4 +1,3 @@
-
 /*
 BSD 2-Clause License
 Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
@@ -125,6 +124,8 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     StatusService statusService;
     @Parameter(type = ItemIO.OUTPUT)
     ImagePlus skeletonization;
+    @Parameter(label = "Gaussian sigma (px)")
+    double sigma = 0;
     @Parameter(validater = "validateImage")
     private ImgPlus<T> inputImage;
     @Parameter
@@ -159,10 +160,6 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
      */
     @Parameter(label = "Maximum_drift")
     private double maxDrift = Math.sqrt(3);
-
-    @Parameter(label = "Gaussian sigma (px)")
-    double sigma = 0;
-
     private double stackVolume;
     private double[][] regularVectors;
     @Parameter(visibility = ItemVisibility.MESSAGE)
@@ -418,10 +415,12 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     @Override
     public void run() {
+
         regularVectors = getRegularVectors(nVectors);
 
         final List<Vector3dc> skeletonPoints = getSkeletonPoints();
         logService.info("Found " + skeletonPoints.size() + " skeleton points");
+
 
         long start = System.currentTimeMillis();
         stackVolume = inputImage.dimension(0) * inputImage.dimension(1) * inputImage.dimension(2);
@@ -432,11 +431,9 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             cancel(NO_ELLIPSOIDS_FOUND);
             return;
         }
-        
-        logService.info("Found " + ellipsoids.size() + " ellipsoids in " + (stop - start) +
-                " ms");
 
-        ellipsoids.sort(Comparator.comparingDouble(e -> -e.getVolume()));
+        logService.info("Found and sorted " + ellipsoids.size() + " ellipsoids in " + (stop - start) +
+                " ms");
 
         statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
         final ImgPlus<BitType> bitImage = Common.toBitTypeImgPlus(opService, inputImage);
@@ -463,8 +460,15 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     private List<Ellipsoid> findEllipsoids(ImgPlus<T> inputImage, List<Vector3dc> skeletonPoints) {
         statusService.showStatus("Optimising ellipsoids...");
-        final List<Ellipsoid> ellipsoids = new ArrayList<>();
-        skeletonPoints.stream().skip(skipRatio).forEach(sp -> ellipsoids.add(optimiseEllipsoid(inputImage, sp)));
+        if (skipRatio > 1) {
+            int limit = skeletonPoints.size() / skipRatio + Math.min(skeletonPoints.size() % skipRatio, 1);
+            skeletonPoints = Stream.iterate(0, i -> i + skipRatio)
+                    .limit(limit)
+                    .map(skeletonPoints::get).collect(toList());
+        }
+
+        final List<Ellipsoid> ellipsoids = new ArrayList<>(skeletonPoints.size());
+        skeletonPoints.parallelStream().forEach(sp -> ellipsoids.add(optimiseEllipsoid(inputImage, sp)));
         return ellipsoids.stream().filter(Objects::nonNull).sorted(Comparator.comparingDouble(e -> -e.getVolume())).collect(toList());
     }
 
@@ -473,11 +477,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
         //TODO deal with calibration and parallelisation
 
-        final Img<T> stack = imp.getImg();
-
-
-        Ellipsoid ellipsoid = new Ellipsoid(vectorIncrement, vectorIncrement,
-                vectorIncrement);
+        Ellipsoid ellipsoid = new Ellipsoid(vectorIncrement, vectorIncrement, vectorIncrement);
         ellipsoid.setCentroid(new Vector3d(skeletonPoint));
 
         final List<Double> volumeHistory = new ArrayList<>();
@@ -486,9 +486,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
         // dilate the sphere until it hits the background
         while (isContained(ellipsoid)) {
-            ellipsoid.setC(ellipsoid.getC() + vectorIncrement);
-            ellipsoid.setB(ellipsoid.getB() + vectorIncrement);
-            ellipsoid.setA(ellipsoid.getA() + vectorIncrement);
+            dilateEllipsoidIsotropic(ellipsoid, vectorIncrement);
         }
 
         volumeHistory.add(ellipsoid.getVolume());
@@ -548,7 +546,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         // goal is maximal inscribed ellipsoid, maximal being defined by volume
 
         // store a copy of the 'best ellipsoid so far'
-        Ellipsoid maximal = updateMaximalEllipsoid(ellipsoid);
+        Ellipsoid maximal = copyEllipsoid(ellipsoid);
 
         // alternately try each axis
         int totalIterations = 0;
@@ -572,7 +570,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             }
 
             if (ellipsoid.getVolume() > maximal.getVolume()) {
-                maximal = updateMaximalEllipsoid(ellipsoid);
+                maximal = copyEllipsoid(ellipsoid);
             }
 
             // bump a little away from the sides
@@ -597,10 +595,11 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             }
 
             if (ellipsoid.getVolume() > maximal.getVolume()) {
-                maximal = updateMaximalEllipsoid(ellipsoid);
+                maximal = copyEllipsoid(ellipsoid);
             }
 
             // rotate a little bit
+            Ellipsoid test = copyEllipsoid(ellipsoid);
             ellipsoid = turn(ellipsoid, contactPoints);
 
             // contract until no contact
@@ -616,11 +615,11 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             }
 
             if (ellipsoid.getVolume() > maximal.getVolume()) {
-                maximal = updateMaximalEllipsoid(ellipsoid);
+                maximal = copyEllipsoid(ellipsoid);
             }
 
             // keep the maximal ellipsoid found
-            ellipsoid = updateMaximalEllipsoid(ellipsoid);
+            ellipsoid = copyEllipsoid(maximal);
             // log its volume
             volumeHistory.add(ellipsoid.getVolume());
 
@@ -657,8 +656,12 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
         if (!contactPoints.isEmpty()) {
             final Vector3d torque = calculateTorque(ellipsoid, contactPoints);
-            torque.normalize();
-            ellipsoid = rotateAboutAxis(ellipsoid, torque);
+            if (torque.length() == 0.0) {
+                logService.info("Warning: zero torque vector - no turn performed");
+            } else {
+                torque.normalize();
+                ellipsoid = rotateAboutAxis(ellipsoid, torque);
+            }
         }
         return ellipsoid;
     }
@@ -699,7 +702,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
                 s + totalIterations + " iterations");
     }
 
-    private Ellipsoid updateMaximalEllipsoid(Ellipsoid ellipsoid) {
+    private Ellipsoid copyEllipsoid(Ellipsoid ellipsoid) {
         Ellipsoid maximal;
         maximal = new Ellipsoid(ellipsoid.getA(), ellipsoid.getB(), ellipsoid.getC());
         maximal.setCentroid(ellipsoid.getCentroid());
@@ -726,7 +729,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     private Ellipsoid inflateToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints, double a, double b, double c) {
         contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
 
-        List<Double> scaledIncrements = Stream.of(a, b, c).sorted().map(d -> d * vectorIncrement).collect(toList());//TODO sort columns!
+        List<Double> scaledIncrements = Stream.of(a, b, c).map(d -> d * vectorIncrement).collect(toList());
         final double av = scaledIncrements.get(0);
         final double bv = scaledIncrements.get(1);
         final double cv = scaledIncrements.get(2);
@@ -734,14 +737,32 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         int safety = 0;
         while (contactPoints.size() < contactSensitivity &&
                 safety < maxIterations) {
-            ellipsoid.setC(ellipsoid.getC() + cv);
-            ellipsoid.setB(ellipsoid.getB() + bv);
-            ellipsoid.setA(ellipsoid.getA() + av);
+            stretchEllipsoidAnisotropic(ellipsoid, av, bv, cv);
             contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
             safety++;
         }
 
         return ellipsoid;
+    }
+
+    private void stretchEllipsoidAnisotropic(Ellipsoid ellipsoid, double av, double bv, double cv) {
+        final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
+        stretchSemiAxis(av, semiAxes.get(0));//1.2391304347826084
+        stretchSemiAxis(bv, semiAxes.get(1));//1.2391304347826082
+        stretchSemiAxis(cv, semiAxes.get(2));
+        ellipsoid.setSemiAxes(semiAxes.get(0), semiAxes.get(1), semiAxes.get(2));
+    }
+
+    private void stretchSemiAxis(double av, Vector3d semiAxis) {
+        double lengtha = semiAxis.length() + av;
+        semiAxis.normalize();
+        semiAxis.mul(lengtha);
+    }
+
+    private void dilateEllipsoidIsotropic(Ellipsoid ellipsoid, double increment) {
+        ellipsoid.setC(ellipsoid.getC() + increment);
+        ellipsoid.setB(ellipsoid.getB() + increment);
+        ellipsoid.setA(ellipsoid.getA() + increment);
     }
 
     private Ellipsoid shrinkToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints) {
@@ -765,7 +786,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         // contract until no contact
         int safety = 0;
         while (!contactPoints.isEmpty() && safety < maxIterations) {
-            contract(ellipsoid, 0.01);
+            contract(ellipsoid, 0.05);
             contactPoints = findContactPoints(ellipsoid, contactPoints, unitVectors);
             safety++;
         }
@@ -776,12 +797,13 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     }
 
     private void contract(Ellipsoid ellipsoid, double contraction) {
-        if (contraction < ellipsoid.getA()) {
+        if (contraction < 0.5 * ellipsoid.getA()) {
             ellipsoid.setA(ellipsoid.getA() - contraction);
             ellipsoid.setB(ellipsoid.getB() - contraction);
             ellipsoid.setC(ellipsoid.getC() - contraction);
+        } else {
+            logService.info("Warning: too much contraction!");
         }
-        //TODO else?
     }
 
     private Ellipsoid wiggle(Ellipsoid ellipsoid) {
