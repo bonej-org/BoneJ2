@@ -24,9 +24,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.ops.ellipsoid;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -167,6 +165,15 @@ public class EllipsoidTest {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.initSampling(null);
+	}
+
+	@Test
+	public void testInside() {
+		Ellipsoid e = new Ellipsoid(1,2,3);
+		e.setCentroid(new Vector3d(1,1,1));
+
+		assertTrue(e.inside(new Vector3d(1,1,2)));
+		assertFalse(e.inside(new Vector3d(1,3,4)));
 	}
 
 	@Test
