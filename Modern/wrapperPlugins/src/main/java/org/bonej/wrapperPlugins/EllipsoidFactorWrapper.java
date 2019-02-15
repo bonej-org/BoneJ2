@@ -70,7 +70,6 @@ import java.lang.Math;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -496,7 +495,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         ArrayList<double[]> contactPoints = new ArrayList<>();
 
         // get the points of contact
-        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
+        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
 
         // find the mean unit vector pointing to the points of contact from the
         // centre
@@ -521,10 +520,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         ellipsoid.setOrientation(rotation);
 
         // shrink the ellipsoid slightly
-        double contraction = 0.1;
-        ellipsoid.setA(ellipsoid.getA() - contraction);
-        ellipsoid.setB(ellipsoid.getB() - contraction);
-        ellipsoid.setC(ellipsoid.getC() - contraction);
+        contract(ellipsoid,0.1);
 
         // dilate other two axes until number of contact points increases
         // by contactSensitivity number of contacts
@@ -532,7 +528,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         while (contactPoints.size() < contactSensitivity) {
             ellipsoid.setB(ellipsoid.getB() + vectorIncrement);
             ellipsoid.setC(ellipsoid.getC() + vectorIncrement);
-            contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
+            contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
             if (isInvalid(ellipsoid)) {
                 logService.info("Ellipsoid at (" + ellipsoid.getCentroid().get(0) + ", " + ellipsoid.getCentroid().get(1) + ", " + ellipsoid.getCentroid().get(2) +
                         ") is invalid, nullifying at initial oblation");
@@ -575,7 +571,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             }
 
             // bump a little away from the sides
-            contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
+            contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
             // if can't bump then do a wiggle
             if (contactPoints.isEmpty()) {
                 ellipsoid = wiggle(ellipsoid);
@@ -654,11 +650,11 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     }
 
     private Ellipsoid turn(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints) {
-        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
+        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
         if (!contactPoints.isEmpty()) {
             final Vector3d torque = calculateTorque(ellipsoid, contactPoints);
             if (torque.length() == 0.0) {
-                logService.info("Warning: zero torque vector - no turn performed");
+                if(logService.isDebug()) logService.info("Warning: zero torque vector - no turn performed");
             } else {
                 torque.normalize();
                 ellipsoid = rotateAboutAxis(ellipsoid, torque);
@@ -728,7 +724,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     }
 
     private Ellipsoid inflateToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints, double a, double b, double c) {
-        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
+        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
 
         List<Double> scaledIncrements = Stream.of(a, b, c).map(d -> d * vectorIncrement).collect(toList());
         final double av = scaledIncrements.get(0);
@@ -739,7 +735,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         while (contactPoints.size() < contactSensitivity &&
                 safety < maxIterations) {
             stretchEllipsoidAnisotropic(ellipsoid, av, bv, cv);
-            contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
+            contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
             safety++;
         }
 
@@ -768,7 +764,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     private Ellipsoid shrinkToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints) {
         // get the contact points
-        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors));
+        contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
 
         // get the unit vectors to the contact points
         final List<double[]> unitVectorList = contactPoints.stream().map(c ->
@@ -788,7 +784,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         int safety = 0;
         while (!contactPoints.isEmpty() && safety < maxIterations) {
             contract(ellipsoid, 0.05);
-            contactPoints = findContactPoints(ellipsoid, contactPoints, unitVectors);
+            contactPoints = findContactPoints(ellipsoid, contactPoints, unitVectors, inputImage.getImg());
             safety++;
         }
 
@@ -803,7 +799,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             ellipsoid.setB(ellipsoid.getB() - contraction);
             ellipsoid.setC(ellipsoid.getC() - contraction);
         } else {
-            logService.info("Warning: too much contraction!");
+            if(logService.isDebug()) logService.info("Warning: too much contraction!");
         }
     }
 
@@ -873,18 +869,18 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         return skeletonPoints;
     }
 
-    private ArrayList<double[]> findContactPoints(
+    ArrayList<double[]> findContactPoints(
             final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints,
-            final double[][] unitVectors) {
+            final double[][] unitVectors, Img<T> img) {
         contactPoints.clear();
         final double[][] points = getSurfacePoints(ellipsoid, unitVectors);
-        final RandomAccess<T> access = inputImage.randomAccess();
+        final RandomAccess<T> access = img.randomAccess();
         for (final double[] p : points) {
             final int x = (int) Math.floor(p[0]);
             final int y = (int) Math.floor(p[1]);
             final int z = (int) Math.floor(p[2]);
             long[] position = {x, y, z};
-            if (outOfBounds(inputImage, position)) {
+            if (outOfBounds(img, position)) {
                 continue;
             }
             access.setPosition(position);
