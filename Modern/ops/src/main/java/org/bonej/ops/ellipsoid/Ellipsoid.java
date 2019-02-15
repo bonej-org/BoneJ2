@@ -336,7 +336,7 @@ public class Ellipsoid {
 	private void setOrientation(final Vector3dc u, final Vector3dc v,
 		final Vector3dc w) throws IllegalArgumentException
 	{
-		final double eps = 1e-12;
+		final double eps = 1e-6;
 		if (u.dot(v) > eps || u.dot(w) > eps || v.dot(w) > eps) {
 			throw new IllegalArgumentException("Vectors must be orthogonal");
 		}
