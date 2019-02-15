@@ -845,6 +845,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     }
 
+    //checked
     private List<Vector3dc> getSkeletonPoints() {
         ImagePlus skeleton = null;
         try {
@@ -917,21 +918,18 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     }
 
-    public double[][] getSurfacePoints(Ellipsoid e, final double[][] vectors) {
+    static double[][] getSurfacePoints(Ellipsoid e, final double[][] vectors) {
         final int nPoints = vectors.length;
         for (int p = 0; p < nPoints; p++) {
             final double[] v = vectors[p];
 
-            // stretch the unit sphere into an ellipsoid
-            final double x = e.getA() * v[0];
-            final double y = e.getB() * v[1];
-            final double z = e.getC() * v[2];
-            // rotate and translate the ellipsoid into position
+            // stretching, rotating and translating in one
+            // semi-axes include length multiplication intrinsically
             final List<Vector3d> semiAxes = e.getSemiAxes();
             final Vector3d c = e.getCentroid();
-            final double vx = x * semiAxes.get(0).get(0) + y * semiAxes.get(0).get(1) + z * semiAxes.get(0).get(2) + c.get(0);
-            final double vy = x * semiAxes.get(1).get(0) + y * semiAxes.get(1).get(1) + z * semiAxes.get(1).get(2) + c.get(1);
-            final double vz = x * semiAxes.get(2).get(0) + y * semiAxes.get(2).get(1) + z * semiAxes.get(2).get(2) + c.get(2);
+            final double vx = v[0] * semiAxes.get(0).get(0) + v[1] * semiAxes.get(0).get(1) + v[2] * semiAxes.get(0).get(2) + c.get(0);
+            final double vy = v[0] * semiAxes.get(1).get(0) + v[1] * semiAxes.get(1).get(1) + v[2] * semiAxes.get(1).get(2) + c.get(1);
+            final double vz = v[0] * semiAxes.get(2).get(0) + v[1] * semiAxes.get(2).get(1) + v[2] * semiAxes.get(2).get(2) + c.get(2);
 
             vectors[p] = new double[]{vx, vy, vz};
         }
