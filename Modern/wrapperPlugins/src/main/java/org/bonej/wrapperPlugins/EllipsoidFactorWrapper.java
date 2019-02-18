@@ -112,8 +112,6 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     @Parameter
     UnitService unitService;
-    @Parameter(label = "Show secondary images")
-    boolean showSecondaryImages = false;
     @Parameter
     CommandService cs;
     @Parameter
@@ -165,6 +163,9 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Parameter(visibility = ItemVisibility.MESSAGE)
     private String outputs = "Outputs";
 
+    @Parameter(label = "Show secondary images")
+    boolean showSecondaryImages = false;
+
     @Parameter(visibility = ItemVisibility.MESSAGE)
     private String note =
             "Ellipsoid Factor is beta software.\n" +
@@ -204,7 +205,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
      * @param contactPoints
      * @return
      */
-    private static Vector3d calculateTorque(final Ellipsoid ellipsoid,
+    static Vector3d calculateTorque(final Ellipsoid ellipsoid,
                                             final Iterable<double[]> contactPoints) {
 
         final Vector3d pc = ellipsoid.getCentroid();
@@ -220,9 +221,8 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         final double t = 2 / (b * b);
         final double u = 2 / (c * c);
 
-        final Matrix4d rot = ellipsoid.getOrientation();
-        final Matrix4d inv = new Matrix4d();
-        rot.transpose(inv);
+        final Matrix3d rot = getProperRotationMatrix(ellipsoid);
+        final Matrix3d inv = rot.transpose();
 
         double t0 = 0;
         double t1 = 0;
@@ -233,10 +233,10 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             final double px = p[0] - cx;
             final double py = p[1] - cy;
             final double pz = p[2] - cz;
-            Vector4dc point = new Vector4d(px, py, pz, 0);
+            final Vector3dc point = new Vector3d(px, py, pz);
 
             // derotate the point
-            Vector4d x = new Vector4d();
+            Vector3d x = new Vector3d();
             inv.transform(point, x);
 
             // calculate the unit normal on the centred and derotated ellipsoid
@@ -244,11 +244,10 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             un.normalize();
 
             // rotate the normal back to the original ellipsoid
-            Vector4d un4 = new Vector4d(un, 0);
-            rot.transform(un4);
+            rot.transform(un);
 
             Vector3d point3 = new Vector3d(point.get(0), point.get(1), point.get(2));
-            final Vector3d torqueVector = point3.cross(new Vector3d(un4.get(0), un4.get(1), un4.get(2)), new Vector3d());
+            final Vector3d torqueVector = point3.cross(un, new Vector3d());
 
             t0 += torqueVector.get(0);
             t1 += torqueVector.get(1);
@@ -256,6 +255,17 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
         }
         return new Vector3d(-t0, -t1, -t2);
+    }
+
+    static Matrix3d getProperRotationMatrix(Ellipsoid ellipsoid) {//TODO should probably be part of Ellipsoid class
+        final Matrix3d rot = ellipsoid.getOrientation().get3x3(new Matrix3d());
+        if(rot.determinant()<0)//ensure proper rotation matrix
+        {
+            final Vector3d column = rot.getColumn(0, new Vector3d());
+            column.mul(-1);
+            rot.setColumn(0, column);
+        }
+        return rot;
     }
 
     /**
@@ -271,8 +281,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
         final int nPoints = contactPoints.size();
 
-        if (nPoints < 1) throw new IllegalArgumentException(
-                "Need at least one contact point");
+        if (nPoints < 1) throw new IllegalArgumentException("Need at least one contact point");
 
         final Vector3d c = ellipsoid.getCentroid();
         final double cx = c.get(0);
@@ -416,9 +425,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Override
     public void run() {
 
-        regularVectors = getRegularVectors(nVectors);
-
-        final List<Vector3dc> skeletonPoints = getSkeletonPoints();
+         final List<Vector3dc> skeletonPoints = getSkeletonPoints();
         logService.info("Found " + skeletonPoints.size() + " skeleton points");
 
 
@@ -468,11 +475,11 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         }
 
         final List<Ellipsoid> ellipsoids = new ArrayList<>(skeletonPoints.size());
-        skeletonPoints.parallelStream().forEach(sp -> ellipsoids.add(optimiseEllipsoid(inputImage, sp)));
+        skeletonPoints.parallelStream().forEach(sp -> ellipsoids.add(optimiseEllipsoid(sp)));
         return ellipsoids.stream().filter(Objects::nonNull).sorted(Comparator.comparingDouble(e -> -e.getVolume())).collect(toList());
     }
 
-    private Ellipsoid optimiseEllipsoid(ImgPlus<T> imp, Vector3dc skeletonPoint) {
+    private Ellipsoid optimiseEllipsoid(Vector3dc skeletonPoint) {
         final long start = System.currentTimeMillis();
 
         //TODO deal with calibration and parallelisation
@@ -680,16 +687,14 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         final double xycos1 = xy * cos1;
         final double xzcos1 = xz * cos1;
         final double yzcos1 = yz * cos1;
-        final Matrix4d rotation = new Matrix4d();
-        rotation.setRow(0, new Vector4d(cos + x * x * cos1, xycos1 - zsin, xzcos1 + ysin, 0));
-        rotation.setRow(1, new Vector4d(xycos1 + zsin, cos + y * y * cos1, yzcos1 - xsin, 0));
-        rotation.setRow(2, new Vector4d(xzcos1 - ysin, yzcos1 + xsin, cos + z * z * cos1, 0));
+        final Matrix3d rotation = new Matrix3d();
+        rotation.setRow(0, new Vector3d(cos + x * x * cos1, xycos1 - zsin, xzcos1 + ysin));
+        rotation.setRow(1, new Vector3d(xycos1 + zsin, cos + y * y * cos1, yzcos1 - xsin));
+        rotation.setRow(2, new Vector3d(xzcos1 - ysin, yzcos1 + xsin, cos + z * z * cos1));
 
-        Matrix4d orientation = ellipsoid.getOrientation();
+        Matrix3d orientation = getProperRotationMatrix(ellipsoid);
         orientation = orientation.mul(rotation);
-        Matrix3d rotated = new Matrix3d();
-        orientation.get3x3(rotated);
-        ellipsoid.setOrientation(rotated);
+        ellipsoid.setOrientation(orientation);
 
         return ellipsoid;
     }
