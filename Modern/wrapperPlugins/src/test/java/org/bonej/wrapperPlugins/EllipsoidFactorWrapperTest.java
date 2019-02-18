@@ -7,6 +7,7 @@ import net.imglib2.img.array.ArrayRandomAccess;
 import net.imglib2.img.basictypeaccess.array.IntArray;
 import net.imglib2.type.numeric.integer.IntType;
 import org.bonej.ops.ellipsoid.Ellipsoid;
+import org.joml.Matrix3d;
 import org.joml.Vector3d;
 import org.junit.Test;
 
@@ -16,6 +17,20 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 
 public class EllipsoidFactorWrapperTest {
+
+    @Test
+    public void testProperRotation() {
+        final Ellipsoid ellipsoid = new Ellipsoid(1,1,1);
+        ellipsoid.setSemiAxes(new Vector3d(-1,0,0), new Vector3d(0,2,0), new Vector3d(0,0,3));
+        final Matrix3d rotationMatrix = EllipsoidFactorWrapper.getProperRotationMatrix(ellipsoid);
+
+        final Matrix3d expected = new Matrix3d();
+
+        Stream.of(0,1,2).forEach
+                (i -> Stream.of(0,1,2).forEach(
+                        j -> assertEquals(expected.get(i,j),rotationMatrix.get(i,j),1e-12)));
+
+    }
 
     @Test
     public void testSurfacePoints() {
