@@ -50,7 +50,9 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.joml.*;
+import org.joml.Matrix3d;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -66,7 +68,6 @@ import org.scijava.table.Table;
 import org.scijava.ui.DialogPrompt;
 import org.scijava.ui.UIService;
 
-import java.lang.Math;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -111,19 +112,18 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     }
 
     @Parameter
+    private
     UnitService unitService;
     @Parameter
-    CommandService cs;
+    private CommandService cs;
     @Parameter
-    OpService opService;
+    private OpService opService;
     @Parameter
-    LogService logService;
+    private LogService logService;
     @Parameter
-    StatusService statusService;
+    private StatusService statusService;
     @Parameter(type = ItemIO.OUTPUT)
-    ImagePlus skeletonization;
-    @Parameter(label = "Gaussian sigma (px)")
-    double sigma = 0;
+    private ImagePlus skeletonization;
     @Parameter(validater = "validateImage")
     private ImgPlus<T> inputImage;
     @Parameter
@@ -159,12 +159,12 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Parameter(label = "Maximum_drift")
     private double maxDrift = Math.sqrt(3);
     private double stackVolume;
-    private double[][] regularVectors;
+
     @Parameter(visibility = ItemVisibility.MESSAGE)
     private String outputs = "Outputs";
 
     @Parameter(label = "Show secondary images")
-    boolean showSecondaryImages = false;
+    private boolean showSecondaryImages = false;
 
     @Parameter(visibility = ItemVisibility.MESSAGE)
     private String note =
@@ -192,6 +192,9 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Parameter(label = "Flinn Peak Plot", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> flinnPeakPlotImage;
 
+    @Parameter(label = "Gaussian_sigma")
+    private double sigma = 2;
+
     /**
      * The EF results in a {@link Table}, null if there are no results
      */
@@ -199,14 +202,14 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     private Table<DefaultColumn<Double>, Double> resultsTable;
 
     /**
-     * Calculate the torque of unit normals acting at the contact points
+     * Calculate the torque of unit normals acting at the contact points on the surface of an Ellipsoid
      *
-     * @param ellipsoid
-     * @param contactPoints
-     * @return
+     * @param ellipsoid     the unit normals refer to the surface of this ellipsoid
+     * @param contactPoints points on ellipsoid surface where normals are calculated
+     * @return torque vector
      */
     static Vector3d calculateTorque(final Ellipsoid ellipsoid,
-                                            final Iterable<double[]> contactPoints) {
+                                    final Iterable<double[]> contactPoints) {
 
         final Vector3d pc = ellipsoid.getCentroid();
         final double cx = pc.get(0);
@@ -259,7 +262,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     static Matrix3d getProperRotationMatrix(Ellipsoid ellipsoid) {//TODO should probably be part of Ellipsoid class
         final Matrix3d rot = ellipsoid.getOrientation().get3x3(new Matrix3d());
-        if(rot.determinant()<0)//ensure proper rotation matrix
+        if (rot.determinant() < 0)//ensure proper rotation matrix
         {
             final Vector3d column = rot.getColumn(0, new Vector3d());
             column.mul(-1);
@@ -272,9 +275,9 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
      * Calculate the mean unit vector between the ellipsoid's centroid and contact
      * points
      *
-     * @param ellipsoid
-     * @param contactPoints
-     * @return
+     * @param ellipsoid     ellipsoid giving centroid
+     * @param contactPoints contact points on ellipsoid surface for mean unit vector calculation
+     * @return mean unit vector
      */
     private static Vector3d contactPointUnitVector(final Ellipsoid ellipsoid,
                                                    final Collection<double[]> contactPoints) {
@@ -319,7 +322,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
      * @param nVectors number of vectors to generate
      * @return 2D array (nVectors x 3) containing unit vectors
      */
-    public static double[][] getRegularVectors(final int nVectors) {
+    private static double[][] getRegularVectors(final int nVectors) {
 
         final double[][] vectors = new double[nVectors][];
         final double inc = Math.PI * (3 - Math.sqrt(5));
@@ -342,7 +345,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
      *
      * @return 3-element double array containing [x y z]^T
      */
-    public static Vector3d randomVector() {
+    private static Vector3d randomVector() {
         final double z = 2 * Math.random() - 1;
         final double rho = Math.sqrt(1 - z * z);
         final double phi = Math.PI * (2 * Math.random() - 1);
@@ -391,8 +394,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     }
 
     private static long[] toPixelGrid(Vector3dc point) {
-        long[] position = {(long) point.get(0), (long) point.get(1), (long) point.get(2)};
-        return position;
+        return new long[]{(long) point.get(0), (long) point.get(1), (long) point.get(2)};
     }
 
     private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
@@ -422,16 +424,33 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         return idImage;
     }
 
+    static double[][] getSurfacePoints(Ellipsoid e, final double[][] vectors) {
+        final int nPoints = vectors.length;
+        for (int p = 0; p < nPoints; p++) {
+            final double[] v = vectors[p];
+
+            // stretching, rotating and translating in one
+            // semi-axes include length multiplication intrinsically
+            final List<Vector3d> semiAxes = e.getSemiAxes();
+            final Vector3d c = e.getCentroid();
+            final double vx = v[0] * semiAxes.get(0).get(0) + v[1] * semiAxes.get(0).get(1) + v[2] * semiAxes.get(0).get(2) + c.get(0);
+            final double vy = v[0] * semiAxes.get(1).get(0) + v[1] * semiAxes.get(1).get(1) + v[2] * semiAxes.get(1).get(2) + c.get(1);
+            final double vz = v[0] * semiAxes.get(2).get(0) + v[1] * semiAxes.get(2).get(1) + v[2] * semiAxes.get(2).get(2) + c.get(2);
+
+            vectors[p] = new double[]{vx, vy, vz};
+        }
+        return vectors;
+    }
+
     @Override
     public void run() {
-
-         final List<Vector3dc> skeletonPoints = getSkeletonPoints();
+        final List<Vector3dc> skeletonPoints = getSkeletonPoints();
         logService.info("Found " + skeletonPoints.size() + " skeleton points");
 
 
         long start = System.currentTimeMillis();
         stackVolume = inputImage.dimension(0) * inputImage.dimension(1) * inputImage.dimension(2);
-        final List<Ellipsoid> ellipsoids = findEllipsoids(inputImage, skeletonPoints);
+        final List<Ellipsoid> ellipsoids = findEllipsoids(skeletonPoints);
         long stop = System.currentTimeMillis();
 
         if (ellipsoids.isEmpty()) {
@@ -465,7 +484,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     }
 
-    private List<Ellipsoid> findEllipsoids(ImgPlus<T> inputImage, List<Vector3dc> skeletonPoints) {
+    private List<Ellipsoid> findEllipsoids(List<Vector3dc> skeletonPoints) {
         statusService.showStatus("Optimising ellipsoids...");
         if (skipRatio > 1) {
             int limit = skeletonPoints.size() / skipRatio + Math.min(skeletonPoints.size() % skipRatio, 1);
@@ -527,7 +546,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         ellipsoid.setOrientation(rotation);
 
         // shrink the ellipsoid slightly
-        contract(ellipsoid,0.1);
+        contract(ellipsoid, 0.1);
 
         // dilate other two axes until number of contact points increases
         // by contactSensitivity number of contacts
@@ -559,14 +578,14 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         while (totalIterations < absoluteMaxIterations && noImprovementCount < maxIterations) {
 
             // rotate a little bit
-            ellipsoid = wiggle(ellipsoid);
+            wiggle(ellipsoid);
 
             // contract until no contact
-            ellipsoid = shrinkToFit(ellipsoid, contactPoints);
+            shrinkToFit(ellipsoid, contactPoints);
 
             // dilate an axis
             double[] abc = threeWayShuffle();
-            ellipsoid = inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2]);
+            inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2]);
 
             if (isInvalid(ellipsoid)) {
                 reportInvalidEllipsoid(ellipsoid, totalIterations, ") is invalid, nullifying after ");
@@ -581,17 +600,17 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
             // if can't bump then do a wiggle
             if (contactPoints.isEmpty()) {
-                ellipsoid = wiggle(ellipsoid);
+                wiggle(ellipsoid);
             } else {
                 bump(ellipsoid, contactPoints);
             }
 
             // contract
-            ellipsoid = shrinkToFit(ellipsoid, contactPoints);
+            shrinkToFit(ellipsoid, contactPoints);
 
             // dilate an axis
             abc = threeWayShuffle();
-            ellipsoid = inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2]);
+            inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2]);
 
             if (isInvalid(ellipsoid)) {
                 reportInvalidEllipsoid(ellipsoid, totalIterations, ") is invalid, nullifying after ");
@@ -603,15 +622,14 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             }
 
             // rotate a little bit
-            Ellipsoid test = copyEllipsoid(ellipsoid);
-            ellipsoid = turn(ellipsoid, contactPoints);
+            turn(ellipsoid, contactPoints);
 
             // contract until no contact
-            ellipsoid = shrinkToFit(ellipsoid, contactPoints);
+            shrinkToFit(ellipsoid, contactPoints);
 
             // dilate an axis
             abc = threeWayShuffle();
-            ellipsoid = inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2]);
+            inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2]);
 
             if (isInvalid(ellipsoid)) {
                 reportInvalidEllipsoid(ellipsoid, totalIterations, ") is invalid, nullifying after ");
@@ -656,21 +674,20 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         return ellipsoid;
     }
 
-    private Ellipsoid turn(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints) {
+    private void turn(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints) {
         contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
         if (!contactPoints.isEmpty()) {
             final Vector3d torque = calculateTorque(ellipsoid, contactPoints);
             if (torque.length() == 0.0) {
-                if(logService.isDebug()) logService.info("Warning: zero torque vector - no turn performed");
+                if (logService.isDebug()) logService.info("Warning: zero torque vector - no turn performed");
             } else {
                 torque.normalize();
-                ellipsoid = rotateAboutAxis(ellipsoid, torque);
+                rotateAboutAxis(ellipsoid, torque);
             }
         }
-        return ellipsoid;
     }
 
-    private Ellipsoid rotateAboutAxis(Ellipsoid ellipsoid, Vector3d axis) {
+    private void rotateAboutAxis(Ellipsoid ellipsoid, Vector3d axis) {
         final double theta = 0.1;
         final double sin = Math.sin(theta);
         final double cos = Math.cos(theta);
@@ -696,7 +713,6 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         orientation = orientation.mul(rotation);
         ellipsoid.setOrientation(orientation);
 
-        return ellipsoid;
     }
 
     private void reportInvalidEllipsoid(Ellipsoid ellipsoid, int totalIterations, String s) {
@@ -718,7 +734,6 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
         final double displacement = vectorIncrement / 2;
 
-        final Vector3d c = ellipsoid.getCentroid();
         final Vector3d vector = contactPointUnitVector(ellipsoid, contactPoints);
         vector.mul(displacement);
 
@@ -728,7 +743,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         if (vector.length() < maxDrift) ellipsoid.setCentroid(newCentroid);
     }
 
-    private Ellipsoid inflateToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints, double a, double b, double c) {
+    private void inflateToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints, double a, double b, double c) {
         contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
 
         List<Double> scaledIncrements = Stream.of(a, b, c).map(d -> d * vectorIncrement).collect(toList());
@@ -744,7 +759,6 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             safety++;
         }
 
-        return ellipsoid;
     }
 
     private void stretchEllipsoidAnisotropic(Ellipsoid ellipsoid, double av, double bv, double cv) {
@@ -767,7 +781,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         ellipsoid.setA(ellipsoid.getA() + increment);
     }
 
-    private Ellipsoid shrinkToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints) {
+    private void shrinkToFit(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints) {
         // get the contact points
         contactPoints = findContactPoints(ellipsoid, contactPoints, getRegularVectors(nVectors), inputImage.getImg());
 
@@ -795,7 +809,6 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
         contract(ellipsoid, 0.05);
 
-        return ellipsoid;
     }
 
     private void contract(Ellipsoid ellipsoid, double contraction) {
@@ -804,11 +817,11 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             ellipsoid.setB(ellipsoid.getB() - contraction);
             ellipsoid.setC(ellipsoid.getC() - contraction);
         } else {
-            if(logService.isDebug()) logService.info("Warning: too much contraction!");
+            if (logService.isDebug()) logService.info("Warning: too much contraction!");
         }
     }
 
-    private Ellipsoid wiggle(Ellipsoid ellipsoid) {
+    private void wiggle(Ellipsoid ellipsoid) {
         final double b = Math.random() * 0.2 - 0.1;
         final double c = Math.random() * 0.2 - 0.1;
         final double a = Math.sqrt(1 - b * b - c * c);
@@ -828,7 +841,6 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         secondColumn.normalize();
 
         ellipsoid.setOrientation(new Matrix3d(zerothColumn, firstColumn, secondColumn));
-        return ellipsoid;
     }
 
     private boolean isInvalid(Ellipsoid ellipsoid) {
@@ -852,9 +864,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         try {
             final CommandModule skeletonizationModule = cs.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true, inputImage).get();
             skeleton = (ImagePlus) skeletonizationModule.getOutput("skeleton");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
         skeletonization = skeleton;
@@ -911,30 +921,12 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         return true;
     }
 
-    public double[][] getSurfacePoints(Ellipsoid e, final int nPoints) {
+    private double[][] getSurfacePoints(Ellipsoid e, final int nPoints) {
 
         // get regularly-spaced points on the unit sphere
         final double[][] vectors = getRegularVectors(nPoints);
         return getSurfacePoints(e, vectors);
 
-    }
-
-    static double[][] getSurfacePoints(Ellipsoid e, final double[][] vectors) {
-        final int nPoints = vectors.length;
-        for (int p = 0; p < nPoints; p++) {
-            final double[] v = vectors[p];
-
-            // stretching, rotating and translating in one
-            // semi-axes include length multiplication intrinsically
-            final List<Vector3d> semiAxes = e.getSemiAxes();
-            final Vector3d c = e.getCentroid();
-            final double vx = v[0] * semiAxes.get(0).get(0) + v[1] * semiAxes.get(0).get(1) + v[2] * semiAxes.get(0).get(2) + c.get(0);
-            final double vy = v[0] * semiAxes.get(1).get(0) + v[1] * semiAxes.get(1).get(1) + v[2] * semiAxes.get(1).get(2) + c.get(1);
-            final double vz = v[0] * semiAxes.get(2).get(0) + v[1] * semiAxes.get(2).get(1) + v[2] * semiAxes.get(2).get(2) + c.get(2);
-
-            vectors[p] = new double[]{vx, vy, vz};
-        }
-        return vectors;
     }
 
     private void createAToBImage(final double[] aBRatios,
@@ -1002,8 +994,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
             flinnPeakPlotRA.get().set(currentValue + 1.0f);
         }
         if (sigma > 0.0) {
-            flinnPeakPlot = (Img<FloatType>) opService.filter().gauss(flinnPeakPlot,
-                    sigma);
+            flinnPeakPlot = (Img<FloatType>) opService.filter().gauss(flinnPeakPlot, sigma);
         }
         flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, "Flinn Peak Plot");
         flinnPeakPlotImage.setChannelMaximum(0, 255.0f);
