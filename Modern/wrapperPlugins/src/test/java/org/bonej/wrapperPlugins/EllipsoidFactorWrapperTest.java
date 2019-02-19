@@ -109,6 +109,20 @@ public class EllipsoidFactorWrapperTest {
         assertEquals(torque.get(2),0,1e-12);
     }
 
+    @Test
+    public void testStretchSemiAxesAnisotropic()
+    {
+        final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
+        EllipsoidFactorWrapper.stretchEllipsoidAnisotropic(ellipsoid, 3,0,0);
+
+        assertEquals(ellipsoid.getA(),2, 1e-12);
+        assertEquals(ellipsoid.getB(),3, 1e-12);
+        assertEquals(ellipsoid.getC(),4, 1e-12);
+
+        final Vector3d xAxis = ellipsoid.getSemiAxes().get(0);
+        assertEquals(xAxis.dot(new Vector3d(1,0,0)),0,1e-12);
+    }
+
     private ArrayImg<IntType, IntArray> getCubeImage() {
         final ArrayImg<IntType, IntArray> ints = ArrayImgs.ints(6, 6, 6);
         final ArrayLocalizingCursor<IntType> cursor = ints.localizingCursor();

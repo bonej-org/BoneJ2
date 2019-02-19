@@ -495,7 +495,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         }
 
         final List<Ellipsoid> ellipsoids = new ArrayList<>(skeletonPoints.size());
-        skeletonPoints.parallelStream().forEach(sp -> ellipsoids.add(optimiseEllipsoid(sp)));
+        skeletonPoints.stream().forEach(sp -> ellipsoids.add(optimiseEllipsoid(sp)));
         return ellipsoids.stream().filter(Objects::nonNull).sorted(Comparator.comparingDouble(e -> -e.getVolume())).collect(toList());
     }
 
@@ -762,7 +762,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     }
 
-    private void stretchEllipsoidAnisotropic(Ellipsoid ellipsoid, double av, double bv, double cv) {
+    static void stretchEllipsoidAnisotropic(Ellipsoid ellipsoid, double av, double bv, double cv) {
         final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
         stretchSemiAxis(av, semiAxes.get(0));
         stretchSemiAxis(bv, semiAxes.get(1));
@@ -770,10 +770,10 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         ellipsoid.setSemiAxes(semiAxes.get(0), semiAxes.get(1), semiAxes.get(2));
     }
 
-    private void stretchSemiAxis(double av, Vector3d semiAxis) {
-        double lengtha = semiAxis.length() + av;
+    private static void stretchSemiAxis(double av, Vector3d semiAxis) {
+        double lengthA = semiAxis.length() + av;
         semiAxis.normalize();
-        semiAxis.mul(lengtha);
+        semiAxis.mul(lengthA);
     }
 
     private void dilateEllipsoidIsotropic(Ellipsoid ellipsoid, double increment) {
@@ -803,7 +803,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         // contract until no contact
         int safety = 0;
         while (!contactPoints.isEmpty() && safety < maxIterations) {
-            contract(ellipsoid, 0.05);
+            contract(ellipsoid, 0.01);
             contactPoints = findContactPoints(ellipsoid, contactPoints, unitVectors, inputImage.getImg());
             safety++;
         }
@@ -841,7 +841,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
         final Vector3d secondColumn = zerothColumn.cross(firstColumn, new Vector3d());
         secondColumn.normalize();
 
-        ellipsoid.setOrientation(new Matrix3d(zerothColumn, firstColumn, secondColumn));
+        ellipsoid.setOrientation(new Matrix3d(zerothColumn, firstColumn, secondColumn));//TODO!!!
     }
 
     private boolean isInvalid(Ellipsoid ellipsoid) {
