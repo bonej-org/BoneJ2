@@ -38,13 +38,10 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
     @Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
     private ImgPlus<UnsignedByteType> seedPointsImage;
 
-    private Random rng;
+    private Random rng = new Random();
 
     @Override
     public List<Vector3dc> calculate(RandomAccessibleInterval<BitType> bitImage) {
-
-        rng = new Random(23);
-
         final Img<R> ridge = (Img<R>) createRidge(bitImage);
 
         IterableMax<R> iterableMax = new IterableMax<>();

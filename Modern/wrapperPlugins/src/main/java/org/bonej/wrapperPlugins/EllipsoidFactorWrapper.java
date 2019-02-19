@@ -46,6 +46,7 @@ import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import org.bonej.ops.ellipsoid.Ellipsoid;
+import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
@@ -123,7 +124,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     @Parameter
     private StatusService statusService;
     @Parameter(type = ItemIO.OUTPUT)
-    private ImagePlus skeletonization;
+    private ImgPlus skeletonization;
     @Parameter(validater = "validateImage")
     private ImgPlus<T> inputImage;
     @Parameter
@@ -444,7 +445,7 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     @Override
     public void run() {
-        final List<Vector3dc> skeletonPoints = getSkeletonPoints();
+        final List<Vector3dc> skeletonPoints = getSkeletonPoints(true);
         logService.info("Found " + skeletonPoints.size() + " skeleton points");
 
 
@@ -763,8 +764,8 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
 
     private void stretchEllipsoidAnisotropic(Ellipsoid ellipsoid, double av, double bv, double cv) {
         final List<Vector3d> semiAxes = ellipsoid.getSemiAxes();
-        stretchSemiAxis(av, semiAxes.get(0));//1.2391304347826084
-        stretchSemiAxis(bv, semiAxes.get(1));//1.2391304347826082
+        stretchSemiAxis(av, semiAxes.get(0));
+        stretchSemiAxis(bv, semiAxes.get(1));
         stretchSemiAxis(cv, semiAxes.get(2));
         ellipsoid.setSemiAxes(semiAxes.get(0), semiAxes.get(1), semiAxes.get(2));
     }
@@ -859,29 +860,39 @@ public class EllipsoidFactorWrapper<T extends RealType<T> & NativeType<T>>
     }
 
     //checked
-    private List<Vector3dc> getSkeletonPoints() {
-        ImagePlus skeleton = null;
-        try {
-            final CommandModule skeletonizationModule = cs.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true, inputImage).get();
-            skeleton = (ImagePlus) skeletonizationModule.getOutput("skeleton");
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-        skeletonization = skeleton;
+    private List<Vector3dc> getSkeletonPoints(boolean classic) {
+        if(classic) {
+            ImagePlus skeleton = null;
+            try {
+                final CommandModule skeletonizationModule = cs.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true, inputImage).get();
+                skeleton = (ImagePlus) skeletonizationModule.getOutput("skeleton");
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
 
-        final ImageStack skeletonStack = skeleton.getImageStack();
-        final List<Vector3dc> skeletonPoints = new ArrayList<>();
-        for (int z = 0; z < skeleton.getStackSize(); z++) {
-            final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
-            for (int x = 0; x < skeleton.getWidth(); x++) {
-                for (int y = 0; y < skeleton.getHeight(); y++) {
-                    if (slicePixels[y * skeleton.getWidth() + x] != 0) {
-                        skeletonPoints.add(new Vector3d(x, y, z));
+            skeletonization = new ImgPlus(ArrayImgs.ints(inputImage.dimension(0),inputImage.dimension(1), inputImage.dimension(2)));
+            final RandomAccess<T> randomAccess = skeletonization.randomAccess();
+
+            final ImageStack skeletonStack = skeleton.getImageStack();
+            final List<Vector3dc> skeletonPoints = new ArrayList<>();
+            for (int z = 0; z < skeleton.getStackSize(); z++) {
+                final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
+                for (int x = 0; x < skeleton.getWidth(); x++) {
+                    for (int y = 0; y < skeleton.getHeight(); y++) {
+                        if (slicePixels[y * skeleton.getWidth() + x] != 0) {
+                            skeletonPoints.add(new Vector3d(x, y, z));
+                            randomAccess.setPosition(new int[]{x,y,z});
+                            randomAccess.get().setReal(255);
+                        }
                     }
                 }
             }
+            return skeletonPoints;
         }
-        return skeletonPoints;
+        else
+        {
+             return (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class, Common.toBitTypeImgPlus(opService,inputImage))).get(0);
+        }
     }
 
     ArrayList<double[]> findContactPoints(
