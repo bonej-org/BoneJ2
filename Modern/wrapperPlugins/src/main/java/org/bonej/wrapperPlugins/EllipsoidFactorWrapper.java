@@ -1193,6 +1193,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		ellipsoid.setRotation(rotation);
 
 		// shrink the ellipsoid slightly
+		shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
 		ellipsoid.contract(0.1);
 
 		// dilate other two axes until number of contact points increases
