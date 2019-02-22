@@ -21,7 +21,25 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package org.bonej.plugins;
+package org.bonej.wrapperPlugins;
+
+import ij.IJ;
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.gui.GenericDialog;
+import ij.gui.Plot;
+import ij.measure.Calibration;
+import ij.process.FloatProcessor;
+import ij.process.ImageProcessor;
+import org.bonej.geometry.Ellipsoid;
+import org.bonej.geometry.Trig;
+import org.bonej.geometry.Vectors;
+import org.bonej.util.ImageCheck;
+import org.bonej.util.Multithreader;
+import org.bonej.util.SkeletonUtils;
+import org.scijava.command.Command;
+import org.scijava.command.ContextCommand;
+import org.scijava.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,28 +48,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.bonej.geometry.Ellipsoid;
-import org.bonej.geometry.Trig;
-import org.bonej.geometry.Vectors;
-import org.bonej.util.ImageCheck;
-import org.bonej.util.Multithreader;
-import org.bonej.util.SkeletonUtils;
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point3f;
-
-import customnode.CustomLineMesh;
-import customnode.CustomPointMesh;
-import ij.IJ;
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.gui.GenericDialog;
-import ij.gui.Plot;
-import ij.measure.Calibration;
-import ij.plugin.PlugIn;
-import ij.process.FloatProcessor;
-import ij.process.ImageProcessor;
-import ij3d.Image3DUniverse;
 
 /**
  * ImageJ plugin to describe the local geometry of a binary image in an
@@ -69,8 +65,11 @@ import ij3d.Image3DUniverse;
  *      "The ellipsoid factor for quantification of rods, plates, and intermediate forms in 3D geometries"
  *      Frontiers in Endocrinology (2015)</a>
  * @author Michael Doube
+ * @author Alessandro Felder
  */
-public class EllipsoidFactor implements PlugIn {
+
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
+public class EllipsoidFactorWrapper extends ContextCommand {
 
 	private int nVectors = 100;
 
@@ -94,14 +93,14 @@ public class EllipsoidFactor implements PlugIn {
 	 * diagonal length
 	 */
 	private double maxDrift = Math.sqrt(3);
-	private Image3DUniverse universe;
+	//private Image3DUniverse universe;
 
 	private double stackVolume;
 
 	private double[][] regularVectors;
 
 	@Override
-	public void run(final String arg) {
+	public void run() {
 		final ImagePlus imp = IJ.getImage();
 		if (imp == null) {
 			IJ.noImage();
@@ -168,11 +167,6 @@ public class EllipsoidFactor implements PlugIn {
 
 		IJ.log("Found " + skeletonPoints.length + " skeleton points");
 
-		if (IJ.debugMode) {
-			universe = new Image3DUniverse();
-			universe.show();
-		}
-
 		long start = System.currentTimeMillis();
 		final Ellipsoid[] ellipsoids = findEllipsoids(imp, skeletonPoints);
 		long stop = System.currentTimeMillis();
@@ -237,7 +231,7 @@ public class EllipsoidFactor implements PlugIn {
 			flinnPeaks.show();
 		}
 
-		UsageReporter.reportEvent(this).send();
+		//UsageReporter.reportEvent(this).send();
 		IJ.showStatus("Ellipsoid Factor completed");
 	}
 
@@ -466,127 +460,6 @@ public class EllipsoidFactor implements PlugIn {
 		final double y = z1 * x2 - x1 * z2;
 		final double z = x1 * y2 - y1 * x2;
 		return new double[] { x, y, z };
-	}
-
-	/**
-	 * Display an ellipsoid in the 3D viewer
-	 *
-	 * @param ellipsoid
-	 * @param pW
-	 * @param pH
-	 * @param pD
-	 * @param w
-	 * @param h
-	 * @param d
-	 * @param px
-	 * @param py
-	 * @param pz
-	 */
-	private void display3D(final Ellipsoid ellipsoid,
-		ArrayList<double[]> contactPoints, final byte[][] pixels, final double pW,
-		final double pH, final double pD, final int w, final int h, final int d,
-		final double px, final double py, final double pz, final String name)
-	{
-		contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
-			pD, w, h, d);
-		final ArrayList<Point3f> contactPointsf = new ArrayList<>(contactPoints
-			.size());
-		for (final double[] p : contactPoints) {
-			final Point3f point = new Point3f((float) p[0], (float) p[1],
-				(float) p[2]);
-			contactPointsf.add(point);
-		}
-		final double[][] pointCloud = ellipsoid.getSurfacePoints(100);
-
-		final List<Point3f> pointList = new ArrayList<>();
-		for (final double[] aPointCloud : pointCloud) {
-			if (aPointCloud == null) {
-				continue;
-			}
-			final Point3f e = new Point3f();
-			e.x = (float) aPointCloud[0];
-			e.y = (float) aPointCloud[1];
-			e.z = (float) aPointCloud[2];
-			pointList.add(e);
-		}
-		final CustomPointMesh mesh = new CustomPointMesh(pointList);
-		mesh.setPointSize(2.0f);
-		final Color3f cColour = new Color3f((float) (px / pW) / w, (float) (py /
-			pH) / h, (float) (pz / pD) / d);
-		mesh.setColor(cColour);
-
-		final CustomPointMesh contactPointMesh = new CustomPointMesh(
-			contactPointsf);
-		contactPointMesh.setPointSize(2.5f);
-		final Color3f invColour = new Color3f(1 - cColour.x, 1 - cColour.y, 1 -
-			cColour.z);
-		contactPointMesh.setColor(invColour);
-
-		final double[] torque = calculateTorque(ellipsoid, contactPoints);
-		final double[] c = ellipsoid.getCentre();
-
-		final List<Point3f> torqueList = new ArrayList<>();
-		torqueList.add(new Point3f((float) c[0], (float) c[1], (float) c[2]));
-		torqueList.add(new Point3f((float) (torque[0] + c[0]), (float) (torque[1] +
-			c[1]), (float) (torque[2] + c[2])));
-		final CustomLineMesh torqueLine = new CustomLineMesh(torqueList);
-		final Color3f blue = new Color3f(0.0f, 0.0f, 1.0f);
-		torqueLine.setColor(blue);
-
-		// Axis-aligned bounding box
-		final double[] box = ellipsoid.getAxisAlignedBoundingBox();
-		final float[] b = { (float) box[0], (float) box[1], (float) box[2],
-			(float) box[3], (float) box[4], (float) box[5] };
-		final List<Point3f> aabb = new ArrayList<>();
-		aabb.add(new Point3f(b[0], b[2], b[4]));
-		aabb.add(new Point3f(b[1], b[2], b[4]));
-
-		aabb.add(new Point3f(b[0], b[2], b[4]));
-		aabb.add(new Point3f(b[0], b[3], b[4]));
-
-		aabb.add(new Point3f(b[0], b[2], b[4]));
-		aabb.add(new Point3f(b[0], b[2], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[4]));
-		aabb.add(new Point3f(b[0], b[3], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[5]));
-		aabb.add(new Point3f(b[0], b[2], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[4]));
-		aabb.add(new Point3f(b[1], b[3], b[4]));
-
-		aabb.add(new Point3f(b[1], b[3], b[4]));
-		aabb.add(new Point3f(b[1], b[3], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[5]));
-		aabb.add(new Point3f(b[1], b[3], b[5]));
-
-		aabb.add(new Point3f(b[0], b[2], b[5]));
-		aabb.add(new Point3f(b[1], b[2], b[5]));
-
-		aabb.add(new Point3f(b[1], b[2], b[4]));
-		aabb.add(new Point3f(b[1], b[3], b[4]));
-
-		aabb.add(new Point3f(b[1], b[2], b[4]));
-		aabb.add(new Point3f(b[1], b[2], b[5]));
-
-		aabb.add(new Point3f(b[1], b[2], b[5]));
-		aabb.add(new Point3f(b[1], b[3], b[5]));
-
-		try {
-			universe.addCustomMesh(mesh, "Point cloud " + name).setLocked(true);
-			universe.addCustomMesh(contactPointMesh, "Contact points of " + name)
-				.setLocked(true);
-			universe.addCustomMesh(torqueLine, "Torque of " + name).setLocked(true);
-			universe.addLineMesh(aabb, new Color3f(1.0f, 0.0f, 0.0f), "AABB of " +
-				name, false).setLocked(true);
-
-		}
-		catch (final Exception e) {
-			IJ.log("Something went wrong adding meshes to 3D viewer:\n" + e
-				.getMessage());
-		}
 	}
 
 	private static ImagePlus displayEllipsoidFactor(final ImagePlus imp,
@@ -1449,11 +1322,6 @@ public class EllipsoidFactor implements PlugIn {
 				") seems to be out of control, nullifying after " + totalIterations +
 				" iterations");
 			return null;
-		}
-		if (IJ.debugMode) {
-			// show in the 3D viewer
-			display3D(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d, px, py,
-				pz, px + " " + py + " " + pz);
 		}
 
 		final long stop = System.currentTimeMillis();
