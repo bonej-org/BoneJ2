@@ -39,6 +39,8 @@ import org.bonej.util.Multithreader;
 import org.bonej.util.SkeletonUtils;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import java.util.ArrayList;
@@ -70,6 +72,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
 public class EllipsoidFactorWrapper extends ContextCommand {
+
+	@Parameter
+	LogService logService;
 
 	private int nVectors = 100;
 
@@ -165,23 +170,23 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		final int[][] skeletonPoints = skeletonPoints(imp);
 
-		IJ.log("Found " + skeletonPoints.length + " skeleton points");
+		logService.info("Found " + skeletonPoints.length + " skeleton points");
 
 		long start = System.currentTimeMillis();
 		final Ellipsoid[] ellipsoids = findEllipsoids(imp, skeletonPoints);
 		long stop = System.currentTimeMillis();
 
-		IJ.log("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) +
+		logService.info("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) +
 			" ms");
 
 		start = System.currentTimeMillis();
 		final int[][] maxIDs = findMaxID(imp, ellipsoids);
 		stop = System.currentTimeMillis();
 
-		IJ.log("Found maximal ellipsoids in " + (stop - start) + " ms");
+		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
 		final double fractionFilled = calculateFillingEfficiency(maxIDs);
-		IJ.log(IJ.d2s((fractionFilled * 100), 3) +
+		logService.info(IJ.d2s((fractionFilled * 100), 3) +
 			"% of foreground volume filled with ellipsoids");
 
 		if (doVolumeImage) {
@@ -280,7 +285,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return ellipsoid;
 	}
 
-	private static double calculateFillingEfficiency(final int[][] maxIDs) {
+	private double calculateFillingEfficiency(final int[][] maxIDs) {
 		final int l = maxIDs.length;
 		final long[] foregroundCount = new long[l];
 		final long[] filledCount = new long[l];
@@ -290,7 +295,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		for (int thread = 0; thread < threads.length; thread++) {
 			threads[thread] = new Thread(() -> {
 				for (int i = ai.getAndIncrement(); i < l; i = ai.getAndIncrement()) {
-					IJ.showStatus("Calculating filling effiency...");
+					IJ.showStatus("Calculating filling efficiency...");
 					IJ.showProgress(i, l);
 					final int[] idSlice = maxIDs[i];
 					for (final int val : idSlice) {
@@ -315,7 +320,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 
 		final long unfilled = sumForegroundCount - sumFilledCount;
-		IJ.log(unfilled + " pixels unfilled with ellipsoids out of " +
+		logService.info(unfilled + " pixels unfilled with ellipsoids out of " +
 			sumForegroundCount + " total foreground pixels");
 
 		return sumFilledCount / (double) sumForegroundCount;
@@ -1204,7 +1209,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW,
 				pH, pD, w, h, d);
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying at initial oblation");
 				return null;
 			}
@@ -1240,7 +1245,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -1269,7 +1274,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -1290,7 +1295,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -1319,7 +1324,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		// this usually indicates that the ellipsoid
 		// grew out of control for some reason
 		if (totalIterations == absoluteMaxIterations) {
-			IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+			logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 				") seems to be out of control, nullifying after " + totalIterations +
 				" iterations");
 			return null;
@@ -1327,7 +1332,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		final long stop = System.currentTimeMillis();
 
-		if (IJ.debugMode) IJ.log("Optimised ellipsoid in " + (stop - start) +
+		if (logService.isDebug()) logService.info("Optimised ellipsoid in " + (stop - start) +
 			" ms after " + totalIterations + " iterations (" + IJ.d2s((double) (stop -
 				start) / totalIterations, 3) + " ms/iteration)");
 
@@ -1399,7 +1404,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return ellipsoid;
 	}
 
-	private static int[][] skeletonPoints(final ImagePlus imp) {
+	private int[][] skeletonPoints(final ImagePlus imp) {
 		final ImagePlus skeleton = SkeletonUtils.getSkeleton(imp);
 		final ImageStack skeletonStack = skeleton.getStack();
 
@@ -1430,7 +1435,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 		Multithreader.startAndJoin(threads);
 
-		if (IJ.debugMode) IJ.log("Skeleton point ArrayList contains " + list
+		if (logService.isDebug()) logService.info("Skeleton point ArrayList contains " + list
 			.size() + " points");
 
 		return list.toArray(new int[list.size()][]);
