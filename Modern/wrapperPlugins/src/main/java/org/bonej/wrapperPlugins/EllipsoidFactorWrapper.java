@@ -21,37 +21,44 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package org.bonej.plugins;
+package org.bonej.wrapperPlugins;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.bonej.geometry.Ellipsoid;
-import org.bonej.geometry.Trig;
-import org.bonej.geometry.Vectors;
-import org.bonej.util.ImageCheck;
-import org.bonej.util.Multithreader;
-import org.bonej.util.SkeletonUtils;
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point3f;
-
-import customnode.CustomLineMesh;
-import customnode.CustomPointMesh;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.GenericDialog;
 import ij.gui.Plot;
 import ij.measure.Calibration;
-import ij.plugin.PlugIn;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
-import ij3d.Image3DUniverse;
+import net.imagej.ImgPlus;
+import net.imagej.ops.OpService;
+import net.imagej.units.UnitService;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
+import org.bonej.ops.skeletonize.FindRidgePoints;
+import org.bonej.util.Multithreader;
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
+import org.scijava.ItemIO;
+import org.scijava.ItemVisibility;
+import org.scijava.app.StatusService;
+import org.scijava.command.Command;
+import org.scijava.command.CommandService;
+import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
+import org.scijava.plugin.Plugin;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
+import org.scijava.ui.UIService;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.DoubleStream.of;
 
 /**
  * ImageJ plugin to describe the local geometry of a binary image in an
@@ -69,128 +76,151 @@ import ij3d.Image3DUniverse;
  *      "The ellipsoid factor for quantification of rods, plates, and intermediate forms in 3D geometries"
  *      Frontiers in Endocrinology (2015)</a>
  * @author Michael Doube
+ * @author Alessandro Felder
  */
-public class EllipsoidFactor implements PlugIn {
 
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
+public class EllipsoidFactorWrapper extends ContextCommand {
+
+	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
+
+	@Parameter
+	private	UnitService unitService;
+	@Parameter
+	private CommandService cs;
+	@Parameter
+	private OpService opService;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private StatusService statusService;
+	@Parameter
+	private UIService uiService;
+	private boolean calibrationWarned;
+	@Parameter
+	private ImgPlus<UnsignedIntType> inputImgPlus;
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String setup = "Setup";
+	@Parameter(label = "Vectors")
 	private int nVectors = 100;
-
-	/**
-	 * increment for vector searching in real units. Defaults to ~Nyquist sampling
-	 * of a unit pixel
-	 */
+	@Parameter(label = "Sampling_increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.")
 	private double vectorIncrement = 1 / 2.3;
-
-	/**
-	 * Number of skeleton points per ellipsoid. Sets the granularity of the
-	 * ellipsoid fields.
-	 */
+	@Parameter(label = "Skeleton_points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.")
 	private int skipRatio = 50;
+	@Parameter(label = "Contact sensitivity")
 	private int contactSensitivity = 1;
-	/** Safety value to prevent while() running forever */
+	@Parameter(label = "Maximum_iterations", description = "Maximum iterations to try improving ellipsoid fit before stopping.")
 	private int maxIterations = 100;
-
-	/**
-	 * maximum distance ellipsoid may drift from seed point. Defaults to voxel
-	 * diagonal length
-	 */
+	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length")
 	private double maxDrift = Math.sqrt(3);
-	private Image3DUniverse universe;
 
 	private double stackVolume;
 
-	private double[][] regularVectors;
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String outputs = "Outputs";
+
+	@Parameter(label = "Show secondary images")
+	private boolean showSecondaryImages = false;
+
+	@Parameter(label = "Gaussian_sigma")
+	private double sigma = 2;
+
+	/**
+	 * The EF results in a {@link Table}, null if there are no results
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<Double>, Double> resultsTable;
+
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String note =
+			"Ellipsoid Factor is beta software.\n" +
+					"Please report your experiences to the user group:\n" +
+					"http://forum.image.sc/tags/bonej";
+
+	private static Random rng = new Random();
+
+	double[][] regularVectors;
+
+	/**
+	 * Method to numerically approximate equidistantly spaced points on the
+	 * surface of a sphere
+	 * <p>
+	 * The implementation follows the description of the theoretical work by
+	 * Rakhmanov et al., 1994 in Saff and Kuijlaars, 1997
+	 * (<a href="doi:10.1007/BF03024331">dx.doi.org/10.1007/BF03024331</a>), but k
+	 * is shifted by one to the left for more convenient indexing.
+	 *
+	 * @param n : number of points required (has to be > 2)
+	 *          <p>
+	 *          This could be its own op in the future.
+	 *          </p>
+	 */
+	static double[][] getGeneralizedSpiralSetOnSphere(final int n) {
+		final Stream.Builder<double[]> spiralSet = Stream.builder();
+		final List<Double> phi = new ArrayList<>();
+		phi.add(0.0);
+		for (int k = 1; k < n - 1; k++) {
+			final double h = -1.0 + 2.0 * k / (n - 1);
+			phi.add(getPhiByRecursion(n, phi.get(k - 1), h));
+		}
+		phi.add(0.0);
+
+		for (int k = 0; k < n; k++) {
+			final double h = -1.0 + 2.0 * k / (n - 1);
+			final double theta = Math.acos(h);
+			spiralSet.add(new double[]{Math.sin(theta) * Math.cos(phi.get(k)), Math
+					.sin(theta) * Math.sin(phi.get(k)), Math.cos(theta)});
+
+		}
+		List<double[]> list = spiralSet.build().collect(toList());
+		return list.toArray(new double[n][]);
+	}
+
+	private static double getPhiByRecursion(final double n, final double phiKMinus1,
+											final double hk) {
+		final double phiK = phiKMinus1 + 3.6 / Math.sqrt(n) * 1.0 / Math.sqrt(1 - hk *
+				hk);
+		// modulo 2pi calculation works for positive numbers only, which is not a
+		// problem in this case.
+		return phiK - Math.floor(phiK / (2 * Math.PI)) * 2 * Math.PI;
+	}
 
 	@Override
-	public void run(final String arg) {
+	public void run() {
+		final double pW = inputImgPlus.averageScale(0);
+		final double pH = inputImgPlus.averageScale(1);
+		final double pD = inputImgPlus.averageScale(2);
+        vectorIncrement *= Math.min(pD, Math.min(pH, pW));
+        maxDrift *= Math.sqrt(pW * pW + pH * pH + pD * pD)/Math.sqrt(3);
+
+		stackVolume = pW * pH * pD * inputImgPlus.dimension(0) * inputImgPlus.dimension(1) * inputImgPlus.dimension(2);
+
+		final List<Vector3dc> vector3dSkeletonPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class, Common.toBitTypeImgPlus(opService, inputImgPlus))).get(0);
+		final List<int[]> listSkeletonPoints = vector3dSkeletonPoints.stream().map(v -> new int[]{(int) v.get(0), (int) v.get(1), (int) v.get(2)}).collect(toList());
+		final int[][] skeletonPoints = listSkeletonPoints.toArray(new int[vector3dSkeletonPoints.size()][]);
+		logService.info("Found " + skeletonPoints.length + " skeleton points");
+
 		final ImagePlus imp = IJ.getImage();
-		if (imp == null) {
-			IJ.noImage();
-			return;
-		}
-		if (!ImageCheck.isBinary(imp) || ImageCheck.isSingleSlice(imp) ||
-			!ImageCheck.isVoxelIsotropic(imp, 0.001))
-		{
-			IJ.error("8-bit binary stack with isotropic pixel spacing required.");
-			return;
-		}
-		final Calibration cal = imp.getCalibration();
-		final String units = cal.getUnits();
-		final double pW = cal.pixelWidth;
-		final double pH = cal.pixelHeight;
-		final double pD = cal.pixelDepth;
-		vectorIncrement *= Math.min(pD, Math.min(pH, pW));
-		maxDrift = Math.sqrt(pW * pW + pH * pH + pD * pD);
-		stackVolume = pW * pH * pD * imp.getWidth() * imp.getHeight() * imp
-			.getStackSize();
-		final GenericDialog gd = new GenericDialog("Setup");
-		gd.addMessage("Sampling options");
-		gd.addNumericField("Sampling_increment", vectorIncrement, 3, 8, units);
-		gd.addNumericField("Vectors", nVectors, 0, 8, "");
-		gd.addNumericField("Skeleton_points per ellipsoid", skipRatio, 0);
-		gd.addNumericField("Contact sensitivity", contactSensitivity, 0, 4, "");
-		gd.addNumericField("Maximum_iterations", maxIterations, 0);
-		gd.addNumericField("Maximum_drift", maxDrift, 5, 8, units);
-
-		gd.addMessage("\nOutput options");
-		gd.addCheckbox("EF_image", true);
-		gd.addCheckbox("Ellipsoid_ID_image", false);
-		gd.addCheckbox("Volume_image", false);
-		gd.addCheckbox("Axis_ratio_images", false);
-		gd.addCheckbox("Flinn_peak_plot", true);
-		gd.addNumericField("Gaussian_sigma", 2, 0, 4, "px");
-		gd.addCheckbox("Flinn_plot", false);
-
-		gd.addMessage("Ellipsoid Factor is beta software.\n" +
-			"Please report your experiences to the user group:\n" +
-			"http://forum.image.sc/tags/bonej");
-		gd.showDialog();
-
-		if (gd.wasCanceled()) return;
-
-		vectorIncrement = gd.getNextNumber();
-		nVectors = (int) Math.round(gd.getNextNumber());
-		skipRatio = (int) Math.round(gd.getNextNumber());
-		contactSensitivity = (int) Math.round(gd.getNextNumber());
-		maxIterations = (int) Math.round(gd.getNextNumber());
-		maxDrift = gd.getNextNumber();
-
-		final boolean doEFImage = gd.getNextBoolean();
-		final boolean doEllipsoidIDImage = gd.getNextBoolean();
-		final boolean doVolumeImage = gd.getNextBoolean();
-		final boolean doAxisRatioImages = gd.getNextBoolean();
-		final boolean doFlinnPeakPlot = gd.getNextBoolean();
-		final double gaussianSigma = gd.getNextNumber();
-		final boolean doFlinnPlot = gd.getNextBoolean();
-
-		regularVectors = Vectors.regularVectors(nVectors);
-
-		final int[][] skeletonPoints = skeletonPoints(imp);
-
-		IJ.log("Found " + skeletonPoints.length + " skeleton points");
-
-		if (IJ.debugMode) {
-			universe = new Image3DUniverse();
-			universe.show();
-		}
-
 		long start = System.currentTimeMillis();
 		final Ellipsoid[] ellipsoids = findEllipsoids(imp, skeletonPoints);
 		long stop = System.currentTimeMillis();
-
-		IJ.log("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) +
+		logService.info("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) +
 			" ms");
+		if (ellipsoids.length==0) {
+			cancel(NO_ELLIPSOIDS_FOUND);
+			return;
+		}
 
 		start = System.currentTimeMillis();
 		final int[][] maxIDs = findMaxID(imp, ellipsoids);
 		stop = System.currentTimeMillis();
 
-		IJ.log("Found maximal ellipsoids in " + (stop - start) + " ms");
+		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
 		final double fractionFilled = calculateFillingEfficiency(maxIDs);
-		IJ.log(IJ.d2s((fractionFilled * 100), 3) +
-			"% of foreground volume filled with ellipsoids");
+		addResults(Arrays.asList(ellipsoids), fractionFilled);
 
-		if (doVolumeImage) {
+		if (showSecondaryImages) {
 			final ImagePlus volumes = displayVolumes(imp, maxIDs, ellipsoids);
 			volumes.show();
 			volumes.setDisplayRange(0, ellipsoids[(int) (0.05 * ellipsoids.length)]
@@ -198,7 +228,7 @@ public class EllipsoidFactor implements PlugIn {
 			IJ.run("Fire");
 		}
 
-		if (doAxisRatioImages) {
+		if (showSecondaryImages) {
 			final ImagePlus middleOverLong = displayMiddleOverLong(imp, maxIDs,
 				ellipsoids);
 			middleOverLong.show();
@@ -212,32 +242,32 @@ public class EllipsoidFactor implements PlugIn {
 			IJ.run("Fire");
 		}
 
-		if (doEFImage) {
+		if (showSecondaryImages) {
 			final ImagePlus eF = displayEllipsoidFactor(imp, maxIDs, ellipsoids);
 			eF.show();
 			eF.setDisplayRange(-1, 1);
 			IJ.run("Fire");
 		}
 
-		if (doEllipsoidIDImage) {
+		if (showSecondaryImages) {
 			final ImagePlus maxID = displayMaximumIDs(maxIDs, imp);
 			maxID.show();
 			maxID.setDisplayRange(-ellipsoids.length / 2.0, ellipsoids.length);
 		}
 
-		if (doFlinnPlot) {
+		if (showSecondaryImages) {
 			final ImagePlus flinnPlot = drawFlinnPlot("Weighted-flinn-plot-" + imp
 				.getTitle(), ellipsoids);
 			flinnPlot.show();
 		}
 
-		if (doFlinnPeakPlot) {
+		if (showSecondaryImages) {
 			final ImagePlus flinnPeaks = drawFlinnPeakPlot("FlinnPeaks_" + imp
-				.getTitle(), imp, maxIDs, ellipsoids, gaussianSigma);
+				.getTitle(), imp, maxIDs, ellipsoids, sigma);
 			flinnPeaks.show();
 		}
 
-		UsageReporter.reportEvent(this).send();
+		//UsageReporter.reportEvent(this).send();
 		IJ.showStatus("Ellipsoid Factor completed");
 	}
 
@@ -267,6 +297,17 @@ public class EllipsoidFactor implements PlugIn {
 		return -1;
 	}
 
+	private void addResults(final List<Ellipsoid> ellipsoids, double fillingPercentage) {
+		final String label = inputImgPlus.getName();
+		SharedTable.add(label, "filling percentage", fillingPercentage);
+		SharedTable.add(label, "number of ellipsoids found", ellipsoids.size());
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		} else {
+			cancel(NO_ELLIPSOIDS_FOUND);
+		}
+	}
+
 	private Ellipsoid bump(final Ellipsoid ellipsoid,
 		final Collection<double[]> contactPoints, final double px, final double py,
 		final double pz)
@@ -280,13 +321,15 @@ public class EllipsoidFactor implements PlugIn {
 		final double y = c[1] + vector[1] * displacement;
 		final double z = c[2] + vector[2] * displacement;
 
-		if (Trig.distance3D(px, py, pz, x, y, z) < maxDrift) ellipsoid.setCentroid(
+		Vector3d distance = new Vector3d(px,py,pz);
+		distance.sub(new Vector3d(x,y,z));
+		if (distance.length() < maxDrift) ellipsoid.setCentroid(
 			x, y, z);
 
 		return ellipsoid;
 	}
 
-	private static double calculateFillingEfficiency(final int[][] maxIDs) {
+	private double calculateFillingEfficiency(final int[][] maxIDs) {
 		final int l = maxIDs.length;
 		final long[] foregroundCount = new long[l];
 		final long[] filledCount = new long[l];
@@ -296,7 +339,7 @@ public class EllipsoidFactor implements PlugIn {
 		for (int thread = 0; thread < threads.length; thread++) {
 			threads[thread] = new Thread(() -> {
 				for (int i = ai.getAndIncrement(); i < l; i = ai.getAndIncrement()) {
-					IJ.showStatus("Calculating filling effiency...");
+					IJ.showStatus("Calculating filling efficiency...");
 					IJ.showProgress(i, l);
 					final int[] idSlice = maxIDs[i];
 					for (final int val : idSlice) {
@@ -321,7 +364,7 @@ public class EllipsoidFactor implements PlugIn {
 		}
 
 		final long unfilled = sumForegroundCount - sumFilledCount;
-		IJ.log(unfilled + " pixels unfilled with ellipsoids out of " +
+		logService.info(unfilled + " pixels unfilled with ellipsoids out of " +
 			sumForegroundCount + " total foreground pixels");
 
 		return sumFilledCount / (double) sumForegroundCount;
@@ -374,7 +417,7 @@ public class EllipsoidFactor implements PlugIn {
 			final double nx = s * x;
 			final double ny = t * y;
 			final double nz = u * z;
-			final double length = Trig.distance3D(nx, ny, nz);
+			final double length = new Vector3d(nx,ny,nz).length();
 			final double unx = nx / length;
 			final double uny = ny / length;
 			final double unz = nz / length;
@@ -422,7 +465,7 @@ public class EllipsoidFactor implements PlugIn {
 			final double x = p[0] - cx;
 			final double y = p[1] - cy;
 			final double z = p[2] - cz;
-			final double l = Trig.distance3D(x, y, z);
+			final double l = new Vector3d(x,y,z).length();
 
 			xSum += x / l;
 			ySum += y / l;
@@ -432,7 +475,7 @@ public class EllipsoidFactor implements PlugIn {
 		final double x = xSum / nPoints;
 		final double y = ySum / nPoints;
 		final double z = zSum / nPoints;
-		final double l = Trig.distance3D(x, y, z);
+		final double l = new Vector3d(x,y,z).length();
 
 		return new double[] { x / l, y / l, z / l };
 	}
@@ -466,127 +509,6 @@ public class EllipsoidFactor implements PlugIn {
 		final double y = z1 * x2 - x1 * z2;
 		final double z = x1 * y2 - y1 * x2;
 		return new double[] { x, y, z };
-	}
-
-	/**
-	 * Display an ellipsoid in the 3D viewer
-	 *
-	 * @param ellipsoid
-	 * @param pW
-	 * @param pH
-	 * @param pD
-	 * @param w
-	 * @param h
-	 * @param d
-	 * @param px
-	 * @param py
-	 * @param pz
-	 */
-	private void display3D(final Ellipsoid ellipsoid,
-		ArrayList<double[]> contactPoints, final byte[][] pixels, final double pW,
-		final double pH, final double pD, final int w, final int h, final int d,
-		final double px, final double py, final double pz, final String name)
-	{
-		contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
-			pD, w, h, d);
-		final ArrayList<Point3f> contactPointsf = new ArrayList<>(contactPoints
-			.size());
-		for (final double[] p : contactPoints) {
-			final Point3f point = new Point3f((float) p[0], (float) p[1],
-				(float) p[2]);
-			contactPointsf.add(point);
-		}
-		final double[][] pointCloud = ellipsoid.getSurfacePoints(100);
-
-		final List<Point3f> pointList = new ArrayList<>();
-		for (final double[] aPointCloud : pointCloud) {
-			if (aPointCloud == null) {
-				continue;
-			}
-			final Point3f e = new Point3f();
-			e.x = (float) aPointCloud[0];
-			e.y = (float) aPointCloud[1];
-			e.z = (float) aPointCloud[2];
-			pointList.add(e);
-		}
-		final CustomPointMesh mesh = new CustomPointMesh(pointList);
-		mesh.setPointSize(2.0f);
-		final Color3f cColour = new Color3f((float) (px / pW) / w, (float) (py /
-			pH) / h, (float) (pz / pD) / d);
-		mesh.setColor(cColour);
-
-		final CustomPointMesh contactPointMesh = new CustomPointMesh(
-			contactPointsf);
-		contactPointMesh.setPointSize(2.5f);
-		final Color3f invColour = new Color3f(1 - cColour.x, 1 - cColour.y, 1 -
-			cColour.z);
-		contactPointMesh.setColor(invColour);
-
-		final double[] torque = calculateTorque(ellipsoid, contactPoints);
-		final double[] c = ellipsoid.getCentre();
-
-		final List<Point3f> torqueList = new ArrayList<>();
-		torqueList.add(new Point3f((float) c[0], (float) c[1], (float) c[2]));
-		torqueList.add(new Point3f((float) (torque[0] + c[0]), (float) (torque[1] +
-			c[1]), (float) (torque[2] + c[2])));
-		final CustomLineMesh torqueLine = new CustomLineMesh(torqueList);
-		final Color3f blue = new Color3f(0.0f, 0.0f, 1.0f);
-		torqueLine.setColor(blue);
-
-		// Axis-aligned bounding box
-		final double[] box = ellipsoid.getAxisAlignedBoundingBox();
-		final float[] b = { (float) box[0], (float) box[1], (float) box[2],
-			(float) box[3], (float) box[4], (float) box[5] };
-		final List<Point3f> aabb = new ArrayList<>();
-		aabb.add(new Point3f(b[0], b[2], b[4]));
-		aabb.add(new Point3f(b[1], b[2], b[4]));
-
-		aabb.add(new Point3f(b[0], b[2], b[4]));
-		aabb.add(new Point3f(b[0], b[3], b[4]));
-
-		aabb.add(new Point3f(b[0], b[2], b[4]));
-		aabb.add(new Point3f(b[0], b[2], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[4]));
-		aabb.add(new Point3f(b[0], b[3], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[5]));
-		aabb.add(new Point3f(b[0], b[2], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[4]));
-		aabb.add(new Point3f(b[1], b[3], b[4]));
-
-		aabb.add(new Point3f(b[1], b[3], b[4]));
-		aabb.add(new Point3f(b[1], b[3], b[5]));
-
-		aabb.add(new Point3f(b[0], b[3], b[5]));
-		aabb.add(new Point3f(b[1], b[3], b[5]));
-
-		aabb.add(new Point3f(b[0], b[2], b[5]));
-		aabb.add(new Point3f(b[1], b[2], b[5]));
-
-		aabb.add(new Point3f(b[1], b[2], b[4]));
-		aabb.add(new Point3f(b[1], b[3], b[4]));
-
-		aabb.add(new Point3f(b[1], b[2], b[4]));
-		aabb.add(new Point3f(b[1], b[2], b[5]));
-
-		aabb.add(new Point3f(b[1], b[2], b[5]));
-		aabb.add(new Point3f(b[1], b[3], b[5]));
-
-		try {
-			universe.addCustomMesh(mesh, "Point cloud " + name).setLocked(true);
-			universe.addCustomMesh(contactPointMesh, "Contact points of " + name)
-				.setLocked(true);
-			universe.addCustomMesh(torqueLine, "Torque of " + name).setLocked(true);
-			universe.addLineMesh(aabb, new Color3f(1.0f, 0.0f, 0.0f), "AABB of " +
-				name, false).setLocked(true);
-
-		}
-		catch (final Exception e) {
-			IJ.log("Something went wrong adding meshes to 3D viewer:\n" + e
-				.getMessage());
-		}
 	}
 
 	private static ImagePlus displayEllipsoidFactor(final ImagePlus imp,
@@ -951,7 +873,7 @@ public class EllipsoidFactor implements PlugIn {
 		final double pW, final double pH, final double pD, final int w, final int h,
 		final int d)
 	{
-		return findContactPoints(ellipsoid, contactPoints, regularVectors.clone(),
+		return findContactPoints(ellipsoid, contactPoints,getGeneralizedSpiralSetOnSphere(nVectors),
 			pixels, pW, pH, pD, w, h, d);
 	}
 
@@ -991,7 +913,9 @@ public class EllipsoidFactor implements PlugIn {
 			final double py = p[1];
 			final double pz = p[2];
 
-			final double l = Trig.distance3D(px, py, pz, cx, cy, cz);
+			Vector3d distance = new Vector3d(px,py,pz);
+			distance.sub(new Vector3d(cx,cy,cz));
+			final double l = distance.length();
 			final double x = (px - cx) / l;
 			final double y = (py - cy) / l;
 			final double z = (pz - cz) / l;
@@ -1320,6 +1244,7 @@ public class EllipsoidFactor implements PlugIn {
 		ellipsoid.setRotation(rotation);
 
 		// shrink the ellipsoid slightly
+		shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
 		ellipsoid.contract(0.1);
 
 		// dilate other two axes until number of contact points increases
@@ -1330,7 +1255,7 @@ public class EllipsoidFactor implements PlugIn {
 			contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW,
 				pH, pD, w, h, d);
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying at initial oblation");
 				return null;
 			}
@@ -1366,7 +1291,7 @@ public class EllipsoidFactor implements PlugIn {
 				pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -1395,7 +1320,7 @@ public class EllipsoidFactor implements PlugIn {
 				pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -1416,7 +1341,7 @@ public class EllipsoidFactor implements PlugIn {
 				pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+				logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 					") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -1445,20 +1370,15 @@ public class EllipsoidFactor implements PlugIn {
 		// this usually indicates that the ellipsoid
 		// grew out of control for some reason
 		if (totalIterations == absoluteMaxIterations) {
-			IJ.log("Ellipsoid at (" + px + ", " + py + ", " + pz +
+			logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
 				") seems to be out of control, nullifying after " + totalIterations +
 				" iterations");
 			return null;
 		}
-		if (IJ.debugMode) {
-			// show in the 3D viewer
-			display3D(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d, px, py,
-				pz, px + " " + py + " " + pz);
-		}
 
 		final long stop = System.currentTimeMillis();
 
-		if (IJ.debugMode) IJ.log("Optimised ellipsoid in " + (stop - start) +
+		if (logService.isDebug()) logService.info("Optimised ellipsoid in " + (stop - start) +
 			" ms after " + totalIterations + " iterations (" + IJ.d2s((double) (stop -
 				start) / totalIterations, 3) + " ms/iteration)");
 
@@ -1530,43 +1450,6 @@ public class EllipsoidFactor implements PlugIn {
 		return ellipsoid;
 	}
 
-	private static int[][] skeletonPoints(final ImagePlus imp) {
-		final ImagePlus skeleton = SkeletonUtils.getSkeleton(imp);
-		final ImageStack skeletonStack = skeleton.getStack();
-
-		final int d = imp.getStackSize();
-		final int h = imp.getHeight();
-		final int w = imp.getWidth();
-
-		// Bare ArrayList is not thread safe for concurrent add() operations.
-		final List<int[]> list = Collections.synchronizedList(new ArrayList<>());
-
-		final AtomicInteger ai = new AtomicInteger(1);
-		final Thread[] threads = Multithreader.newThreads();
-		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(() -> {
-				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-					final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z);
-					for (int y = 0; y < h; y++) {
-						final int offset = y * w;
-						for (int x = 0; x < w; x++) {
-							if (slicePixels[offset + x] == -1) {
-								final int[] array = { x, y, z - 1 };
-								list.add(array);
-							}
-						}
-					}
-				}
-			});
-		}
-		Multithreader.startAndJoin(threads);
-
-		if (IJ.debugMode) IJ.log("Skeleton point ArrayList contains " + list
-			.size() + " points");
-
-		return list.toArray(new int[list.size()][]);
-	}
-
 	private static double[] threeWayShuffle() {
 		final double[] a = { 0, 0, 0 };
 		final double rand = Math.random();
@@ -1618,7 +1501,7 @@ public class EllipsoidFactor implements PlugIn {
 		final double[] zerothColumn = { a, b, c };
 
 		// form triangle in random plane
-		final double[] vector = Vectors.randomVector();
+		final double[] vector = new double[]{rng.nextGaussian(), rng.nextGaussian(), rng.nextGaussian()};
 
 		// first column, should be very close to [0, 1, 0]^T
 		final double[] firstColumn = norm(crossProduct(zerothColumn, vector));
@@ -1636,4 +1519,453 @@ public class EllipsoidFactor implements PlugIn {
 		return ellipsoid;
 	}
 
+}
+
+
+/**
+ * <p>
+ * Represents an ellipsoid defined by its centroid, eigenvalues and 3x3
+ * eigenvector matrix. Semiaxis lengths (radii) are calculated as the inverse
+ * square root of the eigenvalues.
+ * </p>
+ *
+ * @author Michael Doube
+ */
+class Ellipsoid {
+
+	/**
+	 * Eigenvalue matrix. Size-based ordering is not performed. They are in the
+	 * same order as the eigenvectors.
+	 */
+	private final double[][] ed;
+	/** ID field for tracking this particular ellipsoid */
+	public int id;
+	/** Centroid of ellipsoid (cx, cy, cz) */
+	private double cx;
+	private double cy;
+	private double cz;
+	/**
+	 * Radii (semiaxis lengths) of ellipsoid. Size-based ordering (e.g. a > b > c)
+	 * is not performed. They are in the same order as the eigenvalues and
+	 * eigenvectors.
+	 */
+	private double ra;
+	private double rb;
+	private double rc;
+	/** Volume of ellipsoid, calculated as 4 * PI * ra * rb * rc / 3 */
+	private double volume;
+	/**
+	 * Eigenvector matrix Size-based ordering is not performed. They are in the
+	 * same order as the eigenvalues.
+	 */
+	private double[][] ev;
+	/** 3x3 matrix describing shape of ellipsoid */
+	private double[][] eh;
+
+	/**
+	 * Instantiate an ellipsoid from the result of FitEllipsoid
+	 *
+	 * @param ellipsoid the properties of an ellipsoid.
+	 */
+	public Ellipsoid(final Object[] ellipsoid) {
+		final double[] centre = (double[]) ellipsoid[0];
+		cx = centre[0];
+		cy = centre[1];
+		cz = centre[2];
+
+		final double[] radii = (double[]) ellipsoid[1];
+		ra = radii[0];
+		rb = radii[1];
+		rc = radii[2];
+
+		if (Double.isNaN(ra) || Double.isNaN(rb) || Double.isNaN(rc))
+			throw new IllegalArgumentException("Radius is NaN");
+
+		if (ra <= 0 || rb <= 0 || rc <= 0) throw new IllegalArgumentException(
+				"Radius cannot be <= 0");
+
+		ev = new double[3][3];
+		ed = new double[3][3];
+		eh = new double[3][3];
+		setRotation((double[][]) ellipsoid[2]);
+		setEigenvalues();
+		setVolume();
+	}
+
+	/**
+	 * Construct an Ellipsoid from the radii (a,b,c), centroid (cx, cy, cz) and
+	 * Eigenvectors.
+	 *
+	 * @param a 1st radius.
+	 * @param b 2nd radius.
+	 * @param c 3rd radius.
+	 * @param cx centroid x-coordinate.
+	 * @param cy centroid y-coordinate.
+	 * @param cz centroid z-coordinate.
+	 * @param eigenVectors the orientation of the ellipsoid.
+	 */
+	public Ellipsoid(final double a, final double b, final double c,
+					 final double cx, final double cy, final double cz,
+					 final double[][] eigenVectors)
+	{
+
+		ra = a;
+		rb = b;
+		rc = c;
+		this.cx = cx;
+		this.cy = cy;
+		this.cz = cz;
+		ev = new double[3][3];
+		ed = new double[3][3];
+		eh = new double[3][3];
+		setRotation(eigenVectors);
+		setEigenvalues();
+		setVolume();
+	}
+
+	/**
+	 * Method based on the inequality (X-X0)^T H (X-X0) &le; 1 Where X is the test
+	 * point, X0 is the centroid, H is the ellipsoid's 3x3 matrix
+	 *
+	 * @param x x-coordinate of the point.
+	 * @param y y-coordinate of the point.
+	 * @param z z-coordinate of the point.
+	 * @return true if the point (x,y,z) lies inside or on the ellipsoid, false
+	 *         otherwise
+	 */
+	public boolean contains(final double x, final double y, final double z) {
+		// calculate vector between point and centroid
+		final double vx = x - cx;
+		final double vy = y - cy;
+		final double vz = z - cz;
+
+		final double[] radii = getSortedRadii();
+		final double maxRadius = radii[2];
+
+		// if further than maximal sphere's bounding box, must be outside
+		if (Math.abs(vx) > maxRadius || Math.abs(vy) > maxRadius || Math.abs(
+				vz) > maxRadius) return false;
+
+		// calculate distance from centroid
+		final double length = Math.sqrt(vx * vx + vy * vy + vz * vz);
+
+		// if further from centroid than major semiaxis length
+		// must be outside
+		if (length > maxRadius) return false;
+
+		// if length closer than minor semiaxis length
+		// must be inside
+		if (length <= radii[0]) return true;
+
+		final double[][] h = eh;
+
+		final double dot0 = vx * h[0][0] + vy * h[1][0] + vz * h[2][0];
+		final double dot1 = vx * h[0][1] + vy * h[1][1] + vz * h[2][1];
+		final double dot2 = vx * h[0][2] + vy * h[1][2] + vz * h[2][2];
+
+		final double dot = dot0 * vx + dot1 * vy + dot2 * vz;
+
+		return dot <= 1;
+	}
+
+	/**
+	 * Constrict all three axes by a fractional increment
+	 *
+	 * @param increment scaling factor.
+	 */
+	public void contract(final double increment) {
+		dilate(-increment);
+	}
+
+	/**
+	 * Perform a deep copy of this Ellipsoid
+	 *
+	 * @return a copy of the instance.
+	 */
+	public Ellipsoid copy() {
+		final double[][] clone = new double[ev.length][];
+		for (int i = 0; i < ev.length; i++) {
+			clone[i] = ev[i].clone();
+		}
+		return new Ellipsoid(ra, rb, rc, cx, cy, cz, clone);
+	}
+
+	/**
+	 * Dilate the ellipsoid semiaxes by independent absolute amounts
+	 *
+	 * @param da value added to the 1st radius.
+	 * @param db value added to the 2nd radius.
+	 * @param dc value added to the 3rd radius.
+	 * @throws IllegalArgumentException if new semi-axes are non-positive.
+	 */
+	public void dilate(final double da, final double db, final double dc)
+			throws IllegalArgumentException
+	{
+
+		final double a = ra + da;
+		final double b = rb + db;
+		final double c = rc + dc;
+		if (a <= 0 || b <= 0 || c <= 0) {
+			throw new IllegalArgumentException("Ellipsoid cannot have semiaxis <= 0");
+		}
+		setRadii(a, b, c);
+	}
+
+	/**
+	 * Calculate the minimal axis-aligned bounding box of this ellipsoid Thanks to
+	 * Tavian Barnes for the simplification of the maths
+	 * http://tavianator.com/2014/06/exact-bounding-boxes-for-spheres-ellipsoids
+	 *
+	 * @return 6-element array containing x min, x max, y min, y max, z min, z max
+	 */
+	public double[] getAxisAlignedBoundingBox() {
+		final double[] x = getXMinAndMax();
+		final double[] y = getYMinAndMax();
+		final double[] z = getZMinAndMax();
+		return new double[] { x[0], x[1], y[0], y[1], z[0], z[1] };
+	}
+
+	public double[] getCentre() {
+		return new double[] { cx, cy, cz };
+	}
+
+	/**
+	 * Gets a copy of the radii.
+	 *
+	 * @return the semiaxis lengths a, b and c. Note these are not ordered by
+	 *         size, but the order does relate to the 0th, 1st and 2nd columns of
+	 *         the rotation matrix respectively.
+	 */
+	public double[] getRadii() {
+		return new double[] { ra, rb, rc };
+	}
+
+	/**
+	 * Return a copy of the ellipsoid's eigenvector matrix
+	 *
+	 * @return a 3x3 rotation matrix
+	 */
+	public double[][] getRotation() {
+		return ev.clone();
+	}
+
+	/**
+	 * Set rotation to the supplied rotation matrix. Does no error checking.
+	 *
+	 * @param rotation a 3x3 rotation matrix
+	 */
+	public void setRotation(final double[][] rotation) {
+		ev = rotation.clone();
+		update3x3Matrix();
+	}
+
+	/**
+	 * Get the radii sorted in ascending order. Note that there is no guarantee
+	 * that this ordering relates at all to the eigenvectors or eigenvalues.
+	 *
+	 * @return radii in ascending order
+	 */
+	public double[] getSortedRadii() {
+		return of(ra, rb, rc).sorted().toArray();
+	}
+
+	public double[][] getSurfacePoints(final int nPoints) {
+
+		// get regularly-spaced points on the unit sphere
+		final double[][] vectors = EllipsoidFactorWrapper.getGeneralizedSpiralSetOnSphere(nPoints);
+		return getSurfacePoints(vectors);
+
+	}
+
+	public double[][] getSurfacePoints(final double[][] vectors) {
+		final int nPoints = vectors.length;
+		for (int p = 0; p < nPoints; p++) {
+			final double[] v = vectors[p];
+
+			// stretch the unit sphere into an ellipsoid
+			final double x = ra * v[0];
+			final double y = rb * v[1];
+			final double z = rc * v[2];
+			// rotate and translate the ellipsoid into position
+			final double vx = x * ev[0][0] + y * ev[0][1] + z * ev[0][2] + cx;
+			final double vy = x * ev[1][0] + y * ev[1][1] + z * ev[1][2] + cy;
+			final double vz = x * ev[2][0] + y * ev[2][1] + z * ev[2][2] + cz;
+
+			vectors[p] = new double[] { vx, vy, vz };
+		}
+		return vectors;
+	}
+
+	/**
+	 * Gets the volume of this ellipsoid, calculated as PI * a * b * c * 4 / 3
+	 *
+	 * @return copy of the stored volume value.
+	 */
+	public double getVolume() {
+		return volume;
+	}
+
+	/**
+	 * Calculate the minimal and maximal y values bounding this ellipsoid
+	 *
+	 * @return array containing minimal and maximal y values
+	 */
+	public double[] getYMinAndMax() {
+		final double m21 = ev[1][0] * ra;
+		final double m22 = ev[1][1] * rb;
+		final double m23 = ev[1][2] * rc;
+		final double d = Math.sqrt(m21 * m21 + m22 * m22 + m23 * m23);
+		return new double[] { cy - d, cy + d };
+	}
+
+	/**
+	 * Calculate the minimal and maximal z values bounding this ellipsoid
+	 *
+	 * @return array containing minimal and maximal z values
+	 */
+	public double[] getZMinAndMax() {
+		final double m31 = ev[2][0] * ra;
+		final double m32 = ev[2][1] * rb;
+		final double m33 = ev[2][2] * rc;
+		final double d = Math.sqrt(m31 * m31 + m32 * m32 + m33 * m33);
+		return new double[] { cz - d, cz + d };
+	}
+
+	/**
+	 * Rotate the ellipsoid by the given 3x3 Matrix
+	 *
+	 * @param rotation a 3x3 rotation matrix
+	 */
+	public void rotate(final double[][] rotation) {
+		setRotation(times(ev, rotation));
+	}
+
+	/**
+	 * Translate the ellipsoid to a given new centroid
+	 *
+	 * @param x new centroid x-coordinate
+	 * @param y new centroid y-coordinate
+	 * @param z new centroid z-coordinate
+	 */
+	public void setCentroid(final double x, final double y, final double z) {
+		cx = x;
+		cy = y;
+		cz = z;
+	}
+
+	/**
+	 * Transpose a 3x3 matrix in double[][] format. Does no error checking.
+	 *
+	 * @param a a matrix.
+	 * @return new transposed matrix.
+	 */
+	public static double[][] transpose(final double[][] a) {
+		final double[][] t = new double[3][3];
+		t[0][0] = a[0][0];
+		t[0][1] = a[1][0];
+		t[0][2] = a[2][0];
+		t[1][0] = a[0][1];
+		t[1][1] = a[1][1];
+		t[1][2] = a[2][1];
+		t[2][0] = a[0][2];
+		t[2][1] = a[1][2];
+		t[2][2] = a[2][2];
+		return t;
+	}
+
+	/**
+	 * Calculate the minimal and maximal x values bounding this ellipsoid
+	 *
+	 * @return array containing minimal and maximal x values
+	 */
+	private double[] getXMinAndMax() {
+		final double m11 = ev[0][0] * ra;
+		final double m12 = ev[0][1] * rb;
+		final double m13 = ev[0][2] * rc;
+		final double d = Math.sqrt(m11 * m11 + m12 * m12 + m13 * m13);
+		return new double[] { cx - d, cx + d };
+	}
+
+	/**
+	 * Calculates eigenvalues from current radii
+	 */
+	private void setEigenvalues() {
+		ed[0][0] = 1 / (ra * ra);
+		ed[1][1] = 1 / (rb * rb);
+		ed[2][2] = 1 / (rc * rc);
+		update3x3Matrix();
+	}
+
+	/**
+	 * Set the radii (semiaxes). No ordering is assumed, except with regard to the
+	 * columns of the eigenvector rotation matrix (i.e. a relates to the 0th
+	 * eigenvector column, b to the 1st and c to the 2nd)
+	 *
+	 * @param a 1st radius of the ellipsoid.
+	 * @param b 2nd radius of the ellipsoid.
+	 * @param c 3rd radius of the ellipsoid.
+	 * @throws IllegalArgumentException if radii are non-positive.
+	 */
+	private void setRadii(final double a, final double b, final double c)
+			throws IllegalArgumentException
+	{
+		ra = a;
+		rb = b;
+		rc = c;
+		setEigenvalues();
+		setVolume();
+	}
+
+	private void setVolume() {
+		volume = Math.PI * ra * rb * rc * 4 / 3;
+	}
+
+	/**
+	 * High performance 3x3 matrix multiplier with no bounds or error checking
+	 *
+	 * @param a 3x3 matrix
+	 * @param b 3x3 matrix
+	 * @return result of matrix multiplication, c = ab
+	 */
+	private static double[][] times(final double[][] a, final double[][] b) {
+		final double a00 = a[0][0];
+		final double a01 = a[0][1];
+		final double a02 = a[0][2];
+		final double a10 = a[1][0];
+		final double a11 = a[1][1];
+		final double a12 = a[1][2];
+		final double a20 = a[2][0];
+		final double a21 = a[2][1];
+		final double a22 = a[2][2];
+		final double b00 = b[0][0];
+		final double b01 = b[0][1];
+		final double b02 = b[0][2];
+		final double b10 = b[1][0];
+		final double b11 = b[1][1];
+		final double b12 = b[1][2];
+		final double b20 = b[2][0];
+		final double b21 = b[2][1];
+		final double b22 = b[2][2];
+		return new double[][] { { a00 * b00 + a01 * b10 + a02 * b20, a00 * b01 +
+				a01 * b11 + a02 * b21, a00 * b02 + a01 * b12 + a02 * b22 }, { a10 * b00 +
+				a11 * b10 + a12 * b20, a10 * b01 + a11 * b11 + a12 * b21, a10 * b02 +
+				a11 * b12 + a12 * b22 }, { a20 * b00 + a21 * b10 + a22 * b20, a20 *
+				b01 + a21 * b11 + a22 * b21, a20 * b02 + a21 * b12 + a22 * b22 }, };
+	}
+
+	/**
+	 * Needs to be run any time the eigenvalues or eigenvectors change
+	 */
+	private void update3x3Matrix() {
+		eh = times(times(ev, ed), transpose(ev));
+	}
+
+	/**
+	 * Dilate all three axes by a fractional increment
+	 *
+	 * @param increment scaling factor.
+	 */
+	void dilate(final double increment) {
+		dilate(ra * increment, rb * increment, rc * increment);
+	}
 }
