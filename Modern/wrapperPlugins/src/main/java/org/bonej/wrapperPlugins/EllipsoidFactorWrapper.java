@@ -31,17 +31,23 @@ import ij.gui.Plot;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+import net.imagej.ops.OpService;
+import net.imagej.units.UnitService;
 import org.bonej.geometry.Ellipsoid;
 import org.bonej.geometry.Trig;
 import org.bonej.geometry.Vectors;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
 import org.bonej.util.SkeletonUtils;
+import org.scijava.ItemVisibility;
+import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,34 +79,53 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
 public class EllipsoidFactorWrapper extends ContextCommand {
 
+
 	@Parameter
-	LogService logService;
-
+	private	UnitService unitService;
+	@Parameter
+	private CommandService cs;
+	@Parameter
+	private OpService opService;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private StatusService statusService;
+	@Parameter
+	private UIService uiService;
+	private boolean calibrationWarned;
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String setup = "Setup";
+	@Parameter(label = "Vectors")
 	private int nVectors = 100;
-
-	/**
-	 * increment for vector searching in real units. Defaults to ~Nyquist sampling
-	 * of a unit pixel
-	 */
+	@Parameter(label = "Sampling_increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.")
 	private double vectorIncrement = 1 / 2.3;
-
-	/**
-	 * Number of skeleton points per ellipsoid. Sets the granularity of the
-	 * ellipsoid fields.
-	 */
+	@Parameter(label = "Skeleton_points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.")
 	private int skipRatio = 50;
+	@Parameter(label = "Contact sensitivity")
 	private int contactSensitivity = 1;
-	/** Safety value to prevent while() running forever */
+	@Parameter(label = "Maximum_iterations", description = "Maximum iterations to try improving ellipsoid fit before stopping.")
 	private int maxIterations = 100;
-
-	/**
-	 * maximum distance ellipsoid may drift from seed point. Defaults to voxel
-	 * diagonal length
-	 */
+	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length")
 	private double maxDrift = Math.sqrt(3);
-	//private Image3DUniverse universe;
 
 	private double stackVolume;
+
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String outputs = "Outputs";
+
+	@Parameter(label = "Show secondary images")
+	private boolean showSecondaryImages = false;
+
+	@Parameter(label = "Gaussian_sigma")
+	private double sigma = 2;
+
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private String note =
+			"Ellipsoid Factor is beta software.\n" +
+					"Please report your experiences to the user group:\n" +
+					"http://forum.image.sc/tags/bonej";
+
+	//private Image3DUniverse universe;
 
 	private double[][] regularVectors;
 
@@ -122,49 +147,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final double pW = cal.pixelWidth;
 		final double pH = cal.pixelHeight;
 		final double pD = cal.pixelDepth;
-		vectorIncrement *= Math.min(pD, Math.min(pH, pW));
-		maxDrift = Math.sqrt(pW * pW + pH * pH + pD * pD);
-		stackVolume = pW * pH * pD * imp.getWidth() * imp.getHeight() * imp
-			.getStackSize();
-		final GenericDialog gd = new GenericDialog("Setup");
-		gd.addMessage("Sampling options");
-		gd.addNumericField("Sampling_increment", vectorIncrement, 3, 8, units);
-		gd.addNumericField("Vectors", nVectors, 0, 8, "");
-		gd.addNumericField("Skeleton_points per ellipsoid", skipRatio, 0);
-		gd.addNumericField("Contact sensitivity", contactSensitivity, 0, 4, "");
-		gd.addNumericField("Maximum_iterations", maxIterations, 0);
-		gd.addNumericField("Maximum_drift", maxDrift, 5, 8, units);
+        vectorIncrement *= Math.min(pD, Math.min(pH, pW));
+        maxDrift *= Math.sqrt(pW * pW + pH * pH + pD * pD)/Math.sqrt(3);
 
-		gd.addMessage("\nOutput options");
-		gd.addCheckbox("EF_image", true);
-		gd.addCheckbox("Ellipsoid_ID_image", false);
-		gd.addCheckbox("Volume_image", false);
-		gd.addCheckbox("Axis_ratio_images", false);
-		gd.addCheckbox("Flinn_peak_plot", true);
-		gd.addNumericField("Gaussian_sigma", 2, 0, 4, "px");
-		gd.addCheckbox("Flinn_plot", false);
-
-		gd.addMessage("Ellipsoid Factor is beta software.\n" +
-			"Please report your experiences to the user group:\n" +
-			"http://forum.image.sc/tags/bonej");
-		gd.showDialog();
-
-		if (gd.wasCanceled()) return;
-
-		vectorIncrement = gd.getNextNumber();
-		nVectors = (int) Math.round(gd.getNextNumber());
-		skipRatio = (int) Math.round(gd.getNextNumber());
-		contactSensitivity = (int) Math.round(gd.getNextNumber());
-		maxIterations = (int) Math.round(gd.getNextNumber());
-		maxDrift = gd.getNextNumber();
-
-		final boolean doEFImage = gd.getNextBoolean();
-		final boolean doEllipsoidIDImage = gd.getNextBoolean();
-		final boolean doVolumeImage = gd.getNextBoolean();
-		final boolean doAxisRatioImages = gd.getNextBoolean();
-		final boolean doFlinnPeakPlot = gd.getNextBoolean();
-		final double gaussianSigma = gd.getNextNumber();
-		final boolean doFlinnPlot = gd.getNextBoolean();
+		stackVolume = pW * pH * pD * imp.getWidth() * imp.getHeight() * imp.getStackSize();
 
 		regularVectors = Vectors.regularVectors(nVectors);
 
@@ -189,7 +175,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		logService.info(IJ.d2s((fractionFilled * 100), 3) +
 			"% of foreground volume filled with ellipsoids");
 
-		if (doVolumeImage) {
+		if (showSecondaryImages) {
 			final ImagePlus volumes = displayVolumes(imp, maxIDs, ellipsoids);
 			volumes.show();
 			volumes.setDisplayRange(0, ellipsoids[(int) (0.05 * ellipsoids.length)]
@@ -197,7 +183,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			IJ.run("Fire");
 		}
 
-		if (doAxisRatioImages) {
+		if (showSecondaryImages) {
 			final ImagePlus middleOverLong = displayMiddleOverLong(imp, maxIDs,
 				ellipsoids);
 			middleOverLong.show();
@@ -211,28 +197,28 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			IJ.run("Fire");
 		}
 
-		if (doEFImage) {
+		if (showSecondaryImages) {
 			final ImagePlus eF = displayEllipsoidFactor(imp, maxIDs, ellipsoids);
 			eF.show();
 			eF.setDisplayRange(-1, 1);
 			IJ.run("Fire");
 		}
 
-		if (doEllipsoidIDImage) {
+		if (showSecondaryImages) {
 			final ImagePlus maxID = displayMaximumIDs(maxIDs, imp);
 			maxID.show();
 			maxID.setDisplayRange(-ellipsoids.length / 2.0, ellipsoids.length);
 		}
 
-		if (doFlinnPlot) {
+		if (showSecondaryImages) {
 			final ImagePlus flinnPlot = drawFlinnPlot("Weighted-flinn-plot-" + imp
 				.getTitle(), ellipsoids);
 			flinnPlot.show();
 		}
 
-		if (doFlinnPeakPlot) {
+		if (showSecondaryImages) {
 			final ImagePlus flinnPeaks = drawFlinnPeakPlot("FlinnPeaks_" + imp
-				.getTitle(), imp, maxIDs, ellipsoids, gaussianSigma);
+				.getTitle(), imp, maxIDs, ellipsoids, sigma);
 			flinnPeaks.show();
 		}
 
