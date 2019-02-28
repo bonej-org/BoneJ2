@@ -31,8 +31,11 @@ import ij.gui.Plot;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
+import net.imglib2.img.Img;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.bonej.geometry.Ellipsoid;
 import org.bonej.geometry.Trig;
 import org.bonej.geometry.Vectors;
@@ -93,6 +96,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter
 	private UIService uiService;
 	private boolean calibrationWarned;
+	@Parameter
+	private ImgPlus<UnsignedIntType> inputImgPlus;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String setup = "Setup";
 	@Parameter(label = "Vectors")
@@ -131,29 +136,17 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	@Override
 	public void run() {
-		final ImagePlus imp = IJ.getImage();
-		if (imp == null) {
-			IJ.noImage();
-			return;
-		}
-		if (!ImageCheck.isBinary(imp) || ImageCheck.isSingleSlice(imp) ||
-			!ImageCheck.isVoxelIsotropic(imp, 0.001))
-		{
-			IJ.error("8-bit binary stack with isotropic pixel spacing required.");
-			return;
-		}
-		final Calibration cal = imp.getCalibration();
-		final String units = cal.getUnits();
-		final double pW = cal.pixelWidth;
-		final double pH = cal.pixelHeight;
-		final double pD = cal.pixelDepth;
+		final double pW = inputImgPlus.averageScale(0);
+		final double pH = inputImgPlus.averageScale(1);
+		final double pD = inputImgPlus.averageScale(2);
         vectorIncrement *= Math.min(pD, Math.min(pH, pW));
         maxDrift *= Math.sqrt(pW * pW + pH * pH + pD * pD)/Math.sqrt(3);
 
-		stackVolume = pW * pH * pD * imp.getWidth() * imp.getHeight() * imp.getStackSize();
+		stackVolume = pW * pH * pD * inputImgPlus.dimension(0) * inputImgPlus.dimension(1) * inputImgPlus.dimension(2);
 
 		regularVectors = Vectors.regularVectors(nVectors);
 
+		final ImagePlus imp = IJ.getImage();
 		final int[][] skeletonPoints = skeletonPoints(imp);
 
 		logService.info("Found " + skeletonPoints.length + " skeleton points");
