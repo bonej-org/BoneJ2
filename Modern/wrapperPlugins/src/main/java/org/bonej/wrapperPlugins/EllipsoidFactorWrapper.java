@@ -26,7 +26,6 @@ package org.bonej.wrapperPlugins;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.GenericDialog;
 import ij.gui.Plot;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
@@ -34,14 +33,14 @@ import ij.process.ImageProcessor;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
-import net.imglib2.img.Img;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.bonej.geometry.Ellipsoid;
 import org.bonej.geometry.Trig;
 import org.bonej.geometry.Vectors;
-import org.bonej.util.ImageCheck;
+import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.util.Multithreader;
-import org.bonej.util.SkeletonUtils;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
+import org.joml.Vector3dc;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -52,13 +51,9 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * ImageJ plugin to describe the local geometry of a binary image in an
@@ -146,11 +141,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		regularVectors = Vectors.regularVectors(nVectors);
 
-		final ImagePlus imp = IJ.getImage();
-		final int[][] skeletonPoints = skeletonPoints(imp);
-
+		final List<Vector3dc> vector3dSkeletonPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class, Common.toBitTypeImgPlus(opService, inputImgPlus))).get(0);
+		final List<int[]> listSkeletonPoints = vector3dSkeletonPoints.stream().map(v -> new int[]{(int) v.get(0), (int) v.get(1), (int) v.get(2)}).collect(Collectors.toList());
+		final int[][] skeletonPoints = listSkeletonPoints.toArray(new int[vector3dSkeletonPoints.size()][]);
 		logService.info("Found " + skeletonPoints.length + " skeleton points");
 
+		final ImagePlus imp = IJ.getImage();
 		long start = System.currentTimeMillis();
 		final Ellipsoid[] ellipsoids = findEllipsoids(imp, skeletonPoints);
 		long stop = System.currentTimeMillis();
@@ -1381,43 +1377,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		ellipsoid.contract(0.05);
 
 		return ellipsoid;
-	}
-
-	private int[][] skeletonPoints(final ImagePlus imp) {
-		final ImagePlus skeleton = SkeletonUtils.getSkeleton(imp);
-		final ImageStack skeletonStack = skeleton.getStack();
-
-		final int d = imp.getStackSize();
-		final int h = imp.getHeight();
-		final int w = imp.getWidth();
-
-		// Bare ArrayList is not thread safe for concurrent add() operations.
-		final List<int[]> list = Collections.synchronizedList(new ArrayList<>());
-
-		final AtomicInteger ai = new AtomicInteger(1);
-		final Thread[] threads = Multithreader.newThreads();
-		for (int thread = 0; thread < threads.length; thread++) {
-			threads[thread] = new Thread(() -> {
-				for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-					final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z);
-					for (int y = 0; y < h; y++) {
-						final int offset = y * w;
-						for (int x = 0; x < w; x++) {
-							if (slicePixels[offset + x] == -1) {
-								final int[] array = { x, y, z - 1 };
-								list.add(array);
-							}
-						}
-					}
-				}
-			});
-		}
-		Multithreader.startAndJoin(threads);
-
-		if (logService.isDebug()) logService.info("Skeleton point ArrayList contains " + list
-			.size() + " points");
-
-		return list.toArray(new int[list.size()][]);
 	}
 
 	private static double[] threeWayShuffle() {
