@@ -138,8 +138,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	//private Image3DUniverse universe;
 
-	private double[][] regularVectors;
-
 	@Override
 	public void run() {
 		final double pW = inputImgPlus.averageScale(0);
@@ -149,8 +147,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         maxDrift *= Math.sqrt(pW * pW + pH * pH + pD * pD)/Math.sqrt(3);
 
 		stackVolume = pW * pH * pD * inputImgPlus.dimension(0) * inputImgPlus.dimension(1) * inputImgPlus.dimension(2);
-
-		regularVectors = Vectors.regularVectors(nVectors);
 
 		final List<Vector3dc> vector3dSkeletonPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class, Common.toBitTypeImgPlus(opService, inputImgPlus))).get(0);
 		final List<int[]> listSkeletonPoints = vector3dSkeletonPoints.stream().map(v -> new int[]{(int) v.get(0), (int) v.get(1), (int) v.get(2)}).collect(Collectors.toList());
@@ -828,7 +824,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final double pW, final double pH, final double pD, final int w, final int h,
 		final int d)
 	{
-		return findContactPoints(ellipsoid, contactPoints, regularVectors.clone(),
+		return findContactPoints(ellipsoid, contactPoints, Vectors.regularVectors(nVectors).clone(),
 			pixels, pW, pH, pD, w, h, d);
 	}
 
