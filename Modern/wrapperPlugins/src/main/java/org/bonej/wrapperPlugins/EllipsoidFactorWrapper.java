@@ -39,8 +39,10 @@ import org.bonej.geometry.Trig;
 import org.bonej.geometry.Vectors;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.util.Multithreader;
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3dc;
+import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -49,6 +51,8 @@ import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.table.DefaultColumn;
+import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 
 import java.util.*;
@@ -77,6 +81,7 @@ import java.util.stream.Collectors;
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
 public class EllipsoidFactorWrapper extends ContextCommand {
 
+	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
 
 	@Parameter
 	private	UnitService unitService;
@@ -119,6 +124,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Gaussian_sigma")
 	private double sigma = 2;
 
+	/**
+	 * The EF results in a {@link Table}, null if there are no results
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
+	private Table<DefaultColumn<Double>, Double> resultsTable;
+
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String note =
 			"Ellipsoid Factor is beta software.\n" +
@@ -150,9 +161,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		long start = System.currentTimeMillis();
 		final Ellipsoid[] ellipsoids = findEllipsoids(imp, skeletonPoints);
 		long stop = System.currentTimeMillis();
-
 		logService.info("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) +
 			" ms");
+		if (ellipsoids.length==0) {
+			cancel(NO_ELLIPSOIDS_FOUND);
+			return;
+		}
 
 		start = System.currentTimeMillis();
 		final int[][] maxIDs = findMaxID(imp, ellipsoids);
@@ -161,8 +175,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
 		final double fractionFilled = calculateFillingEfficiency(maxIDs);
-		logService.info(IJ.d2s((fractionFilled * 100), 3) +
-			"% of foreground volume filled with ellipsoids");
+		addResults(Arrays.asList(ellipsoids), fractionFilled);
 
 		if (showSecondaryImages) {
 			final ImagePlus volumes = displayVolumes(imp, maxIDs, ellipsoids);
@@ -239,6 +252,17 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			}
 		}
 		return -1;
+	}
+
+	private void addResults(final List<Ellipsoid> ellipsoids, double fillingPercentage) {
+		final String label = inputImgPlus.getName();
+		SharedTable.add(label, "filling percentage", fillingPercentage);
+		SharedTable.add(label, "number of ellipsoids found", ellipsoids.size());
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		} else {
+			cancel(NO_ELLIPSOIDS_FOUND);
+		}
 	}
 
 	private Ellipsoid bump(final Ellipsoid ellipsoid,
