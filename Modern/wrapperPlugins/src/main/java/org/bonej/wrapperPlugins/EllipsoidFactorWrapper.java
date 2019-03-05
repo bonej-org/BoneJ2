@@ -33,7 +33,10 @@ import ij.process.ImageProcessor;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
+import net.imglib2.Cursor;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
+import net.imglib2.view.Views;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.util.Multithreader;
 import org.bonej.utilities.SharedTable;
@@ -55,6 +58,7 @@ import org.scijava.ui.UIService;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -200,9 +204,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int[][] skeletonPoints = listSkeletonPoints.toArray(new int[vector3dSkeletonPoints.size()][]);
 		logService.info("Found " + skeletonPoints.length + " skeleton points");
 
-		final ImagePlus imp = IJ.getImage();
 		long start = System.currentTimeMillis();
-		final Ellipsoid[] ellipsoids = findEllipsoids(imp, skeletonPoints);
+		final Ellipsoid[] ellipsoids = findEllipsoids(inputImgPlus, skeletonPoints);
 		long stop = System.currentTimeMillis();
 		logService.info("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) +
 			" ms");
@@ -212,6 +215,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 
 		start = System.currentTimeMillis();
+		final ImagePlus imp = IJ.getImage();
 		final int[][] maxIDs = findMaxID(imp, ellipsoids);
 		stop = System.currentTimeMillis();
 
@@ -934,7 +938,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @param skeletonPoints
 	 * @return
 	 */
-	private Ellipsoid[] findEllipsoids(final ImagePlus imp,
+	private Ellipsoid[] findEllipsoids(final ImgPlus imp,
 		final int[][] skeletonPoints)
 	{
 		final int nPoints = skeletonPoints.length;
@@ -942,6 +946,26 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		// make sure array contains null in the non-calculated elements
 		Arrays.fill(ellipsoids, null);
+
+		final int w = (int) imp.dimension(0);
+		final int h = (int) imp.dimension(1);
+		final int d = (int) imp.dimension(2);
+
+		final byte[][] pixels = new byte[d][w * h];
+		final LongStream zRange = LongStream.range(0, imp.dimension(2));
+		zRange.forEach(z -> {
+			final long[] mins = {0, 0, z};
+			final long[] maxs = {imp.dimension(0) - 1, imp.dimension(1) - 1, z};
+			final Cursor<UnsignedByteType> sliceCursor = Views.interval(imp, mins, maxs).localizingCursor();
+			while(sliceCursor.hasNext())
+			{
+				sliceCursor.fwd();
+				int[] position = new int[3];
+				sliceCursor.localize(position);
+				pixels[position[2]][position[1]*w+position[0]] = sliceCursor.get().getByte();
+			}
+		});
+
 
 		final AtomicInteger ai = new AtomicInteger(0);
 		final AtomicInteger counter = new AtomicInteger(0);
@@ -951,7 +975,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				for (int i = ai.getAndAdd(skipRatio); i < nPoints; i = ai.getAndAdd(
 					skipRatio))
 				{
-					ellipsoids[i] = optimiseEllipsoid(imp, skeletonPoints[i]);
+					ellipsoids[i] = optimiseEllipsoid(imp, pixels, skeletonPoints[i]);
 					IJ.showProgress(counter.getAndAdd(skipRatio), nPoints);
 					IJ.showStatus("Optimising ellipsoids...");
 				}
@@ -1172,27 +1196,19 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         vectors surrounding the seed point. If ellipsoid fitting fails,
 	 *         returns null
 	 */
-	private Ellipsoid optimiseEllipsoid(final ImagePlus imp,
+	private Ellipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels,
 		final int[] skeletonPoint)
 	{
 
 		final long start = System.currentTimeMillis();
-
-		final Calibration cal = imp.getCalibration();
-		final double pW = cal.pixelWidth;
-		final double pH = cal.pixelHeight;
-		final double pD = cal.pixelDepth;
-
-		final ImageStack stack = imp.getImageStack();
-		final int w = stack.getWidth();
-		final int h = stack.getHeight();
-		final int d = stack.getSize();
-
 		// cache slices into an array
-		final byte[][] pixels = new byte[d][w * h];
-		for (int i = 0; i < d; i++) {
-			pixels[i] = (byte[]) stack.getProcessor(i + 1).getPixels();
-		}
+		final double pW = imp.averageScale(0);
+		final double pH = imp.averageScale(1);
+		final double pD = imp.averageScale(2);
+
+		final int w = (int) imp.dimension(0);
+		final int h = (int) imp.dimension(1);
+		final int d = (int) imp.dimension(2);
 
 		// centre point of vector field
 		final double px = skeletonPoint[0] * pW;
