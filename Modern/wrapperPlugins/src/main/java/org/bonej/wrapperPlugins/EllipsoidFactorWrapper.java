@@ -43,7 +43,6 @@ import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import org.bonej.ops.skeletonize.FindRidgePoints;
-import org.bonej.util.Multithreader;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
@@ -62,7 +61,6 @@ import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -101,20 +99,26 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
     private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
     private static Random rng = new Random();
-    double[][] regularVectors;
+    @SuppressWarnings("unused")
     @Parameter
     private UnitService unitService;
+    @SuppressWarnings("unused")
     @Parameter
-    private CommandService cs;
+    private CommandService commandService;
+    @SuppressWarnings("unused")
     @Parameter
     private OpService opService;
+    @SuppressWarnings("unused")
     @Parameter
     private LogService logService;
+    @SuppressWarnings("unused")
     @Parameter
     private StatusService statusService;
+    @SuppressWarnings("unused")
     @Parameter
     private UIService uiService;
-    private boolean calibrationWarned;
+    //private boolean calibrationWarned;
+    @SuppressWarnings("unused")
     @Parameter
     private ImgPlus<UnsignedIntType> inputImgPlus;
     @Parameter(visibility = ItemVisibility.MESSAGE)
@@ -138,9 +142,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     private boolean showSecondaryImages = false;
     @Parameter(label = "Gaussian_sigma")
     private double sigma = 2;
-
-    @Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
-    private ImgPlus<UnsignedByteType> seedPointsImage;
 
     @Parameter(label = "EF image", type = ItemIO.OUTPUT)
     private ImgPlus<FloatType> efImage;
@@ -221,9 +222,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     /**
      * Calculate the torque of unit normals acting at the contact points
      *
-     * @param ellipsoid
-     * @param contactPoints
-     * @return
+     * @param ellipsoid the ellipsoid
+     * @param contactPoints the contact points of the ellipsoid
+     * @return the torque vector
      */
     private static double[] calculateTorque(final Ellipsoid ellipsoid,
                                             final Iterable<double[]> contactPoints) {
@@ -293,9 +294,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
      * Calculate the mean unit vector between the ellipsoid's centroid and contact
      * points
      *
-     * @param ellipsoid
-     * @param contactPoints
-     * @return
+     * @param ellipsoid the ellipsoid
+     * @param contactPoints the contact points
+     * @return a double array that is the mean unit vector
      */
     private static double[] contactPointUnitVector(final Ellipsoid ellipsoid,
                                                    final Collection<double[]> contactPoints) {
@@ -361,7 +362,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         return new double[]{x, y, z};
     }
 
-    private static ArrayList<double[]> findContactPoints(
+    private static void findContactPoints(
             final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints,
             final double[][] unitVectors, final byte[][] pixels, final double pW,
             final double pH, final double pD, final int w, final int h, final int d) {
@@ -378,7 +379,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                 contactPoints.add(p);
             }
         }
-        return contactPoints;
     }
 
     private static double[][] findContactUnitVectors(final Ellipsoid ellipsoid,
@@ -410,13 +410,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     /**
      * return true if pixel coordinate is out of image bounds
      *
-     * @param x
-     * @param y
-     * @param z
-     * @param w
-     * @param h
-     * @param d
-     * @return
+     * @param x pixel x-coordinate
+     * @param y pixel y-coordinate
+     * @param z pixel z-coordinate
+     * @param w image dimension in x
+     * @param h image dimension in y
+     * @param d image dimension in z
+     * @return true if pixel is outside image bounds, false otherwise
      */
     private static boolean isOutOfBounds(final int x, final int y, final int z,
                                          final int w, final int h, final int d) {
@@ -444,16 +444,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     }
 
     /**
-     * Rotate the ellipsoid theta radians around an arbitrary unit vector
+     * Rotate the ellipsoid 0.1 radians around an arbitrary unit vector
      *
-     * @param ellipsoid
-     * @param axis
-     * @return
+     * @param ellipsoid the ellipsoid
+     * @param axis the rotation axis
      * @see <a href=
      * "http://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle">Rotation
      * matrix from axis and angle</a>
      */
-    private static Ellipsoid rotateAboutAxis(final Ellipsoid ellipsoid,
+    private static void rotateAboutAxis(final Ellipsoid ellipsoid,
                                              final double[] axis) {
         final double theta = 0.1;
         final double sin = Math.sin(theta);
@@ -476,8 +475,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                 ysin, yzcos1 + xsin, cos + z * z * cos1},};
 
         ellipsoid.rotate(rotation);
-
-        return ellipsoid;
     }
 
     private static double[] threeWayShuffle() {
@@ -492,9 +489,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     /**
      * Rotate the ellipsoid by a small random amount
      *
-     * @param ellipsoid
+     * @param ellipsoid the ellipsoid to rotate
      */
-    private static Ellipsoid wiggle(final Ellipsoid ellipsoid) {
+    private static void wiggle(final Ellipsoid ellipsoid) {
 
         final double b = Math.random() * 0.2 - 0.1;
         final double c = Math.random() * 0.2 - 0.1;
@@ -518,8 +515,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         rotation = Ellipsoid.transpose(rotation);
 
         ellipsoid.rotate(rotation);
-
-        return ellipsoid;
     }
 
     private void createAToBImage(final double[] aBRatios,
@@ -728,6 +723,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
         stackVolume = pW * pH * pD * inputImgPlus.dimension(0) * inputImgPlus.dimension(1) * inputImgPlus.dimension(2);
 
+        //noinspection unchecked
         final List<Vector3dc> vector3dSkeletonPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class, Common.toBitTypeImgPlus(opService, inputImgPlus))).get(0);
         final List<int[]> listSkeletonPoints = vector3dSkeletonPoints.stream().map(v -> new int[]{(int) v.get(0), (int) v.get(1), (int) v.get(2)}).collect(toList());
         final int[][] skeletonPoints = listSkeletonPoints.toArray(new int[vector3dSkeletonPoints.size()][]);
@@ -772,7 +768,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         }
     }
 
-    private Ellipsoid bump(final Ellipsoid ellipsoid,
+    private void bump(final Ellipsoid ellipsoid,
                            final Collection<double[]> contactPoints, final double px, final double py,
                            final double pz) {
 
@@ -788,15 +784,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         distance.sub(new Vector3d(x, y, z));
         if (distance.length() < maxDrift) ellipsoid.setCentroid(
                 x, y, z);
-
-        return ellipsoid;
     }
 
-    private ArrayList<double[]> findContactPoints(final Ellipsoid ellipsoid,
+    private void findContactPoints(final Ellipsoid ellipsoid,
                                                   final ArrayList<double[]> contactPoints, final byte[][] pixels,
                                                   final double pW, final double pH, final double pD, final int w, final int h,
                                                   final int d) {
-        return findContactPoints(ellipsoid, contactPoints, getGeneralizedSpiralSetOnSphere(nVectors),
+        findContactPoints(ellipsoid, contactPoints, getGeneralizedSpiralSetOnSphere(nVectors),
                 pixels, pW, pH, pD, w, h, d);
     }
 
@@ -805,17 +799,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
      * boundary is hit. Use the resulting cloud of boundary points as input into
      * an ellipsoid fit.
      *
-     * @param imp
-     * @param skeletonPoints
-     * @return
+     * @param imp input image
+     * @param skeletonPoints input skeleton points
+     * @return array of fitted ellipsoids
      */
     private Ellipsoid[] findEllipsoids(final ImgPlus imp,
-                                       final int[][] skeletonPoints) {
+                                       int[][] skeletonPoints) {
         final int nPoints = skeletonPoints.length;
-        final Ellipsoid[] ellipsoids = new Ellipsoid[nPoints];
-
-        // make sure array contains null in the non-calculated elements
-        Arrays.fill(ellipsoids, null);
 
         final int w = (int) imp.dimension(0);
         final int h = (int) imp.dimension(1);
@@ -826,7 +816,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         zRange.forEach(z -> {
             final long[] mins = {0, 0, z};
             final long[] maxs = {imp.dimension(0) - 1, imp.dimension(1) - 1, z};
-            final Cursor<UnsignedByteType> sliceCursor = Views.interval(imp, mins, maxs).localizingCursor();
+            final Cursor<UnsignedByteType> sliceCursor = (Cursor<UnsignedByteType>) Views.interval(imp, mins, maxs).localizingCursor();
             while (sliceCursor.hasNext()) {
                 sliceCursor.fwd();
                 int[] position = new int[3];
@@ -835,32 +825,27 @@ public class EllipsoidFactorWrapper extends ContextCommand {
             }
         });
 
-
-        final AtomicInteger ai = new AtomicInteger(0);
-        final AtomicInteger counter = new AtomicInteger(0);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int i = ai.getAndAdd(skipRatio); i < nPoints; i = ai.getAndAdd(
-                        skipRatio)) {
-                    ellipsoids[i] = optimiseEllipsoid(imp, pixels, skeletonPoints[i]);
-                    statusService.showProgress(counter.getAndAdd(skipRatio), nPoints);
-                    statusService.showStatus("Optimising ellipsoids...");
-                }
-            });
+        List<int[]> skeletonPointList = Arrays.asList(skeletonPoints);
+        if (skipRatio > 1) {
+            int limit = skeletonPoints.length / skipRatio + Math.min(skeletonPoints.length % skipRatio, 1);
+            skeletonPointList = Stream.iterate(0, i -> i + skipRatio)
+                    .limit(limit)
+                    .map(skeletonPointList::get).collect(toList());
+            skeletonPoints = skeletonPointList.toArray(new int[limit][]);
         }
-        Multithreader.startAndJoin(threads);
-        return Arrays.stream(ellipsoids).filter(Objects::nonNull).sorted((a,
-                                                                          b) -> Double.compare(b.getVolume(), a.getVolume())).toArray(
-                Ellipsoid[]::new);
+
+        final List<Ellipsoid> ellipsoidList = new ArrayList<>(skeletonPoints.length);
+        statusService.showStatus("Optimising ellipsoids...");
+        skeletonPointList.parallelStream().forEach(sp -> ellipsoidList.add(optimiseEllipsoid(imp, pixels,sp)));
+        return ellipsoidList.stream().filter(Objects::nonNull).sorted((a,b) -> Double.compare(b.getVolume(), a.getVolume())).toArray(Ellipsoid[]::new);
     }
 
-    private Ellipsoid inflateToFit(final Ellipsoid ellipsoid,
+    private void inflateToFit(final Ellipsoid ellipsoid,
                                    ArrayList<double[]> contactPoints, final double a, final double b,
                                    final double c, final byte[][] pixels, final double pW, final double pH,
                                    final double pD, final int w, final int h, final int d) {
 
-        contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
+        findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
                 pD, w, h, d);
 
         final double av = a * vectorIncrement;
@@ -871,12 +856,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         while (contactPoints.size() < contactSensitivity &&
                 safety < maxIterations) {
             ellipsoid.dilate(av, bv, cv);
-            contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW,
+            findContactPoints(ellipsoid, contactPoints, pixels, pW,
                     pH, pD, w, h, d);
             safety++;
         }
-
-        return ellipsoid;
     }
 
     private boolean isContained(final Ellipsoid ellipsoid, final byte[][] pixels,
@@ -896,13 +879,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     /**
      * Check whether this ellipsoid is sensible
      *
-     * @param ellipsoid
-     * @param pW
-     * @param pH
-     * @param pD
-     * @param w
-     * @param h
-     * @param d
+     * @param ellipsoid ellipsoids
+     * @param pW scale in x
+     * @param pH scale in y
+     * @param pD scale in z
+     * @param w image dimension in x
+     * @param h image dimension in y
+     * @param d image dimension in z
      * @return true if half or more of the surface points are outside the image
      * stack, or if the volume of the ellipsoid exceeds that of the image
      * stack
@@ -928,7 +911,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
      * given a seed point, find the ellipsoid which best fits the binarised
      * structure
      *
-     * @param imp
+     * @param imp input image
      * @return ellipsoid fitting the point cloud of boundaries lying at the end of
      * vectors surrounding the seed point. If ellipsoid fitting fails,
      * returns null
@@ -971,7 +954,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         ArrayList<double[]> contactPoints = new ArrayList<>();
 
         // get the points of contact
-        contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
+        findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
                 pD, w, h, d);
 
         // find the mean unit vector pointing to the points of contact from the
@@ -1003,7 +986,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
         while (contactPoints.size() < contactSensitivity) {
             ellipsoid.dilate(0, vectorIncrement, vectorIncrement);
-            contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW,
+            findContactPoints(ellipsoid, contactPoints, pixels, pW,
                     pH, pD, w, h, d);
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
                 logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz +
@@ -1029,15 +1012,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                 noImprovementCount < maxIterations) {
 
             // rotate a little bit
-            ellipsoid = wiggle(ellipsoid);
+            wiggle(ellipsoid);
 
             // contract until no contact
-            ellipsoid = shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w,
+            shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w,
                     h, d);
 
             // dilate an axis
             double[] abc = threeWayShuffle();
-            ellipsoid = inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2],
+            inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2],
                     pixels, pW, pH, pD, w, h, d);
 
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
@@ -1050,22 +1033,22 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                     .copy();
 
             // bump a little away from the sides
-            contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW,
+            findContactPoints(ellipsoid, contactPoints, pixels, pW,
                     pH, pD, w, h, d);
             // if can't bump then do a wiggle
             if (contactPoints.isEmpty()) {
-                ellipsoid = wiggle(ellipsoid);
+                wiggle(ellipsoid);
             } else {
-                ellipsoid = bump(ellipsoid, contactPoints, px, py, pz);
+                bump(ellipsoid, contactPoints, px, py, pz);
             }
 
             // contract
-            ellipsoid = shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w,
+            shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w,
                     h, d);
 
             // dilate an axis
             abc = threeWayShuffle();
-            ellipsoid = inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2],
+            inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2],
                     pixels, pW, pH, pD, w, h, d);
 
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
@@ -1078,15 +1061,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                     .copy();
 
             // rotate a little bit
-            ellipsoid = turn(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
+            turn(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
 
             // contract until no contact
-            ellipsoid = shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w,
+            shrinkToFit(ellipsoid, contactPoints, pixels, pW, pH, pD, w,
                     h, d);
 
             // dilate an axis
             abc = threeWayShuffle();
-            ellipsoid = inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2],
+            inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2],
                     pixels, pW, pH, pD, w, h, d);
 
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
@@ -1134,12 +1117,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         return ellipsoid;
     }
 
-    private Ellipsoid shrinkToFit(final Ellipsoid ellipsoid,
+    private void shrinkToFit(final Ellipsoid ellipsoid,
                                   ArrayList<double[]> contactPoints, final byte[][] pixels, final double pW,
                                   final double pH, final double pD, final int w, final int h, final int d) {
 
         // get the contact points
-        contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
+        findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
                 pD, w, h, d);
 
         // get the unit vectors to the contact points
@@ -1150,40 +1133,36 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         int safety = 0;
         while (!contactPoints.isEmpty() && safety < maxIterations) {
             ellipsoid.contract(0.01);
-            contactPoints = findContactPoints(ellipsoid, contactPoints, unitVectors,
+            findContactPoints(ellipsoid, contactPoints, unitVectors,
                     pixels, pW, pH, pD, w, h, d);
             safety++;
         }
 
         ellipsoid.contract(0.05);
-
-        return ellipsoid;
     }
 
     /**
      * Rotate the ellipsoid theta radians around the unit vector formed by the sum
      * of torques effected by unit normals acting on the surface of the ellipsoid
      *
-     * @param ellipsoid
-     * @param pW
-     * @param pH
-     * @param pD
-     * @param w
-     * @param h
-     * @param d
-     * @return
+     * @param ellipsoid the ellipsoid
+     * @param pW the scale in x
+     * @param pH the scale in y
+     * @param pD the scale in z
+     * @param w the image dimension in x
+     * @param h the image dimension in y
+     * @param d the image dimension in z
      */
-    private Ellipsoid turn(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints,
+    private void turn(Ellipsoid ellipsoid, ArrayList<double[]> contactPoints,
                            final byte[][] pixels, final double pW, final double pH, final double pD,
                            final int w, final int h, final int d) {
 
-        contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
+        findContactPoints(ellipsoid, contactPoints, pixels, pW, pH,
                 pD, w, h, d);
         if (!contactPoints.isEmpty()) {
             final double[] torque = calculateTorque(ellipsoid, contactPoints);
-            ellipsoid = rotateAboutAxis(ellipsoid, norm(torque));
+            rotateAboutAxis(ellipsoid, norm(torque));
         }
-        return ellipsoid;
     }
 
 }
@@ -1205,10 +1184,6 @@ class Ellipsoid {
      * same order as the eigenvectors.
      */
     private final double[][] ed;
-    /**
-     * ID field for tracking this particular ellipsoid
-     */
-    public int id;
     /**
      * Centroid of ellipsoid (cx, cy, cz)
      */
@@ -1237,35 +1212,6 @@ class Ellipsoid {
      */
     private double[][] eh;
 
-    /**
-     * Instantiate an ellipsoid from the result of FitEllipsoid
-     *
-     * @param ellipsoid the properties of an ellipsoid.
-     */
-    public Ellipsoid(final Object[] ellipsoid) {
-        final double[] centre = (double[]) ellipsoid[0];
-        cx = centre[0];
-        cy = centre[1];
-        cz = centre[2];
-
-        final double[] radii = (double[]) ellipsoid[1];
-        ra = radii[0];
-        rb = radii[1];
-        rc = radii[2];
-
-        if (Double.isNaN(ra) || Double.isNaN(rb) || Double.isNaN(rc))
-            throw new IllegalArgumentException("Radius is NaN");
-
-        if (ra <= 0 || rb <= 0 || rc <= 0) throw new IllegalArgumentException(
-                "Radius cannot be <= 0");
-
-        ev = new double[3][3];
-        ed = new double[3][3];
-        eh = new double[3][3];
-        setRotation((double[][]) ellipsoid[2]);
-        setEigenvalues();
-        setVolume();
-    }
 
     /**
      * Construct an Ellipsoid from the radii (a,b,c), centroid (cx, cy, cz) and
@@ -1279,9 +1225,9 @@ class Ellipsoid {
      * @param cz           centroid z-coordinate.
      * @param eigenVectors the orientation of the ellipsoid.
      */
-    public Ellipsoid(final double a, final double b, final double c,
-                     final double cx, final double cy, final double cz,
-                     final double[][] eigenVectors) {
+    Ellipsoid(final double a, final double b, final double c,
+              final double cx, final double cy, final double cz,
+              final double[][] eigenVectors) {
 
         ra = a;
         rb = b;
@@ -1303,7 +1249,7 @@ class Ellipsoid {
      * @param a a matrix.
      * @return new transposed matrix.
      */
-    public static double[][] transpose(final double[][] a) {
+    static double[][] transpose(final double[][] a) {
         final double[][] t = new double[3][3];
         t[0][0] = a[0][0];
         t[0][1] = a[1][0];
@@ -1360,7 +1306,7 @@ class Ellipsoid {
      * @return true if the point (x,y,z) lies inside or on the ellipsoid, false
      * otherwise
      */
-    public boolean contains(final double x, final double y, final double z) {
+    boolean contains(final double x, final double y, final double z) {
         // calculate vector between point and centroid
         final double vx = x - cx;
         final double vy = y - cy;
@@ -1409,7 +1355,7 @@ class Ellipsoid {
      *
      * @return a copy of the instance.
      */
-    public Ellipsoid copy() {
+    Ellipsoid copy() {
         final double[][] clone = new double[ev.length][];
         for (int i = 0; i < ev.length; i++) {
             clone[i] = ev[i].clone();
@@ -1425,7 +1371,7 @@ class Ellipsoid {
      * @param dc value added to the 3rd radius.
      * @throws IllegalArgumentException if new semi-axes are non-positive.
      */
-    public void dilate(final double da, final double db, final double dc)
+    void dilate(final double da, final double db, final double dc)
             throws IllegalArgumentException {
 
         final double a = ra + da;
@@ -1437,21 +1383,8 @@ class Ellipsoid {
         setRadii(a, b, c);
     }
 
-    /**
-     * Calculate the minimal axis-aligned bounding box of this ellipsoid Thanks to
-     * Tavian Barnes for the simplification of the maths
-     * http://tavianator.com/2014/06/exact-bounding-boxes-for-spheres-ellipsoids
-     *
-     * @return 6-element array containing x min, x max, y min, y max, z min, z max
-     */
-    public double[] getAxisAlignedBoundingBox() {
-        final double[] x = getXMinAndMax();
-        final double[] y = getYMinAndMax();
-        final double[] z = getZMinAndMax();
-        return new double[]{x[0], x[1], y[0], y[1], z[0], z[1]};
-    }
 
-    public double[] getCentre() {
+    double[] getCentre() {
         return new double[]{cx, cy, cz};
     }
 
@@ -1462,7 +1395,7 @@ class Ellipsoid {
      * size, but the order does relate to the 0th, 1st and 2nd columns of
      * the rotation matrix respectively.
      */
-    public double[] getRadii() {
+    double[] getRadii() {
         return new double[]{ra, rb, rc};
     }
 
@@ -1471,7 +1404,7 @@ class Ellipsoid {
      *
      * @return a 3x3 rotation matrix
      */
-    public double[][] getRotation() {
+    double[][] getRotation() {
         return ev.clone();
     }
 
@@ -1480,7 +1413,7 @@ class Ellipsoid {
      *
      * @param rotation a 3x3 rotation matrix
      */
-    public void setRotation(final double[][] rotation) {
+    void setRotation(final double[][] rotation) {
         ev = rotation.clone();
         update3x3Matrix();
     }
@@ -1491,11 +1424,11 @@ class Ellipsoid {
      *
      * @return radii in ascending order
      */
-    public double[] getSortedRadii() {
+    double[] getSortedRadii() {
         return of(ra, rb, rc).sorted().toArray();
     }
 
-    public double[][] getSurfacePoints(final int nPoints) {
+    double[][] getSurfacePoints(final int nPoints) {
 
         // get regularly-spaced points on the unit sphere
         final double[][] vectors = EllipsoidFactorWrapper.getGeneralizedSpiralSetOnSphere(nPoints);
@@ -1503,7 +1436,7 @@ class Ellipsoid {
 
     }
 
-    public double[][] getSurfacePoints(final double[][] vectors) {
+    double[][] getSurfacePoints(final double[][] vectors) {
         final int nPoints = vectors.length;
         for (int p = 0; p < nPoints; p++) {
             final double[] v = vectors[p];
@@ -1527,34 +1460,8 @@ class Ellipsoid {
      *
      * @return copy of the stored volume value.
      */
-    public double getVolume() {
+    double getVolume() {
         return volume;
-    }
-
-    /**
-     * Calculate the minimal and maximal y values bounding this ellipsoid
-     *
-     * @return array containing minimal and maximal y values
-     */
-    public double[] getYMinAndMax() {
-        final double m21 = ev[1][0] * ra;
-        final double m22 = ev[1][1] * rb;
-        final double m23 = ev[1][2] * rc;
-        final double d = Math.sqrt(m21 * m21 + m22 * m22 + m23 * m23);
-        return new double[]{cy - d, cy + d};
-    }
-
-    /**
-     * Calculate the minimal and maximal z values bounding this ellipsoid
-     *
-     * @return array containing minimal and maximal z values
-     */
-    public double[] getZMinAndMax() {
-        final double m31 = ev[2][0] * ra;
-        final double m32 = ev[2][1] * rb;
-        final double m33 = ev[2][2] * rc;
-        final double d = Math.sqrt(m31 * m31 + m32 * m32 + m33 * m33);
-        return new double[]{cz - d, cz + d};
     }
 
     /**
@@ -1562,7 +1469,7 @@ class Ellipsoid {
      *
      * @param rotation a 3x3 rotation matrix
      */
-    public void rotate(final double[][] rotation) {
+    void rotate(final double[][] rotation) {
         setRotation(times(ev, rotation));
     }
 
@@ -1573,23 +1480,10 @@ class Ellipsoid {
      * @param y new centroid y-coordinate
      * @param z new centroid z-coordinate
      */
-    public void setCentroid(final double x, final double y, final double z) {
+    void setCentroid(final double x, final double y, final double z) {
         cx = x;
         cy = y;
         cz = z;
-    }
-
-    /**
-     * Calculate the minimal and maximal x values bounding this ellipsoid
-     *
-     * @return array containing minimal and maximal x values
-     */
-    private double[] getXMinAndMax() {
-        final double m11 = ev[0][0] * ra;
-        final double m12 = ev[0][1] * rb;
-        final double m13 = ev[0][2] * rc;
-        final double d = Math.sqrt(m11 * m11 + m12 * m12 + m13 * m13);
-        return new double[]{cx - d, cx + d};
     }
 
     /**
@@ -1637,7 +1531,7 @@ class Ellipsoid {
      *
      * @param increment scaling factor.
      */
-    void dilate(final double increment) {
+    private void dilate(final double increment) {
         dilate(ra * increment, rb * increment, rc * increment);
     }
 }
