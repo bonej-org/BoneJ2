@@ -234,12 +234,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.bonej</groupId>
-            <artifactId>bonej-legacy-util_</artifactId>
-            <version>6.1.1-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
 
     <profiles>
