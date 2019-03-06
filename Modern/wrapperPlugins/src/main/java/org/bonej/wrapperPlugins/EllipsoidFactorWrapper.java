@@ -23,19 +23,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
-import ij.IJ;
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.gui.Plot;
-import ij.measure.Calibration;
-import ij.process.FloatProcessor;
-import ij.process.ImageProcessor;
 import net.imagej.ImgPlus;
+import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
+import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
+import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImg;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.basictypeaccess.array.FloatArray;
+import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.integer.LongType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
+import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.util.Multithreader;
@@ -58,11 +63,15 @@ import org.scijava.ui.UIService;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.DoubleStream.of;
+import static net.imglib2.roi.Regions.countTrue;
 
 /**
  * ImageJ plugin to describe the local geometry of a binary image in an
@@ -85,6 +94,10 @@ import static java.util.stream.DoubleStream.of;
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
 public class EllipsoidFactorWrapper extends ContextCommand {
+
+    // Several ellipsoids may fall in same bin if this is too small a number!
+    // This will be ignored!
+    private static final long FLINN_PLOT_DIMENSION = 501;
 
     private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
     private static Random rng = new Random();
@@ -125,6 +138,31 @@ public class EllipsoidFactorWrapper extends ContextCommand {
     private boolean showSecondaryImages = false;
     @Parameter(label = "Gaussian_sigma")
     private double sigma = 2;
+
+    @Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
+    private ImgPlus<UnsignedByteType> seedPointsImage;
+
+    @Parameter(label = "EF image", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> efImage;
+
+    @Parameter(label = "ID image", type = ItemIO.OUTPUT)
+    private ImgPlus<IntType> eIdImage;
+
+    @Parameter(label = "Volume Image", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> vImage;
+
+    @Parameter(label = "a/b Image", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> aToBAxisRatioImage;
+
+    @Parameter(label = "b/c Image", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> bToCAxisRatioImage;
+
+    @Parameter(label = "Unweighted Flinn Plot", type = ItemIO.OUTPUT)
+    private ImgPlus<BitType> flinnPlotImage;
+
+    @Parameter(label = "Flinn Peak Plot", type = ItemIO.OUTPUT)
+    private ImgPlus<FloatType> flinnPeakPlotImage;
+
     /**
      * The EF results in a {@link Table}, null if there are no results
      */
@@ -178,31 +216,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         // modulo 2pi calculation works for positive numbers only, which is not a
         // problem in this case.
         return phiK - Math.floor(phiK / (2 * Math.PI)) * 2 * Math.PI;
-    }
-
-    /**
-     * Search the list of ellipsoids and return the index of the largest ellipsoid
-     * which contains the point x, y, z
-     *
-     * @param ellipsoids sorted in order of descending size and with id set to the
-     *                   sort position of the whole set. This means that subsets may be
-     *                   searched in sorted order and the ID which is returned is the index
-     *                   of the ellipsoid in the full array of ellipsoids rather than its
-     *                   index in the subset. The advantage is much faster searching.
-     * @param x
-     * @param y
-     * @param z
-     * @return the index of the largest ellipsoid which contains this point, -1 if
-     * none of the ellipsoids contain the point
-     */
-    private static int biggestEllipsoid(final Ellipsoid[] ellipsoids,
-                                        final double x, final double y, final double z) {
-        for (final Ellipsoid ellipsoid : ellipsoids) {
-            if (ellipsoid.contains(x, y, z)) {
-                return ellipsoid.id;
-            }
-        }
-        return -1;
     }
 
     /**
@@ -270,6 +283,208 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         }
         return new double[]{-t0, -t1, -t2};
     }
+
+
+    private void createAToBImage(final double[] aBRatios,
+                                 final IterableInterval<IntType> ellipsoidIDs) {
+        final Img<FloatType> aToBImage = createNaNCopy();
+        mapValuesToImage(aBRatios, ellipsoidIDs, aToBImage);
+        aToBAxisRatioImage = new ImgPlus<>(aToBImage, "a/b");
+        aToBAxisRatioImage.setChannelMaximum(0, 1.0f);
+        aToBAxisRatioImage.setChannelMinimum(0, 0.0f);
+    }
+
+    private void createBToCImage(final double[] bCRatios,
+                                 final IterableInterval<IntType> ellipsoidIDs) {
+        final Img<FloatType> bToCImage = createNaNCopy();
+        mapValuesToImage(bCRatios, ellipsoidIDs, bToCImage);
+        bToCAxisRatioImage = new ImgPlus<>(bToCImage, "b/c");
+        bToCAxisRatioImage.setChannelMaximum(0, 1.0f);
+        bToCAxisRatioImage.setChannelMinimum(0, 0.0f);
+    }
+
+    private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage, final RandomAccessible<FloatType> ellipsoidFactorImage) {
+        final RandomAccess<FloatType> ef = ellipsoidFactorImage.randomAccess();
+        final Cursor<IntType> id = ellipsoidIdentityImage.localizingCursor();
+        final long[] position = new long[3];
+        while (id.hasNext()) {
+            id.fwd();
+            if (id.get().getInteger() < 0) {
+                continue;
+            }
+            id.localize(position);
+            final double value = values[id.get().getInteger()];
+            ef.setPosition(position);
+            ef.get().setReal(value);
+        }
+    }
+
+    private void createEFImage(final Collection<Ellipsoid> ellipsoids,
+                               final IterableInterval<IntType> ellipsoidIDs) {
+        final Img<FloatType> ellipsoidFactorImage = createNaNCopy();
+        final double[] ellipsoidFactors = ellipsoids.parallelStream().mapToDouble(
+                EllipsoidFactorWrapper::computeEllipsoidFactor).toArray();
+        mapValuesToImage(ellipsoidFactors, ellipsoidIDs, ellipsoidFactorImage);
+        efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
+        efImage.setChannelMaximum(0, 1);
+        efImage.setChannelMinimum(0, -1);
+        efImage.initializeColorTables(1);
+        efImage.setColorTable(ColorTables.FIRE, 0);
+    }
+
+    private void createFlinnPeakPlot(final double[] aBRatios,
+                                     final double[] bCRatios, final Img<IntType> ellipsoidIDs) {
+        Img<FloatType> flinnPeakPlot = ArrayImgs.floats(FLINN_PLOT_DIMENSION,
+                FLINN_PLOT_DIMENSION);
+        final RandomAccess<FloatType> flinnPeakPlotRA = flinnPeakPlot
+                .randomAccess();
+        final RandomAccess<IntType> idAccess = ellipsoidIDs.randomAccess();
+        final Cursor<IntType> idCursor = ellipsoidIDs.localizingCursor();
+        final long[] position = new long[3];
+        while (idCursor.hasNext()) {
+            idCursor.fwd();
+            if (idCursor.get().getInteger() < 0) {
+                continue;
+            }
+            idCursor.localize(position);
+            idAccess.setPosition(position);
+            final int localMaxEllipsoidID = idAccess.get().getInteger();
+            final long x = Math.round(aBRatios[localMaxEllipsoidID] *
+                    (FLINN_PLOT_DIMENSION - 1));
+            final long y = Math.round(bCRatios[localMaxEllipsoidID] *
+                    (FLINN_PLOT_DIMENSION - 1));
+            flinnPeakPlotRA.setPosition(new long[]{x, FLINN_PLOT_DIMENSION - y -
+                    1});
+            final float currentValue = flinnPeakPlotRA.get().getRealFloat();
+            flinnPeakPlotRA.get().set(currentValue + 1.0f);
+        }
+        if (sigma > 0.0) {
+            flinnPeakPlot = (Img<FloatType>) opService.filter().gauss(flinnPeakPlot,
+                    sigma);
+        }
+        flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, "Flinn Peak Plot");
+        flinnPeakPlotImage.setChannelMaximum(0, 255.0f);
+        flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
+    }
+
+    private void createFlinnPlotImage(final double[] aBRatios,
+                                      final double[] bCRatios) {
+        final Img<BitType> flinnPlot = ArrayImgs.bits(FLINN_PLOT_DIMENSION,
+                FLINN_PLOT_DIMENSION);
+        final RandomAccess<BitType> flinnRA = flinnPlot.randomAccess();
+        for (int i = 0; i < aBRatios.length; i++) {
+            final long x = Math.round(aBRatios[i] * (FLINN_PLOT_DIMENSION - 1));
+            final long y = FLINN_PLOT_DIMENSION - Math.round(bCRatios[i] *
+                    (FLINN_PLOT_DIMENSION - 1)) - 1;
+            flinnRA.setPosition(x, 0);
+            flinnRA.setPosition(y, 1);
+            flinnRA.get().setOne();
+        }
+        flinnPlotImage = new ImgPlus<>(flinnPlot, "Unweighted Flinn Plot");
+        flinnPlotImage.setChannelMaximum(0, 255.0f);
+        flinnPlotImage.setChannelMinimum(0, 0.0f);
+    }
+
+    private Img<FloatType> createNaNCopy() {
+        final ArrayImg<FloatType, FloatArray> copy = ArrayImgs.floats(inputImgPlus
+                .dimension(0), inputImgPlus.dimension(1), inputImgPlus.dimension(2));
+        copy.forEach(e -> e.setReal(Float.NaN));
+        return copy;
+    }
+
+    private void createPrimaryOutputImages(final List<Ellipsoid> ellipsoids,
+                                           final Img<IntType> ellipsoidIDs) {
+        createEFImage(ellipsoids, ellipsoidIDs);
+        createVolumeImage(ellipsoids, ellipsoidIDs);
+    }
+
+    private void createSecondaryOutputImages(final List<Ellipsoid> ellipsoids, final Img<IntType> ellipsoidIDs) {
+        final double[] aBRatios = ellipsoids.parallelStream().mapToDouble(e -> e.getSortedRadii()[0] / e.getSortedRadii()[1]).toArray();
+        createAToBImage(aBRatios, ellipsoidIDs);
+        final double[] bCRatios = ellipsoids.parallelStream().mapToDouble(e -> e.getSortedRadii()[1] / e.getSortedRadii()[2]).toArray();
+        createBToCImage(bCRatios, ellipsoidIDs);
+        createFlinnPlotImage(aBRatios, bCRatios);
+        createFlinnPeakPlot(aBRatios, bCRatios, ellipsoidIDs);
+        eIdImage = new ImgPlus<>(ellipsoidIDs, "ID");
+        eIdImage.setChannelMaximum(0, ellipsoids.size() / 10.0f);
+        eIdImage.setChannelMinimum(0, -1.0f);
+    }
+
+    private void createVolumeImage(final List<Ellipsoid> ellipsoids,
+                                   final IterableInterval<IntType> ellipsoidIDs) {
+        final Img<FloatType> volumeImage = createNaNCopy();
+        final double[] volumes = ellipsoids.parallelStream().mapToDouble(
+                Ellipsoid::getVolume).toArray();
+        mapValuesToImage(volumes, ellipsoidIDs, volumeImage);
+        vImage = new ImgPlus<>(volumeImage, "Volume");
+        vImage.setChannelMaximum(0, ellipsoids.get(0).getVolume());
+        vImage.setChannelMinimum(0, -1.0f);
+    }
+
+    private long countAssignedVoxels(final Iterable<IntType> ellipsoidIdentityImage) {
+        final LongType assignedVoxels = new LongType();
+        ellipsoidIdentityImage.forEach(e -> {
+            if (e.get() >= 0) {
+                assignedVoxels.inc();
+            }
+        });
+        return assignedVoxels.get();
+    }
+    private Img<IntType> assignEllipsoidIDs(final Img<BitType> mask,
+                                                   final List<Ellipsoid> ellipsoids) {
+        final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask
+                .dimension(1), mask.dimension(2));
+        idImage.forEach(c -> c.setInteger(-1));
+        final Map<Ellipsoid, Integer> iDs =
+                IntStream.range(0, ellipsoids.size()).boxed().collect(toMap(ellipsoids::get, Function.identity()));
+        final LongStream zRange = LongStream.range(0, mask.dimension(2));
+        zRange.parallel().forEach(z -> {
+            // multiply by image unit? make more intelligent bounding box?
+            final List<Ellipsoid> localEllipsoids = ellipsoids.stream().filter(
+                    e -> Math.abs(e.getCentre()[2] - z*inputImgPlus.averageScale(2)) < e.getSortedRadii()[2]).collect(
+                    toList());
+            final long[] mins = {0, 0, z};
+            final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
+            final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs)
+                    .localizingCursor();
+            colourSlice(idImage, maskSlice, localEllipsoids, iDs);
+        });
+        return idImage;
+    }
+
+    private void colourSlice(final RandomAccessible<IntType> idImage,
+                                    final Cursor<BitType> mask, final Collection<Ellipsoid> localEllipsoids, final Map<Ellipsoid, Integer> iDs) {
+        while (mask.hasNext()) {
+            mask.fwd();
+            if (!mask.get().get()) {
+                continue;
+            }
+            final long[] coordinates = new long[3];
+            mask.localize(coordinates);
+            final Vector3d point = new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
+            colourID(localEllipsoids, idImage, point, iDs);
+        }
+    }
+
+    private void colourID(final Collection<Ellipsoid> localEllipsoids,
+                                 final RandomAccessible<IntType> ellipsoidIdentityImage,
+                                 final Vector3dc point, final Map<Ellipsoid, Integer> iDs) {
+        //point.add(0.5, 0.5, 0.5);//this need to be scaled before
+        final Optional<Ellipsoid> candidate = localEllipsoids.stream().filter(e -> e.contains(point.x()*inputImgPlus.averageScale(0),point.y()*inputImgPlus.averageScale(1),point.z()*inputImgPlus.averageScale(2))).findFirst();
+        if (!candidate.isPresent()) {
+            return;
+        }
+        final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
+        eIDRandomAccess.setPosition(new long[]{(long) point.x(),(long) point.y(),(long) point.z()});
+        final Ellipsoid ellipsoid = candidate.get();
+        eIDRandomAccess.get().set(iDs.get(ellipsoid));
+    }
+
+    private static float computeEllipsoidFactor(final Ellipsoid ellipsoid) {
+        final double[] sortedRadii = ellipsoid.getSortedRadii();
+        return (float) (sortedRadii[0] / sortedRadii[1] - sortedRadii[1] / sortedRadii[2]);
+    }
+
 
     /**
      * Calculate the mean unit vector between the ellipsoid's centroid and contact
@@ -343,334 +558,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         return new double[]{x, y, z};
     }
 
-    private static ImagePlus displayEllipsoidFactor(final ImagePlus imp,
-                                                    final int[][] maxIDs, final Ellipsoid[] ellipsoids) {
-        final ImageStack stack = imp.getImageStack();
-        final int w = stack.getWidth();
-        final int h = stack.getHeight();
-        final int d = stack.getSize();
-
-        final ImageStack efStack = new ImageStack(imp.getWidth(), imp.getHeight());
-
-        final float[][] stackPixels = new float[d + 1][w * h];
-
-        final AtomicInteger ai = new AtomicInteger(1);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-                    IJ.showStatus("Generating EF image");
-                    IJ.showProgress(z, d);
-                    final int[] idSlice = maxIDs[z];
-                    final float[] pixels = stackPixels[z];
-
-                    for (int y = 0; y < h; y++) {
-                        final int offset = y * w;
-                        for (int x = 0; x < w; x++) {
-                            final int i = offset + x;
-                            final int id = idSlice[i];
-                            if (id >= 0) pixels[i] = (float) ellipsoidFactor(ellipsoids[id]);
-                            else pixels[i] = Float.NaN;
-                        }
-                    }
-                }
-            });
-        }
-        Multithreader.startAndJoin(threads);
-
-        for (int z = 1; z <= d; z++)
-            efStack.addSlice("" + z, stackPixels[z]);
-
-        final ImagePlus ef = new ImagePlus("EF-" + imp.getTitle(), efStack);
-        ef.setCalibration(imp.getCalibration());
-        return ef;
-    }
-
-    private static ImagePlus displayMiddleOverLong(final ImagePlus imp,
-                                                   final int[][] maxIDs, final Ellipsoid[] ellipsoids) {
-        final ImageStack stack = imp.getImageStack();
-        final int w = stack.getWidth();
-        final int h = stack.getHeight();
-        final int d = stack.getSize();
-
-        final ImageStack mlStack = new ImageStack(imp.getWidth(), imp.getHeight());
-
-        final float[][] stackPixels = new float[d + 1][w * h];
-
-        final AtomicInteger ai = new AtomicInteger(1);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-                    IJ.showStatus("Generating volume image");
-                    IJ.showProgress(z, d);
-                    final int[] idSlice = maxIDs[z];
-                    final float[] pixels = stackPixels[z];
-                    for (int y = 0; y < h; y++) {
-                        final int offset = y * w;
-                        for (int x = 0; x < w; x++) {
-                            final int i = offset + x;
-                            final int id = idSlice[i];
-                            if (id >= 0) {
-                                final double[] radii = ellipsoids[id].getSortedRadii();
-                                pixels[i] = (float) (radii[1] / radii[2]);
-                            } else pixels[i] = Float.NaN;
-                        }
-                    }
-                }
-            });
-        }
-        Multithreader.startAndJoin(threads);
-
-        for (int z = 1; z <= d; z++)
-            mlStack.addSlice("" + z, stackPixels[z]);
-
-        final ImagePlus midLong = new ImagePlus("Mid_Long-" + imp.getTitle(),
-                mlStack);
-        midLong.setCalibration(imp.getCalibration());
-        return midLong;
-    }
-
-    private static ImagePlus displayShortOverMiddle(final ImagePlus imp,
-                                                    final int[][] maxIDs, final Ellipsoid[] ellipsoids) {
-        final ImageStack stack = imp.getImageStack();
-        final int w = stack.getWidth();
-        final int h = stack.getHeight();
-        final int d = stack.getSize();
-
-        final ImageStack smStack = new ImageStack(imp.getWidth(), imp.getHeight());
-
-        final float[][] stackPixels = new float[d + 1][w * h];
-
-        final AtomicInteger ai = new AtomicInteger(1);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-                    IJ.showStatus("Generating short/middle axis image");
-                    IJ.showProgress(z, d);
-                    final int[] idSlice = maxIDs[z];
-                    final float[] pixels = stackPixels[z];
-                    for (int y = 0; y < h; y++) {
-                        final int offset = y * w;
-                        for (int x = 0; x < w; x++) {
-                            final int i = offset + x;
-                            final int id = idSlice[i];
-                            if (id >= 0) {
-                                final double[] radii = ellipsoids[id].getSortedRadii();
-                                pixels[i] = (float) (radii[0] / radii[1]);
-                            } else pixels[i] = Float.NaN;
-                        }
-                    }
-                }
-            });
-        }
-        Multithreader.startAndJoin(threads);
-
-        for (int z = 1; z <= d; z++)
-            smStack.addSlice("" + z, stackPixels[z]);
-
-        final ImagePlus shortmid = new ImagePlus("Short_Mid-" + imp.getTitle(),
-                smStack);
-        shortmid.setCalibration(imp.getCalibration());
-        return shortmid;
-    }
-
-    private static ImagePlus displayVolumes(final ImagePlus imp,
-                                            final int[][] maxIDs, final Ellipsoid[] ellipsoids) {
-        final ImageStack stack = imp.getImageStack();
-        final int w = stack.getWidth();
-        final int h = stack.getHeight();
-        final int d = stack.getSize();
-
-        final ImageStack volStack = new ImageStack(imp.getWidth(), imp.getHeight());
-
-        final float[][] stackPixels = new float[d + 1][w * h];
-
-        final AtomicInteger ai = new AtomicInteger(1);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-                    IJ.showStatus("Generating volume image");
-                    IJ.showProgress(z, d);
-                    final int[] idSlice = maxIDs[z];
-                    final float[] pixels = stackPixels[z];
-                    for (int y = 0; y < h; y++) {
-                        final int offset = y * w;
-                        for (int x = 0; x < w; x++) {
-                            final int i = offset + x;
-                            final int id = idSlice[i];
-                            if (id >= 0) {
-                                pixels[i] = (float) ellipsoids[id].getVolume();
-                            } else pixels[i] = Float.NaN;
-                        }
-                    }
-                }
-            });
-        }
-        Multithreader.startAndJoin(threads);
-
-        for (int z = 1; z <= d; z++)
-            volStack.addSlice("" + z, stackPixels[z]);
-
-        final ImagePlus volImp = new ImagePlus("Volume-" + imp.getTitle(),
-                volStack);
-        volImp.setCalibration(imp.getCalibration());
-        return volImp;
-    }
-
-    /**
-     * Draw a Flinn diagram with each point given an intensity proportional to the
-     * volume of the structure with that axis ratio
-     *
-     * @param title
-     * @param imp
-     * @param maxIDs
-     * @param ellipsoids
-     * @param sigma
-     * @return
-     */
-    private static ImagePlus drawFlinnPeakPlot(final String title,
-                                               final ImagePlus imp, final int[][] maxIDs, final Ellipsoid[] ellipsoids,
-                                               final double sigma) {
-
-        final ImageStack stack = imp.getImageStack();
-        final int w = stack.getWidth();
-        final int h = stack.getHeight();
-        final int d = stack.getSize();
-
-        final float[][] ab = new float[d][];
-        final float[][] bc = new float[d][];
-
-        final AtomicInteger ai = new AtomicInteger(1);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-                    IJ.showStatus("Generating Flinn Diagram");
-                    IJ.showProgress(z, d);
-                    final int[] idSlice = maxIDs[z];
-                    int l = 0;
-                    for (int y = 0; y < h; y++) {
-                        final int offset = y * w;
-                        for (int x = 0; x < w; x++)
-                            if (idSlice[offset + x] >= 0) l++;
-                    }
-                    final float[] abl = new float[l];
-                    final float[] bcl = new float[l];
-                    int j = 0;
-                    for (int y = 0; y < h; y++) {
-                        final int offset = y * w;
-                        for (int x = 0; x < w; x++) {
-                            final int i = offset + x;
-                            final int id = idSlice[i];
-                            if (id >= 0) {
-                                final double[] radii = ellipsoids[id].getSortedRadii();
-                                abl[j] = (float) (radii[0] / radii[1]);
-                                bcl[j] = (float) (radii[1] / radii[2]);
-                                j++;
-                            }
-                        }
-                    }
-                    ab[z - 1] = abl;
-                    bc[z - 1] = bcl;
-                }
-            });
-        }
-        Multithreader.startAndJoin(threads);
-
-        int l = 0;
-        for (final float[] f : ab)
-            l += f.length;
-
-        final float[] aOverB = new float[l];
-        final float[] bOverC = new float[l];
-
-        int i = 0;
-        for (final float[] fl : ab) {
-            for (final float f : fl) {
-                aOverB[i] = f;
-                i++;
-            }
-        }
-        i = 0;
-        for (final float[] fl : bc) {
-            for (final float f : fl) {
-                bOverC[i] = f;
-                i++;
-            }
-        }
-
-        final int size = 512;
-        final float[][] pixels = new float[size][size];
-
-        for (int j = 0; j < l; j++) {
-            final int x = (int) Math.floor((size - 1) * bOverC[j]);
-            final int y = (int) Math.floor((size - 1) * (1 - aOverB[j]));
-            pixels[x][y] += 1;
-        }
-
-        final FloatProcessor fp = new FloatProcessor(pixels);
-        if (sigma > 0) fp.blurGaussian(sigma);
-
-        final Calibration cal = new Calibration();
-        cal.setXUnit("b/c");
-        cal.setYUnit("a/b");
-        cal.pixelWidth = 1.0 / size;
-        cal.pixelHeight = 1.0 / size;
-        cal.setInvertY(true);
-        final ImagePlus plot = new ImagePlus(title, fp);
-        plot.setCalibration(cal);
-        return plot;
-    }
-
-    /**
-     * Display each ellipsoid's axis ratios in a scatter plot
-     *
-     * @param title
-     * @param ellipsoids
-     * @return
-     */
-    private static ImagePlus drawFlinnPlot(final String title,
-                                           final Ellipsoid[] ellipsoids) {
-
-        final int l = ellipsoids.length;
-        final double[] aOverB = new double[l];
-        final double[] bOverC = new double[l];
-
-        for (int i = 0; i < l; i++) {
-            final double[] radii = ellipsoids[i].getSortedRadii();
-            aOverB[i] = radii[0] / radii[1];
-            bOverC[i] = radii[1] / radii[2];
-        }
-
-        final Plot plot = new Plot("Flinn Diagram of " + title, "b/c", "a/b");
-        plot.setLimits(0, 1, 0, 1);
-        plot.setSize(1024, 1024);
-        plot.addPoints(bOverC, aOverB, Plot.CIRCLE);
-        final ImageProcessor plotIp = plot.getProcessor();
-        return new ImagePlus("Flinn Diagram of " + title, plotIp);
-    }
-
-    /**
-     * Calculate the ellipsoid factor of this ellipsoid as a / b - b / c where a <
-     * b < c and a, b and c are the ellipsoid semi axis lengths (radii). This
-     * formulation places more rod-like ellipsoids towards 1 and plate-like
-     * ellipsoids towards -1. Ellipsoids of EF = 0 have equal a:b and b:c ratios
-     * so are midway between plate and rod. Spheres are a special case of EF = 0.
-     *
-     * @param ellipsoid
-     * @return the ellipsoid factor
-     */
-    private static double ellipsoidFactor(final Ellipsoid ellipsoid) {
-        final double[] radii = ellipsoid.getSortedRadii();
-        final double a = radii[0];
-        final double b = radii[1];
-        final double c = radii[2];
-        return a / b - b / c;
-    }
-
     private static ArrayList<double[]> findContactPoints(
             final Ellipsoid ellipsoid, final ArrayList<double[]> contactPoints,
             final double[][] unitVectors, final byte[][] pixels, final double pW,
@@ -715,95 +602,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
             unitVectors[i] = u;
         }
         return unitVectors;
-    }
-
-    /**
-     * For each foreground pixel of the input image, find the ellipsoid of
-     * greatest volume
-     *
-     * @param imp
-     * @param ellipsoids
-     * @return array containing the indexes of the biggest ellipsoids which
-     * contain each point
-     */
-    private static int[][] findMaxID(final ImagePlus imp,
-                                     final Ellipsoid[] ellipsoids) {
-
-        final ImageStack stack = imp.getImageStack();
-        final int w = stack.getWidth();
-        final int h = stack.getHeight();
-        final int d = stack.getSize();
-
-        final Calibration cal = imp.getCalibration();
-        final double vW = cal.pixelWidth;
-        final double vH = cal.pixelHeight;
-        final double vD = cal.pixelDepth;
-
-        final int[][] biggest = new int[d + 1][w * h];
-
-        final AtomicInteger ai = new AtomicInteger(1);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int z = ai.getAndIncrement(); z <= d; z = ai.getAndIncrement()) {
-                    IJ.showStatus("Finding biggest ellipsoid");
-                    IJ.showProgress(z, d);
-                    final byte[] slicePixels = (byte[]) stack.getPixels(z);
-                    final int[] bigSlice = biggest[z];
-                    Arrays.fill(bigSlice, -ellipsoids.length);
-                    final double zvD = z * vD;
-
-                    // find the subset of ellipsoids whose bounding box
-                    // intersects with z
-                    final List<Ellipsoid> nearEllipsoids = new ArrayList<>();
-                    final int n = ellipsoids.length;
-                    for (int i = 0; i < n; i++) {
-                        final Ellipsoid e = ellipsoids[i];
-                        final double[] zMinMax = e.getZMinAndMax();
-                        if (zvD >= zMinMax[0] && zvD <= zMinMax[1]) {
-                            final Ellipsoid f = e.copy();
-                            f.id = i;
-                            nearEllipsoids.add(f);
-                        }
-                    }
-                    final int o = nearEllipsoids.size();
-                    final Ellipsoid[] ellipsoidSubSet = new Ellipsoid[o];
-                    for (int i = 0; i < o; i++) {
-                        ellipsoidSubSet[i] = nearEllipsoids.get(i);
-                    }
-
-                    for (int y = 0; y < h; y++) {
-                        final double yvH = y * vH;
-                        // find the subset of ellipsoids whose bounding box
-                        // intersects with y
-                        final List<Ellipsoid> yEllipsoids = new ArrayList<>();
-                        for (final Ellipsoid e : ellipsoidSubSet) {
-                            final double[] yMinMax = e.getYMinAndMax();
-                            if (yvH >= yMinMax[0] && yvH <= yMinMax[1]) {
-                                yEllipsoids.add(e);
-                            }
-                        }
-
-                        final int r = yEllipsoids.size();
-                        final Ellipsoid[] ellipsoidSubSubSet = new Ellipsoid[r];
-                        for (int i = 0; i < r; i++) {
-                            ellipsoidSubSubSet[i] = yEllipsoids.get(i);
-                        }
-
-                        final int offset = y * w;
-                        for (int x = 0; x < w; x++) {
-                            if (slicePixels[offset + x] == -1) {
-                                bigSlice[offset + x] = biggestEllipsoid(ellipsoidSubSubSet, x *
-                                        vW, yvH, zvD);
-                            }
-                        }
-                    }
-
-                }
-            });
-        }
-        Multithreader.startAndJoin(threads);
-        return biggest;
     }
 
     /**
@@ -946,65 +744,22 @@ public class EllipsoidFactorWrapper extends ContextCommand {
             return;
         }
 
+        statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
         start = System.currentTimeMillis();
-        final ImagePlus imp = IJ.getImage();
-        final int[][] maxIDs = findMaxID(imp, ellipsoids);
+        final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(Common.toBitTypeImgPlus(opService,inputImgPlus), Arrays.asList(ellipsoids));
         stop = System.currentTimeMillis();
-
         logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
-        final double fractionFilled = calculateFillingEfficiency(maxIDs);
-        addResults(Arrays.asList(ellipsoids), fractionFilled);
+        createPrimaryOutputImages(Arrays.asList(ellipsoids), ellipsoidIdentityImage);
+        if (showSecondaryImages) createSecondaryOutputImages(Arrays.asList(ellipsoids), ellipsoidIdentityImage);
 
-        if (showSecondaryImages) {
-            final ImagePlus volumes = displayVolumes(imp, maxIDs, ellipsoids);
-            volumes.show();
-            volumes.setDisplayRange(0, ellipsoids[(int) (0.05 * ellipsoids.length)]
-                    .getVolume());
-            IJ.run("Fire");
-        }
+        final double numberOfForegroundVoxels = countTrue(Common.toBitTypeImgPlus(opService,inputImgPlus));
+        final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
+        final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
+        addResults(Arrays.asList(ellipsoids), fillingPercentage);
 
-        if (showSecondaryImages) {
-            final ImagePlus middleOverLong = displayMiddleOverLong(imp, maxIDs,
-                    ellipsoids);
-            middleOverLong.show();
-            middleOverLong.setDisplayRange(0, 1);
-            IJ.run("Fire");
 
-            final ImagePlus shortOverMiddle = displayShortOverMiddle(imp, maxIDs,
-                    ellipsoids);
-            shortOverMiddle.show();
-            shortOverMiddle.setDisplayRange(0, 1);
-            IJ.run("Fire");
-        }
-
-        if (showSecondaryImages) {
-            final ImagePlus eF = displayEllipsoidFactor(imp, maxIDs, ellipsoids);
-            eF.show();
-            eF.setDisplayRange(-1, 1);
-            IJ.run("Fire");
-        }
-
-        if (showSecondaryImages) {
-            final ImagePlus maxID = displayMaximumIDs(maxIDs, imp);
-            maxID.show();
-            maxID.setDisplayRange(-ellipsoids.length / 2.0, ellipsoids.length);
-        }
-
-        if (showSecondaryImages) {
-            final ImagePlus flinnPlot = drawFlinnPlot("Weighted-flinn-plot-" + imp
-                    .getTitle(), ellipsoids);
-            flinnPlot.show();
-        }
-
-        if (showSecondaryImages) {
-            final ImagePlus flinnPeaks = drawFlinnPeakPlot("FlinnPeaks_" + imp
-                    .getTitle(), imp, maxIDs, ellipsoids, sigma);
-            flinnPeaks.show();
-        }
-
-        //UsageReporter.reportEvent(this).send();
-        IJ.showStatus("Ellipsoid Factor completed");
+        statusService.showStatus("Ellipsoid Factor completed");
     }
 
     private void addResults(final List<Ellipsoid> ellipsoids, double fillingPercentage) {
@@ -1036,66 +791,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                 x, y, z);
 
         return ellipsoid;
-    }
-
-    private double calculateFillingEfficiency(final int[][] maxIDs) {
-        final int l = maxIDs.length;
-        final long[] foregroundCount = new long[l];
-        final long[] filledCount = new long[l];
-
-        final AtomicInteger ai = new AtomicInteger(0);
-        final Thread[] threads = Multithreader.newThreads();
-        for (int thread = 0; thread < threads.length; thread++) {
-            threads[thread] = new Thread(() -> {
-                for (int i = ai.getAndIncrement(); i < l; i = ai.getAndIncrement()) {
-                    IJ.showStatus("Calculating filling efficiency...");
-                    IJ.showProgress(i, l);
-                    final int[] idSlice = maxIDs[i];
-                    for (final int val : idSlice) {
-                        if (val >= -1) {
-                            foregroundCount[i]++;
-                        }
-                        if (val >= 0) {
-                            filledCount[i]++;
-                        }
-                    }
-                }
-            });
-        }
-        Multithreader.startAndJoin(threads);
-
-        long sumForegroundCount = 0;
-        long sumFilledCount = 0;
-
-        for (int i = 0; i < l; i++) {
-            sumForegroundCount += foregroundCount[i];
-            sumFilledCount += filledCount[i];
-        }
-
-        final long unfilled = sumForegroundCount - sumFilledCount;
-        logService.info(unfilled + " pixels unfilled with ellipsoids out of " +
-                sumForegroundCount + " total foreground pixels");
-
-        return sumFilledCount / (double) sumForegroundCount;
-    }
-
-    private ImagePlus displayMaximumIDs(final int[][] biggestEllipsoid,
-                                        final ImagePlus imp) {
-
-        final ImageStack bigStack = new ImageStack(imp.getWidth(), imp.getHeight());
-        for (int i = 1; i < biggestEllipsoid.length; i++) {
-            final int[] maxIDs = biggestEllipsoid[i];
-            final int l = maxIDs.length;
-            final float[] pixels = new float[l];
-            for (int j = 0; j < l; j++) {
-                pixels[j] = maxIDs[j];
-            }
-            bigStack.addSlice("" + i, pixels);
-        }
-        final ImagePlus bigImp = new ImagePlus("Max-ID-" + imp.getTitle(),
-                bigStack);
-        bigImp.setCalibration(imp.getCalibration());
-        return bigImp;
     }
 
     private ArrayList<double[]> findContactPoints(final Ellipsoid ellipsoid,
@@ -1150,8 +845,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                 for (int i = ai.getAndAdd(skipRatio); i < nPoints; i = ai.getAndAdd(
                         skipRatio)) {
                     ellipsoids[i] = optimiseEllipsoid(imp, pixels, skeletonPoints[i]);
-                    IJ.showProgress(counter.getAndAdd(skipRatio), nPoints);
-                    IJ.showStatus("Optimising ellipsoids...");
+                    statusService.showProgress(counter.getAndAdd(skipRatio), nPoints);
+                    statusService.showStatus("Optimising ellipsoids...");
                 }
             });
         }
@@ -1312,7 +1007,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
             contactPoints = findContactPoints(ellipsoid, contactPoints, pixels, pW,
                     pH, pD, w, h, d);
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-                logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
+                logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz +
                         ") is invalid, nullifying at initial oblation");
                 return null;
             }
@@ -1347,7 +1042,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                     pixels, pW, pH, pD, w, h, d);
 
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-                logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
+                logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz +
                         ") is invalid, nullifying after " + totalIterations + " iterations");
                 return null;
             }
@@ -1375,7 +1070,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                     pixels, pW, pH, pD, w, h, d);
 
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-                logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
+                logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz +
                         ") is invalid, nullifying after " + totalIterations + " iterations");
                 return null;
             }
@@ -1396,7 +1091,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
                     pixels, pW, pH, pD, w, h, d);
 
             if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-                logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
+                logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz +
                         ") is invalid, nullifying after " + totalIterations + " iterations");
                 return null;
             }
@@ -1425,7 +1120,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
         // this usually indicates that the ellipsoid
         // grew out of control for some reason
         if (totalIterations == absoluteMaxIterations) {
-            logService.info("Ellipsoid at (" + px + ", " + py + ", " + pz +
+            logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz +
                     ") seems to be out of control, nullifying after " + totalIterations +
                     " iterations");
             return null;
@@ -1433,9 +1128,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
         final long stop = System.currentTimeMillis();
 
-        if (logService.isDebug()) logService.info("Optimised ellipsoid in " + (stop - start) +
-                " ms after " + totalIterations + " iterations (" + IJ.d2s((double) (stop -
-                start) / totalIterations, 3) + " ms/iteration)");
+        logService.debug("Optimised ellipsoid in " + (stop - start) +
+                " ms after " + totalIterations + " iterations (" + (double) (stop -
+                start) / totalIterations + " ms/iteration)");
 
         return ellipsoid;
     }
