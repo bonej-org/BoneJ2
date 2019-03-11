@@ -1201,10 +1201,7 @@ class Ellipsoid {
 	private double ra;
 	private double rb;
 	private double rc;
-	/**
-	 * Volume of ellipsoid, calculated as 4 * PI * ra * rb * rc / 3
-	 */
-	private double volume;
+
 	/**
 	 * Eigenvector matrix Size-based ordering is not performed. They are in the same
 	 * order as the eigenvalues.
@@ -1248,7 +1245,6 @@ class Ellipsoid {
 		eh = new double[3][3];
 		setRotation(eigenVectors);
 		setEigenvalues();
-		setVolume();
 	}
 
 	/**
@@ -1348,7 +1344,7 @@ class Ellipsoid {
 		if (length <= radii[0])
 			return true;
 
-		final double[][] h = eh;
+		final double[][] h = getEllipsoidTensor();
 
 		final double dot0 = vx * h[0][0] + vy * h[1][0] + vz * h[2][0];
 		final double dot1 = vx * h[0][1] + vy * h[1][1] + vz * h[2][1];
@@ -1358,6 +1354,17 @@ class Ellipsoid {
 
 		return dot <= 1;
 	}
+
+    /**
+     * Gets an up to date ellipsoid tensor (H)
+     * @return 3×3 matrix containing H, the ellipsoid tensor
+     */
+    private double[][] getEllipsoidTensor(){
+        if (this.eh == null) {
+            this.eh = times(times(ev, ed), transpose(ev));
+        }
+        return this.eh;
+    }
 
 	/**
 	 * Constrict all three axes by a fractional increment
@@ -1483,7 +1490,7 @@ class Ellipsoid {
 	 * @return copy of the stored volume value.
 	 */
 	double getVolume() {
-		return volume;
+		return 4.0*Math.PI*ra*rb*rc/3.0;
 	}
 
 	/**
@@ -1541,18 +1548,14 @@ class Ellipsoid {
 		rb = b;
 		rc = c;
 		setEigenvalues();
-		setVolume();
 	}
 
-	private void setVolume() {
-		volume = Math.PI * ra * rb * rc * 4 / 3;
-	}
 
 	/**
 	 * Needs to be run any time the eigenvalues or eigenvectors change
 	 */
 	private void update3x3Matrix() {
-		eh = times(times(ev, ed), transpose(ev));
+		eh = null;
 	}
 
 	/**
