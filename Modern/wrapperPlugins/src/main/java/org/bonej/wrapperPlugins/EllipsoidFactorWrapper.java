@@ -820,7 +820,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int d = (int) imp.dimension(2);
 
 		final byte[][] pixels = new byte[d][w * h];
-		final LongStream zRange = LongStream.range(0, imp.dimension(2));
+		final IntStream zRange = IntStream.range(0, (int) imp.dimension(2));
 		zRange.forEach(z -> {
 			final long[] mins = {0, 0, z};
 			final long[] maxs = {imp.dimension(0) - 1, imp.dimension(1) - 1, z};
@@ -1355,16 +1355,17 @@ class Ellipsoid {
 		return dot <= 1;
 	}
 
-    /**
-     * Gets an up to date ellipsoid tensor (H)
-     * @return 3×3 matrix containing H, the ellipsoid tensor
-     */
-    private double[][] getEllipsoidTensor(){
-        if (this.eh == null) {
-            this.eh = times(times(ev, ed), transpose(ev));
-        }
-        return this.eh;
-    }
+	/**
+	 * Gets an up to date ellipsoid tensor (H)
+	 * 
+	 * @return 3×3 matrix containing H, the ellipsoid tensor
+	 */
+	private double[][] getEllipsoidTensor() {
+		if (this.eh == null) {
+			this.eh = times(times(ev, ed), transpose(ev));
+		}
+		return this.eh;
+	}
 
 	/**
 	 * Constrict all three axes by a fractional increment
@@ -1490,7 +1491,7 @@ class Ellipsoid {
 	 * @return copy of the stored volume value.
 	 */
 	double getVolume() {
-		return 4.0*Math.PI*ra*rb*rc/3.0;
+		return 4.0 * Math.PI * ra * rb * rc / 3.0;
 	}
 
 	/**
@@ -1549,7 +1550,6 @@ class Ellipsoid {
 		rc = c;
 		setEigenvalues();
 	}
-
 
 	/**
 	 * Needs to be run any time the eigenvalues or eigenvectors change
