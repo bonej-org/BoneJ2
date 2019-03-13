@@ -91,7 +91,7 @@ import net.imglib2.view.Views;
  *      Frontiers in Endocrinology (2015)</a>
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>QuickEllipsoid Factor 2")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
 public class EllipsoidFactorWrapper extends ContextCommand {
 
 	// Several ellipsoids may fall in same bin if this is too small a number!
@@ -171,7 +171,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
 	private Table<DefaultColumn<Double>, Double> resultsTable;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String note = "QuickEllipsoid Factor is beta software.\n" + "Please report your experiences to the user group:\n"
+	private String note = "Ellipsoid Factor is beta software.\n" + "Please report your experiences to the user group:\n"
 			+ "http://forum.image.sc/tags/bonej";
 
 	/**
@@ -747,7 +747,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			return;
 		}
 
-		statusService.showStatus("QuickEllipsoid Factor: assigning EF to foreground voxels...");
+		statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
 		start = System.currentTimeMillis();
 		final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(Common.toBitTypeImgPlus(opService, inputImgPlus),
 				Arrays.asList(ellipsoids));
@@ -763,7 +763,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
 		addResults(Arrays.asList(ellipsoids), fillingPercentage);
 
-		statusService.showStatus("QuickEllipsoid Factor completed");
+		statusService.showStatus("Ellipsoid Factor completed");
 	}
 
 	private void addResults(final List<QuickEllipsoid> ellipsoids, double fillingPercentage) {
@@ -1002,7 +1002,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			findContactPoints(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
 				logService.debug(
-						"QuickEllipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying at initial oblation");
+						"Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying at initial oblation");
 				return null;
 			}
 		}
@@ -1033,7 +1033,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				logService.debug("QuickEllipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
 						+ totalIterations + " iterations");
 				return null;
 			}
@@ -1058,7 +1058,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				logService.debug("QuickEllipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
 						+ totalIterations + " iterations");
 				return null;
 			}
@@ -1077,7 +1077,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, pW, pH, pD, w, h, d);
 
 			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
-				logService.debug("QuickEllipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
 						+ totalIterations + " iterations");
 				return null;
 			}
@@ -1107,7 +1107,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		// this usually indicates that the ellipsoid
 		// grew out of control for some reason
 		if (totalIterations == absoluteMaxIterations) {
-			logService.debug("QuickEllipsoid at (" + px + ", " + py + ", " + pz
+			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz
 					+ ") seems to be out of control, nullifying after " + totalIterations + " iterations");
 			return null;
 		}
