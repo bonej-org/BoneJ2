@@ -226,7 +226,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *            the contact points of the ellipsoid
 	 * @return the torque vector
 	 */
-	private static double[] calculateTorque(final QuickEllipsoid ellipsoid, final Iterable<double[]> contactPoints) {
+	static double[] calculateTorque(final QuickEllipsoid ellipsoid, final Iterable<double[]> contactPoints) {
 
 		final double[] pc = ellipsoid.getCentre();
 		final double cx = pc[0];
@@ -371,9 +371,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return new double[]{x, y, z};
 	}
 
-	private static void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
-										  final double[][] unitVectors, final byte[][] pixels, final double pW, final double pH, final double pD,
-										  final int w, final int h, final int d) {
+	static void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
+								  final double[][] unitVectors, final byte[][] pixels, final double pW, final double pH, final double pD,
+								  final int w, final int h, final int d) {
 		contactPoints.clear();
 		final double[][] points = ellipsoid.getSurfacePoints(unitVectors);
 		for (final double[] p : points) {
