@@ -371,9 +371,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return new double[]{x, y, z};
 	}
 
-	static void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
-								  final double[][] unitVectors, final byte[][] pixels, final double pW, final double pH, final double pD,
-								  final int w, final int h, final int d) {
+	static void findContactPointsForGivenDirections(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
+													final double[][] unitVectors, final byte[][] pixels, final double pW, final double pH, final double pD,
+													final int w, final int h, final int d) {
 		contactPoints.clear();
 		final double[][] points = ellipsoid.getSurfacePoints(unitVectors);
 		for (final double[] p : points) {
@@ -797,7 +797,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
 								   final byte[][] pixels, final double pW, final double pH, final double pD, final int w, final int h,
 								   final int d) {
-		findContactPoints(ellipsoid, contactPoints, ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors), pixels, pW, pH, pD, w, h,
+		findContactPointsForGivenDirections(ellipsoid, contactPoints, ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors), pixels, pW, pH, pD, w, h,
 				d);
 	}
 
@@ -1131,7 +1131,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		int safety = 0;
 		while (!contactPoints.isEmpty() && safety < maxIterations) {
 			ellipsoid.contract(0.01);
-			findContactPoints(ellipsoid, contactPoints, unitVectors, pixels, pW, pH, pD, w, h, d);
+			findContactPointsForGivenDirections(ellipsoid, contactPoints, unitVectors, pixels, pW, pH, pD, w, h, d);
 			safety++;
 		}
 

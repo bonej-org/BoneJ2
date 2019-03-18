@@ -12,7 +12,7 @@ public class EllipsoidFactorWrapperTest {
 
 
     /**
-     * test for EF wrapper findContactPoints function
+     * test for EF wrapper findContactPointsForGivenDirections function
      *
      * uses a 6x6x6 byte array image representation of a cuboid that touches the image boundary at z=0
      * and otherwise has a surface with 1 pixel distance from the image boundary
@@ -45,7 +45,7 @@ public class EllipsoidFactorWrapperTest {
         //EXECUTE
         EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
-        wrapper.findContactPoints(e, contactPoints, vectors, cubeImage,1,1,1,6,6,6);
+        wrapper.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,1,1,1,6,6,6);
 
         //VERIFY
         assertEquals(3, contactPoints.size());
@@ -79,7 +79,7 @@ public class EllipsoidFactorWrapperTest {
         //EXECUTE
         EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
-        wrapper.findContactPoints(e, contactPoints, vectors, cubeImage,1,1,1,6,6,6);
+        wrapper.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,1,1,1,6,6,6);
         final double[] torque = EllipsoidFactorWrapper.calculateTorque(e, contactPoints);
 
         assertEquals(0,torque[0],1e-12);

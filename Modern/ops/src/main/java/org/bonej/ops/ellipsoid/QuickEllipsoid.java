@@ -1,14 +1,10 @@
 package org.bonej.ops.ellipsoid;
 
+import java.util.Arrays;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
-
-import static java.util.stream.Collectors.toList;
-
-import java.util.Arrays;
-import java.util.Random;
-import java.util.stream.DoubleStream;
 
 /**
  * <p>
@@ -337,9 +333,11 @@ public class QuickEllipsoid {
 		return surfacePoints;
 	}
 
-	private double getMu(double[] v) {
-		final DoubleStream terms = DoubleStream.of(ra * rc * v[1], ra * rb * v[2], rb * rc * v[0]);
-		final double sqSum = terms.map(x -> x * x).sum();
+	private double getMu(final double[] v) {
+		final double ra2 = ra*ra;
+		final double rb2 = rb*rb;
+		final double rc2 = rc*rc;
+		final double sqSum = ra2*rc2*v[0]*v[0]+ra2*rb2*v[2]*v[2]+rb2*rc2*v[0]*v[0];
 		return Math.sqrt(sqSum);
 	}
 
