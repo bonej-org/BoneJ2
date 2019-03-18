@@ -13,6 +13,7 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.scijava.Context;
 import org.scijava.cache.CacheService;
@@ -62,11 +63,13 @@ public class FindRidgePointsTest {
     @Test
     public void testSphereRidge() throws Exception {
         //SET UP
-        final ImgPlus<BitType> sphereImage = getSphereImage();
+        final Img<BitType> sphereImage = getSphereImage();
         final Vector3dc expectedSingleRidgePoint = new Vector3d(50.5, 50.5, 50.5);
 
         //EXECUTE
-        final List<Object> outputs = (List) ops.run(FindRidgePoints.class, sphereImage);
+        final List<Object> outputs = (List) ops.run(FindRidgePoints.class, new ImgPlus<>(sphereImage,
+                "Sphere test image", new AxisType[] { Axes.X, Axes.Y, Axes.Z },
+                new double[] { 1.0, 1.0, 1.0 }, new String[] { "", "", "" }));
         final List<Vector3dc> ridgePointList = (List<Vector3dc>) outputs.get(0);
 
         //VERIFY
@@ -78,7 +81,7 @@ public class FindRidgePointsTest {
 
 
     //TODO move to somewhere where all tests can find this.
-    private static ImgPlus<BitType> getSphereImage() {
+    private static Img<BitType> getSphereImage() {
         final long[] imageDimensions = { 101, 101, 101 };
         final Vector3dc centre = new Vector3d(Math.floor(imageDimensions[0] / 2.0),
                 Math.floor(imageDimensions[1] / 2.0), Math.floor(imageDimensions[2] /
@@ -86,10 +89,7 @@ public class FindRidgePointsTest {
         final int radius = 10;
         final Img<BitType> sphereImg = ArrayImgs.bits(imageDimensions[0],
                 imageDimensions[1], imageDimensions[2]);
-        final ImgPlus<BitType> sphereImgPlus = new ImgPlus<>(sphereImg,
-                "Sphere test image", new AxisType[] { Axes.X, Axes.Y, Axes.Z },
-                new double[] { 1.0, 1.0, 1.0 }, new String[] { "", "", "" });
-        final Cursor<BitType> cursor = sphereImgPlus.localizingCursor();
+        final Cursor<BitType> cursor = sphereImg.localizingCursor();
         while (cursor.hasNext()) {
             cursor.fwd();
             final long[] coordinates = new long[3];
@@ -100,6 +100,6 @@ public class FindRidgePointsTest {
                 cursor.get().setOne();
             }
         }
-        return sphereImgPlus;
+        return sphereImg;
     }
 }
