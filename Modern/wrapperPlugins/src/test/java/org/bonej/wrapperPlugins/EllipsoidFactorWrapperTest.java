@@ -45,7 +45,7 @@ public class EllipsoidFactorWrapperTest {
         //EXECUTE
         EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
-        wrapper.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,1,1,1,6,6,6);
+        wrapper.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,6,6,6);
 
         //VERIFY
         assertEquals(3, contactPoints.size());
@@ -79,7 +79,7 @@ public class EllipsoidFactorWrapperTest {
         //EXECUTE
         EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
-        wrapper.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,1,1,1,6,6,6);
+        wrapper.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,6,6,6);
         final double[] torque = EllipsoidFactorWrapper.calculateTorque(e, contactPoints);
 
         assertEquals(0,torque[0],1e-12);
