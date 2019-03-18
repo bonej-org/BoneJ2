@@ -174,48 +174,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private String note = "Ellipsoid Factor is beta software.\n" + "Please report your experiences to the user group:\n"
 			+ "http://forum.image.sc/tags/bonej";
 
-	/**
-	 * Method to numerically approximate equidistantly spaced points on the surface
-	 * of a sphere
-	 * <p>
-	 * The implementation follows the description of the theoretical work by
-	 * Rakhmanov et al., 1994 in Saff and Kuijlaars, 1997
-	 * (<a href="doi:10.1007/BF03024331">dx.doi.org/10.1007/BF03024331</a>), but k
-	 * is shifted by one to the left for more convenient indexing.
-	 *
-	 * @param n
-	 *            : number of points required (has to be > 2)
-	 *            <p>
-	 *            This could be its own op in the future.
-	 *            </p>
-	 */
-	static double[][] getGeneralizedSpiralSetOnSphere(final int n) {
-		final Stream.Builder<double[]> spiralSet = Stream.builder();
-		final List<Double> phi = new ArrayList<>();
-		phi.add(0.0);
-		for (int k = 1; k < n - 1; k++) {
-			final double h = -1.0 + 2.0 * k / (n - 1);
-			phi.add(getPhiByRecursion(n, phi.get(k - 1), h));
-		}
-		phi.add(0.0);
-
-		for (int k = 0; k < n; k++) {
-			final double h = -1.0 + 2.0 * k / (n - 1);
-			final double theta = Math.acos(h);
-			spiralSet.add(new double[]{Math.sin(theta) * Math.cos(phi.get(k)), Math.sin(theta) * Math.sin(phi.get(k)),
-					Math.cos(theta)});
-
-		}
-		List<double[]> list = spiralSet.build().collect(toList());
-		return list.toArray(new double[n][]);
-	}
-
-	private static double getPhiByRecursion(final double n, final double phiKMinus1, final double hk) {
-		final double phiK = phiKMinus1 + 3.6 / Math.sqrt(n) * 1.0 / Math.sqrt(1 - hk * hk);
-		// modulo 2pi calculation works for positive numbers only, which is not a
-		// problem in this case.
-		return phiK - Math.floor(phiK / (2 * Math.PI)) * 2 * Math.PI;
-	}
 
 	/**
 	 * Calculate the torque of unit normals acting at the contact points
@@ -935,7 +893,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final int[] skeletonPoint) {
 
 		final long start = System.currentTimeMillis();
-		// cache slices into an array
 		final double pW = imp.averageScale(0);
 		final double pH = imp.averageScale(1);
 		final double pD = imp.averageScale(2);
@@ -945,9 +902,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int d = (int) imp.dimension(2);
 
 		// centre point of vector field
-		final double px = skeletonPoint[0] * pW;
-		final double py = skeletonPoint[1] * pH;
-		final double pz = skeletonPoint[2] * pD;
+		final double px = (skeletonPoint[0]+0.5) * pW;
+		final double py = (skeletonPoint[1]+0.5) * pH;
+		final double pz = (skeletonPoint[2]+0.5) * pD;
 
 		// Instantiate a small spherical ellipsoid
 		final double[][] orthogonalVectors = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
