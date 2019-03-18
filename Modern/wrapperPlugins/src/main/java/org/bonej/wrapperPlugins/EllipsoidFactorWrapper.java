@@ -797,7 +797,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
 								   final byte[][] pixels, final double pW, final double pH, final double pD, final int w, final int h,
 								   final int d) {
-		findContactPoints(ellipsoid, contactPoints, getGeneralizedSpiralSetOnSphere(nVectors), pixels, pW, pH, pD, w, h,
+		findContactPoints(ellipsoid, contactPoints, ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors), pixels, pW, pH, pD, w, h,
 				d);
 	}
 
@@ -867,17 +867,20 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 	}
 
-	private boolean isContained(final QuickEllipsoid ellipsoid, final byte[][] pixels, final double pW, final double pH,
+	private boolean isContained(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final double pW, final double pH,
 								final double pD, final int w, final int h, final int d) {
-		final double[][] points = ellipsoid.getSurfacePoints(getGeneralizedSpiralSetOnSphere(nVectors));
+		final double[][] points = ellipsoid.getSurfacePoints(ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors));
 		for (final double[] p : points) {
 			final int x = (int) Math.floor(p[0] / pW);
 			final int y = (int) Math.floor(p[1] / pH);
 			final int z = (int) Math.floor(p[2] / pD);
 			if (isOutOfBounds(x, y, z, w, h, d))
 				continue;
-			if (pixels[z][y * w + x] != -1)
+			if (pixels[z][y * w + x] != -1) {
+				contactPoints.clear();
+				contactPoints.addAll(Arrays.asList(points));
 				return false;
+			}
 		}
 		return true;
 	}
@@ -906,7 +909,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private boolean isInvalid(final QuickEllipsoid ellipsoid, final double pW, final double pH, final double pD, final int w,
 							  final int h, final int d) {
 
-		final double[][] surfacePoints = ellipsoid.getSurfacePoints(getGeneralizedSpiralSetOnSphere(nVectors));
+		final double[][] surfacePoints = ellipsoid.getSurfacePoints(ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors));
 		int outOfBoundsCount = 0;
 		final int half = nVectors / 2;
 		for (final double[] p : surfacePoints) {
@@ -957,18 +960,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final List<Double> volumeHistory = new ArrayList<>();
 		volumeHistory.add(ellipsoid.getVolume());
 
+		// instantiate the ArrayList
+		ArrayList<double[]> contactPoints = new ArrayList<>();
+
 		// dilate the sphere until it hits the background
-		while (isContained(ellipsoid, pixels, pW, pH, pD, w, h, d)) {
+		while (isContained(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d)) {
 			ellipsoid.dilate(vectorIncrement, vectorIncrement, vectorIncrement);
 		}
 
 		volumeHistory.add(ellipsoid.getVolume());
-
-		// instantiate the ArrayList
-		ArrayList<double[]> contactPoints = new ArrayList<>();
-
-		// get the points of contact
-		findContactPoints(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
 
 		// find the mean unit vector pointing to the points of contact from the
 		// centre

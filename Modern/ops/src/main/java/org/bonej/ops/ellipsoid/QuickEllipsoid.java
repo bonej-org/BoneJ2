@@ -1,8 +1,14 @@
 package org.bonej.ops.ellipsoid;
 
-import java.util.Arrays;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 
-import static java.util.stream.DoubleStream.of;
+import static java.util.stream.Collectors.toList;
+
+import java.util.Arrays;
+import java.util.Random;
+import java.util.stream.DoubleStream;
 
 /**
  * <p>
@@ -15,6 +21,8 @@ import static java.util.stream.DoubleStream.of;
  */
 public class QuickEllipsoid {
 
+	private RandomGenerator rng = new MersenneTwister();
+	private UnitSphereRandomVectorGenerator sphereRng = new UnitSphereRandomVectorGenerator(3,rng);
 	/**
 	 * Eigenvalue matrix. Size-based ordering is not performed. They are in the same
 	 * order as the eigenvectors.
@@ -311,6 +319,28 @@ public class QuickEllipsoid {
 			vectors[p] = new double[]{vx, vy, vz};
 		}
 		return vectors;
+	}
+
+	public double[][] getAxisAlignRandomlyDistributedSurfacePoints(int n) {
+		final double[] sortedRadii = getSortedRadii();
+		final double muMax = sortedRadii[1]* sortedRadii[2];
+		final double[][] surfacePoints = new double[n][3];
+		int surfacePointsFound = 0;
+		while (surfacePointsFound<n) {
+			final double[] v = sphereRng.nextVector();
+			final double mu = getMu(v);
+			if(rng.nextDouble()<=mu/muMax) {
+				surfacePoints[surfacePointsFound] = new double[]{v[0], v[1], v[2]};
+				surfacePointsFound++;
+			}
+		}
+		return surfacePoints;
+	}
+
+	private double getMu(double[] v) {
+		final DoubleStream terms = DoubleStream.of(ra * rc * v[1], ra * rb * v[2], rb * rc * v[0]);
+		final double sqSum = terms.map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
 	}
 
 	/**
