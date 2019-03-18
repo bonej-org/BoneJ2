@@ -906,10 +906,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         stack, or if the volume of the ellipsoid exceeds that of the image
 	 *         stack
 	 */
-	private boolean isInvalid(final QuickEllipsoid ellipsoid, final double pW, final double pH, final double pD, final int w,
+	private boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double []> surfacePoints, final double pW, final double pH, final double pD, final int w,
 							  final int h, final int d) {
-
-		final double[][] surfacePoints = ellipsoid.getSurfacePoints(ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors));
 		int outOfBoundsCount = 0;
 		final int half = nVectors / 2;
 		for (final double[] p : surfacePoints) {
@@ -1000,7 +998,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		while (contactPoints.size() < contactSensitivity) {
 			ellipsoid.dilate(0, vectorIncrement, vectorIncrement);
 			findContactPoints(ellipsoid, contactPoints, pixels, pW, pH, pD, w, h, d);
-			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
+			if (isInvalid(ellipsoid, contactPoints, pW, pH, pD, w, h, d)) {
 				logService.debug(
 						"Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying at initial oblation");
 				return null;
@@ -1032,7 +1030,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			double[] abc = threeWayShuffle();
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, pW, pH, pD, w, h, d);
 
-			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
+			if (isInvalid(ellipsoid, contactPoints, pW, pH, pD, w, h, d)) {
 				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
 						+ totalIterations + " iterations");
 				return null;
@@ -1057,7 +1055,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			abc = threeWayShuffle();
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, pW, pH, pD, w, h, d);
 
-			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
+			if (isInvalid(ellipsoid, contactPoints, pW, pH, pD, w, h, d)) {
 				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
 						+ totalIterations + " iterations");
 				return null;
@@ -1076,7 +1074,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			abc = threeWayShuffle();
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, pW, pH, pD, w, h, d);
 
-			if (isInvalid(ellipsoid, pW, pH, pD, w, h, d)) {
+			if (isInvalid(ellipsoid, contactPoints, pW, pH, pD, w, h, d)) {
 				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
 						+ totalIterations + " iterations");
 				return null;
