@@ -682,12 +682,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		stackVolume = inputImgPlus.dimension(0) * inputImgPlus.dimension(1) * inputImgPlus.dimension(2);
 
 		// noinspection unchecked
-		final List<Vector3dc> vector3dSkeletonPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class,
+		final List<Vector3d> skeletonPoints = (List<Vector3d>) ((List) opService.run(FindRidgePoints.class,
 				Common.toBitTypeImgPlus(opService, inputImgPlus))).get(0);
-		final List<int[]> listSkeletonPoints = vector3dSkeletonPoints.stream()
-				.map(v -> new int[]{(int) v.get(0), (int) v.get(1), (int) v.get(2)}).collect(toList());
-		final int[][] skeletonPoints = listSkeletonPoints.toArray(new int[vector3dSkeletonPoints.size()][]);
-		logService.info("Found " + skeletonPoints.length + " skeleton points");
+		logService.info("Found " + skeletonPoints.size() + " skeleton points");
 
 		long start = System.currentTimeMillis();
 		final QuickEllipsoid[] ellipsoids = findEllipsoids(inputImgPlus, skeletonPoints);
@@ -763,7 +760,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *            input skeleton points
 	 * @return array of fitted ellipsoids
 	 */
-	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, int[][] skeletonPoints) {
+	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> skeletonPoints) {
 		final int w = (int) imp.dimension(0);
 		final int h = (int) imp.dimension(1);
 		final int d = (int) imp.dimension(2);
@@ -783,15 +780,14 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			}
 		});
 
-		List<int[]> skeletonPointList = Arrays.asList(skeletonPoints);
 		if (skipRatio > 1) {
-			int limit = skeletonPoints.length / skipRatio + Math.min(skeletonPoints.length % skipRatio, 1);
-			skeletonPointList = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(skeletonPointList::get)
+			int limit = skeletonPoints.size() / skipRatio + Math.min(skeletonPoints.size() % skipRatio, 1);
+			skeletonPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(skeletonPoints::get)
 					.collect(toList());
 		}
 
 		statusService.showStatus("Optimising ellipsoids...");
-		return skeletonPointList.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp))
+		return skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp))
 				.sorted((a, b) -> Double.compare(b.getVolume(), a.getVolume()))
 				.toArray(QuickEllipsoid[]::new);
 	}
@@ -870,7 +866,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         vectors surrounding the seed point. If ellipsoid fitting fails,
 	 *         returns null
 	 */
-	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final int[] skeletonPoint) {
+	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final Vector3d skeletonPoint) {
 
 		final long start = System.currentTimeMillis();
 
@@ -879,9 +875,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int d = (int) imp.dimension(2);
 
 		// centre point of vector field
-		final double px = (skeletonPoint[0]+0.5);
-		final double py = (skeletonPoint[1]+0.5);
-		final double pz = (skeletonPoint[2]+0.5);
+		final double px = skeletonPoint.get(0);
+		final double py = skeletonPoint.get(1);
+		final double pz = skeletonPoint.get(2);
 
 		// Instantiate a small spherical ellipsoid
 		final double[][] orthogonalVectors = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
