@@ -788,14 +788,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			int limit = skeletonPoints.length / skipRatio + Math.min(skeletonPoints.length % skipRatio, 1);
 			skeletonPointList = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(skeletonPointList::get)
 					.collect(toList());
-			skeletonPoints = skeletonPointList.toArray(new int[limit][]);
 		}
 
-		final List<QuickEllipsoid> ellipsoidList = new ArrayList<>(skeletonPoints.length);
 		statusService.showStatus("Optimising ellipsoids...");
-		skeletonPointList.parallelStream().forEach(sp -> ellipsoidList.add(optimiseEllipsoid(imp, pixels, sp)));
-		return ellipsoidList.stream().filter(Objects::nonNull)
-				.sorted((a, b) -> Double.compare(b.getVolume(), a.getVolume())).toArray(QuickEllipsoid[]::new);
+		return skeletonPointList.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp))
+				.sorted((a, b) -> Double.compare(b.getVolume(), a.getVolume()))
+				.toArray(QuickEllipsoid[]::new);
 	}
 
 	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final double a,
