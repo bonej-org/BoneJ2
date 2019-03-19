@@ -30,15 +30,7 @@ import java.util.Random;
 public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends AbstractUnaryFunctionOp<RandomAccessibleInterval<BitType>,List<Vector3dc>> {
 
     @Parameter(persist = false, required = false)
-    private long approximateMaximumNumberOfSeeds = 20000;
-
-    @Parameter(persist = false, required = false)
     private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.6);
-
-    @Parameter(label = "Seed point image", type = ItemIO.OUTPUT)
-    private ImgPlus<UnsignedByteType> seedPointsImage;
-
-    private Random rng = new Random();
 
     @Override
     public List<Vector3dc> calculate(RandomAccessibleInterval<BitType> bitImage) {
@@ -68,10 +60,6 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
             seed.sub(0.5, 0.5, 0.5);//add 0.5 to centre of pixel, and subtract 1.0 because of ridge calculated on 1-expanded image!
             seeds.add(seed);
         }
-        if (seeds.size() > approximateMaximumNumberOfSeeds) {
-            reduceSeedPoints(seeds);
-        }
-        createSeedPointImage(ridge, seeds);
         return seeds;
     }
 
@@ -106,27 +94,6 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
             }
         }
         return ridge;
-    }
-
-    private void createSeedPointImage(final Img<R> seedPointImage,
-                                      final List<Vector3dc> seedPoints)
-    {
-        seedPointImage.cursor().forEachRemaining( c -> c.setZero());
-        RandomAccess<R> randomAccess = seedPointImage.randomAccess();
-        seedPoints.forEach(seed ->
-                {
-                    long[] seedPixel = {(long) seed.get(0), (long) seed.get(1), (long) seed.get(2)};
-                    randomAccess.setPosition(seedPixel);
-                    randomAccess.get().setReal(255);
-                }
-        );
-        seedPointsImage = new ImgPlus<>(ops().convert().uint8(seedPointImage), "Seeding Points");
-    }
-
-    private void reduceSeedPoints(final Collection<Vector3dc> seeds) {
-        final double probabilityOfAcceptingSeed =
-                ((double) approximateMaximumNumberOfSeeds / seeds.size());
-        seeds.removeIf(i -> rng.nextDouble() > probabilityOfAcceptingSeed);
     }
 
     private static boolean outOfBounds(final Dimensions dimensions, final long[] currentPixelPosition) {

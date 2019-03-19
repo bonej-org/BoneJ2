@@ -67,10 +67,9 @@ public class FindRidgePointsTest {
         final Vector3dc expectedSingleRidgePoint = new Vector3d(50.5, 50.5, 50.5);
 
         //EXECUTE
-        final List<Object> outputs = (List) ops.run(FindRidgePoints.class, new ImgPlus<>(sphereImage,
+        final List<Vector3dc> ridgePointList = (List) ops.run(FindRidgePoints.class, new ImgPlus<>(sphereImage,
                 "Sphere test image", new AxisType[] { Axes.X, Axes.Y, Axes.Z },
                 new double[] { 1.0, 1.0, 1.0 }, new String[] { "", "", "" }));
-        final List<Vector3dc> ridgePointList = (List<Vector3dc>) outputs.get(0);
 
         //VERIFY
         assertEquals(1, ridgePointList.size());

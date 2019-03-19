@@ -50,6 +50,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
+import org.scijava.thread.DefaultThreadService;
 import org.scijava.ui.UIService;
 
 import net.imagej.ImgPlus;
@@ -173,7 +174,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String note = "Ellipsoid Factor is beta software.\n" + "Please report your experiences to the user group:\n"
 			+ "http://forum.image.sc/tags/bonej";
-
 
 	/**
 	 * Calculate the torque of unit normals acting at the contact points
@@ -329,9 +329,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return new double[]{x, y, z};
 	}
 
-	static void findContactPointsForGivenDirections(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
-													final double[][] unitVectors, final byte[][] pixels,
-													final int w, final int h, final int d) {
+	static void findContactPointsForGivenDirections(final QuickEllipsoid ellipsoid,
+			final ArrayList<double[]> contactPoints, final double[][] unitVectors, final byte[][] pixels, final int w,
+			final int h, final int d) {
 		contactPoints.clear();
 		final double[][] points = ellipsoid.getSurfacePoints(unitVectors);
 		for (final double[] p : points) {
@@ -527,7 +527,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 	}
 
-	private void createEFImage(final Collection<QuickEllipsoid> ellipsoids, final IterableInterval<IntType> ellipsoidIDs) {
+	private void createEFImage(final Collection<QuickEllipsoid> ellipsoids,
+			final IterableInterval<IntType> ellipsoidIDs) {
 		final Img<FloatType> ellipsoidFactorImage = createNaNCopy();
 		final double[] ellipsoidFactors = ellipsoids.parallelStream()
 				.mapToDouble(EllipsoidFactorWrapper::computeEllipsoidFactor).toArray();
@@ -609,7 +610,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		eIdImage.setChannelMinimum(0, -1.0f);
 	}
 
-	private void createVolumeImage(final List<QuickEllipsoid> ellipsoids, final IterableInterval<IntType> ellipsoidIDs) {
+	private void createVolumeImage(final List<QuickEllipsoid> ellipsoids,
+			final IterableInterval<IntType> ellipsoidIDs) {
 		final Img<FloatType> volumeImage = createNaNCopy();
 		final double[] volumes = ellipsoids.parallelStream().mapToDouble(QuickEllipsoid::getVolume).toArray();
 		mapValuesToImage(volumes, ellipsoidIDs, volumeImage);
@@ -637,8 +639,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		zRange.parallel().forEach(z -> {
 			// multiply by image unit? make more intelligent bounding box?
 			final List<QuickEllipsoid> localEllipsoids = ellipsoids.stream()
-					.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2])
-					.collect(toList());
+					.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
 			final long[] mins = {0, 0, z};
 			final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
 			final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs).localizingCursor();
@@ -648,7 +649,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private void colourSlice(final RandomAccessible<IntType> idImage, final Cursor<BitType> mask,
-							 final Collection<QuickEllipsoid> localEllipsoids, final Map<QuickEllipsoid, Integer> iDs) {
+			final Collection<QuickEllipsoid> localEllipsoids, final Map<QuickEllipsoid, Integer> iDs) {
 		while (mask.hasNext()) {
 			mask.fwd();
 			if (!mask.get().get()) {
@@ -666,8 +667,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			final Map<QuickEllipsoid, Integer> iDs) {
 		// point.add(0.5, 0.5, 0.5);//this need to be scaled before
 		final Optional<QuickEllipsoid> candidate = localEllipsoids.stream()
-				.filter(e -> e.contains(point.x(),point.y(), point.z()))
-				.findFirst();
+				.filter(e -> e.contains(point.x(), point.y(), point.z())).findFirst();
 		if (!candidate.isPresent()) {
 			return;
 		}
@@ -682,12 +682,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		stackVolume = inputImgPlus.dimension(0) * inputImgPlus.dimension(1) * inputImgPlus.dimension(2);
 
 		// noinspection unchecked
-		final List<Vector3dc> vector3dSkeletonPoints = (List<Vector3dc>) ((List) opService.run(FindRidgePoints.class,
-				Common.toBitTypeImgPlus(opService, inputImgPlus))).get(0);
-		final List<int[]> listSkeletonPoints = vector3dSkeletonPoints.stream()
-				.map(v -> new int[]{(int) v.get(0), (int) v.get(1), (int) v.get(2)}).collect(toList());
-		final int[][] skeletonPoints = listSkeletonPoints.toArray(new int[vector3dSkeletonPoints.size()][]);
-		logService.info("Found " + skeletonPoints.length + " skeleton points");
+		final List<Vector3d> skeletonPoints = (List<Vector3d>) ((List) opService.run(FindRidgePoints.class,
+				Common.toBitTypeImgPlus(opService, inputImgPlus)));
+		logService.info("Found " + skeletonPoints.size() + " skeleton points");
 
 		long start = System.currentTimeMillis();
 		final QuickEllipsoid[] ellipsoids = findEllipsoids(inputImgPlus, skeletonPoints);
@@ -729,7 +726,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private void bump(final QuickEllipsoid ellipsoid, final Collection<double[]> contactPoints, final double px,
-					  final double py, final double pz) {
+			final double py, final double pz) {
 
 		final double displacement = vectorIncrement / 2;
 
@@ -746,10 +743,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
-								   final byte[][] pixels, final int w, final int h,
-								   final int d) {
-		findContactPointsForGivenDirections(ellipsoid, contactPoints, ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors), pixels, w, h,
-				d);
+			final byte[][] pixels, final int w, final int h, final int d) {
+		findContactPointsForGivenDirections(ellipsoid, contactPoints,
+				ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors), pixels, w, h, d);
 	}
 
 	/**
@@ -763,7 +759,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *            input skeleton points
 	 * @return array of fitted ellipsoids
 	 */
-	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, int[][] skeletonPoints) {
+	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> skeletonPoints) {
 		final int w = (int) imp.dimension(0);
 		final int h = (int) imp.dimension(1);
 		final int d = (int) imp.dimension(2);
@@ -783,23 +779,20 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			}
 		});
 
-		List<int[]> skeletonPointList = Arrays.asList(skeletonPoints);
 		if (skipRatio > 1) {
-			int limit = skeletonPoints.length / skipRatio + Math.min(skeletonPoints.length % skipRatio, 1);
-			skeletonPointList = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(skeletonPointList::get)
+			int limit = skeletonPoints.size() / skipRatio + Math.min(skeletonPoints.size() % skipRatio, 1);
+			skeletonPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(skeletonPoints::get)
 					.collect(toList());
-			skeletonPoints = skeletonPointList.toArray(new int[limit][]);
 		}
 
-		final List<QuickEllipsoid> ellipsoidList = new ArrayList<>(skeletonPoints.length);
 		statusService.showStatus("Optimising ellipsoids...");
-		skeletonPointList.parallelStream().forEach(sp -> ellipsoidList.add(optimiseEllipsoid(imp, pixels, sp)));
-		return ellipsoidList.stream().filter(Objects::nonNull)
-				.sorted((a, b) -> Double.compare(b.getVolume(), a.getVolume())).toArray(QuickEllipsoid[]::new);
+		final QuickEllipsoid[] quickEllipsoids = skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp)).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+		Arrays.sort(quickEllipsoids,(a, b) -> Double.compare(b.getVolume(), a.getVolume()));
+		return quickEllipsoids;
 	}
 
 	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final double a,
-							  final double b, final double c, final byte[][] pixels, final int w, final int h, final int d) {
+			final double b, final double c, final byte[][] pixels, final int w, final int h, final int d) {
 
 		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
 
@@ -815,8 +808,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 	}
 
-	private boolean isContained(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w, final int h, final int d) {
-		final double[][] points = ellipsoid.getSurfacePoints(ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors));
+	private boolean isContained(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints,
+			final byte[][] pixels, final int w, final int h, final int d) {
+		final double[][] points = ellipsoid
+				.getSurfacePoints(ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(nVectors));
 		for (final double[] p : points) {
 			final int x = (int) Math.floor(p[0]);
 			final int y = (int) Math.floor(p[1]);
@@ -847,7 +842,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         stack, or if the volume of the ellipsoid exceeds that of the image
 	 *         stack
 	 */
-	private boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double []> surfacePoints, final int w, final int h, final int d) {
+	private boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double[]> surfacePoints, final int w,
+			final int h, final int d) {
 		int outOfBoundsCount = 0;
 		final int half = nVectors / 2;
 		for (final double[] p : surfacePoints) {
@@ -872,7 +868,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         vectors surrounding the seed point. If ellipsoid fitting fails,
 	 *         returns null
 	 */
-	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final int[] skeletonPoint) {
+	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final Vector3d skeletonPoint) {
 
 		final long start = System.currentTimeMillis();
 
@@ -881,9 +877,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int d = (int) imp.dimension(2);
 
 		// centre point of vector field
-		final double px = (skeletonPoint[0]+0.5);
-		final double py = (skeletonPoint[1]+0.5);
-		final double pz = (skeletonPoint[2]+0.5);
+		final double px = skeletonPoint.get(0);
+		final double py = skeletonPoint.get(1);
+		final double pz = skeletonPoint.get(2);
 
 		// Instantiate a small spherical ellipsoid
 		final double[][] orthogonalVectors = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
@@ -1008,7 +1004,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 			// dilate an axis
 			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels,  w, h, d);
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
 
 			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
 				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
@@ -1055,7 +1051,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private void shrinkToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels,
-							  final int w, final int h, final int d) {
+			final int w, final int h, final int d) {
 
 		// get the contact points
 		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
@@ -1087,7 +1083,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @param d
 	 *            the image dimension in z
 	 */
-	private void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w, final int h, final int d) {
+	private void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w,
+			final int h, final int d) {
 
 		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
 		if (!contactPoints.isEmpty()) {
@@ -1097,4 +1094,3 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 }
-
