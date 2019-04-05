@@ -50,6 +50,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
+import org.scijava.thread.DefaultThreadService;
 import org.scijava.ui.UIService;
 
 import net.imagej.ImgPlus;
@@ -682,7 +683,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		// noinspection unchecked
 		final List<Vector3d> skeletonPoints = (List<Vector3d>) ((List) opService.run(FindRidgePoints.class,
-				Common.toBitTypeImgPlus(opService, inputImgPlus))).get(0);
+				Common.toBitTypeImgPlus(opService, inputImgPlus)));
 		logService.info("Found " + skeletonPoints.size() + " skeleton points");
 
 		long start = System.currentTimeMillis();
@@ -785,8 +786,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 
 		statusService.showStatus("Optimising ellipsoids...");
-		return skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp))
-				.sorted((a, b) -> Double.compare(b.getVolume(), a.getVolume())).toArray(QuickEllipsoid[]::new);
+		final QuickEllipsoid[] quickEllipsoids = skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp)).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+		Arrays.sort(quickEllipsoids,(a, b) -> Double.compare(b.getVolume(), a.getVolume()));
+		return quickEllipsoids;
 	}
 
 	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final double a,
