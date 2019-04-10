@@ -964,7 +964,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param imp
 	 * @param ellipsoids
 	 * @param title
-	 * @return
+	 * @return ImagePlus containing particles drawn as best-fit solid ellipsoids
 	 */
 	private ImagePlus displayParticleEllipsoids(final ImagePlus imp, final Object[][] ellipsoids,
 		final String title) {
@@ -1256,9 +1256,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 *
 	 * @param neighborhood a neighbourhood in the image.
 	 * @param image 3D image (int[][])
-	 * @param x0 x- coordinate
-	 * @param y0 y- coordinate
-	 * @param z0 z- coordinate (in image stacks the indexes start at 1)
+	 * @param x x- coordinate
+	 * @param y y- coordinate
+	 * @param z z- coordinate (in image stacks the indexes start at 1)
 	 * @param w width of the image.
 	 * @param h height of the image.
 	 * @param d depth of the image.
