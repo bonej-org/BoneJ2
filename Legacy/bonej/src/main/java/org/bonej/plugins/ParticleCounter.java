@@ -1125,6 +1125,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 	/**
 	 * Get neighborhood of a pixel in a 3D image (0 border conditions)
+	 * Longhand, hard-coded for speed
 	 *
 	 * @param neighborhood a neighbourhood in the image.
 	 * @param image 3D image (int[][])
@@ -1136,21 +1137,49 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	 * @param d depth of the image.
 	 */
 	private static void get26Neighborhood(final int[] neighborhood,
-		final int[][] image, final int x0, final int y0, final int z0, final int w,
+		final int[][] image, final int x, final int y, final int z, final int w,
 		final int h, final int d)
 	{
-		int i = 0;
-		for (int z = z0 - 1; z < z0 + 1; z++) {
-			for (int y = y0 - 1; y < y0 + 1; y++) {
-				for (int x = x0 - 1; x < x0 + 1; x++) {
-					if (x == x0 && y == y0 && z == z0) {
-						continue;
-					}
-					neighborhood[i] = getPixel(image, x, y, z, w, h, d);
-					i++;
-				}
-			}
-		}
+		final int xm1 = x - 1;
+		final int xp1 = x + 1;
+		final int ym1 = y - 1;
+		final int yp1 = y + 1;
+		final int zm1 = z - 1;
+		final int zp1 = z + 1;
+		neighborhood[0] = getPixel(image, xm1, ym1, zm1, w, h, d);
+		neighborhood[1] = getPixel(image, x, ym1, zm1, w, h, d);
+		neighborhood[2] = getPixel(image, xp1, ym1, zm1, w, h, d);
+		
+		neighborhood[3] = getPixel(image, xm1, y, zm1, w, h, d);
+		neighborhood[4] = getPixel(image, x, y, zm1, w, h, d);
+		neighborhood[5] = getPixel(image, xp1, y, zm1, w, h, d);
+		
+		neighborhood[6] = getPixel(image, xm1, yp1, zm1, w, h, d);
+		neighborhood[7] = getPixel(image, x, yp1, zm1, w, h, d);
+		neighborhood[8] = getPixel(image, xp1, yp1, zm1, w, h, d);
+		
+		neighborhood[9] = getPixel(image, xm1, ym1, z, w, h, d);
+		neighborhood[10] = getPixel(image, x, ym1, z, w, h, d);
+		neighborhood[11] = getPixel(image, xp1, ym1, z, w, h, d);
+		
+		neighborhood[12] = getPixel(image, xm1, y, z, w, h, d);
+		neighborhood[13] = getPixel(image, xp1, y, z, w, h, d);
+		
+		neighborhood[14] = getPixel(image, xm1, yp1, z, w, h, d);
+		neighborhood[15] = getPixel(image, x, yp1, z, w, h, d);
+		neighborhood[16] = getPixel(image, xp1, yp1, z, w, h, d);
+		
+		neighborhood[17] = getPixel(image, xm1, ym1, zp1, w, h, d);
+		neighborhood[18] = getPixel(image, x, ym1, zp1, w, h, d);
+		neighborhood[19] = getPixel(image, xp1, ym1, zp1, w, h, d);
+		
+		neighborhood[20] = getPixel(image, xm1, y, zp1, w, h, d);
+		neighborhood[21] = getPixel(image, x, y, zp1, w, h, d);
+		neighborhood[22] = getPixel(image, xp1, y, zp1, w, h, d);
+		
+		neighborhood[23] = getPixel(image, xm1, yp1, zp1, w, h, d);
+		neighborhood[24] = getPixel(image, x, yp1, zp1, w, h, d);
+		neighborhood[25] = getPixel(image, xp1, yp1, zp1, w, h, d);
 	}
 
 	private static List<int[]> get26NeighbourhoodCoordinates(final int[] voxel,
