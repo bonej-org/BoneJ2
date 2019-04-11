@@ -1,11 +1,14 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
+import org.joml.Matrix3d;
+import org.joml.Vector3d;
 import org.junit.Test;
 
 public class EllipsoidFactorWrapperTest {
@@ -85,6 +88,67 @@ public class EllipsoidFactorWrapperTest {
         assertEquals(0,torque[0],1e-12);
         assertEquals(0,torque[1],1e-12);
         assertEquals(0,torque[2],1e-12);
+    }
+
+    @Test
+    public void testWiggleSurfacePoint() {
+        QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+
+        EllipsoidFactorWrapper.wiggle(e,new double[]{1,0,0});
+
+        assertTrue("Wiggle does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
+    }
+
+    @Test
+    public void testBumpSurfacePoint() {
+        QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+
+        final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
+        final ArrayList<double[]> contactPoints = new ArrayList<>();
+        contactPoints.add(new double[]{0,0,3});
+        wrapper.bump(e, contactPoints, e.getCentre()[0], e.getCentre()[1], e.getCentre()[2], new double[]{1,0,0});
+
+        assertTrue("Bump does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
+    }
+
+    @Test
+    public void testTurnSurfacePoint() {
+        QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+
+        final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
+        final ArrayList<double[]> contactPoints = new ArrayList<>();
+        contactPoints.add(new double[]{0,0,3});
+        wrapper.turn(e,contactPoints,getCubeImage(),6,6,6, new double[]{1,0,0});
+
+        assertTrue("Bump does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
+    }
+
+    private boolean onSurface(QuickEllipsoid e, double[] point) {
+
+        final double[][] ev = e.getRotation();
+        double[] c = e.getCentre();
+        final double[] r = e.getRadii();
+
+        final Matrix3d Q = new Matrix3d(
+                ev[0][0],ev[0][1],ev[0][2],
+                ev[1][0],ev[1][1],ev[1][2],
+                ev[2][0],ev[2][1],ev[2][2]);
+        final Matrix3d L = new Matrix3d(
+                1.0/r[0]/r[0],0,0,
+                0,1.0/r[1]/r[1],0,
+                0,0,1.0/r[2]/r[2]);
+        Matrix3d A = new Matrix3d();
+        L.mul(Q,A);
+        Matrix3d QT = new Matrix3d(Q);
+        QT.transpose();
+        QT.mul(A,A);
+
+        Vector3d APMinusC = new Vector3d();
+        Vector3d PMinusC = new Vector3d(point[0]-c[0],point[1]-c[1],point[2]-c[2]);
+        A.transform(PMinusC, APMinusC);
+        final double oneOnSurface = PMinusC.dot(APMinusC);
+
+        return Math.abs(oneOnSurface-1.0)<1.e-12;
     }
 
     private byte[][] getCubeImage() {
