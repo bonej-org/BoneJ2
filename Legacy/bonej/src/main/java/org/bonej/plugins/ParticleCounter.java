@@ -1505,7 +1505,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[23] = getPixel(image, xm1, yp1, zp1, w, h, d);
 		neighborhood[24] = getPixel(image, x, yp1, zp1, w, h, d);
 		neighborhood[25] = getPixel(image, xp1, yp1, zp1, w, h, d);
-	}
+  }
 
 	private static void get6Neighborhood(final int[] neighborhood,
 		final int[][] image, final int x, final int y, final int z, final int w,
