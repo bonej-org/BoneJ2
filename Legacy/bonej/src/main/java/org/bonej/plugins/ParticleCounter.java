@@ -36,10 +36,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.bonej.geometry.Ellipsoid;
 import org.bonej.geometry.FitEllipsoid;
 import org.bonej.geometry.Vectors;
@@ -517,39 +513,155 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			final int sR1 = scanRanges[1][c];
 			final int sR2 = scanRanges[2][c];
 			final int sR3 = scanRanges[3][c];
-			for (int z = sR0; z < sR1; z++) {
-				for (int y = 0; y < h; y++) {
-					final int rowIndex = y * w;
-					for (int x = 0; x < w; x++) {
-						final int arrayIndex = rowIndex + x;
-						final List<int[]> coordinates;
-						if (workArray[z][arrayIndex] == BACK) {
-							coordinates = get26NeighbourhoodCoordinates(x, y, z, w, h, d);
+			if (phase == FORE) {
+				for (int z = sR0; z < sR1; z++) {
+					for (int y = 0; y < h; y++) {
+						final int rowIndex = y * w;
+						for (int x = 0; x < w; x++) {
+							final int arrayIndex = rowIndex + x;
+							if (workArray[z][arrayIndex] == FORE &&
+								particleLabels[z][arrayIndex] > 1)
+							{
+								int minTag = particleLabels[z][arrayIndex];
+								// Find the minimum particleLabel in the
+								// neighbours' pixels
+								for (int vZ = z - 1; vZ <= z + 1; vZ++) {
+									for (int vY = y - 1; vY <= y + 1; vY++) {
+										for (int vX = x - 1; vX <= x + 1; vX++) {
+											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
+												final int offset = getOffset(vX, vY, w);
+												if (workArray[vZ][offset] == FORE) {
+													final int tagv = particleLabels[vZ][offset];
+													if (tagv != 0 && tagv < minTag) {
+														minTag = tagv;
+													}
+												}
+											}
+										}
+									}
+								}
+								// Replacing particleLabel by the minimum
+								// particleLabel found
+								for (int vZ = z - 1; vZ <= z + 1; vZ++) {
+									for (int vY = y - 1; vY <= y + 1; vY++) {
+										for (int vX = x - 1; vX <= x + 1; vX++) {
+											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
+												final int offset = getOffset(vX, vY, w);
+												if (workArray[vZ][offset] == FORE) {
+													final int tagv = particleLabels[vZ][offset];
+													if (tagv != 0 && tagv != minTag) {
+														replaceLabel(particleLabels, tagv, minTag, sR2,
+															sR3);
+													}
+												}
+											}
+										}
+									}
+								}
+							}
 						}
-						else if (workArray[z][arrayIndex] == FORE &&
-							particleLabels[z][arrayIndex] > 1)
-						{
-							coordinates = get6NeighbourhoodCoordinates(x, y, z, w, h, d);
-						}
-						else {
-							continue;
-						}
-						replaceLabelsWithMinimum(coordinates, workArray, particleLabels, w,
-							phase, sR2, sR3);
 					}
-				}
-				if (phase == FORE) {
 					IJ.showStatus("Connecting foreground structures" + chunkString);
 					IJ.showProgress(z, d);
 				}
-				else {
+			}
+			else if (phase == BACK) {
+				for (int z = sR0; z < sR1; z++) {
+					for (int y = 0; y < h; y++) {
+						final int rowIndex = y * w;
+						for (int x = 0; x < w; x++) {
+							final int arrayIndex = rowIndex + x;
+							if (workArray[z][arrayIndex] == BACK) {
+								int minTag = particleLabels[z][arrayIndex];
+								// Find the minimum particleLabel in the
+								// neighbours' pixels
+								int nX = x;
+								int nY = y;
+								int nZ = z;
+								for (int n = 0; n < 7; n++) {
+									switch (n) {
+										case 0:
+											break;
+										case 1:
+											nX = x - 1;
+											break;
+										case 2:
+											nX = x + 1;
+											break;
+										case 3:
+											nY = y - 1;
+											nX = x;
+											break;
+										case 4:
+											nY = y + 1;
+											break;
+										case 5:
+											nZ = z - 1;
+											nY = y;
+											break;
+										case 6:
+											nZ = z + 1;
+											break;
+									}
+									if (withinBounds(nX, nY, nZ, w, h, sR2, sR3)) {
+										final int offset = getOffset(nX, nY, w);
+										if (workArray[nZ][offset] == BACK) {
+											final int tagv = particleLabels[nZ][offset];
+											if (tagv != 0 && tagv < minTag) {
+												minTag = tagv;
+											}
+										}
+									}
+								}
+								// Replacing particleLabel by the minimum
+								// particleLabel found
+								for (int n = 0; n < 7; n++) {
+									switch (n) {
+										case 0:
+											nZ = z;
+											break; // last switch block left nZ = z
+										// + 1;
+										case 1:
+											nX = x - 1;
+											break;
+										case 2:
+											nX = x + 1;
+											break;
+										case 3:
+											nY = y - 1;
+											nX = x;
+											break;
+										case 4:
+											nY = y + 1;
+											break;
+										case 5:
+											nZ = z - 1;
+											nY = y;
+											break;
+										case 6:
+											nZ = z + 1;
+											break;
+									}
+									if (withinBounds(nX, nY, nZ, w, h, sR2, sR3)) {
+										final int offset = getOffset(nX, nY, w);
+										if (workArray[nZ][offset] == BACK) {
+											final int tagv = particleLabels[nZ][offset];
+											if (tagv != 0 && tagv != minTag) {
+												replaceLabel(particleLabels, tagv, minTag, sR2, sR3);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
 					IJ.showStatus("Connecting background structures" + chunkString);
 					IJ.showProgress(z, d + 1);
 				}
 			}
 		}
 	}
-
+	
 	/**
 	 * Find duplicated values and update the LUT
 	 *
@@ -1181,23 +1293,23 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return changed;
 	}
 
-	private static int findMinimumLabel(final Iterable<int[]> coordinates,
-		final byte[][] workArray, final int[][] particleLabels, final int w,
-		final int phase, final int minStart)
-	{
-		int minLabel = minStart;
-		for (final int[] coordinate : coordinates) {
-			final int z = coordinate[2];
-			final int index = getOffset(coordinate[0], coordinate[1], w);
-			if (workArray[z][index] == phase) {
-				final int label = particleLabels[z][index];
-				if (label != 0 && label < minLabel) {
-					minLabel = label;
-				}
-			}
-		}
-		return minLabel;
-	}
+//	private static int findMinimumLabel(final Iterable<int[]> coordinates,
+//		final byte[][] workArray, final int[][] particleLabels, final int w,
+//		final int phase, final int minStart)
+//	{
+//		int minLabel = minStart;
+//		for (final int[] coordinate : coordinates) {
+//			final int z = coordinate[2];
+//			final int index = getOffset(coordinate[0], coordinate[1], w);
+//			if (workArray[z][index] == phase) {
+//				final int label = particleLabels[z][index];
+//				if (label != 0 && label < minLabel) {
+//					minLabel = label;
+//				}
+//			}
+//		}
+//		return minLabel;
+//	}
 
 	/**
 	 * Go through all pixels and assign initial particle label
@@ -1214,39 +1326,111 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
-		final int[] bounds = { w, h, d };
 		final int wh = w * h;
 		IJ.showStatus("Finding " + sPhase + " structures");
 		final int[][] particleLabels = new int[d][wh];
 		int ID = 1;
-		final BiFunction<int[], int[], List<int[]>> neighbourhoodFinder;
-		if (phase == BACK) {
-			neighbourhoodFinder = ParticleCounter::get6NeighbourhoodCoordinates;
-		}
-		else {
-			neighbourhoodFinder = ParticleCounter::get26NeighbourhoodCoordinates;
-		}
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int rowIndex = y * w;
-				for (int x = 0; x < w; x++) {
-					final int arrayIndex = rowIndex + x;
-					if (workArray[z][arrayIndex] != phase) {
-						continue;
-					}
-					particleLabels[z][arrayIndex] = ID;
-					final List<int[]> coordinates = neighbourhoodFinder.apply(new int[] {
-						x, y, z }, bounds);
-					coordinates.add(new int[] { x, y, z });
-					final int minTag = findMinimumLabel(coordinates, workArray,
-						particleLabels, w, phase, ID);
-					particleLabels[z][arrayIndex] = minTag;
-					if (minTag == ID) {
-						ID++;
+
+		if (phase == FORE) {
+			for (int z = 0; z < d; z++) {
+				for (int y = 0; y < h; y++) {
+					final int rowIndex = y * w;
+					for (int x = 0; x < w; x++) {
+						final int arrayIndex = rowIndex + x;
+						if (workArray[z][arrayIndex] == FORE) {
+							particleLabels[z][arrayIndex] = ID;
+							int minTag = ID;
+							// Find the minimum particleLabel in the
+							// neighbouring pixels
+							for (int vZ = z - 1; vZ <= z + 1; vZ++) {
+								for (int vY = y - 1; vY <= y + 1; vY++) {
+									for (int vX = x - 1; vX <= x + 1; vX++) {
+										if (withinBounds(vX, vY, vZ, w, h, 0, d)) {
+											final int offset = getOffset(vX, vY, w);
+											if (workArray[vZ][offset] == FORE) {
+												final int tagv = particleLabels[vZ][offset];
+												if (tagv != 0 && tagv < minTag) {
+													minTag = tagv;
+												}
+											}
+										}
+									}
+								}
+							}
+							// assign the smallest particle label from the
+							// neighbours to the pixel
+							particleLabels[z][arrayIndex] = minTag;
+							// increment the particle label
+							if (minTag == ID) {
+								ID++;
+							}
+						}
 					}
 				}
+				IJ.showProgress(z, d);
 			}
-			IJ.showProgress(z, d);
+		}
+		else if (phase == BACK) {
+			for (int z = 0; z < d; z++) {
+				for (int y = 0; y < h; y++) {
+					final int rowIndex = y * w;
+					for (int x = 0; x < w; x++) {
+						final int arrayIndex = rowIndex + x;
+						if (workArray[z][arrayIndex] == BACK) {
+							particleLabels[z][arrayIndex] = ID;
+							int minTag = ID;
+							// Find the minimum particleLabel in the
+							// neighbouring pixels
+							int nX = x;
+							int nY = y;
+							int nZ = z;
+							for (int n = 0; n < 7; n++) {
+								switch (n) {
+									case 0:
+										break;
+									case 1:
+										nX = x - 1;
+										break;
+									case 2:
+										nX = x + 1;
+										break;
+									case 3:
+										nY = y - 1;
+										nX = x;
+										break;
+									case 4:
+										nY = y + 1;
+										break;
+									case 5:
+										nZ = z - 1;
+										nY = y;
+										break;
+									case 6:
+										nZ = z + 1;
+										break;
+								}
+								if (withinBounds(nX, nY, nZ, w, h, 0, d)) {
+									final int offset = getOffset(nX, nY, w);
+									if (workArray[nZ][offset] == BACK) {
+										final int tagv = particleLabels[nZ][offset];
+										if (tagv != 0 && tagv < minTag) {
+											minTag = tagv;
+										}
+									}
+								}
+							}
+							// assign the smallest particle label from the
+							// neighbours to the pixel
+							particleLabels[z][arrayIndex] = minTag;
+							// increment the particle label
+							if (minTag == ID) {
+								ID++;
+							}
+						}
+					}
+				}
+				IJ.showProgress(z, d);
+			}
 		}
 		return particleLabels;
 	}
@@ -1310,32 +1494,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[25] = getPixel(image, xp1, yp1, zp1, w, h, d);
 	}
 
-	private static List<int[]> get26NeighbourhoodCoordinates(final int[] voxel,
-		final int[] bounds)
-	{
-		return get26NeighbourhoodCoordinates(voxel[0], voxel[1], voxel[2],
-			bounds[0], bounds[1], bounds[2]);
-	}
-
-	private static List<int[]> get26NeighbourhoodCoordinates(final int x0,
-		final int y0, final int z0, final int w, final int h, final int d)
-	{
-		final List<int[]> coordinates = new ArrayList<>();
-		for (int z = z0 - 1; z <= z0 + 1; z++) {
-			for (int y = y0 - 1; y <= y0 + 1; y++) {
-				for (int x = x0 - 1; x <= x0 + 1; x++) {
-					if (z == z0 && y == y0 && x == x0) {
-						continue;
-					}
-					if (withinBounds(x, y, z, w, h, d)) {
-						coordinates.add(new int[] { x, y, z });
-					}
-				}
-			}
-		}
-		return coordinates;
-	}
-
 	private static void get6Neighborhood(final int[] neighborhood,
 		final int[][] image, final int x, final int y, final int z, final int w,
 		final int h, final int d)
@@ -1346,23 +1504,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		neighborhood[3] = getPixel(image, x + 1, y, z, w, h, d);
 		neighborhood[4] = getPixel(image, x, y + 1, z, w, h, d);
 		neighborhood[5] = getPixel(image, x, y, z + 1, w, h, d);
-	}
-
-	private static List<int[]> get6NeighbourhoodCoordinates(final int[] voxel,
-		final int[] bounds)
-	{
-		return get26NeighbourhoodCoordinates(voxel[0], voxel[1], voxel[2],
-				bounds[0], bounds[1], bounds[2]);
-	}
-
-	private static List<int[]> get6NeighbourhoodCoordinates(final int x0,
-		final int y0, final int z0, final int w, final int h, final int d)
-	{
-		return Stream.of(new int[] { x0 - 1, y0, z0 }, new int[] { x0 + 1, y0, z0 },
-			new int[] { x0, y0 - 1, z0 }, new int[] { x0, y0 + 1, z0 }, new int[] {
-				x0, y0, z0 - 1 }, new int[] { x0, y0, z0 + 1 }).filter(
-					a -> withinBounds(a[0], a[1], a[2], w, h, d)).collect(Collectors
-						.toList());
 	}
 
 	/**
@@ -2407,26 +2548,26 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-	private static void replaceLabelsWithMinimum(
-		final Iterable<int[]> coordinates, final byte[][] workArray,
-		final int[][] particleLabels, final int w, final int phase, final int minZ,
-		final int maxZ)
-	{
-		final int minimumLabel = findMinimumLabel(coordinates, workArray,
-			particleLabels, w, phase, 0);
-		for (final int[] coordinate : coordinates) {
-			final int vX = coordinate[0];
-			final int vY = coordinate[1];
-			final int vZ = coordinate[2];
-			final int offset = getOffset(vX, vY, w);
-			if (workArray[vZ][offset] == phase) {
-				final int label = particleLabels[vZ][offset];
-				if (label != 0 && label != minimumLabel) {
-					replaceLabel(particleLabels, label, minimumLabel, minZ, maxZ);
-				}
-			}
-		}
-	}
+//	private static void replaceLabelsWithMinimum(
+//		final Iterable<int[]> coordinates, final byte[][] workArray,
+//		final int[][] particleLabels, final int w, final int phase, final int minZ,
+//		final int maxZ)
+//	{
+//		final int minimumLabel = findMinimumLabel(coordinates, workArray,
+//			particleLabels, w, phase, 0);
+//		for (final int[] coordinate : coordinates) {
+//			final int vX = coordinate[0];
+//			final int vY = coordinate[1];
+//			final int vZ = coordinate[2];
+//			final int offset = getOffset(vX, vY, w);
+//			if (workArray[vZ][offset] == phase) {
+//				final int label = particleLabels[vZ][offset];
+//				if (label != 0 && label != minimumLabel) {
+//					replaceLabel(particleLabels, label, minimumLabel, minZ, maxZ);
+//				}
+//			}
+//		}
+//	}
 
 	/**
 	 * Iterate backwards over map entries, moving set values to their new lut
@@ -2514,6 +2655,25 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			updateLUT(i, min, lut, lutList);
 		}
 		return changed;
+	}
+
+	/**
+	 * Check to see if the pixel at (m,n,o) is within the bounds of the current
+	 * stack
+	 *
+	 * @param m x co-ordinate
+	 * @param n y co-ordinate
+	 * @param o z co-ordinate
+	 * @param w width of the stack.
+	 * @param h height of the stack.
+	 * @param startZ first Z coordinate to use
+	 * @param endZ last Z coordinate to use
+	 * @return True if the pixel is within the bounds of the current stack
+	 */
+	private static boolean withinBounds(final int m, final int n, final int o,
+		final int w, final int h, final int startZ, final int endZ)
+	{
+		return (m >= 0 && m < w && n >= 0 && n < h && o >= startZ && o < endZ);
 	}
 
 	private static boolean withinBounds(final int m, final int n, final int o,
