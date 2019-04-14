@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -2176,39 +2177,94 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
-		final int[] bounds = { w, h, d };
 		final long[] particleSizes = getParticleSizes(particleLabels);
 		final int nBlobs = particleSizes.length;
 		final ArrayList<ArrayList<short[]>> particleLists = getParticleLists(
 			particleLabels, nBlobs, w, h, d);
-		final BiFunction<int[], int[], List<int[]>> neighbourhoodFinder;
-		if (phase == BACK) {
-			neighbourhoodFinder = ParticleCounter::get6NeighbourhoodCoordinates;
-		}
-		else {
-			neighbourhoodFinder = ParticleCounter::get26NeighbourhoodCoordinates;
-		}
-		for (int b = 1; b < nBlobs; b++) {
-			IJ.showStatus("Joining substructures...");
-			IJ.showProgress(b, nBlobs);
-			final ArrayList<short[]> blob = particleLists.get(b);
-			if (blob.isEmpty()) {
-				continue;
+		switch (phase) {
+			case FORE: {
+				for (int b = 1; b < nBlobs; b++) {
+					IJ.showStatus("Joining substructures...");
+					IJ.showProgress(b, nBlobs);
+					if (particleLists.get(b).isEmpty()) {
+						continue;
+					}
+
+					for (int l = 0; l < particleLists.get(b).size(); l++) {
+						final short[] voxel = particleLists.get(b).get(l);
+						final int x = voxel[0];
+						final int y = voxel[1];
+						final int z = voxel[2];
+						// find any neighbours with bigger labels
+						for (int zN = z - 1; zN <= z + 1; zN++) {
+							for (int yN = y - 1; yN <= y + 1; yN++) {
+								final int index = yN * w;
+								for (int xN = x - 1; xN <= x + 1; xN++) {
+									if (!withinBounds(xN, yN, zN, w, h, d)) continue;
+									final int iN = index + xN;
+									final int p = particleLabels[zN][iN];
+									if (p > b) {
+										joinBlobs(b, p, particleLabels, particleLists, w);
+									}
+								}
+							}
+						}
+					}
+				}
+				break;
 			}
-			for (final short[] voxel : blob) {
-				final int[] tmp = { voxel[0], voxel[1], voxel[2] };
-				final List<int[]> coordinates = neighbourhoodFinder.apply(tmp, bounds);
-				for (final int[] coordinate : coordinates) {
-					final int index = coordinate[1] * w + coordinate[0];
-					final int label = particleLabels[coordinate[2]][index];
-					if (label > b) {
-						joinBlobs(b, label, particleLabels, particleLists, w);
+			case BACK: {
+				for (int b = 1; b < nBlobs; b++) {
+					IJ.showStatus("Joining substructures...");
+					IJ.showProgress(b, nBlobs);
+					if (particleLists.get(b).isEmpty()) {
+						continue;
+					}
+					for (int l = 0; l < particleLists.get(b).size(); l++) {
+						final short[] voxel = particleLists.get(b).get(l);
+						final int x = voxel[0];
+						final int y = voxel[1];
+						final int z = voxel[2];
+						// find any neighbours with bigger labels
+						int xN = x;
+						int yN = y;
+						int zN = z;
+						for (int n = 1; n < 7; n++) {
+							switch (n) {
+								case 1:
+									xN = x - 1;
+									break;
+								case 2:
+									xN = x + 1;
+									break;
+								case 3:
+									yN = y - 1;
+									xN = x;
+									break;
+								case 4:
+									yN = y + 1;
+									break;
+								case 5:
+									zN = z - 1;
+									yN = y;
+									break;
+								case 6:
+									zN = z + 1;
+									break;
+							}
+							if (!withinBounds(xN, yN, zN, w, h, d)) continue;
+							final int iN = yN * w + xN;
+							final int p = particleLabels[zN][iN];
+							if (p > b) {
+								joinBlobs(b, p, particleLabels, particleLists, w);
+							}
+						}
 					}
 				}
 			}
 		}
 	}
-
+	
 	/**
 	 * Create a work array
 	 *
