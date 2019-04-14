@@ -2564,27 +2564,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 	}
 
-//	private static void replaceLabelsWithMinimum(
-//		final Iterable<int[]> coordinates, final byte[][] workArray,
-//		final int[][] particleLabels, final int w, final int phase, final int minZ,
-//		final int maxZ)
-//	{
-//		final int minimumLabel = findMinimumLabel(coordinates, workArray,
-//			particleLabels, w, phase, 0);
-//		for (final int[] coordinate : coordinates) {
-//			final int vX = coordinate[0];
-//			final int vY = coordinate[1];
-//			final int vZ = coordinate[2];
-//			final int offset = getOffset(vX, vY, w);
-//			if (workArray[vZ][offset] == phase) {
-//				final int label = particleLabels[vZ][offset];
-//				if (label != 0 && label != minimumLabel) {
-//					replaceLabel(particleLabels, label, minimumLabel, minZ, maxZ);
-//				}
-//			}
-//		}
-//	}
-
 	/**
 	 * Iterate backwards over map entries, moving set values to their new lut
 	 * positions in the map. Updates LUT value of shifted values
