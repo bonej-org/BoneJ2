@@ -525,9 +525,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 								int minTag = particleLabels[z][arrayIndex];
 								// Find the minimum particleLabel in the
 								// neighbours' pixels
-								for (int vZ = z - 1; vZ <= z + 1; vZ++) {
-									for (int vY = y - 1; vY <= y + 1; vY++) {
-										for (int vX = x - 1; vX <= x + 1; vX++) {
+								final int zp1 = z + 1;
+								final int yp1 = y + 1;
+								final int xp1 = x + 1;
+								final int zm1 = z - 1;
+								final int ym1 = y - 1;
+								final int xm1 = x - 1;
+								for (int vZ = zm1; vZ <= zp1; vZ++) {
+									for (int vY = ym1; vY <= yp1; vY++) {
+										for (int vX = xm1; vX <= xp1; vX++) {
 											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
 												final int offset = getOffset(vX, vY, w);
 												if (workArray[vZ][offset] == FORE) {
@@ -542,9 +548,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 								}
 								// Replacing particleLabel by the minimum
 								// particleLabel found
-								for (int vZ = z - 1; vZ <= z + 1; vZ++) {
-									for (int vY = y - 1; vY <= y + 1; vY++) {
-										for (int vX = x - 1; vX <= x + 1; vX++) {
+								for (int vZ = zm1; vZ <= zp1; vZ++) {
+									for (int vY = ym1; vY <= yp1; vY++) {
+										for (int vX = xm1; vX <= xp1; vX++) {
 											if (withinBounds(vX, vY, vZ, w, h, sR2, sR3)) {
 												final int offset = getOffset(vX, vY, w);
 												if (workArray[vZ][offset] == FORE) {
@@ -677,7 +683,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int l = counter.length;
 		counter = new int[l];
 		HashSet<Integer> set = null;
-		for (int i = 1; i < map.size(); i++) {
+		final int n = map.size();
+		for (int i = 1; i < n; i++) {
 			set = map.get(i);
 			for (final Integer val : set) {
 				final int v = val.intValue();
@@ -1342,9 +1349,15 @@ public class ParticleCounter implements PlugIn, DialogListener {
 							int minTag = ID;
 							// Find the minimum particleLabel in the
 							// neighbouring pixels
-							for (int vZ = z - 1; vZ <= z + 1; vZ++) {
-								for (int vY = y - 1; vY <= y + 1; vY++) {
-									for (int vX = x - 1; vX <= x + 1; vX++) {
+							final int zp1 = z + 1;
+							final int yp1 = y + 1;
+							final int xp1 = x + 1;
+							final int zm1 = z - 1;
+							final int ym1 = y - 1;
+							final int xm1 = x - 1;
+							for (int vZ = zm1; vZ <= zp1; vZ++) {
+								for (int vY = ym1; vY <= yp1; vY++) {
+									for (int vX = xm1; vX <= xp1; vX++) {
 										if (withinBounds(vX, vY, vZ, w, h, 0, d)) {
 											final int offset = getOffset(vX, vY, w);
 											if (workArray[vZ][offset] == FORE) {
@@ -2336,11 +2349,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						final int x = voxel[0];
 						final int y = voxel[1];
 						final int z = voxel[2];
+						final int zp1 = z + 1;
+						final int yp1 = y + 1;
+						final int xp1 = x + 1;
 						// find any neighbours with bigger labels
-						for (int zN = z - 1; zN <= z + 1; zN++) {
-							for (int yN = y - 1; yN <= y + 1; yN++) {
+						for (int zN = z - 1; zN <= zp1; zN++) {
+							for (int yN = y - 1; yN <= yp1; yN++) {
 								final int index = yN * w;
-								for (int xN = x - 1; xN <= x + 1; xN++) {
+								for (int xN = x - 1; xN <= xp1; xN++) {
 									if (!withinBounds(xN, yN, zN, w, h, d)) continue;
 									final int iN = index + xN;
 									final int p = particleLabels[zN][iN];
