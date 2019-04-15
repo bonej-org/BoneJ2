@@ -38,7 +38,6 @@ import java.util.ListIterator;
 
 import org.bonej.geometry.Ellipsoid;
 import org.bonej.geometry.FitEllipsoid;
-import org.bonej.geometry.Vectors;
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
@@ -1299,24 +1298,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		return changed;
 	}
-
-//	private static int findMinimumLabel(final Iterable<int[]> coordinates,
-//		final byte[][] workArray, final int[][] particleLabels, final int w,
-//		final int phase, final int minStart)
-//	{
-//		int minLabel = minStart;
-//		for (final int[] coordinate : coordinates) {
-//			final int z = coordinate[2];
-//			final int index = getOffset(coordinate[0], coordinate[1], w);
-//			if (workArray[z][index] == phase) {
-//				final int label = particleLabels[z][index];
-//				if (label != 0 && label < minLabel) {
-//					minLabel = label;
-//				}
-//			}
-//		}
-//		return minLabel;
-//	}
 
 	/**
 	 * Go through all pixels and assign initial particle label
