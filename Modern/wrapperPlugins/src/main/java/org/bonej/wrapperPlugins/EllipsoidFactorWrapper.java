@@ -981,6 +981,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		// store a copy of the 'best ellipsoid so far'
 		QuickEllipsoid maximal = ellipsoid.copy();
+		double[] anchor = getAnchorPoint(contactPoints);
 
 		// alternately try each axis
 		int totalIterations = 0;
@@ -989,6 +990,23 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		while (totalIterations < absoluteMaxIterations && noImprovementCount < maxIterations) {
 
 			ellipsoid = (QuickEllipsoid) optimisationStep(ellipsoid,maximal,contactPoints,pixels,w,h,d,px,py,pz,totalIterations);
+
+			if(ellipsoid==null) return null;
+
+			correctiveTranslation(ellipsoid, anchor);
+			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+			int corrections = 1;
+			int maxCorrections = 20;
+			while(!contactPoints.isEmpty()&&corrections<maxCorrections) {
+				shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+				correctiveTranslation(ellipsoid, anchor);
+				findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+				corrections++;
+			}
+			if(corrections==20){
+				logService.info("maxCorrections reached.");
+				return null;
+			}
 
 			if (ellipsoid.getVolume() > maximal.getVolume())
 				maximal = ellipsoid.copy();
@@ -1026,6 +1044,24 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				+ (double) (stop - start) / totalIterations + " ms/iteration)");
 
 		return ellipsoid;
+	}
+
+	private void correctiveTranslation(QuickEllipsoid ellipsoid, double[] fixedPoint) {
+		double[] centre = ellipsoid.getCentre();
+
+		Vector3d direction = new Vector3d(fixedPoint[0]- centre[0],fixedPoint[1]- centre[1], fixedPoint[2]- centre[2]);
+		direction.normalize();
+
+		final double[] surfacePoint = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
+		for(int i=0;i<3;i++)
+		{
+			centre[i]+=fixedPoint[i]-surfacePoint[i];
+		}
+		ellipsoid.setCentroid(centre[0],centre[1],centre[2]);
+	}
+
+	private double[] getAnchorPoint(ArrayList<double[]> contactPoints) {
+		return contactPoints.get(0);
 	}
 
 	private Object optimisationStep(QuickEllipsoid ellipsoid, QuickEllipsoid maximal, ArrayList<double[]> contactPoints, byte[][] pixels, int w, int h, int d, double px, double py, double pz,
