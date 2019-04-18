@@ -988,66 +988,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int absoluteMaxIterations = maxIterations * 10;
 		while (totalIterations < absoluteMaxIterations && noImprovementCount < maxIterations) {
 
-			// rotate a little bit
-			wiggle(ellipsoid,getFixedPoint(contactPoints));
-
-
-			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-			// dilate an axis
-			double[] abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-						+ totalIterations + " iterations");
-				return null;
-			}
-
-			if (ellipsoid.getVolume() > maximal.getVolume())
-				maximal = ellipsoid.copy();
-
-			// bump a little away from the sides
-			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-			// if can't bump then do a wiggle
-			if (contactPoints.isEmpty()) {
-				wiggle(ellipsoid, getFixedPoint(contactPoints));
-			} else {
-				bump(ellipsoid, contactPoints, px, py, pz);
-			}
-
-			// contract
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-			// dilate an axis
-			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-						+ totalIterations + " iterations");
-				return null;
-			}
-
-			if (ellipsoid.getVolume() > maximal.getVolume())
-				maximal = ellipsoid.copy();
-
-			// rotate a little bit
-			turn(ellipsoid, contactPoints, pixels, w, h, d);
-
-			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-			// dilate an axis
-			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-						+ totalIterations + " iterations");
-				return null;
-			}
+			ellipsoid = (QuickEllipsoid) optimisationStep(ellipsoid,maximal,contactPoints,pixels,w,h,d,px,py,pz,totalIterations);
 
 			if (ellipsoid.getVolume() > maximal.getVolume())
 				maximal = ellipsoid.copy();
@@ -1087,193 +1028,76 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return ellipsoid;
 	}
 
-	private QuickEllipsoid optimiseEllipsoidSurfacePoint(final ImgPlus imp, byte[][] pixels, final Vector3d skeletonPoint) {
+	private Object optimisationStep(QuickEllipsoid ellipsoid, QuickEllipsoid maximal, ArrayList<double[]> contactPoints, byte[][] pixels, int w, int h, int d, double px, double py, double pz,
+									int totalIterations)
+	{
+		// rotate a little bit
+		wiggle(ellipsoid);
 
-		final long start = System.currentTimeMillis();
 
-		final int w = (int) imp.dimension(0);
-		final int h = (int) imp.dimension(1);
-		final int d = (int) imp.dimension(2);
-
-		// centre point of vector field
-		final double px = skeletonPoint.get(0);
-		final double py = skeletonPoint.get(1);
-		final double pz = skeletonPoint.get(2);
-
-		// Instantiate a small spherical ellipsoid
-		final double[][] orthogonalVectors = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-
-		QuickEllipsoid ellipsoid = new QuickEllipsoid(vectorIncrement, vectorIncrement, vectorIncrement, px, py, pz,
-				orthogonalVectors);
-
-		final List<Double> volumeHistory = new ArrayList<>();
-		volumeHistory.add(ellipsoid.getVolume());
-
-		// instantiate the ArrayList
-		ArrayList<double[]> contactPoints = new ArrayList<>();
-
-		// dilate the sphere until it hits the background
-		while (isContained(ellipsoid, contactPoints, pixels, w, h, d)) {
-			ellipsoid.dilate(vectorIncrement, vectorIncrement, vectorIncrement);
-		}
-
-		volumeHistory.add(ellipsoid.getVolume());
-
-		// find the mean unit vector pointing to the points of contact from the
-		// centre
-		final double[] shortAxis = contactPointUnitVector(ellipsoid, contactPoints);
-
-		// find an orthogonal axis
-		final double[] xAxis = {1, 0, 0};
-		double[] middleAxis = crossProduct(shortAxis, xAxis);
-		middleAxis = norm(middleAxis);
-
-		// find a mutually orthogonal axis by forming the cross product
-		double[] longAxis = crossProduct(shortAxis, middleAxis);
-		longAxis = norm(longAxis);
-
-		// construct a rotation matrix
-		double[][] rotation = {shortAxis, middleAxis, longAxis};
-		rotation = QuickEllipsoid.transpose(rotation);
-
-		// rotate ellipsoid to point this way...
-		ellipsoid.setRotation(rotation);
-
-		// shrink the ellipsoid slightly
+		// contract until no contact
 		shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-		ellipsoid.contract(0.1);
 
-		// dilate other two axes until number of contact points increases
-		// by contactSensitivity number of contacts
+		// dilate an axis
+		double[] abc = threeWayShuffle();
+		inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
 
-		while (contactPoints.size() < contactSensitivity) {
-			ellipsoid.dilate(0, vectorIncrement, vectorIncrement);
-			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-				logService.debug(
-						"Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying at initial oblation");
-				return null;
-			}
-		}
-
-		double [] fixedPoint = getFixedPoint(contactPoints);
-
-		volumeHistory.add(ellipsoid.getVolume());
-
-		// until ellipsoid is totally jammed within the structure, go through
-		// cycles of contraction, wiggling, dilation
-		// goal is maximal inscribed ellipsoid, maximal being defined by volume
-
-		// store a copy of the 'best ellipsoid so far'
-		QuickEllipsoid maximal = ellipsoid.copy();
-
-		// alternately try each axis
-		int totalIterations = 0;
-		int noImprovementCount = 0;
-		final int absoluteMaxIterations = maxIterations * 10;
-		while (totalIterations < absoluteMaxIterations && noImprovementCount < maxIterations) {
-
-			// rotate a little bit
-			wiggle(ellipsoid, getFixedPoint(contactPoints));
-
-			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-			// dilate an axis
-			double[] abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-						+ totalIterations + " iterations");
-				return null;
-			}
-
-			if (ellipsoid.getVolume() > maximal.getVolume())
-				maximal = ellipsoid.copy();
-
-			// bump a little away from the sides
-			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-			// if can't bump then do a wiggle
-			if (contactPoints.isEmpty()) {
-				wiggle(ellipsoid, getFixedPoint(contactPoints));
-			} else {
-				bump(ellipsoid, contactPoints, px, py, pz,getFixedPoint(contactPoints));
-			}
-
-			// contract
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-			// dilate an axis
-			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-						+ totalIterations + " iterations");
-				return null;
-			}
-
-			if (ellipsoid.getVolume() > maximal.getVolume())
-				maximal = ellipsoid.copy();
-
-			// rotate a little bit
-			turn(ellipsoid, contactPoints, pixels, w, h, d,getFixedPoint(contactPoints));
-
-			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-			// dilate an axis
-			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-						+ totalIterations + " iterations");
-				return null;
-			}
-
-			if (ellipsoid.getVolume() > maximal.getVolume())
-				maximal = ellipsoid.copy();
-
-			// keep the maximal ellipsoid found
-			ellipsoid = maximal.copy();
-			// log its volume
-			volumeHistory.add(ellipsoid.getVolume());
-
-			// if the last value is bigger than the second-to-last value
-			// reset the noImprovementCount
-			// otherwise, increment it by 1.
-			// if noImprovementCount exceeds a preset value the while() is
-			// broken
-			final int i = volumeHistory.size() - 1;
-			if (volumeHistory.get(i) > volumeHistory.get(i - 1))
-				noImprovementCount = 0;
-			else
-				noImprovementCount++;
-
-			totalIterations++;
-		}
-
-		// this usually indicates that the ellipsoid
-		// grew out of control for some reason
-		if (totalIterations == absoluteMaxIterations) {
-			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz
-					+ ") seems to be out of control, nullifying after " + totalIterations + " iterations");
+		if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+					+ totalIterations + " iterations");
 			return null;
 		}
 
-		final long stop = System.currentTimeMillis();
+		if (ellipsoid.getVolume() > maximal.getVolume())
+			maximal = ellipsoid.copy();
 
-		logService.debug("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
-				+ (double) (stop - start) / totalIterations + " ms/iteration)");
+		// bump a little away from the sides
+		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+		// if can't bump then do a wiggle
+		if (contactPoints.isEmpty()) {
+			wiggle(ellipsoid);
+		} else {
+			bump(ellipsoid, contactPoints, px, py, pz);
+		}
 
+		// contract
+		shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+
+		// dilate an axis
+		abc = threeWayShuffle();
+		inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+
+		if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+					+ totalIterations + " iterations");
+			return null;
+		}
+
+		if (ellipsoid.getVolume() > maximal.getVolume())
+			maximal = ellipsoid.copy();
+
+		// rotate a little bit
+		turn(ellipsoid, contactPoints, pixels, w, h, d);
+
+		// contract until no contact
+		shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+
+		// dilate an axis
+		abc = threeWayShuffle();
+		inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+
+		if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+					+ totalIterations + " iterations");
+			return null;
+		}
+
+		if (ellipsoid.getVolume() > maximal.getVolume())
+			maximal = ellipsoid.copy();
+
+		// keep the maximal ellipsoid found
+		ellipsoid = maximal.copy();
 		return ellipsoid;
-	}
-
-
-	private double[] getFixedPoint(ArrayList<double[]> contactPoints) {
-			return contactPoints.get(0);
 	}
 
 	private void shrinkToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels,
