@@ -839,11 +839,17 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @param d
 	 *            image dimension in z
 	 * @return true if half or more of the surface points are outside the image
-	 *         stack, or if the volume of the ellipsoid exceeds that of the image
+	 *         stack, if the smallest radius is less than half a pixel length,
+	 *         or if the volume of the ellipsoid exceeds that of the image
 	 *         stack
 	 */
 	private boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double[]> surfacePoints, final int w,
 			final int h, final int d) {
+		final double minRadius = ellipsoid.getSortedRadii()[0];
+		if(minRadius < 0.5) {
+			return true;
+		}
+
 		int outOfBoundsCount = 0;
 		final int half = nVectors / 2;
 		for (final double[] p : surfacePoints) {
