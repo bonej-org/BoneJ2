@@ -182,7 +182,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 			return;
 		}
 
-		if (!ElementUtil.isColorsBinary(inputImage)) {
+		if (!ElementUtil.isBinary(inputImage)) {
 			cancel(NOT_BINARY);
 		}
 

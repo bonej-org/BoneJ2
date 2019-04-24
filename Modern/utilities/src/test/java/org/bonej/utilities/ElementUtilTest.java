@@ -166,7 +166,7 @@ public class ElementUtilTest {
 			.iterator();
 		interval.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
 		assertTrue("An image with two colours should be binary color", result);
 	}
@@ -175,14 +175,14 @@ public class ElementUtilTest {
 	public void testIsColorsBinaryBooleanTypeAssignable() {
 		final Img<BitType> img = ArrayImgs.bits(1);
 
-		final boolean isBinary = ElementUtil.isColorsBinary(img);
+		final boolean isBinary = ElementUtil.isBinary(img);
 
 		assertTrue("A BitType image should be binary", isBinary);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testIsColorsBinaryThrowsNPEIfIntervalNull() {
-		final boolean result = ElementUtil.isColorsBinary(null);
+		final boolean result = ElementUtil.isBinary(null);
 
 		assertFalse("A null interval should not be binary color", result);
 	}
@@ -195,7 +195,7 @@ public class ElementUtilTest {
 			.iterator();
 		interval.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
 		assertFalse(
 			"An image with more than two colours should not be binary color", result);
@@ -205,7 +205,7 @@ public class ElementUtilTest {
 	public void testIsColorsBinaryReturnsFalseIfIntervalEmpty() {
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(0);
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
 		assertFalse("An empty image should not be binary color", result);
 	}
@@ -214,7 +214,7 @@ public class ElementUtilTest {
 	public void testIsColorsBinaryReturnsTrueForMonochrome() {
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(2, 2);
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
 		assertTrue("Monochrome image should be binary color", result);
 	}
