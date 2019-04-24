@@ -4,8 +4,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
+import net.imagej.ImgPlus;
+import net.imglib2.img.array.ArrayImg;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.array.ArrayLocalizingCursor;
+import net.imglib2.img.basictypeaccess.array.IntArray;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.joml.Matrix3d;
 import org.joml.Vector3d;
@@ -15,7 +24,47 @@ public class EllipsoidFactorWrapperTest {
 
 
     /**
-     * test for EF wrapper findContactPointsForGivenDirections function
+     * test for {@link EllipsoidFactorWrapper#getAnchors(QuickEllipsoid[], ImgPlus)}
+     *
+     * tests the method on a simple 3x3x3 foreground cube
+     * where one side of the cube is completely contained in an ellipsoid.
+     */
+    @Test
+    public void testGetAnchors(){
+        //SET-UP
+        final ImgPlus<UnsignedIntType> cube3x3x3 = new ImgPlus<>(get3x3x3CubeIn5x5x5Img());
+        final QuickEllipsoid[] ellipsoids = {new QuickEllipsoid(0.5, 3.0 / 2.0 * Math.sqrt(2.0), 3.0 / 2.0 * Math.sqrt(2.0), 1.5, 2.5, 2.5, new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}})};
+
+        //EXECUTE
+        List<Vector3d> anchors = EllipsoidFactorWrapper.getAnchors(ellipsoids, cube3x3x3);
+
+        //VERIFY
+        assertTrue("Cube centre should not be an anchor.",anchors.stream().noneMatch(a -> a.x==2.5 && a.y==2.5 && a.z==2.5));
+        assertTrue("Pixels with x==1.5 should be within ellipsoid, and therefore not anchors", anchors.stream().noneMatch(a -> a.x==1.5));
+        assertEquals("Unexpected number of anchors found.", 17, anchors.size());
+    }
+
+    /**
+     * @return a 5x5x5 ArrayImg which contains a 3x3x3 foreground cube at its centre.
+     */
+    private ArrayImg<UnsignedIntType, IntArray> get3x3x3CubeIn5x5x5Img() {
+        final ArrayImg<UnsignedIntType, IntArray> cube3x3x3 = ArrayImgs.unsignedInts(5, 5, 5);
+        final ArrayLocalizingCursor<UnsignedIntType> cursor = cube3x3x3.localizingCursor();
+        while(cursor.hasNext()){
+            cursor.fwd();
+
+            long[] position = new long[3];
+            cursor.localize(position);
+            Arrays.sort(position);
+            if(position[0]>0 && position[2]<4){
+                cursor.get().setInteger(255);
+            }
+        }
+        return cube3x3x3;
+    }
+
+    /**
+     * test for {@link EllipsoidFactorWrapper#findContactPoints(QuickEllipsoid, ArrayList, byte[][], int, int, int)}
      *
      * uses a 6x6x6 byte array image representation of a cuboid that touches the image boundary at z=0
      * and otherwise has a surface with 1 pixel distance from the image boundary
@@ -40,7 +89,7 @@ public class EllipsoidFactorWrapperTest {
         vectors[4][1] = -1; //-y-direction
         vectors[5][2] = -1; //-z-direction
 
-        final byte[][] cubeImage = getCubeImage();
+        final byte[][] cubeImage = getCuboidImage();
 
         double[][] expectedContact = {{3,5.1,2},{3,3,5.1},{3,0.9,2}};
 
@@ -58,7 +107,7 @@ public class EllipsoidFactorWrapperTest {
     }
 
     /**
-     * test for EF wrapper calculateTorque method
+     * test for {@link EllipsoidFactorWrapper#calculateTorque(QuickEllipsoid, Iterable)}
      *
      * see testFindContactPoints in this file for explanation on what contact points are used
      * based on these points, the torque is expected to be zero
@@ -77,7 +126,7 @@ public class EllipsoidFactorWrapperTest {
         vectors[4][1] = -1; //-y-direction
         vectors[5][2] = -1; //-z-direction
 
-        final byte[][] cubeImage = getCubeImage();
+        final byte[][] cubeImage = getCuboidImage();
 
         //EXECUTE
         EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
@@ -90,6 +139,9 @@ public class EllipsoidFactorWrapperTest {
         assertEquals(0,torque[2],1e-12);
     }
 
+    /**
+     * test for {@link EllipsoidFactorWrapper#wiggle(QuickEllipsoid, double[])}
+     */
     @Test
     public void testWiggleSurfacePoint() {
         QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
@@ -99,6 +151,9 @@ public class EllipsoidFactorWrapperTest {
         assertTrue("Wiggle does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
     }
 
+    /**
+     * test for {@link EllipsoidFactorWrapper#bump(QuickEllipsoid, Collection, double, double, double, double[])}
+     */
     @Test
     public void testBumpSurfacePoint() {
         QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
@@ -111,6 +166,9 @@ public class EllipsoidFactorWrapperTest {
         assertTrue("Bump does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
     }
 
+    /**
+     * test for {@link EllipsoidFactorWrapper#turn(QuickEllipsoid, ArrayList, byte[][], int, int, int, double[])}
+     */
     @Test
     public void testTurnSurfacePoint() {
         QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
@@ -118,11 +176,16 @@ public class EllipsoidFactorWrapperTest {
         final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
         contactPoints.add(new double[]{0,0,3});
-        wrapper.turn(e,contactPoints,getCubeImage(),6,6,6, new double[]{1,0,0});
+        wrapper.turn(e,contactPoints, getCuboidImage(),6,6,6, new double[]{1,0,0});
 
         assertTrue("Bump does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
     }
 
+    /**
+     * @param e ellipsoid
+     * @param point point
+     * @return true if point is on ellipsoid surface, false otherwise
+     */
     private boolean onSurface(QuickEllipsoid e, double[] point) {
 
         final double[][] ev = e.getRotation();
@@ -151,14 +214,18 @@ public class EllipsoidFactorWrapperTest {
         return Math.abs(oneOnSurface-1.0)<1.e-12;
     }
 
-    private byte[][] getCubeImage() {
+    /**
+     * creates a byte array slice representation of a foreground cuboid that touches the outside of an image on one side (z==0).
+     * @return byte[][] with z index in first index, and xy plane array in second index
+     */
+    private byte[][] getCuboidImage() {
         int dimension = 6;
         final byte[][] cubeImage = new byte[dimension][dimension*dimension];
 
         for(int x=0;x<dimension;x++) {
             for (int y = 0; y < dimension; y++) {
                 for (int z = 0; z < dimension; z++) {
-                    if (x != 0 && x != 5 && y != 0 && y != 5 && z != 5) //part of x=0,y=0 plane is on img boundary and FG
+                    if (x != 0 && x != 5 && y != 0 && y != 5 && z != 5) //part of z==0 plane is on img boundary and FG
                     {
                         cubeImage[z][y * dimension + x] = (byte) 255;//will be -1 as byte has values in [-128,127]
                     }

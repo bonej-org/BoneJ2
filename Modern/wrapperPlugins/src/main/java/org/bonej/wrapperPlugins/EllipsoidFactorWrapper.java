@@ -33,6 +33,12 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import net.imglib2.*;
+import net.imglib2.RandomAccess;
+import net.imglib2.algorithm.neighborhood.Neighborhood;
+import net.imglib2.algorithm.neighborhood.RectangleShape;
+import net.imglib2.util.Intervals;
+import net.imglib2.view.IntervalView;
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.SharedTable;
@@ -56,10 +62,6 @@ import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
-import net.imglib2.Cursor;
-import net.imglib2.IterableInterval;
-import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessible;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -704,8 +706,11 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		long start = System.currentTimeMillis();
 		final QuickEllipsoid[] ellipsoids = findEllipsoids(inputImgPlus, skeletonPoints);
+		Arrays.sort(ellipsoids,(a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		long stop = System.currentTimeMillis();
-		logService.info("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) + " ms");
+		logService.info("Found " + ellipsoids.length + " centrally-seeded ellipsoids in " + (stop - start) + " ms");
+		final List<Vector3d> anchors = getAnchors(ellipsoids, inputImgPlus);
+		//final QuickEllipsoid[] surfaceEllipsoids = findAnchoredEllipsoids(inputImgPlus, anchors);
 		if (ellipsoids.length == 0) {
 			cancel(NO_ELLIPSOIDS_FOUND);
 			return;
@@ -728,6 +733,47 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		addResults(Arrays.asList(ellipsoids), fillingPercentage);
 
 		statusService.showStatus("Ellipsoid Factor completed");
+	}
+
+	/**
+	 * This method finds the anchor points in the input image.
+	 * Anchor points are defined as centres of foreground pixels
+	 * which have at least one background neighbour and are not
+	 * contained in any of the ellipsoids.
+	 * @param ellipsoids Array of QuickEllipsoid that excludes candidate anchor points
+	 * @param inputImgPlus ImgPlus in which to find anchor points
+	 * @return the list of anchor points
+	 */
+	static List<Vector3d> getAnchors(final QuickEllipsoid[] ellipsoids, final ImgPlus<UnsignedIntType> inputImgPlus) {
+		final List<Vector3d> anchors = new ArrayList<>();
+		final Interval inputShrunkByOne = Intervals.expand(inputImgPlus, -1);
+		final IntervalView<UnsignedIntType> source = Views.interval(inputImgPlus, inputShrunkByOne);
+		final Cursor<UnsignedIntType> centre = Views.iterable(source).cursor();
+		final RectangleShape shape = new RectangleShape(1,true);
+
+		for ( final Neighborhood<UnsignedIntType> localNeighborhood : shape.neighborhoods( source ) )
+		{
+			// (the center cursor runs over the image in the same iteration order as neighborhood)
+			final UnsignedIntType centerValue = centre.next();
+			if(centerValue.get()==0){
+				continue;
+			}
+			long[] position =  new long[3];
+			centre.localize(position);
+
+			if(Arrays.stream(ellipsoids).anyMatch(e -> e.contains(position[0]+0.5, position[1]+0.5, position[2]+0.5))) continue;
+
+			for ( final UnsignedIntType value : localNeighborhood )
+			{
+				if(value.get()==0){
+					anchors.add(new Vector3d(position[0]+0.5,position[1]+0.5,position[2]+0.5));
+					break;
+				}
+			}
+
+		}
+
+		return anchors;
 	}
 
 	private void addResults(final List<QuickEllipsoid> ellipsoids, double fillingPercentage) {
@@ -821,9 +867,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					.collect(toList());
 		}
 
-		statusService.showStatus("Optimising ellipsoids...");
+		statusService.showStatus("Optimising centrally-seeded ellipsoids...");
 		final QuickEllipsoid[] quickEllipsoids = skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp)).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
-		Arrays.sort(quickEllipsoids,(a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		return quickEllipsoids;
 	}
 
