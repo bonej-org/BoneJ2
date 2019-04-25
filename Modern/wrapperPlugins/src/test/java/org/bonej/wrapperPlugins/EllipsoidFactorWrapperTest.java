@@ -13,7 +13,9 @@ import net.imagej.ImgPlus;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.array.ArrayLocalizingCursor;
+import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.array.IntArray;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.joml.Matrix3d;
@@ -32,7 +34,7 @@ public class EllipsoidFactorWrapperTest {
     @Test
     public void testGetAnchors(){
         //SET-UP
-        final ImgPlus<UnsignedIntType> cube3x3x3 = new ImgPlus<>(get3x3x3CubeIn5x5x5Img());
+        final ImgPlus<UnsignedByteType> cube3x3x3 = new ImgPlus<>(get3x3x3CubeIn5x5x5Img());
         final QuickEllipsoid[] ellipsoids = {new QuickEllipsoid(0.5, 3.0 / 2.0 * Math.sqrt(2.0), 3.0 / 2.0 * Math.sqrt(2.0), 1.5, 2.5, 2.5, new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}})};
 
         //EXECUTE
@@ -47,9 +49,9 @@ public class EllipsoidFactorWrapperTest {
     /**
      * @return a 5x5x5 ArrayImg which contains a 3x3x3 foreground cube at its centre.
      */
-    private ArrayImg<UnsignedIntType, IntArray> get3x3x3CubeIn5x5x5Img() {
-        final ArrayImg<UnsignedIntType, IntArray> cube3x3x3 = ArrayImgs.unsignedInts(5, 5, 5);
-        final ArrayLocalizingCursor<UnsignedIntType> cursor = cube3x3x3.localizingCursor();
+    private ArrayImg<UnsignedByteType, ByteArray> get3x3x3CubeIn5x5x5Img() {
+        final ArrayImg<UnsignedByteType, ByteArray> cube3x3x3 = ArrayImgs.unsignedBytes(5, 5, 5);
+        final ArrayLocalizingCursor<UnsignedByteType> cursor = cube3x3x3.localizingCursor();
         while(cursor.hasNext()){
             cursor.fwd();
 
@@ -140,19 +142,20 @@ public class EllipsoidFactorWrapperTest {
     }
 
     /**
-     * test for {@link EllipsoidFactorWrapper#wiggle(QuickEllipsoid, double[])}
+     * test for {@link EllipsoidFactorWrapper#wiggle(QuickEllipsoid)} in a constrained setting
      */
     @Test
     public void testWiggleSurfacePoint() {
         QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
-
-        EllipsoidFactorWrapper.wiggle(e,new double[]{1,0,0});
-
+        final EllipsoidFactorWrapper.AnchorConstrain anchorConstrain = new EllipsoidFactorWrapper.AnchorConstrain();
+        anchorConstrain.preConstrain(e, new Vector3d(1,0,0));
+        EllipsoidFactorWrapper.wiggle(e);
+        anchorConstrain.postConstrain(e);
         assertTrue("Wiggle does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
     }
 
     /**
-     * test for {@link EllipsoidFactorWrapper#bump(QuickEllipsoid, Collection, double, double, double, double[])}
+     * test for @link EllipsoidFactorWrapper#bump(QuickEllipsoid, Collection, double, double, double)}
      */
     @Test
     public void testBumpSurfacePoint() {
@@ -161,13 +164,15 @@ public class EllipsoidFactorWrapperTest {
         final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
         contactPoints.add(new double[]{0,0,3});
-        wrapper.bump(e, contactPoints, e.getCentre()[0], e.getCentre()[1], e.getCentre()[2], new double[]{1,0,0});
-
+        final EllipsoidFactorWrapper.AnchorConstrain anchorConstrain = new EllipsoidFactorWrapper.AnchorConstrain();
+        anchorConstrain.preConstrain(e, new Vector3d(1,0,0));
+        wrapper.bump(e, contactPoints, e.getCentre()[0], e.getCentre()[1], e.getCentre()[2]);
+        anchorConstrain.postConstrain(e);
         assertTrue("Bump does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
     }
 
     /**
-     * test for {@link EllipsoidFactorWrapper#turn(QuickEllipsoid, ArrayList, byte[][], int, int, int, double[])}
+     * test for @link EllipsoidFactorWrapper#turn(QuickEllipsoid, ArrayList, byte[][], int, int, int)}
      */
     @Test
     public void testTurnSurfacePoint() {
@@ -176,7 +181,10 @@ public class EllipsoidFactorWrapperTest {
         final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
         contactPoints.add(new double[]{0,0,3});
-        wrapper.turn(e,contactPoints, getCuboidImage(),6,6,6, new double[]{1,0,0});
+        final EllipsoidFactorWrapper.AnchorConstrain anchorConstrain = new EllipsoidFactorWrapper.AnchorConstrain();
+        anchorConstrain.preConstrain(e, new Vector3d(1,0,0));
+        wrapper.turn(e,contactPoints, getCuboidImage(),6,6,6);
+        anchorConstrain.postConstrain(e);
 
         assertTrue("Bump does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
     }

@@ -463,32 +463,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return a;
 	}
 
-	/**
-	 * Rotate the ellipsoid by a small random amount
-	 *
-	 * @param ellipsoid
-	 *            the ellipsoid to rotate
-	 * @param fixedPoint
-	 * 			  the point to keep fixed during wiggling
-	 */
-	static void wiggle(final QuickEllipsoid ellipsoid, double[] fixedPoint) {
-
-		final double[] centre = ellipsoid.getCentre();
-		Vector3d direction = new Vector3d(fixedPoint[0]- centre[0],fixedPoint[1]- centre[1], fixedPoint[2]- centre[2]);
-		direction.normalize();
-		final double[] surfacePointBefore = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-
-		wiggle(ellipsoid);
-
-		final double[] surfacePointAfter = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-		for(int i=0;i<3;i++)
-		{
-			centre[i]+=surfacePointBefore[i]-surfacePointAfter[i];
-		}
-		ellipsoid.setCentroid(centre[0],centre[1],centre[2]);
-	}
-
-	private static void wiggle(QuickEllipsoid ellipsoid) {
+	static void wiggle(QuickEllipsoid ellipsoid) {
 		final double b = Math.random() * 0.2 - 0.1;
 		final double c = Math.random() * 0.2 - 0.1;
 		final double a = Math.sqrt(1 - b * b - c * c);
@@ -708,9 +683,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final QuickEllipsoid[] ellipsoids = findEllipsoids(inputImgPlus, skeletonPoints);
 		Arrays.sort(ellipsoids,(a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		long stop = System.currentTimeMillis();
-		logService.info("Found " + ellipsoids.length + " centrally-seeded ellipsoids in " + (stop - start) + " ms");
-		final List<Vector3d> anchors = getAnchors(ellipsoids, inputImgPlus);
-		//final QuickEllipsoid[] surfaceEllipsoids = findAnchoredEllipsoids(inputImgPlus, anchors);
+		logService.info("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) + " ms");
 		if (ellipsoids.length == 0) {
 			cancel(NO_ELLIPSOIDS_FOUND);
 			return;
@@ -735,6 +708,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		statusService.showStatus("Ellipsoid Factor completed");
 	}
 
+
 	/**
 	 * This method finds the anchor points in the input image.
 	 * Anchor points are defined as centres of foreground pixels
@@ -744,17 +718,18 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @param inputImgPlus ImgPlus in which to find anchor points
 	 * @return the list of anchor points
 	 */
-	static List<Vector3d> getAnchors(final QuickEllipsoid[] ellipsoids, final ImgPlus<UnsignedIntType> inputImgPlus) {
+	static List<Vector3d> getAnchors(final QuickEllipsoid[] ellipsoids, final ImgPlus<UnsignedByteType> inputImgPlus) {
 		final List<Vector3d> anchors = new ArrayList<>();
+
 		final Interval inputShrunkByOne = Intervals.expand(inputImgPlus, -1);
-		final IntervalView<UnsignedIntType> source = Views.interval(inputImgPlus, inputShrunkByOne);
-		final Cursor<UnsignedIntType> centre = Views.iterable(source).cursor();
+		final IntervalView<UnsignedByteType> source = Views.interval(inputImgPlus, inputShrunkByOne);
+		final Cursor<UnsignedByteType> centre = Views.iterable(source).cursor();
 		final RectangleShape shape = new RectangleShape(1,true);
 
-		for ( final Neighborhood<UnsignedIntType> localNeighborhood : shape.neighborhoods( source ) )
+		for ( final Neighborhood<UnsignedByteType> localNeighborhood : shape.neighborhoods( source ) )
 		{
 			// (the center cursor runs over the image in the same iteration order as neighborhood)
-			final UnsignedIntType centerValue = centre.next();
+			final UnsignedByteType centerValue = centre.next();
 			if(centerValue.get()==0){
 				continue;
 			}
@@ -763,7 +738,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 			if(Arrays.stream(ellipsoids).anyMatch(e -> e.contains(position[0]+0.5, position[1]+0.5, position[2]+0.5))) continue;
 
-			for ( final UnsignedIntType value : localNeighborhood )
+			for ( final UnsignedByteType value : localNeighborhood )
 			{
 				if(value.get()==0){
 					anchors.add(new Vector3d(position[0]+0.5,position[1]+0.5,position[2]+0.5));
@@ -787,8 +762,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 	}
 
-	private void bump(final QuickEllipsoid ellipsoid, final Collection<double[]> contactPoints, final double px,
-			final double py, final double pz) {
+	void bump(final QuickEllipsoid ellipsoid, final Collection<double[]> contactPoints, final double px,
+			  final double py, final double pz) {
 
 		final double displacement = vectorIncrement / 2;
 
@@ -804,26 +779,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			ellipsoid.setCentroid(x, y, z);
 	}
 
-	void bump(final QuickEllipsoid ellipsoid, final Collection<double[]> contactPoints, final double px,
-					  final double py, final double pz, double[] fixedPoint) {
-
-		double[] centre = ellipsoid.getCentre();
-
-		Vector3d direction = new Vector3d(fixedPoint[0]- centre[0],fixedPoint[1]- centre[1], fixedPoint[2]- centre[2]);
-		direction.normalize();
-		final double[] surfacePointBefore = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-
-		bump(ellipsoid, contactPoints, px, py, pz);
-
-		centre = ellipsoid.getCentre();
-		final double[] surfacePointAfter = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-		for(int i=0;i<3;i++)
-		{
-			centre[i]+=surfacePointBefore[i]-surfacePointAfter[i];
-		}
-		ellipsoid.setCentroid(centre[0],centre[1],centre[2]);
-	}
-
 	void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
 			final byte[][] pixels, final int w, final int h, final int d) {
 		findContactPointsForGivenDirections(ellipsoid, contactPoints,
@@ -837,11 +792,11 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *
 	 * @param imp
 	 *            input image
-	 * @param skeletonPoints
+	 * @param seedPoints
 	 *            input skeleton points
 	 * @return array of fitted ellipsoids
 	 */
-	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> skeletonPoints) {
+	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> seedPoints) {
 		final int w = (int) imp.dimension(0);
 		final int h = (int) imp.dimension(1);
 		final int d = (int) imp.dimension(2);
@@ -862,14 +817,73 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		});
 
 		if (skipRatio > 1) {
-			int limit = skeletonPoints.size() / skipRatio + Math.min(skeletonPoints.size() % skipRatio, 1);
-			skeletonPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(skeletonPoints::get)
+			int limit = seedPoints.size() / skipRatio + Math.min(seedPoints.size() % skipRatio, 1);
+			seedPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(seedPoints::get)
 					.collect(toList());
 		}
 
 		statusService.showStatus("Optimising centrally-seeded ellipsoids...");
-		final QuickEllipsoid[] quickEllipsoids = skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp)).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
-		return quickEllipsoids;
+		final QuickEllipsoid[] quickEllipsoids = seedPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp, new NoConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+		Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
+		logService.info("Found "+quickEllipsoids.length+ " centrally-seeded ellipsoids.");
+		final List<Vector3d> anchors = getAnchors(quickEllipsoids, imp);
+		logService.info("Found "+anchors.size()+ " anchors.");
+		statusService.showStatus("Optimising surface-seeded ellipsoids...");
+		final QuickEllipsoid[] anchoredEllipsoids = anchors.parallelStream().map(a -> optimiseEllipsoid(imp,pixels,a, new AnchorConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+		logService.info("Found "+anchoredEllipsoids.length+ " surface-seeded ellipsoids.");
+		return Stream.concat(Arrays.stream(quickEllipsoids),Arrays.stream(anchoredEllipsoids)).toArray(QuickEllipsoid[]::new);
+	}
+
+	private interface ConstrainStrategy {
+		void preConstrain(QuickEllipsoid e, Vector3d fixed);
+		void postConstrain(QuickEllipsoid e);
+	}
+
+	static class AnchorConstrain implements ConstrainStrategy {
+		@Override
+		public void preConstrain(QuickEllipsoid ellipsoid, Vector3d fixedPoint) {
+			double[] centre = ellipsoid.getCentre();
+
+			direction = new Vector3d(fixedPoint.x- centre[0],fixedPoint.y- centre[1], fixedPoint.z- centre[2]);
+			if(direction.length()<1.e-12) {
+				direction.normalize();
+			}
+			else {
+				centre[0]=fixedPoint.x+rng.nextGaussian()*0.1;
+				centre[1]=fixedPoint.y+rng.nextGaussian()*0.1;
+				centre[2]=fixedPoint.z+rng.nextGaussian()*0.1;
+				direction = new Vector3d(fixedPoint.x- centre[0],fixedPoint.y- centre[1], fixedPoint.z- centre[2]);
+				direction.normalize();
+			}
+			surfacePointBefore = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
+		}
+
+		@Override
+		public void postConstrain(QuickEllipsoid ellipsoid) {
+			double[] centre = ellipsoid.getCentre();
+			final double[] surfacePointAfter = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
+			for(int i=0;i<3;i++)
+			{
+				centre[i]+=surfacePointBefore[i]-surfacePointAfter[i];
+			}
+			ellipsoid.setCentroid(centre[0],centre[1],centre[2]);
+		}
+
+		private double[] surfacePointBefore;
+		private Vector3d direction;
+	}
+
+	private class NoConstrain implements ConstrainStrategy {
+
+		@Override
+		public void preConstrain(QuickEllipsoid e, Vector3d fixed) {
+			//do nothing
+		}
+
+		@Override
+		public void postConstrain(QuickEllipsoid e) {
+			//do nothing
+		}
 	}
 
 	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final double a,
@@ -955,7 +969,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         vectors surrounding the seed point. If ellipsoid fitting fails,
 	 *         returns null
 	 */
-	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final Vector3d skeletonPoint) {
+	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final Vector3d seedPoint, ConstrainStrategy constrainStrategy) {
 
 		final long start = System.currentTimeMillis();
 
@@ -964,16 +978,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int d = (int) imp.dimension(2);
 
 		// centre point of vector field
-		final double px = skeletonPoint.get(0);
-		final double py = skeletonPoint.get(1);
-		final double pz = skeletonPoint.get(2);
+		final double px = seedPoint.get(0);
+		final double py = seedPoint.get(1);
+		final double pz = seedPoint.get(2);
 
 		// Instantiate a small spherical ellipsoid
 		final double[][] orthogonalVectors = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
 		QuickEllipsoid ellipsoid = new QuickEllipsoid(vectorIncrement, vectorIncrement, vectorIncrement, px, py, pz,
 				orthogonalVectors);
-
 		final List<Double> volumeHistory = new ArrayList<>();
 		volumeHistory.add(ellipsoid.getVolume());
 
@@ -982,7 +995,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		// dilate the sphere until it hits the background
 		while (isContained(ellipsoid, contactPoints, pixels, w, h, d)) {
+			constrainStrategy.preConstrain(ellipsoid,seedPoint);
 			ellipsoid.dilate(vectorIncrement, vectorIncrement, vectorIncrement);
+			constrainStrategy.postConstrain(ellipsoid);
 		}
 
 		volumeHistory.add(ellipsoid.getVolume());
@@ -1032,7 +1047,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		// store a copy of the 'best ellipsoid so far'
 		QuickEllipsoid maximal = ellipsoid.copy();
-		double[] anchor = getAnchorPoint(contactPoints);
 
 		// alternately try each axis
 		int totalIterations = 0;
@@ -1040,24 +1054,76 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int absoluteMaxIterations = maxIterations * 10;
 		while (totalIterations < absoluteMaxIterations && noImprovementCount < maxIterations) {
 
-			ellipsoid = (QuickEllipsoid) optimisationStep(ellipsoid,maximal,contactPoints,pixels,w,h,d,px,py,pz,totalIterations);
+			// rotate a little bit
+			constrainStrategy.preConstrain(ellipsoid,seedPoint);
+			wiggle(ellipsoid);
+			constrainStrategy.postConstrain(ellipsoid);
 
-			if(ellipsoid==null) return null;
+			// contract until no contact
+			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
 
-			correctiveTranslation(ellipsoid, anchor);
-			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-			int corrections = 1;
-			int maxCorrections = 20;
-			while(!contactPoints.isEmpty()&&corrections<maxCorrections) {
-				shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-				correctiveTranslation(ellipsoid, anchor);
-				findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-				corrections++;
-			}
-			if(corrections==20){
-				logService.info("maxCorrections reached.");
+			// dilate an axis
+			double[] abc = threeWayShuffle();
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+
+			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+						+ totalIterations + " iterations");
 				return null;
 			}
+
+			if (ellipsoid.getVolume() > maximal.getVolume())
+				maximal = ellipsoid.copy();
+
+			// bump a little away from the sides
+			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+			constrainStrategy.preConstrain(ellipsoid,seedPoint);
+			// if can't bump then do a wiggle
+			if (contactPoints.isEmpty()) {
+				wiggle(ellipsoid);
+			} else {
+				bump(ellipsoid, contactPoints, px, py, pz);
+			}
+			constrainStrategy.postConstrain(ellipsoid);
+			// contract
+			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+
+			// dilate an axis
+			abc = threeWayShuffle();
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+
+			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+						+ totalIterations + " iterations");
+				return null;
+			}
+
+			if (ellipsoid.getVolume() > maximal.getVolume())
+				maximal = ellipsoid.copy();
+
+			// rotate a little bit
+			constrainStrategy.preConstrain(ellipsoid,seedPoint);
+			turn(ellipsoid, contactPoints, pixels, w, h, d);
+			constrainStrategy.postConstrain(ellipsoid);
+
+			// contract until no contact
+			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+
+			// dilate an axis
+			abc = threeWayShuffle();
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+
+			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+				logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
+						+ totalIterations + " iterations");
+				return null;
+			}
+
+			if (ellipsoid.getVolume() > maximal.getVolume())
+				maximal = ellipsoid.copy();
+
+			// keep the maximal ellipsoid found
+			ellipsoid = maximal.copy();
 
 			if (ellipsoid.getVolume() > maximal.getVolume())
 				maximal = ellipsoid.copy();
@@ -1097,96 +1163,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return ellipsoid;
 	}
 
-	private void correctiveTranslation(QuickEllipsoid ellipsoid, double[] fixedPoint) {
-		double[] centre = ellipsoid.getCentre();
-
-		Vector3d direction = new Vector3d(fixedPoint[0]- centre[0],fixedPoint[1]- centre[1], fixedPoint[2]- centre[2]);
-		direction.normalize();
-
-		final double[] surfacePoint = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-		for(int i=0;i<3;i++)
-		{
-			centre[i]+=fixedPoint[i]-surfacePoint[i];
-		}
-		ellipsoid.setCentroid(centre[0],centre[1],centre[2]);
-	}
-
-	private double[] getAnchorPoint(ArrayList<double[]> contactPoints) {
-		return contactPoints.get(0);
-	}
-
-	private Object optimisationStep(QuickEllipsoid ellipsoid, QuickEllipsoid maximal, ArrayList<double[]> contactPoints, byte[][] pixels, int w, int h, int d, double px, double py, double pz,
-									int totalIterations)
-	{
-		// rotate a little bit
-		wiggle(ellipsoid);
-
-
-		// contract until no contact
-		shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-		// dilate an axis
-		double[] abc = threeWayShuffle();
-		inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-		if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-					+ totalIterations + " iterations");
-			return null;
-		}
-
-		if (ellipsoid.getVolume() > maximal.getVolume())
-			maximal = ellipsoid.copy();
-
-		// bump a little away from the sides
-		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-		// if can't bump then do a wiggle
-		if (contactPoints.isEmpty()) {
-			wiggle(ellipsoid);
-		} else {
-			bump(ellipsoid, contactPoints, px, py, pz);
-		}
-
-		// contract
-		shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-		// dilate an axis
-		abc = threeWayShuffle();
-		inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-		if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-					+ totalIterations + " iterations");
-			return null;
-		}
-
-		if (ellipsoid.getVolume() > maximal.getVolume())
-			maximal = ellipsoid.copy();
-
-		// rotate a little bit
-		turn(ellipsoid, contactPoints, pixels, w, h, d);
-
-		// contract until no contact
-		shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
-
-		// dilate an axis
-		abc = threeWayShuffle();
-		inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
-
-		if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
-			logService.debug("Ellipsoid at (" + px + ", " + py + ", " + pz + ") is invalid, nullifying after "
-					+ totalIterations + " iterations");
-			return null;
-		}
-
-		if (ellipsoid.getVolume() > maximal.getVolume())
-			maximal = ellipsoid.copy();
-
-		// keep the maximal ellipsoid found
-		ellipsoid = maximal.copy();
-		return ellipsoid;
-	}
-
 	private void shrinkToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels,
 			final int w, final int h, final int d) {
 
@@ -1220,32 +1196,14 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @param d
 	 *            the image dimension in z
 	 */
-	private void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w,
-			final int h, final int d) {
+	void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w,
+			  final int h, final int d) {
 
 		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
 		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
 			rotateAboutAxis(ellipsoid, norm(torque));
 		}
-	}
-
-	void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, byte[][] pixels, int w, int h, int d, double[] fixedPoint) {
-		double[] centre = ellipsoid.getCentre();
-
-		Vector3d direction = new Vector3d(fixedPoint[0]- centre[0],fixedPoint[1]- centre[1], fixedPoint[2]- centre[2]);
-		direction.normalize();
-		final double[] surfacePointBefore = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-
-		turn(ellipsoid, contactPoints, pixels, w, h, d);
-
-		centre = ellipsoid.getCentre();
-		final double[] surfacePointAfter = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-		for(int i=0;i<3;i++)
-		{
-			centre[i]+=surfacePointBefore[i]-surfacePointAfter[i];
-		}
-		ellipsoid.setCentroid(centre[0],centre[1],centre[2]);
 	}
 
 }
