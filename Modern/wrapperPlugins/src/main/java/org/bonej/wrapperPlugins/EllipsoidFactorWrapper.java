@@ -816,22 +816,27 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			}
 		});
 
-		if (skipRatio > 1) {
-			int limit = seedPoints.size() / skipRatio + Math.min(seedPoints.size() % skipRatio, 1);
-			seedPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(seedPoints::get)
-					.collect(toList());
-		}
+		applySkipRatio(seedPoints);
 
 		statusService.showStatus("Optimising centrally-seeded ellipsoids...");
 		final QuickEllipsoid[] quickEllipsoids = seedPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp, new NoConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
 		Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		logService.info("Found "+quickEllipsoids.length+ " centrally-seeded ellipsoids.");
-		final List<Vector3d> anchors = getAnchors(quickEllipsoids, imp);
+		List<Vector3d> anchors = getAnchors(quickEllipsoids, imp);
+		applySkipRatio(anchors);
 		logService.info("Found "+anchors.size()+ " anchors.");
 		statusService.showStatus("Optimising surface-seeded ellipsoids...");
 		final QuickEllipsoid[] anchoredEllipsoids = anchors.parallelStream().map(a -> optimiseEllipsoid(imp,pixels,a, new AnchorConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
 		logService.info("Found "+anchoredEllipsoids.length+ " surface-seeded ellipsoids.");
 		return Stream.concat(Arrays.stream(quickEllipsoids),Arrays.stream(anchoredEllipsoids)).toArray(QuickEllipsoid[]::new);
+	}
+
+	private void applySkipRatio(List<Vector3d> seedPoints) {
+		if (skipRatio > 1) {
+			int limit = seedPoints.size() / skipRatio + Math.min(seedPoints.size() % skipRatio, 1);
+			seedPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(seedPoints::get)
+					.collect(toList());
+		}
 	}
 
 	private interface ConstrainStrategy {
@@ -845,7 +850,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			double[] centre = ellipsoid.getCentre();
 
 			direction = new Vector3d(fixedPoint.x- centre[0],fixedPoint.y- centre[1], fixedPoint.z- centre[2]);
-			if(direction.length()<1.e-12) {
+			if(direction.length()>1.e-12) {
 				direction.normalize();
 			}
 			else {
