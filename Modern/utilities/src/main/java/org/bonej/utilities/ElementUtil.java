@@ -26,10 +26,8 @@ package org.bonej.utilities;
 import static org.bonej.utilities.Streamers.axisStream;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import net.imagej.axis.CalibratedAxis;
@@ -47,6 +45,7 @@ import net.imglib2.type.numeric.RealType;
  * Various utility methods for inspecting image element properties
  *
  * @author Richard Domander
+ * @author Michael Doube
  */
 public final class ElementUtil {
 
@@ -123,8 +122,7 @@ public final class ElementUtil {
 		
 		final Cursor<T> cursor = interval.cursor();
 		while (cursor.hasNext()){
-			cursor.fwd();
-			c = cursor.get().getRealDouble();
+			c = cursor.next().getRealDouble();
 			//if we encounter a different pixel value
 			// than a, assign it to b, and stop
 			if (c != a) {
@@ -136,8 +134,7 @@ public final class ElementUtil {
 		//the next while is skipped, and we return true.
 		//Otherwise check the rest of the pixels
 		while (cursor.hasNext()) {
-			cursor.fwd();
-		  c = cursor.get().getRealDouble();
+		  c = cursor.next().getRealDouble();
 		  //if c is neither a or b the image is not binary
 		  if (c == a || c == b)
 		  	continue;
