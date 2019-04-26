@@ -96,16 +96,13 @@ public final class ElementUtil {
 
 	/**
 	 * Checks whether the interval contains only two distinct values.
-	 * <p>
-	 * NB a hacky brute force approach.
-	 * </p>
 	 *
 	 * @param interval an iterable interval.
 	 * @param <T> type of the elements in the interval.
 	 * @return true if only two distinct values, false if interval is empty
-	 *         or has more colors.
+	 *         or has more values.
 	 */
-	public static <T extends RealType<T> & NativeType<T>> boolean isColorsBinary(
+	public static <T extends RealType<T> & NativeType<T>> boolean isBinary(
 		final IterableInterval<T> interval)
 	{
 		if (interval.size() == 0) {
@@ -119,15 +116,32 @@ public final class ElementUtil {
 			return true;
 		}
 
-		final Set<Double> colors = new HashSet<>();
+		//a and b have the first pixel value
+		double a = interval.firstElement().getRealDouble();
+		double b = a;
+		double c;
+		
 		final Cursor<T> cursor = interval.cursor();
+		while (cursor.hasNext()){
+			cursor.fwd();
+			c = cursor.get().getRealDouble();
+			//if we encounter a different pixel value
+			// than a, assign it to b, and stop
+			if (c != a) {
+				b = c;
+				break;
+			}
+		}
+		//if we got to the end, there is only one pixel value,
+		//the next while is skipped, and we return true.
+		//Otherwise check the rest of the pixels
 		while (cursor.hasNext()) {
 			cursor.fwd();
-			final T e = cursor.get();
-			colors.add(e.getRealDouble());
-			if (colors.size() > 2) {
-				return false;
-			}
+		  c = cursor.get().getRealDouble();
+		  //if c is neither a or b the image is not binary
+		  if (c == a || c == b)
+		  	continue;
+		  return false;
 		}
 		return true;
 	}
