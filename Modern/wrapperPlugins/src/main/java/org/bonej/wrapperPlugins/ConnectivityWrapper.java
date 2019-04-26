@@ -222,7 +222,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 			return;
 		}
 
-		if (!ElementUtil.isColorsBinary(inputImage)) {
+		if (!ElementUtil.isBinary(inputImage)) {
 			cancel(NOT_BINARY);
 		}
 	}

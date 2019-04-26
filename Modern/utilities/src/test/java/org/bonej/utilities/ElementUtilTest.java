@@ -159,64 +159,64 @@ public class ElementUtilTest {
 	}
 
 	@Test
-	public void testIsColorsBinary() {
-		// Create a test image with two colors
+	public void testIsBinary() {
+		// Create a test image with two values
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(2, 2);
 		final Iterator<Integer> intIterator = IntStream.iterate(0, i -> (i + 1) % 2)
 			.iterator();
 		interval.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
-		assertTrue("An image with two colours should be binary color", result);
+		assertTrue("An image with two values should be binary", result);
 	}
 
 	@Test
-	public void testIsColorsBinaryBooleanTypeAssignable() {
+	public void testIsBinaryBooleanTypeAssignable() {
 		final Img<BitType> img = ArrayImgs.bits(1);
 
-		final boolean isBinary = ElementUtil.isColorsBinary(img);
+		final boolean isBinary = ElementUtil.isBinary(img);
 
 		assertTrue("A BitType image should be binary", isBinary);
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testIsColorsBinaryThrowsNPEIfIntervalNull() {
-		final boolean result = ElementUtil.isColorsBinary(null);
+	public void testIsBinaryThrowsNPEIfIntervalNull() {
+		final boolean result = ElementUtil.isBinary(null);
 
-		assertFalse("A null interval should not be binary color", result);
+		assertFalse("A null interval should not be binary", result);
 	}
 
 	@Test
-	public void testIsColorsBinaryReturnsFalseForMulticolor() {
-		// Create a test image with many colors
+	public void testIsBinaryReturnsFalseForMultiValue() {
+		// Create a test image with many values
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(2, 2);
 		final Iterator<Integer> intIterator = IntStream.iterate(0, i -> i + 1)
 			.iterator();
 		interval.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
 		assertFalse(
-			"An image with more than two colours should not be binary color", result);
+			"An image with more than two values should not be binary", result);
 	}
 
 	@Test
-	public void testIsColorsBinaryReturnsFalseIfIntervalEmpty() {
+	public void testIsBinaryReturnsFalseIfIntervalEmpty() {
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(0);
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
-		assertFalse("An empty image should not be binary color", result);
+		assertFalse("An empty image should not be binary", result);
 	}
 
 	@Test
-	public void testIsColorsBinaryReturnsTrueForMonochrome() {
+	public void testIsBinaryReturnsTrueForMonochrome() {
 		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(2, 2);
 
-		final boolean result = ElementUtil.isColorsBinary(interval);
+		final boolean result = ElementUtil.isBinary(interval);
 
-		assertTrue("Monochrome image should be binary color", result);
+		assertTrue("Monochrome image should be binary", result);
 	}
 
 	@AfterClass
