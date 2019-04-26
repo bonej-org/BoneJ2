@@ -37,6 +37,9 @@ import net.imglib2.*;
 import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.RectangleShape;
+import net.imglib2.img.array.ArrayRandomAccess;
+import net.imglib2.img.basictypeaccess.array.ByteArray;
+import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.IntervalView;
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
@@ -166,6 +169,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	@Parameter(label = "Flinn Peak Plot", type = ItemIO.OUTPUT)
 	private ImgPlus<FloatType> flinnPeakPlotImage;
+
+	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
+	private ImgPlus<ByteType> seedPointImage;//0=not a seed, 1=medial seed && not anchor seed, 2=surface anchor seed
 
 	/**
 	 * The EF results in a {@link Table}, null if there are no results
@@ -736,12 +742,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			long[] position =  new long[3];
 			centre.localize(position);
 
-			if(Arrays.stream(ellipsoids).anyMatch(e -> e.contains(position[0]+0.5, position[1]+0.5, position[2]+0.5))) continue;
+			if(Arrays.stream(ellipsoids).anyMatch(e -> e.contains(position[0]-0.5, position[1]-0.5, position[2]-0.5))) continue;
 
 			for ( final UnsignedByteType value : localNeighborhood )
 			{
 				if(value.get()==0){
-					anchors.add(new Vector3d(position[0]+0.5,position[1]+0.5,position[2]+0.5));
+					anchors.add(new Vector3d(position[0]-0.5,position[1]-0.5,position[2]-0.5));
 					break;
 				}
 			}
@@ -792,11 +798,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *
 	 * @param imp
 	 *            input image
-	 * @param seedPoints
+	 * @param skeletonPoints
 	 *            input skeleton points
 	 * @return array of fitted ellipsoids
 	 */
-	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> seedPoints) {
+	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> skeletonPoints) {
+		/*TODO lots of repeated code here: change to QuickEllipsoids[] findEllipsoids(ImgPlus, optimisationStrategy)
+		* TODO optimisationStrategy contains constraint + seedPointfinding strategies
+		* TODO lots more tests
+		*/
 		final int w = (int) imp.dimension(0);
 		final int h = (int) imp.dimension(1);
 		final int d = (int) imp.dimension(2);
@@ -816,27 +826,40 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			}
 		});
 
-		applySkipRatio(seedPoints);
-
+		skeletonPoints = applySkipRatio(skeletonPoints);
+		final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
 		statusService.showStatus("Optimising centrally-seeded ellipsoids...");
-		final QuickEllipsoid[] quickEllipsoids = seedPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp, new NoConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+		final QuickEllipsoid[] quickEllipsoids = skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp, new NoConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
 		Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		logService.info("Found "+quickEllipsoids.length+ " centrally-seeded ellipsoids.");
+		addPointsToDisplay(skeletonPoints, seedImage, (byte) 1);
 		List<Vector3d> anchors = getAnchors(quickEllipsoids, imp);
-		applySkipRatio(anchors);
+		anchors = applySkipRatio(anchors);
+		addPointsToDisplay(anchors, seedImage, (byte) 2);
 		logService.info("Found "+anchors.size()+ " anchors.");
 		statusService.showStatus("Optimising surface-seeded ellipsoids...");
 		final QuickEllipsoid[] anchoredEllipsoids = anchors.parallelStream().map(a -> optimiseEllipsoid(imp,pixels,a, new AnchorConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
 		logService.info("Found "+anchoredEllipsoids.length+ " surface-seeded ellipsoids.");
+		seedPointImage=new ImgPlus<>(seedImage,"Seed points");
+		seedPointImage.setChannelMaximum(0,2);
 		return Stream.concat(Arrays.stream(quickEllipsoids),Arrays.stream(anchoredEllipsoids)).toArray(QuickEllipsoid[]::new);
 	}
 
-	private void applySkipRatio(List<Vector3d> seedPoints) {
+	private void addPointsToDisplay(List<Vector3d> seedPoints, ArrayImg<ByteType, ByteArray> seedImage, byte i) {
+		final ArrayRandomAccess<ByteType> access = seedImage.randomAccess();
+		for(final Vector3d p : seedPoints){
+			access.setPosition(new int[]{(int) p.x,(int) p.y,(int) p.z});
+			access.get().set(i);
+		}
+	}
+
+	private List<Vector3d> applySkipRatio(List<Vector3d> seedPoints) {
 		if (skipRatio > 1) {
 			int limit = seedPoints.size() / skipRatio + Math.min(seedPoints.size() % skipRatio, 1);
 			seedPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(seedPoints::get)
 					.collect(toList());
 		}
+		return seedPoints;
 	}
 
 	private interface ConstrainStrategy {
