@@ -33,15 +33,6 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import net.imglib2.*;
-import net.imglib2.RandomAccess;
-import net.imglib2.algorithm.neighborhood.Neighborhood;
-import net.imglib2.algorithm.neighborhood.RectangleShape;
-import net.imglib2.img.array.ArrayRandomAccess;
-import net.imglib2.img.basictypeaccess.array.ByteArray;
-import net.imglib2.type.numeric.integer.ByteType;
-import net.imglib2.util.Intervals;
-import net.imglib2.view.IntervalView;
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.SharedTable;
@@ -65,16 +56,21 @@ import net.imagej.ImgPlus;
 import net.imagej.display.ColorTables;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
+import net.imglib2.*;
+import net.imglib2.RandomAccess;
+import net.imglib2.algorithm.neighborhood.Neighborhood;
+import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.array.ArrayRandomAccess;
+import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.integer.IntType;
-import net.imglib2.type.numeric.integer.LongType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.type.numeric.integer.UnsignedIntType;
+import net.imglib2.type.numeric.integer.*;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.util.Intervals;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 /**
@@ -171,7 +167,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private ImgPlus<FloatType> flinnPeakPlotImage;
 
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
-	private ImgPlus<ByteType> seedPointImage;//0=not a seed, 1=medial seed && not anchor seed, 2=surface anchor seed
+	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed && not anchor seed, 2=surface anchor seed
 
 	/**
 	 * The EF results in a {@link Table}, null if there are no results
@@ -493,6 +489,51 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		ellipsoid.rotate(rotation);
 	}
 
+	/**
+	 * This method finds the anchor points in the input image. Anchor points are
+	 * defined as centres of foreground pixels which have at least one background
+	 * neighbour and are not contained in any of the ellipsoids.
+	 *
+	 * @param ellipsoids
+	 *            Array of QuickEllipsoid that excludes candidate anchor points
+	 * @param inputImgPlus
+	 *            ImgPlus in which to find anchor points
+	 * @return the list of anchor points
+	 */
+	static List<Vector3d> getAnchors(final QuickEllipsoid[] ellipsoids, final ImgPlus<UnsignedByteType> inputImgPlus) {
+		final List<Vector3d> anchors = new ArrayList<>();
+
+		final Interval inputShrunkByOne = Intervals.expand(inputImgPlus, -1);
+		final IntervalView<UnsignedByteType> source = Views.interval(inputImgPlus, inputShrunkByOne);
+		final Cursor<UnsignedByteType> centre = Views.iterable(source).cursor();
+		final RectangleShape shape = new RectangleShape(1, true);
+
+		for (final Neighborhood<UnsignedByteType> localNeighborhood : shape.neighborhoods(source)) {
+			// (the center cursor runs over the image in the same iteration order as
+			// neighborhood)
+			final UnsignedByteType centerValue = centre.next();
+			if (centerValue.get() == 0) {
+				continue;
+			}
+			long[] position = new long[3];
+			centre.localize(position);
+
+			if (Arrays.stream(ellipsoids)
+					.anyMatch(e -> e.contains(position[0] - 0.5, position[1] - 0.5, position[2] - 0.5)))
+				continue;
+
+			for (final UnsignedByteType value : localNeighborhood) {
+				if (value.get() == 0) {
+					anchors.add(new Vector3d(position[0] - 0.5, position[1] - 0.5, position[2] - 0.5));
+					break;
+				}
+			}
+
+		}
+
+		return anchors;
+	}
+
 	private void createAToBImage(final double[] aBRatios, final IterableInterval<IntType> ellipsoidIDs) {
 		final Img<FloatType> aToBImage = createNaNCopy();
 		mapValuesToImage(aBRatios, ellipsoidIDs, aToBImage);
@@ -687,7 +728,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		long start = System.currentTimeMillis();
 		final QuickEllipsoid[] ellipsoids = findEllipsoids(inputImgPlus, skeletonPoints);
-		Arrays.sort(ellipsoids,(a, b) -> Double.compare(b.getVolume(), a.getVolume()));
+		Arrays.sort(ellipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		long stop = System.currentTimeMillis();
 		logService.info("Found " + ellipsoids.length + " ellipsoids in " + (stop - start) + " ms");
 		if (ellipsoids.length == 0) {
@@ -714,49 +755,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		statusService.showStatus("Ellipsoid Factor completed");
 	}
 
-
-	/**
-	 * This method finds the anchor points in the input image.
-	 * Anchor points are defined as centres of foreground pixels
-	 * which have at least one background neighbour and are not
-	 * contained in any of the ellipsoids.
-	 * @param ellipsoids Array of QuickEllipsoid that excludes candidate anchor points
-	 * @param inputImgPlus ImgPlus in which to find anchor points
-	 * @return the list of anchor points
-	 */
-	static List<Vector3d> getAnchors(final QuickEllipsoid[] ellipsoids, final ImgPlus<UnsignedByteType> inputImgPlus) {
-		final List<Vector3d> anchors = new ArrayList<>();
-
-		final Interval inputShrunkByOne = Intervals.expand(inputImgPlus, -1);
-		final IntervalView<UnsignedByteType> source = Views.interval(inputImgPlus, inputShrunkByOne);
-		final Cursor<UnsignedByteType> centre = Views.iterable(source).cursor();
-		final RectangleShape shape = new RectangleShape(1,true);
-
-		for ( final Neighborhood<UnsignedByteType> localNeighborhood : shape.neighborhoods( source ) )
-		{
-			// (the center cursor runs over the image in the same iteration order as neighborhood)
-			final UnsignedByteType centerValue = centre.next();
-			if(centerValue.get()==0){
-				continue;
-			}
-			long[] position =  new long[3];
-			centre.localize(position);
-
-			if(Arrays.stream(ellipsoids).anyMatch(e -> e.contains(position[0]-0.5, position[1]-0.5, position[2]-0.5))) continue;
-
-			for ( final UnsignedByteType value : localNeighborhood )
-			{
-				if(value.get()==0){
-					anchors.add(new Vector3d(position[0]-0.5,position[1]-0.5,position[2]-0.5));
-					break;
-				}
-			}
-
-		}
-
-		return anchors;
-	}
-
 	private void addResults(final List<QuickEllipsoid> ellipsoids, double fillingPercentage) {
 		final String label = inputImgPlus.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
@@ -769,7 +767,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	void bump(final QuickEllipsoid ellipsoid, final Collection<double[]> contactPoints, final double px,
-			  final double py, final double pz) {
+			final double py, final double pz) {
 
 		final double displacement = vectorIncrement / 2;
 
@@ -803,10 +801,11 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @return array of fitted ellipsoids
 	 */
 	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> skeletonPoints) {
-		/*TODO lots of repeated code here: change to QuickEllipsoids[] findEllipsoids(ImgPlus, optimisationStrategy)
-		* TODO optimisationStrategy contains constraint + seedPointfinding strategies
-		* TODO lots more tests
-		*/
+		/*
+		 * TODO lots of repeated code here: change to QuickEllipsoids[]
+		 * findEllipsoids(ImgPlus, optimisationStrategy) TODO optimisationStrategy
+		 * contains constraint + seedPointfinding strategies TODO lots more tests
+		 */
 		final int w = (int) imp.dimension(0);
 		final int h = (int) imp.dimension(1);
 		final int d = (int) imp.dimension(2);
@@ -829,26 +828,31 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		skeletonPoints = applySkipRatio(skeletonPoints);
 		final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
 		statusService.showStatus("Optimising centrally-seeded ellipsoids...");
-		final QuickEllipsoid[] quickEllipsoids = skeletonPoints.parallelStream().map(sp -> optimiseEllipsoid(imp, pixels, sp, new NoConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+		final QuickEllipsoid[] quickEllipsoids = skeletonPoints.parallelStream()
+				.map(sp -> optimiseEllipsoid(imp, pixels, sp, new NoConstrain())).filter(Objects::nonNull)
+				.toArray(QuickEllipsoid[]::new);
 		Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
-		logService.info("Found "+quickEllipsoids.length+ " centrally-seeded ellipsoids.");
+		logService.info("Found " + quickEllipsoids.length + " centrally-seeded ellipsoids.");
 		addPointsToDisplay(skeletonPoints, seedImage, (byte) 1);
 		List<Vector3d> anchors = getAnchors(quickEllipsoids, imp);
 		anchors = applySkipRatio(anchors);
 		addPointsToDisplay(anchors, seedImage, (byte) 2);
-		logService.info("Found "+anchors.size()+ " anchors.");
+		logService.info("Found " + anchors.size() + " anchors.");
 		statusService.showStatus("Optimising surface-seeded ellipsoids...");
-		final QuickEllipsoid[] anchoredEllipsoids = anchors.parallelStream().map(a -> optimiseEllipsoid(imp,pixels,a, new AnchorConstrain())).filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
-		logService.info("Found "+anchoredEllipsoids.length+ " surface-seeded ellipsoids.");
-		seedPointImage=new ImgPlus<>(seedImage,"Seed points");
-		seedPointImage.setChannelMaximum(0,2);
-		return Stream.concat(Arrays.stream(quickEllipsoids),Arrays.stream(anchoredEllipsoids)).toArray(QuickEllipsoid[]::new);
+		final QuickEllipsoid[] anchoredEllipsoids = anchors.parallelStream()
+				.map(a -> optimiseEllipsoid(imp, pixels, a, new AnchorConstrain())).filter(Objects::nonNull)
+				.toArray(QuickEllipsoid[]::new);
+		logService.info("Found " + anchoredEllipsoids.length + " surface-seeded ellipsoids.");
+		seedPointImage = new ImgPlus<>(seedImage, "Seed points");
+		seedPointImage.setChannelMaximum(0, 2);
+		return Stream.concat(Arrays.stream(quickEllipsoids), Arrays.stream(anchoredEllipsoids))
+				.toArray(QuickEllipsoid[]::new);
 	}
 
 	private void addPointsToDisplay(List<Vector3d> seedPoints, ArrayImg<ByteType, ByteArray> seedImage, byte i) {
 		final ArrayRandomAccess<ByteType> access = seedImage.randomAccess();
-		for(final Vector3d p : seedPoints){
-			access.setPosition(new int[]{(int) p.x,(int) p.y,(int) p.z});
+		for (final Vector3d p : seedPoints) {
+			access.setPosition(new int[]{(int) p.x, (int) p.y, (int) p.z});
 			access.get().set(i);
 		}
 	}
@@ -856,62 +860,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private List<Vector3d> applySkipRatio(List<Vector3d> seedPoints) {
 		if (skipRatio > 1) {
 			int limit = seedPoints.size() / skipRatio + Math.min(seedPoints.size() % skipRatio, 1);
-			seedPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(seedPoints::get)
-					.collect(toList());
+			seedPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(seedPoints::get).collect(toList());
 		}
 		return seedPoints;
-	}
-
-	private interface ConstrainStrategy {
-		void preConstrain(QuickEllipsoid e, Vector3d fixed);
-		void postConstrain(QuickEllipsoid e);
-	}
-
-	static class AnchorConstrain implements ConstrainStrategy {
-		@Override
-		public void preConstrain(QuickEllipsoid ellipsoid, Vector3d fixedPoint) {
-			double[] centre = ellipsoid.getCentre();
-
-			direction = new Vector3d(fixedPoint.x- centre[0],fixedPoint.y- centre[1], fixedPoint.z- centre[2]);
-			if(direction.length()>1.e-12) {
-				direction.normalize();
-			}
-			else {
-				centre[0]=fixedPoint.x+rng.nextGaussian()*0.1;
-				centre[1]=fixedPoint.y+rng.nextGaussian()*0.1;
-				centre[2]=fixedPoint.z+rng.nextGaussian()*0.1;
-				direction = new Vector3d(fixedPoint.x- centre[0],fixedPoint.y- centre[1], fixedPoint.z- centre[2]);
-				direction.normalize();
-			}
-			surfacePointBefore = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-		}
-
-		@Override
-		public void postConstrain(QuickEllipsoid ellipsoid) {
-			double[] centre = ellipsoid.getCentre();
-			final double[] surfacePointAfter = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
-			for(int i=0;i<3;i++)
-			{
-				centre[i]+=surfacePointBefore[i]-surfacePointAfter[i];
-			}
-			ellipsoid.setCentroid(centre[0],centre[1],centre[2]);
-		}
-
-		private double[] surfacePointBefore;
-		private Vector3d direction;
-	}
-
-	private class NoConstrain implements ConstrainStrategy {
-
-		@Override
-		public void preConstrain(QuickEllipsoid e, Vector3d fixed) {
-			//do nothing
-		}
-
-		@Override
-		public void postConstrain(QuickEllipsoid e) {
-			//do nothing
-		}
 	}
 
 	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final double a,
@@ -962,14 +913,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @param d
 	 *            image dimension in z
 	 * @return true if half or more of the surface points are outside the image
-	 *         stack, if the smallest radius is less than half a pixel length,
-	 *         or if the volume of the ellipsoid exceeds that of the image
-	 *         stack
+	 *         stack, if the smallest radius is less than half a pixel length, or if
+	 *         the volume of the ellipsoid exceeds that of the image stack
 	 */
 	private boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double[]> surfacePoints, final int w,
 			final int h, final int d) {
 		final double minRadius = ellipsoid.getSortedRadii()[0];
-		if(minRadius < 0.5) {
+		if (minRadius < 0.5) {
 			return true;
 		}
 
@@ -997,7 +947,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         vectors surrounding the seed point. If ellipsoid fitting fails,
 	 *         returns null
 	 */
-	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final Vector3d seedPoint, ConstrainStrategy constrainStrategy) {
+	private QuickEllipsoid optimiseEllipsoid(final ImgPlus imp, byte[][] pixels, final Vector3d seedPoint,
+			ConstrainStrategy constrainStrategy) {
 
 		final long start = System.currentTimeMillis();
 
@@ -1023,7 +974,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		// dilate the sphere until it hits the background
 		while (isContained(ellipsoid, contactPoints, pixels, w, h, d)) {
-			constrainStrategy.preConstrain(ellipsoid,seedPoint);
+			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			ellipsoid.dilate(vectorIncrement, vectorIncrement, vectorIncrement);
 			constrainStrategy.postConstrain(ellipsoid);
 		}
@@ -1083,7 +1034,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		while (totalIterations < absoluteMaxIterations && noImprovementCount < maxIterations) {
 
 			// rotate a little bit
-			constrainStrategy.preConstrain(ellipsoid,seedPoint);
+			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			wiggle(ellipsoid);
 			constrainStrategy.postConstrain(ellipsoid);
 
@@ -1105,7 +1056,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 			// bump a little away from the sides
 			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-			constrainStrategy.preConstrain(ellipsoid,seedPoint);
+			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			// if can't bump then do a wiggle
 			if (contactPoints.isEmpty()) {
 				wiggle(ellipsoid);
@@ -1130,7 +1081,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				maximal = ellipsoid.copy();
 
 			// rotate a little bit
-			constrainStrategy.preConstrain(ellipsoid,seedPoint);
+			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			turn(ellipsoid, contactPoints, pixels, w, h, d);
 			constrainStrategy.postConstrain(ellipsoid);
 
@@ -1225,12 +1176,63 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *            the image dimension in z
 	 */
 	void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w,
-			  final int h, final int d) {
+			final int h, final int d) {
 
 		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
 		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
 			rotateAboutAxis(ellipsoid, norm(torque));
+		}
+	}
+
+	private interface ConstrainStrategy {
+		void preConstrain(QuickEllipsoid e, Vector3d fixed);
+		void postConstrain(QuickEllipsoid e);
+	}
+
+	static class AnchorConstrain implements ConstrainStrategy {
+		private double[] surfacePointBefore;
+		private Vector3d direction;
+
+		@Override
+		public void preConstrain(QuickEllipsoid ellipsoid, Vector3d fixedPoint) {
+			double[] centre = ellipsoid.getCentre();
+
+			direction = new Vector3d(fixedPoint.x - centre[0], fixedPoint.y - centre[1], fixedPoint.z - centre[2]);
+			if (direction.length() > 1.e-12) {
+				direction.normalize();
+			} else {
+				centre[0] = fixedPoint.x + rng.nextGaussian() * 0.1;
+				centre[1] = fixedPoint.y + rng.nextGaussian() * 0.1;
+				centre[2] = fixedPoint.z + rng.nextGaussian() * 0.1;
+				direction = new Vector3d(fixedPoint.x - centre[0], fixedPoint.y - centre[1], fixedPoint.z - centre[2]);
+				direction.normalize();
+			}
+			surfacePointBefore = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
+		}
+
+		@Override
+		public void postConstrain(QuickEllipsoid ellipsoid) {
+			double[] centre = ellipsoid.getCentre();
+			final double[] surfacePointAfter = ellipsoid
+					.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
+			for (int i = 0; i < 3; i++) {
+				centre[i] += surfacePointBefore[i] - surfacePointAfter[i];
+			}
+			ellipsoid.setCentroid(centre[0], centre[1], centre[2]);
+		}
+	}
+
+	private class NoConstrain implements ConstrainStrategy {
+
+		@Override
+		public void preConstrain(QuickEllipsoid e, Vector3d fixed) {
+			// do nothing
+		}
+
+		@Override
+		public void postConstrain(QuickEllipsoid e) {
+			// do nothing
 		}
 	}
 
