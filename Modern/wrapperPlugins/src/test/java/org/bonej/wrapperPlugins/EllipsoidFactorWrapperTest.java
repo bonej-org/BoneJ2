@@ -25,6 +25,12 @@ import org.junit.Test;
 public class EllipsoidFactorWrapperTest {
 
 
+    /**
+     * test for {@link EllipsoidFactorWrapper#isInvalid(QuickEllipsoid, ArrayList, int, int, int)}
+     *
+     * isInvalid can be true in three situations (too small, too large, too out of bounds),
+     * each of which are asserted here.
+     */
     @Test
     public void testIsInvalid()
     {
@@ -43,8 +49,8 @@ public class EllipsoidFactorWrapperTest {
         surfacePointList.addAll(Arrays.asList(surfacePoints));
 
         final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
-        wrapper.stackVolume = 100;
-        wrapper.nVectors = 2;
+        wrapper.stackVolume = 100;// -> too large condition depends on stackVolume
+        wrapper.nVectors = 2;// -> out of bounds conditions depends on nVectors
 
         //EXECUTE
         boolean tooSmallInvalid = wrapper.isInvalid(tooSmall, new ArrayList<>(),100,100,100);
