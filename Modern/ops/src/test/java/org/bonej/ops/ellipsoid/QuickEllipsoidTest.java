@@ -28,7 +28,7 @@ public class QuickEllipsoidTest {
      */
     @Test
     public void testSurfacePoints() {
-        QuickEllipsoid e = new QuickEllipsoid(1,2,3, 1,1,1,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        QuickEllipsoid e = new QuickEllipsoid(new double[]{1,2,3}, new double[]{1,1,1},new double[][]{{1,0,0},{0,1,0},{0,0,1}});
 
         double [][] vectors = new double[2][3];
         vectors[0][2] = 1; //z-direction

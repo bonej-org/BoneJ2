@@ -35,7 +35,10 @@ public class EllipsoidFactorWrapperTest {
     public void testGetAnchors(){
         //SET-UP
         final ImgPlus<UnsignedByteType> cube3x3x3 = new ImgPlus<>(get3x3x3CubeIn5x5x5Img());
-        final QuickEllipsoid[] ellipsoids = {new QuickEllipsoid(0.5, 3.0 / 2.0 * Math.sqrt(2.0), 3.0 / 2.0 * Math.sqrt(2.0), 1.5, 2.5, 2.5, new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}})};
+        double[] radii = new double[]{0.5, 3.0 / 2.0 * Math.sqrt(2.0), 3.0 / 2.0 * Math.sqrt(2.0)};
+        double[] centre = new double[]{1.5, 2.5, 2.5};
+        final QuickEllipsoid[] ellipsoids = {new QuickEllipsoid(radii, centre, new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0,
+                1}})};
 
         //EXECUTE
         List<Vector3d> anchors = EllipsoidFactorWrapper.getAnchors(ellipsoids, cube3x3x3);
@@ -81,7 +84,9 @@ public class EllipsoidFactorWrapperTest {
     @Test
     public void testFindContactPoints() {
         //SETUP
-        QuickEllipsoid e = new QuickEllipsoid(1,2.1,3.1,3,3,2,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        final double[] radii = {1, 2.1, 3.1};
+        final double[] centre = {3,3,2};
+        QuickEllipsoid e = new QuickEllipsoid(radii,centre,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
 
         double [][] vectors = new double[6][3];
         vectors[0][0] = 1; //x-direction
@@ -118,7 +123,9 @@ public class EllipsoidFactorWrapperTest {
 
     @Test
     public void testCalculateTorque() {
-        QuickEllipsoid e = new QuickEllipsoid(1,2.1,3.1,3,3,2,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        double[] radii = {1,2.1,3.1};
+        double[] centre = {3,3,2};
+        QuickEllipsoid e = new QuickEllipsoid(radii,centre,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
 
         double [][] vectors = new double[7][3];
         vectors[0][0] = 1; //x-direction
@@ -146,7 +153,9 @@ public class EllipsoidFactorWrapperTest {
      */
     @Test
     public void testWiggleSurfacePoint() {
-        QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        double[] radii = {1,2,3};
+        double[] centre = {0,0,0};
+        QuickEllipsoid e = new QuickEllipsoid(radii,centre,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
         final EllipsoidFactorWrapper.AnchorConstrain anchorConstrain = new EllipsoidFactorWrapper.AnchorConstrain();
         anchorConstrain.preConstrain(e, new Vector3d(1,0,0));
         EllipsoidFactorWrapper.wiggle(e);
@@ -159,14 +168,16 @@ public class EllipsoidFactorWrapperTest {
      */
     @Test
     public void testBumpSurfacePoint() {
-        QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        double[] radii = {1,2,3};
+        double[] centre = {0,0,0};
+        QuickEllipsoid e = new QuickEllipsoid(radii, centre, new double[][]{{1,0,0},{0,1,0},{0,0,1}});
 
         final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
         contactPoints.add(new double[]{0,0,3});
         final EllipsoidFactorWrapper.AnchorConstrain anchorConstrain = new EllipsoidFactorWrapper.AnchorConstrain();
         anchorConstrain.preConstrain(e, new Vector3d(1,0,0));
-        wrapper.bump(e, contactPoints, e.getCentre()[0], e.getCentre()[1], e.getCentre()[2]);
+        wrapper.bump(e, contactPoints, new double[]{e.getCentre()[0], e.getCentre()[1], e.getCentre()[2]});
         anchorConstrain.postConstrain(e);
         assertTrue("Bump does not preserve surface point.",onSurface(e, new double[]{1,0,0}));
     }
@@ -176,7 +187,9 @@ public class EllipsoidFactorWrapperTest {
      */
     @Test
     public void testTurnSurfacePoint() {
-        QuickEllipsoid e = new QuickEllipsoid(1,2,3,0,0,0,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        double[] radii = {1,2,3};
+        double[] centre = {0,0,0};
+        QuickEllipsoid e = new QuickEllipsoid(radii, centre,new double[][]{{1,0,0},{0,1,0},{0,0,1}});
 
         final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
         final ArrayList<double[]> contactPoints = new ArrayList<>();
