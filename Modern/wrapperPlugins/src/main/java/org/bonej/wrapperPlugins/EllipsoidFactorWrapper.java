@@ -126,7 +126,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String setup = "Setup";
 	@Parameter(label = "Vectors")
-	private int nVectors = 100;
+	int nVectors = 100;
 	@Parameter(label = "Sampling_increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.")
 	private double vectorIncrement = 1 / 2.3;
 	@Parameter(label = "Skeleton_points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.")
@@ -137,7 +137,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private int maxIterations = 100;
 	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length")
 	private double maxDrift = Math.sqrt(3);
-	private double stackVolume;
+	double stackVolume;
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String outputs = "Outputs";
 	@Parameter(label = "Show secondary images")
@@ -801,11 +801,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 * @return array of fitted ellipsoids
 	 */
 	private QuickEllipsoid[] findEllipsoids(final ImgPlus imp, List<Vector3d> skeletonPoints) {
-		/*
-		 * TODO lots of repeated code here: change to QuickEllipsoids[]
-		 * findEllipsoids(ImgPlus, optimisationStrategy) TODO optimisationStrategy
-		 * contains constraint + seedPointfinding strategies TODO lots more tests
-		 */
 		final int w = (int) imp.dimension(0);
 		final int h = (int) imp.dimension(1);
 		final int d = (int) imp.dimension(2);
@@ -916,8 +911,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *         stack, if the smallest radius is less than half a pixel length, or if
 	 *         the volume of the ellipsoid exceeds that of the image stack
 	 */
-	private boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double[]> surfacePoints, final int w,
-			final int h, final int d) {
+	boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double[]> surfacePoints, final int w,
+					  final int h, final int d) {
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
 			return true;
@@ -1166,6 +1161,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	/**
 	 * Rotate the ellipsoid theta radians around the unit vector formed by the sum
 	 * of torques effected by unit normals acting on the surface of the ellipsoid
+	 * (if the ellipsoid surface is in contact with the foreground boundary)
 	 *
 	 * @param ellipsoid
 	 *            the ellipsoid
@@ -1178,7 +1174,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 */
 	void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w,
 			final int h, final int d) {
-
 		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
 		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);

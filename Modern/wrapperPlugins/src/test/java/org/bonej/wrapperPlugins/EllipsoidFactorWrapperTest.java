@@ -25,6 +25,39 @@ import org.junit.Test;
 public class EllipsoidFactorWrapperTest {
 
 
+    @Test
+    public void testIsInvalid()
+    {
+        //SET-UP
+        QuickEllipsoid tooSmall = new QuickEllipsoid(new double[]{0.3,0.3,0.3},new double[]{50,50,50},new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}});
+        QuickEllipsoid tooLarge = new QuickEllipsoid(new double[]{10,10,10},new double[]{50,50,50},new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}});
+
+        //by sampling only in directions away from image coordinates, both surface points should be out-of-bounds, and the ellipsoid
+        // is invalid as a consequence
+        QuickEllipsoid tooFarOutOfBounds = new QuickEllipsoid(new double[]{2,2,2},new double[]{0,0,0},new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}});
+        double [][] vectors = new double[2][3];
+        vectors[0][2] = -1; //-z-direction
+        vectors[1][1] = -1; //-y-direction
+        final double[][] surfacePoints = tooFarOutOfBounds.getSurfacePoints(vectors);
+        final ArrayList<double[]> surfacePointList = new ArrayList<>();
+        surfacePointList.addAll(Arrays.asList(surfacePoints));
+
+        final EllipsoidFactorWrapper wrapper = new EllipsoidFactorWrapper();
+        wrapper.stackVolume = 100;
+        wrapper.nVectors = 2;
+
+        //EXECUTE
+        boolean tooSmallInvalid = wrapper.isInvalid(tooSmall, new ArrayList<>(),100,100,100);
+        boolean tooFarOutInvalid = wrapper.isInvalid(tooFarOutOfBounds, surfacePointList, 100,100,100);
+        boolean tooLargeInvalid = wrapper.isInvalid(tooLarge, new ArrayList<>(), 100,100,100);
+
+
+
+        //VERIFY
+        assertTrue("Too small ellipsoid is valid.", tooSmallInvalid);
+        assertTrue("Too large ellipsoid is valid.", tooLargeInvalid);
+        assertTrue("Too far out ellipsoid is valid.", tooFarOutInvalid);
+    }
     /**
      * test for {@link EllipsoidFactorWrapper#getAnchors(QuickEllipsoid[], ImgPlus)}
      *
