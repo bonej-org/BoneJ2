@@ -117,14 +117,14 @@
     <properties>
         <license.licenseName>bsd_2</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
-        <releaseProfiles>deploy-to-imagej</releaseProfiles>
+        <releaseProfiles>deploy-to-scijava</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
     </properties>
 
     <repositories>
         <repository>
-            <id>imagej.public</id>
-            <url>https://maven.imagej.net/content/groups/public</url>
+            <id>scijava.public</id>
+            <url>https://maven.scijava.org/content/groups/public</url>
         </repository>
     </repositories>
 </project>
