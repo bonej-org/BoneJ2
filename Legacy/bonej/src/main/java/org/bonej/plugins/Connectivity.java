@@ -22,6 +22,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.bonej.plugins;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.ImageCheck;
@@ -90,9 +91,7 @@ import ij.plugin.PlugIn;
  *      >Skeletonize3D homepage</a>
  *      </p>
  *
- * @deprecated Replaced by ConnectivityWrapper in Modern
  */
-@Deprecated
 public class Connectivity implements PlugIn {
 
 	/** working image width */
@@ -202,15 +201,13 @@ public class Connectivity implements PlugIn {
 			threads[thread] = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					long deltaEuler = 0;
 					for (int z = ai.getAndIncrement(); z <= depth; z = ai.getAndIncrement()) {
 						for (int y = 0; y <= height; y++) {
 							for (int x = 0; x <= width; x++) {
-								final byte[] octant = getOctant(stack, x, y, z);
-								if (octant[0] > 0) { // this octant is not empty
-									deltaEuler = getDeltaEuler(octant, eulerLUT);
-									sumEulerInt[z] += deltaEuler;
-								}
+								 final byte[] octant = getOctant(stack, x, y, z);
+									if (octant[0] == 0)
+										continue;
+								 sumEulerInt[z] += getDeltaEuler(octant, eulerLUT);
 							}
 						}
 					}
@@ -218,10 +215,7 @@ public class Connectivity implements PlugIn {
 			});
 		}
 		Multithreader.startAndJoin(threads);
-		double sumEuler = 0;
-		for (int i = 0; i < sumEulerInt.length; i++) {
-			sumEuler += sumEulerInt[i];
-		}
+		double sumEuler = Arrays.stream(sumEulerInt).sum();
 
 		sumEuler /= 8;
 		return sumEuler;
@@ -252,9 +246,7 @@ public class Connectivity implements PlugIn {
 	 * @return corresponding 8-pixel octant (0 if out of image)
 	 */
 	private byte[] getOctant(final ImageStack stack, final int x, final int y, final int z) {
-		final byte[] octant = new byte[9]; // index 0 is counter to determine
-											// octant
-		// emptiness, index 8 is at (x,y,z)
+		final byte[] octant = new byte[9];
 
 		octant[1] = getPixel(stack, x - 1, y - 1, z - 1);
 		octant[2] = getPixel(stack, x - 1, y, z - 1);
@@ -264,10 +256,13 @@ public class Connectivity implements PlugIn {
 		octant[6] = getPixel(stack, x - 1, y, z);
 		octant[7] = getPixel(stack, x, y - 1, z);
 		octant[8] = getPixel(stack, x, y, z);
+		
+		for (int i = 1; i < 9; i++)
+			if (octant[i] != 0) {
+				octant[0] = 1;
+				break;
+			}
 
-		for (int n = 1; n < 9; n++)
-			octant[0] -= octant[n]; // foreground is -1, so octant[0] contains
-		// nVoxels in octant
 		return octant;
 	} /* end getNeighborhood */
 
@@ -310,91 +305,55 @@ public class Connectivity implements PlugIn {
 	 * @return or false if the point is Euler invariant or not
 	 */
 	private int getDeltaEuler(final byte[] octant, final int[] LUT) {
-		int deltaEuler = 0;
-		if (octant[0] == 0) { // check to make sure there is a foreground voxel
-			// in this octant
-			return deltaEuler;
-		}
+		if (octant[0] == 0)
+			return 0;
+		
 		char n = 1;
-		// have to rotate octant voxels around vertex so that
-		// octant[8] is foreground as eulerLUT assumes that voxel in position
-		// 8 is always foreground. Only have to check each voxel once.
 		if (octant[8] == -1) {
-			n = 1;
-			if (octant[1] == -1)
-				n |= 128;
-			if (octant[2] == -1)
-				n |= 64;
-			if (octant[3] == -1)
-				n |= 32;
-			if (octant[4] == -1)
-				n |= 16;
-			if (octant[5] == -1)
-				n |= 8;
-			if (octant[6] == -1)
-				n |= 4;
-			if (octant[7] == -1)
-				n |= 2;
-		} else if (octant[7] == -1) {
-			n = 1;
-			if (octant[2] == -1)
-				n |= 128;
-			if (octant[4] == -1)
-				n |= 64;
-			if (octant[1] == -1)
-				n |= 32;
-			if (octant[3] == -1)
-				n |= 16;
-			if (octant[6] == -1)
-				n |= 8;
-			if (octant[5] == -1)
-				n |= 2;
-		} else if (octant[6] == -1) {
-			n = 1;
-			if (octant[3] == -1)
-				n |= 128;
-			if (octant[1] == -1)
-				n |= 64;
-			if (octant[4] == -1)
-				n |= 32;
-			if (octant[2] == -1)
-				n |= 16;
-			if (octant[5] == -1)
-				n |= 4;
-		} else if (octant[5] == -1) {
-			n = 1;
-			if (octant[4] == -1)
-				n |= 128;
-			if (octant[3] == -1)
-				n |= 64;
-			if (octant[2] == -1)
-				n |= 32;
-			if (octant[1] == -1)
-				n |= 16;
-		} else if (octant[4] == -1) {
-			n = 1;
-			if (octant[1] == -1)
-				n |= 8;
-			if (octant[3] == -1)
-				n |= 4;
-			if (octant[2] == -1)
-				n |= 2;
-		} else if (octant[3] == -1) {
-			n = 1;
-			if (octant[2] == -1)
-				n |= 8;
-			if (octant[1] == -1)
-				n |= 4;
-		} else if (octant[2] == -1) {
-			n = 1;
-			if (octant[1] == -1)
-				n |= 2;
-		} else {
-			// if we have got here, all the other voxels are background
-			n = 1;
+			if (octant[1] == -1) n |= 128;
+			if (octant[2] == -1) n |= 64;
+			if (octant[3] == -1) n |= 32;
+			if (octant[4] == -1) n |= 16;
+			if (octant[5] == -1) n |= 8;
+			if (octant[6] == -1) n |= 4;
+			if (octant[7] == -1) n |= 2;
 		}
-		deltaEuler += LUT[n];
-		return deltaEuler;
+		else if (octant[7] == -1) {
+			if (octant[2] == -1) n |= 128;
+			if (octant[4] == -1) n |= 64;
+			if (octant[1] == -1) n |= 32;
+			if (octant[3] == -1) n |= 16;
+			if (octant[6] == -1) n |= 8;
+			if (octant[5] == -1) n |= 2;
+		}
+		else if (octant[6] == -1) {
+			if (octant[3] == -1) n |= 128;
+			if (octant[1] == -1) n |= 64;
+			if (octant[4] == -1) n |= 32;
+			if (octant[2] == -1) n |= 16;
+			if (octant[5] == -1) n |= 4;
+		}
+		else if (octant[5] == -1) {
+			if (octant[4] == -1) n |= 128;
+			if (octant[3] == -1) n |= 64;
+			if (octant[2] == -1) n |= 32;
+			if (octant[1] == -1) n |= 16;
+		}
+		else if (octant[4] == -1) {
+			if (octant[1] == -1) n |= 8;
+			if (octant[3] == -1) n |= 4;
+			if (octant[2] == -1) n |= 2;
+		}
+		else if (octant[3] == -1) {
+			if (octant[2] == -1) n |= 8;
+			if (octant[1] == -1) n |= 4;
+		}
+		else if (octant[2] == -1) {
+			if (octant[1] == -1) n |= 2;
+		}
+		else return 1;
+
+		return LUT[n];
 	}/* end getDeltaEuler */
 
 	/*------------------------------------------------------------------------*/
@@ -432,6 +391,11 @@ public class Connectivity implements PlugIn {
 	 */
 	private long getStackEdges(final ImageStack stack) {
 		long nStackEdges = 0;
+		
+		final int w1 = width - 1;
+		final int h1 = height - 1;
+		final int d1 = depth -1;
+		
 		final int xInc = Math.max(1, width - 1);
 		final int yInc = Math.max(1, height - 1);
 		final int zInc = Math.max(1, depth - 1);
@@ -440,10 +404,12 @@ public class Connectivity implements PlugIn {
 		// this could be taken out into a variable to avoid recalculating it
 		// nStackEdges += getStackVertices(stack) * 3; = f * 3;
 
+		
+		
 		// left to right stack edges
 		for (int z = 0; z < depth; z += zInc) {
 			for (int y = 0; y < height; y += yInc) {
-				for (int x = 1; x < width - 1; x++) {
+				for (int x = 1; x < w1; x++) {
 					if (getPixel(stack, x, y, z) == -1)
 						nStackEdges++;
 				}
@@ -453,7 +419,7 @@ public class Connectivity implements PlugIn {
 		// back to front stack edges
 		for (int z = 0; z < depth; z += zInc) {
 			for (int x = 0; x < width; x += xInc) {
-				for (int y = 1; y < height - 1; y++) {
+				for (int y = 1; y < h1; y++) {
 					if (getPixel(stack, x, y, z) == -1)
 						nStackEdges++;
 				}
@@ -463,7 +429,7 @@ public class Connectivity implements PlugIn {
 		// top to bottom stack edges
 		for (int y = 0; y < height; y += yInc) {
 			for (int x = 0; x < width; x += xInc) {
-				for (int z = 1; z < depth - 1; z++) {
+				for (int z = 1; z < d1; z++) {
 					if (getPixel(stack, x, y, z) == -1)
 						nStackEdges++;
 				}
@@ -481,6 +447,11 @@ public class Connectivity implements PlugIn {
 	 * @return number of voxel faces intersecting with stack faces
 	 */
 	private long getStackFaces(final ImageStack stack) {
+		
+		final int w1 = width - 1;
+		final int h1 = height - 1;
+		final int d1 = depth -1;
+		
 		final int xInc = Math.max(1, width - 1);
 		final int yInc = Math.max(1, height - 1);
 		final int zInc = Math.max(1, depth - 1);
@@ -496,8 +467,8 @@ public class Connectivity implements PlugIn {
 
 		// top and bottom faces
 		for (int z = 0; z < depth; z += zInc) {
-			for (int y = 1; y < height - 1; y++) {
-				for (int x = 1; x < width - 1; x++) {
+			for (int y = 1; y < h1; y++) {
+				for (int x = 1; x < w1; x++) {
 					if (getPixel(stack, x, y, z) == -1)
 						nStackFaces++;
 				}
@@ -506,8 +477,8 @@ public class Connectivity implements PlugIn {
 
 		// back and front faces
 		for (int y = 0; y < height; y += yInc) {
-			for (int z = 1; z < depth - 1; z++) {
-				for (int x = 1; x < width - 1; x++) {
+			for (int z = 1; z < d1; z++) {
+				for (int x = 1; x < w1; x++) {
 					if (getPixel(stack, x, y, z) == -1)
 						nStackFaces++;
 				}
@@ -516,8 +487,8 @@ public class Connectivity implements PlugIn {
 
 		// left and right faces
 		for (int x = 0; x < width; x += xInc) {
-			for (int y = 1; y < height - 1; y++) {
-				for (int z = 1; z < depth - 1; z++) {
+			for (int y = 1; y < h1; y++) {
+				for (int z = 1; z < d1; z++) {
 					if (getPixel(stack, x, y, z) == -1)
 						nStackFaces++;
 				}
