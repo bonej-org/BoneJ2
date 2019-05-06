@@ -125,7 +125,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4dc> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
-		ellipsoid -> 1.0 - ellipsoid.getA() / ellipsoid.getC();
+			ellipsoid -> 1.0 - (1.0/(ellipsoid.getC() * ellipsoid.getC())) / (1.0/(ellipsoid.getA() * ellipsoid.getA()));
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
