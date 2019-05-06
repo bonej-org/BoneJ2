@@ -94,6 +94,8 @@ import ij.plugin.PlugIn;
  */
 public class Connectivity implements PlugIn {
 
+	private final static int[] EULER_LUT = fillEulerLUT();
+	
 	/** working image width */
 	private int width = 0;
 
@@ -101,7 +103,7 @@ public class Connectivity implements PlugIn {
 	private int height = 0;
 
 	/** working image depth */
-	private int depth = 0;
+	private int depth = 0; 
 
 	@Override
 	public void run(final String arg) {
@@ -190,9 +192,6 @@ public class Connectivity implements PlugIn {
 		setDimensions(imp);
 		final ImageStack stack = imp.getImageStack();
 
-		final int eulerLUT[] = new int[256];
-		fillEulerLUT(eulerLUT);
-
 		final int[] sumEulerInt = new int[depth + 1];
 
 		final AtomicInteger ai = new AtomicInteger(0);
@@ -207,7 +206,7 @@ public class Connectivity implements PlugIn {
 								final byte[] octant = getOctant(stack, x, y, z);
 								if (octant[0] == 0)
 									continue;
-								sumEulerInt[z] += getDeltaEuler(octant, eulerLUT);
+								sumEulerInt[z] += getDeltaEuler(octant);
 							}
 						}
 					}
@@ -304,11 +303,9 @@ public class Connectivity implements PlugIn {
 	 * @param octant
 	 *            9 element array containing nVoxels in zeroth element and 8
 	 *            voxel values
-	 * @param LUT
-	 *            Euler LUT
 	 * @return or false if the point is Euler invariant or not
 	 */
-	private int getDeltaEuler(final byte[] octant, final int[] LUT) {
+	private int getDeltaEuler(final byte[] octant) {
 		if (octant[0] == 0)
 			return 0;
 		
@@ -357,7 +354,7 @@ public class Connectivity implements PlugIn {
 		}
 		else return 1;
 
-		return LUT[n];
+		return EULER_LUT[n];
 	}/* end getDeltaEuler */
 
 	/*------------------------------------------------------------------------*/
@@ -741,142 +738,142 @@ public class Connectivity implements PlugIn {
 	 *
 	 * This is derived from Toriwaki & Yonekura (2002) Table 2 for 26-connected
 	 * images.
-	 *
-	 * @param LUT
-	 *            Euler LUT
 	 */
-	private final void fillEulerLUT(final int[] LUT) {
-		LUT[1] = 1;
-		LUT[3] = 0;
-		LUT[5] = 0;
-		LUT[7] = -1;
-		LUT[9] = -2;
-		LUT[11] = -1;
-		LUT[13] = -1;
-		LUT[15] = 0;
-		LUT[17] = 0;
-		LUT[19] = -1;
-		LUT[21] = -1;
-		LUT[23] = -2;
-		LUT[25] = -3;
-		LUT[27] = -2;
-		LUT[29] = -2;
-		LUT[31] = -1;
-		LUT[33] = -2;
-		LUT[35] = -1;
-		LUT[37] = -3;
-		LUT[39] = -2;
-		LUT[41] = -1;
-		LUT[43] = -2;
-		LUT[45] = 0;
-		LUT[47] = -1;
-		LUT[49] = -1;
+	private final static int[] fillEulerLUT() {
+		final int[] lut = new int[256];
+		lut[1] = 1;
+		lut[3] = 0;
+		lut[5] = 0;
+		lut[7] = -1;
+		lut[9] = -2;
+		lut[11] = -1;
+		lut[13] = -1;
+		lut[15] = 0;
+		lut[17] = 0;
+		lut[19] = -1;
+		lut[21] = -1;
+		lut[23] = -2;
+		lut[25] = -3;
+		lut[27] = -2;
+		lut[29] = -2;
+		lut[31] = -1;
+		lut[33] = -2;
+		lut[35] = -1;
+		lut[37] = -3;
+		lut[39] = -2;
+		lut[41] = -1;
+		lut[43] = -2;
+		lut[45] = 0;
+		lut[47] = -1;
+		lut[49] = -1;
 
-		LUT[51] = 0;
-		LUT[53] = -2;
-		LUT[55] = -1;
-		LUT[57] = 0;
-		LUT[59] = -1;
-		LUT[61] = 1;
-		LUT[63] = 0;
-		LUT[65] = -2;
-		LUT[67] = -3;
-		LUT[69] = -1;
-		LUT[71] = -2;
-		LUT[73] = -1;
-		LUT[75] = 0;
-		LUT[77] = -2;
-		LUT[79] = -1;
-		LUT[81] = -1;
-		LUT[83] = -2;
-		LUT[85] = 0;
-		LUT[87] = -1;
-		LUT[89] = 0;
-		LUT[91] = 1;
-		LUT[93] = -1;
-		LUT[95] = 0;
-		LUT[97] = -1;
-		LUT[99] = 0;
+		lut[51] = 0;
+		lut[53] = -2;
+		lut[55] = -1;
+		lut[57] = 0;
+		lut[59] = -1;
+		lut[61] = 1;
+		lut[63] = 0;
+		lut[65] = -2;
+		lut[67] = -3;
+		lut[69] = -1;
+		lut[71] = -2;
+		lut[73] = -1;
+		lut[75] = 0;
+		lut[77] = -2;
+		lut[79] = -1;
+		lut[81] = -1;
+		lut[83] = -2;
+		lut[85] = 0;
+		lut[87] = -1;
+		lut[89] = 0;
+		lut[91] = 1;
+		lut[93] = -1;
+		lut[95] = 0;
+		lut[97] = -1;
+		lut[99] = 0;
 
-		LUT[101] = 0;
-		LUT[103] = 1;
-		LUT[105] = 4;
-		LUT[107] = 3;
-		LUT[109] = 3;
-		LUT[111] = 2;
-		LUT[113] = -2;
-		LUT[115] = -1;
-		LUT[117] = -1;
-		LUT[119] = 0;
-		LUT[121] = 3;
-		LUT[123] = 2;
-		LUT[125] = 2;
-		LUT[127] = 1;
-		LUT[129] = -6;
-		LUT[131] = -3;
-		LUT[133] = -3;
-		LUT[135] = 0;
-		LUT[137] = -3;
-		LUT[139] = -2;
-		LUT[141] = -2;
-		LUT[143] = -1;
-		LUT[145] = -3;
-		LUT[147] = 0;
-		LUT[149] = 0;
+		lut[101] = 0;
+		lut[103] = 1;
+		lut[105] = 4;
+		lut[107] = 3;
+		lut[109] = 3;
+		lut[111] = 2;
+		lut[113] = -2;
+		lut[115] = -1;
+		lut[117] = -1;
+		lut[119] = 0;
+		lut[121] = 3;
+		lut[123] = 2;
+		lut[125] = 2;
+		lut[127] = 1;
+		lut[129] = -6;
+		lut[131] = -3;
+		lut[133] = -3;
+		lut[135] = 0;
+		lut[137] = -3;
+		lut[139] = -2;
+		lut[141] = -2;
+		lut[143] = -1;
+		lut[145] = -3;
+		lut[147] = 0;
+		lut[149] = 0;
 
-		LUT[151] = 3;
-		LUT[153] = 0;
-		LUT[155] = 1;
-		LUT[157] = 1;
-		LUT[159] = 2;
-		LUT[161] = -3;
-		LUT[163] = -2;
-		LUT[165] = 0;
-		LUT[167] = 1;
-		LUT[169] = 0;
-		LUT[171] = -1;
-		LUT[173] = 1;
-		LUT[175] = 0;
-		LUT[177] = -2;
-		LUT[179] = -1;
-		LUT[181] = 1;
-		LUT[183] = 2;
-		LUT[185] = 1;
-		LUT[187] = 0;
-		LUT[189] = 2;
-		LUT[191] = 1;
-		LUT[193] = -3;
-		LUT[195] = 0;
-		LUT[197] = -2;
-		LUT[199] = 1;
+		lut[151] = 3;
+		lut[153] = 0;
+		lut[155] = 1;
+		lut[157] = 1;
+		lut[159] = 2;
+		lut[161] = -3;
+		lut[163] = -2;
+		lut[165] = 0;
+		lut[167] = 1;
+		lut[169] = 0;
+		lut[171] = -1;
+		lut[173] = 1;
+		lut[175] = 0;
+		lut[177] = -2;
+		lut[179] = -1;
+		lut[181] = 1;
+		lut[183] = 2;
+		lut[185] = 1;
+		lut[187] = 0;
+		lut[189] = 2;
+		lut[191] = 1;
+		lut[193] = -3;
+		lut[195] = 0;
+		lut[197] = -2;
+		lut[199] = 1;
 
-		LUT[201] = 0;
-		LUT[203] = 1;
-		LUT[205] = -1;
-		LUT[207] = 0;
-		LUT[209] = -2;
-		LUT[211] = 1;
-		LUT[213] = -1;
-		LUT[215] = 2;
-		LUT[217] = 1;
-		LUT[219] = 2;
-		LUT[221] = 0;
-		LUT[223] = 1;
-		LUT[225] = 0;
-		LUT[227] = 1;
-		LUT[229] = 1;
-		LUT[231] = 2;
-		LUT[233] = 3;
-		LUT[235] = 2;
-		LUT[237] = 2;
-		LUT[239] = 1;
-		LUT[241] = -1;
-		LUT[243] = 0;
-		LUT[245] = 0;
-		LUT[247] = 1;
-		LUT[249] = 2;
-		LUT[251] = 1;
-		LUT[253] = 1;
-		LUT[255] = 0;
+		lut[201] = 0;
+		lut[203] = 1;
+		lut[205] = -1;
+		lut[207] = 0;
+		lut[209] = -2;
+		lut[211] = 1;
+		lut[213] = -1;
+		lut[215] = 2;
+		lut[217] = 1;
+		lut[219] = 2;
+		lut[221] = 0;
+		lut[223] = 1;
+		lut[225] = 0;
+		lut[227] = 1;
+		lut[229] = 1;
+		lut[231] = 2;
+		lut[233] = 3;
+		lut[235] = 2;
+		lut[237] = 2;
+		lut[239] = 1;
+		lut[241] = -1;
+		lut[243] = 0;
+		lut[245] = 0;
+		lut[247] = 1;
+		lut[249] = 2;
+		lut[251] = 1;
+		lut[253] = 1;
+		lut[255] = 0;
+		
+		return lut;
 	}/* end fillEulerLUT */
 }
