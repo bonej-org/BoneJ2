@@ -204,10 +204,10 @@ public class Connectivity implements PlugIn {
 					for (int z = ai.getAndIncrement(); z <= depth; z = ai.getAndIncrement()) {
 						for (int y = 0; y <= height; y++) {
 							for (int x = 0; x <= width; x++) {
-								 final byte[] octant = getOctant(stack, x, y, z);
-									if (octant[0] == 0)
-										continue;
-								 sumEulerInt[z] += getDeltaEuler(octant, eulerLUT);
+								final byte[] octant = getOctant(stack, x, y, z);
+								if (octant[0] == 0)
+									continue;
+								sumEulerInt[z] += getDeltaEuler(octant, eulerLUT);
 							}
 						}
 					}
@@ -403,12 +403,6 @@ public class Connectivity implements PlugIn {
 		final int xInc = Math.max(1, w1);
 		final int yInc = Math.max(1, h1);
 		final int zInc = Math.max(1, d1);
-
-		// vertex voxels contribute 3 edges
-		// this could be taken out into a variable to avoid recalculating it
-		// nStackEdges += getStackVertices(stack) * 3; = f * 3;
-
-		
 		
 		// left to right stack edges
 		for (int z = 0; z < depth; z += zInc) {
@@ -460,14 +454,6 @@ public class Connectivity implements PlugIn {
 		final int yInc = Math.max(1, h1);
 		final int zInc = Math.max(1, d1);
 		long nStackFaces = 0;
-
-		// vertex voxels contribute 3 faces
-		// this could be taken out into a variable to avoid recalculating it
-		// nStackFaces += getStackVertices(stack) * 3;
-
-		// edge voxels contribute 2 faces
-		// this could be taken out into a variable to avoid recalculating it
-		// nStackFaces += getStackEdges(stack) * 2;
 
 		// top and bottom faces
 		for (int z = 0; z < depth; z += zInc) {
@@ -668,10 +654,6 @@ public class Connectivity implements PlugIn {
 		final int zInc = Math.max(1, depth - 1);
 		long nEdgeVertices = 0;
 
-		// vertex voxels contribute 1 edge vertex each
-		// this could be taken out into a variable to avoid recalculating it
-		// nEdgeVertices += getStackVertices(stack);
-
 		// left->right edges
 		for (int z = 0; z < depth; z += zInc) {
 			for (int y = 0; y < height; y += yInc) {
@@ -736,10 +718,7 @@ public class Connectivity implements PlugIn {
 
 		final long f = getStackVertices(stack);
 		final long e = getStackEdges(stack) + 3 * f;
-		final long c = getStackFaces(stack) + 2 * e - 3 * f; // there are
-																// already 6 *
-		// f in 2 * e, so remove
-		// 3 * f
+		final long c = getStackFaces(stack) + 2 * e - 3 * f;
 		final long d = getEdgeVertices(stack) + f;
 		final long a = getFaceVertices(stack);
 		final long b = getFaceEdges(stack);
