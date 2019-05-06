@@ -247,14 +247,18 @@ public class Connectivity implements PlugIn {
 	 */
 	private byte[] getOctant(final ImageStack stack, final int x, final int y, final int z) {
 		final byte[] octant = new byte[9];
+		
+		final int x1 = x - 1;
+		final int y1 = y - 1;
+		final int z1 = z - 1;
 
-		octant[1] = getPixel(stack, x - 1, y - 1, z - 1);
-		octant[2] = getPixel(stack, x - 1, y, z - 1);
-		octant[3] = getPixel(stack, x, y - 1, z - 1);
-		octant[4] = getPixel(stack, x, y, z - 1);
-		octant[5] = getPixel(stack, x - 1, y - 1, z);
-		octant[6] = getPixel(stack, x - 1, y, z);
-		octant[7] = getPixel(stack, x, y - 1, z);
+		octant[1] = getPixel(stack, x1, y1, z1);
+		octant[2] = getPixel(stack, x1, y, z1);
+		octant[3] = getPixel(stack, x, y1, z1);
+		octant[4] = getPixel(stack, x, y, z1);
+		octant[5] = getPixel(stack, x1, y1, z);
+		octant[6] = getPixel(stack, x1, y, z);
+		octant[7] = getPixel(stack, x, y1, z);
 		octant[8] = getPixel(stack, x, y, z);
 		
 		for (int i = 1; i < 9; i++)
@@ -396,9 +400,9 @@ public class Connectivity implements PlugIn {
 		final int h1 = height - 1;
 		final int d1 = depth -1;
 		
-		final int xInc = Math.max(1, width - 1);
-		final int yInc = Math.max(1, height - 1);
-		final int zInc = Math.max(1, depth - 1);
+		final int xInc = Math.max(1, w1);
+		final int yInc = Math.max(1, h1);
+		final int zInc = Math.max(1, d1);
 
 		// vertex voxels contribute 3 edges
 		// this could be taken out into a variable to avoid recalculating it
@@ -452,9 +456,9 @@ public class Connectivity implements PlugIn {
 		final int h1 = height - 1;
 		final int d1 = depth -1;
 		
-		final int xInc = Math.max(1, width - 1);
-		final int yInc = Math.max(1, height - 1);
-		final int zInc = Math.max(1, depth - 1);
+		final int xInc = Math.max(1, w1);
+		final int yInc = Math.max(1, h1);
+		final int zInc = Math.max(1, d1);
 		long nStackFaces = 0;
 
 		// vertex voxels contribute 3 faces
