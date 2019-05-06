@@ -71,6 +71,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
+import org.joml.Matrix3d;
 import org.joml.Matrix4d;
 import org.joml.Matrix4dc;
 import org.joml.Quaterniond;
@@ -155,6 +156,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		description = "Show the radii of the fitted ellipsoid in the results",
 		required = false)
 	private boolean printRadii;
+	@Parameter(label = "Show eigenvectors",
+			description = "Show the eigenvectors of the fitted ellipsoid in the results",
+			required = false)
+		private boolean printVectors;
 	private static Long seed;
 
 	/**
@@ -231,6 +236,19 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			SharedTable.add(label, "Radius a", ellipsoid.getA());
 			SharedTable.add(label, "Radius b", ellipsoid.getB());
 			SharedTable.add(label, "Radius c", ellipsoid.getC());
+		}
+		if (printVectors) {
+			Matrix3d eigenVectors = new Matrix3d();
+			ellipsoid.getOrientation().get3x3(eigenVectors);
+			SharedTable.add(label, "m00", eigenVectors.m00);
+			SharedTable.add(label, "m01", eigenVectors.m01);
+			SharedTable.add(label, "m02", eigenVectors.m02);
+			SharedTable.add(label, "m10", eigenVectors.m10);
+			SharedTable.add(label, "m11", eigenVectors.m11);
+			SharedTable.add(label, "m12", eigenVectors.m12);
+			SharedTable.add(label, "m20", eigenVectors.m20);
+			SharedTable.add(label, "m21", eigenVectors.m21);
+			SharedTable.add(label, "m22", eigenVectors.m22);
 		}
 	}
 
