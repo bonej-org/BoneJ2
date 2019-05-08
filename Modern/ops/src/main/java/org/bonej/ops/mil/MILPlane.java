@@ -184,7 +184,7 @@ public class MILPlane<B extends BooleanType<B>> extends
 		long phaseChanges = 0;
 		for (long i = 0; i < samples; i++) {
 			final boolean current = getVoxel(access, start);
-			if (current && !previous) {
+			if (current != previous) {
 				phaseChanges++;
 			}
 			previous = current;
