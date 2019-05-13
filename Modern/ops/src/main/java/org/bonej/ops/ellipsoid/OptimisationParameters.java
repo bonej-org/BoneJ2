@@ -1,5 +1,10 @@
 package org.bonej.ops.ellipsoid;
 
+/**
+ * A class wrapping the optimisation parameters for {@link EllipsoidOptimisationStrategy}.
+ *
+ * @author Alessandro Felder
+ */
 public class OptimisationParameters {
     double vectorIncrement;
     int nVectors;

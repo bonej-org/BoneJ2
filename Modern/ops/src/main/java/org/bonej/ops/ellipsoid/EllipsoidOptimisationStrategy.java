@@ -11,11 +11,25 @@ import org.scijava.plugin.Plugin;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 
+/**
+ * An Op that handles the stochastic optimisation of local ellipsoids for the Ellipsoid Factor algorithm
+ * <p>
+ *     Main inputs are a byte array representing the fore- and background, and a seeding point.
+ *     The input {@link OptimisationParameters} regulate the optimisation.
+ *     The input {@link EllipsoidConstrainStrategy} determine how the seed point is constrained.
+ *     The optimisation consists of a custom order of stochastically "bumping","wiggling" and "turning"
+ *     the ellipsoid until it achieves a locally maximum volume.
+ *     Returns a locally maximal ellipsoid.
+ * </p>
+ *
+ * @author Alessandro Felder
+ */
+
 @Plugin(type = Op.class)
 public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> {
 	private static Random rng = new Random();
 	@Parameter
-	private long[] imageDimensions;
+	private long[] imageDimensions;//TODO shift into OptimisationParameters
 	@Parameter
 	private LogService logService;
 	@Parameter

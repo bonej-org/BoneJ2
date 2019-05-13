@@ -14,6 +14,7 @@ import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
  * </p>
  *
  * @author Michael Doube
+ * @author Alessandro Felder
  */
 public class QuickEllipsoid {
 
