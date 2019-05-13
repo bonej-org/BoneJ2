@@ -53,30 +53,19 @@ public class QuickEllipsoid {
 	 * Construct an QuickEllipsoid from the radii (a,b,c), centroid (cx, cy, cz) and
 	 * Eigenvectors.
 	 *
-	 * @param a
-	 *            1st radius.
-	 * @param b
-	 *            2nd radius.
-	 * @param c
-	 *            3rd radius.
-	 * @param cx
-	 *            centroid x-coordinate.
-	 * @param cy
-	 *            centroid y-coordinate.
-	 * @param cz
-	 *            centroid z-coordinate.
-	 * @param eigenVectors
-	 *            the orientation of the ellipsoid.
+	 * @param radii radii (a,b,c) as a double array
+	 * @param centroid ellipsoid centre x,y,z coordinates as a double array
+	 * @param eigenVectors the orientation of the ellipsoid.
+	 *
 	 */
-	public QuickEllipsoid(final double a, final double b, final double c, final double cx, final double cy, final double cz,
-						  final double[][] eigenVectors) {
+	public QuickEllipsoid(final double[] radii, final double[] centroid, final double[][] eigenVectors) {
 
-		ra = a;
-		rb = b;
-		rc = c;
-		this.cx = cx;
-		this.cy = cy;
-		this.cz = cz;
+		ra = radii[0];
+		rb = radii[1];
+		rc = radii[2];
+		this.cx = centroid[0];
+		this.cy = centroid[1];
+		this.cz = centroid[2];
 		ev = new double[3][3];
 		ed = new double[3][3];
 		eh = new double[3][3];
@@ -224,7 +213,7 @@ public class QuickEllipsoid {
 		for (int i = 0; i < ev.length; i++) {
 			clone[i] = ev[i].clone();
 		}
-		return new QuickEllipsoid(ra, rb, rc, cx, cy, cz, clone);
+		return new QuickEllipsoid(new double[]{ra, rb, rc}, new double[]{cx, cy, cz}, clone);
 	}
 
 	/**

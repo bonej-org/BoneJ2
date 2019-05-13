@@ -145,5 +145,11 @@
             <artifactId>imagej</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-ops</artifactId>
+            <version>0.43.2</version>
+            <classifier>tests</classifier>
+        </dependency>
     </dependencies>
 </project>
