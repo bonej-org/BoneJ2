@@ -71,7 +71,7 @@ import org.scijava.ui.UIService;
  *
  * @author Richard Domander
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity>Connectivity (Modern)")
 public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
 
 	static final String NEGATIVE_CONNECTIVITY =
@@ -222,7 +222,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 			return;
 		}
 
-		if (!ElementUtil.isColorsBinary(inputImage)) {
+		if (!ElementUtil.isBinary(inputImage)) {
 			cancel(NOT_BINARY);
 		}
 	}
