@@ -173,7 +173,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter(label = "Display MIL vectors",
 			description = "Show the vectors of the mean intercept lengths",
 			required = false)
-		private boolean displayMILVectors;
+	private boolean displayMILVectors;
 	private static Long seed;
 
 	/**
