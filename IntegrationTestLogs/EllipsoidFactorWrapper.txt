@@ -1,0 +1,69 @@
+Manual integration tests for the Ellipsoid Factor command.
+They complement the automated wrapper tests in EllipsoidFactorWrapperTest
+
+Case 1
+=======================================================================
+Test output of rods_plates
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntegrationTestLogs/rods_plates.tif
+3. Run Plugins > BoneJ > Ellipsoid Factor 2
+4. TODO
+5. Click "OK" (Execution takes a while)
+
+Expected results
+-----------------------------------------------------------------------
+- One (new) result rows in the table
+- Three (new) columns: "Label", "Filling percentage" and "Number of Ellipsoids"
+- Filling percentage > 90%
+- Plates are plates and rods are rods
+
+Completed TODO Alessandro Felder
+-----------------------------------------------------------------------
+
+Case 2
+=======================================================================
+Test output of emu.tif
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntegrationTestLogs/emu.tif
+3. Run Plugins > BoneJ > Ellipsoid Factor 2
+4. TODO
+5. Click "OK" (Execution takes a while)
+
+Expected results
+-----------------------------------------------------------------------
+- One (new) result rows in the table
+- Three (new) columns: "Label", "Filling percentage" and "Number of Ellipsoids"
+- Filling percentage > 90%
+- Emu should be mainly plates (blue) with two clear rods (yellow) on slice 166.
+
+Completed May 13 2019, Alessandro Felder
+-----------------------------------------------------------------------
+
+
+Case 3
+=======================================================================
+Test output of shrew.tif
+=======================================================================
+Steps
+-----------------------------------------------------------------------
+1. Run File > Open >
+2. Select ./IntegrationTestLogs/shrew.tif
+3. Run Plugins > BoneJ > Ellipsoid Factor 2
+4. TODO
+5. Click "OK" (Execution takes a while)
+
+Expected results
+-----------------------------------------------------------------------
+- One (new) result rows in the table
+- Three (new) columns: "Label", "Filling percentage" and "Number of Ellipsoids"
+- Filling percentage > 90%
+- Shrew should have a tendency towards plates with a rod in the x-y middle visible through most z-slices
+
+Completed TODO Alessandro Felder
+-----------------------------------------------------------------------
