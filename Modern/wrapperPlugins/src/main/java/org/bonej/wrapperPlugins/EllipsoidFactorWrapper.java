@@ -33,9 +33,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import net.imglib2.type.numeric.integer.*;
-import org.bonej.ops.ellipsoid.OptimisationParameters;
 import org.bonej.ops.ellipsoid.EllipsoidOptimisationStrategy;
+import org.bonej.ops.ellipsoid.OptimisationParameters;
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.bonej.ops.ellipsoid.constrain.AnchorEllipsoidConstrain;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
@@ -72,6 +71,7 @@ import net.imglib2.img.array.ArrayRandomAccess;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.integer.*;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.IntervalView;
@@ -139,6 +139,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length")
 	private double maxDrift = Math.sqrt(3);
 
+	@Parameter(label = "Repetitions", description = "Number of repetitions over which to average EF value")
+	private int repetitions = 1;
+
 	//what seed points should I use?
 	@Parameter(label = "Seed points on distance ridge", description = "tick this if you would like ellipsoids to be seeded on the foreground distance ridge")
 	private boolean seedOnDistanceRidge = true;
@@ -184,12 +187,36 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	public void run() {
 		final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImgPlus);
 
-		final QuickEllipsoid[] ellipsoids = runEllipsoidOptimisation(inputImgPlus);
-		if (ellipsoids.length == 0) {
-			cancel(NO_ELLIPSOIDS_FOUND);
-			return;
+		int totalEllipsoids = 0;
+		final EFOutput output = new EFOutput(repetitions);
+
+		for(int i=0; i<repetitions;i++) {
+			final QuickEllipsoid[] ellipsoids = runEllipsoidOptimisation(inputImgPlus);
+			if (ellipsoids.length == 0) {
+				cancel(NO_ELLIPSOIDS_FOUND);
+				return;
+			}
+			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
+			long start = System.currentTimeMillis();
+			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, Arrays.asList(ellipsoids));
+			long stop = System.currentTimeMillis();
+			logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
+
+			createEFOutputs(ellipsoidIdentityImage,ellipsoids);
+			output.addImage(efImage.getImg(),i);
+			totalEllipsoids += ellipsoids.length;
 		}
-		createEFOutputs(inputAsBitType, ellipsoids);
+
+		efImage = new ImgPlus<>(output.getAveragedEFImage());
+		efImage.setChannelMaximum(0, 1);
+		efImage.setChannelMinimum(0, -1);
+		efImage.initializeColorTables(1);
+		efImage.setColorTable(ColorTables.FIRE, 0);
+
+		final double numberOfForegroundVoxels = countTrue(inputAsBitType);
+		final double numberOfAssignedVoxels = countAssignedVoxels(efImage.getImg());
+		final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
+		addResults(totalEllipsoids, fillingPercentage);
 		statusService.showStatus("Ellipsoid Factor completed");
 	}
 
@@ -259,6 +286,79 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		long stop = System.currentTimeMillis();
 		logService.info("Found " + quickEllipsoids.length + " ellipsoids in " + (stop - start) + " ms");
 		return quickEllipsoids;
+	}
+
+	private class EFOutput {
+		private int repetitions;
+		private Img<FloatType> ellipsoidFactorImage;
+		private Img<FloatType> currentAverage;
+		private Img<FloatType> previousAverage;
+
+		EFOutput(int reps) {
+			repetitions = reps;
+			ellipsoidFactorImage = null;
+		}
+
+		public void addImage(Img<FloatType> ef, int currentRep){
+			if(repetitions>0 && ellipsoidFactorImage!=null) {
+					if(currentRep>1) {
+						previousAverage = (Img) opService.math().divide(ellipsoidFactorImage, new FloatType(currentRep - 1));
+					}
+					else
+					{
+						previousAverage = ellipsoidFactorImage;
+					}
+
+				ellipsoidFactorImage = (Img) opService.math().add(ef, (IterableInterval<FloatType>) ellipsoidFactorImage);
+					currentAverage = (Img) opService.math().divide(ellipsoidFactorImage, new FloatType(currentRep));
+					currentAverage = (Img) opService.math().subtract(previousAverage, (IterableInterval<FloatType>) currentAverage);
+					final Cursor<FloatType> cursor = currentAverage.cursor();
+					while(cursor.hasNext())
+					{
+						final float next = cursor.next().get();
+						if(next < 0){
+							cursor.get().setReal(-next);
+						}
+					}
+					cursor.reset();
+					double max = 0;
+					double min = 2;
+					double mean = 0;
+					double count = 0;
+					while(cursor.hasNext())
+					{
+						final float next = cursor.next().get();
+						if(Double.isNaN(next))
+							continue;
+						if(next>max){
+							max = next;
+						}
+						if(next<min)
+						{
+							min = next;
+						}
+						mean += next;
+						count++;
+					}
+					mean /= count;
+
+					logService.info("mean change: "+mean);
+					logService.info("max change: "+max);
+					logService.info("min change: "+min);
+			}
+			else
+			{
+				ellipsoidFactorImage = ef;
+			}
+		}
+
+		public Img<FloatType> getAveragedEFImage(){
+			if(repetitions>1) {
+				return (Img<FloatType>) opService.math().divide(ellipsoidFactorImage, new FloatType(repetitions));
+			}
+			else return ellipsoidFactorImage;
+		}
+
 	}
 
 	// region --seed point finding--
@@ -457,10 +557,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		vImage.setChannelMinimum(0, -1.0f);
 	}
 
-	private long countAssignedVoxels(final Iterable<IntType> ellipsoidIdentityImage) {
+	private long countAssignedVoxels(final Iterable<FloatType> ellipsoidFactorImage) {
 		final LongType assignedVoxels = new LongType();
-		ellipsoidIdentityImage.forEach(e -> {
-			if (e.get() >= 0) {
+		ellipsoidFactorImage.forEach(e -> {
+			if (Float.isFinite(e.get())) {
 				assignedVoxels.inc();
 			}
 		});
@@ -513,27 +613,16 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
 
-	private void createEFOutputs(ImgPlus<BitType> inputAsBitType, QuickEllipsoid[] ellipsoids) {
-		statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-		long start = System.currentTimeMillis();
-		final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, Arrays.asList(ellipsoids));
-		long stop = System.currentTimeMillis();
-		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
-
+	private void createEFOutputs(Img<IntType> ellipsoidIdentityImage, QuickEllipsoid[] ellipsoids) {
 		createPrimaryOutputImages(Arrays.asList(ellipsoids), ellipsoidIdentityImage);
 		if (showSecondaryImages)
 			createSecondaryOutputImages(Arrays.asList(ellipsoids), ellipsoidIdentityImage);
-
-		final double numberOfForegroundVoxels = countTrue(inputAsBitType);
-		final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidIdentityImage);
-		final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
-		addResults(Arrays.asList(ellipsoids), fillingPercentage);
 	}
 
-	private void addResults(final List<QuickEllipsoid> ellipsoids, double fillingPercentage) {
+	private void addResults(final int totalEllipsoids, double fillingPercentage) {
 		final String label = inputImgPlus.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
-		SharedTable.add(label, "number of ellipsoids found", ellipsoids.size());
+		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		} else {
