@@ -90,7 +90,7 @@ public class ThicknessWrapper extends ContextCommand {
 
 	@Parameter(label = "Mask thickness maps",
 		description = "Remove pixel artifacts from the thickness maps",
-		required = false)
+		persist = false, required = false)
 	private boolean maskArtefacts = true;
 
 	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
