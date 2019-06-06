@@ -3,6 +3,7 @@ package org.bonej.ops.skeletonize;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
+import net.imagej.ops.AbstractOpTest;
 import net.imagej.ops.OpMatchingService;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
@@ -23,42 +24,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class FindRidgePointsTest {
-
-    //TODO: can I make this extend the imagej-ops AbstractTestOp class
-    @Parameter
-    protected Context context;
-
-    @Parameter
-    protected OpService ops;
-
-    @Parameter
-    protected OpMatchingService matcher;
-
-    /** Subclasses can override to create a context with different services. */
-    protected Context createContext() {
-        return new Context(OpService.class, OpMatchingService.class,
-                CacheService.class);
-    }
-
-    /** Sets up a SciJava context with {@link OpService}. */
-    @Before
-    public void setUp() {
-        createContext().inject(this);
-    }
-
-    /**
-     * Disposes of the {@link OpService} that was initialized in {@link #setUp()}.
-     */
-    @After
-    public synchronized void cleanUp() {
-        if (context != null) {
-            context.dispose();
-            context = null;
-            ops = null;
-            matcher = null;
-        }
-    }
+public class FindRidgePointsTest extends AbstractOpTest {
 
     @Test
     public void testSphereRidge() throws Exception {

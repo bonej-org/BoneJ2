@@ -33,10 +33,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.bonej.ops.ellipsoid.EllipsoidFactorOutputGenerator;
-import org.bonej.ops.ellipsoid.EllipsoidOptimisationStrategy;
-import org.bonej.ops.ellipsoid.OptimisationParameters;
-import org.bonej.ops.ellipsoid.QuickEllipsoid;
+import org.bonej.ops.ellipsoid.*;
 import org.bonej.ops.ellipsoid.constrain.AnchorEllipsoidConstrain;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
@@ -158,6 +155,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed && not anchor seed, 2=surface anchor seed
 
+	private EllipsoidFactorErrorTracking errorTracking;
 	/**
 	 * The EF results in a {@link Table}, null if there are no results
 	 */
@@ -174,8 +172,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		int totalEllipsoids = 0;
 		List<ImgPlus> outputList = null;
+		errorTracking = new EllipsoidFactorErrorTracking();
 
-		for(int i = 0; i< runs; i++) {
+		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
 			final QuickEllipsoid[] ellipsoids = runEllipsoidOptimisation(inputImgPlus);
 			if (ellipsoids.length == 0) {
@@ -192,11 +191,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 			//add result of this run to overall result
 			//TODO do not match Op every time
-			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage, Arrays.asList(ellipsoids), showSecondaryImages);
+			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
+					Arrays.asList(ellipsoids),
+					showSecondaryImages);
 
 			if(outputList!=null)
 			{
 				outputList = sumOutput(outputList, currentOutputList);
+				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
+				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
 			}
 			else{
 				outputList = currentOutputList;
@@ -308,100 +311,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return quickEllipsoids;
 	}
 
-	/*private class EFOutput {
-		private int currentIteration;
-		private Img<FloatType> currentAverage;
-		private Img<FloatType> previousAverage;
-		private ArrayList<ImgPlus> primaryList;
-		private ArrayList<ImgPlus> secondaryList;
-
-		EFOutput() {
-			currentIteration = 0; //watch out if this is ever parallelised!
-			primaryList = new ArrayList<>();
-			secondaryList = new ArrayList<>();
-		}
-
-		public void addResultOfOneRun(Img<IntType> id, List<QuickEllipsoid> ellipsoids){
-			currentIteration++;
-			Img currentEllipsoidFactorImage = createEFImage(ellipsoids, id);
-
-			if(currentIteration>1)
-			{
-				Img ellipsoidFactorImage = primaryList.stream().filter(i -> i.getName() == "EF").findFirst().get().getImg();
-				primaryList.clear();
-				outputCurrentErrors(currentEllipsoidFactorImage);
-				currentEllipsoidFactorImage = (Img) opService.math().add(ellipsoidFactorImage, (IterableInterval<FloatType>) currentEllipsoidFactorImage);
-			}
-
-			primaryList.add(new ImgPlus(currentEllipsoidFactorImage, "EF"));
-		}
-
-		private void outputCurrentErrors(Img<FloatType> currentEllipsoidFactorImage) {
-			if(currentIteration>1) {
-						previousAverage = (Img) opService.math().divide(currentEllipsoidFactorImage, new FloatType(currentIteration - 1));
-			}
-			else
-			{
-				previousAverage = currentEllipsoidFactorImage;
-			}
-
-			currentAverage = (Img) opService.math().divide(currentEllipsoidFactorImage, new FloatType(currentIteration));
-			currentAverage = (Img) opService.math().subtract(previousAverage, (IterableInterval<FloatType>) currentAverage);
-			final Cursor<FloatType> cursor = currentAverage.cursor();
-			while(cursor.hasNext())
-			{
-				final float next = cursor.next().get();
-				if(next < 0){
-					cursor.get().setReal(-next);
-				}
-			}
-			cursor.reset();
-			double max = 0;
-			double min = 2;
-			double mean = 0;
-			double count = 0;
-			while(cursor.hasNext()) {
-				final float next = cursor.next().get();
-				if (Double.isNaN(next))
-					continue;
-				if (next > max) {
-					max = next;
-				}
-				if (next < min) {
-					min = next;
-				}
-				mean += next;
-				count++;
-			}
-			mean /= count;
-
-			logService.info("mean change: "+mean);
-			logService.info("max change: "+max);
-			logService.info("min change: "+min);
-		}
-
-		public List<ImgPlus> getPrimaryOutputs()
-		{
-			if(currentIteration >1) {
-				ArrayList<ImgPlus> tmp = new ArrayList<>();
-				for(int i=0; i<primaryList.size(); i++)
-				{
-					tmp.add(new ImgPlus((Img<FloatType>) opService.math().divide(primaryList.get(i).getImg(), new FloatType(currentIteration)),primaryList.get(i).getName()));
-				}
-				primaryList.clear();
-				primaryList.addAll(tmp);
-			}
-			primaryList.forEach(i ->
-			{
-					i.setChannelMaximum(0, 1);
-					i.setChannelMinimum(0, -1);
-					i.initializeColorTables(1);
-					i.setColorTable(ColorTables.FIRE, 0);
-			});
-			return primaryList;
-		}
-	*/
-
 	// region --seed point finding--
 	/**
 	 * This method finds the anchor points in the input image. Anchor points are
@@ -472,24 +381,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	//endregion
 
 
-	private void mapValuesToImage(final double[] values, final IterableInterval<IntType> ellipsoidIdentityImage,
-			final RandomAccessible<FloatType> ellipsoidFactorImage) {
-		final RandomAccess<FloatType> ef = ellipsoidFactorImage.randomAccess();
-		final Cursor<IntType> id = ellipsoidIdentityImage.localizingCursor();
-		final long[] position = new long[3];
-		while (id.hasNext()) {
-			id.fwd();
-			if (id.get().getInteger() < 0) {
-				continue;
-			}
-			id.localize(position);
-			final double value = values[id.get().getInteger()];
-			ef.setPosition(position);
-			ef.get().setReal(value);
-		}
-	}
-
-
 	private long countAssignedVoxels(final Iterable<FloatType> ellipsoidFactorImage) {
 		final LongType assignedVoxels = new LongType();
 		ellipsoidFactorImage.forEach(e -> {
@@ -501,25 +392,30 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private Img<IntType> assignEllipsoidIDs(final Img<BitType> mask, final List<QuickEllipsoid> ellipsoids) {
-		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask.dimension(1), mask.dimension(2));
+
+		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask.dimension(1),weightedAverageN, mask.dimension(2));
 		idImage.forEach(c -> c.setInteger(-1));
-		final Map<QuickEllipsoid, Integer> iDs = IntStream.range(0, ellipsoids.size()).boxed()
-				.collect(toMap(ellipsoids::get, Function.identity()));
-		final LongStream zRange = LongStream.range(0, mask.dimension(2));
-		zRange.parallel().forEach(z -> {
-			// multiply by image unit? make more intelligent bounding box?
-			final List<QuickEllipsoid> localEllipsoids = ellipsoids.stream()
-					.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
-			final long[] mins = {0, 0, z};
-			final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
-			final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs).localizingCursor();
-			colourSlice(idImage, maskSlice, localEllipsoids, iDs);
-		});
+
+		for(int nn=0;nn<weightedAverageN;nn++) {
+			final int n = nn;
+			final Map<QuickEllipsoid, Integer> iDs = IntStream.range(0, ellipsoids.size()).boxed()
+					.collect(toMap(ellipsoids::get, Function.identity()));
+			final LongStream zRange = LongStream.range(0, mask.dimension(2));
+			zRange.parallel().forEach(z -> {
+				// multiply by image unit? make more intelligent bounding box?
+				final List<QuickEllipsoid> localEllipsoids = ellipsoids.stream()
+						.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
+				final long[] mins = {0, 0, z};
+				final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
+				final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs).localizingCursor();
+				colourSlice(idImage, maskSlice, localEllipsoids, iDs, n);
+			});
+		}
 		return idImage;
 	}
 
 	private void colourSlice(final RandomAccessible<IntType> idImage, final Cursor<BitType> mask,
-			final Collection<QuickEllipsoid> localEllipsoids, final Map<QuickEllipsoid, Integer> iDs) {
+							 final Collection<QuickEllipsoid> localEllipsoids, final Map<QuickEllipsoid, Integer> iDs, int nlargest) {
 		while (mask.hasNext()) {
 			mask.fwd();
 			if (!mask.get().get()) {
@@ -528,20 +424,20 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			final long[] coordinates = new long[3];
 			mask.localize(coordinates);
 			final Vector3d point = new Vector3d(coordinates[0] + 0.5, coordinates[1] + 0.5, coordinates[2] + 0.5);
-			colourID(localEllipsoids, idImage, point, iDs);
+			colourID(localEllipsoids, idImage, point, iDs, nlargest);
 		}
 	}
 
 	private void colourID(final Collection<QuickEllipsoid> localEllipsoids,
-			final RandomAccessible<IntType> ellipsoidIdentityImage, final Vector3dc point,
-			final Map<QuickEllipsoid, Integer> iDs) {
+						  final RandomAccessible<IntType> ellipsoidIdentityImage, final Vector3dc point,
+						  final Map<QuickEllipsoid, Integer> iDs, int nLargest) {
 		final Optional<QuickEllipsoid> candidate = localEllipsoids.stream()
-				.filter(e -> e.contains(point.x(), point.y(), point.z())).findFirst();
+				.filter(e -> e.contains(point.x(), point.y(), point.z())).skip(nLargest).findFirst();
 		if (!candidate.isPresent()) {
 			return;
 		}
 		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
-		eIDRandomAccess.setPosition(new long[]{(long) point.x(), (long) point.y(), (long) point.z()});
+		eIDRandomAccess.setPosition(new long[]{(long) point.x(), (long) point.y(), (long) nLargest, (long) point.z()});
 		final QuickEllipsoid ellipsoid = candidate.get();
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
