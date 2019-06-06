@@ -120,6 +120,12 @@
             <groupId>net.imagej</groupId>
             <artifactId>ij</artifactId>
         </dependency>
+        
+        <!-- Fiji dependencies -->
+        <dependency>
+            <groupId>sc.fiji</groupId>
+            <artifactId>3D_Viewer</artifactId>
+        </dependency>
 
         <!-- SciJava dependencies -->
         <dependency>

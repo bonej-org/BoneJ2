@@ -67,6 +67,7 @@ import org.bonej.ops.mil.MILPlane;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.utilities.Visualiser;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
@@ -120,46 +121,59 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	// The default number of lines was found to be sensible after experimenting
 	// with data at hand. Other data may need a different number.
 	private static final int DEFAULT_LINES = 100;
-	private static final double DEFAULT_INCREMENT = 1.0;
+	private static final double DEFAULT_INCREMENT = 2.3;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, Quaterniondc, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3d>, Matrix4dc> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 			ellipsoid -> 1.0 - (1.0/(ellipsoid.getC() * ellipsoid.getC())) / (1.0/(ellipsoid.getA() * ellipsoid.getA()));
 	@SuppressWarnings("unused")
+	
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
+	
 	@Parameter(label = "Directions",
 		description = "The number of times sampling is performed from different directions",
 		min = "9", style = NumberWidget.SPINNER_STYLE, required = false,
 		callback = "applyMinimum")
 	private Integer directions = DEFAULT_DIRECTIONS;
+	
 	@Parameter(label = "Lines per dimension",
 		description = "How many sampling lines are projected in both 2D directions (this number squared)",
 		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
 		callback = "applyMinimum")
 	private Integer lines = DEFAULT_LINES;
-	@Parameter(label = "Sampling increment", min = "0.01",
+	
+	@Parameter(label = "Sampling increment", min = "0.1",
 		description = "Distance between sampling points (in voxels)",
 		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1",
 		callback = "applyMinimum")
 	private Double samplingIncrement = DEFAULT_INCREMENT;
+	
 	@Parameter(label = "Recommended minimums",
 		description = "Apply minimum recommended values to directions, lines, and increment",
 		persist = false, required = false, callback = "applyMinimum")
 	private boolean recommendedMin;
+	
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String instruction =
 		"NB parameter values can affect results significantly";
 	private boolean calibrationWarned;
+	
 	@Parameter(label = "Show radii",
 		description = "Show the radii of the fitted ellipsoid in the results",
 		required = false)
 	private boolean printRadii;
-	@Parameter(label = "Show eigenvectors",
-			description = "Show the eigenvectors of the fitted ellipsoid in the results",
+	
+	@Parameter(label = "Show Eigens",
+		description = "Show the eigenvectors and eigenvalues of the fitted ellipsoid in the results",
+		required = false)
+	private boolean printEigens;
+	
+	@Parameter(label = "Display MIL vectors",
+			description = "Show the vectors of the mean intercept lengths",
 			required = false)
-		private boolean printVectors;
+	private boolean displayMILVectors;
 	private static Long seed;
 
 	/**
@@ -237,7 +251,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			SharedTable.add(label, "Radius b", ellipsoid.getB());
 			SharedTable.add(label, "Radius c", ellipsoid.getC());
 		}
-		if (printVectors) {
+		if (printEigens) {
 			Matrix3d eigenVectors = new Matrix3d();
 			ellipsoid.getOrientation().get3x3(eigenVectors);
 			SharedTable.add(label, "m00", eigenVectors.m00);
@@ -249,6 +263,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			SharedTable.add(label, "m20", eigenVectors.m20);
 			SharedTable.add(label, "m21", eigenVectors.m21);
 			SharedTable.add(label, "m22", eigenVectors.m22);
+			final double d1 = 1/(ellipsoid.getC() * ellipsoid.getC());
+			final double d2 = 1/(ellipsoid.getB() * ellipsoid.getB());
+			final double d3 = 1/(ellipsoid.getA() * ellipsoid.getA());
+			SharedTable.add(label, "D1", d1);
+			SharedTable.add(label, "D2", d2);
+			SharedTable.add(label, "D3", d3);
 		}
 	}
 
@@ -305,6 +325,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			if (!ellipsoid.isPresent()) {
 				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
 				return null;
+			}
+			if (displayMILVectors) {
+				Visualiser.display3DPoints(pointCloud, "MIL points");
 			}
 			return ellipsoid.get();
 		}
