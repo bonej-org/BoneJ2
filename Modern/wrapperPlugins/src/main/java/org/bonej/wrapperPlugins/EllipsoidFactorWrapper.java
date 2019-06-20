@@ -172,7 +172,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		int totalEllipsoids = 0;
 		List<ImgPlus> outputList = null;
-		errorTracking = new EllipsoidFactorErrorTracking();
+		errorTracking = new EllipsoidFactorErrorTracking(opService);
 
 		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
@@ -200,9 +200,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				outputList = sumOutput(outputList, currentOutputList);
 				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
 				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
+				SharedTable.add(inputImgPlus.getName(),"median change "+i,errors.get("Median"));
+				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,errors.get("Max"));
 			}
 			else{
 				outputList = currentOutputList;
+				SharedTable.add(inputImgPlus.getName(),"median change "+i,2);
+				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,2);
 			}
 			totalEllipsoids += ellipsoids.length;
 		}

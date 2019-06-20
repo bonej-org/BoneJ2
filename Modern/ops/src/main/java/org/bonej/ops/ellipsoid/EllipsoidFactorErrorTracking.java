@@ -26,10 +26,12 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
     private int currentIteration;
     private Img<FloatType> currentAverage;
     private Img<FloatType> previousAverage;
+    private OpService opService;
 
-    public EllipsoidFactorErrorTracking() {
+    public EllipsoidFactorErrorTracking(OpService opService) {
 
         currentIteration = 0; //watch out if this is ever parallelised!
+        this.opService = opService;
     }
 
     @Override
@@ -44,14 +46,14 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
         {
             previousAverage = currentAverage;
 
-            currentAverage = (Img) ops().math().multiply(previousAverage,new FloatType(currentIteration));
-            currentAverage = (Img) ops().math().add(currentEllipsoidFactorImage, (IterableInterval<FloatType>) currentAverage);
-            currentAverage = (Img) ops().math().divide(currentEllipsoidFactorImage, new FloatType(currentIteration+1));;
+            currentAverage = (Img) opService.math().multiply(previousAverage,new FloatType(currentIteration));
+            currentAverage = (Img) opService.math().add(currentEllipsoidFactorImage, (IterableInterval<FloatType>) currentAverage);
+            currentAverage = (Img) opService.math().divide(currentEllipsoidFactorImage, new FloatType(currentIteration+1));;
             currentIteration++;
         }
 
 
-        final Img<FloatType> error = (Img) ops().math().subtract(previousAverage, (IterableInterval<FloatType>) currentAverage);
+        final Img<FloatType> error = (Img) opService.math().subtract(previousAverage, (IterableInterval<FloatType>) currentAverage);
         final Cursor<FloatType> cursor = error.cursor();
         while (cursor.hasNext()) {
             final float next = cursor.next().get();

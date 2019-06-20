@@ -161,7 +161,7 @@ public class EllipsoidFactorOutputGenerator extends
                                              final IterableInterval idImage) {
         final Img<FloatType> ellipsoidFactorImage = createNaNImg(idImage);
         final double[] ellipsoidFactors = ellipsoids.parallelStream()
-                .mapToDouble(EllipsoidFactorOutputGenerator::computeEllipsoidFactor).toArray();
+                .mapToDouble(EllipsoidFactorOutputGenerator::computeWeightedEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactors, idImage, ellipsoidFactorImage);
         final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
         efImage.setChannelMaximum(0,1);
@@ -249,7 +249,7 @@ public class EllipsoidFactorOutputGenerator extends
     //endregion
 
     //region: helper methods
-    private static double computeEllipsoidFactor(final QuickEllipsoid ellipsoid) {
+    private static double computeWeightedEllipsoidFactor(final QuickEllipsoid ellipsoid) {
         final double[] sortedRadii = ellipsoid.getSortedRadii();
         return (sortedRadii[0] / sortedRadii[1] - sortedRadii[1] / sortedRadii[2])*ellipsoid.getVolume();
     }
