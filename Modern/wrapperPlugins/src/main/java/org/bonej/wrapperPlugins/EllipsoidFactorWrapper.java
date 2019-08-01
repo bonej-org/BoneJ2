@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.bonej.ops.ellipsoid.*;
 import org.bonej.ops.ellipsoid.constrain.AnchorEllipsoidConstrain;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
@@ -57,8 +58,10 @@ import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
-import net.imglib2.*;
+import net.imglib2.Cursor;
+import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.img.Img;
@@ -67,6 +70,7 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.array.ArrayRandomAccess;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.*;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Intervals;
@@ -174,6 +178,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		List<ImgPlus> outputList = null;
 		errorTracking = new EllipsoidFactorErrorTracking(opService);
 
+		int counter = 0;
 		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
 			final QuickEllipsoid[] ellipsoids = runEllipsoidOptimisation(inputImgPlus);
@@ -197,16 +202,18 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 			if(outputList!=null)
 			{
-				outputList = sumOutput(outputList, currentOutputList);
+				outputList = sumOutput(outputList, currentOutputList, (double) counter);
 				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
 				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
 				SharedTable.add(inputImgPlus.getName(),"median change "+i,errors.get("Median"));
 				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,errors.get("Max"));
+				counter++;
 			}
 			else{
 				outputList = currentOutputList;
 				SharedTable.add(inputImgPlus.getName(),"median change "+i,2);
 				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,2);
+				counter++;
 			}
 			totalEllipsoids += ellipsoids.length;
 		}
@@ -218,9 +225,27 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		ellipsoidFactorOutputImages = outputList;
 
+		final ImgPlus EF = ellipsoidFactorOutputImages.get(0);
 		final double numberOfForegroundVoxels = countTrue(inputAsBitType);
-		final double numberOfAssignedVoxels = countAssignedVoxels(ellipsoidFactorOutputImages.get(0));
+		final double numberOfAssignedVoxels = countAssignedVoxels(EF);
 		final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
+
+
+		DescriptiveStatistics stats = new DescriptiveStatistics();
+		final Cursor<FloatType> cursor = EF.cursor();
+		while(cursor.hasNext()){
+			cursor.fwd();
+			double value = cursor.get().getRealDouble();
+			if(!Double.isNaN(value)){
+				stats.addValue(value);
+			}
+		}
+		final double median = stats.getPercentile(50);
+		SharedTable.add(inputImgPlus.getName(), "Median EF", median);
+		final double max = stats.getMax();
+		SharedTable.add(inputImgPlus.getName(), "Max EF", max);
+		final double min = stats.getMin();
+		SharedTable.add(inputImgPlus.getName(), "Min EF", min);
 		addResults(totalEllipsoids, fillingPercentage);
 		statusService.showStatus("Ellipsoid Factor completed");
 
@@ -239,15 +264,47 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return divided;
 	}
 
-	private List<ImgPlus> sumOutput(List<ImgPlus> outputList, List<ImgPlus> currentOutputList) {
+	private List<ImgPlus> sumOutput(List<ImgPlus> outputList, List<ImgPlus> currentOutputList, double nSum) {
 		List<ImgPlus> summed = new ArrayList<>();
 		for(int i=0; i<outputList.size(); i++)
 		{
-			final Img addition = (Img) opService.math().add(outputList.get(i).getImg(), (IterableInterval<FloatType>) currentOutputList.get(i).getImg());
+			//final Img addition = (Img) opService.math().add(outputList.get(i).getImg(), (IterableInterval<FloatType>) currentOutputList.get(i).getImg());
+
+			//avoid NaN addition, still dodgy, first nonNaN will get loads of weight.
+			final Img addition = outputList.get(i).getImg().copy();
+			final Cursor<? extends RealType> previousVal = outputList.get(i).cursor();
+			final Cursor<? extends RealType> currentVal = currentOutputList.get(i).getImg().cursor();
+			final Cursor<? extends RealType> nextVal = addition.cursor();
+
+			while(previousVal.hasNext())
+			{
+				previousVal.fwd();
+				currentVal.fwd();
+				nextVal.fwd();
+
+				double p = previousVal.get().getRealDouble();
+				double c = currentVal.get().getRealDouble();
+				// only need to care about XOR case
+				if(!Double.isFinite(c) ^ !Double.isFinite(p))
+				{
+					if(!Double.isFinite(c)){
+						nextVal.get().setReal(p*(1.0+1.0/nSum));
+					}
+					else
+					{
+						nextVal.get().setReal(c*(nSum+1));
+					}
+				}
+				else {
+					nextVal.get().setReal(p+c);
+				}
+
+			}
 			final ImgPlus additionImgPlus = new ImgPlus<>(addition, outputList.get(i));
 			additionImgPlus.setChannelMaximum(0, outputList.get(i).getChannelMaximum(0));
 			additionImgPlus.setChannelMinimum(0, outputList.get(i).getChannelMinimum(0));
 			summed.add(additionImgPlus);
+
 		}
 		return summed;
 	}
