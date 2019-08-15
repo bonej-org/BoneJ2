@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.bonej.ops.ellipsoid.*;
-import org.bonej.ops.ellipsoid.constrain.AnchorEllipsoidConstrain;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.SharedTable;
@@ -142,14 +141,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	//what seed points should I use?
 	@Parameter(label = "Seed points on distance ridge", description = "tick this if you would like ellipsoids to be seeded on the foreground distance ridge")
 	private boolean seedOnDistanceRidge = true;
-	@Parameter(label = "Seed points on unoccupied surfaces", description = "tick this if you would like ellipsoids to be seeded on surface voxels that are not inside an ellipsoid")
-	private boolean seedOnSurface = false;
 
 	@Parameter(label = "Show secondary images")
 	private boolean showSecondaryImages = false;
 
 	@Parameter(label = "Average over largest n")
-	private int weightedAverageN;
+	private int weightedAverageN = 1;
 
 	//output parameters
 	@Parameter(visibility = ItemVisibility.MESSAGE)
@@ -157,7 +154,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
 	private List<ImgPlus> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
-	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed && not anchor seed, 2=surface anchor seed
+	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed && not anchor seed
 
 	private EllipsoidFactorErrorTracking errorTracking;
 	/**
@@ -268,9 +265,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		List<ImgPlus> summed = new ArrayList<>();
 		for(int i=0; i<outputList.size(); i++)
 		{
+			//this does not deal with NaNs the way we would like
 			//final Img addition = (Img) opService.math().add(outputList.get(i).getImg(), (IterableInterval<FloatType>) currentOutputList.get(i).getImg());
 
-			//avoid NaN addition, still dodgy, first nonNaN will get loads of weight.
+			//workaround to avoid NaN addition, still dodgy, first nonNaN will get loads of weight.
 			final Img addition = outputList.get(i).getImg().copy();
 			final Cursor<? extends RealType> previousVal = outputList.get(i).cursor();
 			final Cursor<? extends RealType> currentVal = currentOutputList.get(i).getImg().cursor();
@@ -344,24 +342,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					.filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
 			Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 			logService.info("Found " + quickEllipsoids.length + " centrally-seeded ellipsoids.");
-		}
-		if (seedOnSurface) {
-			List<Vector3d> anchors = getAnchors(quickEllipsoids, imp);
-			anchors = applySkipRatio(anchors);
-			addPointsToDisplay(anchors, seedImage, (byte) 2);
-			logService.info("Found " + anchors.size() + " anchors.");
-
-			statusService.showStatus("Optimising surface-seeded ellipsoids...");
-			final BinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> surfaceOptimisation = Functions.binary(opService,
-					EllipsoidOptimisationStrategy.class, QuickEllipsoid.class, pixels, new Vector3d(),
-					new long[]{w, h, d}, new AnchorEllipsoidConstrain(),parameters);
-			final QuickEllipsoid[] anchoredEllipsoids = anchors.parallelStream()
-					.map(a -> surfaceOptimisation.calculate(pixels, a)).filter(Objects::nonNull)
-					.toArray(QuickEllipsoid[]::new);
-			logService.info("Found " + anchoredEllipsoids.length + " surface-seeded ellipsoids.");
-
-			quickEllipsoids = Stream.concat(Arrays.stream(quickEllipsoids), Arrays.stream(anchoredEllipsoids))
-					.toArray(QuickEllipsoid[]::new);
 		}
 
 		seedPointImage = new ImgPlus<>(seedImage, "Seed points");
