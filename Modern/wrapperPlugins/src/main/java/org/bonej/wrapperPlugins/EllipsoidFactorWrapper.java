@@ -28,6 +28,7 @@ import static java.util.stream.Collectors.toMap;
 import static net.imglib2.roi.Regions.countTrue;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -45,6 +46,8 @@ import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.command.CommandModule;
+import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -53,16 +56,15 @@ import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 
+import ij.ImagePlus;
+import ij.ImageStack;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imglib2.Cursor;
-import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
-import net.imglib2.algorithm.neighborhood.Neighborhood;
-import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -72,8 +74,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.*;
 import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.Intervals;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 /**
@@ -113,6 +113,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	@Parameter
 	private UIService uiService;
+	@SuppressWarnings("unused")
+	@Parameter
+	private CommandService commandService;
+
 
 	//main input image
 	@SuppressWarnings("unused")
@@ -139,8 +143,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private int runs = 1;
 
 	//what seed points should I use?
-	@Parameter(label = "Seed points on distance ridge", description = "tick this if you would like ellipsoids to be seeded on the foreground distance ridge")
+	@Parameter(label = "Seed points based on distance ridge", description = "tick this if you would like ellipsoids to be seeded based on the foreground distance ridge")
 	private boolean seedOnDistanceRidge = true;
+	@Parameter(label = "Seed points on topology-preserving skeletonization ", description = "tick this if you would like ellipsoids to be seeded on the topology-preserving skeletonization (\"Skeletonize3D\").")
+	private boolean seedOnTopologyPreserving = false;
 
 	@Parameter(label = "Show secondary images")
 	private boolean showSecondaryImages = false;
@@ -334,14 +340,31 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			ridgePoints = applySkipRatio(ridgePoints);
 			addPointsToDisplay(ridgePoints, seedImage, (byte) 1);
 
-			statusService.showStatus("Optimising centrally-seeded ellipsoids from "+ridgePoints.size()+" ridge points...");
+			statusService.showStatus("Optimising distance-ridge-seeded ellipsoids from "+ridgePoints.size()+" seed points...");
 			final BinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> medialOptimisation = Functions.binary(opService,
 					EllipsoidOptimisationStrategy.class, QuickEllipsoid.class, pixels, new Vector3d(),
 					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
 			quickEllipsoids = ridgePoints.parallelStream().map(sp -> medialOptimisation.calculate(pixels, sp))
 					.filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
 			Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
-			logService.info("Found " + quickEllipsoids.length + " centrally-seeded ellipsoids.");
+			logService.info("Found " + quickEllipsoids.length + " distance-ridge-seeded ellipsoids.");
+		}
+
+		if (seedOnTopologyPreserving) {
+			List<Vector3d> skeletonPoints = getSkeletonPoints();
+			skeletonPoints = applySkipRatio(skeletonPoints);
+			addPointsToDisplay(skeletonPoints, seedImage, (byte) 1);
+
+			statusService.showStatus("Optimising skeleton-seeded ellipsoids from "+skeletonPoints.size()+" seed points...");
+			final BinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> medialOptimisation = Functions.binary(opService,
+					EllipsoidOptimisationStrategy.class, QuickEllipsoid.class, pixels, new Vector3d(),
+					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
+			QuickEllipsoid[] skeletonSeededEllipsoids = skeletonPoints.parallelStream().map(sp -> medialOptimisation.calculate(pixels, sp))
+					.filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+			Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
+			logService.info("Found " + quickEllipsoids.length + " skeleton-seeded ellipsoids.");
+			quickEllipsoids = Stream.concat(Arrays.stream(quickEllipsoids), Arrays.stream(skeletonSeededEllipsoids))
+					.toArray(QuickEllipsoid[]::new);
 		}
 
 		seedPointImage = new ImgPlus<>(seedImage, "Seed points");
@@ -353,54 +376,33 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	// region --seed point finding--
-	/**
-	 * This method finds the anchor points in the input image. Anchor points are
-	 * defined as centres of foreground pixels which have at least one background
-	 * neighbour and are not contained in any of the ellipsoids.
-	 *
-	 * @param ellipsoids
-	 *            Array of QuickEllipsoid that excludes candidate anchor points
-	 * @param inputImgPlus
-	 *            ImgPlus in which to find anchor points
-	 * @return the list of anchor points
-	 */
-	static List<Vector3d> getAnchors(final QuickEllipsoid[] ellipsoids, final ImgPlus<UnsignedByteType> inputImgPlus) {
-		final List<Vector3d> anchors = new ArrayList<>();
 
-		final Interval inputShrunkByOne = Intervals.expand(inputImgPlus, -1);
-		final IntervalView<UnsignedByteType> source = Views.interval(inputImgPlus, inputShrunkByOne);
-		final Cursor<UnsignedByteType> centre = Views.iterable(source).localizingCursor();
-		final RectangleShape shape = new RectangleShape(1, true);
-
-		for (final Neighborhood<UnsignedByteType> localNeighborhood : shape.neighborhoods(source)) {
-			// (the center cursor runs over the image in the same iteration order as
-			// neighborhood)
-			final UnsignedByteType centerValue = centre.next();
-			if (centerValue.get() == 0) {
-				continue;
-			}
-			long[] position = new long[3];
-			centre.localize(position);
-
-			for (final UnsignedByteType value : localNeighborhood) {
-				if (value.get() == 0) {
-					final double[] voxelCentre = new double[]{position[0] + 0.5, position[1] + 0.5, position[2] + 0.5};
-					if (Arrays.stream(ellipsoids)
-							.anyMatch(e -> e.contains(voxelCentre[0], voxelCentre[1], voxelCentre[2]))) {
-						continue;
+	private List<Vector3d> getSkeletonPoints() {
+		ImagePlus skeleton = null;
+		try {
+			final CommandModule skeletonizationModule = commandService.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true).get();
+			skeleton = (ImagePlus) skeletonizationModule.getOutput("skeleton");
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+		}
+		final ImageStack skeletonStack = skeleton.getImageStack();
+		final List<Vector3d> skeletonPoints = new ArrayList<>();
+		for (int z = 0; z < skeleton.getStackSize(); z++) {
+			final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
+			for (int x = 0; x < skeleton.getWidth(); x++) {
+				for (int y = 0; y < skeleton.getHeight(); y++) {
+					if (slicePixels[y * skeleton.getWidth() + x] != 0) {
+						skeletonPoints.add(new Vector3d(x, y, z));
 					}
-					anchors.add(new Vector3d(voxelCentre[0], voxelCentre[1], voxelCentre[2]));
-					break;
 				}
 			}
-
 		}
-		return anchors;
+		return skeletonPoints;
 	}
 
 	private List<Vector3d> getDistanceRidgePoints(ImgPlus<BitType> imp) {
 		List<Vector3d> ridgePoints = (List<Vector3d>) opService.run(FindRidgePoints.class, imp);
-		logService.info("Found " + ridgePoints.size() + " skeleton points");
+		logService.info("Found " + ridgePoints.size() + " distance-ridge-based points");
 		return ridgePoints;
 	}
 
