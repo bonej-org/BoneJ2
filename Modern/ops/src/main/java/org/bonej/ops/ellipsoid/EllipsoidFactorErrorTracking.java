@@ -1,24 +1,24 @@
 package org.bonej.ops.ellipsoid;
 
-import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
-import org.scijava.log.LogService;
-import org.scijava.plugin.Parameter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.scijava.plugin.Plugin;
 
 import net.imagej.ops.Op;
 import net.imagej.ops.OpService;
-import net.imagej.ops.special.AbstractUnaryOp;
+import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.FloatType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+/**
+ * Class for tracking descriptive statistics of the change in EF from iteration to iteration
+ */
 @Plugin(name = "Track Ellipsoid Factor Error", type = Op.class)
 public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<FloatType>, Map<String, Double>> {
 
@@ -48,7 +48,7 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
 
             currentAverage = (Img) opService.math().multiply(previousAverage,new FloatType(currentIteration));
             currentAverage = (Img) opService.math().add(currentEllipsoidFactorImage, (IterableInterval<FloatType>) currentAverage);
-            currentAverage = (Img) opService.math().divide(currentEllipsoidFactorImage, new FloatType(currentIteration+1));;
+            currentAverage = (Img) opService.math().divide(currentAverage, new FloatType(currentIteration+1));;
             currentIteration++;
         }
 
