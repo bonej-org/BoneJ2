@@ -124,18 +124,18 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private String setup = "Setup";
 	@Parameter(label = "Vectors")
 	int nVectors = 100;
-	@Parameter(label = "Sampling_increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.")
+	@Parameter(label = "Sampling_increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.", min="0.01", max = "0.99")
 	private double vectorIncrement = 1 / 2.3;
-	@Parameter(label = "Skeleton_points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.")
+	@Parameter(label = "Skeleton_points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.", min="1")
 	private int skipRatio = 50;
-	@Parameter(label = "Contact sensitivity")
+	@Parameter(label = "Contact sensitivity", description = "Number of contacts with surface required to determine collision.", min = "1")
 	private int contactSensitivity = 1;
-	@Parameter(label = "Maximum_iterations", description = "Maximum currentIteration to try improving ellipsoid fit before stopping.")
+	@Parameter(label = "Maximum_iterations", description = "Maximum currentIteration to try improving ellipsoid fit before stopping.", min="10")
 	private int maxIterations = 100;
-	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length")
+	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
 	private double maxDrift = Math.sqrt(3);
 
-	@Parameter(label = "Repetitions", description = "Number of currentIteration over which to average EF value")
+	@Parameter(label = "Repetitions", description = "Number of currentIteration over which to average EF value", min="1")
 	private int runs = 1;
 
 	//what seed points should I use?
@@ -145,7 +145,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Show secondary images")
 	private boolean showSecondaryImages = false;
 
-	@Parameter(label = "Average over largest n")
+	@Parameter(label = "Average over largest n ellipsoids", min="1")
 	private int weightedAverageN = 1;
 
 	//output parameters
@@ -154,7 +154,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
 	private List<ImgPlus> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
-	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed && not anchor seed
+	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
 	private EllipsoidFactorErrorTracking errorTracking;
 	/**
