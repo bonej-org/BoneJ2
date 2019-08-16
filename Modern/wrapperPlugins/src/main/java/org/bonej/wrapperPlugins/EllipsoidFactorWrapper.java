@@ -24,24 +24,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.wrapperPlugins;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static net.imglib2.roi.Regions.countTrue;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.bonej.ops.ellipsoid.*;
+import org.bonej.ops.ellipsoid.EllipsoidOptimisationStrategy;
+import org.bonej.ops.ellipsoid.OptimisationParameters;
+import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
-import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -64,7 +66,6 @@ import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessible;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -72,7 +73,10 @@ import net.imglib2.img.array.ArrayRandomAccess;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.*;
+import net.imglib2.type.numeric.integer.ByteType;
+import net.imglib2.type.numeric.integer.LongType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.Views;
 
@@ -162,7 +166,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
-	private EllipsoidFactorErrorTracking errorTracking;
 	/**
 	 * The EF results in a {@link Table}, null if there are no results
 	 */
@@ -178,53 +181,25 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImgPlus);
 
 		int totalEllipsoids = 0;
-		List<ImgPlus> outputList = null;
-		errorTracking = new EllipsoidFactorErrorTracking(opService);
+		List<ImgPlus> outputList = new ArrayList<>();
 
-		int counter = 0;
+		final QuickEllipsoid[][] ellipsoidMatrix = new QuickEllipsoid[runs][];
 		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
-			final QuickEllipsoid[] ellipsoids = runEllipsoidOptimisation(inputImgPlus);
-			if (ellipsoids.length == 0) {
+			ellipsoidMatrix[i] = runEllipsoidOptimisation(inputImgPlus);
+			if (ellipsoidMatrix[i].length == 0) {
 				cancel(NO_ELLIPSOIDS_FOUND);
 				return;
 			}
-
-			//assign one ellipsoid to each FG voxel
-			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-			long start = System.currentTimeMillis();
-			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, Arrays.asList(ellipsoids));
-			long stop = System.currentTimeMillis();
-			logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
-
-			//add result of this run to overall result
-			//TODO do not match Op every time
-			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
-					Arrays.asList(ellipsoids),
-					showSecondaryImages);
-
-			if(outputList!=null)
-			{
-				outputList = sumOutput(outputList, currentOutputList, (double) counter);
-				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
-				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
-				SharedTable.add(inputImgPlus.getName(),"median change "+i,errors.get("Median"));
-				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,errors.get("Max"));
-				counter++;
-			}
-			else{
-				outputList = currentOutputList;
-				SharedTable.add(inputImgPlus.getName(),"median change "+i,2);
-				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,2);
-				counter++;
-			}
-			totalEllipsoids += ellipsoids.length;
 		}
 
-		if(runs>1)
-		{
-			outputList = divideOutput(outputList, runs);
-		}
+		//assign one ellipsoid per run to each FG voxel
+		statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
+		long start = System.currentTimeMillis();
+		outputList.add(new ImgPlus(ArrayImgs.floats(inputAsBitType.dimension(0),inputAsBitType.dimension(1),inputAsBitType.dimension(2)),"Ellipsoid Factor"));
+		assignEllipsoidIDs(outputList, inputAsBitType, ellipsoidMatrix);
+		long stop = System.currentTimeMillis();
+		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
 		ellipsoidFactorOutputImages = outputList;
 
@@ -252,65 +227,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		addResults(totalEllipsoids, fillingPercentage);
 		statusService.showStatus("Ellipsoid Factor completed");
 
-	}
-
-	private List<ImgPlus> divideOutput(List<ImgPlus> outputList, int repetitions) {
-		List<ImgPlus> divided = new ArrayList<>();
-		for(int i=0; i<outputList.size(); i++)
-		{
-			final Img division = (Img) opService.math().divide(opService.convert().float32(outputList.get(i).getImg()), new FloatType(repetitions));
-			final ImgPlus divisionImgPlus = new ImgPlus<>(division, outputList.get(i));
-			divisionImgPlus.setChannelMaximum(0, outputList.get(i).getChannelMaximum(0));
-			divisionImgPlus.setChannelMinimum(0, outputList.get(i).getChannelMinimum(0));
-			divided.add(divisionImgPlus);
-		}
-		return divided;
-	}
-
-	private List<ImgPlus> sumOutput(List<ImgPlus> outputList, List<ImgPlus> currentOutputList, double nSum) {
-		List<ImgPlus> summed = new ArrayList<>();
-		for(int i=0; i<outputList.size(); i++)
-		{
-			//this does not deal with NaNs the way we would like
-			//final Img addition = (Img) opService.math().add(outputList.get(i).getImg(), (IterableInterval<FloatType>) currentOutputList.get(i).getImg());
-
-			//workaround to avoid NaN addition, still dodgy, first nonNaN will get loads of weight.
-			final Img addition = outputList.get(i).getImg().copy();
-			final Cursor<? extends RealType> previousVal = outputList.get(i).cursor();
-			final Cursor<? extends RealType> currentVal = currentOutputList.get(i).getImg().cursor();
-			final Cursor<? extends RealType> nextVal = addition.cursor();
-
-			while(previousVal.hasNext())
-			{
-				previousVal.fwd();
-				currentVal.fwd();
-				nextVal.fwd();
-
-				double p = previousVal.get().getRealDouble();
-				double c = currentVal.get().getRealDouble();
-				// only need to care about XOR case
-				if(!Double.isFinite(c) ^ !Double.isFinite(p))
-				{
-					if(!Double.isFinite(c)){
-						nextVal.get().setReal(p*(1.0+1.0/nSum));
-					}
-					else
-					{
-						nextVal.get().setReal(c*(nSum+1));
-					}
-				}
-				else {
-					nextVal.get().setReal(p+c);
-				}
-
-			}
-			final ImgPlus additionImgPlus = new ImgPlus<>(addition, outputList.get(i));
-			additionImgPlus.setChannelMaximum(0, outputList.get(i).getChannelMaximum(0));
-			additionImgPlus.setChannelMinimum(0, outputList.get(i).getChannelMinimum(0));
-			summed.add(additionImgPlus);
-
-		}
-		return summed;
 	}
 
 	/**
@@ -434,55 +350,60 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return assignedVoxels.get();
 	}
 
-	private Img<IntType> assignEllipsoidIDs(final Img<BitType> mask, final List<QuickEllipsoid> ellipsoids) {
-
-		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask.dimension(1),weightedAverageN, mask.dimension(2));
-		idImage.forEach(c -> c.setInteger(-1));
-
-		for(int nn=0;nn<weightedAverageN;nn++) {
-			final int n = nn;
-			final Map<QuickEllipsoid, Integer> iDs = IntStream.range(0, ellipsoids.size()).boxed()
-					.collect(toMap(ellipsoids::get, Function.identity()));
-			final LongStream zRange = LongStream.range(0, mask.dimension(2));
-			zRange.parallel().forEach(z -> {
-				// multiply by image unit? make more intelligent bounding box?
-				final List<QuickEllipsoid> localEllipsoids = ellipsoids.stream()
-						.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
-				final long[] mins = {0, 0, z};
-				final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
-				final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs).localizingCursor();
-				colourSlice(idImage, maskSlice, localEllipsoids, iDs, n);
-			});
-		}
-		return idImage;
-	}
-
-	private void colourSlice(final RandomAccessible<IntType> idImage, final Cursor<BitType> mask,
-							 final Collection<QuickEllipsoid> localEllipsoids, final Map<QuickEllipsoid, Integer> iDs, int nlargest) {
-		while (mask.hasNext()) {
-			mask.fwd();
-			if (!mask.get().get()) {
-				continue;
+	private static double computeWeightedEllipsoidFactor(final QuickEllipsoid[][] ellipsoid) {
+		double EF = 0;
+		for(int run=0; run<ellipsoid.length; run++) {
+			double volSum = 0;
+			for (int weight = 0; weight < ellipsoid[run].length; weight++) {
+				QuickEllipsoid e = ellipsoid[run][weight];
+				final double[] sortedRadii = e.getSortedRadii();
+				final double volume = e.getVolume();
+				double weightedEF = (sortedRadii[0] / sortedRadii[1] - sortedRadii[1] / sortedRadii[2]) * volume;
+				volSum+=volume;
+				EF+=weightedEF;
 			}
-			final long[] coordinates = new long[3];
-			mask.localize(coordinates);
-			final Vector3d point = new Vector3d(coordinates[0] + 0.5, coordinates[1] + 0.5, coordinates[2] + 0.5);
-			colourID(localEllipsoids, idImage, point, iDs, nlargest);
+			EF/=volSum;
 		}
+		EF/=ellipsoid.length;
+		return EF;
 	}
 
-	private void colourID(final Collection<QuickEllipsoid> localEllipsoids,
-						  final RandomAccessible<IntType> ellipsoidIdentityImage, final Vector3dc point,
-						  final Map<QuickEllipsoid, Integer> iDs, int nLargest) {
-		final Optional<QuickEllipsoid> candidate = localEllipsoids.stream()
-				.filter(e -> e.contains(point.x(), point.y(), point.z())).skip(nLargest).findFirst();
-		if (!candidate.isPresent()) {
-			return;
+	private void assignEllipsoidIDs(List<ImgPlus> outputList, final Img<BitType> inputBinaryImage, final QuickEllipsoid[][] ellipsoids) {
+
+		final LongStream zRange = LongStream.range(0, inputBinaryImage.dimension(2));
+		zRange.parallel().forEach(z -> {
+
+			//get coordinates
+			final long[] mins = {0, 0, z};
+			final long[] maxs = {inputBinaryImage.dimension(0) - 1, inputBinaryImage.dimension(1) - 1, z};
+			final Cursor<BitType> currentSlice = Views.interval(inputBinaryImage, mins, maxs).localizingCursor();
+
+			//get runs by weighted array
+			while(currentSlice.hasNext())
+			{
+				long[] coordinates = new long[3];
+				currentSlice.localize(coordinates);
+				final Vector3d point = new Vector3d(coordinates[0] + 0.5, coordinates[1] + 0.5, coordinates[2] + 0.5);
+				final QuickEllipsoid[][] firstNContainingEllipsoidsForEachRun = new QuickEllipsoid[runs][];
+
+				for(int r=0; r<runs; r++)
+				{
+					//filter out impossible ellipsoids for this z
+					final List<QuickEllipsoid> localEllipsoids = Arrays.stream(ellipsoids[r]).filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
+					firstNContainingEllipsoidsForEachRun[r] = localEllipsoids.stream()
+						.filter(e -> e.contains(point.x(), point.y(), point.z())).limit(weightedAverageN).toArray(QuickEllipsoid[]::new);
+				}
+				setOutputForVoxel(outputList, coordinates, firstNContainingEllipsoidsForEachRun);
+			}
+		});
+	}
+
+	private void setOutputForVoxel(List<ImgPlus> imgPluses, long[] coordinates, QuickEllipsoid[][] firstNContainingEllipsoidsForEachRun) {
+		for(ImgPlus i : imgPluses) {
+			final RandomAccess<? extends RealType> randomAccess = i.randomAccess();
+			randomAccess.setPosition(coordinates);
+			randomAccess.get().setReal(computeWeightedEllipsoidFactor(firstNContainingEllipsoidsForEachRun));
 		}
-		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
-		eIDRandomAccess.setPosition(new long[]{(long) point.x(), (long) point.y(), (long) nLargest, (long) point.z()});
-		final QuickEllipsoid ellipsoid = candidate.get();
-		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
 
 	private void addResults(final int totalEllipsoids, double fillingPercentage) {
