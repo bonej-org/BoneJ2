@@ -30,10 +30,12 @@ import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.MatrixUtils;
+import org.bonej.util.Multithreader;
 import org.bonej.util.ResultInserter;
 import org.bonej.util.ThresholdGuesser;
 import org.scijava.vecmath.Color3f;
@@ -430,40 +432,74 @@ public class Moments implements PlugIn, DialogListener {
 		final double voxVhVd = (vH * vH + vD * vD) / 12;
 		final double voxVwVd = (vW * vW + vD * vD) / 12;
 		final double voxVhVw = (vH * vH + vW * vW) / 12;
-		double sumVoxVol = 0;
-		double sumVoxMass = 0;
-		double Icxx = 0;
-		double Icyy = 0;
-		double Iczz = 0;
-		double Icxy = 0;
-		double Icxz = 0;
-		double Icyz = 0;
-		for (int z = startSlice; z <= endSlice; z++) {
-			IJ.showStatus("Calculating inertia tensor...");
-			IJ.showProgress(z - startSlice, endSlice - startSlice);
-			final ImageProcessor ip = stack.getProcessor(z);
-			for (int y = rY; y < rH; y++) {
-				for (int x = rX; x < rW; x++) {
-					final double testPixel = ip.get(x, y);
-					if (testPixel < min || testPixel > max) {
-						continue;
+		
+		final int d = imp.getStackSize();
+		double[] sliceSumVoxVol = new double[d + 1];
+		double[] sliceSumVoxMass = new double[d + 1];
+		double[] sliceIcxx = new double[d + 1];
+		double[] sliceIcyy = new double[d + 1];
+		double[] sliceIczz = new double[d + 1];
+		double[] sliceIcxy = new double[d + 1];
+		double[] sliceIcxz = new double[d + 1];
+		double[] sliceIcyz = new double[d + 1];
+		
+		final AtomicInteger ai = new AtomicInteger(startSlice);
+		final Thread[] threads = Multithreader.newThreads();
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= endSlice; z = ai.getAndIncrement()) {
+					IJ.showStatus("Calculating inertia tensor...");
+					IJ.showProgress(z - startSlice, endSlice - startSlice);
+					final ImageProcessor ip = stack.getProcessor(z);
+					double sumVoxVol = 0;
+					double sumVoxMass = 0;
+					double Icxx = 0;
+					double Icyy = 0;
+					double Iczz = 0;
+					double Icxy = 0;
+					double Icxz = 0;
+					double Icyz = 0;
+					for (int y = rY; y < rH; y++) {
+						for (int x = rX; x < rW; x++) {
+							final double testPixel = ip.get(x, y);
+							if (testPixel < min || testPixel > max) {
+								continue;
+							}
+							sumVoxVol += voxVol;
+							final double voxMass = voxelDensity(testPixel, m, c, factor) * voxVol;
+							sumVoxMass += voxMass;
+							final double xvWcX = x * vW - cX;
+							final double yvHcY = y * vH - cY;
+							final double zvDcZ = z * vD - cZ;
+							Icxx += (yvHcY * yvHcY + zvDcZ * zvDcZ + voxVhVd) * voxMass;
+							Icyy += (xvWcX * xvWcX + zvDcZ * zvDcZ + voxVwVd) * voxMass;
+							Iczz += (yvHcY * yvHcY + xvWcX * xvWcX + voxVhVw) * voxMass;
+							Icxy += xvWcX * yvHcY * voxMass;
+							Icxz += xvWcX * zvDcZ * voxMass;
+							Icyz += yvHcY * zvDcZ * voxMass;
+						}
 					}
-					sumVoxVol += voxVol;
-					final double voxMass = voxelDensity(testPixel, m, c, factor) * voxVol;
-					sumVoxMass += voxMass;
-					final double xvWcX = x * vW - cX;
-					final double yvHcY = y * vH - cY;
-					final double zvDcZ = z * vD - cZ;
-					Icxx += (yvHcY * yvHcY + zvDcZ * zvDcZ + voxVhVd) * voxMass;
-					Icyy += (xvWcX * xvWcX + zvDcZ * zvDcZ + voxVwVd) * voxMass;
-					Iczz += (yvHcY * yvHcY + xvWcX * xvWcX + voxVhVw) * voxMass;
-					Icxy += xvWcX * yvHcY * voxMass;
-					Icxz += xvWcX * zvDcZ * voxMass;
-					Icyz += yvHcY * zvDcZ * voxMass;
+					sliceSumVoxMass[z] = sumVoxMass;
+					sliceSumVoxVol[z] = sumVoxVol;
+					sliceIcxx[z] = Icxx;
+					sliceIcyy[z] = Icyy;
+					sliceIczz[z] = Iczz;
+					sliceIcxy[z] = Icxy;
+					sliceIcxz[z] = Icxz;
+					sliceIcyz[z] = Icyz;
 				}
-			}
+			});
 		}
+		Multithreader.startAndJoin(threads);
+			
 		// create the inertia tensor matrix
+		final double Icxx = Arrays.stream(sliceIcxx).sum();
+		final double Icyy = Arrays.stream(sliceIcyy).sum();
+		final double Iczz = Arrays.stream(sliceIczz).sum();
+		final double Icxy = Arrays.stream(sliceIcxy).sum();
+		final double Icxz = Arrays.stream(sliceIcxz).sum();
+		final double Icyz = Arrays.stream(sliceIcyz).sum();
+				
 		final double[][] inertiaTensor = new double[3][3];
 		inertiaTensor[0][0] = Icxx;
 		inertiaTensor[1][1] = Icyy;
@@ -482,6 +518,9 @@ public class Moments implements PlugIn, DialogListener {
 		MatrixUtils.printToIJLog(E.getD(), "Eigenvalues");
 		MatrixUtils.printToIJLog(E.getV(), "Eigenvectors");
 
+		final double sumVoxVol = Arrays.stream(sliceSumVoxVol).sum();
+		final double sumVoxMass = Arrays.stream(sliceSumVoxMass).sum();
+		
 		final double[] moments = { sumVoxVol, sumVoxMass, Icxx, Icyy, Iczz, Icxy,
 			Icxz, Icyz };
 
@@ -517,28 +556,50 @@ public class Moments implements PlugIn, DialogListener {
 		final double vD = cal.pixelDepth;
 		final double voxVol = vW * vH * vD;
 		final double factor = getDensityFactor(imp);
-		double sumx = 0;
-		double sumy = 0;
-		double sumz = 0;
-		double sumMass = 0;
-		for (int z = startSlice; z <= endSlice; z++) {
-			IJ.showStatus("Calculating centroid...");
-			IJ.showProgress(z - startSlice, endSlice - startSlice);
-			final ImageProcessor ip = stack.getProcessor(z);
-			for (int y = rY; y < rH; y++) {
-				for (int x = rX; x < rW; x++) {
-					final double testPixel = ip.get(x, y);
-					if (testPixel >= min && testPixel <= max) {
-						final double voxelMass = voxelDensity(testPixel, m, c, factor) *
-							voxVol;
-						sumMass += voxelMass;
-						sumx += x * voxelMass;
-						sumy += y * voxelMass;
-						sumz += z * voxelMass;
+		final int d = imp.getStackSize();
+		double[] sliceSumx = new double[d + 1];
+		double[] sliceSumy = new double[d + 1];
+		double[] sliceSumz = new double[d + 1];
+		double[] sliceSumMass = new double[d + 1];
+		
+		final AtomicInteger ai = new AtomicInteger(startSlice);
+		final Thread[] threads = Multithreader.newThreads();
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= endSlice; z = ai.getAndIncrement()) {
+					IJ.showStatus("Calculating centroid...");
+					IJ.showProgress(z - startSlice, endSlice - startSlice);
+					final ImageProcessor ip = stack.getProcessor(z);
+					double sumMass = 0;
+					double sumx = 0;
+					double sumy = 0;
+					double sumz = 0;
+					for (int y = rY; y < rH; y++) {
+						for (int x = rX; x < rW; x++) {
+							final double testPixel = ip.get(x, y);
+							if (testPixel >= min && testPixel <= max) {
+								final double voxelMass = voxelDensity(testPixel, m, c, factor) *
+										voxVol;
+								sumMass += voxelMass;
+								sumx += x * voxelMass;
+								sumy += y * voxelMass;
+								sumz += z * voxelMass;
+							}
+						}
 					}
-				}
-			}
+					sliceSumx[z] = sumx;
+					sliceSumy[z] = sumy;
+					sliceSumz[z] = sumz;
+					sliceSumMass[z] = sumMass;
+				} 
+			});
 		}
+		Multithreader.startAndJoin(threads);
+		
+		double sumMass = Arrays.stream(sliceSumMass).sum();
+		double sumx = Arrays.stream(sliceSumx).sum();
+		double sumy = Arrays.stream(sliceSumy).sum();
+		double sumz = Arrays.stream(sliceSumz).sum();
 		// centroid in pixels
 		double centX = sumx / sumMass;
 		double centY = sumy / sumMass;
@@ -613,49 +674,67 @@ public class Moments implements PlugIn, DialogListener {
 		final double v12 = v[1][2];
 		final double v22 = v[2][2];
 
-		double xTmax = 0;
-		double yTmax = 0;
-		double zTmax = 0;
+		final int d = imp.getStackSize();
+		double[] sliceXTmax = new double[d + 1];
+		double[] sliceYTmax = new double[d + 1];
+		double[] sliceZTmax = new double[d + 1];
 
-		for (int z = startSlice; z <= endSlice; z++) {
-			IJ.showStatus("Getting aligned stack dimensions...");
-			final ImageProcessor ip = stack.getProcessor(z);
-			final double zCz = z * vD - zC;
-			final double zCzv20 = zCz * v20;
-			final double zCzv21 = zCz * v21;
-			final double zCzv22 = zCz * v22;
-			for (int y = rY; y < rH; y++) {
-				final double yCy = y * vH - yC;
-				final double yCyv10 = yCy * v10;
-				final double yCyv11 = yCy * v11;
-				final double yCyv12 = yCy * v12;
-				for (int x = rX; x < rW; x++) {
-					final double pixel = ip.get(x, y);
-					if (pixel < min || pixel > max) continue;
+		final AtomicInteger ai = new AtomicInteger(startSlice);
+		final Thread[] threads = Multithreader.newThreads();
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z <= endSlice; z = ai.getAndIncrement()) {
+					IJ.showStatus("Getting aligned stack dimensions...");
+					final ImageProcessor ip = stack.getProcessor(z);
+					final double zCz = z * vD - zC;
+					final double zCzv20 = zCz * v20;
+					final double zCzv21 = zCz * v21;
+					final double zCzv22 = zCz * v22;
+					double xTmax = 0;
+					double yTmax = 0;
+					double zTmax = 0;
+					for (int y = rY; y < rH; y++) {
+						final double yCy = y * vH - yC;
+						final double yCyv10 = yCy * v10;
+						final double yCyv11 = yCy * v11;
+						final double yCyv12 = yCy * v12;
+						for (int x = rX; x < rW; x++) {
+							final double pixel = ip.get(x, y);
+							if (pixel < min || pixel > max) continue;
 
-					// distance from centroid in
-					// original coordinate system
-					// xCx, yCx, zCx
-					final double xCx = x * vW - xC;
-					// now transform each coordinate
-					// transformed coordinate is dot product of original
-					// coordinates
-					// and eigenvectors
-					final double xT = xCx * v00 + yCyv10 + zCzv20;
-					final double yT = xCx * v01 + yCyv11 + zCzv21;
-					final double zT = xCx * v02 + yCyv12 + zCzv22;
-					// keep the biggest value to find the greatest distance
-					// in x, y and z
-					xTmax = Math.max(xTmax, Math.abs(xT));
-					yTmax = Math.max(yTmax, Math.abs(yT));
-					zTmax = Math.max(zTmax, Math.abs(zT));
+							// distance from centroid in
+							// original coordinate system
+							// xCx, yCx, zCx
+							final double xCx = x * vW - xC;
+							// now transform each coordinate
+							// transformed coordinate is dot product of original
+							// coordinates
+							// and eigenvectors
+							final double xT = xCx * v00 + yCyv10 + zCzv20;
+							final double yT = xCx * v01 + yCyv11 + zCzv21;
+							final double zT = xCx * v02 + yCyv12 + zCzv22;
+							// keep the biggest value to find the greatest distance
+							// in x, y and z
+							xTmax = Math.max(xTmax, Math.abs(xT));
+							yTmax = Math.max(yTmax, Math.abs(yT));
+							zTmax = Math.max(zTmax, Math.abs(zT));
+						}
+					}
+					sliceXTmax[z] = xTmax;
+					sliceYTmax[z] = yTmax;
+					sliceZTmax[z] = zTmax;
 				}
-			}
+			});
 		}
+		Multithreader.startAndJoin(threads);
 
 		// use the smallest input voxel dimension as the voxel size
 		final double vS = Math.min(vW, Math.min(vH, vD));
 
+		final double xTmax = Arrays.stream(sliceXTmax).max().getAsDouble();
+		final double yTmax = Arrays.stream(sliceYTmax).max().getAsDouble();
+		final double zTmax = Arrays.stream(sliceZTmax).max().getAsDouble();
+		
 		final int tW = (int) Math.floor(2 * xTmax / vS) + 5;
 		final int tH = (int) Math.floor(2 * yTmax / vS) + 5;
 		final int tD = (int) Math.floor(2 * zTmax / vS) + 5;
