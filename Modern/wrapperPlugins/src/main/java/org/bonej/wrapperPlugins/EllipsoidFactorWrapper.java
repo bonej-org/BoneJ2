@@ -368,7 +368,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 
 		seedPointImage = new ImgPlus<>(seedImage, "Seed points");
-		seedPointImage.setChannelMaximum(0, 2);
+		seedPointImage.setChannelMaximum(0, 1);
+		seedPointImage.setChannelMinimum(0, 0);
 		Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		long stop = System.currentTimeMillis();
 		logService.info("Found " + quickEllipsoids.length + " ellipsoids in " + (stop - start) + " ms");
