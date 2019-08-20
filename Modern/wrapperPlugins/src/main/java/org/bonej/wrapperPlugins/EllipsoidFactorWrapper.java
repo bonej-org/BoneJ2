@@ -139,9 +139,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
 	private double maxDrift = Math.sqrt(3);
 
+	//averaging / smoothing
 	@Parameter(label = "Repetitions", description = "Number of currentIteration over which to average EF value", min="1")
 	private int runs = 1;
-
+	@Parameter(label = "Average over largest n ellipsoids", min="1")
+	private int weightedAverageN = 1;
+	
+	
 	//what seed points should I use?
 	@Parameter(label = "Seed points based on distance ridge", description = "tick this if you would like ellipsoids to be seeded based on the foreground distance ridge")
 	private boolean seedOnDistanceRidge = true;
@@ -150,9 +154,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	@Parameter(label = "Show secondary images")
 	private boolean showSecondaryImages = false;
-
-	@Parameter(label = "Average over largest n ellipsoids", min="1")
-	private int weightedAverageN = 1;
 
 	//output parameters
 	@Parameter(visibility = ItemVisibility.MESSAGE)
