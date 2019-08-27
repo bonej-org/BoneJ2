@@ -383,6 +383,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			//get runs by weighted array
 			while(currentSlice.hasNext())
 			{
+				currentSlice.fwd();
 				long[] coordinates = new long[3];
 				currentSlice.localize(coordinates);
 				final Vector3d point = new Vector3d(coordinates[0] + 0.5, coordinates[1] + 0.5, coordinates[2] + 0.5);
