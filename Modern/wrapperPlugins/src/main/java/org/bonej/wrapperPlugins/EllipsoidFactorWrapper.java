@@ -65,7 +65,6 @@ import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imglib2.Cursor;
-import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -163,7 +162,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private String outputs = "Outputs";
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
-	private List<ImgPlus> ellipsoidFactorOutputImages;
+	private List<ImgPlus<? extends RealType>> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
@@ -182,7 +181,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImgPlus);
 
 		int totalEllipsoids = 0;
-		List<ImgPlus> outputList = new ArrayList<>();
+		List<ImgPlus<? extends RealType>> outputList = new ArrayList<>();
 
 		final QuickEllipsoid[][] ellipsoidMatrix = new QuickEllipsoid[runs][];
 		for(int i = 0; i<runs; i++) {
@@ -370,7 +369,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return EF;
 	}
 
-	private void assignEllipsoidIDs(List<ImgPlus> outputList, final Img<BitType> inputBinaryImage, final QuickEllipsoid[][] ellipsoids) {
+	private void assignEllipsoidIDs(List<ImgPlus<? extends RealType>> outputList, final Img<BitType> inputBinaryImage, final QuickEllipsoid[][] ellipsoids) {
 
 		final LongStream zRange = LongStream.range(0, inputBinaryImage.dimension(2));
 		zRange.parallel().forEach(z -> {
@@ -379,11 +378,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			final long[] mins = {0, 0, z};
 			final long[] maxs = {inputBinaryImage.dimension(0) - 1, inputBinaryImage.dimension(1) - 1, z};
 			final Cursor<BitType> currentSlice = Views.interval(inputBinaryImage, mins, maxs).localizingCursor();
+			final Cursor<? extends RealType> currentEFSlice = Views.interval(outputList.get(0).getImg(), mins, maxs).cursor();
 
 			//get runs by weighted array
 			while(currentSlice.hasNext())
 			{
 				currentSlice.fwd();
+				currentEFSlice.fwd();
 				long[] coordinates = new long[3];
 				currentSlice.localize(coordinates);
 				final Vector3d point = new Vector3d(coordinates[0] + 0.5, coordinates[1] + 0.5, coordinates[2] + 0.5);
@@ -396,17 +397,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					firstNContainingEllipsoidsForEachRun[r] = localEllipsoids.stream()
 						.filter(e -> e.contains(point.x(), point.y(), point.z())).limit(weightedAverageN).toArray(QuickEllipsoid[]::new);
 				}
-				setOutputForVoxel(outputList, coordinates, firstNContainingEllipsoidsForEachRun);
+				setOutputForVoxel(currentEFSlice, firstNContainingEllipsoidsForEachRun);
 			}
 		});
 	}
 
-	private void setOutputForVoxel(List<ImgPlus> imgPluses, long[] coordinates, QuickEllipsoid[][] firstNContainingEllipsoidsForEachRun) {
-		for(ImgPlus i : imgPluses) {
-			final RandomAccess<? extends RealType> randomAccess = i.randomAccess();
-			randomAccess.setPosition(coordinates);
-			randomAccess.get().setReal(computeWeightedEllipsoidFactor(firstNContainingEllipsoidsForEachRun));
-		}
+	private void setOutputForVoxel(Cursor<? extends RealType> cursor, QuickEllipsoid[][] firstNContainingEllipsoidsForEachRun) {
+			cursor.get().setReal(computeWeightedEllipsoidFactor(firstNContainingEllipsoidsForEachRun));
 	}
 
 	private void addResults(final int totalEllipsoids, double fillingPercentage) {
