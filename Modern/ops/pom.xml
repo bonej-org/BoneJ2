@@ -148,8 +148,9 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
-            <version>0.43.2</version>
+            <version>${imagej-ops.version}</version>
             <classifier>tests</classifier>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
