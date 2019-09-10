@@ -410,8 +410,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	private List<Vector3d> applySkipRatio(List<Vector3d> seedPoints) {
 		if (skipRatio > 1) {
-			int limit = seedPoints.size() / skipRatio + Math.min(seedPoints.size() % skipRatio, 1);
-			seedPoints = Stream.iterate(0, i -> i + skipRatio).limit(limit).map(seedPoints::get).collect(toList());
+			int limit = seedPoints.size() / skipRatio;
+			final Random random = new Random();
+			final int skipper = random.nextInt(skipRatio);
+			seedPoints = Stream.iterate(skipper, i -> i + skipRatio).limit(limit).map(seedPoints::get).collect(toList());
 		}
 		return seedPoints;
 	}
