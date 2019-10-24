@@ -38,6 +38,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.bonej.ops.ellipsoid.*;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
+import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
@@ -138,6 +139,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private int maxIterations = 100;
 	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
 	private double maxDrift = Math.sqrt(3);
+	@Parameter(label = "Minimum semi axis", description = "minimum length for the longest semi-axis needed for an ellipsoid to be valid. Defaults to unit voxel", min="0")
+	private double minimumSemiAxis = 1.0;
 
 	//averaging / smoothing
 	@Parameter(label = "Repetitions", description = "Number of currentIteration over which to average EF value", min="1")
@@ -333,7 +336,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final byte[][] pixels = imgPlusToByteArray(imp);
 		final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
 		QuickEllipsoid[] quickEllipsoids = new QuickEllipsoid[]{};
-		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift);
+		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift, minimumSemiAxis);
 		if (seedOnDistanceRidge) {
 			// noinspection unchecked
 			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImgPlus);
@@ -347,7 +350,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
 			quickEllipsoids = ridgePoints.parallelStream().map(sp -> medialOptimisation.calculate(pixels, sp))
 					.filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
-			Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 			logService.info("Found " + quickEllipsoids.length + " distance-ridge-seeded ellipsoids.");
 		}
 
@@ -362,8 +364,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
 			QuickEllipsoid[] skeletonSeededEllipsoids = skeletonPoints.parallelStream().map(sp -> medialOptimisation.calculate(pixels, sp))
 					.filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
-			Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
-			logService.info("Found " + quickEllipsoids.length + " skeleton-seeded ellipsoids.");
+			logService.info("Found " + skeletonSeededEllipsoids.length + " skeleton-seeded ellipsoids.");
 			quickEllipsoids = Stream.concat(Arrays.stream(quickEllipsoids), Arrays.stream(skeletonSeededEllipsoids))
 					.toArray(QuickEllipsoid[]::new);
 		}
@@ -399,6 +400,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				}
 			}
 		}
+		skeleton.close();
 		return skeletonPoints;
 	}
 

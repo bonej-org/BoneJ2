@@ -16,6 +16,27 @@ import org.junit.Test;
 import net.imagej.ops.AbstractOpTest;
 
 public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
+
+	@Test
+	public void testMinimumSemiAxisFilter() {
+		final byte[][] sphere = getSphere(10);
+		final QuickEllipsoid ellipsoidNull = (QuickEllipsoid) ops.run(EllipsoidOptimisationStrategy.class, sphere,
+				new Vector3d(20.5, 20.5, 20.5), new double[]{40, 40, 40},
+				new NoEllipsoidConstrain(), new OptimisationParameters(0.435,100,1,100,1.73, 15));
+
+		final QuickEllipsoid ellipsoidTooBigToBeFiltered = (QuickEllipsoid) ops.run(EllipsoidOptimisationStrategy.class, sphere,
+				new Vector3d(20.5, 20.5, 20.5), new double[]{40, 40, 40},
+				new NoEllipsoidConstrain(), new OptimisationParameters(0.435,100,1,100,1.73, 9.5));
+
+		final QuickEllipsoid ellipsoidZeroFilter = (QuickEllipsoid) ops.run(EllipsoidOptimisationStrategy.class, sphere,
+				new Vector3d(20.5, 20.5, 20.5), new double[]{40, 40, 40},
+				new NoEllipsoidConstrain(), new OptimisationParameters(0.435,100,1,100,1.73, 0));
+
+		assertNull(ellipsoidNull);
+		assertNotNull(ellipsoidTooBigToBeFiltered);
+		assertNotNull(ellipsoidZeroFilter);
+	}
+
 	@Test
 	public void testSkeletonPointOptimisationStrategy() {
 		final byte[][] sphere = getSphere(10);
@@ -233,7 +254,7 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 
 		final EllipsoidOptimisationStrategy optimisation = (EllipsoidOptimisationStrategy) Functions.binary(ops, EllipsoidOptimisationStrategy.class, QuickEllipsoid.class,
 				new byte[10][10],
-				new Vector3d(),new long[]{10,10,1},  new NoEllipsoidConstrain(), new OptimisationParameters(2,0,0,0,0));
+				new Vector3d(),new long[]{10,10,1},  new NoEllipsoidConstrain(), new OptimisationParameters(2,0,0,0,0,1000));
 
 		//EXECUTE
 		boolean tooSmallInvalid = optimisation.isInvalid(tooSmall, new ArrayList<>(),100,100,100);
