@@ -48,6 +48,7 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.view.Views;
 
+import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -87,6 +88,7 @@ public class AnisotropyWrapperTest {
 	@After
 	public void tearDown() {
 		Mockito.reset(IMAGE_J.ui().getDefaultUI());
+		SharedTable.reset();
 	}
 
 	@Test
