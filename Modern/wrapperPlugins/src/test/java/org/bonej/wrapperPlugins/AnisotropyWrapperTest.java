@@ -76,14 +76,6 @@ public class AnisotropyWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static ImgPlus<BitType> hyperSheets;
-	private UsageReporter mockReporter;
-
-	@Before
-	public void setup() {
-		mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		AnisotropyWrapper.setReporter(mockReporter);
-	}
 
 	@After
 	public void tearDown() {
@@ -205,6 +197,10 @@ public class AnisotropyWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
+		final UsageReporter mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		AnisotropyWrapper.setReporter(mockReporter);
+
 		final String unit = "mm";
 		final double scale = 1.0;
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);

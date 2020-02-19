@@ -56,8 +56,10 @@ import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
@@ -73,12 +75,7 @@ import org.scijava.ui.UserInterface;
 public class AnalyseSkeletonWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
-	private UsageReporter mockReporter;
-
-	@After
-	public void tearDown() {
-		SharedTable.reset();
-	}
+	private static final UsageReporter mockReporter = mock(UsageReporter.class);
 
 	@Test
 	public void testAdditionalResultsTable() throws Exception {
@@ -509,10 +506,18 @@ public class AnalyseSkeletonWrapperTest {
 
 	@Before
 	public void setup() {
-		mockReporter = mock(UsageReporter.class);
 		doNothing().when(mockReporter).reportEvent(anyString());
-		AnalyseSkeletonWrapper.setReporter(mockReporter);
 	}
+
+
+	@After
+	public void tearDown() {
+		Mockito.reset(mockReporter);
+		SharedTable.reset();
+	}
+
+	@BeforeClass
+	public static void oneTimeSetup() { AnalyseSkeletonWrapper.setReporter(mockReporter); }
 
 	@AfterClass
 	public static void oneTimeTearDown() {
