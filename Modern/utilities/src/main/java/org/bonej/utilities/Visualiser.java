@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.vecmath.Color3f;
 import org.scijava.vecmath.Point3f;
 
@@ -73,13 +74,13 @@ public class Visualiser {
 		univ.show();
 	}
 	
-	public static void display3DPoints(List<Vector3d> vectors, String title) {
+	public static void display3DPoints(List<Vector3dc> vectors, String title) {
 		double[][] points = new double[vectors.size()][3];
 		int i = 0;
-		for (Vector3d v : vectors) {
-			points[i][0] = v.x;
-			points[i][1] = v.y;
-			points[i][2] = v.z;
+		for (Vector3dc v : vectors) {
+			points[i][0] = v.x();
+			points[i][1] = v.y();
+			points[i][2] = v.z();
 			i++;
 		}
 		display3DPoints(points, title);

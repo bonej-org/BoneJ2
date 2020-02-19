@@ -84,6 +84,7 @@ import org.joml.Matrix4dc;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -130,7 +131,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final double DEFAULT_INCREMENT = 2.3;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
-	private static UnaryFunctionOp<List<Vector3d>, Matrix4dc> solveQuadricOp;
+	private static UnaryFunctionOp<List<Vector3dc>, Matrix4dc> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 			ellipsoid -> 1.0 - (1.0/(ellipsoid.getC() * ellipsoid.getC())) / (1.0/(ellipsoid.getA() * ellipsoid.getA()));
 	@SuppressWarnings("unused")
@@ -310,7 +311,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3d> pointCloud) {
+	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3dc> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4dc quadric = solveQuadricOp.calculate(pointCloud);
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
@@ -319,7 +320,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@SuppressWarnings("unchecked")
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
-		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
+		final List<Vector3dc> tmpPoints = generate(Vector3d::new).limit(
 			Quadric.MIN_DATA).collect(toList());
 		solveQuadricOp = Functions.unary(opService, Quadric.class, Matrix4dc.class,
 			tmpPoints);
@@ -335,7 +336,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private Ellipsoid milEllipsoid(final RandomAccessibleInterval<BitType> interval) {
-		final List<Vector3d> pointCloud;
+		final List<Vector3dc> pointCloud;
 		try {
 			pointCloud = runDirectionsInParallel(interval);
 			if (pointCloud.size() < Quadric.MIN_DATA) {
@@ -368,7 +369,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		return () -> milOp.calculate(interval, generator);
 	}
 
-	private List<Vector3d> runDirectionsInParallel(
+	private List<Vector3dc> runDirectionsInParallel(
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
 	{
@@ -382,7 +383,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final List<Future<Vector3d>> futures = generate(() -> createMILTask(interval)).limit(
 			directions).map(executor::submit).collect(toList());
-		final List<Vector3d> pointCloud = Collections.synchronizedList(
+		final List<Vector3dc> pointCloud = Collections.synchronizedList(
 			new ArrayList<>(directions));
 		final int futuresSize = futures.size();
 		final AtomicInteger progress = new AtomicInteger();
