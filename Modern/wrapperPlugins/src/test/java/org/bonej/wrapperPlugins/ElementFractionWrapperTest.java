@@ -51,9 +51,11 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
 import org.scijava.ui.UserInterface;
@@ -67,6 +69,7 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ElementFractionWrapperTest {
 
+	private final UserInterface mockUI = mock(UserInterface.class);
 	private static final ImageJ IMAGE_J = new ImageJ();
 
 	@BeforeClass
@@ -76,19 +79,26 @@ public class ElementFractionWrapperTest {
 		ElementFractionWrapper.setReporter(mockReporter);
 	}
 
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
 	@After
 	public void tearDown() {
+		Mockito.reset(mockUI);
+
 		SharedTable.reset();
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsElementFraction() throws Exception {
+	public void testNonBinaryImageCancelsElementFraction() {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			ElementFractionWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsElementFraction() throws Exception {
+	public void testNullImageCancelsElementFraction() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			ElementFractionWrapper.class);
 	}
@@ -205,11 +215,9 @@ public class ElementFractionWrapperTest {
 	@Test
 	public void testWeirdSpatialImageCancelsPlugin() throws Exception {
 		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(anyString(), anyString(), any(), any()))
 			.thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Create an hyperstack with no calibration
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);

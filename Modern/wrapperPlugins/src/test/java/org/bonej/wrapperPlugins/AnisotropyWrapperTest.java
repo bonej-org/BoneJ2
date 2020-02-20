@@ -76,7 +76,7 @@ public class AnisotropyWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static ImgPlus<BitType> hyperSheets;
-	private static final UserInterface mockUI = mock(UserInterface.class);
+	private final UserInterface mockUI = mock(UserInterface.class);
 
 	@Before
 	public void setup() {
@@ -90,7 +90,7 @@ public class AnisotropyWrapperTest {
 	}
 
 	@Test
-	public void test2DImageCancelsWrapper() throws Exception {
+	public void test2DImageCancelsWrapper() {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
 			AnisotropyWrapper.class);
 	}
@@ -138,7 +138,6 @@ public class AnisotropyWrapperTest {
 		final String expectedStart = "The voxels in the image are anisotropic";
 		when(mockUI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
@@ -171,13 +170,13 @@ public class AnisotropyWrapperTest {
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsWrapper() throws Exception {
+	public void testNonBinaryImageCancelsWrapper() {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			AnisotropyWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsWrapper() throws Exception {
+	public void testNullImageCancelsWrapper() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			AnisotropyWrapper.class);
 	}

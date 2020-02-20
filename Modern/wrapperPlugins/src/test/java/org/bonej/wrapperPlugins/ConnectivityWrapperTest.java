@@ -52,9 +52,11 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
@@ -70,6 +72,7 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 public class ConnectivityWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private final UserInterface mockUI = mock(UserInterface.class);
 
 	@BeforeClass
 	public static void oneTimeSetup() {
@@ -78,13 +81,20 @@ public class ConnectivityWrapperTest {
 		ConnectivityWrapper.setReporter(mockReporter);
 	}
 
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
 	@After
 	public void tearDown() {
+		Mockito.reset(mockUI);
+
 		SharedTable.reset();
 	}
 
 	@Test
-	public void test2DImageCancelsConnectivity() throws Exception {
+	public void test2DImageCancelsConnectivity() {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
 			ConnectivityWrapper.class);
 	}
@@ -92,11 +102,9 @@ public class ConnectivityWrapperTest {
 	@Test
 	public void testNegativeConnectivityShowsInfoDialog() throws Exception {
 		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(
 			INFORMATION_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Create a 3D hyperstack with two channels. Each channel has two particles
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
@@ -128,13 +136,13 @@ public class ConnectivityWrapperTest {
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsConnectivity() throws Exception {
+	public void testNonBinaryImageCancelsConnectivity() {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			ConnectivityWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsConnectivity() throws Exception {
+	public void testNullImageCancelsConnectivity() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			ConnectivityWrapper.class);
 	}

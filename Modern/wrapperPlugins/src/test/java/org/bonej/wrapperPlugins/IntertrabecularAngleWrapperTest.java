@@ -59,9 +59,11 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
@@ -78,16 +80,24 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 public class IntertrabecularAngleWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private final UserInterface mockUI = mock(UserInterface.class);
 
 	@BeforeClass
-	public static void setup() {
+	public static void oneTimeSetup() {
 		final UsageReporter mockReporter = mock(UsageReporter.class);
 		doNothing().when(mockReporter).reportEvent(anyString());
 		IntertrabecularAngleWrapper.setReporter(mockReporter);
 	}
 
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
 	@After
 	public void tearDown() {
+		Mockito.reset(mockUI);
+
 		SharedTable.reset();
 	}
 
@@ -129,7 +139,7 @@ public class IntertrabecularAngleWrapperTest {
 	}
 
 	@Test
-	public void testAnisotropicImageShowsWarningDialog() throws Exception {
+	public void testAnisotropicImageShowsWarningDialog() {
 		CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
 			IntertrabecularAngleWrapper.class);
 	}
@@ -139,7 +149,6 @@ public class IntertrabecularAngleWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_CHANNEL_DIMENSIONS +
 			". Please split the channels.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
@@ -185,11 +194,9 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testMultipleGraphsShowsWarningDialog() throws Exception {
 		// SETUP
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(startsWith("Image has multiple skeletons"),
 			anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus pixels = NewImage.createByteImage("Test", 4, 4, 1,
 			FILL_BLACK);
 		pixels.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -211,9 +218,7 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testNoImageWhenNoSkeletonisation() throws Exception {
 		// SETUP
-		final UserInterface mockUI = mock(UserInterface.class);
 		doNothing().when(mockUI).show(any(ImagePlus.class));
-		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus pixel = NewImage.createByteImage("Test", 3, 3, 1,
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -232,7 +237,6 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testNoResultsCancelsPlugin() throws Exception {
 		// SETUP
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus pixel = NewImage.createByteImage("Test", 3, 3, 1,
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -253,7 +257,6 @@ public class IntertrabecularAngleWrapperTest {
 	public void testNoSkeletonsCancelsPlugin() throws Exception {
 		// SETUP
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(
@@ -268,13 +271,13 @@ public class IntertrabecularAngleWrapperTest {
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsPlugin() throws Exception {
+	public void testNonBinaryImageCancelsPlugin() {
 		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
 			IntertrabecularAngleWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
+	public void testNullImageCancelsPlugin() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			IntertrabecularAngleWrapper.class);
 	}
@@ -282,9 +285,7 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testPrintCentroids() throws Exception {
 		// SETUP
-		final UserInterface mockUI = mock(UserInterface.class);
 		doNothing().when(mockUI).show(any(ImagePlus.class));
-		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus line = NewImage.createByteImage("Test", 5, 3, 1,
 			FILL_BLACK);
 		line.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -324,9 +325,7 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testSkeletonImageWhenSkeletonised() throws Exception {
 		// SETUP
-		final UserInterface mockUI = mock(UserInterface.class);
 		doNothing().when(mockUI).show(any(ImagePlus.class));
-		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus square = NewImage.createByteImage("Test", 4, 4, 1,
 			FILL_BLACK);
 		square.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -347,7 +346,6 @@ public class IntertrabecularAngleWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
 			". Please split the hyperstack.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
@@ -362,6 +360,7 @@ public class IntertrabecularAngleWrapperTest {
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
+
 
 	@AfterClass
 	public static void oneTimeTearDown() {

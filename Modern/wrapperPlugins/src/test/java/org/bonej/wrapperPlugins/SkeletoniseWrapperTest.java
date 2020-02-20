@@ -40,9 +40,11 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
@@ -61,16 +63,24 @@ import ij.measure.Calibration;
 public class SkeletoniseWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private final UserInterface mockUI = mock(UserInterface.class);
 
 	@BeforeClass
-	public static void setup() {
+	public static void oneTimeSetup() {
 		final UsageReporter mockReporter = mock(UsageReporter.class);
 		doNothing().when(mockReporter).reportEvent(anyString());
 		SkeletoniseWrapper.setReporter(mockReporter);
 	}
 
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
 	@After
 	public void tearDown() {
+		Mockito.reset(mockUI);
+
 		SharedTable.reset();
 	}
 
@@ -79,7 +89,6 @@ public class SkeletoniseWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_CHANNEL_DIMENSIONS +
 			". Please split the channels.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
@@ -96,13 +105,13 @@ public class SkeletoniseWrapperTest {
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsPlugin() throws Exception {
+	public void testNonBinaryImageCancelsPlugin() {
 		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
 			SkeletoniseWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
+	public void testNullImageCancelsPlugin() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			SkeletoniseWrapper.class);
 	}
@@ -136,7 +145,6 @@ public class SkeletoniseWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
 			". Please split the hyperstack.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE

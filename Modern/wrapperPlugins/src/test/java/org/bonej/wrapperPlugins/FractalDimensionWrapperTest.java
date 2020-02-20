@@ -49,9 +49,11 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.Column;
@@ -59,6 +61,7 @@ import org.scijava.table.DefaultColumn;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.GenericTable;
 import org.scijava.table.Table;
+import org.scijava.ui.UserInterface;
 
 /**
  * Tests for {@link FractalDimensionWrapper}
@@ -69,6 +72,7 @@ import org.scijava.table.Table;
 public class FractalDimensionWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private final UserInterface mockUI = mock(UserInterface.class);
 
 	@BeforeClass
 	public static void oneTimeSetup() {
@@ -77,19 +81,26 @@ public class FractalDimensionWrapperTest {
 		FractalDimensionWrapper.setReporter(mockReporter);
 	}
 
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
 	@After
 	public void tearDown() {
+		Mockito.reset(mockUI);
+
 		SharedTable.reset();
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsFractalDimension() throws Exception {
+	public void testNonBinaryImageCancelsFractalDimension() {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			FractalDimensionWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsFractalDimension() throws Exception {
+	public void testNullImageCancelsFractalDimension() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			FractalDimensionWrapper.class);
 	}

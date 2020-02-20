@@ -67,9 +67,11 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
@@ -85,21 +87,29 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 public class SurfaceAreaWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private final UserInterface mockUI = mock(UserInterface.class);
 
 	@BeforeClass
-	public static void setup() {
+	public static void oneTimeSetup() {
 		final UsageReporter mockReporter = mock(UsageReporter.class);
 		doNothing().when(mockReporter).reportEvent(anyString());
 		SurfaceAreaWrapper.setReporter(mockReporter);
 	}
 
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
 	@After
 	public void tearDown() {
+		Mockito.reset(mockUI);
+
 		SharedTable.reset();
 	}
 
 	@Test
-	public void test2DImageCancelsIsosurface() throws Exception {
+	public void test2DImageCancelsIsosurface() {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
 			SurfaceAreaWrapper.class);
 	}
@@ -120,13 +130,11 @@ public class SurfaceAreaWrapperTest {
 			yAxis, zAxis);
 
 		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.chooseFile(any(File.class), anyString())).thenReturn(
 			exceptionsThrowingFile);
 		when(mockUI.dialogPrompt(startsWith(STL_WRITE_ERROR), anyString(), eq(
 			ERROR_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Run plugin
 		IMAGE_J.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
@@ -219,11 +227,9 @@ public class SurfaceAreaWrapperTest {
 			yAxis, zAxis, tAxis);
 
 		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(eq(SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Run plugin
 		IMAGE_J.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
@@ -235,13 +241,13 @@ public class SurfaceAreaWrapperTest {
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsIsosurface() throws Exception {
+	public void testNonBinaryImageCancelsIsosurface() {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			SurfaceAreaWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsIsosurface() throws Exception {
+	public void testNullImageCancelsIsosurface() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			SurfaceAreaWrapper.class);
 	}

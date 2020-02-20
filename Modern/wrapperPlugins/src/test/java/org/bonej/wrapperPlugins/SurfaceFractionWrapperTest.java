@@ -44,12 +44,15 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
+import org.scijava.ui.UserInterface;
 
 /**
  * Tests for the {@link SurfaceFractionWrapper} class
@@ -59,34 +62,42 @@ import org.scijava.table.DefaultColumn;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SurfaceFractionWrapperTest {
 
+	private final UserInterface mockUI = mock(UserInterface.class);
 	private static final Gateway IMAGE_J = new ImageJ();
 
 	@BeforeClass
-	public static void setup() {
+	public static void oneTimeSetup() {
 		final UsageReporter mockReporter = mock(UsageReporter.class);
 		doNothing().when(mockReporter).reportEvent(anyString());
 		SurfaceFractionWrapper.setReporter(mockReporter);
 	}
 
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
 	@After
 	public void tearDown() {
+		Mockito.reset(mockUI);
+
 		SharedTable.reset();
 	}
 
 	@Test
-	public void test2DImageCancelsConnectivity() throws Exception {
+	public void test2DImageCancelsConnectivity() {
 		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
 			SurfaceFractionWrapper.class);
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsSurfaceFraction() throws Exception {
+	public void testNonBinaryImageCancelsSurfaceFraction() {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
 			SurfaceFractionWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsSurfaceFraction() throws Exception {
+	public void testNullImageCancelsSurfaceFraction() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			SurfaceFractionWrapper.class);
 	}

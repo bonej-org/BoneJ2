@@ -35,10 +35,13 @@ import net.imagej.ImageJ;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.UserInterface;
@@ -55,6 +58,7 @@ import ij.gui.NewImage;
 public class FitEllipsoidWrapperTest {
 
 	private static final Gateway IMAGE_J = new ImageJ();
+	private final UserInterface mockUI = mock(UserInterface.class);
 
 	@BeforeClass
 	public static void oneTimeSetup() {
@@ -64,19 +68,19 @@ public class FitEllipsoidWrapperTest {
 	}
 
 	@Test
-	public void test2DImageCancelsPlugin() throws Exception {
+	public void test2DImageCancelsPlugin() {
 		CommonWrapperTests.test2DImagePlusCancelsPlugin(IMAGE_J,
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
-	public void testAnisotropicImageShowsWarningDialog() throws Exception {
+	public void testAnisotropicImageShowsWarningDialog() {
 		CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
+	public void testNullImageCancelsPlugin() {
 		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
 			FitEllipsoidWrapper.class);
 	}
@@ -84,7 +88,6 @@ public class FitEllipsoidWrapperTest {
 	@Test
 	public void testNullROIManagerCancelsPlugin() throws Exception {
 		// SETUP
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = NewImage.createImage("", 5, 5, 5, 8, 1);
 
 		// EXECUTE
@@ -99,6 +102,16 @@ public class FitEllipsoidWrapperTest {
 				Quadric.MIN_DATA));
 		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
+	}
+
+	@Before
+	public void setup() {
+		IMAGE_J.ui().setDefaultUI(mockUI);
+	}
+
+	@After
+	public void tearDown() {
+		Mockito.reset(mockUI);
 	}
 
 	@AfterClass
