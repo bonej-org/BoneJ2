@@ -76,17 +76,16 @@ public class AnisotropyWrapperTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static ImgPlus<BitType> hyperSheets;
+	private static final UserInterface mockUI = mock(UserInterface.class);
 
 	@Before
 	public void setup() {
-		UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		AnisotropyWrapper.setReporter(mockReporter);
+		IMAGE_J.ui().setDefaultUI(mockUI);
 	}
 
 	@After
 	public void tearDown() {
-		Mockito.reset(IMAGE_J.ui().getDefaultUI());
+		Mockito.reset(mockUI);
 		SharedTable.reset();
 	}
 
@@ -107,13 +106,11 @@ public class AnisotropyWrapperTest {
 		final Img<BitType> img = ArrayImgs.bits(5, 5, 5);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 				yAxis, zAxis);
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
 		final String expectedStart = "The voxels in the image are anisotropic";
 		when(mockUI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
 				WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// EXECUTE
 		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
@@ -136,7 +133,6 @@ public class AnisotropyWrapperTest {
 		final Img<BitType> img = ArrayImgs.bits(5, 5, 5);
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, zAxis);
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
 		final String expectedStart = "The voxels in the image are anisotropic";
@@ -165,9 +161,6 @@ public class AnisotropyWrapperTest {
 	 */
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
-		final UserInterface mockUI = mock(UserInterface.class);
-		IMAGE_J.ui().setDefaultUI(mockUI);
-
 		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
 			true, "inputImage", hyperSheets, "lines", 4, "directions", 9).get();
 
@@ -191,15 +184,36 @@ public class AnisotropyWrapperTest {
 
 	@Test
 	public void testTooFewPointsCancelsPlugin() throws Exception {
-		final UserInterface mockUI = mock(UserInterface.class);
-		IMAGE_J.ui().setDefaultUI(mockUI);
-
 		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
 			true, "inputImage", hyperSheets, "lines", 1, "directions", 1).get();
 
 		assertTrue(module.isCanceled());
 		assertEquals("Anisotropy could not be calculated - too few points", module
 			.getCancelReason());
+	}
+
+	@Test
+	public void testMinimumIncrementIsEnforced() throws Exception {
+		final double expectedIncrement = Math.round(Math.sqrt(3.0) * 100.0) / 100.0;
+
+		final CommandModule module = IMAGE_J.command()
+				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
+						"directions", 1, "samplingIncrement", 0).get();
+
+		final Double increment = (Double) module.getInput("samplingIncrement");
+		assertEquals(expectedIncrement, increment, 1e-12);
+	}
+
+	@Test
+	public void testIncrementGreaterThanMinimumIsAllowd() throws Exception {
+		final double inputIncrement = 5.0;
+
+		final CommandModule module = IMAGE_J.command()
+				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
+						"directions", 1, "samplingIncrement", inputIncrement).get();
+
+		final Double increment = (Double) module.getInput("samplingIncrement");
+		assertEquals(increment, inputIncrement, 1e-12);
 	}
 
 	@BeforeClass
@@ -225,6 +239,7 @@ public class AnisotropyWrapperTest {
 			Views.interval(hyperSheets, new long[] { 0, 0, z, 1, 1 }, new long[] { 99,
 				99, z, 0, 0 }).forEach(BitType::setOne);
 		}
+
 		AnisotropyWrapper.setSeed(0xc0ff33);
 	}
 
