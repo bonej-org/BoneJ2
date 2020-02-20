@@ -1,5 +1,5 @@
 language: java
-jdk: oraclejdk8
+jdk: openjdk8
 branches:
   only:
   - master
@@ -9,7 +9,7 @@ script: ".travis/build.sh"
 notifications:
   email:
     - afelder@rvc.ac.uk
-    - mdoube@cityu.edu.hkm
+    - mdoube@cityu.edu.hk
 cache:
   directories:
   - "~/.m2/repository"

@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.scijava</groupId>
         <artifactId>pom-scijava</artifactId>
-        <version>24.0.0</version>
+        <version>26.0.0</version>
         <relativePath />
     </parent>
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej</artifactId>
-    <version>6.1.1-SNAPSHOT</version>
+    <version>6.1.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>BoneJ Parent POM</name>
@@ -86,7 +86,7 @@
     <mailingLists>
         <mailingList>
             <name>Image.sc Forum</name>
-            <subscribe>https://forum.image.sc/</subscribe>
+            <subscribe>https://forum.image.sc/tags/bonej</subscribe>
             <post>http://forum.image.sc/tags/bonej</post>
         </mailingList>
     </mailingLists>
@@ -117,14 +117,14 @@
     <properties>
         <license.licenseName>bsd_2</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
-        <releaseProfiles>deploy-to-imagej</releaseProfiles>
+        <releaseProfiles>deploy-to-scijava</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
     </properties>
 
     <repositories>
         <repository>
-            <id>imagej.public</id>
-            <url>https://maven.imagej.net/content/groups/public</url>
+            <id>scijava.public</id>
+            <url>https://maven.scijava.org/content/groups/public</url>
         </repository>
     </repositories>
 </project>

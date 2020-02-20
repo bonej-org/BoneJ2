@@ -373,7 +373,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 			cancel(NOT_3D_IMAGE);
 		}
 
-		if (!ElementUtil.isColorsBinary(inputImage)) {
+		if (!ElementUtil.isBinary(inputImage)) {
 			cancel(NOT_BINARY);
 		}
 	}

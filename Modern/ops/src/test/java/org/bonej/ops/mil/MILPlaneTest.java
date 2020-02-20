@@ -157,14 +157,15 @@ public class MILPlaneTest {
 	/**
 	 * Tests the op with an image with a foreground sheet on every other XY-slice.
 	 * Since the direction of the lines is (0, 0, 1) they should encounter all of
-	 * them. Their length should be image depth / sheets = 2.0.
+	 * them and count both in-out and out-in boundaries.
+	 * Their length should be image depth / (2 * sheets) = 1.0.
 	 */
 	@Test
 	public void testXYSheets() {
 		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
 			SHEETS, IDENTITY_ROTATION, 2L, 1.0, SEED);
 
-		assertEquals(2.0, milVector.length(), 1e-12);
+		assertEquals(1.0, milVector.length(), 1e-12);
 	}
 
 	/**

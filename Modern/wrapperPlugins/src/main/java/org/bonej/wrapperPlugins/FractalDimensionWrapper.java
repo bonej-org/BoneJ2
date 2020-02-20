@@ -325,7 +325,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 			cancel(NO_IMAGE_OPEN);
 			return;
 		}
-		if (!ElementUtil.isColorsBinary(inputImage)) {
+		if (!ElementUtil.isBinary(inputImage)) {
 			cancel(NOT_BINARY);
 		}
 	}
