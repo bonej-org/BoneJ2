@@ -77,7 +77,6 @@ public class CommonTest {
 	private static final ImageJ IMAGE_J = new ImageJ();
 
 	@Test
-	@Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 	public void testToBitTypeImgPlus() throws AssertionError {
 		final String unit = "mm";
 		final String name = "Test image";
