@@ -26,8 +26,6 @@ package org.bonej.ops.mil;
 import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
-import java.util.stream.Stream.Builder;
 
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imglib2.Interval;
@@ -37,12 +35,19 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 /**
- * A class that describes a set of parallel lines normal to a plane. The plane
- * passes through an interval.
- *
+ * A class that generates random lines that pass through a plane.
+ * <p>
+ * All the lines pass through a point on a d * d plane, where d = the longest diagonal of an interval.
+ * The lines are also normal to the plane.
+ * </p>
+ * <p>
+ * The plane is d * d so that it's big enough that lines passing through it cover the entire interval,
+ * regardless of the direction of the lines. However, this means that nextLine() might return a line
+ * that entirely misses the interval.
+ * </p>
  * @author Richard Domander
  */
-class LinePlane {
+public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 
 	private final double size;
 	private final Vector3dc translation;
@@ -51,24 +56,74 @@ class LinePlane {
 	private final Random random = new Random();
 	private final Quaterniondc rotation;
 	private final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
+	private final long sections;
+	private long uSection = 0;
+	private long tSection = 0;
+	private double uOffset = 0.0;
+	private double tOffset = 0.0;
 
 	/**
-	 * Creates an instance of LinePlane, and initializes it for generating lines.
+	 * Creates and initializes an instance for generating lines.
 	 *
-	 * @param interval a discrete interval through which the lines pass.
-	 * @param rotation the direction of the lines through the interval.
-	 * @param rotateOp the Op used to rotate the origin points and direction.
+	 * @param interval an interval through which the lines pass.
+	 * @param direction the direction of the lines through the interval described as a rotation.
+	 * @param rotateOp an op the generator needs for rotating vectors
+	 * @param sections number of sections each line point coordinate is generated from.
 	 * @param <I> type of the interval.
 	 */
-	<I extends Interval> LinePlane(final I interval, final Quaterniondc rotation,
-		final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp)
+	public <I extends Interval> PlaneParallelLineGenerator(final I interval, final Quaterniondc direction,
+														   final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp,
+														   final long sections)
 	{
 		size = findPlaneSize(interval);
 		translation = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
 		centroid = findCentroid(interval);
 		this.rotateOp = rotateOp;
-		this.rotation = rotation;
-		direction = createDirection();
+		this.rotation = direction;
+		this.direction = createDirection();
+		this.sections = sections;
+	}
+
+
+	/**
+	 * Generates the next random line.
+	 * <p>
+	 * If the class is initialised with more than one section, then lines pass the plane cyclically
+	 * through each section. For example, if sections == 2 then first line generated passes through a random
+	 * point on the top left quarter of the plane. The fourth line passes through a point on the bottom right quarter.
+	 * For the fifth one the cycle resets, and it's top left again. The randomisation happens once
+	 * per cycle, so the four points have consistent distance between each other.
+	 * </p>
+	 * <p>
+	 * NB: the line might miss the interval the class was initialised with!
+	 * </p>
+	 * @return a line passing through a point on a plane described by the class.
+	 */
+	@Override
+	public Line nextLine() {
+		final double sectionSize = 1.0 / sections;
+		if (uSection == 0 && tSection == 0) {
+			uOffset = random.nextDouble() * sectionSize;
+			tOffset = random.nextDouble() * sectionSize;
+		}
+		final double u = uSection * sectionSize + uOffset;
+		final double t = tSection * sectionSize + tOffset;
+		tSection++;
+		if (tSection >= sections) {
+			tSection = 0;
+			uSection++;
+		}
+		if (uSection >= sections) {
+			uSection = 0;
+			tSection = 0;
+		}
+		final Vector3dc point = createOrigin(t, u);
+		return new Line(point, direction);
+	}
+
+	@Override
+	public Vector3dc getDirection() {
+		return direction;
 	}
 
 	// region -- Helper methods --
@@ -99,63 +154,5 @@ class LinePlane {
 			1), interval.dimension(2)).map(x -> x * x).sum();
 		return Math.sqrt(sqSum);
 	}
-
-	/**
-	 * Generates a random set of points through which lines pass the plane.
-	 * <p>
-	 * If the direction of the lines is (0, 0, 1), then their coordinate range of
-	 * the points will be will be (c<sub>x</sub> &plusmn; d/2, c<sub>y</sub>
-	 * &plusmn; d/2, c<sub>z</sub>), where <b>c</b> is the centroid, and
-	 * <em>d</em> is the length of the largest, "corner-to-corner" diagonal of the
-	 * interval.
-	 * </p>
-	 * <p>
-	 * The points are equidistant from each other in both directions, but
-	 * translated randomly so that they don't always have the same co-ordinates.
-	 * </p>
-	 * <p>
-	 * NB points may lay outside the interval!
-	 * </p>
-	 *
-	 * @param bins number of sub-regions in both dimensions. Bins = 2 creates four
-	 *          points, one from each quadrant of the plane.
-	 * @return a finite stream of origin points on the plane.
-	 */
-	Stream<Vector3dc> getOrigins(final Long bins) {
-		final Builder<Vector3dc> builder = Stream.builder();
-		final double step = 1.0 / bins;
-		final double uOffset = random.nextDouble() * step;
-		final double tOffset = random.nextDouble() * step;
-		for (long i = 0; i < bins; i++) {
-			final double u = i * step + uOffset;
-			for (long j = 0; j < bins; j++) {
-				final double t = j * step + tOffset;
-				final Vector3dc origin = createOrigin(t, u);
-				builder.add(origin);
-			}
-		}
-		return builder.build();
-	}
-
-	/**
-	 * Gets a reference of the plane's normal.
-	 *
-	 * @return direction of the lines passing through the plane.
-	 */
-	Vector3dc getDirection() {
-		return direction;
-	}
-
-	/**
-	 * Sets the seed of the pseudo random number generator used in drawing the
-	 * origin points.
-	 *
-	 * @see #getOrigins(Long)
-	 * @param seed a seed number.
-	 */
-	void setSeed(final long seed) {
-		random.setSeed(seed);
-	}
-
 	// endregion
 }

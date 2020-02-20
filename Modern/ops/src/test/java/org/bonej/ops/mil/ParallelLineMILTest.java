@@ -24,10 +24,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.ops.mil;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import net.imagej.ImageJ;
+import net.imagej.ops.linalg.rotate.Rotate3d;
+import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
+import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
@@ -43,62 +45,60 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Tests for {@link MILPlane}.
+ * Tests for {@link ParallelLineMIL}.
  *
  * @author Richard Domander
  */
-public class MILPlaneTest {
+public class ParallelLineMILTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static final long SIZE = 100;
-	private static final Img<BitType> SHEETS = ArrayImgs.bits(SIZE, SIZE, SIZE);
+	private static final Img<BitType> XY_SHEETS = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static final Quaterniondc IDENTITY_ROTATION = new Quaterniond();
-	private static final Long SEED = 0xc0ffeeL;
+	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 
-	/**
-	 * Tests that changing the bins parameter changes the op result.
-	 * <p>
-	 * An image with random noise should produce a longer MIL vector with more
-	 * bins, because it's unlikely that that all of them intercept the same number
-	 * of foreground voxels.
-	 * </p>
-	 */
 	@Test
-	public void testBinsParameter() {
+	public void testMILLengthParameter() {
 		// SETUP
-		final long seed = 0xc0ffee;
-		final Img<BitType> noiseImg = ArrayImgs.bits(SIZE, SIZE, SIZE);
-		noiseImg.forEach(voxel -> {
-			if (Math.random() >= 0.5) {
-				voxel.setOne();
-			}
-		});
+		final double milLength = 200.0;
+		final double milLength2 = 400.0;
+		final Img<BitType> emptyStack = ArrayImgs.bits(100, 100, 100);
+		final ParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(XY_SHEETS, IDENTITY_ROTATION, rotateOp, 2L);
 
 		// EXECUTE
-		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			noiseImg, IDENTITY_ROTATION, 1L, 1.0, seed);
-		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			noiseImg, IDENTITY_ROTATION, 16L, 1.0, seed);
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
+				emptyStack, generator, milLength, 1.0);
+		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
+				emptyStack, generator, milLength2, 1.0);
 
 		// VERIFY
-		assertTrue(milVector.length() < milVector2.length());
+		assertEquals(milLength, milVector.length(), 1e-12);
+		assertEquals(milLength2, milVector2.length(), 1e-12);
 	}
 
 	/**
 	 * Tests that changing the increment parameter has an effect on the result.
 	 * <p>
-	 * Increasing increment should make the MIL vector longer, because intercepts
-	 * fewer foreground voxels.
+	 * Increasing increment should make the MIL vector longer, because it finds fewer foreground voxels.
 	 * </p>
 	 */
 	@Test
 	public void testIncrementParameter() {
+		// SETUP
+		final double milLength = 100.0;
+		final ParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(XY_SHEETS, IDENTITY_ROTATION, rotateOp, 2L);
+
 		// EXECUTE
-		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, IDENTITY_ROTATION, 2L, 1.0, SEED);
-		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, IDENTITY_ROTATION, 2L, 4.0, SEED);
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
+				XY_SHEETS, generator, milLength, 1.0);
+		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
+				XY_SHEETS, generator, milLength, 4.0);
 
 		// VERIFY
 		assertTrue(milVector.length() < milVector2.length());
@@ -107,51 +107,13 @@ public class MILPlaneTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testMatchingFailsIf2DInterval() {
 		final Img<BitType> img = ArrayImgs.bits(5, 5);
-		IMAGE_J.op().run(MILPlane.class, img);
+		IMAGE_J.op().run(ParallelLineMIL.class, img);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testMatchingFailsIf4DInterval() {
 		final Img<BitType> img = ArrayImgs.bits(5, 5, 5, 5);
-		IMAGE_J.op().run(MILPlane.class, img);
-	}
-
-	@Test
-	public void testRotationParameter() {
-		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 2.0,
-			0, 1, 0));
-		final Vector3dc expectedDirection = new Vector3d(1, 0, 0);
-
-		// EXECUTE
-		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, rotation, 2L, 1.0, SEED);
-
-		assertTrue("Changing the rotation parameter had no effect", isParallel(
-			expectedDirection, milVector));
-	}
-
-	@Test
-	public void testSeedParameter() {
-		// SETUP
-		final long seed2 = 0x70ffee;
-		// Drawing lines in an angle where they're likely to encounter different
-		// number of sheets based on where they start
-		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 3.0,
-			1, 1, 0));
-
-		// EXECUTE
-		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, rotation, 4L, 1.0, SEED);
-		final Vector3dc milVector2 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, rotation, 4L, 1.0, SEED);
-		final Vector3dc milVector3 = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, rotation, 4L, 1.0, seed2);
-
-		// VERIFY
-		assertEquals("Same seed should produce the same result", milVector.length(),
-			milVector2.length(), 1e-12);
-		assertNotEquals("Different seeds should produce different results",
-			milVector.length(), milVector3.length(), 1e-12);
+		IMAGE_J.op().run(ParallelLineMIL.class, img);
 	}
 
 	/**
@@ -162,9 +124,18 @@ public class MILPlaneTest {
 	 */
 	@Test
 	public void testXYSheets() {
-		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			SHEETS, IDENTITY_ROTATION, 2L, 1.0, SEED);
+		// SETUP
+		final Quaterniond zAxis = new Quaterniond(new AxisAngle4d(0.0, 0, 0, 1));
+		final long sections = 2L;
+		final ParallelLineGenerator zGenerator =
+				new PlaneParallelLineGenerator(XY_SHEETS, zAxis, rotateOp, sections);
+		final double milLength = SIZE * sections * sections;
 
+		// EXECUTE
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
+				XY_SHEETS, zGenerator, milLength, 1.0);
+
+		// VERIFY
 		assertEquals(1.0, milVector.length(), 1e-12);
 	}
 
@@ -183,17 +154,23 @@ public class MILPlaneTest {
 				0, y, 0 }, new long[] { SIZE - 1, y, SIZE - 1 });
 			view.forEach(BitType::setOne);
 		}
+		final ConstantZGenerator generator = new ConstantZGenerator();
+		final long milLength = 4 * SIZE;
+		// Two of the vectors from the constant generator will intercept a sheet, two won't.
+		final double expectedLength = milLength / 2.0;
 
 		// EXECUTE
-		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(MILPlane.class,
-			xzSheets, IDENTITY_ROTATION, 2L, 1.0, SEED);
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
+			xzSheets, generator, milLength, 1.0);
 
 		// VERIFY
-		assertEquals(SIZE, milVector.length(), 1e-12);
+		assertEquals(expectedLength, milVector.length(), 1e-12);
 	}
 
 	@BeforeClass
 	public static void oneTimeSetup() {
+		rotateOp = Hybrids.binaryCFI1(IMAGE_J.op(), Rotate3d.class, Vector3d.class,
+				new Vector3d(), new Quaterniond());
 		drawXYSheets();
 	}
 
@@ -205,18 +182,35 @@ public class MILPlaneTest {
 	// region -- Helper methods --
 	private static void drawXYSheets() {
 		for (int i = 0; i < SIZE; i += 2) {
-			final IntervalView<BitType> view = Views.interval(SHEETS, new long[] { 0,
+			final IntervalView<BitType> view = Views.interval(XY_SHEETS, new long[] { 0,
 				0, i }, new long[] { SIZE - 1, SIZE - 1, i });
 			view.forEach(BitType::setOne);
 		}
 	}
 
-	private boolean isParallel(final Vector3dc u, final Vector3dc v) {
-		final Vector3d product = new Vector3d(u);
-		product.cross(v);
+	private static class ConstantZGenerator implements ParallelLineGenerator {
+		private static final Vector3dc direction = new Vector3d(0, 0, 1);
+		private static final List<Line> LINES = new ArrayList<>(4);
+		private int cycle;
 
-		return Math.abs(product.x) < 1e-12 && Math.abs(product.y) < 1e-12 && Math
-			.abs(product.z) < 1e-12;
+		static {
+			LINES.add(new Line(new Vector3d(1, 1, -1), direction));
+			LINES.add(new Line(new Vector3d(4, 4, -1), direction));
+			LINES.add(new Line(new Vector3d(7, 7, -1), direction));
+			LINES.add(new Line(new Vector3d(10, 10, -1), direction));
+		}
+
+		@Override
+		public Line nextLine() {
+			int index = cycle % LINES.size();
+			cycle++;
+			return LINES.get(index);
+		}
+
+		@Override
+		public Vector3dc getDirection() {
+			return direction;
+		}
 	}
 	// endregion
 }

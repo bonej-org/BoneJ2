@@ -77,6 +77,13 @@ public class AnisotropyWrapperTest {
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static ImgPlus<BitType> hyperSheets;
 
+	@Before
+	public void setup() {
+		UsageReporter mockReporter = mock(UsageReporter.class);
+		doNothing().when(mockReporter).reportEvent(anyString());
+		AnisotropyWrapper.setReporter(mockReporter);
+	}
+
 	@After
 	public void tearDown() {
 		Mockito.reset(IMAGE_J.ui().getDefaultUI());
