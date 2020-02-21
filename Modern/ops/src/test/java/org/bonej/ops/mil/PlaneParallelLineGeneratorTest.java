@@ -23,13 +23,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.mil;
 
+import static java.util.stream.Collectors.toList;
+import static org.bonej.ops.mil.ParallelLineGenerator.Line;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
@@ -39,6 +38,7 @@ import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 
+import net.imglib2.type.logic.BitType;
 import org.joml.AxisAngle4d;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
@@ -49,38 +49,39 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests for {@link LinePlane}.
+ * Tests for {@link PlaneParallelLineGenerator}.
  *
  * @author Richard Domander
  */
-public class LinePlaneTest {
+public class PlaneParallelLineGeneratorTest {
 
 	private static final ImageJ IMAGE_J = new ImageJ();
 	private static final Quaterniondc IDENTITY = new Quaterniond(new AxisAngle4d(
 		0, 0, 1, 0));
 	private static final int SIZE = 5;
-	private static final Img IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
+	private static final Img<BitType> IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfIntervalNull() {
-		new LinePlane(null, IDENTITY, rotateOp);
+		new PlaneParallelLineGenerator(null, IDENTITY, rotateOp, 1);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfRotationNull() {
-		new LinePlane(IMG, null, rotateOp);
+		new PlaneParallelLineGenerator(IMG, null, rotateOp, 1);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfOpNull() {
-		new LinePlane(IMG, IDENTITY, null);
+		new PlaneParallelLineGenerator(IMG, IDENTITY, null, 1);
 	}
 
 	@Test
 	public void testGetDirection() {
 		final Vector3d expectedDirection = new Vector3d(0, 0, 1);
-		final LinePlane plane = new LinePlane(IMG, IDENTITY, rotateOp);
+		final PlaneParallelLineGenerator
+				plane = new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 1);
 
 		final Vector3dc direction = plane.getDirection();
 
@@ -94,7 +95,8 @@ public class LinePlaneTest {
 			0, 1, 0));
 		final Vector3d expectedDirection = IMAGE_J.op().linalg().rotate(
 			new Vector3d(0, 0, 1), rotation);
-		final LinePlane plane = new LinePlane(IMG, rotation, rotateOp);
+		final PlaneParallelLineGenerator
+				plane = new PlaneParallelLineGenerator(IMG, rotation, rotateOp, 1);
 
 		// EXECUTE
 		final Vector3dc direction = plane.getDirection();
@@ -104,35 +106,25 @@ public class LinePlaneTest {
 	}
 
 	@Test
-	public void testGetOriginsBinsCount() {
-		final LinePlane plane = new LinePlane(IMG, IDENTITY, rotateOp);
-
-		final long count = plane.getOrigins(1L).count();
-		assertEquals("Wrong number of origin points", 1, count);
-		final long count1 = plane.getOrigins(4L).count();
-		assertEquals("Wrong number of origin points", 16, count1);
-	}
-
-	@Test
 	public void testGetOriginsBinsRegions() {
-		final LinePlane plane = new LinePlane(IMG, IDENTITY, rotateOp);
+		final PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
 		final double cX = SIZE / 2.0;
 		final double cY = SIZE / 2.0;
 
 		// EXECUTE
-		final List<Vector3dc> origins = plane.getOrigins(2L).collect(Collectors
-			.toList());
+		final List<Line> lines = Stream.generate(generator::nextLine).limit(4).collect(toList());
 
-		final Vector3dc a = origins.get(0);
+		final Vector3dc a = lines.get(0).point;
 		assertTrue("Point is in the wrong quadrant of the plane", a.x() <= cX &&
 			a.y() <= cY);
-		final Vector3dc b = origins.get(1);
+		final Vector3dc b = lines.get(1).point;
 		assertTrue("Point is in the wrong quadrant of the plane", b.x() > cX &&
 			b.y() <= cY);
-		final Vector3dc c = origins.get(2);
+		final Vector3dc c = lines.get(2).point;
 		assertTrue("Point is in the wrong quadrant of the plane", c.x() <= cX &&
 			c.y() > cY);
-		final Vector3dc d = origins.get(3);
+		final Vector3dc d = lines.get(3).point;
 		assertTrue("Point is in the wrong quadrant of the plane", d.x() > cX &&
 			d.y() > cY);
 	}
@@ -145,14 +137,15 @@ public class LinePlaneTest {
 		final Vector3dc pointOnPlane = new Vector3d(translation, translation, SIZE /
 			2.0);
 		final Vector3dc normal = new Vector3d(0, 0, 1);
-		final LinePlane plane = new LinePlane(IMG, IDENTITY, rotateOp);
+		final PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
 
 		// EXECUTE
-		final Stream<Vector3dc> origins = plane.getOrigins(4L);
+		final Stream<Line> origins = Stream.generate(generator::nextLine).limit(4);
 
 		// VERIFY
-		origins.forEach(o -> {
-			final Vector3d a = new Vector3d(o);
+		origins.forEach(l -> {
+			final Vector3d a = new Vector3d(l.point);
 			a.sub(pointOnPlane);
 			assertEquals("Point " + a + " is not on the expected plane", 0.0, normal
 				.dot(a), 0.0);
@@ -168,36 +161,19 @@ public class LinePlaneTest {
 		final Vector3dc normal = new Vector3d(1, 0, 0);
 		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 2.0,
 			0, 1, 0));
-		final LinePlane plane = new LinePlane(IMG, rotation, rotateOp);
+		final PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(IMG, rotation, rotateOp, 2L);
 
 		// EXECUTE
-		final Stream<Vector3dc> origins = plane.getOrigins(2L);
+		final Stream<Line> origins = Stream.generate(generator::nextLine).limit(4);
 
 		// VERIFY
-		origins.forEach(o -> {
-			final Vector3d a = new Vector3d(o);
+		origins.forEach(l -> {
+			final Vector3d a = new Vector3d(l.point);
 			a.sub(pointOnPlane);
 			assertEquals("Point " + a + " rotated incorrectly", 0.0, normal.dot(a),
 				1e-12);
 		});
-	}
-
-	@Test
-	public void testSetSeed() throws NoSuchElementException {
-		// SETUP
-		final LinePlane plane = new LinePlane(IMG, IDENTITY, rotateOp);
-
-		// EXECUTE
-		plane.setSeed(0xc0ff33);
-		final Vector3dc p = plane.getOrigins(1L).findFirst().get();
-		plane.setSeed(0xc0ff33);
-		final Vector3dc p2 = plane.getOrigins(1L).findFirst().get();
-		plane.setSeed(0x70ff33);
-		final Vector3dc q = plane.getOrigins(1L).findFirst().get();
-
-		// VERIFY
-		assertEquals("Same seed should create the same point", p, p2);
-		assertNotEquals("Different seeds should create different points", p, q);
 	}
 
 	@BeforeClass
