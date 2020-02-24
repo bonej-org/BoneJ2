@@ -30,8 +30,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -45,22 +43,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import net.imagej.ImageJ;
-
-import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.UserInterface;
 
 /**
  * Tests for {@link ThicknessWrapper}
@@ -68,39 +56,22 @@ import org.scijava.ui.UserInterface;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class ThicknessWrapperTest {
-
-	private static final Gateway IMAGE_J = new ImageJ();
-	private final UserInterface mockUI = mock(UserInterface.class);
+public class ThicknessWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		ThicknessWrapper.setReporter(mockReporter);
-	}
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-
-		SharedTable.reset();
+		ThicknessWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
 	public void test2DImageCancelsPlugin() {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ,
 			ThicknessWrapper.class);
 	}
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
-		CommonWrapperTests.testAnisotropyWarning(IMAGE_J, ThicknessWrapper.class);
+		CommonWrapperTests.testAnisotropyWarning(imageJ, ThicknessWrapper.class);
 	}
 
 	@Test
@@ -111,7 +82,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -119,7 +90,7 @@ public class ThicknessWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -133,7 +104,7 @@ public class ThicknessWrapperTest {
 			2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
 			.get();
 
@@ -156,7 +127,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
 			.get();
 
@@ -173,7 +144,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", false)
 			.get();
 
@@ -190,7 +161,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
 			"showMaps", true).get();
 
@@ -210,7 +181,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Trabecular thickness",
 			"showMaps", true).get();
 
@@ -225,13 +196,13 @@ public class ThicknessWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ,
 			ThicknessWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			ThicknessWrapper.class);
 	}
 
@@ -250,7 +221,7 @@ public class ThicknessWrapperTest {
 			Double.NaN }, { 10.392304420471191 }, { 0.0 }, { 10.392304420471191 } };
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "maskArtefacts",
 			false, "showMaps", false).get();
 
@@ -278,7 +249,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -286,12 +257,7 @@ public class ThicknessWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

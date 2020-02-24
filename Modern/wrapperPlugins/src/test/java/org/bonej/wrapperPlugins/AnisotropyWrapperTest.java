@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -39,7 +38,6 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.concurrent.ExecutionException;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -48,18 +46,11 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.view.Views;
 
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
 import org.scijava.command.CommandModule;
 import org.scijava.ui.DialogPrompt.Result;
-import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 /**
@@ -72,26 +63,12 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  * @author Richard Domander
  */
 @Category(SlowWrapperTest.class)
-public class AnisotropyWrapperTest {
-
-	private static final ImageJ IMAGE_J = new ImageJ();
+public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	private static ImgPlus<BitType> hyperSheets;
-	private final UserInterface mockUI = mock(UserInterface.class);
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-		SharedTable.reset();
-	}
 
 	@Test
 	public void test2DImageCancelsWrapper() {
-		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ,
 			AnisotropyWrapper.class);
 	}
 
@@ -109,16 +86,16 @@ public class AnisotropyWrapperTest {
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
 		final String expectedStart = "The voxels in the image are anisotropic";
-		when(mockUI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
+		when(MOCK_UI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
 				WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
+		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
 				true, "inputImage", imgPlus, "lines", 10, "directions", 10, "displayMILVectors", false).get();
 
 		// VERIFY
 		assertFalse(module.isCanceled());
-		verify(mockUI, timeout(1000).times(0)).dialogPrompt(startsWith(
+		verify(MOCK_UI, timeout(1000).times(0)).dialogPrompt(startsWith(
 				expectedStart), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
@@ -136,16 +113,16 @@ public class AnisotropyWrapperTest {
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
 		final String expectedStart = "The voxels in the image are anisotropic";
-		when(mockUI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
+		when(MOCK_UI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
+		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
 			true, "inputImage", imgPlus, "lines", 10, "directions", 10).get();
 
 		// VERIFY
 		assertTrue(module.isCanceled());
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
+		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(startsWith(
 			expectedStart), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
@@ -160,7 +137,7 @@ public class AnisotropyWrapperTest {
 	 */
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
-		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
+		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
 			true, "inputImage", hyperSheets, "lines", 4, "directions", 9).get();
 
 		assertTrue(module.isCanceled());
@@ -171,19 +148,19 @@ public class AnisotropyWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsWrapper() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
 			AnisotropyWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsWrapper() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			AnisotropyWrapper.class);
 	}
 
 	@Test
 	public void testTooFewPointsCancelsPlugin() throws Exception {
-		final CommandModule module = IMAGE_J.command().run(AnisotropyWrapper.class,
+		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
 			true, "inputImage", hyperSheets, "lines", 1, "directions", 1).get();
 
 		assertTrue(module.isCanceled());
@@ -195,7 +172,7 @@ public class AnisotropyWrapperTest {
 	public void testMinimumIncrementIsEnforced() throws Exception {
 		final double expectedIncrement = Math.round(Math.sqrt(3.0) * 100.0) / 100.0;
 
-		final CommandModule module = IMAGE_J.command()
+		final CommandModule module = imageJ.command()
 				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
 						"directions", 1, "samplingIncrement", 0).get();
 
@@ -207,7 +184,7 @@ public class AnisotropyWrapperTest {
 	public void testIncrementGreaterThanMinimumIsAllowd() throws Exception {
 		final double inputIncrement = 5.0;
 
-		final CommandModule module = IMAGE_J.command()
+		final CommandModule module = imageJ.command()
 				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
 						"directions", 1, "samplingIncrement", inputIncrement).get();
 
@@ -217,9 +194,7 @@ public class AnisotropyWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		AnisotropyWrapper.setReporter(mockReporter);
+		AnisotropyWrapper.setReporter(MOCK_REPORTER);
 
 		final String unit = "mm";
 		final double scale = 1.0;
@@ -240,10 +215,5 @@ public class AnisotropyWrapperTest {
 		}
 
 		AnisotropyWrapper.setSeed(0xc0ff33);
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

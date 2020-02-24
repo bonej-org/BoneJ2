@@ -26,25 +26,15 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import net.imagej.ImageJ;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.UserInterface;
 
 import ij.ImagePlus;
 import ij.gui.NewImage;
@@ -55,33 +45,28 @@ import ij.gui.NewImage;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class FitEllipsoidWrapperTest {
-
-	private static final Gateway IMAGE_J = new ImageJ();
-	private final UserInterface mockUI = mock(UserInterface.class);
+public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		FitEllipsoidWrapper.setReporter(mockReporter);
+		FitEllipsoidWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
 	public void test2DImageCancelsPlugin() {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ,
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
-		CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
+		CommonWrapperTests.testAnisotropyWarning(imageJ,
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			FitEllipsoidWrapper.class);
 	}
 
@@ -91,7 +76,7 @@ public class FitEllipsoidWrapperTest {
 		final ImagePlus imagePlus = NewImage.createImage("", 5, 5, 5, 8, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			FitEllipsoidWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -100,22 +85,7 @@ public class FitEllipsoidWrapperTest {
 		assertTrue("Cancel reason is incorrect", module.getCancelReason()
 			.startsWith("Please populate ROI Manager with at least " +
 				Quadric.MIN_DATA));
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-	}
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

@@ -25,13 +25,9 @@ package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 
 import java.util.List;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -40,19 +36,11 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.UserInterface;
 
 /**
  * Tests for the {@link SurfaceFractionWrapper} class
@@ -60,45 +48,28 @@ import org.scijava.ui.UserInterface;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class SurfaceFractionWrapperTest {
-
-	private final UserInterface mockUI = mock(UserInterface.class);
-	private static final Gateway IMAGE_J = new ImageJ();
+public class SurfaceFractionWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		SurfaceFractionWrapper.setReporter(mockReporter);
-	}
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-
-		SharedTable.reset();
+		SurfaceFractionWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
 	public void test2DImageCancelsConnectivity() {
-		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ,
 			SurfaceFractionWrapper.class);
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsSurfaceFraction() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
 			SurfaceFractionWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsSurfaceFraction() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			SurfaceFractionWrapper.class);
 	}
 
@@ -158,7 +129,7 @@ public class SurfaceFractionWrapperTest {
 		}
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
@@ -179,10 +150,5 @@ public class SurfaceFractionWrapperTest {
 						column.get(j).doubleValue(), 1e-12);
 			}
 		}
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

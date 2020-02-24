@@ -28,7 +28,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -36,7 +35,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
@@ -47,18 +45,11 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 /**
@@ -67,39 +58,22 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class ElementFractionWrapperTest {
-
-	private final UserInterface mockUI = mock(UserInterface.class);
-	private static final ImageJ IMAGE_J = new ImageJ();
+public class ElementFractionWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		ElementFractionWrapper.setReporter(mockReporter);
-	}
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-
-		SharedTable.reset();
+		ElementFractionWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsElementFraction() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
 			ElementFractionWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsElementFraction() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			ElementFractionWrapper.class);
 	}
 
@@ -139,7 +113,7 @@ public class ElementFractionWrapperTest {
 			calibration, units);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
@@ -190,7 +164,7 @@ public class ElementFractionWrapperTest {
 			calibration, units);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
@@ -216,7 +190,7 @@ public class ElementFractionWrapperTest {
 	public void testWeirdSpatialImageCancelsPlugin() throws Exception {
 		// Mock UI
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(anyString(), anyString(), any(), any()))
+		when(MOCK_UI.dialogPrompt(anyString(), anyString(), any(), any()))
 			.thenReturn(mockPrompt);
 
 		// Create an hyperstack with no calibration
@@ -227,19 +201,14 @@ public class ElementFractionWrapperTest {
 			cAxis);
 
 		// Run command
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		assertTrue("A non 2D and 3D image should have cancelled the plugin", module
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", CommonMessages.WEIRD_SPATIAL,
 			module.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

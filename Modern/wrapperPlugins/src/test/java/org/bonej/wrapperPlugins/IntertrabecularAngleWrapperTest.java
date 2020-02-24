@@ -52,22 +52,14 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import net.imagej.ImageJ;
 import net.imagej.table.DefaultResultsTable;
 
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 /**
@@ -77,28 +69,11 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class IntertrabecularAngleWrapperTest {
-
-	private static final Gateway IMAGE_J = new ImageJ();
-	private final UserInterface mockUI = mock(UserInterface.class);
+public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		IntertrabecularAngleWrapper.setReporter(mockReporter);
-	}
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-
-		SharedTable.reset();
+		IntertrabecularAngleWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
@@ -111,7 +86,7 @@ public class IntertrabecularAngleWrapperTest {
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 0, "useClusters", true, "iteratePruning", false).get();
@@ -140,7 +115,7 @@ public class IntertrabecularAngleWrapperTest {
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
-		CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
+		CommonWrapperTests.testAnisotropyWarning(imageJ,
 			IntertrabecularAngleWrapper.class);
 	}
 
@@ -152,7 +127,7 @@ public class IntertrabecularAngleWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -160,7 +135,7 @@ public class IntertrabecularAngleWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -174,7 +149,7 @@ public class IntertrabecularAngleWrapperTest {
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 10, "useClusters", true, "iteratePruning", false).get();
@@ -195,7 +170,7 @@ public class IntertrabecularAngleWrapperTest {
 	public void testMultipleGraphsShowsWarningDialog() throws Exception {
 		// SETUP
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(startsWith("Image has multiple skeletons"),
+		when(MOCK_UI.dialogPrompt(startsWith("Image has multiple skeletons"),
 			anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 		final ImagePlus pixels = NewImage.createByteImage("Test", 4, 4, 1,
 			FILL_BLACK);
@@ -203,11 +178,11 @@ public class IntertrabecularAngleWrapperTest {
 		pixels.getStack().getProcessor(1).set(3, 3, (byte) 0xFF);
 
 		// EXECUTE
-		IMAGE_J.command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
+		imageJ.command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
 			pixels).get();
 
 		// VERIFY
-		verify(mockUI, timeout(1000)).dialogPrompt(startsWith(
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(startsWith(
 			"Image has multiple skeletons"), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
@@ -218,20 +193,20 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testNoImageWhenNoSkeletonisation() throws Exception {
 		// SETUP
-		doNothing().when(mockUI).show(any(ImagePlus.class));
+		doNothing().when(MOCK_UI).show(any(ImagePlus.class));
 		final ImagePlus pixel = NewImage.createByteImage("Test", 3, 3, 1,
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", pixel).get();
 
 		// VERIFY
 		assertEquals(
 			"Sanity check failed: plugin cancelled before image could have been shown",
 			NO_RESULTS_MSG, module.getCancelReason());
-		verify(mockUI, after(250).never()).show(any(ImagePlus.class));
+		verify(MOCK_UI, after(250).never()).show(any(ImagePlus.class));
 	}
 
 	@Test
@@ -242,14 +217,14 @@ public class IntertrabecularAngleWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", pixel).get();
 
 		// VERIFY
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_RESULTS_MSG, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -259,33 +234,33 @@ public class IntertrabecularAngleWrapperTest {
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_SKELETONS, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ,
 			IntertrabecularAngleWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			IntertrabecularAngleWrapper.class);
 	}
 
 	@Test
 	public void testPrintCentroids() throws Exception {
 		// SETUP
-		doNothing().when(mockUI).show(any(ImagePlus.class));
+		doNothing().when(MOCK_UI).show(any(ImagePlus.class));
 		final ImagePlus line = NewImage.createByteImage("Test", 5, 3, 1,
 			FILL_BLACK);
 		line.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -293,7 +268,7 @@ public class IntertrabecularAngleWrapperTest {
 		line.getStack().getProcessor(1).set(3, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", line,
 			"minimumTrabecularLength", 0, "printCentroids", true).get();
 
@@ -325,7 +300,7 @@ public class IntertrabecularAngleWrapperTest {
 	@Test
 	public void testSkeletonImageWhenSkeletonised() throws Exception {
 		// SETUP
-		doNothing().when(mockUI).show(any(ImagePlus.class));
+		doNothing().when(MOCK_UI).show(any(ImagePlus.class));
 		final ImagePlus square = NewImage.createByteImage("Test", 4, 4, 1,
 			FILL_BLACK);
 		square.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -334,11 +309,11 @@ public class IntertrabecularAngleWrapperTest {
 		square.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
 
 		// EXECUTE
-		IMAGE_J.command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
+		imageJ.command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
 			square).get();
 
 		// VERIFY
-		verify(mockUI, timeout(1000)).show(any(ImagePlus.class));
+		verify(MOCK_UI, timeout(1000)).show(any(ImagePlus.class));
 	}
 
 	@Test
@@ -349,7 +324,7 @@ public class IntertrabecularAngleWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -357,13 +332,7 @@ public class IntertrabecularAngleWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-	}
-
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

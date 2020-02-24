@@ -25,9 +25,6 @@ package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,7 +32,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -45,23 +41,15 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.Column;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.GenericTable;
 import org.scijava.table.Table;
-import org.scijava.ui.UserInterface;
 
 /**
  * Tests for {@link FractalDimensionWrapper}
@@ -69,39 +57,22 @@ import org.scijava.ui.UserInterface;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class FractalDimensionWrapperTest {
-
-	private static final Gateway IMAGE_J = new ImageJ();
-	private final UserInterface mockUI = mock(UserInterface.class);
+public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		FractalDimensionWrapper.setReporter(mockReporter);
-	}
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-
-		SharedTable.reset();
+		FractalDimensionWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsFractalDimension() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
 			FractalDimensionWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsFractalDimension() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			FractalDimensionWrapper.class);
 	}
 
@@ -120,7 +91,7 @@ public class FractalDimensionWrapperTest {
 		final ImgPlus<BitType> imgPlus = createTestHyperStack("Test");
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
 			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
 			"translations", 0L, "showPoints", true).get();
@@ -163,7 +134,7 @@ public class FractalDimensionWrapperTest {
 		final ImgPlus<BitType> imgPlus = createTestHyperStack(imageName);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = imageJ.command().run(
 			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
 			"startBoxSize", 4, "smallestBoxSize", 1, "scaleFactor", 2.0,
 			"translations", 0L).get();
@@ -182,11 +153,6 @@ public class FractalDimensionWrapperTest {
 			dimension, 1e-12));
 		table.get("R²").forEach(r2 -> assertEquals("R² column has a wrong value",
 			expectedRSquares.next(), r2, 1e-12));
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 
 	/** Create a hyperstack with a cuboid in two subspaces */

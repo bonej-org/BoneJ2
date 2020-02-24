@@ -32,7 +32,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -50,7 +49,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -63,19 +61,11 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mockito;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 /**
@@ -84,33 +74,16 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class SurfaceAreaWrapperTest {
-
-	private static final Gateway IMAGE_J = new ImageJ();
-	private final UserInterface mockUI = mock(UserInterface.class);
+public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		SurfaceAreaWrapper.setReporter(mockReporter);
-	}
-
-	@Before
-	public void setup() {
-		IMAGE_J.ui().setDefaultUI(mockUI);
-	}
-
-	@After
-	public void tearDown() {
-		Mockito.reset(mockUI);
-
-		SharedTable.reset();
+		SurfaceAreaWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
 	public void test2DImageCancelsIsosurface() {
-		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ,
 			SurfaceAreaWrapper.class);
 	}
 
@@ -131,17 +104,17 @@ public class SurfaceAreaWrapperTest {
 
 		// Mock UI
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.chooseFile(any(File.class), anyString())).thenReturn(
+		when(MOCK_UI.chooseFile(any(File.class), anyString())).thenReturn(
 			exceptionsThrowingFile);
-		when(mockUI.dialogPrompt(startsWith(STL_WRITE_ERROR), anyString(), eq(
+		when(MOCK_UI.dialogPrompt(startsWith(STL_WRITE_ERROR), anyString(), eq(
 			ERROR_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// Run plugin
-		IMAGE_J.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
+		imageJ.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
 			"exportSTL", true).get();
 
 		// Verify that write error dialog got shown
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
+		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(startsWith(
 			STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
 	}
 
@@ -228,27 +201,27 @@ public class SurfaceAreaWrapperTest {
 
 		// Mock UI
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(eq(SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(
+		when(MOCK_UI.dialogPrompt(eq(SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// Run plugin
-		IMAGE_J.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
+		imageJ.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
 			"exportSTL", false).get();
 
 		// Verify that warning dialog about result scaling got shown once
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
+		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(eq(
 			SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsIsosurface() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
 			SurfaceAreaWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsIsosurface() {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
 			SurfaceAreaWrapper.class);
 	}
 
@@ -295,7 +268,7 @@ public class SurfaceAreaWrapperTest {
 		}
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(SurfaceAreaWrapper.class,
+		final CommandModule module = imageJ.command().run(SurfaceAreaWrapper.class,
 			true, "inputImage", imgPlus, "exportSTL", false).get();
 
 		// VERIFY
@@ -398,10 +371,5 @@ public class SurfaceAreaWrapperTest {
 		final Mesh mesh = new NaiveFloatMesh();
 
 		SurfaceAreaWrapper.writeBinarySTLFile(null, mesh);
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

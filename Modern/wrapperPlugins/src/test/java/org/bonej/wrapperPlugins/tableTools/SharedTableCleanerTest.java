@@ -26,13 +26,10 @@ package org.bonej.wrapperPlugins.tableTools;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import net.imagej.ImageJ;
-
 import org.bonej.utilities.SharedTable;
-import org.junit.AfterClass;
+import org.bonej.wrapperPlugins.AbstractWrapperTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.scijava.Gateway;
 
 /**
  * Tests for {@link SharedTableCleaner}
@@ -40,9 +37,7 @@ import org.scijava.Gateway;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class SharedTableCleanerTest {
-
-	private static final Gateway IMAGE_J = new ImageJ();
+public class SharedTableCleanerTest extends AbstractWrapperTest {
 
 	@Test
 	public void testRun() throws Exception {
@@ -52,15 +47,9 @@ public class SharedTableCleanerTest {
 			.hasData());
 
 		// EXECUTE
-		IMAGE_J.command().run(SharedTableCleaner.class, true).get();
+		imageJ.command().run(SharedTableCleaner.class, true).get();
 
 		// VERIFY
 		assertFalse("Table should have no data", SharedTable.hasData());
 	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
 }
