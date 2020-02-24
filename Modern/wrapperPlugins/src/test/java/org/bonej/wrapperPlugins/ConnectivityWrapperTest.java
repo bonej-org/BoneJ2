@@ -68,7 +68,7 @@ public class ConnectivityWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsConnectivity() {
-		CommonWrapperTests.test2DImageCancelsPlugin(imageJ,
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
 			ConnectivityWrapper.class);
 	}
 
@@ -100,7 +100,7 @@ public class ConnectivityWrapperTest extends AbstractWrapperTest {
 		access.get().setOne();
 
 		// Run command
-		imageJ.command().run(ConnectivityWrapper.class, true, "inputImage",
+		command().run(ConnectivityWrapper.class, true, "inputImage",
 			imgPlus).get();
 
 		// Dialog should only be shown once
@@ -110,13 +110,13 @@ public class ConnectivityWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsConnectivity() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			ConnectivityWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsConnectivity() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			ConnectivityWrapper.class);
 	}
 
@@ -160,7 +160,7 @@ public class ConnectivityWrapperTest extends AbstractWrapperTest {
 		access.get().setOne();
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY

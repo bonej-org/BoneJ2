@@ -31,6 +31,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.mockito.Mockito;
+import org.scijava.command.CommandService;
 import org.scijava.ui.UserInterface;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -45,13 +46,23 @@ import static org.mockito.Mockito.mock;
  * @author Richard Domander
  */
 public abstract class AbstractWrapperTest {
-    protected static ImageJ imageJ;
+    private static ImageJ imageJ;
     protected static final UsageReporter MOCK_REPORTER = mock(UsageReporter.class);
     protected static final UserInterface MOCK_UI = mock(UserInterface.class);
+    private static CommandService commandService;
+
+    protected static CommandService command() {
+        return commandService;
+    }
+
+    protected static ImageJ imageJ() {
+        return imageJ;
+    }
 
     @BeforeClass
     public static void basicOneTimeSetup() {
         imageJ = new ImageJ();
+        commandService = imageJ.command();
     }
 
     @Before

@@ -63,7 +63,7 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(SkeletoniseWrapper.class,
+		final CommandModule module = command().run(SkeletoniseWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -77,13 +77,13 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			SkeletoniseWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			SkeletoniseWrapper.class);
 	}
 
@@ -97,7 +97,7 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 		imagePlus.setCalibration(calibration);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(SkeletoniseWrapper.class,
+		final CommandModule module = command().run(SkeletoniseWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -119,7 +119,7 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(SkeletoniseWrapper.class,
+		final CommandModule module = command().run(SkeletoniseWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY

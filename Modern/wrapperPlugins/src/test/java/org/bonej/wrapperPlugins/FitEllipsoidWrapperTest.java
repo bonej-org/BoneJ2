@@ -54,19 +54,19 @@ public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsPlugin() {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ,
+		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ(),
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
-		CommonWrapperTests.testAnisotropyWarning(imageJ,
+		CommonWrapperTests.testAnisotropyWarning(imageJ(),
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			FitEllipsoidWrapper.class);
 	}
 
@@ -76,7 +76,7 @@ public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = NewImage.createImage("", 5, 5, 5, 8, 1);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			FitEllipsoidWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY

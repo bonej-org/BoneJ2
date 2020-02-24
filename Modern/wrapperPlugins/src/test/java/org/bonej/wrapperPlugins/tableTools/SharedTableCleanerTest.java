@@ -47,7 +47,7 @@ public class SharedTableCleanerTest extends AbstractWrapperTest {
 			.hasData());
 
 		// EXECUTE
-		imageJ.command().run(SharedTableCleaner.class, true).get();
+		command().run(SharedTableCleaner.class, true).get();
 
 		// VERIFY
 		assertFalse("Table should have no data", SharedTable.hasData());

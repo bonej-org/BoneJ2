@@ -86,7 +86,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 0, "useClusters", true, "iteratePruning", false).get();
@@ -115,7 +115,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
-		CommonWrapperTests.testAnisotropyWarning(imageJ,
+		CommonWrapperTests.testAnisotropyWarning(imageJ(),
 			IntertrabecularAngleWrapper.class);
 	}
 
@@ -127,7 +127,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -149,7 +149,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 10, "useClusters", true, "iteratePruning", false).get();
@@ -178,7 +178,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		pixels.getStack().getProcessor(1).set(3, 3, (byte) 0xFF);
 
 		// EXECUTE
-		imageJ.command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
+		command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
 			pixels).get();
 
 		// VERIFY
@@ -199,7 +199,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", pixel).get();
 
 		// VERIFY
@@ -217,7 +217,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", pixel).get();
 
 		// VERIFY
@@ -234,7 +234,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -247,13 +247,13 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			IntertrabecularAngleWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			IntertrabecularAngleWrapper.class);
 	}
 
@@ -268,7 +268,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		line.getStack().getProcessor(1).set(3, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", line,
 			"minimumTrabecularLength", 0, "printCentroids", true).get();
 
@@ -309,7 +309,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		square.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
 
 		// EXECUTE
-		imageJ.command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
+		command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
 			square).get();
 
 		// VERIFY
@@ -324,7 +324,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY

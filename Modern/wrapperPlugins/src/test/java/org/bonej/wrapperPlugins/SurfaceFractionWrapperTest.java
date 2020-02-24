@@ -57,19 +57,19 @@ public class SurfaceFractionWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsConnectivity() {
-		CommonWrapperTests.test2DImageCancelsPlugin(imageJ,
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
 			SurfaceFractionWrapper.class);
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsSurfaceFraction() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			SurfaceFractionWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsSurfaceFraction() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			SurfaceFractionWrapper.class);
 	}
 
@@ -129,7 +129,7 @@ public class SurfaceFractionWrapperTest extends AbstractWrapperTest {
 		}
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY

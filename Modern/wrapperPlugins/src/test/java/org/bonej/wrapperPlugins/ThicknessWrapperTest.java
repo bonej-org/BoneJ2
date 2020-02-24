@@ -65,13 +65,13 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsPlugin() {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ,
+		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
-		CommonWrapperTests.testAnisotropyWarning(imageJ, ThicknessWrapper.class);
+		CommonWrapperTests.testAnisotropyWarning(imageJ(), ThicknessWrapper.class);
 	}
 
 	@Test
@@ -82,7 +82,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -104,7 +104,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 			2, 1);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
 			.get();
 
@@ -127,7 +127,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
 			.get();
 
@@ -144,7 +144,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", false)
 			.get();
 
@@ -161,7 +161,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
 			"showMaps", true).get();
 
@@ -181,7 +181,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Trabecular thickness",
 			"showMaps", true).get();
 
@@ -196,13 +196,13 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
@@ -221,7 +221,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 			Double.NaN }, { 10.392304420471191 }, { 0.0 }, { 10.392304420471191 } };
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "maskArtefacts",
 			false, "showMaps", false).get();
 
@@ -249,7 +249,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY

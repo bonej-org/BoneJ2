@@ -67,13 +67,13 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsElementFraction() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			ElementFractionWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsElementFraction() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			ElementFractionWrapper.class);
 	}
 
@@ -113,7 +113,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 			calibration, units);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
@@ -164,7 +164,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 			calibration, units);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
@@ -201,7 +201,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 			cAxis);
 
 		// Run command
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
 		assertTrue("A non 2D and 3D image should have cancelled the plugin", module

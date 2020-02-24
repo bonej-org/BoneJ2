@@ -80,7 +80,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			"0", length, length, "255.0", "255.0" };
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", line,
 			"pruneCycleMethod", "None", "verbose", true, "pruneEnds", false).get();
 
@@ -110,7 +110,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
 			"pruneCycleMethod", "None", "verbose", false).get();
 
@@ -128,7 +128,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			exceptionFile);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -146,7 +146,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -166,7 +166,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -184,7 +184,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -204,7 +204,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -227,7 +227,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
 			"pruneCycleMethod", "None").get();
 
@@ -244,7 +244,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus,
 			"pruneCycleMethod", "None").get();
 
@@ -258,7 +258,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			AnalyseSkeletonWrapper.class);
 	}
 
@@ -271,7 +271,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -283,7 +283,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNullImageCancelsPlugin() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			AnalyseSkeletonWrapper.class);
 	}
 
@@ -295,7 +295,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		CommandModule module = imageJ.command().run(AnalyseSkeletonWrapper.class,
+		CommandModule module = command().run(AnalyseSkeletonWrapper.class,
 			true, "inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons",
 			false, "calculateShortestPaths", true).get();
 
@@ -304,7 +304,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		assertNull(module.getOutput("shortestPaths"));
 
 		// EXECUTE
-		module = imageJ.command().run(AnalyseSkeletonWrapper.class, true,
+		module = command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", false).get();
 
@@ -313,7 +313,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		assertNull(module.getOutput("shortestPaths"));
 
 		// EXECUTE
-		module = imageJ.command().run(AnalyseSkeletonWrapper.class, true,
+		module = command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", true).get();
 
@@ -349,7 +349,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 					3.0 }, { 1.0, 3.0 }, { 0.0, 0.0 } };
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixels,
 			"pruneCycleMethod", "None", "calculateShortestPaths", true).get();
 
@@ -384,7 +384,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
 			"pruneCycleMethod", "None", "calculateShortestPaths", false).get();
 
@@ -409,7 +409,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		square.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", square,
 			"pruneCycleMethod", "None").get();
 
@@ -428,7 +428,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -450,7 +450,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", blank).get();
 
 		// VERIFY
@@ -474,7 +474,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		image.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", image).get();
 
 		// VERIFY

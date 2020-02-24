@@ -68,7 +68,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsWrapper() {
-		CommonWrapperTests.test2DImageCancelsPlugin(imageJ,
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
 			AnisotropyWrapper.class);
 	}
 
@@ -90,7 +90,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 				WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
+		final CommandModule module = command().run(AnisotropyWrapper.class,
 				true, "inputImage", imgPlus, "lines", 10, "directions", 10, "displayMILVectors", false).get();
 
 		// VERIFY
@@ -117,7 +117,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
+		final CommandModule module = command().run(AnisotropyWrapper.class,
 			true, "inputImage", imgPlus, "lines", 10, "directions", 10).get();
 
 		// VERIFY
@@ -137,7 +137,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	 */
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
-		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
+		final CommandModule module = command().run(AnisotropyWrapper.class,
 			true, "inputImage", hyperSheets, "lines", 4, "directions", 9).get();
 
 		assertTrue(module.isCanceled());
@@ -148,19 +148,19 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsWrapper() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			AnisotropyWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsWrapper() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			AnisotropyWrapper.class);
 	}
 
 	@Test
 	public void testTooFewPointsCancelsPlugin() throws Exception {
-		final CommandModule module = imageJ.command().run(AnisotropyWrapper.class,
+		final CommandModule module = command().run(AnisotropyWrapper.class,
 			true, "inputImage", hyperSheets, "lines", 1, "directions", 1).get();
 
 		assertTrue(module.isCanceled());
@@ -172,7 +172,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	public void testMinimumIncrementIsEnforced() throws Exception {
 		final double expectedIncrement = Math.round(Math.sqrt(3.0) * 100.0) / 100.0;
 
-		final CommandModule module = imageJ.command()
+		final CommandModule module = command()
 				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
 						"directions", 1, "samplingIncrement", 0).get();
 
@@ -184,7 +184,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	public void testIncrementGreaterThanMinimumIsAllowd() throws Exception {
 		final double inputIncrement = 5.0;
 
-		final CommandModule module = imageJ.command()
+		final CommandModule module = command()
 				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
 						"directions", 1, "samplingIncrement", inputIncrement).get();
 

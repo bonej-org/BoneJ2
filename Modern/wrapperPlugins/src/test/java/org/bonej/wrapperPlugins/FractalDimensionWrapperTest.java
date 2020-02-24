@@ -66,13 +66,13 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsFractalDimension() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			FractalDimensionWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsFractalDimension() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			FractalDimensionWrapper.class);
 	}
 
@@ -91,7 +91,7 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 		final ImgPlus<BitType> imgPlus = createTestHyperStack("Test");
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
 			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
 			"translations", 0L, "showPoints", true).get();
@@ -134,7 +134,7 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 		final ImgPlus<BitType> imgPlus = createTestHyperStack(imageName);
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(
+		final CommandModule module = command().run(
 			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
 			"startBoxSize", 4, "smallestBoxSize", 1, "scaleFactor", 2.0,
 			"translations", 0L).get();

@@ -83,7 +83,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsIsosurface() {
-		CommonWrapperTests.test2DImageCancelsPlugin(imageJ,
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
 			SurfaceAreaWrapper.class);
 	}
 
@@ -110,7 +110,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 			ERROR_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// Run plugin
-		imageJ.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
+		command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
 			"exportSTL", true).get();
 
 		// Verify that write error dialog got shown
@@ -205,7 +205,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// Run plugin
-		imageJ.command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
+		command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
 			"exportSTL", false).get();
 
 		// Verify that warning dialog about result scaling got shown once
@@ -215,13 +215,13 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsIsosurface() {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			SurfaceAreaWrapper.class);
 	}
 
 	@Test
 	public void testNullImageCancelsIsosurface() {
-		CommonWrapperTests.testNullImageCancelsPlugin(imageJ,
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			SurfaceAreaWrapper.class);
 	}
 
@@ -268,7 +268,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 		}
 
 		// EXECUTE
-		final CommandModule module = imageJ.command().run(SurfaceAreaWrapper.class,
+		final CommandModule module = command().run(SurfaceAreaWrapper.class,
 			true, "inputImage", imgPlus, "exportSTL", false).get();
 
 		// VERIFY
