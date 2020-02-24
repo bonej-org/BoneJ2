@@ -283,7 +283,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 			assertEquals("A column has an incorrect header", expectedHeaders[i],
 				column.getHeader());
 			for (int j = 0; j < column.size(); j++) {
-				assertEquals("Column has an incorrect value", expectedValues[j], column.get(j).doubleValue(), 1e-12);
+				assertEquals("Column has an incorrect value", expectedValues[j], column.get(j), 1e-12);
 			}
 		}
 	}

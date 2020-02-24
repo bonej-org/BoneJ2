@@ -23,6 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
@@ -39,7 +40,6 @@ import ij.gui.NewImage;
 import ij.measure.Calibration;
 import ij.process.LUT;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -113,10 +113,10 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 			.getLuts()[0];
 		final LUT spacingMap = ((ImagePlus) module.getOutput("spacingMap"))
 			.getLuts()[0];
-		assertTrue("Trabecular map doesn't have the 'fire' LUT", Arrays.equals(
-			fireLUT.getBytes(), trabecularMap.getBytes()));
-		assertTrue("Spacing map doesn't have the 'fire' LUT", Arrays.equals(fireLUT
-			.getBytes(), spacingMap.getBytes()));
+		assertArrayEquals("Trabecular map doesn't have the 'fire' LUT", fireLUT.getBytes(),
+				trabecularMap.getBytes());
+		assertArrayEquals("Spacing map doesn't have the 'fire' LUT", fireLUT
+				.getBytes(), spacingMap.getBytes());
 	}
 
 	@Test

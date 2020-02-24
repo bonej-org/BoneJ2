@@ -367,7 +367,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			assertEquals("Column has wrong number of rows", 2, column.size());
 			for (int j = 0; j < 2; j++) {
 				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					column.get(j).doubleValue(), 1e-12);
+						column.get(j), 1e-12);
 			}
 		}
 	}

@@ -54,7 +54,6 @@ import java.util.stream.Stream;
 
 import net.imagej.table.DefaultResultsTable;
 
-import org.bonej.utilities.SharedTable;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -107,9 +106,9 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assertEquals(10, fiveColumn.size());
 		assertEquals(10, fiveColumn.stream().filter(nonEmpty).count());
 		assertEquals(6, fiveColumn.stream().filter(nonEmpty).distinct().count());
-		assertEquals(1, fiveColumn.stream().filter(nonEmpty).map(Double::valueOf)
+		assertEquals(1, fiveColumn.stream().filter(nonEmpty)
 			.filter(d -> d == Math.PI).count());
-		assertEquals(2, fiveColumn.stream().filter(nonEmpty).map(Double::valueOf)
+		assertEquals(2, fiveColumn.stream().filter(nonEmpty)
 			.filter(d -> d == Math.PI / 2).count());
 	}
 
@@ -142,7 +141,6 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 	@Test
 	public void testMargins() throws Exception {
 		// SETUP
-		final Predicate<Double> nonEmpty = s -> !s.equals(SharedTable.EMPTY_CELL);
 		final URL resource = getClass().getClassLoader().getResource(
 			"test-skelly.zip");
 		assert resource != null;
@@ -163,7 +161,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		final DefaultColumn<Double> fiveColumn = table.get(0);
 		assertEquals("5", fiveColumn.getHeader());
 		assertEquals(10, fiveColumn.size());
-		assertEquals(10, fiveColumn.stream().filter(nonEmpty).count());
+		assertEquals(10, fiveColumn.stream().filter(Objects::nonNull).count());
 	}
 
 	@Test

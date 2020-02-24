@@ -177,7 +177,7 @@ public class ConnectivityWrapperTest extends AbstractWrapperTest {
 			assertEquals("A column has an incorrect header", expectedHeaders.get(i),
 				header);
 			for (int j = 0; j < column.size(); j++) {
-				assertEquals(expectedValues[i][j], column.get(j).doubleValue(),	1e-12);
+				assertEquals(expectedValues[i][j], column.get(j),	1e-12);
 			}
 		}
 	}

@@ -146,8 +146,8 @@ public class SurfaceFractionWrapperTest extends AbstractWrapperTest {
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			for (int j = 0; j < expectedValues.length; j++) {
-				assertEquals("Incorrect value in table", expectedValues[i][j], 
-						column.get(j).doubleValue(), 1e-12);
+				assertEquals("Incorrect value in table", expectedValues[i][j],
+						column.get(j), 1e-12);
 			}
 		}
 	}
