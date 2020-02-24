@@ -181,7 +181,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	}
 
 	@Test
-	public void testIncrementGreaterThanMinimumIsAllowd() throws Exception {
+	public void testIncrementGreaterThanMinimumIsAllowed() throws Exception {
 		final double inputIncrement = 5.0;
 
 		final CommandModule module = command()
