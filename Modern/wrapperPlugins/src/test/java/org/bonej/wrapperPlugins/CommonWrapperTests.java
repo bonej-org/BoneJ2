@@ -36,6 +36,7 @@ import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
 import net.imagej.ImgPlus;
@@ -45,6 +46,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
 
+import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.Command;
@@ -66,30 +68,34 @@ import ij.process.ImageStatistics;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public final class CommonWrapperTests {
 
-	static <C extends Command> void testNullImageCancelsPlugin(
-		final Gateway imageJ, final Class<C> commandClass) throws Exception
-	{
+	static <C extends Command> void testNullImageCancelsPlugin(final Gateway imageJ,
+															   final Class<C> commandClass) {
 		// SETUP
-		final UserInterface mockUI = mockUIService(imageJ);
+		final UserInterface oldUI = imageJ.ui().getDefaultUI();
+		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
 
-		// EXECUTE
-		final CommandModule module = imageJ.command().run(commandClass, true,
-			"inputImage", null).get();
+		try {
+			// EXECUTE
+			final CommandModule module =
+					imageJ.command().run(commandClass, true, "inputImage", null).get();
 
-		// VERIFY
-		assertTrue("Null image should have canceled the plugin", module
-			.isCanceled());
-		assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN,
-			module.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
+			// VERIFY
+			assertTrue("Null image should have canceled the plugin", module.isCanceled());
+			assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN,
+					module.getCancelReason());
+			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(), any());
+		} catch (InterruptedException | ExecutionException e) {
+			Assert.fail("Test timed out");
+		} finally {
+			imageJ.ui().setDefaultUI(oldUI);
+		}
 	}
 
 	static <C extends Command> void test2DImageCancelsPlugin(final Gateway imageJ,
-		final Class<C> commandClass) throws Exception
-	{
+		final Class<C> commandClass) {
 		// SETUP
-		final UserInterface mockUI = mockUIService(imageJ);
+		final UserInterface oldUI = imageJ.ui().getDefaultUI();
+		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
 		// Create an image with only two spatial dimensions
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
@@ -98,24 +104,30 @@ public final class CommonWrapperTests {
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, cAxis);
 
-		// EXECUTE
-		final CommandModule module = imageJ.command().run(commandClass, true,
-			"inputImage", imgPlus).get();
+		try {
+			// EXECUTE
+			final CommandModule module = imageJ.command().run(commandClass, true,
+					"inputImage", imgPlus).get();
 
-		// VERIFY
-		assertTrue("2D image should have cancelled the plugin", module
-			.isCanceled());
-		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
-			module.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
+			// VERIFY
+			assertTrue("2D image should have cancelled the plugin", module
+					.isCanceled());
+			assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
+					module.getCancelReason());
+			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+					any());
+		} catch (InterruptedException | ExecutionException e) {
+			Assert.fail("Test timed out");
+		} finally {
+			imageJ.ui().setDefaultUI(oldUI);
+		}
 	}
 
 	static <C extends Command> void testNonBinaryImageCancelsPlugin(
-		final Gateway imageJ, final Class<C> commandClass) throws Exception
-	{
+		final Gateway imageJ, final Class<C> commandClass) {
 		// SETUP
-		final UserInterface mockUI = mockUIService(imageJ);
+		final UserInterface oldUI = imageJ.ui().getDefaultUI();
+		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
 		// Create a test image with more than two colors
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X);
 		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y);
@@ -127,25 +139,31 @@ public final class CommonWrapperTests {
 			.iterator();
 		imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
-		// EXECUTE
-		final CommandModule module = imageJ.command().run(commandClass, true,
-			"inputImage", imgPlus).get();
+		try {
+			// EXECUTE
+			final CommandModule module = imageJ.command().run(commandClass, true,
+					"inputImage", imgPlus).get();
 
-		// VERIFY
-		assertTrue(
-			"An image with more than two colours should have cancelled the plugin",
-			module.isCanceled());
-		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module
-			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
+			// VERIFY
+			assertTrue(
+					"An image with more than two colours should have cancelled the plugin",
+					module.isCanceled());
+			assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module
+					.getCancelReason());
+			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+					any());
+		} catch (InterruptedException | ExecutionException e) {
+			Assert.fail("Test timed out");
+		} finally {
+			imageJ.ui().setDefaultUI(oldUI);
+		}
 	}
 
 	static <C extends Command> void testNonBinaryImagePlusCancelsPlugin(
-		final Gateway imageJ, final Class<C> commandClass) throws Exception
-	{
+		final Gateway imageJ, final Class<C> commandClass) {
 		// SETUP
-		final UserInterface mockUI = mockUIService(imageJ);
+		final UserInterface oldUI = imageJ.ui().getDefaultUI();
+		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
 		final ImagePlus nonBinaryImage = mock(ImagePlus.class);
 		final ImageStatistics stats = new ImageStatistics();
 		stats.pixelCount = 3;
@@ -156,42 +174,54 @@ public final class CommonWrapperTests {
 		when(nonBinaryImage.getStatistics()).thenReturn(stats);
 		when(nonBinaryImage.getNSlices()).thenReturn(2);
 
-		// EXECUTE
-		final CommandModule module = imageJ.command().run(commandClass, true,
-			"inputImage", nonBinaryImage).get();
+		try {
+			// EXECUTE
+			final CommandModule module = imageJ.command().run(commandClass, true,
+					"inputImage", nonBinaryImage).get();
 
-		// VERIFY
-		assertTrue(
-			"An image with more than two colours should have cancelled the plugin",
-			module.isCanceled());
-		assertEquals("Cancel reason is incorrect",
-			CommonMessages.NOT_8_BIT_BINARY_IMAGE, module.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
+			// VERIFY
+			assertTrue(
+					"An image with more than two colours should have cancelled the plugin",
+					module.isCanceled());
+			assertEquals("Cancel reason is incorrect",
+					CommonMessages.NOT_8_BIT_BINARY_IMAGE, module.getCancelReason());
+			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+					any());
+		} catch (InterruptedException | ExecutionException e) {
+			Assert.fail("Test timed out");
+		} finally {
+			imageJ.ui().setDefaultUI(oldUI);
+		}
 	}
 
 	static <C extends Command> void test2DImagePlusCancelsPlugin(
-		final Gateway imageJ, final Class<C> commandClass) throws Exception
-	{
+		final Gateway imageJ, final Class<C> commandClass) {
 		// SETUP
-		final UserInterface mockUI = mockUIService(imageJ);
+		final UserInterface oldUI = imageJ.ui().getDefaultUI();
+		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
 		final ImagePlus image = mock(ImagePlus.class);
 		when(image.getNSlices()).thenReturn(1);
 
-		// EXECUTE
-		final CommandModule module = imageJ.command().run(commandClass, true,
-			"inputImage", image).get();
+		try {
+			// EXECUTE
+			final CommandModule module = imageJ.command().run(commandClass, true,
+					"inputImage", image).get();
 
-		// VERIFY
-		assertTrue("2D image should have cancelled the plugin", module
-			.isCanceled());
-		assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
-			module.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-			any());
+			// VERIFY
+			assertTrue("2D image should have cancelled the plugin", module
+					.isCanceled());
+			assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
+					module.getCancelReason());
+			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+					any());
+		} catch (InterruptedException | ExecutionException e) {
+			Assert.fail("Test timed out");
+		} finally {
+			imageJ.ui().setDefaultUI(oldUI);
+		}
 	}
 
-	static UserInterface mockUIService(final Gateway imageJ) {
+	private static UserInterface mockUIDialogPrompt(final Gateway imageJ) {
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockUI.dialogPrompt(any(), anyString(), any(), any())).thenReturn(
@@ -205,9 +235,9 @@ public final class CommonWrapperTests {
 	 * shows a warning dialog that can be used to cancel the plugin
 	 */
 	static <C extends Command> void testAnisotropyWarning(final Gateway imageJ,
-		final Class<C> commandClass) throws Exception
-	{
+		final Class<C> commandClass) {
 		// SETUP
+		final UserInterface oldUI = imageJ.ui().getDefaultUI();
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(mockPrompt.prompt()).thenReturn(Result.CANCEL_OPTION);
@@ -221,14 +251,20 @@ public final class CommonWrapperTests {
 		final ImagePlus imagePlus = NewImage.createByteImage("", 5, 5, 5, 1);
 		imagePlus.setCalibration(calibration);
 
-		// EXECUTE
-		final CommandModule module = imageJ.command().run(commandClass, true,
-			"inputImage", imagePlus).get();
+		try {
+			// EXECUTE
+			final CommandModule module = imageJ.command().run(commandClass, true,
+					"inputImage", imagePlus).get();
 
-		// VERIFY
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
-			"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
-		assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
-			module.isCanceled());
+			// VERIFY
+			verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
+					"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
+			assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
+					module.isCanceled());
+		} catch (InterruptedException | ExecutionException e) {
+			Assert.fail("Test timed out");
+		} finally {
+			imageJ.ui().setDefaultUI(oldUI);
+		}
 	}
 }

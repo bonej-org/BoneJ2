@@ -29,7 +29,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -39,7 +38,6 @@ import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 import java.util.Arrays;
 import java.util.List;
 
-import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -48,17 +46,11 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 /**
@@ -67,36 +59,25 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class ConnectivityWrapperTest {
-
-	private static final Gateway IMAGE_J = new ImageJ();
+public class ConnectivityWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		final UsageReporter mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		ConnectivityWrapper.setReporter(mockReporter);
-	}
-
-	@After
-	public void tearDown() {
-		SharedTable.reset();
+		ConnectivityWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
-	public void test2DImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.test2DImageCancelsPlugin(IMAGE_J,
+	public void test2DImageCancelsConnectivity() {
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
 			ConnectivityWrapper.class);
 	}
 
 	@Test
 	public void testNegativeConnectivityShowsInfoDialog() throws Exception {
 		// Mock UI
-		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(mockUI.dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(
+		when(MOCK_UI.dialogPrompt(eq(NEGATIVE_CONNECTIVITY), anyString(), eq(
 			INFORMATION_MESSAGE), any())).thenReturn(mockPrompt);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// Create a 3D hyperstack with two channels. Each channel has two particles
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "mm");
@@ -119,23 +100,23 @@ public class ConnectivityWrapperTest {
 		access.get().setOne();
 
 		// Run command
-		IMAGE_J.command().run(ConnectivityWrapper.class, true, "inputImage",
+		command().run(ConnectivityWrapper.class, true, "inputImage",
 			imgPlus).get();
 
 		// Dialog should only be shown once
-		verify(mockUI, timeout(1000).times(1)).dialogPrompt(eq(
+		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(eq(
 			NEGATIVE_CONNECTIVITY), anyString(), eq(INFORMATION_MESSAGE), any());
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.testNonBinaryImageCancelsPlugin(IMAGE_J,
+	public void testNonBinaryImageCancelsConnectivity() {
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			ConnectivityWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsConnectivity() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void testNullImageCancelsConnectivity() {
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			ConnectivityWrapper.class);
 	}
 
@@ -179,7 +160,7 @@ public class ConnectivityWrapperTest {
 		access.get().setOne();
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			ConnectivityWrapper.class, true, "inputImage", imgPlus).get();
 
 		// VERIFY
@@ -196,13 +177,8 @@ public class ConnectivityWrapperTest {
 			assertEquals("A column has an incorrect header", expectedHeaders.get(i),
 				header);
 			for (int j = 0; j < column.size(); j++) {
-				assertEquals(expectedValues[i][j], column.get(j).doubleValue(),	1e-12);
+				assertEquals(expectedValues[i][j], column.get(j),	1e-12);
 			}
 		}
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

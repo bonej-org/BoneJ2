@@ -128,7 +128,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	// The default number of lines was found to be sensible after experimenting
 	// with data at hand. Other data may need a different number.
 	private static final int DEFAULT_LINES = 100;
-	private static final double DEFAULT_INCREMENT = 2.3;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3dc>, Matrix4dc> solveQuadricOp;
@@ -151,12 +150,13 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		callback = "applyMinimum")
 	private Integer lines = DEFAULT_LINES;
 	
-	@Parameter(label = "Sampling increment", min = "0.1",
+	@Parameter(label = "Sampling increment", persist = false,
 		description = "Distance between sampling points (in voxels)",
 		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1",
-		callback = "applyMinimum")
-	private Double samplingIncrement = DEFAULT_INCREMENT;
-	
+		callback = "incrementChanged", initializer = "initializeIncrement")
+	private Double samplingIncrement;
+	private double minIncrement;
+
 	@Parameter(label = "Recommended minimums",
 		description = "Apply minimum recommended values to directions, lines, and increment",
 		persist = false, required = false, callback = "applyMinimum")
@@ -303,11 +303,37 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	@SuppressWarnings("unused")
+	private void initializeIncrement() {
+		/* TODO: Get calibration from inputimage.axis(int)
+		   NB: you can't assume that 0, 1, 2 are X, Y, Z axes!
+		   NB: axes can have different units of calibration
+		 */
+		final double px = 1.0;
+		final double py = 1.0;
+		final double pz = 1.0;
+		final double diagonal = px * px + py * py + pz * pz;
+		// Round to 2 decimal places
+		minIncrement = Math.round(Math.sqrt(diagonal) * 100.0) / 100.0;
+		if (samplingIncrement < minIncrement) {
+			// Allow calling through commandService with a greater explicit parameter value,
+			// e.g. commandService.run(AnisotropyWrapper.class, ... "samplingIncrement", 5.0)
+			samplingIncrement = minIncrement;
+		}
+	}
+
+	@SuppressWarnings("unused")
+	private void incrementChanged() {
+		if (recommendedMin || samplingIncrement < minIncrement) {
+			samplingIncrement = minIncrement;
+		}
+	}
+
+	@SuppressWarnings("unused")
 	private void applyMinimum() {
 		if (recommendedMin) {
 			lines = DEFAULT_LINES;
 			directions = DEFAULT_DIRECTIONS;
-			samplingIncrement = DEFAULT_INCREMENT;
+			samplingIncrement = minIncrement;
 		}
 	}
 
