@@ -41,8 +41,10 @@ import Jama.Matrix;
  */
 public final class FitEllipsoid {
 
+	/** Random number generator*/
 	private static Random rng = new Random();
 
+	/** Constructor */
 	private FitEllipsoid() {}
 
 	/**
@@ -167,7 +169,9 @@ public final class FitEllipsoid {
 	 * @param points array[n][3] where n &gt; 8
 	 * @return Object[] array containing the centre, radii, eigenvectors of the
 	 *         axes, the 9 variables of the ellipsoid equation and the EVD
-	 * @throws IllegalArgumentException if number of coordinates is less than 9
+	 * @throws IllegalArgumentException if number of coordinates is less than 9 or
+	 * if ellipsoid matrix is not positive definite (i.e. the fitted function is
+	 * one of the other quadrics).
 	 */
 	public static Object[] yuryPetrov(final double[][] points) {
 
@@ -212,7 +216,12 @@ public final class FitEllipsoid {
 		final int nEvals = diagonal.getRowDimension();
 		final double[] radii = new double[nEvals];
 		for (int i = 0; i < nEvals; i++) {
-			radii[i] = Math.sqrt(1 / diagonal.get(i, 0));
+			final double eigenvalue = diagonal.get(i, 0);
+			if (eigenvalue <= 0) {
+				throw new IllegalArgumentException("Ellipsoid eigenvalues must be greater than 0 "
+						+ "(positive definite matrix)");
+			}
+			radii[i] = Math.sqrt(1 / eigenvalue);
 		}
 		final double[] centre = (double[]) matrices[0];
 		final double[][] eigenVectors = (double[][]) matrices[2];

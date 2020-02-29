@@ -26,7 +26,6 @@ package org.bonej.plugins;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +36,15 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
 
+/**
+ * Performs connected components labelling (sequential region labelling) in two-passes.
+ * 
+ * This implementation scales as O(n) or slightly better and is well suited to large images.
+ * 
+ * @author Michael Doube
+ * @see <a href="https://doi.org/10.1101/2020.02.28.969139">doi:10.1101/2020.02.28.969139</a>
+ *
+ */
 public class ConnectedComponents {
 
 	/** Foreground value */
@@ -49,8 +57,10 @@ public class ConnectedComponents {
 	/** number of particle labels */
 	private static int nParticles;
 
+	/** array of binary pixels */
 	private static byte[][] workArray;
 
+	/** Constructor */
 	public ConnectedComponents() {
 
 	}
@@ -116,8 +126,15 @@ public class ConnectedComponents {
 		return particleLabels;
 	}
 
+	/**
+	 * Generate a label replacement LUT
+	 * 
+	 * @param chunkMaps list of HashMaps
+	 * @param chunkIDOffsets ID offsets
+	 * @return LUTs, one per image chunk
+	 */
 	private static int[][] generateLut(ArrayList<ArrayList<HashSet<Integer>>> chunkMaps, int[] chunkIDOffsets) {
-		// snowball the HashSets, handling the chunk offsets and indexes
+		// merge labels between the HashSets, handling the chunk offsets and indexes
 		bucketFountain(chunkMaps, chunkIDOffsets);
 
 		HashMap<Integer, Integer> lutMap = makeLutMap(chunkMaps);
@@ -156,7 +173,12 @@ public class ConnectedComponents {
 	/**
 	 * Go through all pixels and assign initial particle label.
 	 *
-	 * @param chunkMaps an image.
+	 * @param chunkMaps collision recording lists
+	 * @param chunkIDOffsets ID offsets 
+	 * @param startSlices first slice of each chunk
+	 * @param w image width
+	 * @param h image height
+	 * @param nSlices number of slices
 	 * @param phase     FORE or BACK for foreground of background respectively
 	 * @return particleLabels int[] array containing label associating every pixel
 	 *         with a particle
@@ -402,8 +424,8 @@ public class ConnectedComponents {
 	 * installed in Cuba Mall, Wellington, New Zealand.
 	 * 
 	 * @see <a href="https://en.wikipedia.org/wiki/Bucket_Fountain">Wikipedia: Bucket Fountain</a>
-	 * @param chunkMaps
-	 * @param chunkIDOffsets
+	 * @param chunkMaps list of collisions between labels
+	 * @param chunkIDOffsets ID offsets
 	 */
 	private static void bucketFountain(final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps, final int[] chunkIDOffsets) {
 		// iterate backwards through the chunk maps
@@ -436,7 +458,6 @@ public class ConnectedComponents {
 					if (minLabel < i + IDoffset) {
 						map.get(minLabel - IDoffset).addAll(set);
 						set.clear();
-						continue;
 					}
 				}
 			}
@@ -448,8 +469,8 @@ public class ConnectedComponents {
 	 * Generate a label replacement LUT based on the index of the HashSet each label is
 	 * found within.
 	 * 
-	 * @param chunkMaps
-	 * @return lutMap
+	 * @param chunkMaps list of collisions between labels
+	 * @return lutMap initial mapping of partial region labels to final labels
 	 */
 	private static HashMap<Integer, Integer> makeLutMap(final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps) {
 		// count unique labels and particles
@@ -490,9 +511,7 @@ public class ConnectedComponents {
 		boolean somethingChanged = true;
 		while (somethingChanged) {
 			somethingChanged = false;
-			Iterator<Map.Entry<Integer, HashSet<Integer>>> it = hashMap.entrySet().iterator();
-			while (it.hasNext()) {
-				Map.Entry<Integer, HashSet<Integer>> pair = it.next();
+			for (Map.Entry<Integer, HashSet<Integer>> pair : hashMap.entrySet()) {
 				HashSet<Integer> set = pair.getValue();
 				int key = pair.getKey();
 				for (Integer label : set) {
@@ -524,18 +543,16 @@ public class ConnectedComponents {
 	/**
 	 * Translate the LUT coded as a HashMap into a primitive array for rapid pixel relabelling
 	 * 
-	 * @param lutMap
-	 * @param chunkMaps
-	 * @param chunkIDOffsets
+	 * @param lutMap hashmap LUT
+	 * @param chunkMaps list of labels
+	 * @param chunkIDOffsets ID offsets
 	 * @return LUT as a 2D int array, with an int[] array per chunk
 	 */
 	private static int[][] lutFromLutMap(final HashMap<Integer, Integer> lutMap,
 			final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps, final int[] chunkIDOffsets) {
 		// count number of unique labels in the LUT
 		HashSet<Integer> lutLabels = new HashSet<>();
-		Iterator<Map.Entry<Integer, Integer>> itL = lutMap.entrySet().iterator();
-		while (itL.hasNext()) {
-			Map.Entry<Integer, Integer> pair = itL.next();
+		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
 			lutLabels.add(pair.getValue());
 		}
 		final int nLabels = lutLabels.size();
@@ -556,10 +573,7 @@ public class ConnectedComponents {
 
 		// lutLut now contains mapping from the old lut value (the lutLut 'key') to the
 		// new lut value (lutLut 'value')
-
-		Iterator<Map.Entry<Integer, Integer>> itR = lutMap.entrySet().iterator();
-		while (itR.hasNext()) {
-			Map.Entry<Integer, Integer> pair = itR.next();
+		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
 			Integer oldLutValue = pair.getValue();
 			Integer newLutValue = lutLut.get(oldLutValue);
 			pair.setValue(newLutValue);
@@ -584,11 +598,13 @@ public class ConnectedComponents {
 	/**
 	 * Apply the LUT in multiple threads
 	 * 
-	 * @param particleLabels
-	 * @param lut
-	 * @param w
-	 * @param h
-	 * @param d
+	 * @param particleLabels label array
+	 * @param lut label LUT
+	 * @param chunkIDOffsets ID offsets 
+	 * @param startSlices start slices per chunk
+	 * @param w image width
+	 * @param h image height
+	 * @param d image depth
 	 */
 	private static void applyLUT(final int[][] particleLabels, final int[][] lut, final int[] chunkIDOffsets,
 			final int[] startSlices, final int w, final int h, final int d) {
@@ -726,6 +742,7 @@ public class ConnectedComponents {
 	 * @param y            y- coordinate
 	 * @param z            z- coordinate (in image stacks the indexes start at 1)
 	 * @param w            width of the image.
+	 * @param lastCentre centre label from the last neighbourhood
 	 */
 	private static void get13Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y,
 			final int z, final int w, final int lastCentre) {
@@ -800,6 +817,8 @@ public class ConnectedComponents {
 	 * @param y            y- coordinate
 	 * @param z            z- coordinate (in image stacks the indexes start at 1)
 	 * @param w            width of the image.
+	 * @param h            image height
+	 * @param d            image depth
 	 */
 	private static void get4Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y,
 			final int z, final int w, final int h, final int d) {
@@ -814,6 +833,18 @@ public class ConnectedComponents {
 		neighborhood[3] = getPixel(image, xm1, y, z, w, h, d);
 	}
 
+	/**
+	 * Get a 3 neighbourhood from the label array
+	 * 
+	 * @param neighborhood the neighbour labels
+	 * @param image label array
+	 * @param x x position of the centre
+	 * @param y y position of the centre
+	 * @param z z position of the centre
+	 * @param w image width
+	 * @param h image height
+	 * @param d image depth
+	 */
 	private static void get3Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y,
 			final int z, final int w, final int h, final int d) {
 		neighborhood[0] = getPixel(image, x - 1, y, z, w, h, d);
@@ -821,12 +852,34 @@ public class ConnectedComponents {
 		neighborhood[2] = getPixel(image, x, y, z - 1, w, h, d);
 	}
 
+	/**
+	 * Get a 2 neighbourhood from the label array
+	 * 
+	 * @param neighborhood the neighbour labels
+	 * @param image label array
+	 * @param x x position of the centre
+	 * @param y y position of the centre
+	 * @param z z position of the centre
+	 * @param w image width
+	 * @param h image height
+	 * @param d image depth
+	 */
 	private static void get2Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y,
 			final int z, final int w, final int h, final int d) {
 		neighborhood[0] = getPixel(image, x - 1, y, z, w, h, d);
 		neighborhood[1] = getPixel(image, x, y - 1, z, w, h, d);
 	}
 
+	/**
+	 * Get a 1 neighbourhood from the label array
+	 * 
+	 * @param neighborhood the neighbour labels
+	 * @param image label array
+	 * @param x x position of the centre
+	 * @param y y position of the centre
+	 * @param z z position of the centre
+	 * @param w image width
+	 */
 	private static void get1Neighborhood(final int[] neighborhood, final int[][] image, final int x, final int y,
 			final int z, final int w) {
 		neighborhood[0] = image[z - 1][x + y * w];
@@ -883,6 +936,13 @@ public class ConnectedComponents {
 		return (m >= 0 && m < w && n >= 0 && n < h && o >= 0 && o < d);
 	}
 
+	/**
+	 * Find the minimum value among neighbours and the current ID value
+	 * 
+	 * @param neighbourhood a label neighbourhood
+	 * @param ID current ID counter
+	 * @return minimum label of neighbours and ID
+	 */
 	private static int getMinTag(final int[] neighbourhood, final int ID) {
 		final int l = neighbourhood.length;
 		int minTag = ID;
@@ -900,9 +960,10 @@ public class ConnectedComponents {
 	 * Increase the length of the list of label HashSets to accommodate the full
 	 * range of IDs
 	 * 
-	 * @param map
-	 * @param ID
-	 * @param IDoffset
+	 * @param map Single chunk's list of label buckets
+	 * @param ID current ID value
+	 * @param IDoffset this chunk's ID offset
+	 * @param nextIDOffset ID offset of the next chunk
 	 */
 	private static void expandMap(final List<HashSet<Integer>> map, final int ID,
 			final int IDoffset, final int nextIDOffset) {
@@ -916,11 +977,17 @@ public class ConnectedComponents {
 		}
 	}
 
+	/**
+	 * @return number of particles in the image
+	 */
 	public int getNParticles() {
 		final int n = nParticles;
 		return n;
 	}
 
+	/**
+	 * @return binary work array containing foreground and background pixels
+	 */
 	public byte[][] getWorkArray() {
 		return workArray;
 	}
