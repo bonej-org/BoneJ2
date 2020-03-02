@@ -25,6 +25,8 @@ package org.bonej.geometry;
 
 import java.util.stream.Stream;
 
+import org.scijava.vecmath.Point3f;
+
 public final class Vectors {
 
 	private Vectors() {}
@@ -78,5 +80,31 @@ public final class Vectors {
 			vectors[k] = vector;
 		}
 		return vectors;
+	}
+	
+	/**
+	 * Calculate the cross product of 3 Point3f's, which describe two vectors
+	 * joined at the tails. Can be used to find the plane / surface normal of a
+	 * triangle. Half of its magnitude is the area of the triangle.
+	 *
+	 * @param point0 both vectors' tails
+	 * @param point1 vector 1's head
+	 * @param point2 vector 2's head
+	 * @return cross product vector
+	 */
+	public static Point3f crossProduct(final Point3f point0,
+		final Point3f point1, final Point3f point2)
+	{
+		final double x1 = point1.x - point0.x;
+		final double y1 = point1.y - point0.y;
+		final double z1 = point1.z - point0.z;
+		final double x2 = point2.x - point0.x;
+		final double y2 = point2.y - point0.y;
+		final double z2 = point2.z - point0.z;
+		final Point3f crossVector = new Point3f();
+		crossVector.x = (float) (y1 * z2 - z1 * y2);
+		crossVector.y = (float) (z1 * x2 - x1 * z2);
+		crossVector.z = (float) (x1 * y2 - y1 * x2);
+		return crossVector;
 	}
 }
