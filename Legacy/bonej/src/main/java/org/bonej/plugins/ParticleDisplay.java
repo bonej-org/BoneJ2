@@ -26,7 +26,6 @@ package org.bonej.plugins;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.bonej.geometry.Ellipsoid;
@@ -44,11 +43,19 @@ import ij.measure.Calibration;
 import ij.process.ByteProcessor;
 import ij3d.Image3DUniverse;
 
+/**
+ * Display stacks and 3D visualisation of particles and particle analysis
+ * 
+ * @author Michael Doube
+ *
+ */
 public class ParticleDisplay {
 
-	/** Surface colour style */
+	/** Surface colour style: gradient */
 	static final int GRADIENT = 0;
+	/** Surface colour style: split */
 	static final int SPLIT = 1;
+	/** Surface colour style: orientation */
 	static final int ORIENTATION = 2;
 
 	// ----------------- STACK DISPLAY ---------------//
@@ -117,13 +124,13 @@ public class ParticleDisplay {
 	}
 
 	/**
+	 * Draw ellipsoids in a stack
 	 * 
-	 * @param imp
-	 * @param ellipsoids
-	 * @param title
+	 * @param imp ImagePlus, needed for calibration
+	 * @param ellipsoids list of ellipsoids
 	 * @return ImagePlus containing particles drawn as best-fit solid ellipsoids
 	 */
-	static ImagePlus displayParticleEllipsoids(final ImagePlus imp, final Object[] ellipsoids, final String title) {
+	static ImagePlus displayParticleEllipsoids(final ImagePlus imp, final Object[] ellipsoids) {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
@@ -177,7 +184,7 @@ public class ParticleDisplay {
 		for (ByteProcessor bp : bps)
 			stack.addSlice(bp);
 
-		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + title, stack);
+		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_Ellipsoids", stack);
 		impOut.setCalibration(cal);
 		return impOut;
 	}
@@ -290,6 +297,14 @@ public class ParticleDisplay {
 		}
 	}
 
+	/**
+	 * Display principal axes in the 3D Viewer
+	 * 
+	 * @param univ 3D Viewer universe
+	 * @param eigens list of eigenvalue decompositions
+	 * @param centroids list of centroids
+	 * @param particleSizes list of particle sizes
+	 */
 	static void displayPrincipalAxes(final Image3DUniverse univ, final EigenvalueDecomposition[] eigens,
 			final double[][] centroids, long[] particleSizes) {
 		final int nEigens = eigens.length;
@@ -309,6 +324,12 @@ public class ParticleDisplay {
 		}
 	}
 
+	/**
+	 * Display ellipsoids in the 3D Viewer as point clouds
+	 * 
+	 * @param ellipsoids list of ellipsoids
+	 * @param univ 3D Viewer universe
+	 */
 	static void displayEllipsoids(final Object[] ellipsoids, final Image3DUniverse univ) {
 		final int nEllipsoids = ellipsoids.length;
 		for (int el = 1; el < nEllipsoids; el++) {
@@ -374,45 +395,39 @@ public class ParticleDisplay {
 	 *
 	 * @param univ          universe where the centroids are displayed.
 	 * @param surfacePoints points of each particle.
+	 * @param colourMode  colour particles by SPLIT, GRADIENT, or ORIENTATION
+	 * @param volumes   list of particle volumes
+	 * @param splitValue volume at which to split the colours for SPLIT colour option
+	 * @param eigens list of eigendecompositions, needed for ORIENTATION colouring
 	 */
-	static void displayParticleSurfaces(final Image3DUniverse univ, final Collection<List<Point3f>> surfacePoints,
+	static void displayParticleSurfaces(final Image3DUniverse univ, final List<List<Point3f>> surfacePoints,
 			final int colourMode, final double[] volumes, final double splitValue,
 			final EigenvalueDecomposition[] eigens) {
-		int p = 0;
 		final int nSurfaces = surfacePoints.size();
-		for (final List<Point3f> surfacePoint : surfacePoints) {
+		for (int p = 1; p < nSurfaces; p++) {
 			IJ.showStatus("Rendering surfaces...");
 			IJ.showProgress(p, nSurfaces);
-			if (p > 0 && !surfacePoint.isEmpty()) {
-				Color3f pColour = new Color3f(0, 0, 0);
-				if (colourMode == GRADIENT) {
-					final float red = 1.0f - p / (float) nSurfaces;
-					final float green = 1.0f - red;
-					final float blue = p / (2.0f * nSurfaces);
-					pColour = new Color3f(red, green, blue);
-				} else if (colourMode == SPLIT) {
-					if (volumes[p] > splitValue) {
-						// red if over
-						pColour = new Color3f(1.0f, 0.0f, 0.0f);
-					} else {
-						// yellow if under
-						pColour = new Color3f(1.0f, 1.0f, 0.0f);
-					}
-				} else if (colourMode == ORIENTATION) {
-					pColour = ParticleDisplay.colourFromEigenVector(eigens[p]);
-				}
+			final List<Point3f> surfacePoint = surfacePoints.get(p);
+			if (!surfacePoint.isEmpty()) {
+				Color3f colour = getColour(p, nSurfaces, colourMode, volumes, eigens, splitValue);
 				// Add the mesh
 				try {
-					univ.addTriangleMesh(surfacePoint, pColour, "Surface " + p).setLocked(true);
+					univ.addTriangleMesh(surfacePoint, colour, "Surface " + p).setLocked(true);
 				} catch (final NullPointerException npe) {
 					IJ.log("3D Viewer was closed before rendering completed.");
 					return;
 				}
 			}
-			p++;
 		}
 	}
 
+	/**
+	 * Display the input image in the 3D Viewer
+	 * 
+	 * @param imp Input image
+	 * @param resampling pixel resampling for the viewer; minimum 1
+	 * @param univ 3D Viewer universe
+	 */
 	static void display3DOriginal(final ImagePlus imp, final int resampling, final Image3DUniverse univ) {
 		final Color3f colour = new Color3f(1.0f, 1.0f, 1.0f);
 		final boolean[] channels = { true, true, true };
@@ -425,6 +440,40 @@ public class ParticleDisplay {
 
 	// ----------------- HELPER METHODS --------------//
 
+	/**
+	 * Calculate a colour based on particle parameters
+	 * 
+	 * @param p particle number, for GRADIENT
+	 * @param nSurfaces total number of particles being displayed for GRADIENT
+	 * @param colourMode SPLIT, GRADIENT or ORIENTATION
+	 * @param volumes particle volumes, for SPLIT
+	 * @param eigens particle eigendecompositions, for ORIENTATION
+	 * @param splitValue volumt at which colour changes
+	 * 
+	 * @return RGB (Color3f) colour of the particle
+	 */
+	private static Color3f getColour(int p, int nSurfaces, int colourMode, double[] volumes, 
+			EigenvalueDecomposition[] eigens, double splitValue) {
+		Color3f colour = new Color3f(0, 0, 0);
+		if (colourMode == GRADIENT) {
+			final float red = 1.0f - p / (float) nSurfaces;
+			final float green = 1.0f - red;
+			final float blue = p / (2.0f * nSurfaces);
+			colour = new Color3f(red, green, blue);
+		} else if (colourMode == SPLIT) {
+			if (volumes[p] > splitValue) {
+				// red if over
+				colour = new Color3f(1.0f, 0.0f, 0.0f);
+			} else {
+				// yellow if under
+				colour = new Color3f(1.0f, 1.0f, 0.0f);
+			}
+		} else if (colourMode == ORIENTATION) {
+			colour = ParticleDisplay.colourFromEigenVector(eigens[p]);
+		}
+		return colour;
+	}
+	
 	/**
 	 * Generate a colour based on the inertia tensor's eigenvector
 	 * 
@@ -450,13 +499,19 @@ public class ParticleDisplay {
 
 		final int rgb = Color.HSBtoRGB(hue, saturation, brightness);
 		final Color color = new Color(rgb);
-		float red = (float) (color.getRed() / 255d);
-		float green = (float) (color.getGreen() / 255d);
-		float blue = (float) (color.getBlue() / 255d);
+		float red = color.getRed() / 255f;
+		float green = color.getGreen() / 255f;
+		float blue = color.getBlue() / 255f;
 
 		return new Color3f(red, green, blue);
 	}
 
+	/**
+	 * Check whether ellipsoid radii are NaN
+	 * 
+	 * @param radii list of radii
+	 * @return true if all radii are not NaN
+	 */
 	private static boolean isRadiiValid(final double[] radii) {
 		for (int r = 0; r < 3; r++) {
 			if (Double.isNaN(radii[r])) {
@@ -466,7 +521,18 @@ public class ParticleDisplay {
 		return true;
 	}
 
+	/**
+	 * Limit value to within minimum and maxium values
+	 * 
+	 * @param value the input value
+	 * @param min the allowed minimum
+	 * @param max the allowed maximum
+	 * @return value, or min if value < min; max if value > max
+	 */
 	private static int clamp(int value, int min, int max) {
+		if (min > max) {
+			throw new IllegalArgumentException("min must be less than or equal to max");
+		}
 		if (value < min)
 			return min;
 		if (value > max)

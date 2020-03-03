@@ -50,6 +50,27 @@ public class FitEllipsoidTest {
 		assertArrayEquals(centre, (double[]) result[0], 1e-2);
 		assertArrayEquals(radii, (double[]) result[1], 1e-2);
 	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testYuryPetrovCylinder() {
+		//generate points on a cylinder with d = h, centred on 0, 0, 0.
+		final int r = 50;
+		final int nPoints = 100;
+		final double[][] points = new double[(int)(2 * r * nPoints)][3];
+		final double radialIncrement = 2 * Math.PI / nPoints;
+		int p = 0;
+		for (double z = -r; z < r; z += 1) {
+			for (double theta = -Math.PI; theta < Math.PI; theta += radialIncrement) {
+				theta += radialIncrement;
+				final double x = Math.cos(theta) * r;
+				final double y = Math.sin(theta) * r;
+				final double[] point = {x, y, z};
+				points[p] = point;
+				p++;
+			}
+		}
+		FitEllipsoid.yuryPetrov(points);
+	}
 
 	@Test
 	public void testTestEllipsoid() {

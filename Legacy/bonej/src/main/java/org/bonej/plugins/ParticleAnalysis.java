@@ -31,7 +31,6 @@ import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.geometry.FitEllipsoid;
-import org.bonej.geometry.Vectors;
 import org.bonej.util.Multithreader;
 import org.scijava.vecmath.Point3f;
 
@@ -44,10 +43,17 @@ import ij.ImageStack;
 import ij.measure.Calibration;
 import marchingcubes.MCTriangulator;
 
+/**
+ * Perform analysis of particles
+ * @author Michael Doube
+ *
+ */
 public class ParticleAnalysis {
 
+	/** list of particle sizes */
 	private long[] particleSizes;
 
+	/** Constructor */
 	public ParticleAnalysis() {
 
 	}
@@ -64,7 +70,7 @@ public class ParticleAnalysis {
 	 * @param imp            Input image. Needed for calibration
 	 * @param particleLabels Particle label image array
 	 * @param workArray      Binary work array
-	 * @param particleSizes  List of particle sizes in pixels indexed by particle ID
+	 * @param nParticles     Number of particles in the image
 	 * @param phase          Foreground or background
 	 * @param doExclude      true to remove all particles touching a side
 	 * @param min            minimum volume in calibrated units to include
@@ -239,6 +245,7 @@ public class ParticleAnalysis {
 	 *
 	 * @param particleLabels particle label image array
 	 * @param nParticles     number of particles
+	 * @return array of particle sizes
 	 */
 	public long[] getParticleSizes(final int[][] particleLabels, final int nParticles) {
 		final int d = particleLabels.length;
@@ -276,6 +283,13 @@ public class ParticleAnalysis {
 		return this.particleSizes.clone();
 	}
 
+	/**
+	 * Calculate calibrated volumes of the particles
+	 * 
+	 * @param imp ImagePlus, used only for its calibration information
+	 * @param particleSizes list of particle sizes in pixel counts
+	 * @return array of particle sizes in calibrated units
+	 */
 	static double[] getVolumes(final ImagePlus imp, final long[] particleSizes) {
 		final Calibration cal = imp.getCalibration();
 		final double voxelVolume = cal.pixelWidth * cal.pixelHeight * cal.pixelDepth;
@@ -373,6 +387,14 @@ public class ParticleAnalysis {
 		return meanStdDev;
 	}
 
+	/**
+	 * Calculate Eigenvalue decompositions of all the particles
+	 * 
+	 * @param imp ImagePlus, used for calibration
+	 * @param particleLabels label image array
+	 * @param centroids list of particle centroids
+	 * @return list of EigenvalueDecompositions
+	 */
 	static EigenvalueDecomposition[] getEigens(final ImagePlus imp, final int[][] particleLabels,
 			final double[][] centroids) {
 		final Calibration cal = imp.getCalibration();
@@ -433,6 +455,7 @@ public class ParticleAnalysis {
 	 *
 	 * @param imp            ImagePlus (used for stack size)
 	 * @param particleLabels work array containing labelled particles
+	 * @param nParticles     number of particles in the image
 	 * @return int[][] containing x, y and z minima and maxima.
 	 */
 	static int[][] getParticleLimits(final ImagePlus imp, final int[][] particleLabels, final int nParticles) {
@@ -471,6 +494,7 @@ public class ParticleAnalysis {
 	 * @param imp an image.
 	 * @param particleLabels particles of the image.
 	 * @param limits limits of the particles.
+	 * @param nParticles number of particles in the image
 	 * @return euler characteristic of each image.
 	 */
 	static double[][] getEulerCharacter(final ImagePlus imp,
@@ -493,6 +517,13 @@ public class ParticleAnalysis {
 		return eulerCharacters;
 	}
 
+	/**
+	 * Calculate the number of cavities in the image, which may be interpreted
+	 * as a count of disconnected particles of background.
+	 * 
+	 * @param imp input image
+	 * @return number of cavities
+	 */
 	private static int getNCavities(final ImagePlus imp) {
 		final ConnectedComponents connector = new ConnectedComponents();
 		connector.run(imp, ConnectedComponents.BACK);
@@ -548,6 +579,16 @@ public class ParticleAnalysis {
 
 	// ----------- SURFACE MESH OPERATIONS ------------------------//
 
+	/**
+	 * Create a list of surface meshes, each wrapping a particle
+	 * 
+	 * @param imp Input image, needed for calibration
+	 * @param particleLabels label array
+	 * @param limits bounding box limits for each particle
+	 * @param resampling user-set resampling level
+	 * @param nParticles number of particles
+	 * @return list of surface meshes, one per particle
+	 */
 	static ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp, final int[][] particleLabels,
 			final int[][] limits, final int resampling, final int nParticles) {
 		final Calibration cal = imp.getCalibration();
@@ -580,6 +621,12 @@ public class ParticleAnalysis {
 		return surfacePoints;
 	}
 
+	/**
+	 * Calculate surface areas of the particles
+	 * 
+	 * @param surfacePoints list of surface points
+	 * @return list of surface areas
+	 */
 	static double[] getSurfaceAreas(final Collection<List<Point3f>> surfacePoints) {
 		return surfacePoints.parallelStream().mapToDouble(ParticleAnalysis::getSurfaceArea).toArray();
 	}
@@ -598,13 +645,19 @@ public class ParticleAnalysis {
 		final int nPoints = points.size();
 		final Point3f origin = new Point3f(0.0f, 0.0f, 0.0f);
 		for (int n = 0; n < nPoints; n += 3) {
-			final Point3f cp = Vectors.crossProduct(points.get(n), points.get(n + 1), points.get(n + 2));
+			final Point3f cp = crossProduct(points.get(n), points.get(n + 1), points.get(n + 2));
 			final double deltaArea = 0.5 * cp.distance(origin);
 			sumArea += deltaArea;
 		}
 		return sumArea;
 	}
 
+	/**
+	 * Calculate volume contained within surface points
+	 * 
+	 * @param surfacePoints list of surface points
+	 * @return  list of particle volumes
+	 */
 	static double[] getSurfaceVolume(final Collection<List<Point3f>> surfacePoints) {
 		return surfacePoints.parallelStream().mapToDouble(p -> {
 			if (p == null) {
@@ -665,7 +718,7 @@ public class ParticleAnalysis {
 	/**
 	 * Get the list of best-fit ellipsoids for the particle surfaces
 	 * 
-	 * @param surfacePoints
+	 * @param surfacePoints list of surface points
 	 * @return Object[] array containing the list of ellipsoids, each of which is
 	 *         also stored as an Object[] array (see FitEllipsoid.yuryPetrov() for
 	 *         details). Note that an Object[] is also an Object so there is no need
@@ -692,10 +745,38 @@ public class ParticleAnalysis {
 			Object[] ellipsoid = null;
 			try {
 				ellipsoid = FitEllipsoid.yuryPetrov(coOrdinates);
-			} catch (final RuntimeException re) {
-
+			} catch (final IllegalArgumentException re) {
+				IJ.log("Could not fit ellipsoid to particle: "+re.getMessage());
+			} catch (final Exception e) {
+				IJ.log("Could not fit ellipsoid to particle: "+e.getMessage());
 			}
 			return ellipsoid;
 		}).toArray();
+	}
+	
+	/**
+	 * Calculate the cross product of 3 Point3f's, which describe two vectors
+	 * joined at the tails. Can be used to find the plane / surface normal of a
+	 * triangle. Half of its magnitude is the area of the triangle.
+	 *
+	 * @param point0 both vectors' tails
+	 * @param point1 vector 1's head
+	 * @param point2 vector 2's head
+	 * @return cross product vector
+	 */
+	private static Point3f crossProduct(final Point3f point0,
+		final Point3f point1, final Point3f point2)
+	{
+		final double x1 = point1.x - point0.x;
+		final double y1 = point1.y - point0.y;
+		final double z1 = point1.z - point0.z;
+		final double x2 = point2.x - point0.x;
+		final double y2 = point2.y - point0.y;
+		final double z2 = point2.z - point0.z;
+		final Point3f crossVector = new Point3f();
+		crossVector.x = (float) (y1 * z2 - z1 * y2);
+		crossVector.y = (float) (z1 * x2 - x1 * z2);
+		crossVector.z = (float) (x1 * y2 - y1 * x2);
+		return crossVector;
 	}
 }

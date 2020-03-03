@@ -59,6 +59,9 @@ import ij3d.Image3DUniverse;
 public class ParticleCounter implements PlugIn, DialogListener {
 
 	
+	/* (non-Javadoc)
+	 * @see ij.gui.DialogListener#dialogItemChanged(ij.gui.GenericDialog, java.awt.AWTEvent)
+	 */
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
 		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
@@ -85,6 +88,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return true;
 	}
 
+	/* (non-Javadoc)
+	 * @see ij.plugin.PlugIn#run(java.lang.String)
+	 */
 	@Override
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
@@ -348,7 +354,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			IJ.run("Fire");
 		}
 		if (doEllipsoidStack) {
-			ParticleDisplay.displayParticleEllipsoids(imp, ellipsoids, "Ellipsoids").show();
+			ParticleDisplay.displayParticleEllipsoids(imp, ellipsoids).show();
 		}
 
 		// show 3D renderings
@@ -386,10 +392,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	
 	/**
 	 * Get particles, particle labels and particle sizes from a 3D ImagePlus
-	 *  
-	 * @param imp
-	 * @param phase
-	 * @return
+	 * 
+	 * @param connector Instance of ConnectedComponents 
+	 * @param imp Input image
+	 * @param phase foreground or background (ConnectedComponents.FORE or .BACK)
+	 * @return array containing a binary workArray, particle labels and
+	 *         particle sizes
 	 */
 	Object[] getParticles(ConnectedComponents connector, final ImagePlus imp, final int phase)
 	{
@@ -400,9 +408,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 	/**
 	 * Get particles, particle labels and sizes from a workArray using an
 	 * ImagePlus for scale information
-	 *
+	 * 
+	 * @param connector Instance of ConnectedComponents
 	 * @param imp input binary image
-	 * @param workArray work array
 	 * @param minVol minimum volume particle to include
 	 * @param maxVol maximum volume particle to include
 	 * @param phase FORE or BACK for foreground or background respectively
