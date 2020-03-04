@@ -37,12 +37,12 @@ import org.joml.Vector3dc;
 /**
  * A class that generates random lines that pass through a plane.
  * <p>
- * All the lines pass through a point on a d * d plane, where d = the longest diagonal of an interval.
+ * All the lines pass through a point on a d * d plane, where d = the longest diagonal of a 3D interval.
  * The lines are also normal to the plane.
  * </p>
  * <p>
- * The plane is d * d so that it's big enough that lines passing through it cover the entire interval,
- * regardless of the direction of the lines. However, this means that nextLine() might return a line
+ * The plane is d * d so that it's big enough that normal lines passing through it cover the entire interval,
+ * regardless of the orientation of the plane. However, this means that nextLine() might return a line
  * that entirely misses the interval.
  * </p>
  * @author Richard Domander
@@ -65,16 +65,25 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	/**
 	 * Creates and initializes an instance for generating lines.
 	 *
-	 * @param interval an interval through which the lines pass.
+	 * @param interval a 3D interval through which the lines pass.
 	 * @param direction the direction of the lines through the interval described as a rotation.
 	 * @param rotateOp an op the generator needs for rotating vectors
 	 * @param sections number of sections each line point coordinate is generated from.
 	 * @param <I> type of the interval.
+	 * @throws IllegalArgumentException if sections is not positive, or interval is not 3D.
 	 */
 	public <I extends Interval> PlaneParallelLineGenerator(final I interval, final Quaterniondc direction,
 														   final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp,
-														   final long sections)
+														   final long sections) throws IllegalArgumentException
 	{
+		if (sections < 1) {
+			throw new IllegalArgumentException("Sections must be positive");
+		}
+
+		if (interval.numDimensions() != 3) {
+			throw new IllegalArgumentException("Interval must be 3D");
+		}
+
 		size = findPlaneSize(interval);
 		translation = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
 		centroid = findCentroid(interval);
