@@ -127,7 +127,7 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	private boolean isReflected0;
 	private boolean isReflected1;
 
-	private Orienteer() {
+	public Orienteer() {
 		super("Orientation");
 		if (instance != null) {
 			if (instance.getTitle().equals(getTitle())) {
