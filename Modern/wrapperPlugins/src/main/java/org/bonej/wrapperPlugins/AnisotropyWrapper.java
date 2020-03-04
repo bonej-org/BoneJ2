@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -181,7 +180,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			description = "Show the vectors of the mean intercept lengths",
 			required = false)
 	private boolean displayMILVectors;
-	private static Long seed;
 
 	/**
 	 * The anisotropy results in a {@link Table}.
@@ -470,21 +468,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				cancel(null);
 			}
 		}
-	}
-	// endregion
-
-	// region -- Utility methods --
-	/**
-	 * Sets the seed used in the random generation of MIL sampling lines.
-	 * <p>
-	 * The method's here only to enable reproducible unit test.
-	 * </p>
-	 *
-	 * @param seed a seed number.
-	 * @see Random#setSeed
-	 */
-	static void setSeed(final long seed) {
-		AnisotropyWrapper.seed = seed;
 	}
 	// endregion
 }

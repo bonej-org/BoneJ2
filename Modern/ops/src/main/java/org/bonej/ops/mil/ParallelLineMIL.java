@@ -110,18 +110,6 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	 */
 	@Parameter(required = false, persist = false)
 	private Double increment;
-	/**
-	 * The seed used in the random generator in the algorithm.
-	 * <p>
-	 * Given that all other parameters all the same (including the interval and
-	 * rotation), then using the same seed will give the same results.
-	 * </p>
-	 * <p>
-	 * If left null, a new generator is created with the default constructor.
-	 * </p>
-	 */
-	@Parameter(required = false, persist = false)
-	private Long seed;
 
 	private final Random random = new Random();
 
@@ -138,9 +126,6 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	public Vector3d calculate(final RandomAccessibleInterval<B> interval,
 		final ParallelLineGenerator parallelLineGenerator)
 	{
-		if (seed != null) {
-			random.setSeed(seed);
-		}
 		if (increment == null) {
 			increment = 1.0;
 		}
