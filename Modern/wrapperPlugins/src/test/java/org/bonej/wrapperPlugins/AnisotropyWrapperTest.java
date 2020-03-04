@@ -46,6 +46,7 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.view.Views;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -213,5 +214,10 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 			Views.interval(hyperSheets, new long[] { 0, 0, z, 1, 1 }, new long[] { 99,
 				99, z, 0, 0 }).forEach(BitType::setOne);
 		}
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		hyperSheets = null;
 	}
 }

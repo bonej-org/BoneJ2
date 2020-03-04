@@ -59,11 +59,11 @@ import org.junit.rules.ExpectedException;
  */
 public class PlaneParallelLineGeneratorTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImageJ IMAGE_J = new ImageJ();
 	private static final Quaterniondc IDENTITY = new Quaterniond(new AxisAngle4d(
 		0, 0, 1, 0));
 	private static final int SIZE = 5;
-	private static final Img<BitType> IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
+	private static Img<BitType> IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
@@ -208,5 +208,7 @@ public class PlaneParallelLineGeneratorTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
+		IMG = null;
 	}
 }

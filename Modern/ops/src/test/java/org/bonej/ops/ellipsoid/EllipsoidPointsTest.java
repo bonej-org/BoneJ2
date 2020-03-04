@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public class EllipsoidPointsTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImageJ IMAGE_J = new ImageJ();
 
 	@Test
 	public void testEllipsoidEquation() {
@@ -106,5 +106,6 @@ public class EllipsoidPointsTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
 	}
 }

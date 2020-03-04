@@ -72,7 +72,7 @@ public class QuadricToEllipsoidTest {
                     0, 0, 0, -1
             );
     //@formatter:on
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImageJ IMAGE_J = new ImageJ();
 	// Constant seed for random generators
 	private static final long SEED = 0xc0ffee;
 	@SuppressWarnings("unchecked")
@@ -216,6 +216,7 @@ public class QuadricToEllipsoidTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
 	}
 
 	private void epsilonEquals(final Matrix4dc a, final Matrix4dc b,
