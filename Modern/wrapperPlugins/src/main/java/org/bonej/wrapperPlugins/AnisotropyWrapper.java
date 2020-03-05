@@ -126,7 +126,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final int DEFAULT_DIRECTIONS = 2_000;
 	// The default number of lines was found to be sensible after experimenting
 	// with data at hand. Other data may need a different number.
-	private static final int DEFAULT_LINES = 100;
+	private static final int DEFAULT_LINES = 10_000;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3dc>, Matrix4dc> solveQuadricOp;
@@ -143,11 +143,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		callback = "applyMinimum")
 	private Integer directions = DEFAULT_DIRECTIONS;
 	
-	@Parameter(label = "Lines per dimension",
-		description = "How many sampling lines are projected in both 2D directions (this number squared)",
+	@Parameter(label = "Lines per direction",
+		description = "How many lines are sampled per direction",
 		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
 		callback = "applyMinimum")
 	private Integer lines = DEFAULT_LINES;
+	private long sections;
 	
 	@Parameter(label = "Sampling increment", persist = false,
 		description = "Distance between sampling points (in voxels)",
@@ -211,6 +212,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Override
 	public void run() {
+		sections = (long) Math.sqrt(lines);
 		statusService.showStatus("Anisotropy: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
@@ -250,8 +252,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private void calculateMILLength(final RandomAccessibleInterval<BitType> interval) {
 		final long[] dimensions = new long[interval.numDimensions()];
 		interval.dimensions(dimensions);
-		final long maxDim = Arrays.stream(dimensions).max().orElse(0L);
-		milLength = lines * lines * maxDim;
+		final double diagonal = Math.sqrt(Arrays.stream(dimensions).map(x -> x * x).sum());
+		milLength = lines * diagonal;
 	}
 
 	private void addResult(final Subspace<BitType> subspace,
@@ -354,7 +356,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
 				new Vector3d(), new Quaterniond());
 		ParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(interval, new Quaterniond(), rotateOp, lines);
+				new PlaneParallelLineGenerator(interval, new Quaterniond(), rotateOp, sections);
 		milOp = Functions.binary(opService, ParallelLineMIL.class, Vector3d.class,
 				interval, generator, milLength, samplingIncrement);
 	}
@@ -389,7 +391,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final double[] v = qGenerator.nextVector();
 		final Quaterniond quaternion = new Quaterniond(v[0], v[1], v[2], v[3]);
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(interval, quaternion, rotateOp, lines);
+				new PlaneParallelLineGenerator(interval, quaternion, rotateOp, sections);
 		return () -> milOp.calculate(interval, generator);
 	}
 
