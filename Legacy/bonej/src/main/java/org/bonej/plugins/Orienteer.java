@@ -88,7 +88,7 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 							"axial", "abaxial", "Ax", "Ab" }, { "north", "south", "N", "S" },
 		{ "east", "west", "E", "W" }, { "up", "down", "Up", "D" }, { "right",
 			"left", "R", "L" } };
-	private static Orienteer instance = new Orienteer();
+	private static Orienteer instance;
 	private final Map<Integer, Double> thetaHash = new HashMap<>();
 	private final Map<Integer, Integer> lengthHash = new HashMap<>();
 	private final Map<Integer, Point> centreHash = new HashMap<>();
