@@ -36,8 +36,10 @@ import net.imagej.ops.linalg.rotate.Rotate3d;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 
+import net.imglib2.img.basictypeaccess.array.LongArray;
 import net.imglib2.type.logic.BitType;
 import org.joml.AxisAngle4d;
 import org.joml.Quaterniond;
@@ -46,7 +48,9 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Tests for {@link PlaneParallelLineGenerator}.
@@ -55,12 +59,14 @@ import org.junit.Test;
  */
 public class PlaneParallelLineGeneratorTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImageJ IMAGE_J = new ImageJ();
 	private static final Quaterniondc IDENTITY = new Quaterniond(new AxisAngle4d(
 		0, 0, 1, 0));
 	private static final int SIZE = 5;
-	private static final Img<BitType> IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
+	private static Img<BitType> IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfIntervalNull() {
@@ -75,6 +81,23 @@ public class PlaneParallelLineGeneratorTest {
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfOpNull() {
 		new PlaneParallelLineGenerator(IMG, IDENTITY, null, 1);
+	}
+
+	@Test
+	public void testConstructorThrowsIAEIfSectionsNotPositive() {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("Sections must be positive");
+
+		new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 0);
+	}
+
+	@Test
+	public void testConstructorThrowsIAEIfIntervalNot3D() {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("Interval must be 3D");
+		final ArrayImg<BitType, LongArray> twoDImg = ArrayImgs.bits(SIZE, SIZE);
+
+		new PlaneParallelLineGenerator(twoDImg, IDENTITY, rotateOp, 1);
 	}
 
 	@Test
@@ -185,5 +208,7 @@ public class PlaneParallelLineGeneratorTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
+		IMG = null;
 	}
 }

@@ -53,8 +53,8 @@ import org.scijava.Contextual;
  */
 public class AxisUtilsTest {
 
-	private static final Contextual IMAGE_J = new ImageJ();
-	private static final UnitService unitService = IMAGE_J.context().getService(
+	private static Contextual IMAGE_J = new ImageJ();
+	private static UnitService unitService = IMAGE_J.context().getService(
 		UnitService.class);
 
 	@Rule
@@ -319,5 +319,7 @@ public class AxisUtilsTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
+		unitService = null;
 	}
 }

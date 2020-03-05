@@ -110,18 +110,6 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	 */
 	@Parameter(required = false, persist = false)
 	private Double increment;
-	/**
-	 * The seed used in the random generator in the algorithm.
-	 * <p>
-	 * Given that all other parameters all the same (including the interval and
-	 * rotation), then using the same seed will give the same results.
-	 * </p>
-	 * <p>
-	 * If left null, a new generator is created with the default constructor.
-	 * </p>
-	 */
-	@Parameter(required = false, persist = false)
-	private Long seed;
 
 	private final Random random = new Random();
 
@@ -138,9 +126,6 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	public Vector3d calculate(final RandomAccessibleInterval<B> interval,
 		final ParallelLineGenerator parallelLineGenerator)
 	{
-		if (seed != null) {
-			random.setSeed(seed);
-		}
 		if (increment == null) {
 			increment = 1.0;
 		}
@@ -152,15 +137,15 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		long totalIntercepts = 0L;
 		while (totalLength < milLength) {
 			final Line line = parallelLineGenerator.nextLine();
-			Section section = intersectInterval(line, interval);
-			if (section == null) {
+			Segment segment = intersectInterval(line, interval);
+			if (segment == null) {
 				continue;
 			}
-			final double length = Math.abs(section.tMax - section.tMin);
+			final double length = Math.abs(segment.tMax - segment.tMin);
 			if (totalLength + length > milLength) {
-				section = limitSection(milLength, totalLength, section);
+				segment = limitSegment(milLength, totalLength, segment);
 			}
-			final ValuePair<Double, Long> mILValues = mILValues(interval, section, increment);
+			final ValuePair<Double, Long> mILValues = mILValues(interval, segment, increment);
 			if (mILValues == null) {
 				continue;
 			}
@@ -206,7 +191,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		return access.get().get();
 	}
 
-	private static Section intersectInterval(final Line line, final Interval interval)
+	private static Segment intersectInterval(final Line line, final Interval interval)
 	{
 		final Vector3dc min = new Vector3d(interval.min(0), interval.min(1),
 			interval.min(2));
@@ -217,31 +202,31 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		if (!intersect) {
 			return null;
 		}
-		return new Section(line, tValues.x, tValues.y);
+		return new Segment(line, tValues.x, tValues.y);
 	}
 
-	private static Section limitSection(final double goalLength, final double totalLength,
-										final Section section)
+	private static Segment limitSegment(final double goalLength, final double totalLength,
+										final Segment segment)
 	{
 		final double remaining = goalLength - totalLength;
 		final double tMax;
-		if (section.tMax < section.tMin) {
-			tMax = section.tMin - remaining;
+		if (segment.tMax < segment.tMin) {
+			tMax = segment.tMin - remaining;
 		} else {
-			tMax = section.tMin + remaining;
+			tMax = segment.tMin + remaining;
 		}
-		return new Section(section.line, section.tMin, tMax);
+		return new Segment(segment.line, segment.tMin, tMax);
 	}
 
 	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
-		final Section section, final double increment)
+											  final Segment segment, final double increment)
 	{
-		final long intercepts = sampleSection(interval, section, section.line.direction,
+		final long intercepts = sampleSegment(interval, segment, segment.line.direction,
 			increment);
 		if (intercepts < 0) {
 			return null;
 		}
-		final double length = Math.abs(section.tMax - section.tMin);
+		final double length = Math.abs(segment.tMax - segment.tMin);
 		return new ValuePair<>(length, intercepts);
 	}
 
@@ -252,19 +237,19 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		return Arrays.stream(dimensions).max().orElse(0L);
 	}
 
-	private long sampleSection(final RandomAccessible<B> interval,
-		final Section section, final Vector3dc direction, final double increment)
+	private long sampleSegment(final RandomAccessible<B> interval,
+							   final Segment segment, final Vector3dc direction, final double increment)
 	{
-		// Add a random offset so that sampling doesn't always start from the same
-		// plane
-		final double startT = section.tMin + random.nextDouble() * increment;
-		final long samples = (long) Math.ceil((section.tMax - startT) / increment);
+		// Add a random offset so that sampling doesn't always start from where the segment
+		// enters the interval
+		final double startT = segment.tMin + random.nextDouble() * increment;
+		final long samples = (long) Math.ceil((segment.tMax - startT) / increment);
 		if (samples < 1) {
 			return -1;
 		}
 		final Vector3d samplePoint = new Vector3d(direction);
 		samplePoint.mul(startT);
-		samplePoint.add(section.line.point);
+		samplePoint.add(segment.line.point);
 		final Vector3d gap = new Vector3d(direction);
 		gap.mul(increment);
 		return countPhaseChanges(interval, samplePoint, gap, samples);
@@ -281,13 +266,13 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	 * The direction comes from the {@link PlaneParallelLineGenerator} used in the op.
 	 * </p>
 	 */
-	private static final class Section {
+	private static final class Segment {
 
 		private final double tMin;
 		private final double tMax;
 		private final Line line;
 
-		private Section(final Line line, final double tMin, final double tMax) {
+		private Segment(final Line line, final double tMin, final double tMax) {
 			this.line = line;
 			this.tMin = tMin;
 			this.tMax = tMax;

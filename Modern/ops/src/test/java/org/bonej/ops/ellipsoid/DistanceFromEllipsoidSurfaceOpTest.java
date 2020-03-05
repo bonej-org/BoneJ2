@@ -50,7 +50,7 @@ import org.junit.rules.ExpectedException;
  */
 public class DistanceFromEllipsoidSurfaceOpTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImageJ IMAGE_J = new ImageJ();
 	private static final RandomVectorGenerator sphereRng =
 		new UnitSphereRandomVectorGenerator(3);
 	private static BinaryFunctionOp<Ellipsoid, Vector3dc, DoubleType> distanceFromEllipsoidSurfaceOp;
@@ -233,5 +233,6 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 	@AfterClass
 	public static void tearDownAfterClass() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
 	}
 }

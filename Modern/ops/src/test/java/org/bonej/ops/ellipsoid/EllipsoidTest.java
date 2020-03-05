@@ -61,7 +61,7 @@ import org.junit.rules.ExpectedException;
  */
 public class EllipsoidTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImageJ IMAGE_J = new ImageJ();
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
@@ -496,5 +496,6 @@ public class EllipsoidTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
 	}
 }

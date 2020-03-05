@@ -81,5 +81,7 @@ public abstract class AbstractWrapperTest {
     @AfterClass
     public static void basicOneTimeTearDown() {
         imageJ.context().dispose();
+        imageJ = null;
+        commandService = null;
     }
 }

@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.joml.Vector3d;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -489,6 +490,11 @@ public class RoiManagerUtilTest {
 		final ImagePlus image = NewImage.createByteImage("testImage", 100, 100, 4,
 			0);
 		testStack = image.getStack();
+	}
+
+	@AfterClass
+	public static void oneTimeTearDown() {
+		testStack = null;
 	}
 
 	// region -- Helper methods --

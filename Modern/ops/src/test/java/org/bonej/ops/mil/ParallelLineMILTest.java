@@ -55,9 +55,9 @@ import java.util.List;
  */
 public class ParallelLineMILTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
+	private static ImageJ IMAGE_J = new ImageJ();
 	private static final long SIZE = 100;
-	private static final Img<BitType> XY_SHEETS = ArrayImgs.bits(SIZE, SIZE, SIZE);
+	private static Img<BitType> XY_SHEETS = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static final Quaterniondc IDENTITY_ROTATION = new Quaterniond();
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 
@@ -177,6 +177,8 @@ public class ParallelLineMILTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
+		XY_SHEETS = null;
 	}
 
 	// region -- Helper methods --
