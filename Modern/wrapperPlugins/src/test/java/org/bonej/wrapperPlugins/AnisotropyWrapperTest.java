@@ -136,10 +136,12 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	 * quadric solution to them is not an ellipsoid.
 	 * </p>
 	 */
+	// TODO This test has a small chance of failing. Sometimes ellipsoid fitting succeeds
+	// despite there being just 9 points
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-			true, "inputImage", hyperSheets, "lines", 4, "directions", 9).get();
+			true, "inputImage", hyperSheets, "lines", 1, "directions", 9).get();
 
 		assertTrue(module.isCanceled());
 		assertEquals(
