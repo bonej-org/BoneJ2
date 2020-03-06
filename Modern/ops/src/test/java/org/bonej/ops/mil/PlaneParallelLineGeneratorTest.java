@@ -23,12 +23,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.mil;
 
-import static java.util.stream.Collectors.toList;
 import static org.bonej.ops.mil.ParallelLineGenerator.Line;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 import net.imagej.ImageJ;
@@ -129,27 +127,41 @@ public class PlaneParallelLineGeneratorTest {
 	}
 
 	@Test
-	public void testGetOriginsBinsRegions() {
+	public void testAllQuadrantsCovered() {
 		final PlaneParallelLineGenerator generator =
 				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
-		final double cX = SIZE / 2.0;
-		final double cY = SIZE / 2.0;
+		final double planeSize = Math.sqrt(SIZE * SIZE * 3);
+		final double centre = (planeSize - planeSize * 0.5) / 2.0;
 
-		// EXECUTE
-		final List<Line> lines = Stream.generate(generator::nextLine).limit(4).collect(toList());
+		final long quadrants = Stream.generate(generator::nextLine).limit(4).map(l -> l.point)
+				.map(p -> identifyQuadrant(p, centre)).distinct().count();
 
-		final Vector3dc a = lines.get(0).point;
-		assertTrue("Point is in the wrong quadrant of the plane", a.x() <= cX &&
-			a.y() <= cY);
-		final Vector3dc b = lines.get(1).point;
-		assertTrue("Point is in the wrong quadrant of the plane", b.x() > cX &&
-			b.y() <= cY);
-		final Vector3dc c = lines.get(2).point;
-		assertTrue("Point is in the wrong quadrant of the plane", c.x() <= cX &&
-			c.y() > cY);
-		final Vector3dc d = lines.get(3).point;
-		assertTrue("Point is in the wrong quadrant of the plane", d.x() > cX &&
-			d.y() > cY);
+		assertEquals("There's a line missing from one or more quadrants of the plane",
+			4, quadrants);
+	}
+
+	@Test
+	public void testFirstQuadrantChanges() {
+		PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+		final double planeSize = Math.sqrt(SIZE * SIZE * 3);
+		final double centre = (planeSize - planeSize * 0.5) / 2.0;
+		final int initialQuadrant = identifyQuadrant(generator.nextLine().point, centre);
+		final int max = 100_000;
+		int generated = 0;
+		boolean changed = false;
+
+		while (generated < max) {
+			generator = new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+			final int quadrant = identifyQuadrant(generator.nextLine().point, centre);
+			if (quadrant != initialQuadrant) {
+				changed = true;
+			}
+			generated++;
+		}
+
+		assertTrue("All the lines came from the same quadrant. " +
+				"Either you're unlucky, or generation isn't truly random", changed);
 	}
 
 	@Test
@@ -210,5 +222,19 @@ public class PlaneParallelLineGeneratorTest {
 		IMAGE_J.context().dispose();
 		IMAGE_J = null;
 		IMG = null;
+	}
+
+	private static int identifyQuadrant(final Vector3dc v, final double centre) {
+		if (v.x() <= centre) {
+			if (v.y() <= centre) {
+				return 1;
+			} else {
+				return 2;
+			}
+		}
+		if (v.y() <= centre) {
+			return 3;
+		}
+		return 4;
 	}
 }
