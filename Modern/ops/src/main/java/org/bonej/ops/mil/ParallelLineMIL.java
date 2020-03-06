@@ -134,7 +134,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		}
 		double totalLength = 0.0;
 		long totalIntercepts = 0L;
-		while (totalLength < milLength) {
+		while (milLength - totalLength > 1e-12) {
 			final Line line = parallelLineGenerator.nextLine();
 			Segment segment = intersectInterval(line, interval);
 			if (segment == null) {
