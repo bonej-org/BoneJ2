@@ -51,8 +51,10 @@ import java.awt.event.WindowEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -89,13 +91,13 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 		{ "east", "west", "E", "W" }, { "up", "down", "Up", "D" }, { "right",
 			"left", "R", "L" } };
 	private static Orienteer instance;
-	private final Map<Integer, Double> thetaHash = new HashMap<>();
-	private final Map<Integer, Integer> lengthHash = new HashMap<>();
-	private final Map<Integer, Point> centreHash = new HashMap<>();
-	private final Map<Integer, GeneralPath> pathHash = new HashMap<>();
-	private final Map<Integer, int[]> axisHash = new HashMap<>();
-	private final Map<Integer, boolean[]> reflectHash = new HashMap<>();
-	private final Map<Integer, boolean[]> unitHash = new HashMap<>();
+	private final Map<Integer, Double> thetaHash = new Hashtable<>();
+	private final Map<Integer, Integer> lengthHash = new Hashtable<>();
+	private final Map<Integer, Point> centreHash = new Hashtable<>();
+	private final Map<Integer, GeneralPath> pathHash = new Hashtable<>();
+	private final Map<Integer, int[]> axisHash = new Hashtable<>();
+	private final Map<Integer, boolean[]> reflectHash = new Hashtable<>();
+	private final Map<Integer, boolean[]> unitHash = new Hashtable<>();
 	private final Overlay overlay = new Overlay();
 	private final int fontSize = 12;
 	private final Scrollbar slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0,
