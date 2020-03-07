@@ -400,12 +400,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		InterruptedException
 	{
 		final int cores = Runtime.getRuntime().availableProcessors();
-		// The parallellization of the the MILPlane algorithm is a memory bound
-		// problem, which is why speed gains start to drop after 5 cores. With much
-		// larger 'nThreads' it slows down due to overhead. Of course '5' here is a
-		// bit of a magic number, which might not hold true for all environments,
-		// but we need some kind of upper bound
-		final int nThreads = Math.max(5, cores);
+		// Anisotropy starts to slow down after more than n threads.
+		// The 8 here is a magic number, but some upper bound is better than none.
+		final int nThreads = Math.min(cores, 8);
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final List<Future<Vector3d>> futures = generate(() -> createMILTask(interval)).limit(
 			directions).map(executor::submit).collect(toList());
