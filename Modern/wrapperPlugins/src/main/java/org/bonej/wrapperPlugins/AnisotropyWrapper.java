@@ -403,6 +403,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		// Anisotropy starts to slow down after more than n threads.
 		// The 8 here is a magic number, but some upper bound is better than none.
 		final int nThreads = Math.min(cores, 8);
+		// I've tried running milOp with a parallel Stream, but for whatever reason its slower.
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final List<Future<Vector3d>> futures = generate(() -> createMILTask(interval)).limit(
 			directions).map(executor::submit).collect(toList());
