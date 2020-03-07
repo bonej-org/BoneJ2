@@ -35,7 +35,6 @@ import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -44,7 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import net.imagej.ImgPlus;
@@ -403,17 +401,16 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		// Anisotropy starts to slow down after more than n threads.
 		// The 8 here is a magic number, but some upper bound is better than none.
 		final int nThreads = Math.min(cores, 8);
-		// I've tried running milOp with a parallel Stream, but for whatever reason its slower.
+		// I've tried running milOp with a parallel Stream, but for whatever reason it's slower.
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final List<Future<Vector3d>> futures = generate(() -> createMILTask(interval)).limit(
 			directions).map(executor::submit).collect(toList());
-		final List<Vector3dc> pointCloud = Collections.synchronizedList(
-			new ArrayList<>(directions));
-		final int futuresSize = futures.size();
-		final AtomicInteger progress = new AtomicInteger();
+		final List<Vector3dc> pointCloud = new ArrayList<>(directions);
+		int progress = 0;
 		for (final Future<Vector3d> future : futures) {
-			statusService.showProgress(progress.getAndIncrement(), futuresSize);
+			statusService.showProgress(progress, directions);
 			pointCloud.add(future.get());
+			progress++;
 		}
 		shutdownAndAwaitTermination(executor);
 		return pointCloud;
