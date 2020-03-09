@@ -73,6 +73,9 @@ import org.scijava.ui.UserInterface;
  * @author Richard Domander
  */
 public class CommonTest {
+
+	private static ImageJ IMAGE_J = new ImageJ();
+
 	@Test
 	public void makeFire() {
 		final LUT lut = Common.makeFire();
@@ -80,8 +83,6 @@ public class CommonTest {
 		assertEquals(3 * 256, lut.getBytes().length);
 		assertEquals(8, lut.getPixelSize());
 	}
-
-	private static final ImageJ IMAGE_J = new ImageJ();
 
 	@Test
 	public void testToBitTypeImgPlus() throws AssertionError {
@@ -249,5 +250,6 @@ public class CommonTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
 	}
 }
