@@ -38,7 +38,6 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.bonej.ops.ellipsoid.*;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
-import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
@@ -158,9 +157,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Show secondary images")
 	private boolean showSecondaryImages = false;
 
-	//output parameters
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String outputs = "Outputs";
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
 	private List<ImgPlus> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
