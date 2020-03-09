@@ -52,12 +52,10 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
                 continue;
             }
             ridgeCursor.localize(position);
-            if(outOfBounds(innerImageDimensions, position))
-            {
-                //	continue;
-            }
             final Vector3d seed = new Vector3d(position[0], position[1], position[2]);
-            seed.sub(0.5, 0.5, 0.5);//add 0.5 to centre of pixel, and subtract 1.0 because of ridge calculated on 1-expanded image!
+            // add 0.5 to centre of pixel, and subtract 1.0 because of ridge calculated on 1-expanded image!
+            // equivalently, subtract 0.5:
+            seed.sub(0.5, 0.5, 0.5);
             seeds.add(seed);
         }
         return seeds;
@@ -94,15 +92,5 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
             }
         }
         return ridge;
-    }
-
-    private static boolean outOfBounds(final Dimensions dimensions, final long[] currentPixelPosition) {
-        for (int i = 0; i < currentPixelPosition.length; i++) {
-            final long position = currentPixelPosition[i];
-            if (position < 0 || position >= dimensions.dimension(i)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

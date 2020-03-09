@@ -94,9 +94,8 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 		final byte[][] cubeImage = getCuboidImage();
 
 		//EXECUTE
-		EllipsoidOptimisationStrategy optimisation = new EllipsoidOptimisationStrategy();
 		final ArrayList<double[]> contactPoints = new ArrayList<>();
-		optimisation.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,6,6,6);
+		EllipsoidOptimisationStrategy.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,6,6,6);
 		final double[] torque = EllipsoidOptimisationStrategy.calculateTorque(e, contactPoints);
 
 		assertEquals(0,torque[0],1e-12);
@@ -115,10 +114,11 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 		for(int x=0;x<dimension;x++) {
 			for (int y = 0; y < dimension; y++) {
 				for (int z = 0; z < dimension; z++) {
-					if (x != 0 && x != 5 && y != 0 && y != 5 && z != 5) //part of z==0 plane is on img boundary and FG
+					if (x == 0 || x == 5 || y == 0 || y == 5 || z == 5)
 					{
-						cubeImage[z][y * dimension + x] = (byte) 255;//will be -1 as byte has values in [-128,127]
+						continue;
 					}
+					cubeImage[z][y * dimension + x] = (byte) 255;//will be -1 as byte has values in [-128,127]
 				}
 			}
 		}
@@ -249,8 +249,7 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 		vectors[0][2] = -1; //-z-direction
 		vectors[1][1] = -1; //-y-direction
 		final double[][] surfacePoints = tooFarOutOfBounds.getSurfacePoints(vectors);
-		final ArrayList<double[]> surfacePointList = new ArrayList<>();
-		surfacePointList.addAll(Arrays.asList(surfacePoints));
+		final ArrayList<double[]> surfacePointList = new ArrayList<>(Arrays.asList(surfacePoints));
 
 		final EllipsoidOptimisationStrategy optimisation = (EllipsoidOptimisationStrategy) Functions.binary(ops, EllipsoidOptimisationStrategy.class, QuickEllipsoid.class,
 				new byte[10][10],

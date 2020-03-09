@@ -26,13 +26,6 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
     private int currentIteration;
     private Img<FloatType> currentAverage;
     private Img<FloatType> previousAverage;
-    private OpService opService;
-
-    public EllipsoidFactorErrorTracking(OpService opService) {
-
-        currentIteration = 0; //watch out if this is ever parallelised!
-        this.opService = opService;
-    }
 
     @Override
     public Map<String,Double> calculate(Img<FloatType> currentEllipsoidFactorImage) {
@@ -40,20 +33,18 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
         {
             previousAverage = ArrayImgs.floats(currentEllipsoidFactorImage.dimension(0),currentEllipsoidFactorImage.dimension(1),currentEllipsoidFactorImage.dimension(2));
             currentAverage =  currentEllipsoidFactorImage;
-            currentIteration++;
         }
         else
         {
             previousAverage = currentAverage;
 
-            currentAverage = (Img) opService.math().multiply(previousAverage,new FloatType(currentIteration));
-            currentAverage = (Img) opService.math().add(currentEllipsoidFactorImage, (IterableInterval<FloatType>) currentAverage);
-            currentAverage = (Img) opService.math().divide(currentAverage, new FloatType(currentIteration+1));;
-            currentIteration++;
+            currentAverage = (Img) ops().math().multiply(previousAverage,new FloatType(currentIteration));
+            currentAverage = (Img) ops().math().add(currentEllipsoidFactorImage, (IterableInterval<FloatType>) currentAverage);
+            currentAverage = (Img) ops().math().divide(currentAverage, new FloatType(currentIteration+1));
         }
+        currentIteration++;
 
-
-        final Img<FloatType> error = (Img) opService.math().subtract(previousAverage, (IterableInterval<FloatType>) currentAverage);
+        final Img<FloatType> error = (Img) ops().math().subtract(previousAverage, (IterableInterval<FloatType>) currentAverage);
         final Cursor<FloatType> cursor = error.cursor();
         while (cursor.hasNext()) {
             final float next = cursor.next().get();

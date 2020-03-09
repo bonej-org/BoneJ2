@@ -21,7 +21,8 @@ public class EllipsoidFactorErrorTrackingTest extends AbstractOpTest {
     @Test
     public void testMedian(){
         final IterableInterval<? extends RealType> toyImg = getToyImg();
-        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking(ops);
+        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking();
+        errorTracking.setEnvironment(ops);
         Map<String,Double> errorStats = errorTracking.calculate((Img<FloatType>) toyImg);
         Double median = errorStats.get("Median");
         assertEquals("Median wrong", 3.0, median, 1e-12);
@@ -30,7 +31,8 @@ public class EllipsoidFactorErrorTrackingTest extends AbstractOpTest {
     @Test
     public void testIteration(){
         final IterableInterval<? extends RealType> toyImg = getToyImg();
-        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking(ops);
+        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking();
+        errorTracking.setEnvironment(ops);
         Map<String,Double> errorStats = errorTracking.calculate((Img<FloatType>) toyImg);
         errorStats = errorTracking.calculate((Img<FloatType>) toyImg);
         Double median = errorStats.get("Median");
@@ -40,7 +42,8 @@ public class EllipsoidFactorErrorTrackingTest extends AbstractOpTest {
     @Test
     public void testMean(){
         final IterableInterval<? extends RealType> toyImg = getToyImg();
-        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking(ops);
+        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking();
+        errorTracking.setEnvironment(ops);
         Map<String,Double> errorStats = errorTracking.calculate((Img<FloatType>) toyImg);
         Double mean = errorStats.get("Mean");
         assertEquals("Mean wrong", 2.5, mean, 1e-12);
@@ -49,7 +52,8 @@ public class EllipsoidFactorErrorTrackingTest extends AbstractOpTest {
     @Test
     public void testMax(){
         final IterableInterval<? extends RealType> toyImg = getToyImg();
-        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking(ops);
+        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking();
+        errorTracking.setEnvironment(ops);
         Map<String,Double> errorStats = errorTracking.calculate((Img<FloatType>) toyImg);
         Double max = errorStats.get("Max");
         assertEquals("Max wrong", 3.5, max, 1e-12);
@@ -58,7 +62,8 @@ public class EllipsoidFactorErrorTrackingTest extends AbstractOpTest {
     @Test
     public void testMin(){
         final IterableInterval<? extends RealType> toyImg = getToyImg();
-        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking(ops);
+        final EllipsoidFactorErrorTracking errorTracking = new EllipsoidFactorErrorTracking();
+        errorTracking.setEnvironment(ops);
         Map<String,Double> errorStats = errorTracking.calculate((Img<FloatType>) toyImg);
         Double min = errorStats.get("Min");
         assertEquals("Min wrong", 1.0, min, 1e-12);

@@ -148,7 +148,7 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
-            <version>${imagej-ops.version}</version>
+            <version>${imagej-ops.version}</version><!--Needed to use imagej ops's AbstractOpTest-->
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>

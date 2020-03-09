@@ -6,12 +6,12 @@ package org.bonej.ops.ellipsoid;
  * @author Alessandro Felder
  */
 public class OptimisationParameters {
-    double vectorIncrement;
-    int nVectors;
-    int contactSensitivity;
-    int maxIterations;
-    double maxDrift;
-    double minimumSemiAxis;
+    public final double vectorIncrement;
+    public final int nVectors;
+    public final int contactSensitivity;
+    public final int maxIterations;
+    public final double maxDrift;
+    public final double minimumSemiAxis;
 
     public OptimisationParameters(double inc, int n, int cs, int maxIt, double maxDr, double minSemiAxis){
         vectorIncrement = inc;

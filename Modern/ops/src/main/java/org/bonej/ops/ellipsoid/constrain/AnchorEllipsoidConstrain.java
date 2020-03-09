@@ -15,15 +15,13 @@ public class AnchorEllipsoidConstrain implements EllipsoidConstrainStrategy {
         double[] centre = ellipsoid.getCentre();
 
         direction = new Vector3d(fixedPoint.x - centre[0], fixedPoint.y - centre[1], fixedPoint.z - centre[2]);
-        if (direction.length() > 1.e-12) {
-            direction.normalize();
-        } else {
+        if (direction.length() <= 1.e-12) {
             centre[0] = fixedPoint.x + rng.nextGaussian() * 0.1;
             centre[1] = fixedPoint.y + rng.nextGaussian() * 0.1;
             centre[2] = fixedPoint.z + rng.nextGaussian() * 0.1;
             direction = new Vector3d(fixedPoint.x - centre[0], fixedPoint.y - centre[1], fixedPoint.z - centre[2]);
-            direction.normalize();
         }
+        direction.normalize();
         surfacePointBefore = ellipsoid.getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];
     }
 

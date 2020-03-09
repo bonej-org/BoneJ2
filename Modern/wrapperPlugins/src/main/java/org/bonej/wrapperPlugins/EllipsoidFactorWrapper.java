@@ -181,7 +181,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		int totalEllipsoids = 0;
 		List<ImgPlus> outputList = null;
-		errorTracking = new EllipsoidFactorErrorTracking(opService);
+		errorTracking = new EllipsoidFactorErrorTracking();
 
 		int counter = 0;
 		for(int i = 0; i<runs; i++) {

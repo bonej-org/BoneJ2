@@ -50,8 +50,8 @@ public class EllipsoidFactorOutputGeneratorTest extends AbstractOpTest {
         final List<ImgPlus> allEfOutputs = (List<ImgPlus>) ops.run(EllipsoidFactorOutputGenerator.class,idImage,ellipsoids,true);
 
         //VERIFY
-        assertEquals("Expect 3 primary outputs", 3,primaryEfOutputs.size());
-        assertEquals("Expect 10 outputs overall", 10,allEfOutputs.size());
+        assertEquals("Wrong number of primary outputs", 3,primaryEfOutputs.size());
+        assertEquals("Wrong overall number of outputs", 10,allEfOutputs.size());
         allEfOutputs.forEach(out -> assertNotNull("No null outputs expected.", out));
     }
 
