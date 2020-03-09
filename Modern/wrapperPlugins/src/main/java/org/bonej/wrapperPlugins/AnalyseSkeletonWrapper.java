@@ -101,7 +101,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		persist = false)
 	private ImagePlus inputImage;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, columns = 1)
+	@Parameter(visibility = ItemVisibility.MESSAGE, columns = 1, persist = false)
 	private String loopSection = "-- LOOPS --";
 
 	@Parameter(label = "Cycle pruning method",
@@ -110,7 +110,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 			"Shortest branch", "Lowest intensity voxel", "Lowest intensity branch" })
 	private String pruneCycleMethod = "None";
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String endPointSection = "-- END-POINTS --";
 
 	@Parameter(label = "Prune ends",
@@ -119,10 +119,10 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 
 	@Parameter(label = "Exclude ROI from pruning",
 		description = "Exclude the current selection from pruning",
-		required = false, visibility = ItemVisibility.INVISIBLE)
+		required = false, visibility = ItemVisibility.INVISIBLE, persist = false)
 	private boolean excludeRoi;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String resultSection = "-- RESULTS AND OUTPUT --";
 
 	@Parameter(label = "Calculate largest shortest paths",
