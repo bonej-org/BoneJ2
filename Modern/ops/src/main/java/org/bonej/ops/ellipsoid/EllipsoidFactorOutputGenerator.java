@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import net.imagej.axis.Axes;
+import net.imagej.axis.AxisType;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
@@ -163,7 +165,7 @@ public class EllipsoidFactorOutputGenerator extends
         final double[] ellipsoidFactors = ellipsoids.parallelStream()
                 .mapToDouble(EllipsoidFactorOutputGenerator::computeWeightedEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactors, idImage, ellipsoidFactorImage);
-        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
+        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, "EF", new AxisType[] {Axes.X, Axes.Y, Axes.Z});
         efImage.setChannelMaximum(0,1);
         efImage.setChannelMinimum(0, -1);
         efImage.initializeColorTables(1);
@@ -175,7 +177,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> aImg = createNaNImg(idImage);
         mapValuesToImage(radii, idImage, aImg);
         Arrays.sort(radii);
-        ImgPlus radiusImage = new ImgPlus<>(aImg, name);
+        ImgPlus radiusImage = new ImgPlus<>(aImg, name, new AxisType[] {Axes.X, Axes.Y, Axes.Z});
         radiusImage.setChannelMaximum(0, radii[radii.length-1]);
         radiusImage.setChannelMinimum(0, 0.0f);
         return radiusImage;
@@ -184,7 +186,7 @@ public class EllipsoidFactorOutputGenerator extends
     private ImgPlus createAxisRatioImage(final double[] ratios, final IterableInterval idImage, String name) {
         final Img<FloatType> axisRatioImage = createNaNImg(idImage);
         mapValuesToImage(ratios, idImage, axisRatioImage);
-        ImgPlus aToBAxisRatioImage = new ImgPlus<>(axisRatioImage, name);
+        ImgPlus aToBAxisRatioImage = new ImgPlus<>(axisRatioImage, name, new AxisType[] {Axes.X, Axes.Y, Axes.Z});
         aToBAxisRatioImage.setChannelMaximum(0, 1.0f);
         aToBAxisRatioImage.setChannelMinimum(0, 0.0f);
         return aToBAxisRatioImage;
@@ -195,7 +197,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> volumeImage = createNaNImg(idImage);
         final double[] volumes = ellipsoids.parallelStream().mapToDouble(QuickEllipsoid::getVolume).toArray();
         mapValuesToImage(volumes, idImage, volumeImage);
-        ImgPlus vImage = new ImgPlus<>(volumeImage, "Volume");
+        ImgPlus vImage = new ImgPlus<>(volumeImage, "Volume", new AxisType[] {Axes.X, Axes.Y, Axes.Z});
         vImage.setChannelMaximum(0, ellipsoids.get(0).getVolume());
         vImage.setChannelMinimum(0, -1.0f);
         return vImage;
