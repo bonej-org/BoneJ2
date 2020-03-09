@@ -34,6 +34,8 @@ import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
+import static org.apache.commons.math3.util.MathArrays.shuffle;
+
 /**
  * A class that generates random lines that pass through a plane.
  * <p>
@@ -57,10 +59,11 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	private final Quaterniondc rotation;
 	private final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	private final long sections;
-	private long uSection = 0;
-	private long tSection = 0;
+	private final double sectionSize;
 	private double uOffset = 0.0;
 	private double tOffset = 0.0;
+	private final int[] order;
+	private int cycle;
 
 	/**
 	 * Creates and initializes an instance for generating lines.
@@ -91,6 +94,13 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 		this.rotation = direction;
 		this.direction = createDirection();
 		this.sections = sections;
+		sectionSize =  1.0 / sections;
+		final int sectionsSq = (int) (sections * sections);
+
+		order = new int[sectionsSq];
+		for (int i = 0; i < sectionsSq; i++) {
+			order[i] = i;
+		}
 	}
 
 
@@ -98,10 +108,10 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	 * Generates the next random line.
 	 * <p>
 	 * If the class is initialised with more than one section, then lines pass the plane cyclically
-	 * through each section. For example, if sections == 2 then first line generated passes through a random
-	 * point on the top left quarter of the plane. The fourth line passes through a point on the bottom right quarter.
-	 * For the fifth one the cycle resets, and it's top left again. The randomisation happens once
-	 * per cycle, so the four points have consistent distance between each other.
+	 * through each section. For example, if sections == 2 then the next four lines come from the four
+	 * different quadrants of the plane. Calling nextLine() for the fifth time resets the cycle.
+	 * Each line has the same random offset within its section. This offset is randomized when the
+	 * cycle resets. The order of the quadrants is randomised as well.
 	 * </p>
 	 * <p>
 	 * NB: the line might miss the interval the class was initialised with!
@@ -110,23 +120,24 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	 */
 	@Override
 	public Line nextLine() {
-		final double sectionSize = 1.0 / sections;
-		if (uSection == 0 && tSection == 0) {
+        if (cycle == 0) {
+			shuffle(order);
 			uOffset = random.nextDouble() * sectionSize;
 			tOffset = random.nextDouble() * sectionSize;
 		}
+
+		final long uSection = order[cycle] / sections;
+		final long tSection = order[cycle] - uSection * sections;
 		final double u = uSection * sectionSize + uOffset;
 		final double t = tSection * sectionSize + tOffset;
-		tSection++;
-		if (tSection >= sections) {
-			tSection = 0;
-			uSection++;
-		}
-		if (uSection >= sections) {
-			uSection = 0;
-			tSection = 0;
-		}
+
 		final Vector3dc point = createOrigin(t, u);
+
+		cycle++;
+		if (cycle >= order.length) {
+			cycle = 0;
+		}
+
 		return new Line(point, direction);
 	}
 

@@ -35,7 +35,6 @@ import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -44,7 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import net.imagej.ImgPlus;
@@ -126,7 +124,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final int DEFAULT_DIRECTIONS = 2_000;
 	// The default number of lines was found to be sensible after experimenting
 	// with data at hand. Other data may need a different number.
-	private static final int DEFAULT_LINES = 100;
+	private static final int DEFAULT_LINES = 10_000;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3dc>, Matrix4dc> solveQuadricOp;
@@ -143,11 +141,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		callback = "applyMinimum")
 	private Integer directions = DEFAULT_DIRECTIONS;
 	
-	@Parameter(label = "Lines per dimension",
-		description = "How many sampling lines are projected in both 2D directions (this number squared)",
+	@Parameter(label = "Lines per direction",
+		description = "How many lines are sampled per direction",
 		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
 		callback = "applyMinimum")
 	private Integer lines = DEFAULT_LINES;
+	private long sections;
 	
 	@Parameter(label = "Sampling increment", persist = false,
 		description = "Distance between sampling points (in voxels)",
@@ -211,6 +210,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 
 	@Override
 	public void run() {
+		sections = (long) Math.sqrt(lines);
 		statusService.showStatus("Anisotropy: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
@@ -250,8 +250,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private void calculateMILLength(final RandomAccessibleInterval<BitType> interval) {
 		final long[] dimensions = new long[interval.numDimensions()];
 		interval.dimensions(dimensions);
-		final long maxDim = Arrays.stream(dimensions).max().orElse(0L);
-		milLength = lines * lines * maxDim;
+		final double diagonal = Math.sqrt(Arrays.stream(dimensions).map(x -> x * x).sum());
+		milLength = lines * diagonal;
 	}
 
 	private void addResult(final Subspace<BitType> subspace,
@@ -354,7 +354,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
 				new Vector3d(), new Quaterniond());
 		ParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(interval, new Quaterniond(), rotateOp, lines);
+				new PlaneParallelLineGenerator(interval, new Quaterniond(), rotateOp, sections);
 		milOp = Functions.binary(opService, ParallelLineMIL.class, Vector3d.class,
 				interval, generator, milLength, samplingIncrement);
 	}
@@ -389,7 +389,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		final double[] v = qGenerator.nextVector();
 		final Quaterniond quaternion = new Quaterniond(v[0], v[1], v[2], v[3]);
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(interval, quaternion, rotateOp, lines);
+				new PlaneParallelLineGenerator(interval, quaternion, rotateOp, sections);
 		return () -> milOp.calculate(interval, generator);
 	}
 
@@ -398,22 +398,19 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		InterruptedException
 	{
 		final int cores = Runtime.getRuntime().availableProcessors();
-		// The parallellization of the the MILPlane algorithm is a memory bound
-		// problem, which is why speed gains start to drop after 5 cores. With much
-		// larger 'nThreads' it slows down due to overhead. Of course '5' here is a
-		// bit of a magic number, which might not hold true for all environments,
-		// but we need some kind of upper bound
-		final int nThreads = Math.max(5, cores);
+		// Anisotropy starts to slow down after more than n threads.
+		// The 8 here is a magic number, but some upper bound is better than none.
+		final int nThreads = Math.min(cores, 8);
+		// I've tried running milOp with a parallel Stream, but for whatever reason it's slower.
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		final List<Future<Vector3d>> futures = generate(() -> createMILTask(interval)).limit(
 			directions).map(executor::submit).collect(toList());
-		final List<Vector3dc> pointCloud = Collections.synchronizedList(
-			new ArrayList<>(directions));
-		final int futuresSize = futures.size();
-		final AtomicInteger progress = new AtomicInteger();
+		final List<Vector3dc> pointCloud = new ArrayList<>(directions);
+		int progress = 0;
 		for (final Future<Vector3d> future : futures) {
-			statusService.showProgress(progress.getAndIncrement(), futuresSize);
+			statusService.showProgress(progress, directions);
 			pointCloud.add(future.get());
+			progress++;
 		}
 		shutdownAndAwaitTermination(executor);
 		return pointCloud;

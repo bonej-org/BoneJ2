@@ -24,8 +24,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.ops.mil;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.generate;
 import static org.bonej.ops.mil.ParallelLineGenerator.Line;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -63,6 +65,7 @@ public class PlaneParallelLineGeneratorTest {
 	private static final Quaterniondc IDENTITY = new Quaterniond(new AxisAngle4d(
 		0, 0, 1, 0));
 	private static final int SIZE = 5;
+	private static final double CENTRE = SIZE * 0.5;
 	private static Img<BitType> IMG = ArrayImgs.bits(SIZE, SIZE, SIZE);
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	@Rule
@@ -129,27 +132,81 @@ public class PlaneParallelLineGeneratorTest {
 	}
 
 	@Test
-	public void testGetOriginsBinsRegions() {
+	public void testAllQuadrantsCovered() {
 		final PlaneParallelLineGenerator generator =
 				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
-		final double cX = SIZE / 2.0;
-		final double cY = SIZE / 2.0;
+
+		final long quadrants = generate(generator::nextLine).limit(4).map(l -> l.point)
+				.map(PlaneParallelLineGeneratorTest::identifyQuadrant).distinct().count();
+
+		assertEquals("There's a line missing from one or more quadrants of the plane",
+			4, quadrants);
+	}
+
+	@Test
+	public void testFirstQuadrantChanges() {
+		// SETUP
+		PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+		final int initialQuadrant = identifyQuadrant(generator.nextLine().point);
+		final int max = 100_000;
+		int generated = 0;
+		boolean changed = false;
 
 		// EXECUTE
-		final List<Line> lines = Stream.generate(generator::nextLine).limit(4).collect(toList());
+		// There's a non-zero chance that the next cycle just happens to generate the same quadrant
+		// - it is random after all. So let's repeat for good measure.
+		while (generated < max) {
+			generator = new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+			final int quadrant = identifyQuadrant(generator.nextLine().point);
+			if (quadrant != initialQuadrant) {
+				changed = true;
+			}
+			generated++;
+		}
 
-		final Vector3dc a = lines.get(0).point;
-		assertTrue("Point is in the wrong quadrant of the plane", a.x() <= cX &&
-			a.y() <= cY);
-		final Vector3dc b = lines.get(1).point;
-		assertTrue("Point is in the wrong quadrant of the plane", b.x() > cX &&
-			b.y() <= cY);
-		final Vector3dc c = lines.get(2).point;
-		assertTrue("Point is in the wrong quadrant of the plane", c.x() <= cX &&
-			c.y() > cY);
-		final Vector3dc d = lines.get(3).point;
-		assertTrue("Point is in the wrong quadrant of the plane", d.x() > cX &&
-			d.y() > cY);
+		// VERIFY
+		assertTrue("All the lines came from the same quadrant. ", changed);
+	}
+
+	@Test
+	public void testSectionOffsetChangesBetweenCycles() {
+		// SETUP
+		final PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+		final Vector3dc o = new Vector3d();
+		final String msg = "Sanity check failed - no point in the first quadrant!";
+		long generated = 0;
+		long max = 100_000;
+		boolean same = true;
+		// You have to generate exactly 4 lines in the first cycle even though we need just
+		// one point for testing. Otherwise the next cycle(s) will start from the wrong point!
+		final List<Vector3dc> firstCycle = generate(generator::nextLine).
+				limit(4).map(l -> l.point).collect(toList());
+		final Vector3dc comparison = firstCycle.stream().
+				filter(p -> identifyQuadrant(p) == 1).
+				findFirst().
+				orElseThrow(() -> new AssertionError(msg));
+
+		// EXECUTE
+		// There's a non-zero chance that the next cycle just happens to have to same offset -
+		// it is random after all. So let's repeat for good measure.
+		while (generated < max) {
+			final Vector3dc another = generate(generator::nextLine).
+					limit(4).
+					map(l -> l.point).
+					filter(p -> identifyQuadrant(p) == 1).
+					findFirst().
+					orElseThrow(() -> new AssertionError(msg));
+			if (Math.abs(o.distance(comparison) - o.distance(another)) > 1e-12) {
+				same = false;
+				break;
+			}
+			generated++;
+		}
+
+		// VERIFY
+		assertFalse("Offset stays the same between cycles", same);
 	}
 
 	@Test
@@ -164,7 +221,7 @@ public class PlaneParallelLineGeneratorTest {
 				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
 
 		// EXECUTE
-		final Stream<Line> origins = Stream.generate(generator::nextLine).limit(4);
+		final Stream<Line> origins = generate(generator::nextLine).limit(4);
 
 		// VERIFY
 		origins.forEach(l -> {
@@ -188,7 +245,7 @@ public class PlaneParallelLineGeneratorTest {
 				new PlaneParallelLineGenerator(IMG, rotation, rotateOp, 2L);
 
 		// EXECUTE
-		final Stream<Line> origins = Stream.generate(generator::nextLine).limit(4);
+		final Stream<Line> origins = generate(generator::nextLine).limit(4);
 
 		// VERIFY
 		origins.forEach(l -> {
@@ -210,5 +267,19 @@ public class PlaneParallelLineGeneratorTest {
 		IMAGE_J.context().dispose();
 		IMAGE_J = null;
 		IMG = null;
+	}
+
+	private static int identifyQuadrant(final Vector3dc v) {
+		if (v.y() <= CENTRE) {
+			if (v.x() <= CENTRE) {
+				return 1;
+			} else {
+				return 2;
+			}
+		}
+		if (v.x() <= CENTRE) {
+			return 3;
+		}
+		return 4;
 	}
 }

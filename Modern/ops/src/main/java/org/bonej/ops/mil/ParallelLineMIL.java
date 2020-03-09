@@ -90,7 +90,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	 * reaches the given value.
 	 * </p>
 	 * <p>
-	 * If left null, the length is 100.0 * d, where d = the size of the biggest dimension of the interval.
+	 * If left null, the length is 100.0 * d, where d = longest diagonal of the interval.
 	 * </p>
 	 */
 	@Parameter(required = false, persist = false)
@@ -130,12 +130,11 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 			increment = 1.0;
 		}
 		if (milLength == null) {
-			final long maxDim = getMaxDim();
-			milLength = 100.0 * maxDim;
+			milLength = 100.0 * getDiagonal();
 		}
 		double totalLength = 0.0;
 		long totalIntercepts = 0L;
-		while (totalLength < milLength) {
+		while (milLength - totalLength > 1e-12) {
 			final Line line = parallelLineGenerator.nextLine();
 			Segment segment = intersectInterval(line, interval);
 			if (segment == null) {
@@ -230,11 +229,12 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		return new ValuePair<>(length, intercepts);
 	}
 
-	private long getMaxDim() {
+	private double getDiagonal() {
 		final RandomAccessibleInterval<B> interval = in();
 		final long[] dimensions = new long[interval.numDimensions()];
 		interval.dimensions(dimensions);
-		return Arrays.stream(dimensions).max().orElse(0L);
+		final long sqSum = Arrays.stream(dimensions).map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
 	}
 
 	private long sampleSegment(final RandomAccessible<B> interval,
