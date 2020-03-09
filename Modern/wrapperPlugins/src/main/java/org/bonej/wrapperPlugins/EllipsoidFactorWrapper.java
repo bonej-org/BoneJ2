@@ -78,8 +78,10 @@ import net.imglib2.view.Views;
 
 /**
  * ImageJ plugin to describe the local geometry of a binary image in an
- * oblate/prolate spheroid space. Uses Skeletonize3D to generate a 3D skeleton,
- * the points of which are used as centres for maximally inscribed ellipsoids.
+ * oblate/prolate spheroid space. Uses Skeletonize3D to generate a 3D skeleton
+ * and/or a distance ridge-based image to generate seed points, which are used
+ * as centres for maximally inscribed ellipsoids.
+ *
  * The ellipsoid factor (EF) is a method for the local determination of the rod-
  * or plate-like nature of porous or spongy continua. EF at a point within a 3D
  * structure is defined as the difference in axis ratios of the greatest
