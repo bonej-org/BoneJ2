@@ -128,15 +128,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private String setup = "Setup";
 	@Parameter(label = "Vectors")
 	int nVectors = 100;
-	@Parameter(label = "Sampling_increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.", min="0.01", max = "0.99")
+	@Parameter(label = "Sampling increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.", min="0.01", max = "0.99")
 	private double vectorIncrement = 1 / 2.3;
-	@Parameter(label = "Skeleton_points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.", min="1")
+	@Parameter(label = "Skeleton points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.", min="1")
 	private int skipRatio = 50;
 	@Parameter(label = "Contact sensitivity", description = "Number of contacts with surface required to determine collision.", min = "1")
 	private int contactSensitivity = 1;
-	@Parameter(label = "Maximum_iterations", description = "Maximum currentIteration to try improving ellipsoid fit before stopping.", min="10")
+	@Parameter(label = "Maximum iterations", description = "Maximum currentIteration to try improving ellipsoid fit before stopping.", min="10")
 	private int maxIterations = 100;
-	@Parameter(label = "Maximum_drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
+	@Parameter(label = "Maximum drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
 	private double maxDrift = Math.sqrt(3);
 	@Parameter(label = "Minimum semi axis", description = "minimum length for the longest semi-axis needed for an ellipsoid to be valid. Defaults to unit voxel", min="0")
 	private double minimumSemiAxis = 1.0;
