@@ -251,11 +251,11 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	@Override
 	public void close() {
 		super.close();
-		if (WindowManager.getImageCount() == 0) return;
 		// clear the orientation overlay from open images
 		for (final Integer i : thetaHash.keySet()) {
 			WindowManager.getImage(i).setOverlay(null);
 		}
+		instance = null;
 	}
 
 	@Override
