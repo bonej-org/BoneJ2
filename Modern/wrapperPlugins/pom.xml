@@ -181,7 +181,6 @@
         <dependency><!-- Needed for legacy UI. Do not remove. -->
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
-            <scope>runtime</scope>
             <optional>true</optional>
             <!-- Try removing after pom-scijava 29.x.x -->
             <exclusions>
