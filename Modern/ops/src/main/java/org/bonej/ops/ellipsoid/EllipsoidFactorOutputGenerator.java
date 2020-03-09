@@ -7,6 +7,7 @@ import java.util.List;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
+import net.imagej.axis.DefaultLinearAxis;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
@@ -165,7 +166,7 @@ public class EllipsoidFactorOutputGenerator extends
         final double[] ellipsoidFactors = ellipsoids.parallelStream()
                 .mapToDouble(EllipsoidFactorOutputGenerator::computeWeightedEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactors, idImage, ellipsoidFactorImage);
-        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, "EF", new AxisType[] {Axes.X, Axes.Y, Axes.Z});
+        final ImgPlus<FloatType> efImage = createImgPlus3D(ellipsoidFactorImage, "EF");
         efImage.setChannelMaximum(0,1);
         efImage.setChannelMinimum(0, -1);
         efImage.initializeColorTables(1);
@@ -177,7 +178,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> aImg = createNaNImg(idImage);
         mapValuesToImage(radii, idImage, aImg);
         Arrays.sort(radii);
-        ImgPlus radiusImage = new ImgPlus<>(aImg, name, new AxisType[] {Axes.X, Axes.Y, Axes.Z});
+        ImgPlus radiusImage = createImgPlus3D(aImg,name);
         radiusImage.setChannelMaximum(0, radii[radii.length-1]);
         radiusImage.setChannelMinimum(0, 0.0f);
         return radiusImage;
@@ -186,7 +187,7 @@ public class EllipsoidFactorOutputGenerator extends
     private ImgPlus createAxisRatioImage(final double[] ratios, final IterableInterval idImage, String name) {
         final Img<FloatType> axisRatioImage = createNaNImg(idImage);
         mapValuesToImage(ratios, idImage, axisRatioImage);
-        ImgPlus aToBAxisRatioImage = new ImgPlus<>(axisRatioImage, name, new AxisType[] {Axes.X, Axes.Y, Axes.Z});
+        ImgPlus aToBAxisRatioImage = createImgPlus3D(axisRatioImage,name);
         aToBAxisRatioImage.setChannelMaximum(0, 1.0f);
         aToBAxisRatioImage.setChannelMinimum(0, 0.0f);
         return aToBAxisRatioImage;
@@ -197,7 +198,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> volumeImage = createNaNImg(idImage);
         final double[] volumes = ellipsoids.parallelStream().mapToDouble(QuickEllipsoid::getVolume).toArray();
         mapValuesToImage(volumes, idImage, volumeImage);
-        ImgPlus vImage = new ImgPlus<>(volumeImage, "Volume", new AxisType[] {Axes.X, Axes.Y, Axes.Z});
+        ImgPlus vImage = createImgPlus3D(volumeImage,"Volume");
         vImage.setChannelMaximum(0, ellipsoids.get(0).getVolume());
         vImage.setChannelMinimum(0, -1.0f);
         return vImage;
@@ -283,6 +284,13 @@ public class EllipsoidFactorOutputGenerator extends
                 idImage.dimension(1), idImage.dimension(3));
         img.forEach(e -> e.setReal(Float.NaN));
         return img;
+    }
+
+    private ImgPlus<FloatType> createImgPlus3D(final Img<FloatType> img, final String title) {
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "");
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "");
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "");
+        return new ImgPlus<>(img, title, xAxis, yAxis, zAxis);
     }
     //endregion
 }
