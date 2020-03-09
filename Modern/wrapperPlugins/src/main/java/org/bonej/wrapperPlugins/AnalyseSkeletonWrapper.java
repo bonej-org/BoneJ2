@@ -29,6 +29,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -50,6 +51,7 @@ import org.apache.commons.math3.util.MathArrays;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -213,7 +215,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		final SkeletonResult results = analyzeSkeleton_.run(pruneIndex, pruneEnds,
 				calculateShortestPaths, intensityImage, true, verbose, roi);
 		if (hasNoSkeletons(analyzeSkeleton_)) {
-			cancel(NO_SKELETONS);
+			cancelMacroSafe(this, NO_SKELETONS);
 			return;
 		}
 		showResults(results);
@@ -260,21 +262,21 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		// image
 		final int compositeChannelCount = dataset.getCompositeChannelCount();
 		if (compositeChannelCount != 1 || dataset.getValidBits() != 8) {
-			cancel("The intensity image needs to be 8-bit greyscale");
+			cancelMacroSafe(this, "The intensity image needs to be 8-bit greyscale");
 			return false;
 		}
 		if (AxisUtils.hasTimeDimensions(dataset)) {
-			cancel("The intensity image can't have a time dimension");
+			cancelMacroSafe(this, "The intensity image can't have a time dimension");
 			return false;
 		}
 		if (AxisUtils.hasChannelDimensions(dataset)) {
-			cancel("The intensity image can't have a channel dimension");
+			cancelMacroSafe(this, "The intensity image can't have a channel dimension");
 			return false;
 		}
 		if (AxisUtils.countSpatialDimensions(dataset) != inputImage
 			.getNDimensions())
 		{
-			cancel(
+			cancelMacroSafe(this,
 				"The intensity image should match the dimensionality of the input image");
 			return false;
 		}
@@ -312,17 +314,17 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 				return;
 			}
 			if (!convertService.supports(dataset, ImagePlus.class)) {
-				cancel("Intensity image could not be converted into an ImagePlus");
+				cancelMacroSafe(this, "Intensity image could not be converted into an ImagePlus");
 				return;
 			}
 			intensityImage = convertService.convert(dataset, ImagePlus.class);
 		}
 		catch (final FormatException e) {
-			cancel("Image format is not recognized");
+			cancelMacroSafe(this, "Image format is not recognized");
 			logService.trace(e);
 		}
 		catch (final IOException | NullPointerException e) {
-			cancel("An error occurred while opening the image");
+			cancelMacroSafe(this, "An error occurred while opening the image");
 			logService.trace(e);
 		}
 	}
@@ -433,7 +435,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
@@ -442,16 +444,16 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 		{
 			// AnalyzeSkeleton_ and Skeletonize_ cast to byte[], anything else than
 			// 8-bit will crash
-			cancel(NOT_8_BIT_BINARY_IMAGE);
+			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 
 		if (inputImage.getNChannels() > 1) {
-			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
 		if (inputImage.getNFrames() > 1) {
-			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
+			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 	}
 

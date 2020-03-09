@@ -28,6 +28,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import ij.ImagePlus;
@@ -180,7 +181,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		statusService.showProgress(0, PROGRESS_STEPS);
 		final Graph[] graphs = analyzeSkeleton(skeleton);
 		if (graphs == null || graphs.length == 0) {
-			cancel(NO_SKELETONS);
+			cancelMacroSafe(this, NO_SKELETONS);
 			return;
 		}
 		warnMultipleGraphs(graphs);
@@ -226,7 +227,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 			anglesTable = SharedTable.getTable();
 		}
 		else {
-			cancel(NO_RESULTS_MSG);
+			cancelMacroSafe(this, NO_RESULTS_MSG);
 		}
 	}
 
@@ -277,23 +278,23 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void imageValidater() {
 		if (inputImage == null) {
-			cancel(CommonMessages.NO_IMAGE_OPEN);
+			cancelMacroSafe(this, CommonMessages.NO_IMAGE_OPEN);
 			return;
 		}
 		if (inputImage.getBitDepth() != 8 || !ImagePlusUtil.isBinaryColour(
 			inputImage))
 		{
-			cancel(NOT_8_BIT_BINARY_IMAGE);
+			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 
 		if (inputImage.getNChannels() > 1) {
-			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
 
 		if (inputImage.getNFrames() > 1) {
-			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
+			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 		// Without anisotropyWarned the warning is shown twice
 		if (!anisotropyWarned) {
