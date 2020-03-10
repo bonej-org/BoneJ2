@@ -26,6 +26,7 @@ package org.bonej.wrapperPlugins;
 import static net.imagej.ops.stats.regression.leastSquares.Quadric.MIN_DATA;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -113,8 +114,8 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	@Override
 	public void run() {
 		if (!initPointROIs()) {
-			cancel("Please populate ROI Manager with at least " + MIN_DATA +
-				" point ROIs");
+			cancelMacroSafe(this, "Please populate ROI Manager with at least "
+					+ MIN_DATA + " point ROIs");
 			return;
 		}
 		statusService.showStatus("Fit ellipsoid: solving ellipsoid equation");
@@ -126,7 +127,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		final Optional<Ellipsoid> result = (Optional<Ellipsoid>) opService.run(
 			QuadricToEllipsoid.class, quadric);
 		if (!result.isPresent()) {
-			cancel("Can't fit ellipsoid to points.\n" +
+			cancelMacroSafe(this, "Can't fit ellipsoid to points.\n" +
 				"Try adding more point ROIs to the ROI Manager and try again.");
 			return;
 		}
@@ -181,11 +182,11 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 		if (!ImagePlusUtil.is3D(inputImage)) {
-			cancel(NOT_3D_IMAGE);
+			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
 		if (!Common.warnAnisotropy(inputImage, uiService)) {

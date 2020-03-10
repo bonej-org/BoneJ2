@@ -30,6 +30,7 @@ import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.display.ColorTables;
+import net.imagej.legacy.LegacyService;
 import net.imagej.ops.OpEnvironment;
 import net.imagej.ops.OpService;
 import net.imglib2.img.Img;
@@ -37,6 +38,9 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.ComplexType;
 
 import org.bonej.utilities.ImagePlusUtil;
+import org.scijava.Context;
+import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.ui.UIService;
 
 import ij.ImagePlus;
@@ -105,6 +109,28 @@ public final class Common {
 		return uiService.showDialog("The image is anisotropic " +
 			anisotropyPercent + ". Continue anyway?", WARNING_MESSAGE,
 			OK_CANCEL_OPTION) == OK_OPTION;
+	}
+
+	/**
+	 * Cancels a command so that it won't show a dialog if a macro is running
+	 * <p>
+	 * When a macro is running, an error message is logged instead
+	 * </p>
+	 * @param command Command that needs to be cancelled
+	 * @param reason A message that describes why the command is being cancelled
+	 * @see ContextCommand#cancel(String)
+	 */
+	public static void cancelMacroSafe(final ContextCommand command, final String reason) {
+		final Context context = command.context();
+		final LegacyService legacyService = context.getService(LegacyService.class);
+		if (!legacyService.getIJ1Helper().isMacro()) {
+			command.cancel(reason);
+			return;
+		}
+		// Cancelling with null won't show a dialog
+		command.cancel(null);
+		final LogService logService = context.getService(LogService.class);
+		logService.error("Plugin cancelled: " + reason);
 	}
 
 	/**

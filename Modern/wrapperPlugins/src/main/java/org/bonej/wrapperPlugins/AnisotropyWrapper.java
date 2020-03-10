@@ -29,6 +29,7 @@ import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
@@ -364,12 +365,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		try {
 			pointCloud = runDirectionsInParallel(interval);
 			if (pointCloud.size() < Quadric.MIN_DATA) {
-				cancel("Anisotropy could not be calculated - too few points");
+				cancelMacroSafe(this, "Anisotropy could not be calculated - too few points");
 				return null;
 			}
 			final Optional<Ellipsoid> ellipsoid = fitEllipsoid(pointCloud);
 			if (!ellipsoid.isPresent()) {
-				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+				cancelMacroSafe(this, "Anisotropy could not be calculated - ellipsoid fitting failed");
 				return null;
 			}
 			if (displayMILVectors) {
@@ -379,7 +380,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 		catch (final ExecutionException | InterruptedException e) {
 			logService.trace(e.getMessage());
-			cancel("The plug-in was interrupted");
+			cancelMacroSafe(this, "The plug-in was interrupted");
 		}
 		return null;
 	}
@@ -441,15 +442,15 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
-			cancel(NOT_3D_IMAGE);
+			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
 		if (!ElementUtil.isBinary(inputImage)) {
-			cancel(NOT_BINARY);
+			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
 		if (!isSpatialCalibrationsIsotropic(inputImage, 0.01, unitService) &&

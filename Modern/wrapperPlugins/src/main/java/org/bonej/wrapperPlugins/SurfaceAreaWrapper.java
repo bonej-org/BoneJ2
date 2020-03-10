@@ -27,6 +27,7 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
@@ -365,16 +366,16 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
 		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
-			cancel(NOT_3D_IMAGE);
+			cancelMacroSafe(this, NOT_3D_IMAGE);
 		}
 
 		if (!ElementUtil.isBinary(inputImage)) {
-			cancel(NOT_BINARY);
+			cancelMacroSafe(this, NOT_BINARY);
 		}
 	}
 

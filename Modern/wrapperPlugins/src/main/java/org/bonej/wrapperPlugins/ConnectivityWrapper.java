@@ -26,6 +26,7 @@ package org.bonej.wrapperPlugins;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
 import java.util.List;
@@ -213,17 +214,17 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
 		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
-			cancel(NOT_3D_IMAGE);
+			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
 
 		if (!ElementUtil.isBinary(inputImage)) {
-			cancel(NOT_BINARY);
+			cancelMacroSafe(this, NOT_BINARY);
 		}
 	}
 	// endregion

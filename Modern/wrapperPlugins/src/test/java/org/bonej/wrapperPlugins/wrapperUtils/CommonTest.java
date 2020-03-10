@@ -28,6 +28,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.endsWith;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -43,6 +45,8 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.legacy.IJ1Helper;
+import net.imagej.legacy.LegacyService;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
@@ -52,6 +56,9 @@ import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.scijava.Context;
+import org.scijava.command.ContextCommand;
+import org.scijava.log.LogService;
 import org.scijava.ui.DefaultUIService;
 import org.scijava.ui.DialogPrompt.MessageType;
 import org.scijava.ui.UIService;
@@ -66,6 +73,9 @@ import org.scijava.ui.UserInterface;
  * @author Richard Domander
  */
 public class CommonTest {
+
+	private static ImageJ IMAGE_J = new ImageJ();
+
 	@Test
 	public void makeFire() {
 		final LUT lut = Common.makeFire();
@@ -73,8 +83,6 @@ public class CommonTest {
 		assertEquals(3 * 256, lut.getBytes().length);
 		assertEquals(8, lut.getPixelSize());
 	}
-
-	private static final ImageJ IMAGE_J = new ImageJ();
 
 	@Test
 	public void testToBitTypeImgPlus() throws AssertionError {
@@ -182,8 +190,66 @@ public class CommonTest {
 		Common.warnAnisotropy(mock(ImagePlus.class), null);
 	}
 
+	@Test
+	public void testCancelMacroSafeCancelsNormallyIfNotMacro() {
+		final String reason = "No.";
+		final IJ1Helper ij1Helper = mock(IJ1Helper.class);
+		when(ij1Helper.isMacro()).thenReturn(false);
+		final LegacyService legacyService = mock(LegacyService.class);
+		when(legacyService.getIJ1Helper()).thenReturn(ij1Helper);
+		final Context context = mock(Context.class);
+		when(context.getService(LegacyService.class)).thenReturn(legacyService);
+		final ContextCommand command = mock(ContextCommand.class);
+		when(command.context()).thenReturn(context);
+
+		Common.cancelMacroSafe(command, reason);
+
+		verify(command).cancel(reason);
+	}
+
+	@Test
+	public void testCancelMacroSafeLogsErrorWhenMacro() {
+		final String reason = "No.";
+		final String expectedError = "Plugin cancelled: " + reason;
+		final IJ1Helper ij1Helper = mock(IJ1Helper.class);
+		when(ij1Helper.isMacro()).thenReturn(true);
+		final LogService logService = mock(LogService.class);
+		final LegacyService legacyService = mock(LegacyService.class);
+		when(legacyService.getIJ1Helper()).thenReturn(ij1Helper);
+		final Context context = mock(Context.class);
+		when(context.getService(LegacyService.class)).thenReturn(legacyService);
+		when(context.getService(LogService.class)).thenReturn(logService);
+		final ContextCommand command = mock(ContextCommand.class);
+		when(command.context()).thenReturn(context);
+
+		Common.cancelMacroSafe(command, reason);
+
+		verify(logService).error(expectedError);
+	}
+
+
+	@Test
+	public void testCancelMacroSafeCancelsWithNullWhenMacro() {
+		final String reason = "No.";
+		final IJ1Helper ij1Helper = mock(IJ1Helper.class);
+		when(ij1Helper.isMacro()).thenReturn(true);
+		final LogService logService = mock(LogService.class);
+		final LegacyService legacyService = mock(LegacyService.class);
+		when(legacyService.getIJ1Helper()).thenReturn(ij1Helper);
+		final Context context = mock(Context.class);
+		when(context.getService(LegacyService.class)).thenReturn(legacyService);
+		when(context.getService(LogService.class)).thenReturn(logService);
+		final ContextCommand command = mock(ContextCommand.class);
+		when(command.context()).thenReturn(context);
+
+		Common.cancelMacroSafe(command, reason);
+
+		verify(command).cancel(null);
+	}
+
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
 	}
 }

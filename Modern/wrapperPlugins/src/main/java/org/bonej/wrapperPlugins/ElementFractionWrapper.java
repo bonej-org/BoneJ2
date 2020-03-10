@@ -26,6 +26,7 @@ package org.bonej.wrapperPlugins;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.WEIRD_SPATIAL;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -178,17 +179,17 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>>
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
 		if (!ElementUtil.isBinary(inputImage)) {
-			cancel(NOT_BINARY);
+			cancelMacroSafe(this, NOT_BINARY);
 		}
 
 		final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
 		if (spatialDimensions < 2 || spatialDimensions > 3) {
-			cancel(WEIRD_SPATIAL);
+			cancelMacroSafe(this, WEIRD_SPATIAL);
 		}
 	}
 	// endregion

@@ -58,7 +58,7 @@ import ij.measure.Calibration;
  */
 public class ResultUtilsTest {
 
-	private static final Contextual IMAGE_J = new ImageJ();
+	private static Contextual IMAGE_J = new ImageJ();
 	private static final UnitService unitService = IMAGE_J.context().getService(
 		UnitService.class);
 
@@ -222,5 +222,6 @@ public class ResultUtilsTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
 	}
 }
