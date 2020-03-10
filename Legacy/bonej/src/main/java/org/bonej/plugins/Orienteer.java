@@ -51,8 +51,10 @@ import java.awt.event.WindowEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -88,14 +90,14 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 							"axial", "abaxial", "Ax", "Ab" }, { "north", "south", "N", "S" },
 		{ "east", "west", "E", "W" }, { "up", "down", "Up", "D" }, { "right",
 			"left", "R", "L" } };
-	private static Orienteer instance = new Orienteer();
-	private final Map<Integer, Double> thetaHash = new HashMap<>();
-	private final Map<Integer, Integer> lengthHash = new HashMap<>();
-	private final Map<Integer, Point> centreHash = new HashMap<>();
-	private final Map<Integer, GeneralPath> pathHash = new HashMap<>();
-	private final Map<Integer, int[]> axisHash = new HashMap<>();
-	private final Map<Integer, boolean[]> reflectHash = new HashMap<>();
-	private final Map<Integer, boolean[]> unitHash = new HashMap<>();
+	private static Orienteer instance;
+	private final Map<Integer, Double> thetaHash = new Hashtable<>();
+	private final Map<Integer, Integer> lengthHash = new Hashtable<>();
+	private final Map<Integer, Point> centreHash = new Hashtable<>();
+	private final Map<Integer, GeneralPath> pathHash = new Hashtable<>();
+	private final Map<Integer, int[]> axisHash = new Hashtable<>();
+	private final Map<Integer, boolean[]> reflectHash = new Hashtable<>();
+	private final Map<Integer, boolean[]> unitHash = new Hashtable<>();
 	private final Overlay overlay = new Overlay();
 	private final int fontSize = 12;
 	private final Scrollbar slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0,
@@ -127,7 +129,7 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	private boolean isReflected0;
 	private boolean isReflected1;
 
-	private Orienteer() {
+	public Orienteer() {
 		super("Orientation");
 		if (instance != null) {
 			if (instance.getTitle().equals(getTitle())) {
@@ -234,6 +236,8 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 		if (WindowManager.getImageCount() == 0) return;
 		final ImagePlus imp = WindowManager.getCurrentImage();
 		setup(imp);
+
+		UsageReporter.reportEvent(this).send();
 	}
 
 	@Override
@@ -247,11 +251,11 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	@Override
 	public void close() {
 		super.close();
-		if (WindowManager.getImageCount() == 0) return;
 		// clear the orientation overlay from open images
 		for (final Integer i : thetaHash.keySet()) {
 			WindowManager.getImage(i).setOverlay(null);
 		}
+		instance = null;
 	}
 
 	@Override
@@ -505,7 +509,6 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 		final boolean[] units = { deg.getState(), rad.getState() };
 		unitHash.put(id, units);
 		updateTextbox();
-		UsageReporter.reportEvent(this).send();
 	}
 
 	private void update() {
