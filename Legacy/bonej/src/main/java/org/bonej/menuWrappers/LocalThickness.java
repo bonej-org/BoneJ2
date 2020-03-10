@@ -30,12 +30,8 @@ import ij.ImagePlus;
 import sc.fiji.localThickness.LocalThicknessWrapper;
 
 /**
- * A wrapper plugin to add the LocalThickness plugin under BoneJ menu path.
- * <p>
- * Also shows a custom setup dialog that introduces new options, and overrides
- * the options in the original LocalThickness plugin. Displays additional
- * incompatibility warnings to the user.
- * </p>
+ * A helper class that allows Legacy plugins to call sc.fiji_LocalThickness_
+ * like they called Thickness in BoneJ1
  *
  * @author Michael Doube
  * @author Richard Domander
