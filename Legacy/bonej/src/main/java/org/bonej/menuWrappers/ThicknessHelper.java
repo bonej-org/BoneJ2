@@ -38,7 +38,7 @@ import sc.fiji.localThickness.LocalThicknessWrapper;
  * @deprecated Replaced by ThicknessWrapper in BoneJ2
  */
 @Deprecated
-public class LocalThickness {
+public class ThicknessHelper {
 
 	 /**
 	 * Get a local thickness map from an ImagePlus with optional masking

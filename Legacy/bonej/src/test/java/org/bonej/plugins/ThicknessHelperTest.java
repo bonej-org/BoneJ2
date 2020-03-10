@@ -28,19 +28,19 @@ import static org.junit.Assert.assertEquals;
 import ij.ImageStack;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
-import org.bonej.menuWrappers.LocalThickness;
+import org.bonej.menuWrappers.ThicknessHelper;
 import org.bonej.util.TestDataMaker;
 import org.junit.Test;
 
 import ij.ImagePlus;
 
-public class LocalThicknessTest {
+public class ThicknessHelperTest {
 
 	@Test
 	public void testGetLocalThicknessRod() {
 		for (int d = 1; d < 25; d += 1) {
 			final ImagePlus rod = rod(d * 100, d);
-			final ImagePlus imp = LocalThickness.getLocalThickness(rod, false);
+			final ImagePlus imp = ThicknessHelper.getLocalThickness(rod, false);
 			final double[] stats = meanStdDev(imp);
 			assertEquals(d, stats[0], 1.5);
 		}
@@ -50,7 +50,7 @@ public class LocalThicknessTest {
 	public void testGetLocalThicknessSphere() {
 		for (int r = 2; r < 25; r++) {
 			final ImagePlus sphere = sphere(r);
-			final ImagePlus imp = LocalThickness.getLocalThickness(sphere, false);
+			final ImagePlus imp = ThicknessHelper.getLocalThickness(sphere, false);
 			final double[] stats = meanStdDev(imp);
 			final double regression = r * 1.9441872882 - 1.218936;
 			assertEquals(regression, stats[0], regression * 0.1);
@@ -61,7 +61,7 @@ public class LocalThicknessTest {
 	public void testGetLocalThicknessBrick() {
 		for (int t = 1; t < 21; t++) {
 			final ImagePlus brick = TestDataMaker.brick(128, 128, t);
-			final ImagePlus imp = LocalThickness.getLocalThickness(brick, false);
+			final ImagePlus imp = ThicknessHelper.getLocalThickness(brick, false);
 			final double[] stats = meanStdDev(imp);
 			int expected = t;
 			// pixelation and *2 (radius to diameter conversion) weirdness

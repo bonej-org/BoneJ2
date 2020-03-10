@@ -30,7 +30,7 @@ import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bonej.menuWrappers.LocalThickness;
+import org.bonej.menuWrappers.ThicknessHelper;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.scijava.vecmath.Point3f;
@@ -247,7 +247,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		double[][] thick = new double[nParticles][2];
 		if (doThickness) {
-			final ImagePlus thickImp = LocalThickness.getLocalThickness(imp, false, doMask);
+			final ImagePlus thickImp = ThicknessHelper.getLocalThickness(imp, false, doMask);
 			thick = ParticleAnalysis.getMeanStdDev(thickImp, particleLabels, particleSizes);
 			if (doThickImage) {
 				double max = 0;

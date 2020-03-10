@@ -30,9 +30,8 @@ import java.awt.Rectangle;
 import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
-import org.bonej.menuWrappers.LocalThickness;
+import org.bonej.menuWrappers.ThicknessHelper;
 import org.bonej.util.BoneList;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
@@ -713,7 +712,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		// convert to binary
 		final ImagePlus binaryImp = convertToBinary(imp, min, max);
 
-		final ImagePlus thickImp = LocalThickness.getLocalThickness(binaryImp, false, doMask);
+		final ImagePlus thickImp = ThicknessHelper.getLocalThickness(binaryImp, false, doMask);
 
 		for (int s = startSlice; s <= endSlice; s++) {
 			if (emptySlices[s]) {
@@ -1001,7 +1000,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				final Calibration cal = impT.getCalibration();
 				binaryImp.setCalibration(cal);
 				// calculate thickness
-				final ImagePlus thickImp = LocalThickness.getLocalThickness(binaryImp, false,
+				final ImagePlus thickImp = ThicknessHelper.getLocalThickness(binaryImp, false,
 					doMask);
 				final FloatProcessor thickIp = (FloatProcessor) thickImp.getProcessor();
 				double sumPix = 0;
