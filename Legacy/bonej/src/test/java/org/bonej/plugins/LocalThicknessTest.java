@@ -38,10 +38,9 @@ public class LocalThicknessTest {
 
 	@Test
 	public void testGetLocalThicknessRod() {
-		final LocalThickness th = new LocalThickness();
 		for (int d = 1; d < 25; d += 1) {
 			final ImagePlus rod = rod(d * 100, d);
-			final ImagePlus imp = th.getLocalThickness(rod, false);
+			final ImagePlus imp = LocalThickness.getLocalThickness(rod, false);
 			final double[] stats = meanStdDev(imp);
 			assertEquals(d, stats[0], 1.5);
 		}
@@ -49,10 +48,9 @@ public class LocalThicknessTest {
 
 	@Test
 	public void testGetLocalThicknessSphere() {
-		final LocalThickness th = new LocalThickness();
 		for (int r = 2; r < 25; r++) {
 			final ImagePlus sphere = sphere(r);
-			final ImagePlus imp = th.getLocalThickness(sphere, false);
+			final ImagePlus imp = LocalThickness.getLocalThickness(sphere, false);
 			final double[] stats = meanStdDev(imp);
 			final double regression = r * 1.9441872882 - 1.218936;
 			assertEquals(regression, stats[0], regression * 0.1);
@@ -61,10 +59,9 @@ public class LocalThicknessTest {
 
 	@Test
 	public void testGetLocalThicknessBrick() {
-		final LocalThickness th = new LocalThickness();
 		for (int t = 1; t < 21; t++) {
 			final ImagePlus brick = TestDataMaker.brick(128, 128, t);
-			final ImagePlus imp = th.getLocalThickness(brick, false);
+			final ImagePlus imp = LocalThickness.getLocalThickness(brick, false);
 			final double[] stats = meanStdDev(imp);
 			int expected = t;
 			// pixelation and *2 (radius to diameter conversion) weirdness

@@ -709,12 +709,11 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		meanCortThick3D = new double[al];
 		stdevCortThick3D = new double[al];
 		final Rectangle r = imp.getProcessor().getRoi();
-		final LocalThickness th = new LocalThickness();
 
 		// convert to binary
 		final ImagePlus binaryImp = convertToBinary(imp, min, max);
 
-		final ImagePlus thickImp = th.getLocalThickness(binaryImp, false, doMask);
+		final ImagePlus thickImp = LocalThickness.getLocalThickness(binaryImp, false, doMask);
 
 		for (int s = startSlice; s <= endSlice; s++) {
 			if (emptySlices[s]) {
@@ -1002,8 +1001,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				final Calibration cal = impT.getCalibration();
 				binaryImp.setCalibration(cal);
 				// calculate thickness
-				final LocalThickness th = new LocalThickness();
-				final ImagePlus thickImp = th.getLocalThickness(binaryImp, false,
+				final ImagePlus thickImp = LocalThickness.getLocalThickness(binaryImp, false,
 					doMask);
 				final FloatProcessor thickIp = (FloatProcessor) thickImp.getProcessor();
 				double sumPix = 0;

@@ -247,8 +247,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		double[][] thick = new double[nParticles][2];
 		if (doThickness) {
-			final LocalThickness th = new LocalThickness();
-			final ImagePlus thickImp = th.getLocalThickness(imp, false, doMask);
+			final ImagePlus thickImp = LocalThickness.getLocalThickness(imp, false, doMask);
 			thick = ParticleAnalysis.getMeanStdDev(thickImp, particleLabels, particleSizes);
 			if (doThickImage) {
 				double max = 0;
