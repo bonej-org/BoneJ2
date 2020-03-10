@@ -29,7 +29,6 @@ import ij.ImageStack;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 import org.bonej.menuWrappers.ThicknessHelper;
-import org.bonej.util.TestDataMaker;
 import org.junit.Test;
 
 import ij.ImagePlus;
@@ -60,7 +59,7 @@ public class ThicknessHelperTest {
 	@Test
 	public void testGetLocalThicknessBrick() {
 		for (int t = 1; t < 21; t++) {
-			final ImagePlus brick = TestDataMaker.brick(128, 128, t);
+			final ImagePlus brick = brick(128, 128, t);
 			final ImagePlus imp = ThicknessHelper.getLocalThickness(brick, false);
 			final double[] stats = meanStdDev(imp);
 			int expected = t;
@@ -158,5 +157,32 @@ public class ThicknessHelperTest {
 		final ImageProcessor ipe = new ByteProcessor(side, side);
 		stack.addSlice("", ipe); // padding
 		return new ImagePlus("sphere", stack);
+	}
+
+	/**
+	 * Create a binary brick of arbitrary width, height and depth, padded with 1
+	 * voxel of background on all faces.
+	 *
+	 * @param width width of the brick.
+	 * @param height height of the brick.
+	 * @param depth depth of the brick.
+	 * @return image with brick in foreground
+	 */
+	private static ImagePlus brick(final int width, final int height,
+								  final int depth)
+	{
+		final ImageStack stack = new ImageStack(width + 2, height + 2);
+		final ImageProcessor ip = new ByteProcessor(width + 2, height + 2);
+		stack.addSlice("", ip);
+		for (int i = 0; i < depth; i++) {
+			final ImageProcessor ip2 = new ByteProcessor(width + 2, height + 2);
+			ip2.setColor(255);
+			ip2.setRoi(1, 1, width, height);
+			ip2.fill();
+			stack.addSlice("", ip2);
+		}
+		final ImageProcessor ip3 = new ByteProcessor(width + 2, height + 2);
+		stack.addSlice("", ip3);
+		return new ImagePlus("brick", stack);
 	}
 }
