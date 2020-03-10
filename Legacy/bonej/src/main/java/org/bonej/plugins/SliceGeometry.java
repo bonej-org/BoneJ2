@@ -30,6 +30,7 @@ import java.awt.Rectangle;
 import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 import org.bonej.menuWrappers.LocalThickness;
 import org.bonej.util.BoneList;
@@ -183,13 +184,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		if (isHUCalibrated) DialogModifier.replaceUnitString(gd, "grey", "HU");
 		else DialogModifier.replaceUnitString(gd, "HU", "grey");
 
-		final Checkbox oriented = (Checkbox) checkboxes.get(9);
-		if (orienteer == null) {
-			oriented.setState(false);
-			oriented.setEnabled(false);
-		}
-		else oriented.setEnabled(true);
-
 		DialogModifier.registerMacroValues(gd, gd.getComponents());
 		return true;
 	}
@@ -233,7 +227,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		gd.addCheckbox("3D_Annotation", false);
 		gd.addCheckbox("Process_Stack", false);
 		gd.addCheckbox("Clear_results", false);
-		gd.addCheckbox("Use_Orientation", (orienteer != null));
+		initOrientationCheckBox(gd);
 		gd.addCheckbox("HU_Calibrated", ImageCheck.huCalibrated(imp));
 		gd.addNumericField("Bone_Min:", thresholds[0], 1, 6, pixUnits + " ");
 		gd.addNumericField("Bone_Max:", thresholds[1], 1, 6, pixUnits + " ");
@@ -370,6 +364,13 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			show3DAxes(imp);
 		}
 		UsageReporter.reportEvent(this).send();
+	}
+
+	private void initOrientationCheckBox(final GenericDialog gd) {
+		gd.addCheckbox("Use_Orientation", (orienteer != null));
+		final Checkbox checkBox = (Checkbox) gd.getCheckboxes().lastElement();
+		checkBox.setState(orienteer != null);
+		checkBox.setEnabled(orienteer != null);
 	}
 
 	/**
