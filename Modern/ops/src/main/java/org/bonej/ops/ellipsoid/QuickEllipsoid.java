@@ -21,6 +21,7 @@ public class QuickEllipsoid {
 	private RandomGenerator rng = new MersenneTwister();
 	private UnitSphereRandomVectorGenerator sphereRng = new UnitSphereRandomVectorGenerator(3,rng);
 	private final double[][] sphereVectors;
+	public int shift;
 	/**
 	 * Eigenvalue matrix. Size-based ordering is not performed. They are in the same
 	 * order as the eigenvectors.
@@ -73,8 +74,9 @@ public class QuickEllipsoid {
 		eh = new double[3][3];
 		setRotation(eigenVectors);
 		setEigenvalues();
-		sphereVectors = new double[200][3];
-		for(int i = 0; i<200; i++)
+		sphereVectors = new double[400][3];
+		shift = 0;
+		for(int i = 0; i<400; i++)
 		{
 			sphereVectors[i] = sphereRng.nextVector();
 		}
@@ -326,13 +328,15 @@ public class QuickEllipsoid {
 				surfacePointsFound++;
 			}
 		}
+		shift = (shift+1)%4;
 		return surfacePoints;
 	}
 
 	private double[] getNextVector(int i) {
 		if(i<sphereVectors.length)
 		{
-			return new double[]{sphereVectors[i][0], sphereVectors[i][1],sphereVectors[i][2]};
+			int index = shift+i;
+			return new double[]{sphereVectors[index][0], sphereVectors[index][1],sphereVectors[index][2]};
 		}
 		else{
 			System.out.println("dynamic vector finding");
