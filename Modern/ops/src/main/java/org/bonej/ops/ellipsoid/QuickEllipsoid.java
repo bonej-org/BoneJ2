@@ -20,6 +20,12 @@ public class QuickEllipsoid {
 
 	private RandomGenerator rng = new MersenneTwister();
 	private UnitSphereRandomVectorGenerator sphereRng = new UnitSphereRandomVectorGenerator(3,rng);
+	private final static int randomNumberRefreshmentPeriodicity = 100;
+	private final static int numberOfPreallocatedRandomNumbers = 150;
+	private int lastRefreshed = 0;
+	private double[][] sphereRandomVectors;
+	private double[] uniformRandomNumbers;
+
 	/**
 	 * Eigenvalue matrix. Size-based ordering is not performed. They are in the same
 	 * order as the eigenvectors.
@@ -308,19 +314,42 @@ public class QuickEllipsoid {
 	}
 
 	public double[][] getAxisAlignRandomlyDistributedSurfacePoints(int n) {
+		refreshRandomNumbersIfNeeded();
+
 		final double[] sortedRadii = getSortedRadii();
 		final double muMax = sortedRadii[1]* sortedRadii[2];
 		final double[][] surfacePoints = new double[n][3];
 		int surfacePointsFound = 0;
+		int attemptCounter = 0;
 		while (surfacePointsFound<n) {
-			final double[] v = sphereRng.nextVector();
+			final double[] v =  (attemptCounter<numberOfPreallocatedRandomNumbers)? sphereRandomVectors[attemptCounter] : sphereRng.nextVector();
 			final double mu = getMu(v);
-			if(rng.nextDouble()<=mu/muMax) {
+			double rn = (attemptCounter<numberOfPreallocatedRandomNumbers) ? uniformRandomNumbers[attemptCounter] : rng.nextDouble();
+			if(rn<=mu/muMax) {
 				surfacePoints[surfacePointsFound] = new double[]{v[0], v[1], v[2]};
 				surfacePointsFound++;
 			}
+			attemptCounter++;
 		}
 		return surfacePoints;
+	}
+
+	private void refreshRandomNumbersIfNeeded() {
+		if(sphereRandomVectors==null)
+		{
+			sphereRandomVectors = new double[numberOfPreallocatedRandomNumbers][3];
+			uniformRandomNumbers = new double[numberOfPreallocatedRandomNumbers];
+		}
+
+		if((lastRefreshed % randomNumberRefreshmentPeriodicity)==0)
+		{
+			for(int i=0;i<numberOfPreallocatedRandomNumbers;i++)
+			{
+				sphereRandomVectors[i] = sphereRng.nextVector();
+				uniformRandomNumbers[i] = rng.nextDouble();
+			}
+		}
+		lastRefreshed++;
 	}
 
 	private double getMu(final double[] v) {
