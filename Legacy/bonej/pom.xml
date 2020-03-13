@@ -118,11 +118,19 @@
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
+            <artifactId>VIB_</artifactId>
+        </dependency>
+                <dependency>
+            <groupId>sc.fiji</groupId>
+            <artifactId>AnalyzeSkeleton_</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>sc.fiji</groupId>
             <artifactId>LocalThickness_</artifactId>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
-            <artifactId>VIB_</artifactId>
+            <artifactId>Skeletonize3D_</artifactId>
         </dependency>
 
         <!-- Other dependencies -->
