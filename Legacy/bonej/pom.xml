@@ -118,10 +118,6 @@
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
-            <artifactId>VIB_</artifactId>
-        </dependency>
-                <dependency>
-            <groupId>sc.fiji</groupId>
             <artifactId>AnalyzeSkeleton_</artifactId>
         </dependency>
         <dependency>
