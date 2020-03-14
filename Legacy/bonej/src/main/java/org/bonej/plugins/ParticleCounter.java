@@ -45,6 +45,7 @@ import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
 import ij3d.Image3DUniverse;
+import sc.fiji.analyzeSkeleton.SkeletonResult;
 
 /**
  * <p>
@@ -106,8 +107,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final String units = cal.getUnits();
 		final GenericDialog gd = new GenericDialog("Setup");
 		final String[] headers = { "Measurement Options", " " };
-		final String[] labels = new String[10];
-		final boolean[] defaultValues = new boolean[10];
+		final String[] labels = new String[12];
+		final boolean[] defaultValues = new boolean[12];
 		labels[0] = "Exclude on sides";
 		defaultValues[0] = false;
 		labels[1] = "Surface_area";
@@ -128,7 +129,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues[8] = true;
 		labels[9] = "Record unit vectors";
 		defaultValues[9] = false;
-		gd.addCheckboxGroup(5, 2, labels, defaultValues, headers);
+		labels[10] = "Skeletons";
+		defaultValues[10] = false;
+		gd.addCheckboxGroup(6, 2, labels, defaultValues, headers);
 		gd.addNumericField("Min Volume", 0, 3, 7, units + "³");
 		gd.addNumericField("Max Volume", Double.POSITIVE_INFINITY, 3, 7, units +
 			"³");
@@ -178,6 +181,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean doMask = gd.getNextBoolean();
 		final boolean doEllipsoids = gd.getNextBoolean();
 		final boolean doVerboseUnitVectors = gd.getNextBoolean();
+		final boolean doSkeletons = gd.getNextBoolean();
 		final boolean doParticleImage = gd.getNextBoolean();
 		final boolean doParticleSizeImage = gd.getNextBoolean();
 		final boolean doThickImage = gd.getNextBoolean();
@@ -262,6 +266,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		if (doEllipsoids || doEllipsoidImage || doEllipsoidStack) {
 			ellipsoids = ParticleAnalysis.getEllipsoids(surfacePoints);
 		}
+		SkeletonResult[] skeletonResults = null;
+		if (doSkeletons) {
+			skeletonResults = ParticleAnalysis.getBranchLength(imp, particleLabels, limits, nParticles);
+		}
 
 		// Show numerical results
 		final ResultsTable rt = new ResultsTable();
@@ -299,6 +307,20 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						rt.addValue("vY2", E.getV().get(1, 2));
 						rt.addValue("vZ2", E.getV().get(2, 2));
 					}
+				}
+				if (doSkeletons) {
+					int nBranches = 0;
+					double branchesLength = Double.NaN;
+					final SkeletonResult skeletonResult = skeletonResults[i];
+					if (skeletonResult.getNumOfTrees() == 0) {
+						IJ.log("No skeleton found for particle "+i);
+					} else {
+					    nBranches = skeletonResults[i].getBranches()[0];
+					    branchesLength = skeletonResults[i].getAverageBranchLength()[0]
+					    		* nBranches;
+					}
+					rt.addValue("n Branches", nBranches);
+					rt.addValue("Branches length ("+units+")", branchesLength);
 				}
 				if (doEulerCharacters) {
 					rt.addValue("Euler (χ)", eulerCharacters[i][0]);

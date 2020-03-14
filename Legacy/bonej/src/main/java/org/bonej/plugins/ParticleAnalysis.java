@@ -41,7 +41,11 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
+import ij.plugin.filter.PlugInFilter;
 import marchingcubes.MCTriangulator;
+import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
+import sc.fiji.analyzeSkeleton.SkeletonResult;
+import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
  * Perform analysis of particles
@@ -515,6 +519,47 @@ public class ParticleAnalysis {
 			eulerCharacters[p] = bettis;
 		}
 		return eulerCharacters;
+	}
+	
+	/**
+	 * Calculate number of branches and total branch length by running Skeletonize3D
+	 * and Analyze Skeleton on each particle.
+	 * 
+	 * <p>
+	 * Calls {@link AnalyzeSkeleton_#run()} with no arguments.
+	 * </p>
+	 *  
+	 * @param imp            Input image
+	 * @param particleLabels particle label array
+	 * @param limits         xyz limits of each particle
+	 * @param nParticles     number of particles
+	 * @return array of {@link SkeletonResult} result objects. Use methods therein
+	 *         to get specific results out. Each result is a list of trees, but
+	 *         there should be only one tree per particle so its result is at [0].
+	 */
+	static SkeletonResult[] getBranchLength(final ImagePlus imp,
+			final int[][] particleLabels, final int[][] limits, final int nParticles)
+	{
+		final SkeletonResult[] skeletonResults = new SkeletonResult[nParticles];
+		final Thread[] threads = Multithreader.newThreads();
+		final AtomicInteger ai = new AtomicInteger(1);
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+				final AnalyzeSkeleton_ analyzeSkeleton_ = new AnalyzeSkeleton_();
+				for (int i = ai.getAndIncrement(); i < nParticles; i = ai.getAndIncrement()) {
+					final ImagePlus particleImp = getBinaryParticle(i, imp, particleLabels,
+							limits, 1);
+					skeletoniser.setup("", particleImp);
+					skeletoniser.run(null);
+					analyzeSkeleton_.setup("", particleImp);
+					final SkeletonResult skeletonResult = analyzeSkeleton_.run();
+					skeletonResults[i] = skeletonResult;
+				}
+			});
+		}
+		Multithreader.startAndJoin(threads);
+		return skeletonResults;
 	}
 
 	/**

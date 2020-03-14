@@ -110,10 +110,6 @@
             <groupId>gov.nist.math</groupId>
             <artifactId>jama</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>vecmath</artifactId>
-        </dependency>
 
         <!-- Test dependencies -->
         <dependency>
