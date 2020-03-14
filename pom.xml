@@ -119,6 +119,7 @@
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>deploy-to-scijava</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
+        <LocalThickness_.version>4.0.3</LocalThickness_.version>
     </properties>
 
     <repositories>
