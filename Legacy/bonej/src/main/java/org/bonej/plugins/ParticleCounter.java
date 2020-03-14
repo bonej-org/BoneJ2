@@ -266,7 +266,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		if (doEllipsoids || doEllipsoidImage || doEllipsoidStack) {
 			ellipsoids = ParticleAnalysis.getEllipsoids(surfacePoints);
 		}
-		SkeletonResult[] skeletonResults = new SkeletonResult[nParticles];
+		SkeletonResult[] skeletonResults = null;
 		if (doSkeletons) {
 			skeletonResults = ParticleAnalysis.getBranchLength(imp, particleLabels, limits, nParticles);
 		}
