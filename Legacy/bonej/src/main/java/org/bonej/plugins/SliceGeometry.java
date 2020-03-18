@@ -129,7 +129,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private boolean[] emptySlices;
 	/** List of slice centroids */
 	private double[][] sliceCentroids;
-	private double[] integratedDensity;
 	private double[] meanDensity;
 	private double m;
 	private double c;
@@ -241,7 +240,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		gd.addCheckbox("Partial_volume_compensation", false);
 		gd.addNumericField("Background", thresholds[0], 1, 6, pixUnits + " ");
 		gd.addNumericField("Foreground", thresholds[1], 1, 6, pixUnits + " ");
-		gd.addHelp("http://bonej.org/slice");
+		gd.addHelp("https://imagej.net/BoneJ2#Slice_geometry");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		final String bone = gd.getNextChoice();
@@ -276,6 +275,10 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		doPartialVolume = gd.getNextBoolean();
 		background = gd.getNextNumber();
 		foreground = gd.getNextNumber();
+		if (background >= foreground || min >= max) {
+			IJ.showMessage("Slice Geometry", "Background value must be less than foreground value.");
+			return;
+		}
 		if (isHUCalibrated) {
 			min = cal.getRawValue(min);
 			max = cal.getRawValue(max);
@@ -454,7 +457,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		emptySlices = new boolean[al];
 		cslice = new double[al];
 		cortArea = new double[al];
-		integratedDensity = new double[al];
 		meanDensity = new double[al];
 		weightedCentroids = new double[2][al];
 		final double pixelArea = vW * vH;
@@ -489,11 +491,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			}
 			cslice[s] = count;
 			if (count > 0) {
-				// if !doPatialVolume then sumAreaFractions = count
 				sliceCentroids[0][s] = sumX * vW / sumAreaFractions;
 				sliceCentroids[1][s] = sumY * vH / sumAreaFractions;
 				cortArea[s] = sumAreaFractions * pixelArea;
-				integratedDensity[s] = sumD;
 				meanDensity[s] = sumD / count;
 				weightedCentroids[0][s] = wSumX * vW / sumD;
 				weightedCentroids[1][s] = wSumY * vH / sumD;
@@ -869,7 +869,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	 * @param imp Original image
 	 */
 	private void show3DAxes(final ImagePlus imp) {
-		final Calibration cal = imp.getCalibration();
 		// copy the data from inside the ROI and convert it to 8-bit
 		final Duplicator d = new Duplicator();
 		final ImagePlus roiImp = d.run(imp, 1, imp.getImageStackSize());
@@ -971,8 +970,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		// show the stack
 		try {
 			new StackConverter(roiImp).convertToGray8();
-			final Content c = univ.addVoltex(roiImp);
-			c.setLocked(true);
+			final Content content = univ.addVoltex(roiImp);
+			content.setLocked(true);
 		}
 		catch (final NullPointerException npe) {
 			IJ.log("3D Viewer was closed before rendering completed.");
@@ -1079,10 +1078,12 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	 * @return fraction of pixel 'size' occupied by foreground
 	 */
 	private double filledFraction(final double pixel) {
-		if (pixel > foreground)
+		if (pixel > foreground) {
 			return 1;
-		if (pixel < background)
+		}
+		if (pixel < background) {
 			return 0;
+		}
 		return (pixel - background) / (foreground - background);
 	}
 }
