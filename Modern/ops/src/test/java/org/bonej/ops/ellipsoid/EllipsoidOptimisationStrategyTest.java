@@ -230,7 +230,7 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 
 
 	/**
-	 * test for {@link EllipsoidOptimisationStrategy#isInvalid(QuickEllipsoid, ArrayList, int, int, int)}
+	 * test for {@link EllipsoidOptimisationStrategy#isInvalid(QuickEllipsoid, int, int, int)}
 	 *
 	 * isInvalid can be true in three situations (too small, too large, too out of bounds),
 	 * each of which are asserted here.
@@ -256,9 +256,9 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 				new Vector3d(),new long[]{10,10,1},  new NoEllipsoidConstrain(), new OptimisationParameters(2,0,0,0,0,1000));
 
 		//EXECUTE
-		boolean tooSmallInvalid = optimisation.isInvalid(tooSmall, new ArrayList<>(),100,100,100);
-		boolean tooFarOutInvalid = optimisation.isInvalid(tooFarOutOfBounds, surfacePointList, 100,100,100);
-		boolean tooLargeInvalid = optimisation.isInvalid(tooLarge, new ArrayList<>(), 100,100,100);
+		boolean tooSmallInvalid = optimisation.isInvalid(tooSmall, 100,100,100);
+		boolean tooFarOutInvalid = optimisation.isInvalid(tooFarOutOfBounds, 100,100,100);
+		boolean tooLargeInvalid = optimisation.isInvalid(tooLarge, 100,100,100);
 
 
 
