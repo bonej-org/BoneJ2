@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.imagej.ops.OpEnvironment;
 import org.scijava.plugin.Plugin;
 
 import net.imagej.ops.Op;
@@ -27,6 +28,10 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
     private Img<FloatType> currentAverage;
     private Img<FloatType> previousAverage;
 
+    public EllipsoidFactorErrorTracking(OpService opService)
+    {
+        this.setEnvironment(opService);
+    }
     @Override
     public Map<String,Double> calculate(Img<FloatType> currentEllipsoidFactorImage) {
         if(currentIteration==0)
