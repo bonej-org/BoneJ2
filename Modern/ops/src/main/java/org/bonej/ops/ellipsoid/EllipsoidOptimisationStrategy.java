@@ -406,7 +406,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		while (contactPoints.size() < algorithmParameters.contactSensitivity) {
 			ellipsoid.dilate(0, algorithmParameters.vectorIncrement, algorithmParameters.vectorIncrement);
 			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying at initial oblation");
 				return null;
@@ -440,7 +440,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 			double[] abc = threeWayShuffle();
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
 
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
@@ -466,7 +466,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 			abc = threeWayShuffle();
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
 
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
@@ -487,7 +487,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 			abc = threeWayShuffle();
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
 
-			if (isInvalid(ellipsoid, contactPoints, w, h, d)) {
+			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
@@ -642,8 +642,9 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	 *         stack, if the smallest radius is less than half a pixel length, or if
 	 *         the volume of the ellipsoid exceeds that of the image stack
 	 */
-	boolean isInvalid(final QuickEllipsoid ellipsoid, final ArrayList<double[]> surfacePoints, final int w, final int h,
-			final int d) {
+	boolean isInvalid(final QuickEllipsoid ellipsoid, final int w, final int h, final int d) {
+		double[][] surfacePoints = ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(algorithmParameters.nVectors);
+
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
 			return true;
@@ -651,6 +652,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 
 		int outOfBoundsCount = 0;
 		final int half = algorithmParameters.nVectors / 2;
+
 		for (final double[] p : surfacePoints) {
 			if (isOutOfBounds((int) (p[0]), (int) (p[1]), (int) (p[2]), w, h, d))
 				outOfBoundsCount++;
