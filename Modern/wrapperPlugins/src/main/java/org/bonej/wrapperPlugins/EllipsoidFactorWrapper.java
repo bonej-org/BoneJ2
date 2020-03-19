@@ -248,6 +248,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					{
 						c.mul(voxelVolume);
 					});
+					imgPlus.setChannelMaximum(0,imgPlus.getChannelMaximum(0)*voxelVolume);
 				}
 			}
 		}
