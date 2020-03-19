@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.List;
 
 import net.imagej.axis.Axes;
-import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -166,7 +165,7 @@ public class EllipsoidFactorOutputGenerator extends
         final double[] ellipsoidFactors = ellipsoids.parallelStream()
                 .mapToDouble(EllipsoidFactorOutputGenerator::computeWeightedEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactors, idImage, ellipsoidFactorImage);
-        final ImgPlus<FloatType> efImage = createImgPlus3D(ellipsoidFactorImage, "EF");
+        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
         efImage.setChannelMaximum(0,1);
         efImage.setChannelMinimum(0, -1);
         efImage.initializeColorTables(1);
@@ -178,7 +177,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> aImg = createNaNImg(idImage);
         mapValuesToImage(radii, idImage, aImg);
         Arrays.sort(radii);
-        ImgPlus radiusImage = createImgPlus3D(aImg,name);
+        ImgPlus radiusImage = new ImgPlus(aImg,name);
         radiusImage.setChannelMaximum(0, radii[radii.length-1]);
         radiusImage.setChannelMinimum(0, 0.0f);
         return radiusImage;
@@ -187,7 +186,7 @@ public class EllipsoidFactorOutputGenerator extends
     private ImgPlus createAxisRatioImage(final double[] ratios, final IterableInterval idImage, String name) {
         final Img<FloatType> axisRatioImage = createNaNImg(idImage);
         mapValuesToImage(ratios, idImage, axisRatioImage);
-        ImgPlus aToBAxisRatioImage = createImgPlus3D(axisRatioImage,name);
+        ImgPlus aToBAxisRatioImage = new ImgPlus(axisRatioImage,name);
         aToBAxisRatioImage.setChannelMaximum(0, 1.0f);
         aToBAxisRatioImage.setChannelMinimum(0, 0.0f);
         return aToBAxisRatioImage;
@@ -198,7 +197,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> volumeImage = createNaNImg(idImage);
         final double[] volumes = ellipsoids.parallelStream().mapToDouble(QuickEllipsoid::getVolume).toArray();
         mapValuesToImage(volumes, idImage, volumeImage);
-        ImgPlus vImage = createImgPlus3D(volumeImage,"Volume");
+        ImgPlus vImage = new ImgPlus(volumeImage,"Volume");
         vImage.setChannelMaximum(0, ellipsoids.get(0).getVolume());
         vImage.setChannelMinimum(0, -1.0f);
         return vImage;
@@ -219,16 +218,25 @@ public class EllipsoidFactorOutputGenerator extends
             if(position[2]>0) break;
 
             final int localMaxEllipsoidID = idCursor.get().getInteger();
-            final long x = Math.round(aBRatios[localMaxEllipsoidID] * (FLINN_PLOT_DIMENSION - 1));
-            final long y = Math.round(bCRatios[localMaxEllipsoidID] * (FLINN_PLOT_DIMENSION - 1));
+            final long x = Math.round(bCRatios[localMaxEllipsoidID] * (FLINN_PLOT_DIMENSION - 1));
+            final long y = Math.round(aBRatios[localMaxEllipsoidID] * (FLINN_PLOT_DIMENSION - 1));
             flinnPeakPlotRA.setPosition(new long[]{x, FLINN_PLOT_DIMENSION - y - 1});
             final float currentValue = flinnPeakPlotRA.get().getRealFloat();
             flinnPeakPlotRA.get().set(currentValue + 1.0f);
         }
 
         ImgPlus flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, "Flinn Peak Plot");
+
         flinnPeakPlotImage.setChannelMaximum(0, 255.0f);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
+        DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/FLINN_PLOT_DIMENSION);
+        xFlinnAxis.setUnit("");
+        DefaultLinearAxis yFlinnAxis = new DefaultLinearAxis(Axes.get("a/b",true),-1.0/FLINN_PLOT_DIMENSION);
+        yFlinnAxis.setOrigin(FLINN_PLOT_DIMENSION);
+        yFlinnAxis.setUnit("");
+
+        flinnPeakPlotImage.setAxis(xFlinnAxis,0);
+        flinnPeakPlotImage.setAxis(yFlinnAxis,1);
 
         return flinnPeakPlotImage;
     }
@@ -237,8 +245,8 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<BitType> flinnPlot = ArrayImgs.bits(FLINN_PLOT_DIMENSION, FLINN_PLOT_DIMENSION);
         final RandomAccess<BitType> flinnRA = flinnPlot.randomAccess();
         for (int i = 0; i < aBRatios.length; i++) {
-            final long x = Math.round(aBRatios[i] * (FLINN_PLOT_DIMENSION - 1));
-            final long y = FLINN_PLOT_DIMENSION - Math.round(bCRatios[i] * (FLINN_PLOT_DIMENSION - 1)) - 1;
+            final long x = Math.round(bCRatios[i] * (FLINN_PLOT_DIMENSION - 1));
+            final long y = FLINN_PLOT_DIMENSION - Math.round(aBRatios[i] * (FLINN_PLOT_DIMENSION - 1)) - 1;
             flinnRA.setPosition(x, 0);
             flinnRA.setPosition(y, 1);
             flinnRA.get().setOne();
@@ -246,6 +254,18 @@ public class EllipsoidFactorOutputGenerator extends
         ImgPlus flinnPlotImage = new ImgPlus<>(flinnPlot, "Unweighted Flinn Plot");
         flinnPlotImage.setChannelMaximum(0, 255.0f);
         flinnPlotImage.setChannelMinimum(0, 0.0f);
+
+        flinnPlotImage.setChannelMaximum(0, 255.0f);
+        flinnPlotImage.setChannelMinimum(0, 0.0f);
+        DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/FLINN_PLOT_DIMENSION);
+        xFlinnAxis.setUnit("");
+        DefaultLinearAxis yFlinnAxis = new DefaultLinearAxis(Axes.get("a/b",true),-1.0/FLINN_PLOT_DIMENSION);
+        yFlinnAxis.setOrigin(FLINN_PLOT_DIMENSION);
+        yFlinnAxis.setUnit("");
+
+        flinnPlotImage.setAxis(xFlinnAxis,0);
+        flinnPlotImage.setAxis(yFlinnAxis,1);
+
         return flinnPlotImage;
     }
 
@@ -284,13 +304,6 @@ public class EllipsoidFactorOutputGenerator extends
                 idImage.dimension(1), idImage.dimension(3));
         img.forEach(e -> e.setReal(Float.NaN));
         return img;
-    }
-
-    private ImgPlus<FloatType> createImgPlus3D(final Img<FloatType> img, final String title) {
-        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "");
-        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "");
-        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "");
-        return new ImgPlus<>(img, title, xAxis, yAxis, zAxis);
     }
     //endregion
 }

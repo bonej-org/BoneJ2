@@ -231,6 +231,27 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		ellipsoidFactorOutputImages = outputList;
 
+		//calibrate output images
+		final double voxelVolume = Math.pow(inputImgPlus.axis(0).calibratedValue(1),3);
+		for(ImgPlus imgPlus : ellipsoidFactorOutputImages)
+		{
+			if(imgPlus.numDimensions()>=3)
+			{
+				// set spatial axis for first 3 dimensions (ID is 4d)
+				for(int dim = 0; dim<3; dim++)
+				{
+					imgPlus.setAxis(inputImgPlus.axis(dim), dim);
+				}
+				if(imgPlus.getName()=="Volume") {
+					final Cursor<RealType> cursor = imgPlus.cursor();
+					cursor.forEachRemaining(c ->
+					{
+						c.mul(voxelVolume);
+					});
+				}
+			}
+		}
+
 		final ImgPlus EF = ellipsoidFactorOutputImages.get(0);
 		final double numberOfForegroundVoxels = countTrue(inputAsBitType);
 		final double numberOfAssignedVoxels = countAssignedVoxels(EF);
