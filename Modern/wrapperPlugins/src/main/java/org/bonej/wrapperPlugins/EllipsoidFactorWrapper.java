@@ -34,6 +34,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import net.imagej.axis.Axes;
+import net.imagej.axis.DefaultLinearAxis;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.bonej.ops.ellipsoid.*;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
@@ -367,7 +369,10 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					.toArray(QuickEllipsoid[]::new);
 		}
 
-		seedPointImage = new ImgPlus<>(seedImage, "Seed points");
+		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "");
+		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "");
+		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "");
+		seedPointImage = new ImgPlus<>(seedImage, "Seed points", xAxis, yAxis, zAxis);
 		seedPointImage.setChannelMaximum(0, 1);
 		seedPointImage.setChannelMinimum(0, 0);
 		Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
