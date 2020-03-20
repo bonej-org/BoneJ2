@@ -329,22 +329,22 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		final double c = Math.random() * 0.2 - 0.1;
 		final double a = Math.sqrt(1 - b * b - c * c);
 
+		final double k = Math.sqrt(a*a+b*b+c*c);
 		// zeroth column, should be very close to [1, 0, 0]^T (mostly x)
 		final double[] zerothColumn = {a, b, c};
 
-		// form triangle in random plane
-		final double[] vector = new double[]{rng.nextGaussian(), rng.nextGaussian(), rng.nextGaussian()};
-
 		// first column, should be very close to [0, 1, 0]^T
-		final double[] firstColumn = norm(crossProduct(zerothColumn, vector));
+		final double[] firstColumn = {-b/k, a/k, 0};
 
 		// second column, should be very close to [0, 0, 1]^T
-		final double[] secondColumn = norm(crossProduct(zerothColumn, firstColumn));
-
-		double[][] rotation = {zerothColumn, firstColumn, secondColumn};
+		final double[] secondColumn = norm(new double[]{-a*c, -b*c, a*a+b*b});
 
 		// array has subarrays as rows, need them as columns
-		rotation = QuickEllipsoid.transpose(rotation);
+		double[][] rotation = {	{zerothColumn[0], firstColumn[0], secondColumn[0]},
+								{zerothColumn[1], firstColumn[1], secondColumn[1]},
+								{zerothColumn[2], firstColumn[2], secondColumn[2]}
+		};
+
 		ellipsoid.rotate(rotation);
 	}
 

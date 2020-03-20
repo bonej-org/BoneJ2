@@ -43,9 +43,9 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 		final QuickEllipsoid ellipsoid = (QuickEllipsoid) ops.run(EllipsoidOptimisationStrategy.class, sphere,
 				new Vector3d(20.5, 20.5, 20.5), new double[]{40, 40, 40},new NoEllipsoidConstrain());
 		assertNotNull(ellipsoid);
-        assertEquals(9.5,ellipsoid.getRadii()[0],1.0);
-        assertEquals(9.5,ellipsoid.getRadii()[1],1.0);
-        assertEquals(9.5,ellipsoid.getRadii()[2],1.0);
+		assertEquals(9.5,ellipsoid.getRadii()[0],1.5);
+		assertEquals(9.5,ellipsoid.getRadii()[1],1.5);
+		assertEquals(9.5,ellipsoid.getRadii()[2],1.5);
 	}
 
 	private byte[][] getSphere(int radius) {
