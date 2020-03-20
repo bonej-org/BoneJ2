@@ -4,6 +4,7 @@ import java.util.*;
 
 import org.bonej.ops.ellipsoid.constrain.EllipsoidConstrainStrategy;
 import org.joml.Vector3d;
+import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -32,6 +33,8 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	private long[] imageDimensions;//TODO shift into OptimisationParameters
 	@Parameter
 	private LogService logService;
+	@Parameter(required = false)
+	private StatusService statusService;
 	@Parameter
 	private static EllipsoidConstrainStrategy constrainStrategy;
 	@Parameter(required = false)
@@ -539,6 +542,11 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 
 		logService.debug("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
 				+ (double) (stop - start) / totalIterations + " ms/iteration)");
+
+		String centreString = "("+centre[0]+",  "+centre[1]+",  "+centre[2]+")";
+		if(statusService!=null) {
+			statusService.showStatus("Ellipsoid optimised at " + centreString);//non-null check needed for tests
+		}
 
 		return ellipsoid;
 	}
