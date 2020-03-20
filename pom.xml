@@ -119,7 +119,9 @@
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>deploy-to-scijava</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
+        <!-- Remove the versions when upgrading to pom-scijava 29.x.x -->
         <LocalThickness_.version>4.0.3</LocalThickness_.version>
+        <imagej-ops.version>0.45.3</imagej-ops.version>
     </properties>
 
     <repositories>
