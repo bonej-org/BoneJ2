@@ -537,7 +537,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 
 		final long stop = System.currentTimeMillis();
 
-		logService.info("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
+		logService.debug("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
 				+ (double) (stop - start) / totalIterations + " ms/iteration)");
 
 		return ellipsoid;
