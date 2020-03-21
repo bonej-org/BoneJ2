@@ -154,6 +154,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	//what seed points should I use?
 	@Parameter(label = "Seed points based on distance ridge", description = "tick this if you would like ellipsoids to be seeded based on the foreground distance ridge")
 	private boolean seedOnDistanceRidge = true;
+	@Parameter(label = "Threshold for distance ridge", description = "How far must a pixel be from the boundary to count as ridge")
+	private double distanceThreshold = 0.6;
 	@Parameter(label = "Seed points on topology-preserving skeletonization ", description = "tick this if you would like ellipsoids to be seeded on the topology-preserving skeletonization (\"Skeletonize3D\").")
 	private boolean seedOnTopologyPreserving = false;
 
@@ -429,7 +431,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private List<Vector3d> getDistanceRidgePoints(ImgPlus<BitType> imp) {
-		List<Vector3d> ridgePoints = (List<Vector3d>) opService.run(FindRidgePoints.class, imp);
+		List<Vector3d> ridgePoints = (List<Vector3d>) opService.run(FindRidgePoints.class, imp, distanceThreshold);
 		logService.info("Found " + ridgePoints.size() + " distance-ridge-based points");
 		return ridgePoints;
 	}
