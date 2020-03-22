@@ -3,67 +3,33 @@ They complement the automated wrapper tests in EllipsoidFactorWrapperTest
 
 Case 1
 =======================================================================
-Test output of rods_plates
+Test output of image out of a) rods_plates, b) emu, c) shrew
 =======================================================================
 Steps
 -----------------------------------------------------------------------
 1. Run File > Open >
-2. Select ./IntegrationTestLogs/rods_plates.tif
-3. Run Plugins > BoneJ > Ellipsoid Factor 2
-4. TODO
+2. open [image].tif (obtainable via bonej.org)
+3. Run Plugins > BoneJ > Ellipsoid Factor
+4. Set parameters as in ./ellipsoid-factor-integration-test-parameters.png
 5. Click "OK" (Execution takes a while)
 
 Expected results
 -----------------------------------------------------------------------
-- One (new) result rows in the table
-- Three (new) columns: "Label", "Filling percentage" and "Number of Ellipsoids"
+- One (new) result rows in the results table
+- Nine (new) columns: "Label", "Filling percentage" and "Number of Ellipsoids",
+  "Median EF", "Max EF", "Min EF",
+  "median change 0", "maximum change 0", "median change 1", "maximum change 1"
 - Filling percentage > 90%
-- Plates are plates and rods are rods
+- rods_plates.tif: Plates in "EF" image are largely blue and rods are largely yellow
+- emu.tif: Emu should be mainly plates (blue) with two clear rods (yellow) on slice 166.
+- shrew.tif: Shrew should have a variety of shapes, several plates with a rod in the x-y middle visible through most z-slices
+- There are 8 other 3d (seeds, volume, a, b, c, a/b, b/c) output images.
+- There is a 4d output image (ID).
+- There are 2 2d output images (unweighted and peak Flinn plots).
+- 3d images have same spatial calibration as input.
+- 2d images have both axes ranging from 0 to 1, and the origin is the lower left corner.
+- Outputs are understandable with some EF knowledge.
 
-Completed TODO Alessandro Felder
+Completed 22 March 2020 Alessandro Felder
 -----------------------------------------------------------------------
 
-Case 2
-=======================================================================
-Test output of emu.tif
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Run File > Open >
-2. Select ./IntegrationTestLogs/emu.tif
-3. Run Plugins > BoneJ > Ellipsoid Factor 2
-4. TODO
-5. Click "OK" (Execution takes a while)
-
-Expected results
------------------------------------------------------------------------
-- One (new) result rows in the table
-- Three (new) columns: "Label", "Filling percentage" and "Number of Ellipsoids"
-- Filling percentage > 90%
-- Emu should be mainly plates (blue) with two clear rods (yellow) on slice 166.
-
-Completed May 13 2019, Alessandro Felder
------------------------------------------------------------------------
-
-
-Case 3
-=======================================================================
-Test output of shrew.tif
-=======================================================================
-Steps
------------------------------------------------------------------------
-1. Run File > Open >
-2. Select ./IntegrationTestLogs/shrew.tif
-3. Run Plugins > BoneJ > Ellipsoid Factor 2
-4. TODO
-5. Click "OK" (Execution takes a while)
-
-Expected results
------------------------------------------------------------------------
-- One (new) result rows in the table
-- Three (new) columns: "Label", "Filling percentage" and "Number of Ellipsoids"
-- Filling percentage > 90%
-- Shrew should have a tendency towards plates with a rod in the x-y middle visible through most z-slices
-
-Completed TODO Alessandro Felder
------------------------------------------------------------------------
