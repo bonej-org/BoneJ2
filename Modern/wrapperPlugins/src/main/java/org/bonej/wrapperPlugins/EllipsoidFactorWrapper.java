@@ -98,7 +98,7 @@ import net.imglib2.view.Views;
  *      Frontiers in Endocrinology (2015)</a>
  */
 
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor 2")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor")
 public class EllipsoidFactorWrapper extends ContextCommand {
 
 	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
@@ -139,9 +139,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private int contactSensitivity = 1;
 	@Parameter(label = "Maximum iterations", description = "Maximum currentIteration to try improving ellipsoid fit before stopping.", min="10")
 	private int maxIterations = 100;
-	@Parameter(label = "Maximum drift", description = "maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
+	@Parameter(label = "Maximum drift", description = "Maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
 	private double maxDrift = Math.sqrt(3);
-	@Parameter(label = "Minimum semi axis", description = "minimum length for the longest semi-axis needed for an ellipsoid to be valid. Defaults to unit voxel", min="0")
+	@Parameter(label = "Minimum semi axis", description = "Minimum length for the longest semi-axis needed for an ellipsoid to be valid. Defaults to unit voxel", min="0")
 	private double minimumSemiAxis = 1.0;
 
 	//averaging / smoothing
@@ -152,11 +152,11 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	
 	
 	//what seed points should I use?
-	@Parameter(label = "Seed points based on distance ridge", description = "tick this if you would like ellipsoids to be seeded based on the foreground distance ridge")
+	@Parameter(label = "Seed points based on distance ridge", description = "Tick this if you would like ellipsoids to be seeded based on the foreground distance ridge")
 	private boolean seedOnDistanceRidge = true;
 	@Parameter(label = "Threshold for distance ridge", description = "How far must a pixel be from the boundary to count as ridge")
 	private double distanceThreshold = 0.6;
-	@Parameter(label = "Seed points on topology-preserving skeletonization ", description = "tick this if you would like ellipsoids to be seeded on the topology-preserving skeletonization (\"Skeletonize3D\").")
+	@Parameter(label = "Seed points on topology-preserving skeletonization ", description = "Tick this if you would like ellipsoids to be seeded on the topology-preserving skeletonization (\"Skeletonize3D\").")
 	private boolean seedOnTopologyPreserving = false;
 
 	@Parameter(label = "Show secondary images")
@@ -173,10 +173,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
 	private Table<DefaultColumn<Double>, Double> resultsTable;
-
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String note = "Ellipsoid Factor is beta software.\n" + "Please report your experiences to the user group:\n"
-			+ "http://forum.image.sc/tags/bonej";
 
 	@Override
 	public void run() {
