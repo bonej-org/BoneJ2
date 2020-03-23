@@ -54,8 +54,8 @@ import org.junit.Test;
  */
 public class ElementUtilTest {
 
-	private static final ImageJ IMAGE_J = new ImageJ();
-	private static final UnitService unitService = IMAGE_J.context().getService(
+	private static ImageJ IMAGE_J = new ImageJ();
+	private static UnitService unitService = IMAGE_J.context().getService(
 		UnitService.class);
 
 	@Test
@@ -222,5 +222,7 @@ public class ElementUtilTest {
 	@AfterClass
 	public static void oneTimeTearDown() {
 		IMAGE_J.context().dispose();
+		IMAGE_J = null;
+		unitService = null;
 	}
 }

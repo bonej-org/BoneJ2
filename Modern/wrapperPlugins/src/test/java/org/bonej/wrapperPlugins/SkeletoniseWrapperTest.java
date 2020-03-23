@@ -29,23 +29,13 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import net.imagej.ImageJ;
-
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.UserInterface;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -58,21 +48,11 @@ import ij.measure.Calibration;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class SkeletoniseWrapperTest {
+public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 
-	private static final Gateway IMAGE_J = new ImageJ();
-	private UsageReporter mockReporter;
-
-	@Before
-	public void setup() {
-		mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		SkeletoniseWrapper.setReporter(mockReporter);
-	}
-
-	@After
-	public void tearDown() {
-		SharedTable.reset();
+	@BeforeClass
+	public static void oneTimeSetup() {
+		SkeletoniseWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
@@ -80,11 +60,10 @@ public class SkeletoniseWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_CHANNEL_DIMENSIONS +
 			". Please split the channels.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(SkeletoniseWrapper.class,
+		final CommandModule module = command().run(SkeletoniseWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -92,19 +71,19 @@ public class SkeletoniseWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+	public void testNonBinaryImageCancelsPlugin() {
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			SkeletoniseWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void testNullImageCancelsPlugin() {
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			SkeletoniseWrapper.class);
 	}
 
@@ -118,7 +97,7 @@ public class SkeletoniseWrapperTest {
 		imagePlus.setCalibration(calibration);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(SkeletoniseWrapper.class,
+		final CommandModule module = command().run(SkeletoniseWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -137,11 +116,10 @@ public class SkeletoniseWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
 			". Please split the hyperstack.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(SkeletoniseWrapper.class,
+		final CommandModule module = command().run(SkeletoniseWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -149,13 +127,7 @@ public class SkeletoniseWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
-	}
-
 }

@@ -29,29 +29,31 @@ import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.ops.linalg.rotate.Rotate3d;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
+import net.imagej.ops.special.hybrid.Hybrids;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
@@ -63,7 +65,9 @@ import org.apache.commons.math3.random.RandomVectorGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
-import org.bonej.ops.mil.MILPlane;
+import org.bonej.ops.mil.ParallelLineGenerator;
+import org.bonej.ops.mil.ParallelLineMIL;
+import org.bonej.ops.mil.PlaneParallelLineGenerator;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
@@ -78,6 +82,7 @@ import org.joml.Matrix4dc;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -120,11 +125,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private static final int DEFAULT_DIRECTIONS = 2_000;
 	// The default number of lines was found to be sensible after experimenting
 	// with data at hand. Other data may need a different number.
-	private static final int DEFAULT_LINES = 100;
-	private static final double DEFAULT_INCREMENT = 2.3;
-	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, Quaterniondc, Vector3d> milOp;
+	private static final int DEFAULT_LINES = 10_000;
+	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d> milOp;
 	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
-	private static UnaryFunctionOp<List<Vector3d>, Matrix4dc> solveQuadricOp;
+	private static UnaryFunctionOp<List<Vector3dc>, Matrix4dc> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 			ellipsoid -> 1.0 - (1.0/(ellipsoid.getC() * ellipsoid.getC())) / (1.0/(ellipsoid.getA() * ellipsoid.getA()));
 	@SuppressWarnings("unused")
@@ -138,18 +142,20 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		callback = "applyMinimum")
 	private Integer directions = DEFAULT_DIRECTIONS;
 	
-	@Parameter(label = "Lines per dimension",
-		description = "How many sampling lines are projected in both 2D directions (this number squared)",
+	@Parameter(label = "Lines per direction",
+		description = "How many lines are sampled per direction",
 		min = "1", style = NumberWidget.SPINNER_STYLE, required = false,
 		callback = "applyMinimum")
 	private Integer lines = DEFAULT_LINES;
+	private long sections;
 	
-	@Parameter(label = "Sampling increment", min = "0.1",
+	@Parameter(label = "Sampling increment", persist = false,
 		description = "Distance between sampling points (in voxels)",
 		style = NumberWidget.SPINNER_STYLE, required = false, stepSize = "0.1",
-		callback = "applyMinimum")
-	private Double samplingIncrement = DEFAULT_INCREMENT;
-	
+		callback = "incrementChanged", initializer = "initializeIncrement")
+	private Double samplingIncrement;
+	private double minIncrement;
+
 	@Parameter(label = "Recommended minimums",
 		description = "Apply minimum recommended values to directions, lines, and increment",
 		persist = false, required = false, callback = "applyMinimum")
@@ -174,7 +180,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			description = "Show the vectors of the mean intercept lengths",
 			required = false)
 	private boolean displayMILVectors;
-	private static Long seed;
 
 	/**
 	 * The anisotropy results in a {@link Table}.
@@ -201,20 +206,24 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@Parameter
 	private CommandService commandService;
 	private static UsageReporter reporter;
+	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
+	private double milLength;
 
 	@Override
 	public void run() {
+		sections = (long) Math.sqrt(lines);
 		statusService.showStatus("Anisotropy: initialising");
 		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
 			inputImage);
 		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
 			bitImgPlus).collect(toList());
-		matchOps(subspaces.get(0));
+		calculateMILLength(subspaces.get(0).interval);
+		matchOps(subspaces.get(0).interval);
 		final List<Ellipsoid> ellipsoids = new ArrayList<>();
 		for (int i = 0; i < subspaces.size(); i++) {
 			statusService.showStatus("Anisotropy: sampling subspace #" + (i + 1));
-			final Subspace<BitType> subspace = subspaces.get(i);
-			final Ellipsoid ellipsoid = milEllipsoid(subspace);
+			final RandomAccessibleInterval<BitType> interval = subspaces.get(i).interval;
+			final Ellipsoid ellipsoid = milEllipsoid(interval);
 			if (ellipsoid == null) {
 				return;
 			}
@@ -236,6 +245,14 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			throw new NullPointerException("Reporter cannot be null");
 		}
 		AnisotropyWrapper.reporter = reporter;
+	}
+
+
+	private void calculateMILLength(final RandomAccessibleInterval<BitType> interval) {
+		final long[] dimensions = new long[interval.numDimensions()];
+		interval.dimensions(dimensions);
+		final double diagonal = Math.sqrt(Arrays.stream(dimensions).map(x -> x * x).sum());
+		milLength = lines * diagonal;
 	}
 
 	private void addResult(final Subspace<BitType> subspace,
@@ -285,15 +302,41 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	@SuppressWarnings("unused")
+	private void initializeIncrement() {
+		/* TODO: Get calibration from inputimage.axis(int)
+		   NB: you can't assume that 0, 1, 2 are X, Y, Z axes!
+		   NB: axes can have different units of calibration
+		 */
+		final double px = 1.0;
+		final double py = 1.0;
+		final double pz = 1.0;
+		final double diagonal = px * px + py * py + pz * pz;
+		// Round to 2 decimal places
+		minIncrement = Math.round(Math.sqrt(diagonal) * 100.0) / 100.0;
+		if (samplingIncrement < minIncrement) {
+			// Allow calling through commandService with a greater explicit parameter value,
+			// e.g. commandService.run(AnisotropyWrapper.class, ... "samplingIncrement", 5.0)
+			samplingIncrement = minIncrement;
+		}
+	}
+
+	@SuppressWarnings("unused")
+	private void incrementChanged() {
+		if (recommendedMin || samplingIncrement < minIncrement) {
+			samplingIncrement = minIncrement;
+		}
+	}
+
+	@SuppressWarnings("unused")
 	private void applyMinimum() {
 		if (recommendedMin) {
 			lines = DEFAULT_LINES;
 			directions = DEFAULT_DIRECTIONS;
-			samplingIncrement = DEFAULT_INCREMENT;
+			samplingIncrement = minIncrement;
 		}
 	}
 
-	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3d> pointCloud) {
+	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3dc> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4dc quadric = solveQuadricOp.calculate(pointCloud);
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
@@ -301,29 +344,33 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	@SuppressWarnings("unchecked")
-	private void matchOps(final Subspace<BitType> subspace) {
-		milOp = Functions.binary(opService, MILPlane.class, Vector3d.class,
-			subspace.interval, new Quaterniond(), lines, samplingIncrement);
-		final List<Vector3d> tmpPoints = generate(Vector3d::new).limit(
+	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
+		final List<Vector3dc> tmpPoints = generate(Vector3d::new).limit(
 			Quadric.MIN_DATA).collect(toList());
 		solveQuadricOp = Functions.unary(opService, Quadric.class, Matrix4dc.class,
 			tmpPoints);
 		final Matrix4dc matchingMock = new Matrix4d();
 		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService,
 			QuadricToEllipsoid.class, Optional.class, matchingMock);
+		rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
+				new Vector3d(), new Quaterniond());
+		ParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(interval, new Quaterniond(), rotateOp, sections);
+		milOp = Functions.binary(opService, ParallelLineMIL.class, Vector3d.class,
+				interval, generator, milLength, samplingIncrement);
 	}
 
-	private Ellipsoid milEllipsoid(final Subspace<BitType> subspace) {
-		final List<Vector3d> pointCloud;
+	private Ellipsoid milEllipsoid(final RandomAccessibleInterval<BitType> interval) {
+		final List<Vector3dc> pointCloud;
 		try {
-			pointCloud = runDirectionsInParallel(subspace.interval);
+			pointCloud = runDirectionsInParallel(interval);
 			if (pointCloud.size() < Quadric.MIN_DATA) {
-				cancel("Anisotropy could not be calculated - too few points");
+				cancelMacroSafe(this, "Anisotropy could not be calculated - too few points");
 				return null;
 			}
 			final Optional<Ellipsoid> ellipsoid = fitEllipsoid(pointCloud);
 			if (!ellipsoid.isPresent()) {
-				cancel("Anisotropy could not be calculated - ellipsoid fitting failed");
+				cancelMacroSafe(this, "Anisotropy could not be calculated - ellipsoid fitting failed");
 				return null;
 			}
 			if (displayMILVectors) {
@@ -333,45 +380,38 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 		catch (final ExecutionException | InterruptedException e) {
 			logService.trace(e.getMessage());
-			cancel("The plug-in was interrupted");
+			cancelMacroSafe(this, "The plug-in was interrupted");
 		}
 		return null;
 	}
 
-	/**
-	 * Creates a random isotropically distributed quaternion.
-	 *
-	 * @return a (rotation) quaternion which can be used as a parameter for the
-	 *         op.
-	 */
-	private static synchronized Quaterniondc randomQuaternion() {
+	private Callable<Vector3d> createMILTask(final RandomAccessibleInterval<BitType> interval) {
+		// A random isotropically distributed quaternion
 		final double[] v = qGenerator.nextVector();
-		return new Quaterniond(v[0], v[1], v[2], v[3]);
+		final Quaterniond quaternion = new Quaterniond(v[0], v[1], v[2], v[3]);
+		final PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(interval, quaternion, rotateOp, sections);
+		return () -> milOp.calculate(interval, generator);
 	}
 
-	private List<Vector3d> runDirectionsInParallel(
+	private List<Vector3dc> runDirectionsInParallel(
 		final RandomAccessibleInterval<BitType> interval) throws ExecutionException,
 		InterruptedException
 	{
 		final int cores = Runtime.getRuntime().availableProcessors();
-		// The parallellization of the the MILPlane algorithm is a memory bound
-		// problem, which is why speed gains start to drop after 5 cores. With much
-		// larger 'nThreads' it slows down due to overhead. Of course '5' here is a
-		// bit of a magic number, which might not hold true for all environments,
-		// but we need some kind of upper bound
-		final int nThreads = Math.max(5, cores);
+		// Anisotropy starts to slow down after more than n threads.
+		// The 8 here is a magic number, but some upper bound is better than none.
+		final int nThreads = Math.min(cores, 8);
+		// I've tried running milOp with a parallel Stream, but for whatever reason it's slower.
 		final ExecutorService executor = Executors.newFixedThreadPool(nThreads);
-		final Callable<Vector3d> milTask = () -> milOp.calculate(interval,
-			randomQuaternion());
-		final List<Future<Vector3d>> futures = generate(() -> milTask).limit(
+		final List<Future<Vector3d>> futures = generate(() -> createMILTask(interval)).limit(
 			directions).map(executor::submit).collect(toList());
-		final List<Vector3d> pointCloud = Collections.synchronizedList(
-			new ArrayList<>(directions));
-		final int futuresSize = futures.size();
-		final AtomicInteger progress = new AtomicInteger();
+		final List<Vector3dc> pointCloud = new ArrayList<>(directions);
+		int progress = 0;
 		for (final Future<Vector3d> future : futures) {
-			statusService.showProgress(progress.getAndIncrement(), futuresSize);
+			statusService.showProgress(progress, directions);
 			pointCloud.add(future.get());
+			progress++;
 		}
 		shutdownAndAwaitTermination(executor);
 		return pointCloud;
@@ -402,15 +442,15 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
-			cancel(NOT_3D_IMAGE);
+			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
 		if (!ElementUtil.isBinary(inputImage)) {
-			cancel(NOT_BINARY);
+			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
 		if (!isSpatialCalibrationsIsotropic(inputImage, 0.01, unitService) &&
@@ -426,21 +466,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 				cancel(null);
 			}
 		}
-	}
-	// endregion
-
-	// region -- Utility methods --
-	/**
-	 * Sets the seed used in the random generation of MIL sampling lines.
-	 * <p>
-	 * The method's here only to enable reproducible unit test.
-	 * </p>
-	 * 
-	 * @param seed a seed number.
-	 * @see Random#setSeed
-	 */
-	static void setSeed(final long seed) {
-		AnisotropyWrapper.seed = seed;
 	}
 	// endregion
 }

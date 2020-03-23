@@ -62,21 +62,21 @@ public class UsageReporterOptions extends ContextCommand {
 	static final String SESSIONKEY = "bonej2.report.bonejsession";
 	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
 	// TODO Make into one string (format with HTML)
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String message1 = "Allow usage data collection?";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String message2 = "BoneJ would like to collect data on";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String message3 =
 		"which plugins are being used, to direct development";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String message4 = "and promote BoneJ to funders.";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String message5 = "If you agree to participate please check the box.";
 	@Parameter(label = "Opt in to usage data collection",
 		description = "Can BoneJ send usage data?", persistKey = OPTINKEY)
 	private boolean optIn;
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String helpMessage = "For more information click Help.";
 	@Parameter(label = "Help", description = "More about data collection", callback = "showHelpPage")
 	private Button button;

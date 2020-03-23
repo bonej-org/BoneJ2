@@ -23,34 +23,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.mil;
 
-import java.util.Objects;
+import java.util.Arrays;
 import java.util.Random;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
-import net.imagej.ops.linalg.rotate.Rotate3d;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
-import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
-import net.imagej.ops.special.hybrid.Hybrids;
 import net.imglib2.Interval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
-import net.imglib2.type.numeric.integer.LongType;
-import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.util.ValuePair;
 
 import org.joml.Intersectiond;
-import org.joml.Quaterniond;
-import org.joml.Quaterniondc;
 import org.joml.Vector2d;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+
+import static org.bonej.ops.mil.ParallelLineGenerator.Line;
 
 /**
  * An op that finds the mean intercept length (MIL) vector of an interval.
@@ -86,30 +79,22 @@ import org.scijava.plugin.Plugin;
  * @author Richard Domander
  */
 @Plugin(type = Op.class)
-public class MILPlane<B extends BooleanType<B>> extends
-	AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, Quaterniondc, Vector3d>
+public class ParallelLineMIL<B extends BooleanType<B>> extends
+	AbstractBinaryFunctionOp<RandomAccessibleInterval<B>, ParallelLineGenerator, Vector3d>
 	implements Contingent
 {
-
-	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
-	private final Random random = new Random();
 	/**
-	 * Number of sampling lines generated per dimension.
+	 * Length of the MIL vector sampled.
 	 * <p>
-	 * Each bin represents a sub-region of the plane where a sampling line
-	 * originates. For example, if bins = 2 then we get four lines originating
-	 * from the four quadrants of the plane.
+	 * The op generates and samples random lines through the interval until their total length
+	 * reaches the given value.
 	 * </p>
 	 * <p>
-	 * If left null, bins is set to <em>d</em>, where <em>d</em> is the largest
-	 * diagonal of the input interval.
-	 * </p>
-	 * <p>
-	 * The higher the number, the more likely you get an accurate result.
+	 * If left null, the length is 100.0 * d, where d = longest diagonal of the interval.
 	 * </p>
 	 */
 	@Parameter(required = false, persist = false)
-	private Long bins;
+	private Double milLength;
 	/**
 	 * The scalar step between positions on a sampling line where voxels are read.
 	 * <p>
@@ -125,47 +110,50 @@ public class MILPlane<B extends BooleanType<B>> extends
 	 */
 	@Parameter(required = false, persist = false)
 	private Double increment;
-	/**
-	 * The seed used in the random generator in the algorithm.
-	 * <p>
-	 * Given that all other parameters all the same (including the interval and
-	 * rotation), then using the same seed will give the same results.
-	 * </p>
-	 * <p>
-	 * If left null, a new generator is created with the default constructor.
-	 * </p>
-	 */
-	@Parameter(required = false, persist = false)
-	private Long seed;
+
+	private final Random random = new Random();
 
 	/**
 	 * Calculates the MIL vector of the interval.
 	 *
 	 * @param interval a 3D interval.
-	 * @param rotation direction of the MIL lines in the interval.
+	 * @param parallelLineGenerator a generator of random lines for MIL sampling.
 	 * @return a vector <b>v</b> parallel to the MIL lines, whose magnitude
 	 *         ||<b>v</b>|| = total length of lines / total phase changes from
 	 *         background to foreground
 	 */
 	@Override
 	public Vector3d calculate(final RandomAccessibleInterval<B> interval,
-		final Quaterniondc rotation)
+		final ParallelLineGenerator parallelLineGenerator)
 	{
-		matchOps();
-		final LinePlane samplingPlane = new LinePlane(interval, rotation, rotateOp);
-		if (seed != null) {
-			random.setSeed(seed);
-			samplingPlane.setSeed(seed);
-		}
 		if (increment == null) {
 			increment = 1.0;
 		}
-		if (bins == null) {
-			bins = defaultBins(interval);
+		if (milLength == null) {
+			milLength = 100.0 * getDiagonal();
 		}
-		final Stream<Section> sections = findIntersectingSections(samplingPlane,
-			interval);
-		return sampleMILVector(interval, sections, samplingPlane.getDirection());
+		double totalLength = 0.0;
+		long totalIntercepts = 0L;
+		while (milLength - totalLength > 1e-12) {
+			final Line line = parallelLineGenerator.nextLine();
+			Segment segment = intersectInterval(line, interval);
+			if (segment == null) {
+				continue;
+			}
+			final double length = Math.abs(segment.tMax - segment.tMin);
+			if (totalLength + length > milLength) {
+				segment = limitSegment(milLength, totalLength, segment);
+			}
+			final ValuePair<Double, Long> mILValues = mILValues(interval, segment, increment);
+			if (mILValues == null) {
+				continue;
+			}
+			totalLength += mILValues.getA();
+			totalIntercepts += mILValues.getB();
+		}
+		totalIntercepts = Math.max(totalIntercepts, 1);
+		final Vector3dc direction = parallelLineGenerator.getDirection();
+		return new Vector3d(direction).mul(totalLength / totalIntercepts);
 	}
 
 	@Override
@@ -193,20 +181,6 @@ public class MILPlane<B extends BooleanType<B>> extends
 		return phaseChanges;
 	}
 
-	private long defaultBins(final RandomAccessibleInterval<B> interval) {
-		final long sqSum = IntStream.range(0, 3).mapToLong(interval::dimension).map(
-			d -> d * d).sum();
-		return (long) Math.sqrt(sqSum);
-	}
-
-	private Stream<Section> findIntersectingSections(final LinePlane plane,
-		final Interval interval)
-	{
-		final Vector3dc direction = plane.getDirection();
-		return plane.getOrigins(bins).map(origin -> intersectInterval(origin,
-			direction, interval)).filter(Objects::nonNull);
-	}
-
 	private static <B extends BooleanType<B>> boolean getVoxel(
 		final RandomAccess<B> access, final Vector3d v)
 	{
@@ -216,72 +190,68 @@ public class MILPlane<B extends BooleanType<B>> extends
 		return access.get().get();
 	}
 
-	private static Section intersectInterval(final Vector3dc origin,
-		final Vector3dc direction, final Interval interval)
+	private static Segment intersectInterval(final Line line, final Interval interval)
 	{
-		final Vector2d tValues = new Vector2d();
-		final Vector3dc o = new Vector3d(origin.x(), origin.y(), origin.z());
-		final Vector3dc d = new Vector3d(direction.x(), direction.y(), direction.z());
 		final Vector3dc min = new Vector3d(interval.min(0), interval.min(1),
 			interval.min(2));
 		final Vector3dc max = new Vector3d(interval.max(0) + 1, interval.max(1) + 1,
 			interval.max(2) + 1);
-		final boolean intersect = Intersectiond.intersectRayAab(o, d, min, max,
-			tValues);
+		final Vector2d tValues = new Vector2d();
+		final boolean intersect = Intersectiond.intersectRayAab(line.point, line.direction, min, max, tValues);
 		if (!intersect) {
 			return null;
 		}
-		return new Section(origin, direction, tValues.x, tValues.y);
+		return new Segment(line, tValues.x, tValues.y);
+	}
+
+	private static Segment limitSegment(final double goalLength, final double totalLength,
+										final Segment segment)
+	{
+		final double remaining = goalLength - totalLength;
+		final double tMax;
+		if (segment.tMax < segment.tMin) {
+			tMax = segment.tMin - remaining;
+		} else {
+			tMax = segment.tMin + remaining;
+		}
+		return new Segment(segment.line, segment.tMin, tMax);
 	}
 
 	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
-		final Section section, final double increment)
+											  final Segment segment, final double increment)
 	{
-		final long intercepts = sampleSection(interval, section, section.direction,
+		final long intercepts = sampleSegment(interval, segment, segment.line.direction,
 			increment);
 		if (intercepts < 0) {
 			return null;
 		}
-		final double length = Math.abs(section.tMax - section.tMin);
+		final double length = Math.abs(segment.tMax - segment.tMin);
 		return new ValuePair<>(length, intercepts);
 	}
 
-	@SuppressWarnings("unchecked")
-	private void matchOps() {
-		rotateOp = Hybrids.binaryCFI1(ops(), Rotate3d.class, Vector3d.class,
-			new Vector3d(), new Quaterniond());
+	private double getDiagonal() {
+		final RandomAccessibleInterval<B> interval = in();
+		final long[] dimensions = new long[interval.numDimensions()];
+		interval.dimensions(dimensions);
+		final long sqSum = Arrays.stream(dimensions).map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
 	}
 
-	private Vector3d sampleMILVector(final RandomAccessible<B> interval,
-		final Stream<Section> sections, final Vector3dc direction)
+	private long sampleSegment(final RandomAccessible<B> interval,
+							   final Segment segment, final Vector3dc direction, final double increment)
 	{
-		final DoubleType totalLength = new DoubleType();
-		final LongType totalIntercepts = new LongType();
-		sections.map(s -> mILValues(interval, s, increment)).filter(
-			Objects::nonNull).forEach(p -> {
-				totalLength.set(p.a + totalLength.get());
-				totalIntercepts.set(p.b + totalIntercepts.get());
-			});
-		totalIntercepts.set(Math.max(totalIntercepts.get(), 1));
-		final Vector3d milVector = new Vector3d(direction);
-		return milVector.mul(totalLength.get() / totalIntercepts.get());
-	}
-
-	private long sampleSection(final RandomAccessible<B> interval,
-		final Section section, final Vector3dc direction, final double increment)
-	{
-		// Add a random offset so that sampling doesn't always start from the same
-		// plane
-		final double startT = section.tMin + random.nextDouble() * increment;
-		final Vector3d samplePoint = new Vector3d(direction);
-		samplePoint.mul(startT);
-		samplePoint.add(section.origin);
-		final Vector3d gap = new Vector3d(direction);
-		gap.mul(increment);
-		final long samples = (long) Math.ceil((section.tMax - startT) / increment);
+		// Add a random offset so that sampling doesn't always start from where the segment
+		// enters the interval
+		final double startT = segment.tMin + random.nextDouble() * increment;
+		final long samples = (long) Math.ceil((segment.tMax - startT) / increment);
 		if (samples < 1) {
 			return -1;
 		}
+		final Vector3d samplePoint = new Vector3d(direction);
+		samplePoint.mul(startT);
+		samplePoint.add(segment.line.point);
+		final Vector3d gap = new Vector3d(direction);
+		gap.mul(increment);
 		return countPhaseChanges(interval, samplePoint, gap, samples);
 	}
 	// endregion
@@ -293,22 +263,19 @@ public class MILPlane<B extends BooleanType<B>> extends
 	 * <em>t<sub>2</sub></em><b>v</b> where the origin + direction <b>v</b>
 	 * intersects the input interval.
 	 * <p>
-	 * The direction comes from the {@link LinePlane} used in the op.
+	 * The direction comes from the {@link PlaneParallelLineGenerator} used in the op.
 	 * </p>
 	 */
-	private static final class Section {
+	private static final class Segment {
 
 		private final double tMin;
 		private final double tMax;
-		private final Vector3dc origin;
-		private final Vector3dc direction;
+		private final Line line;
 
-		private Section(final Vector3dc origin, final Vector3dc direction, final double tMin,
-						final double tMax) {
+		private Segment(final Line line, final double tMin, final double tMax) {
+			this.line = line;
 			this.tMin = tMin;
 			this.tMax = tMax;
-			this.origin = origin;
-			this.direction = direction;
 		}
 	}
 

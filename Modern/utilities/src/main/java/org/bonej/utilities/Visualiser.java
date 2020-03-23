@@ -22,15 +22,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.bonej.utilities;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.scijava.vecmath.Color3f;
 import org.scijava.vecmath.Point3f;
 
 import customnode.CustomPointMesh;
 import ij3d.Image3DUniverse;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Convenience methods for displaying data.
@@ -44,21 +46,13 @@ public class Visualiser {
 	/**
 	 * Plot a set of 3D coordinates in Benjamin Schmidt's ImageJ 3D Viewer
 	 *
-	 * @param points
-	 *            float[][] n x 3 array of 3D (x,y,z) coordinates
-	 * @param title
-	 *            String name of the dataset
-	 *
+	 * @param vectors a collection of 3D (x,y,z) vectors
+	 * @param title String name of the dataset
 	 */
-	public static void display3DPoints(final double[][] points, String title) {
-		final int nPoints = points.length;
+	public static void display3DPoints(final Collection<Vector3dc> vectors, final String title) {
 		// Create a CustomMesh from the coordinates
-		final List<Point3f> mesh = new ArrayList<>();
-		for (int i = 0; i < nPoints; i++) {
-			mesh.add(new Point3f((float) points[i][0], (float) points[i][1], (float) points[i][2]));
-		}
-
-		final CustomPointMesh cm = new CustomPointMesh(mesh);
+		final List<Point3f> points = vectors.stream().map(Visualiser::toPoint).collect(toList());
+		final CustomPointMesh cm = new CustomPointMesh(points);
 		final Color3f green = new Color3f(0.0f, 0.5f, 0.0f);
 		cm.setColor(green);
 		cm.setPointSize(1);
@@ -72,16 +66,8 @@ public class Visualiser {
 		//show the universe
 		univ.show();
 	}
-	
-	public static void display3DPoints(List<Vector3d> vectors, String title) {
-		double[][] points = new double[vectors.size()][3];
-		int i = 0;
-		for (Vector3d v : vectors) {
-			points[i][0] = v.x;
-			points[i][1] = v.y;
-			points[i][2] = v.z;
-			i++;
-		}
-		display3DPoints(points, title);
+
+	private static Point3f toPoint(final Vector3dc v) {
+		return new Point3f((float) v.x(), (float) v.y(), (float) v.z());
 	}
 }

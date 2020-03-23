@@ -28,6 +28,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import net.imagej.patcher.LegacyInjector;
 
@@ -38,7 +39,6 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
@@ -107,21 +107,21 @@ public class SkeletoniseWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
 			.getBitDepth() != 8)
 		{
-			cancel(NOT_8_BIT_BINARY_IMAGE);
+			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 		if (inputImage.getNChannels() > 1) {
-			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
 		if (inputImage.getNFrames() > 1) {
-			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
+			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 	}
 }

@@ -26,22 +26,15 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import net.imagej.ImageJ;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
-import org.scijava.ui.UserInterface;
 
 import ij.ImagePlus;
 import ij.gui.NewImage;
@@ -52,44 +45,38 @@ import ij.gui.NewImage;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class FitEllipsoidWrapperTest {
+public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 
-	private static final Gateway IMAGE_J = new ImageJ();
-	private UsageReporter mockReporter;
-
-	@Before
-	public void setup() {
-		mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		FitEllipsoidWrapper.setReporter(mockReporter);
+	@BeforeClass
+	public static void oneTimeSetup() {
+		FitEllipsoidWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
-	public void test2DImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(IMAGE_J,
+	public void test2DImageCancelsPlugin() {
+		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ(),
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
-	public void testAnisotropicImageShowsWarningDialog() throws Exception {
-		CommonWrapperTests.testAnisotropyWarning(IMAGE_J,
+	public void testAnisotropicImageShowsWarningDialog() {
+		CommonWrapperTests.testAnisotropyWarning(imageJ(),
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void testNullImageCancelsPlugin() {
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			FitEllipsoidWrapper.class);
 	}
 
 	@Test
 	public void testNullROIManagerCancelsPlugin() throws Exception {
 		// SETUP
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = NewImage.createImage("", 5, 5, 5, 8, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			FitEllipsoidWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -98,12 +85,7 @@ public class FitEllipsoidWrapperTest {
 		assertTrue("Cancel reason is incorrect", module.getCancelReason()
 			.startsWith("Please populate ROI Manager with at least " +
 				Quadric.MIN_DATA));
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }

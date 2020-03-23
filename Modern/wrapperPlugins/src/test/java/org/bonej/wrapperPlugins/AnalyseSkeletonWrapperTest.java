@@ -34,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -49,20 +48,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import net.imagej.ImageJ;
-
-import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.PrimitiveColumn;
-import org.scijava.ui.UserInterface;
 
 /**
  * Tests for {@link AnalyseSkeletonWrapper}
@@ -70,15 +62,7 @@ import org.scijava.ui.UserInterface;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class AnalyseSkeletonWrapperTest {
-
-	private static final ImageJ IMAGE_J = new ImageJ();
-	private UsageReporter mockReporter;
-
-	@After
-	public void tearDown() {
-		SharedTable.reset();
-	}
+public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testAdditionalResultsTable() throws Exception {
@@ -96,7 +80,7 @@ public class AnalyseSkeletonWrapperTest {
 			"0", length, length, "255.0", "255.0" };
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", line,
 			"pruneCycleMethod", "None", "verbose", true, "pruneEnds", false).get();
 
@@ -126,7 +110,7 @@ public class AnalyseSkeletonWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
 			"pruneCycleMethod", "None", "verbose", false).get();
 
@@ -138,15 +122,13 @@ public class AnalyseSkeletonWrapperTest {
 	public void testBadFormatIntensityImageCancelsPlugin() throws Exception {
 		// SETUP
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
-		final UserInterface mockUI = mock(UserInterface.class);
 		final File exceptionFile = mock(File.class);
 		when(exceptionFile.getAbsolutePath()).thenReturn("file.foo");
-		when(mockUI.chooseFile(any(File.class), anyString())).thenReturn(
+		when(MOCK_UI.chooseFile(any(File.class), anyString())).thenReturn(
 			exceptionFile);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -161,11 +143,10 @@ public class AnalyseSkeletonWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_CHANNEL_DIMENSIONS +
 			". Please split the channels.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -173,7 +154,7 @@ public class AnalyseSkeletonWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -185,7 +166,7 @@ public class AnalyseSkeletonWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -203,7 +184,7 @@ public class AnalyseSkeletonWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -223,7 +204,7 @@ public class AnalyseSkeletonWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -241,14 +222,12 @@ public class AnalyseSkeletonWrapperTest {
 	@Test
 	public void testNoImageWhenNoSkeletonisation() throws Exception {
 		// SETUP
-		final UserInterface mockUI = mock(UserInterface.class);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus pixel = NewImage.createByteImage("Test", 3, 3, 1,
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
 			"pruneCycleMethod", "None").get();
 
@@ -256,17 +235,16 @@ public class AnalyseSkeletonWrapperTest {
 		assertFalse(
 			"Sanity check failed: plugin cancelled before image could have been shown",
 			module.isCanceled());
-		verify(mockUI, after(250).never()).show(any(ImagePlus.class));
+		verify(MOCK_UI, after(250).never()).show(any(ImagePlus.class));
 	}
 
 	@Test
 	public void testNoSkeletonsCancelsPlugin() throws Exception {
 		// SETUP
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus,
 			"pruneCycleMethod", "None").get();
 
@@ -274,13 +252,13 @@ public class AnalyseSkeletonWrapperTest {
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_SKELETONS, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+	public void testNonBinaryImageCancelsPlugin() {
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			AnalyseSkeletonWrapper.class);
 	}
 
@@ -293,7 +271,7 @@ public class AnalyseSkeletonWrapperTest {
 		mockIntensityFileOpening(intensityPath);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
 			"pruneCycleMethod", "Lowest intensity voxel").get();
 
@@ -304,8 +282,8 @@ public class AnalyseSkeletonWrapperTest {
 	}
 
 	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void testNullImageCancelsPlugin() {
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			AnalyseSkeletonWrapper.class);
 	}
 
@@ -317,7 +295,7 @@ public class AnalyseSkeletonWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		CommandModule module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class,
+		CommandModule module = command().run(AnalyseSkeletonWrapper.class,
 			true, "inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons",
 			false, "calculateShortestPaths", true).get();
 
@@ -326,7 +304,7 @@ public class AnalyseSkeletonWrapperTest {
 		assertNull(module.getOutput("shortestPaths"));
 
 		// EXECUTE
-		module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class, true,
+		module = command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", false).get();
 
@@ -335,7 +313,7 @@ public class AnalyseSkeletonWrapperTest {
 		assertNull(module.getOutput("shortestPaths"));
 
 		// EXECUTE
-		module = IMAGE_J.command().run(AnalyseSkeletonWrapper.class, true,
+		module = command().run(AnalyseSkeletonWrapper.class, true,
 			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", true).get();
 
@@ -371,7 +349,7 @@ public class AnalyseSkeletonWrapperTest {
 					3.0 }, { 1.0, 3.0 }, { 0.0, 0.0 } };
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixels,
 			"pruneCycleMethod", "None", "calculateShortestPaths", true).get();
 
@@ -389,7 +367,7 @@ public class AnalyseSkeletonWrapperTest {
 			assertEquals("Column has wrong number of rows", 2, column.size());
 			for (int j = 0; j < 2; j++) {
 				assertEquals("Column has an incorrect value", expectedValues[i][j],
-					column.get(j).doubleValue(), 1e-12);
+						column.get(j), 1e-12);
 			}
 		}
 	}
@@ -406,7 +384,7 @@ public class AnalyseSkeletonWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
 			"pruneCycleMethod", "None", "calculateShortestPaths", false).get();
 
@@ -423,8 +401,6 @@ public class AnalyseSkeletonWrapperTest {
 	 */
 	@Test
 	public void testSkeletonImageWhenSkeletonised() throws Exception {
-		final UserInterface mockUI = mock(UserInterface.class);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 		final ImagePlus square = NewImage.createByteImage("Test", 4, 4, 1,
 			FILL_BLACK);
 		square.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
@@ -433,7 +409,7 @@ public class AnalyseSkeletonWrapperTest {
 		square.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", square,
 			"pruneCycleMethod", "None").get();
 
@@ -441,7 +417,7 @@ public class AnalyseSkeletonWrapperTest {
 		assertFalse(
 			"Sanity check failed: plugin cancelled before image could have been shown",
 			module.isCanceled());
-		verify(mockUI, timeout(1000)).show(any(ImagePlus.class));
+		verify(MOCK_UI, timeout(1000)).show(any(ImagePlus.class));
 	}
 
 	@Test
@@ -449,11 +425,10 @@ public class AnalyseSkeletonWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
 			". Please split the hyperstack.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -461,7 +436,7 @@ public class AnalyseSkeletonWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -475,13 +450,13 @@ public class AnalyseSkeletonWrapperTest {
 			FILL_BLACK);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", blank).get();
 
 		// VERIFY
 		assertTrue("Sanity check failed: method didn't cancel", module
 			.isCanceled());
-		verify(mockReporter, timeout(1000).times(0)).reportEvent(anyString());
+		verify(MOCK_REPORTER, timeout(1000).times(0)).reportEvent(anyString());
 	}
 
 	@Test(expected = NullPointerException.class)
@@ -499,32 +474,23 @@ public class AnalyseSkeletonWrapperTest {
 		image.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(
+		final CommandModule module = command().run(
 			AnalyseSkeletonWrapper.class, true, "inputImage", image).get();
 
 		// VERIFY
 		assertFalse("Sanity check failed: method cancelled", module.isCanceled());
-		verify(mockReporter, timeout(1000)).reportEvent(anyString());
+		verify(MOCK_REPORTER, timeout(1000)).reportEvent(anyString());
 	}
 
-	@Before
-	public void setup() {
-		mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		AnalyseSkeletonWrapper.setReporter(mockReporter);
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
+	@BeforeClass
+	public static void oneTimeSetup() {
+		AnalyseSkeletonWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	private void mockIntensityFileOpening(final String path) {
 		final File intensityFile = mock(File.class);
-		final UserInterface mockUI = mock(UserInterface.class);
 		when(intensityFile.getAbsolutePath()).thenReturn(path);
-		when(mockUI.chooseFile(any(File.class), anyString())).thenReturn(
+		when(MOCK_UI.chooseFile(any(File.class), anyString())).thenReturn(
 			intensityFile);
-		IMAGE_J.ui().setDefaultUI(mockUI);
 	}
 }

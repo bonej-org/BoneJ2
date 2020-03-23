@@ -29,6 +29,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
 import ij.process.LUT;
@@ -237,28 +238,28 @@ public class ThicknessWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		if (inputImage == null) {
-			cancel(NO_IMAGE_OPEN);
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
 		if (!ImagePlusUtil.is3D(inputImage)) {
-			cancel(NOT_3D_IMAGE);
+			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
 
 		if (inputImage.getNChannels() > 1) {
-			cancel(HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
+			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
 		if (inputImage.getNFrames() > 1) {
-			cancel(HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
+			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 			return;
 		}
 
 		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
 			.getBitDepth() != 8)
 		{
-			cancel(NOT_8_BIT_BINARY_IMAGE);
+			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 

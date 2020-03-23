@@ -23,6 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.wrapperPlugins;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
@@ -30,8 +31,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -41,24 +40,15 @@ import ij.gui.NewImage;
 import ij.measure.Calibration;
 import ij.process.LUT;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import net.imagej.ImageJ;
-
-import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.scijava.Gateway;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.UserInterface;
 
 /**
  * Tests for {@link ThicknessWrapper}
@@ -66,32 +56,22 @@ import org.scijava.ui.UserInterface;
  * @author Richard Domander
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
-public class ThicknessWrapperTest {
+public class ThicknessWrapperTest extends AbstractWrapperTest {
 
-	private static final Gateway IMAGE_J = new ImageJ();
-	private UsageReporter mockReporter;
-
-	@Before
-	public void setup() {
-		mockReporter = mock(UsageReporter.class);
-		doNothing().when(mockReporter).reportEvent(anyString());
-		ThicknessWrapper.setReporter(mockReporter);
-	}
-
-	@After
-	public void tearDown() {
-		SharedTable.reset();
+	@BeforeClass
+	public static void oneTimeSetup() {
+		ThicknessWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	@Test
-	public void test2DImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(IMAGE_J,
+	public void test2DImageCancelsPlugin() {
+		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
 	@Test
-	public void testAnisotropicImageShowsWarningDialog() throws Exception {
-		CommonWrapperTests.testAnisotropyWarning(IMAGE_J, ThicknessWrapper.class);
+	public void testAnisotropicImageShowsWarningDialog() {
+		CommonWrapperTests.testAnisotropyWarning(imageJ(), ThicknessWrapper.class);
 	}
 
 	@Test
@@ -99,11 +79,10 @@ public class ThicknessWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_CHANNEL_DIMENSIONS +
 			". Please split the channels.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -111,7 +90,7 @@ public class ThicknessWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -125,7 +104,7 @@ public class ThicknessWrapperTest {
 			2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
 			.get();
 
@@ -134,10 +113,10 @@ public class ThicknessWrapperTest {
 			.getLuts()[0];
 		final LUT spacingMap = ((ImagePlus) module.getOutput("spacingMap"))
 			.getLuts()[0];
-		assertTrue("Trabecular map doesn't have the 'fire' LUT", Arrays.equals(
-			fireLUT.getBytes(), trabecularMap.getBytes()));
-		assertTrue("Spacing map doesn't have the 'fire' LUT", Arrays.equals(fireLUT
-			.getBytes(), spacingMap.getBytes()));
+		assertArrayEquals("Trabecular map doesn't have the 'fire' LUT", fireLUT.getBytes(),
+				trabecularMap.getBytes());
+		assertArrayEquals("Spacing map doesn't have the 'fire' LUT", fireLUT
+				.getBytes(), spacingMap.getBytes());
 	}
 
 	@Test
@@ -148,7 +127,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
 			.get();
 
@@ -165,7 +144,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", false)
 			.get();
 
@@ -182,7 +161,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
 			"showMaps", true).get();
 
@@ -202,7 +181,7 @@ public class ThicknessWrapperTest {
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Trabecular thickness",
 			"showMaps", true).get();
 
@@ -216,14 +195,14 @@ public class ThicknessWrapperTest {
 	}
 
 	@Test
-	public void testNonBinaryImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(IMAGE_J,
+	public void testNonBinaryImageCancelsPlugin() {
+		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
 	@Test
-	public void testNullImageCancelsPlugin() throws Exception {
-		CommonWrapperTests.testNullImageCancelsPlugin(IMAGE_J,
+	public void testNullImageCancelsPlugin() {
+		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
@@ -242,7 +221,7 @@ public class ThicknessWrapperTest {
 			Double.NaN }, { 10.392304420471191 }, { 0.0 }, { 10.392304420471191 } };
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus, "mapChoice", "Both", "maskArtefacts",
 			false, "showMaps", false).get();
 
@@ -267,11 +246,10 @@ public class ThicknessWrapperTest {
 		// SETUP
 		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
 			". Please split the hyperstack.";
-		final UserInterface mockUI = CommonWrapperTests.mockUIService(IMAGE_J);
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
 		// EXECUTE
-		final CommandModule module = IMAGE_J.command().run(ThicknessWrapper.class,
+		final CommandModule module = command().run(ThicknessWrapper.class,
 			true, "inputImage", imagePlus).get();
 
 		// VERIFY
@@ -279,12 +257,7 @@ public class ThicknessWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
 			any());
-	}
-
-	@AfterClass
-	public static void oneTimeTearDown() {
-		IMAGE_J.context().dispose();
 	}
 }
