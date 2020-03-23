@@ -543,7 +543,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		logService.debug("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
 				+ (double) (stop - start) / totalIterations + " ms/iteration)");
 
-		String centreString = "("+centre[0]+",  "+centre[1]+",  "+centre[2]+")";
+		String centreString = "("+(int) centre[0]+",  "+ (int) centre[1]+",  "+(int) centre[2]+")";
 		if(statusService!=null) {
 			statusService.showStatus("Ellipsoid optimised at " + centreString);//non-null check needed for tests
 		}
