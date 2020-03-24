@@ -70,6 +70,7 @@ public final class AxisUtils {
 	 *
 	 * @param space an n-dimensional space with calibrated axes.
 	 * @param <S> type of the space.
+	 * @param <C> type of axis in the space
 	 * @param unitService an {@link UnitService} to convert axis calibrations.
 	 * @return an optional with the unit of spatial calibration. It's empty if
 	 *         there's no conversion between the units of spatial axes. The
