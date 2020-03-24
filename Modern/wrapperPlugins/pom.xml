@@ -232,6 +232,10 @@
             <groupId>net.imglib2</groupId>
             <artifactId>imglib2</artifactId>
         </dependency>
+        <dependency>
+            <groupId>net.imglib2</groupId>
+            <artifactId>imglib2-roi</artifactId>
+        </dependency>
 
         <!-- Other dependencies -->
         <dependency>
