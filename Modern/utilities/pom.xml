@@ -173,7 +173,7 @@
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
         </dependency>
-        <!-- Try removing after pom-scijava 29.x.x -->
+        <!-- Needed for UI. Try removing after pom-scijava 29.x.x -->
         <dependency>
             <groupId>com.miglayout</groupId>
             <artifactId>miglayout-swing</artifactId>
