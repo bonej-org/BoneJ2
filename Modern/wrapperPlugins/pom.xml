@@ -93,7 +93,7 @@
     <scm>
         <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
         <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
-        <tag>HEAD</tag>
+        <tag>bonej-7.0.0</tag>
         <url>https://github.com/bonej-org/BoneJ2</url>
     </scm>
     <issueManagement>
