@@ -29,6 +29,7 @@ import static net.imglib2.roi.Regions.countTrue;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -367,8 +368,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			final BinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> medialOptimisation = Functions.binary(opService,
 					EllipsoidOptimisationStrategy.class, QuickEllipsoid.class, pixels, new Vector3d(),
 					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
-			quickEllipsoids = ridgePoints.parallelStream().map(sp -> medialOptimisation.calculate(pixels, sp))
-					.filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+			final AtomicInteger progress = new AtomicInteger();
+			final int points = ridgePoints.size();
+			quickEllipsoids = ridgePoints.parallelStream()
+					.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
+					.map(sp -> medialOptimisation.calculate(pixels, sp)).filter(Objects::nonNull)
+					.toArray(QuickEllipsoid[]::new);
 			logService.info("Found " + quickEllipsoids.length + " distance-ridge-seeded ellipsoids.");
 		}
 
@@ -381,8 +386,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			final BinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> medialOptimisation = Functions.binary(opService,
 					EllipsoidOptimisationStrategy.class, QuickEllipsoid.class, pixels, new Vector3d(),
 					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
-			QuickEllipsoid[] skeletonSeededEllipsoids = skeletonPoints.parallelStream().map(sp -> medialOptimisation.calculate(pixels, sp))
-					.filter(Objects::nonNull).toArray(QuickEllipsoid[]::new);
+			final AtomicInteger progress = new AtomicInteger();
+			final int points = skeletonPoints.size();
+			QuickEllipsoid[] skeletonSeededEllipsoids = skeletonPoints.parallelStream()
+					.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
+					.map(sp -> medialOptimisation.calculate(pixels, sp)).filter(Objects::nonNull)
+					.toArray(QuickEllipsoid[]::new);
 			logService.info("Found " + skeletonSeededEllipsoids.length + " skeleton-seeded ellipsoids.");
 			quickEllipsoids = Stream.concat(Arrays.stream(quickEllipsoids), Arrays.stream(skeletonSeededEllipsoids))
 					.toArray(QuickEllipsoid[]::new);
