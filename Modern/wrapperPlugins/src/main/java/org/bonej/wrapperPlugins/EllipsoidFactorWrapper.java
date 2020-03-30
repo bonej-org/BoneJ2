@@ -194,9 +194,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 			//assign one ellipsoid to each FG voxel
 			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-			long start = System.currentTimeMillis();
+			final long start = System.currentTimeMillis();
 			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, ellipsoids);
-			long stop = System.currentTimeMillis();
+			final long stop = System.currentTimeMillis();
 			logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
 			//add result of this run to overall result
@@ -260,7 +260,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final Cursor<FloatType> cursor = EF.cursor();
 		while(cursor.hasNext()){
 			cursor.fwd();
-			double value = cursor.get().getRealDouble();
+			final double value = cursor.get().getRealDouble();
 			if(!Double.isNaN(value)){
 				stats.addValue(value);
 			}
@@ -276,21 +276,24 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	}
 
-	private List<ImgPlus> divideOutput(List<ImgPlus> outputList, int repetitions) {
-		List<ImgPlus> divided = new ArrayList<>();
-		for(int i=0; i<outputList.size(); i++)
-		{
-			final Img division = (Img) opService.math().divide(opService.convert().float32(outputList.get(i).getImg()), new FloatType(repetitions));
-			final ImgPlus divisionImgPlus = new ImgPlus<>(division, outputList.get(i));
-			divisionImgPlus.setChannelMaximum(0, outputList.get(i).getChannelMaximum(0));
-			divisionImgPlus.setChannelMinimum(0, outputList.get(i).getChannelMinimum(0));
+	private List<ImgPlus> divideOutput(final List<ImgPlus> outputList, final int repetitions) {
+		final List<ImgPlus> divided = new ArrayList<>();
+		for (final ImgPlus floatTypes : outputList) {
+			final Img division = (Img) opService.math()
+					.divide(opService.convert().float32(floatTypes.getImg()),
+							new FloatType(repetitions));
+			final ImgPlus divisionImgPlus = new ImgPlus<>(division, floatTypes);
+			divisionImgPlus.setChannelMaximum(0, floatTypes.getChannelMaximum(0));
+			divisionImgPlus.setChannelMinimum(0, floatTypes.getChannelMinimum(0));
 			divided.add(divisionImgPlus);
 		}
 		return divided;
 	}
 
-	private List<ImgPlus> sumOutput(List<ImgPlus> outputList, List<ImgPlus> currentOutputList, double nSum) {
-		List<ImgPlus> summed = new ArrayList<>();
+	private List<ImgPlus> sumOutput(final List<ImgPlus> outputList,
+											   final List<ImgPlus> currentOutputList,
+											   final double nSum) {
+		final List<ImgPlus> summed = new ArrayList<>();
 		for(int i=0; i<outputList.size(); i++)
 		{
 			//this does not deal with NaNs the way we would like
@@ -308,8 +311,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				currentVal.fwd();
 				nextVal.fwd();
 
-				double p = previousVal.get().getRealDouble();
-				double c = currentVal.get().getRealDouble();
+				final double p = previousVal.get().getRealDouble();
+				final double c = currentVal.get().getRealDouble();
 				// only need to care about XOR case
 				if(!Double.isFinite(c) ^ !Double.isFinite(p))
 				{
@@ -401,7 +404,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		seedPointImage.setChannelMaximum(0, 1);
 		seedPointImage.setChannelMinimum(0, 0);
 		quickEllipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
-		long stop = System.currentTimeMillis();
+		final long stop = System.currentTimeMillis();
 		logService.info("Found " + quickEllipsoids.size() + " ellipsoids in " + (stop - start) + " ms");
 		return quickEllipsoids;
 	}
@@ -436,24 +439,25 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		return skeletonPoints;
 	}
 
-	private List<Vector3d> getDistanceRidgePoints(ImgPlus<BitType> imp) {
-		List<Vector3d> ridgePoints = (List<Vector3d>) opService.run(FindRidgePoints.class, imp, distanceThreshold);
+	private List<Vector3d> getDistanceRidgePoints(final ImgPlus<BitType> imp) {
+		final List<Vector3d> ridgePoints = (List<Vector3d>) opService.run(FindRidgePoints.class, imp, distanceThreshold);
 		logService.info("Found " + ridgePoints.size() + " distance-ridge-based points");
 		return ridgePoints;
 	}
 
-	private List<Vector3d> applySkipRatio(List<Vector3d> seedPoints) {
+	private List<Vector3d> applySkipRatio(final List<Vector3d> seedPoints) {
 		if (skipRatio > 1) {
-			int limit = seedPoints.size() / skipRatio;
+			final int limit = seedPoints.size() / skipRatio;
 			final Random random = new Random();
 			final int skipper = random.nextInt(skipRatio);
-			seedPoints = Stream.iterate(skipper, i -> i + skipRatio).limit(limit).map(seedPoints::get).collect(toList());
+			return Stream.iterate(skipper, i -> i + skipRatio).limit(limit).map(seedPoints::get).collect(toList());
 		}
 		return seedPoints;
 	}
 
-	private void addPointsToDisplay(List<Vector3d> seedPoints, ArrayImg<ByteType, ByteArray> seedImage, byte i) {
-		final ArrayRandomAccess<ByteType> access = seedImage.randomAccess();
+	private void addPointsToDisplay(final List<Vector3d> seedPoints, final Img<ByteType> seedImage,
+									final byte i) {
+		final RandomAccess<ByteType> access = seedImage.randomAccess();
 		for (final Vector3d p : seedPoints) {
 			access.setPosition(new int[]{(int) p.x, (int) p.y, (int) p.z});
 			access.get().set(i);
@@ -496,16 +500,17 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private void colourSlice(final RandomAccessible<IntType> idImage, final Cursor<BitType> mask,
-							 final Collection<QuickEllipsoid> localEllipsoids, final Map<QuickEllipsoid, Integer> iDs, int nlargest) {
+							 final Collection<QuickEllipsoid> localEllipsoids, final Map<QuickEllipsoid, Integer> iDs,
+							 final int nLargest) {
+		final long[] coordinates = new long[mask.numDimensions()];
 		while (mask.hasNext()) {
 			mask.fwd();
 			if (!mask.get().get()) {
 				continue;
 			}
-			final long[] coordinates = new long[3];
 			mask.localize(coordinates);
 			final Vector3d point = new Vector3d(coordinates[0] + 0.5, coordinates[1] + 0.5, coordinates[2] + 0.5);
-			colourID(localEllipsoids, idImage, point, iDs, nlargest);
+			colourID(localEllipsoids, idImage, point, iDs, nLargest);
 		}
 	}
 
@@ -523,7 +528,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}
 
-	private void addResults(final int totalEllipsoids, double fillingPercentage) {
+	private void addResults(final int totalEllipsoids, final double fillingPercentage) {
 		final String label = inputImgPlus.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
 		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
