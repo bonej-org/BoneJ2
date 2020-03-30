@@ -28,7 +28,16 @@ import static java.util.stream.Collectors.toMap;
 import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
-import java.util.*;
+import ij.ImagePlus;
+import ij.ImageStack;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -37,8 +46,33 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import net.imagej.axis.DefaultLinearAxis;
+import net.imglib2.type.numeric.integer.ByteType;
+import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.integer.LongType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.integer.UnsignedIntType;
+import net.imagej.ImgPlus;
+import net.imagej.ops.OpService;
+import net.imagej.ops.special.function.BinaryFunctionOp;
+import net.imagej.ops.special.function.Functions;
+import net.imglib2.Cursor;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
+import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImg;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.basictypeaccess.array.ByteArray;
+import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.view.Views;
+
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.bonej.ops.ellipsoid.*;
+import org.bonej.ops.ellipsoid.EllipsoidFactorErrorTracking;
+import org.bonej.ops.ellipsoid.EllipsoidFactorOutputGenerator;
+import org.bonej.ops.ellipsoid.EllipsoidOptimisationStrategy;
+import org.bonej.ops.ellipsoid.OptimisationParameters;
+import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.SharedTable;
@@ -58,26 +92,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
-
-import ij.ImagePlus;
-import ij.ImageStack;
-import net.imagej.ImgPlus;
-import net.imagej.ops.OpService;
-import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.ops.special.function.Functions;
-import net.imglib2.Cursor;
-import net.imglib2.RandomAccess;
-import net.imglib2.RandomAccessible;
-import net.imglib2.img.Img;
-import net.imglib2.img.array.ArrayImg;
-import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.array.ArrayRandomAccess;
-import net.imglib2.img.basictypeaccess.array.ByteArray;
-import net.imglib2.type.logic.BitType;
-import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.*;
-import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.view.Views;
 
 /**
  * ImageJ plugin to describe the local geometry of a binary image in an
