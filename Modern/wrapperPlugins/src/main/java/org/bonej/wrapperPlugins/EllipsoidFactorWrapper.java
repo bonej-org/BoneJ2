@@ -534,14 +534,14 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		}
 	}
 	// endregion
-	static byte[][] imgPlusToByteArray(ImgPlus<UnsignedByteType> imp) {
-		final int w = (int) imp.dimension(0);
-		final int h = (int) imp.dimension(1);
-		final int d = (int) imp.dimension(2);
+	static byte[][] imgPlusToByteArray(final ImgPlus<UnsignedByteType> imgPlus) {
+		final int w = (int) imgPlus.dimension(0);
+		final int h = (int) imgPlus.dimension(1);
+		final int d = (int) imgPlus.dimension(2);
 
 		final byte[][] pixels = new byte[d][w * h];
-		final Cursor<UnsignedByteType> cursor = imp.localizingCursor();
-		final int[] position = new int[imp.numDimensions()];
+		final Cursor<UnsignedByteType> cursor = imgPlus.localizingCursor();
+		final int[] position = new int[imgPlus.numDimensions()];
 		while (cursor.hasNext()) {
 			cursor.fwd();
 			if (cursor.get().getRealDouble() != 0.0) {
