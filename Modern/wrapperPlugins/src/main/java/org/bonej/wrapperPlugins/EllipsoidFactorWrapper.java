@@ -412,15 +412,19 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	// region --seed point finding--
 
 	private List<Vector3d> getSkeletonPoints() {
-		ImagePlus skeleton = null;
+		ImagePlus skeleton;
+		final List<Vector3d> skeletonPoints = new ArrayList<>();
+
 		try {
-			final CommandModule skeletonizationModule = commandService.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true).get();
+			final CommandModule skeletonizationModule =
+					commandService.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true).get();
 			skeleton = (ImagePlus) skeletonizationModule.getOutput("skeleton");
 		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
+			return skeletonPoints;
 		}
+
 		final ImageStack skeletonStack = skeleton.getImageStack();
-		final List<Vector3d> skeletonPoints = new ArrayList<>();
 		for (int z = 0; z < skeleton.getStackSize(); z++) {
 			final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
 			for (int x = 0; x < skeleton.getWidth(); x++) {
