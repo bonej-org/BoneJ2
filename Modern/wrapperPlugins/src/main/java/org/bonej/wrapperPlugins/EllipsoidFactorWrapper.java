@@ -26,6 +26,7 @@ package org.bonej.wrapperPlugins;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static net.imglib2.roi.Regions.countTrue;
+import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -188,7 +189,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			//optimise ellipsoids
 			final List<QuickEllipsoid> ellipsoids = runEllipsoidOptimisation(inputImgPlus);
 			if (ellipsoids.isEmpty()) {
-				cancel(NO_ELLIPSOIDS_FOUND);
+				cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
 				return;
 			}
 
@@ -535,7 +536,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		} else {
-			cancel(NO_ELLIPSOIDS_FOUND);
+			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
 		}
 	}
 	// endregion
