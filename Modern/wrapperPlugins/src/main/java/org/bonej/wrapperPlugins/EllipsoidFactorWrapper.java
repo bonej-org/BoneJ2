@@ -211,14 +211,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
 				SharedTable.add(inputImgPlus.getName(),"median change "+i,errors.get("Median"));
 				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,errors.get("Max"));
-				counter++;
 			}
 			else{
 				outputList = currentOutputList;
 				SharedTable.add(inputImgPlus.getName(),"median change "+i,2);
 				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,2);
-				counter++;
 			}
+			counter++;
 			totalEllipsoids += ellipsoids.size();
 		}
 
@@ -541,20 +540,16 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final int d = (int) imp.dimension(2);
 
 		final byte[][] pixels = new byte[d][w * h];
-		final IntStream zRange = IntStream.range(0, d);
-		zRange.forEach(z -> {
-			final long[] minValues = {0, 0, z};
-			final long[] maxValues = {w - 1, h - 1, z};
-			final Cursor<UnsignedByteType> sliceCursor = Views.interval(imp, minValues, maxValues).localizingCursor();
-			while (sliceCursor.hasNext()) {
-				sliceCursor.fwd();
-				int[] position = new int[3];
-				sliceCursor.localize(position);
-				if (sliceCursor.get().get()!=0) {
-					pixels[position[2]][position[1] * w + position[0]] = (byte) 255;
-				}
+		final Cursor<UnsignedByteType> cursor = imp.localizingCursor();
+		final int[] position = new int[imp.numDimensions()];
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			if (cursor.get().getRealDouble() != 0.0) {
+				cursor.localize(position);
+				pixels[position[2]][position[1] * w + position[0]] = (byte) 0xFF;
 			}
-		});
+		}
+
 		return pixels;
 	}
 }
