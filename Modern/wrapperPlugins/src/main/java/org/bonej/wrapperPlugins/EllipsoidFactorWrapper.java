@@ -357,7 +357,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final List<QuickEllipsoid> quickEllipsoids = new ArrayList<>();
 		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift, minimumSemiAxis);
 		if (seedOnDistanceRidge) {
-			// noinspection unchecked
 			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImgPlus);
 			List<Vector3d> ridgePoints = getDistanceRidgePoints(inputAsBitType);
 			ridgePoints = applySkipRatio(ridgePoints);
