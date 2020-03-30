@@ -420,7 +420,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					commandService.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true).get();
 			skeleton = (ImagePlus) skeletonizationModule.getOutput("skeleton");
 		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
+			logService.error(e);
 			return skeletonPoints;
 		}
 
