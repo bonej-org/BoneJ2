@@ -168,7 +168,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
-	private EllipsoidFactorErrorTracking errorTracking;
 	/**
 	 * The EF results in a {@link Table}, null if there are no results
 	 */
@@ -181,7 +180,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		int totalEllipsoids = 0;
 		List<ImgPlus> outputList = null;
-		errorTracking = new EllipsoidFactorErrorTracking(opService);
+		final EllipsoidFactorErrorTracking errorTracking =
+				new EllipsoidFactorErrorTracking(opService);
 
 		int counter = 0;
 		for(int i = 0; i<runs; i++) {
