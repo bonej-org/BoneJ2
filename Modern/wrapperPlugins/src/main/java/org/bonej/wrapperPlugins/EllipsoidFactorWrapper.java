@@ -186,8 +186,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		int counter = 0;
 		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
-			final QuickEllipsoid[] ellipsoids = runEllipsoidOptimisation(inputImgPlus);
-			if (ellipsoids.length == 0) {
+			final List<QuickEllipsoid> ellipsoids = runEllipsoidOptimisation(inputImgPlus);
+			if (ellipsoids.isEmpty()) {
 				cancel(NO_ELLIPSOIDS_FOUND);
 				return;
 			}
@@ -195,15 +195,14 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			//assign one ellipsoid to each FG voxel
 			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
 			long start = System.currentTimeMillis();
-			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, Arrays.asList(ellipsoids));
+			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, ellipsoids);
 			long stop = System.currentTimeMillis();
 			logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
 			//add result of this run to overall result
 			//TODO do not match Op every time
 			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
-					Arrays.asList(ellipsoids),
-					showSecondaryImages);
+					ellipsoids, showSecondaryImages);
 
 			if(outputList!=null)
 			{
@@ -220,7 +219,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,2);
 				counter++;
 			}
-			totalEllipsoids += ellipsoids.length;
+			totalEllipsoids += ellipsoids.size();
 		}
 
 		if(runs>1)
@@ -346,7 +345,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	 *            input image
 	 * @return array of fitted ellipsoids
 	 */
-	private QuickEllipsoid[] runEllipsoidOptimisation(final ImgPlus imp) {
+	private List<QuickEllipsoid> runEllipsoidOptimisation(final ImgPlus imp) {
 		long start = System.currentTimeMillis();
 
 		final int w = (int) imp.dimension(0);
@@ -355,7 +354,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 		final byte[][] pixels = imgPlusToByteArray(imp);
 		final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
-		QuickEllipsoid[] quickEllipsoids = new QuickEllipsoid[]{};
+		final List<QuickEllipsoid> quickEllipsoids = new ArrayList<>();
 		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift, minimumSemiAxis);
 		if (seedOnDistanceRidge) {
 			// noinspection unchecked
@@ -370,11 +369,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
 			final AtomicInteger progress = new AtomicInteger();
 			final int points = ridgePoints.size();
-			quickEllipsoids = ridgePoints.parallelStream()
+			final List<QuickEllipsoid> ridgePointEllipsoids = ridgePoints.parallelStream()
 					.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
 					.map(sp -> medialOptimisation.calculate(pixels, sp)).filter(Objects::nonNull)
-					.toArray(QuickEllipsoid[]::new);
-			logService.info("Found " + quickEllipsoids.length + " distance-ridge-seeded ellipsoids.");
+					.collect(toList());
+			logService.info("Found " + ridgePointEllipsoids.size() + " distance-ridge-seeded ellipsoids.");
+			quickEllipsoids.addAll(ridgePointEllipsoids);
 		}
 
 		if (seedOnTopologyPreserving) {
@@ -388,13 +388,12 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
 			final AtomicInteger progress = new AtomicInteger();
 			final int points = skeletonPoints.size();
-			QuickEllipsoid[] skeletonSeededEllipsoids = skeletonPoints.parallelStream()
+			final List <QuickEllipsoid> skeletonSeededEllipsoids = skeletonPoints.parallelStream()
 					.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
 					.map(sp -> medialOptimisation.calculate(pixels, sp)).filter(Objects::nonNull)
-					.toArray(QuickEllipsoid[]::new);
-			logService.info("Found " + skeletonSeededEllipsoids.length + " skeleton-seeded ellipsoids.");
-			quickEllipsoids = Stream.concat(Arrays.stream(quickEllipsoids), Arrays.stream(skeletonSeededEllipsoids))
-					.toArray(QuickEllipsoid[]::new);
+					.collect(toList());
+			logService.info("Found " + skeletonSeededEllipsoids.size() + " skeleton-seeded ellipsoids.");
+			quickEllipsoids.addAll(skeletonSeededEllipsoids);
 		}
 
 		final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImgPlus.axis(0);
@@ -403,9 +402,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		seedPointImage = new ImgPlus<>(seedImage, "Seed points", xAxis, yAxis, zAxis);
 		seedPointImage.setChannelMaximum(0, 1);
 		seedPointImage.setChannelMinimum(0, 0);
-		Arrays.sort(quickEllipsoids, (a, b) -> Double.compare(b.getVolume(), a.getVolume()));
+		quickEllipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		long stop = System.currentTimeMillis();
-		logService.info("Found " + quickEllipsoids.length + " ellipsoids in " + (stop - start) + " ms");
+		logService.info("Found " + quickEllipsoids.size() + " ellipsoids in " + (stop - start) + " ms");
 		return quickEllipsoids;
 	}
 
