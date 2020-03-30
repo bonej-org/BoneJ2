@@ -240,7 +240,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				{
 					imgPlus.setAxis(inputImgPlus.axis(dim), dim);
 				}
-				if(imgPlus.getName()=="Volume") {
+				if("Volume".equals(imgPlus.getName())) {
 					final Cursor<RealType> cursor = imgPlus.cursor();
 					cursor.forEachRemaining(c ->
 					{
