@@ -138,7 +138,12 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 
 		return new Line(point, direction);
 	}
-
+	
+	/**
+	 * Returns the direction of the lines this generator creates
+	 *
+	 * @return direction as a unit vector
+	 */
 	@Override
 	public Vector3dc getDirection() {
 		return direction;
