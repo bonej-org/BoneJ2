@@ -36,6 +36,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.util.ValuePair;
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.joml.Intersectiond;
 import org.joml.Vector2d;
 import org.joml.Vector3d;
@@ -112,6 +113,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	private Double increment;
 
 	private final Random random = new Random();
+	private static Long seed = null;
 
 	/**
 	 * Calculates the MIL vector of the interval.
@@ -131,6 +133,9 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		}
 		if (milLength == null) {
 			milLength = 100.0 * getDiagonal();
+		}
+		if (seed != null) {
+			random.setSeed(seed);
 		}
 		double totalLength = 0.0;
 		long totalIntercepts = 0L;
@@ -159,6 +164,18 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	@Override
 	public boolean conforms() {
 		return in().numDimensions() >= 3;
+	}
+
+	/**
+	 * Sets the seed of the underlying random number generator
+	 * <p>
+	 * Only affects the random offset 0 &lte; o &lte; increment added to the sampling points
+	 * (see {@link #sampleSegment(RandomAccessible, Segment, Vector3dc, double)})
+	 * </p>
+	 * @param seed seed value
+	 */
+	public static void setSeed(final long seed) {
+		ParallelLineMIL.seed = seed;
 	}
 
 	// region -- Helper methods --

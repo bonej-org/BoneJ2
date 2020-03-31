@@ -138,7 +138,7 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 
 		return new Line(point, direction);
 	}
-	
+
 	/**
 	 * Returns the direction of the lines this generator creates
 	 *
