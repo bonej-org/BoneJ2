@@ -1,7 +1,6 @@
 package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -11,8 +10,30 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.array.ArrayRandomAccess;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+import org.junit.experimental.categories.Category;
 
-public class EllipsoidFactorWrapperTest {
+public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
+
+    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+    @Test
+    public void test2DImageCancelsConnectivity() {
+        CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
+                EllipsoidFactorWrapper.class);
+    }
+
+    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+    @Test
+    public void testNonBinaryImageCancelsConnectivity() {
+        CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
+                EllipsoidFactorWrapper.class);
+    }
+
+    @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
+    @Test
+    public void testNullImageCancelsConnectivity() {
+        CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
+                EllipsoidFactorWrapper.class);
+    }
 
     @Test
     public void testImgToByteArray(){

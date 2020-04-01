@@ -26,6 +26,9 @@ package org.bonej.wrapperPlugins;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static net.imglib2.roi.Regions.countTrue;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
+import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
@@ -46,6 +49,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import net.imagej.axis.DefaultLinearAxis;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -75,6 +79,8 @@ import org.bonej.ops.ellipsoid.OptimisationParameters;
 import org.bonej.ops.ellipsoid.QuickEllipsoid;
 import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
@@ -139,8 +145,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	//main input image
 	@SuppressWarnings("unused")
-	@Parameter
-	private ImgPlus<UnsignedIntType> inputImgPlus;
+	@Parameter(validater = "validateImage")
+	private ImgPlus<UnsignedIntType> inputImage;
 
 	//algorithm parameters
 	@Parameter(visibility = ItemVisibility.MESSAGE)
@@ -191,7 +197,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 	@Override
 	public void run() {
-		final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImgPlus);
+		final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 
 		int totalEllipsoids = 0;
 		List<ImgPlus> outputList = null;
@@ -201,7 +207,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		int counter = 0;
 		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
-			final List<QuickEllipsoid> ellipsoids = runEllipsoidOptimisation(inputImgPlus);
+			final List<QuickEllipsoid> ellipsoids = runEllipsoidOptimisation(inputImage);
 			if (ellipsoids.isEmpty()) {
 				cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
 				return;
@@ -224,13 +230,13 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				outputList = sumOutput(outputList, currentOutputList, (double) counter);
 				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
 				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
-				SharedTable.add(inputImgPlus.getName(),"median change "+i,errors.get("Median"));
-				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,errors.get("Max"));
+				SharedTable.add(inputImage.getName(),"median change "+i,errors.get("Median"));
+				SharedTable.add(inputImage.getName(),"maximum change "+i,errors.get("Max"));
 			}
 			else{
 				outputList = currentOutputList;
-				SharedTable.add(inputImgPlus.getName(),"median change "+i,2);
-				SharedTable.add(inputImgPlus.getName(),"maximum change "+i,2);
+				SharedTable.add(inputImage.getName(),"median change "+i,2);
+				SharedTable.add(inputImage.getName(),"maximum change "+i,2);
 			}
 			counter++;
 			totalEllipsoids += ellipsoids.size();
@@ -244,15 +250,15 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		ellipsoidFactorOutputImages = outputList;
 
 		//calibrate output images
-		final double voxelVolume = Math.pow(inputImgPlus.axis(0).calibratedValue(1),3);
-		for(ImgPlus imgPlus : ellipsoidFactorOutputImages)
+		final double voxelVolume = Math.pow(inputImage.axis(0).calibratedValue(1),3);
+		for(final ImgPlus imgPlus : ellipsoidFactorOutputImages)
 		{
 			if(imgPlus.numDimensions()>=3)
 			{
 				// set spatial axis for first 3 dimensions (ID is 4d)
 				for(int dim = 0; dim<3; dim++)
 				{
-					imgPlus.setAxis(inputImgPlus.axis(dim), dim);
+					imgPlus.setAxis(inputImage.axis(dim), dim);
 				}
 				if("Volume".equals(imgPlus.getName())) {
 					final Cursor<RealType> cursor = imgPlus.cursor();
@@ -281,11 +287,11 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			}
 		}
 		final double median = stats.getPercentile(50);
-		SharedTable.add(inputImgPlus.getName(), "Median EF", median);
+		SharedTable.add(inputImage.getName(), "Median EF", median);
 		final double max = stats.getMax();
-		SharedTable.add(inputImgPlus.getName(), "Max EF", max);
+		SharedTable.add(inputImage.getName(), "Max EF", max);
 		final double min = stats.getMin();
-		SharedTable.add(inputImgPlus.getName(), "Min EF", min);
+		SharedTable.add(inputImage.getName(), "Min EF", min);
 		addResults(totalEllipsoids, fillingPercentage);
 		statusService.showStatus("Ellipsoid Factor completed");
 
@@ -374,7 +380,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		final List<QuickEllipsoid> quickEllipsoids = new ArrayList<>();
 		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift, minimumSemiAxis);
 		if (seedOnDistanceRidge) {
-			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImgPlus);
+			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 			List<Vector3d> ridgePoints = getDistanceRidgePoints(inputAsBitType);
 			ridgePoints = applySkipRatio(ridgePoints);
 			addPointsToDisplay(ridgePoints, seedImage, (byte) 1);
@@ -412,9 +418,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			quickEllipsoids.addAll(skeletonSeededEllipsoids);
 		}
 
-		final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImgPlus.axis(0);
-		final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImgPlus.axis(1);
-		final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImgPlus.axis(2);
+		final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
+		final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
+		final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
 		seedPointImage = new ImgPlus<>(seedImage, "Seed points", xAxis, yAxis, zAxis);
 		seedPointImage.setChannelMaximum(0, 1);
 		seedPointImage.setChannelMinimum(0, 0);
@@ -544,7 +550,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	}
 
 	private void addResults(final int totalEllipsoids, final double fillingPercentage) {
-		final String label = inputImgPlus.getName();
+		final String label = inputImage.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
 		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
 		if (SharedTable.hasData()) {
@@ -553,6 +559,24 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
 		}
 	}
+
+	@SuppressWarnings("unused")
+	private void validateImage() {
+		if (inputImage == null) {
+			cancelMacroSafe(this, NO_IMAGE_OPEN);
+			return;
+		}
+
+		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+			cancelMacroSafe(this, NOT_3D_IMAGE);
+			return;
+		}
+
+		if (!ElementUtil.isBinary(inputImage)) {
+			cancelMacroSafe(this, NOT_BINARY);
+		}
+	}
+
 	// endregion
 	static byte[][] imgPlusToByteArray(final ImgPlus<UnsignedByteType> imgPlus) {
 		final int w = (int) imgPlus.dimension(0);
