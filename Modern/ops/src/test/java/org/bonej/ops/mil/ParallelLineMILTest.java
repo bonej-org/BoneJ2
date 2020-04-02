@@ -47,6 +47,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Tests for {@link ParallelLineMIL}.
@@ -165,6 +166,34 @@ public class ParallelLineMILTest {
 
 		// VERIFY
 		assertEquals(expectedLength, milVector.length(), 1e-12);
+	}
+
+	// This test is more for consistency than correctness per se
+	@Test
+	public void testBinaryNoise() {
+		// SETUP
+		final long seed = 0xc0ff33;
+		final Random noiseRNG = new Random();
+		noiseRNG.setSeed(seed);
+		final double milLength = Math.sqrt(SIZE * SIZE * 3);
+		final Img<BitType> binaryNoise = ArrayImgs.bits(SIZE, SIZE, SIZE);
+		binaryNoise.forEach(e -> {
+			if (noiseRNG.nextDouble() >= 0.5) {
+				e.setOne();
+			}
+		});
+		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 4.0, 0, 1, 0));
+		final PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(binaryNoise, rotation, rotateOp, 16);
+		generator.setSeed(seed);
+		ParallelLineMIL.setSeed(seed);
+
+		// EXECUTE
+		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
+				binaryNoise, generator, milLength, 1.0);
+
+		// VERIFY
+		assertEquals(1.9908629972056058, milVector.length(), 1e-12);
 	}
 
 	@BeforeClass
