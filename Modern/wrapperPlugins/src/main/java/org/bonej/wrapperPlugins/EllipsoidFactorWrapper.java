@@ -49,6 +49,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.units.UnitService;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.IntType;
@@ -141,8 +142,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@SuppressWarnings("unused")
 	@Parameter
 	private CommandService commandService;
-
-
+    @Parameter
+	private UnitService unitService;
 	//main input image
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
@@ -227,7 +228,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 
 			if(outputList!=null)
 			{
-				outputList = sumOutput(outputList, currentOutputList, (double) counter);
+				outputList = sumOutput(outputList, currentOutputList, counter);
 				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
 				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
 				SharedTable.add(inputImage.getName(),"median change "+i,errors.get("Median"));
@@ -250,7 +251,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		ellipsoidFactorOutputImages = outputList;
 
 		//calibrate output images
-		final double voxelVolume = Math.pow(inputImage.axis(0).calibratedValue(1),3);
+		final double voxelVolume = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
 		for(final ImgPlus imgPlus : ellipsoidFactorOutputImages)
 		{
 			if(imgPlus.numDimensions()>=3)
