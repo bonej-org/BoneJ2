@@ -28,6 +28,7 @@ import static java.util.stream.Stream.generate;
 import static org.bonej.ops.mil.ParallelLineGenerator.Line;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -254,6 +255,24 @@ public class PlaneParallelLineGeneratorTest {
 			assertEquals("Point " + a + " rotated incorrectly", 0.0, normal.dot(a),
 				1e-12);
 		});
+	}
+
+	@Test
+	public void testSetSeed() {
+		final PlaneParallelLineGenerator generator =
+				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 16L);
+
+		generator.setSeed(0xc0ff33);
+		final Line l = generator.nextLine();
+		generator.reset();
+		generator.setSeed(0xc0ff33);
+		final Line m = generator.nextLine();
+		generator.reset();
+		generator.setSeed(0xc0c0a);
+		final Line n = generator.nextLine();
+
+		assertEquals(l.point, m.point);
+		assertNotEquals(l.point, n.point);
 	}
 
 	@BeforeClass

@@ -23,13 +23,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.mil;
 
-import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imglib2.Interval;
 
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -55,7 +56,7 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	private final Vector3dc translation;
 	private final Vector3dc centroid;
 	private final Vector3dc direction;
-	private final Random random = new Random();
+	private final RandomGenerator random = new MersenneTwister();
 	private final Quaterniondc rotation;
 	private final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	private final long sections;
@@ -98,11 +99,8 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 		final int sectionsSq = (int) (sections * sections);
 
 		order = new int[sectionsSq];
-		for (int i = 0; i < sectionsSq; i++) {
-			order[i] = i;
-		}
+		initOrder();
 	}
-
 
 	/**
 	 * Generates the next random line.
@@ -121,7 +119,7 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	@Override
 	public Line nextLine() {
         if (cycle == 0) {
-			shuffle(order);
+			shuffle(order, random);
 			uOffset = random.nextDouble() * sectionSize;
 			tOffset = random.nextDouble() * sectionSize;
 		}
@@ -141,9 +139,34 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 		return new Line(point, direction);
 	}
 
+	/**
+	 * Returns the direction of the lines this generator creates
+	 *
+	 * @return direction as a unit vector
+	 */
 	@Override
 	public Vector3dc getDirection() {
 		return direction;
+	}
+
+	/**
+	 * Sets the seed of the underlying random number generator
+	 *
+	 * @param seed seed value
+	 * @see RandomGenerator#setSeed(long)
+	 */
+	public void setSeed(final long seed) { random.setSeed(seed); }
+
+	/**
+	 * Resets the cycle of the line generation
+	 *
+	 * @see #nextLine()
+	 */
+	public void reset() {
+		cycle = 0;
+		// Order needs to be reset to initial permutation {1, 2, 3 ... n},
+		// so that reset(); setSeed(seed); always produces the same sequence.
+		initOrder();
 	}
 
 	// region -- Helper methods --
@@ -173,6 +196,12 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 		final long sqSum = LongStream.of(interval.dimension(0), interval.dimension(
 			1), interval.dimension(2)).map(x -> x * x).sum();
 		return Math.sqrt(sqSum);
+	}
+
+	private void initOrder() {
+		for (int i = 0; i < order.length; i++) {
+			order[i] = i;
+		}
 	}
 	// endregion
 }
