@@ -169,7 +169,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	/**
 	 * Sets the seed of the underlying random number generator
 	 * <p>
-	 * Only affects the random offset 0 &lte; o &lte; increment added to the sampling points
+	 * Only affects the random offset 0 &lt; o &lt; increment added to the sampling points
 	 * (see {@link #sampleSegment(RandomAccessible, Segment, Vector3dc, double)})
 	 * </p>
 	 * @param seed seed value
