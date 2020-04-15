@@ -183,6 +183,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
+		reportUsage();
 	}
 
 	// region -- Helper methods --
