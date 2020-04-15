@@ -122,7 +122,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor")
 public class EllipsoidFactorWrapper extends BoneJCommand {
 
-	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
+	static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
 
 	//ImageJ services
 	@SuppressWarnings("unused")
