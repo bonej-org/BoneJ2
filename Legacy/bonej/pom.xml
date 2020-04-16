@@ -1,150 +1,170 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.bonej</groupId>
-        <artifactId>pom-bonej</artifactId>
-        <version>7.0.2-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
-    </parent>
+	<parent>
+		<groupId>org.bonej</groupId>
+		<artifactId>pom-bonej</artifactId>
+		<version>7.0.2-SNAPSHOT</version>
+		<relativePath>../..</relativePath>
+	</parent>
 
-    <artifactId>bonej-legacy-plugins_</artifactId>
+	<artifactId>bonej-legacy-plugins_</artifactId>
 
-    <name>BoneJ legacy plugins</name>
-    <description>Mavenized version of the BoneJ1 plugins</description>
-    <url>https://imagej.net/BoneJ_experimental</url>
-    <inceptionYear>2015</inceptionYear>
-    <organization>
-        <name>Royal Veterinary College</name>
-        <url>https://www.rvc.ac.uk/</url>
-    </organization>
-    <licenses>
-        <license>
-            <name>Simplified BSD License</name>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
+	<name>BoneJ legacy plugins</name>
+	<description>Mavenized version of the BoneJ1 plugins</description>
+	<url>https://imagej.net/BoneJ_experimental</url>
+	<inceptionYear>2015</inceptionYear>
+	<organization>
+		<name>Royal Veterinary College</name>
+		<url>https://www.rvc.ac.uk/</url>
+	</organization>
+	<licenses>
+		<license>
+			<name>Simplified BSD License</name>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
-    <developers>
-        <developer>
-            <id>mdoube</id>
-            <name>Michael Doube</name>
-            <email>mdoube@cityu.edu.hk</email>
-            <url>https://scholars.cityu.edu.hk/en/persons/michael-doube(e2acdf24-d9b3-4a48-a05d-ffcd72e7b758).html</url>
-            <organization>City University of Hong Kong</organization>
-            <organizationUrl>https://www.cityu.edu.hk/</organizationUrl>
-            <roles>
-                <role>founder</role>
-                <role>lead</role>
-                <role>developer</role>
-                <role>debugger</role>
-                <role>reviewer</role>
-                <role>support</role>
-                <role>maintainer</role>
-            </roles>
-            <timezone>+8</timezone>
-        </developer>
-    </developers>
-    <contributors>
-        <contributor>
-            <name>Richard Domander</name>
-            <url>https://imagej.net/User:Rdom</url>
-            <properties><id>rimadoma</id></properties>
-        </contributor>
-        <contributor>
-            <name>Curtis Rueden</name>
-            <url>https://imagej.net/User:Rueden</url>
-            <properties><id>ctrueden</id></properties>
-        </contributor>
-        <contributor>
-            <name>Mark Hiner</name>
-            <url>https://imagej.net/User:Hinerm</url>
-            <properties><id>hinerm</id></properties>
-        </contributor>
-        <contributor>
-            <name>Karl-Heinz Kunzelmann</name>
-            <organization>LMU-München</organization>
-            <properties><id>kkunzelm</id></properties>
-        </contributor>
-    </contributors>
+	<developers>
+		<developer>
+			<id>mdoube</id>
+			<name>Michael Doube</name>
+			<email>mdoube@cityu.edu.hk</email>
+			<url>https://scholars.cityu.edu.hk/en/persons/michael-doube(e2acdf24-d9b3-4a48-a05d-ffcd72e7b758).html</url>
+			<organization>City University of Hong Kong</organization>
+			<organizationUrl>https://www.cityu.edu.hk/</organizationUrl>
+			<roles>
+				<role>founder</role>
+				<role>lead</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
+			<timezone>+8</timezone>
+		</developer>
+	</developers>
+	<contributors>
+		<contributor>
+			<name>Richard Domander</name>
+			<url>https://imagej.net/User:Rdom</url>
+			<properties>
+				<id>rimadoma</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>Curtis Rueden</name>
+			<url>https://imagej.net/User:Rueden</url>
+			<properties>
+				<id>ctrueden</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>Mark Hiner</name>
+			<url>https://imagej.net/User:Hinerm</url>
+			<properties>
+				<id>hinerm</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>Karl-Heinz Kunzelmann</name>
+			<organization>LMU-München</organization>
+			<properties>
+				<id>kkunzelm</id>
+			</properties>
+		</contributor>
+	</contributors>
 
-    <mailingLists>
-        <mailingList>
-            <name>Image.sc Forum</name>
-            <subscribe>https://forum.image.sc/tags/bonej</subscribe>
-            <post>https://forum.image.sc/tags/bonej</post>
-        </mailingList>
-    </mailingLists>
+	<mailingLists>
+		<mailingList>
+			<name>Image.sc Forum</name>
+			<subscribe>https://forum.image.sc/tags/bonej</subscribe>
+			<post>https://forum.image.sc/tags/bonej</post>
+		</mailingList>
+	</mailingLists>
 
-    <scm>
-        <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
-        <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
-        <tag>bonej-7.0.0</tag>
-        <url>https://github.com/bonej-org/BoneJ2</url>
-    </scm>
-    <issueManagement>
-        <system>GitHub Issues</system>
-        <url>https://github.com/bonej-org/BoneJ2/issues</url>
-    </issueManagement>
-    <ciManagement>
-        <system>Travis CI</system>
-        <url>https://travis-ci.org/bonej-org/BoneJ2</url>
-    </ciManagement>
+	<scm>
+		<connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
+		<developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
+		<tag>bonej-7.0.0</tag>
+		<url>https://github.com/bonej-org/BoneJ2</url>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/bonej-org/BoneJ2/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>Travis CI</system>
+		<url>https://travis-ci.org/bonej-org/BoneJ2</url>
+	</ciManagement>
 
-    <properties>
-        <license.licenseName>bsd_2</license.licenseName>
-        <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
-    </properties>
+	<properties>
+		<license.licenseName>bsd_2</license.licenseName>
+		<license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
+	</properties>
 
-    <dependencies>
-        <!-- BoneJ dependencies -->
-        <dependency>
-            <groupId>org.bonej</groupId>
-            <artifactId>bonej-legacy-util_</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+	<dependencies>
+		<!-- BoneJ dependencies -->
+		<dependency>
+			<groupId>org.bonej</groupId>
+			<artifactId>bonej-legacy-util_</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
-        <!-- ImageJ dependencies -->
-        <dependency>
-            <groupId>net.imagej</groupId>
-            <artifactId>ij</artifactId>
-        </dependency>
+		<!-- ImageJ dependencies -->
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>ij</artifactId>
+		</dependency>
 
-        <!-- Fiji dependencies -->
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>3D_Viewer</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>AnalyzeSkeleton_</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>LocalThickness_</artifactId>
-            <version>${LocalThickness_.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>sc.fiji</groupId>
-            <artifactId>Skeletonize3D_</artifactId>
-        </dependency>
+		<!-- Fiji dependencies -->
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>3D_Viewer</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>AnalyzeSkeleton_</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>LocalThickness_</artifactId>
+			<version>${LocalThickness_.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>Skeletonize3D_</artifactId>
+		</dependency>
 
-        <!-- Other dependencies -->
-        <dependency>
-            <groupId>gov.nist.math</groupId>
-            <artifactId>jama</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scijava</groupId>
-            <artifactId>vecmath</artifactId>
-        </dependency>
+		<!-- Other dependencies -->
+		<dependency>
+			<groupId>gov.nist.math</groupId>
+			<artifactId>jama</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>vecmath</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.collections</groupId>
+			<artifactId>eclipse-collections-api</artifactId>
+			<version>10.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.collections</groupId>
+			<artifactId>eclipse-collections</artifactId>
+			<version>10.2.0</version>
+		</dependency>
 
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+		<!-- Test dependencies -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 </project>
