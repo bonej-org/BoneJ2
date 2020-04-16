@@ -561,15 +561,6 @@ public class ConnectedComponents {
 		// translate old
 		final HashMap<Integer, Integer> lutLut = new HashMap<>(nLabels);
 		final AtomicInteger value = new AtomicInteger(1);
-//		for (Integer lutValue : lutLabels) {
-//			if (lutValue == 0) {
-//				lutLut.put(0, 0);
-//				continue;
-//			}
-//			lutLut.put(lutValue, value);
-//			value++;
-//		}
-		//TODO this looks huckery
 		lutLabels.forEach(lutValue -> {
 			if (lutValue == 0) {
 				lutLut.put(0, 0);
