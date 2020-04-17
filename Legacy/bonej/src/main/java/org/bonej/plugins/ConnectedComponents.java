@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.Multithreader;
 import org.eclipse.collections.api.iterator.MutableIntIterator;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import ij.ImagePlus;
@@ -105,11 +107,11 @@ public class ConnectedComponents {
 		}
 
 		// set up a map split into one per chunk
-		final ArrayList<ArrayList<IntHashSet>> chunkMaps = new ArrayList<>(nChunks);
+		final ArrayList<MutableList<IntHashSet>> chunkMaps = new ArrayList<>(nChunks);
 		for (int chunk = 0; chunk < nChunks; chunk++) {
 			// assume there is a new particle label for every 10000 pixels
 			final int initialArrayCapacity = 1 + w * h * slicesPerChunk / 10000;
-			final ArrayList<IntHashSet> map = new ArrayList<>(initialArrayCapacity);
+			final MutableList<IntHashSet> map = FastList.newList(initialArrayCapacity);
 			chunkMaps.add(map);
 		}
 
@@ -135,7 +137,7 @@ public class ConnectedComponents {
 	 * @param chunkIDOffsets ID offsets
 	 * @return LUTs, one per image chunk
 	 */
-	private static int[][] generateLut(ArrayList<ArrayList<IntHashSet>> chunkMaps, int[] chunkIDOffsets) {
+	private static int[][] generateLut(ArrayList<MutableList<IntHashSet>> chunkMaps, int[] chunkIDOffsets) {
 		// merge labels between the HashSets, handling the chunk offsets and indexes
 		bucketFountain(chunkMaps, chunkIDOffsets);
 
@@ -185,7 +187,7 @@ public class ConnectedComponents {
 	 * @return particleLabels int[] array containing label associating every pixel
 	 *         with a particle
 	 */
-	private static int[][] firstIDAttribution(final ArrayList<ArrayList<IntHashSet>> chunkMaps,
+	private static int[][] firstIDAttribution(final ArrayList<MutableList<IntHashSet>> chunkMaps,
 			final int[] chunkIDOffsets, final int[] startSlices, final int w, final int h, final int nSlices,
 			final int phase) {
 
@@ -205,7 +207,7 @@ public class ConnectedComponents {
 			final int nextIDOffset = chunk < (chunkIDOffsets.length - 1) ? chunkIDOffsets[chunk + 1] : MAX_LABEL;
 			threads[chunk] = new Thread(() -> {
 				// get the Array of HashSets that relate to this image chunk
-				final ArrayList<IntHashSet> chunkMap = chunkMaps.get(chunk);
+				final MutableList<IntHashSet> chunkMap = chunkMaps.get(chunk);
 
 				// label image IDs have the chunk ID offset
 				int ID = IDoffset;
@@ -373,7 +375,7 @@ public class ConnectedComponents {
 
 				// need only one z per thread
 				final int z = startSlices[chunk];
-				final ArrayList<IntHashSet> chunkMap = chunkMaps.get(chunk);
+				final MutableList<IntHashSet> chunkMap = chunkMaps.get(chunk);
 				final int IDoffset = chunkIDOffsets[chunk];
 
 				if (chunk > 0) {
@@ -429,22 +431,21 @@ public class ConnectedComponents {
 	 * @param chunkMaps list of collisions between labels
 	 * @param chunkIDOffsets ID offsets
 	 */
-	private static void bucketFountain(final ArrayList<ArrayList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
+	private static void bucketFountain(final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
 		// iterate backwards through the chunk maps
 
 		final int nChunks = chunkIDOffsets.length;
 
 		for (int chunk = nChunks - 1; chunk >= 0; chunk--) {
-			final ArrayList<IntHashSet> map = chunkMaps.get(chunk);
+			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
 			final int priorChunk = chunk > 0 ? chunk - 1 : 0;
-			final ArrayList<IntHashSet> priorMap = chunkMaps.get(priorChunk);
+			final MutableList<IntHashSet> priorMap = chunkMaps.get(priorChunk);
 			final int IDoffset = chunkIDOffsets[chunk];
 			final int priorIDoffset = chunkIDOffsets[priorChunk];
 			for (int i = map.size() - 1; i >= 0; i--) {
 				final IntHashSet set = map.get(i);
 				if (!set.isEmpty()) {
 					// find the minimum label in the set
-					//TODO maybe quicker to write this out in a forEach
 					int minLabel = set.min();
 					
 					// if minimum label is less than this chunk's offset, need
@@ -472,10 +473,10 @@ public class ConnectedComponents {
 	 * @param chunkMaps list of collisions between labels
 	 * @return lutMap initial mapping of partial region labels to final labels
 	 */
-	private static HashMap<Integer, Integer> makeLutMap(final ArrayList<ArrayList<IntHashSet>> chunkMaps) {
+	private static HashMap<Integer, Integer> makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps) {
 		// count unique labels and particles
 		int labelCount = 0;
-		for (ArrayList<IntHashSet> map : chunkMaps) {
+		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
 				if (!set.isEmpty())
 					labelCount += set.size();
@@ -485,7 +486,7 @@ public class ConnectedComponents {
 		// set up a 1D HashMap of HashSets with the minimum label
 		// set as the 'root' (key) of the hashMap
 		HashMap<Integer, IntHashSet> hashMap = new HashMap<>(labelCount);
-		for (ArrayList<IntHashSet> map : chunkMaps) {
+		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
 				if (!set.isEmpty())
 					hashMap.put(set.min(), set);
@@ -494,7 +495,7 @@ public class ConnectedComponents {
 
 		// set up a LUT to keep track of the minimum replacement value for each label
 		final HashMap<Integer, Integer> lutMap = new HashMap<>(labelCount);
-		for (ArrayList<IntHashSet> map : chunkMaps) {
+		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
 				// start so that each label looks up itself
 				set.forEach(label -> lutMap.put(label, label));
@@ -508,7 +509,6 @@ public class ConnectedComponents {
 			for (Entry<Integer, IntHashSet> pair : hashMap.entrySet()) {
 				final IntHashSet set = pair.getValue();
 				final int key = pair.getKey();
-				//TODO is there a lighter-weight way to iterate over the IntHashSet?
 				MutableIntIterator iterator = set.intIterator();
 				while (iterator.hasNext()) {
 					final int label = iterator.next();
@@ -548,7 +548,7 @@ public class ConnectedComponents {
 	 * @return LUT as a 2D int array, with an int[] array per chunk
 	 */
 	private static int[][] lutFromLutMap(final HashMap<Integer, Integer> lutMap,
-			final ArrayList<ArrayList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
+			final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
 		// count number of unique labels in the LUT
 		IntHashSet lutLabels = new IntHashSet();
 		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
