@@ -646,11 +646,9 @@ public class ConnectedComponents {
 	 */
 	private static void addNeighboursToMap(final List<IntHashSet> map, final int[] nbh, final int centre,
 			final int IDoffset) {
-		final int l = nbh.length;
-		int lastNonZero = -1;
-		for (int i = 0; i < l; i++) {
-			final int val = nbh[i];
 
+		int lastNonZero = -1;
+		for (final int val : nbh) {
 			// skip background, self-similar, and the last label added
 			// adding them again is a redundant waste of time
 			if (val == 0 || val == centre || val == lastNonZero)
@@ -671,11 +669,9 @@ public class ConnectedComponents {
 	 * @param centre current pixel's map index (label - IDoffset)
 	 */
 	private static void addChunkNeighboursToMap(final List<IntHashSet> map, final int[] nbh, final int centre) {
-		final int l = nbh.length;
 		final IntHashSet set = map.get(centre);
 		int lastNonZero = -1;
-		for (int i = 0; i < l; i++) {
-			final int val = nbh[i];
+		for (final int val : nbh) {
 			// skip background
 			// and the last non-zero value (already added)
 			if (val == 0 || val == lastNonZero)
@@ -940,10 +936,8 @@ public class ConnectedComponents {
 	 * @return minimum label of neighbours and ID
 	 */
 	private static int getMinTag(final int[] neighbourhood, final int ID) {
-		final int l = neighbourhood.length;
 		int minTag = ID;
-		for (int i = 0; i < l; i++) {
-			final int tagv = neighbourhood[i];
+		for (final int tagv : neighbourhood) {
 			if (tagv == 0)
 				continue;
 			if (tagv < minTag)
@@ -977,8 +971,7 @@ public class ConnectedComponents {
 	 * @return number of particles in the image
 	 */
 	public int getNParticles() {
-		final int n = nParticles;
-		return n;
+		return nParticles;
 	}
 
 	/**
