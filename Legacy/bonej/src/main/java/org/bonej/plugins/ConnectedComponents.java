@@ -123,7 +123,7 @@ public class ConnectedComponents {
 		final int[][] lut = generateLut(chunkMaps, chunkIDOffsets);
 		
 		// rewrite the pixel values using the LUT
-		applyLUT(particleLabels, lut, chunkIDOffsets, startSlices, w, h, nSlices);
+		applyLUT(particleLabels, lut, chunkIDOffsets, startSlices, nSlices);
 
 		return particleLabels;
 	}
@@ -600,12 +600,10 @@ public class ConnectedComponents {
 	 * @param lut label LUT
 	 * @param chunkIDOffsets ID offsets 
 	 * @param startSlices start slices per chunk
-	 * @param w image width
-	 * @param h image height
 	 * @param d image depth
 	 */
 	private static void applyLUT(final int[][] particleLabels, final int[][] lut, final int[] chunkIDOffsets,
-			final int[] startSlices, final int w, final int h, final int d) {
+			final int[] startSlices, final int d) {
 		final int nChunks = chunkIDOffsets.length;
 
 		final Thread[] threads = new Thread[nChunks];
