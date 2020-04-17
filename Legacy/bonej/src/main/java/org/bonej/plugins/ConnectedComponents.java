@@ -25,12 +25,16 @@ package org.bonej.plugins;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.Multithreader;
+import org.eclipse.collections.api.iterator.MutableIntIterator;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -103,11 +107,11 @@ public class ConnectedComponents {
 		}
 
 		// set up a map split into one per chunk
-		final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps = new ArrayList<>(nChunks);
+		final ArrayList<MutableList<IntHashSet>> chunkMaps = new ArrayList<>(nChunks);
 		for (int chunk = 0; chunk < nChunks; chunk++) {
 			// assume there is a new particle label for every 10000 pixels
 			final int initialArrayCapacity = 1 + w * h * slicesPerChunk / 10000;
-			final ArrayList<HashSet<Integer>> map = new ArrayList<>(initialArrayCapacity);
+			final MutableList<IntHashSet> map = FastList.newList(initialArrayCapacity);
 			chunkMaps.add(map);
 		}
 
@@ -121,7 +125,7 @@ public class ConnectedComponents {
 		final int[][] lut = generateLut(chunkMaps, chunkIDOffsets);
 		
 		// rewrite the pixel values using the LUT
-		applyLUT(particleLabels, lut, chunkIDOffsets, startSlices, w, h, nSlices);
+		applyLUT(particleLabels, lut, chunkIDOffsets, startSlices, nSlices);
 
 		return particleLabels;
 	}
@@ -133,7 +137,7 @@ public class ConnectedComponents {
 	 * @param chunkIDOffsets ID offsets
 	 * @return LUTs, one per image chunk
 	 */
-	private static int[][] generateLut(ArrayList<ArrayList<HashSet<Integer>>> chunkMaps, int[] chunkIDOffsets) {
+	private static int[][] generateLut(ArrayList<MutableList<IntHashSet>> chunkMaps, int[] chunkIDOffsets) {
 		// merge labels between the HashSets, handling the chunk offsets and indexes
 		bucketFountain(chunkMaps, chunkIDOffsets);
 
@@ -183,7 +187,7 @@ public class ConnectedComponents {
 	 * @return particleLabels int[] array containing label associating every pixel
 	 *         with a particle
 	 */
-	private static int[][] firstIDAttribution(final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps,
+	private static int[][] firstIDAttribution(final ArrayList<MutableList<IntHashSet>> chunkMaps,
 			final int[] chunkIDOffsets, final int[] startSlices, final int w, final int h, final int nSlices,
 			final int phase) {
 
@@ -203,7 +207,7 @@ public class ConnectedComponents {
 			final int nextIDOffset = chunk < (chunkIDOffsets.length - 1) ? chunkIDOffsets[chunk + 1] : MAX_LABEL;
 			threads[chunk] = new Thread(() -> {
 				// get the Array of HashSets that relate to this image chunk
-				final ArrayList<HashSet<Integer>> chunkMap = chunkMaps.get(chunk);
+				final MutableList<IntHashSet> chunkMap = chunkMaps.get(chunk);
 
 				// label image IDs have the chunk ID offset
 				int ID = IDoffset;
@@ -371,7 +375,7 @@ public class ConnectedComponents {
 
 				// need only one z per thread
 				final int z = startSlices[chunk];
-				final ArrayList<HashSet<Integer>> chunkMap = chunkMaps.get(chunk);
+				final MutableList<IntHashSet> chunkMap = chunkMaps.get(chunk);
 				final int IDoffset = chunkIDOffsets[chunk];
 
 				if (chunk > 0) {
@@ -427,26 +431,23 @@ public class ConnectedComponents {
 	 * @param chunkMaps list of collisions between labels
 	 * @param chunkIDOffsets ID offsets
 	 */
-	private static void bucketFountain(final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps, final int[] chunkIDOffsets) {
+	private static void bucketFountain(final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
 		// iterate backwards through the chunk maps
 
 		final int nChunks = chunkIDOffsets.length;
 
 		for (int chunk = nChunks - 1; chunk >= 0; chunk--) {
-			final ArrayList<HashSet<Integer>> map = chunkMaps.get(chunk);
+			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
 			final int priorChunk = chunk > 0 ? chunk - 1 : 0;
-			final ArrayList<HashSet<Integer>> priorMap = chunkMaps.get(priorChunk);
+			final MutableList<IntHashSet> priorMap = chunkMaps.get(priorChunk);
 			final int IDoffset = chunkIDOffsets[chunk];
 			final int priorIDoffset = chunkIDOffsets[priorChunk];
 			for (int i = map.size() - 1; i >= 0; i--) {
-				final HashSet<Integer> set = map.get(i);
+				final IntHashSet set = map.get(i);
 				if (!set.isEmpty()) {
 					// find the minimum label in the set
-					int minLabel = Integer.MAX_VALUE;
-					for (Integer label : set) {
-						if (label < minLabel)
-							minLabel = label;
-					}
+					int minLabel = set.min();
+					
 					// if minimum label is less than this chunk's offset, need
 					// to move set to previous chunk's map
 					if (minLabel < IDoffset) {
@@ -472,11 +473,11 @@ public class ConnectedComponents {
 	 * @param chunkMaps list of collisions between labels
 	 * @return lutMap initial mapping of partial region labels to final labels
 	 */
-	private static HashMap<Integer, Integer> makeLutMap(final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps) {
+	private static HashMap<Integer, Integer> makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps) {
 		// count unique labels and particles
 		int labelCount = 0;
-		for (ArrayList<HashSet<Integer>> map : chunkMaps) {
-			for (HashSet<Integer> set : map) {
+		for (MutableList<IntHashSet> map : chunkMaps) {
+			for (IntHashSet set : map) {
 				if (!set.isEmpty())
 					labelCount += set.size();
 			}
@@ -484,26 +485,20 @@ public class ConnectedComponents {
 
 		// set up a 1D HashMap of HashSets with the minimum label
 		// set as the 'root' (key) of the hashMap
-		HashMap<Integer, HashSet<Integer>> hashMap = new HashMap<>(labelCount);
-		for (ArrayList<HashSet<Integer>> map : chunkMaps) {
-			for (HashSet<Integer> set : map) {
-				int root = Integer.MAX_VALUE;
-				for (Integer label : set) {
-					if (label < root)
-						root = label;
-				}
-				hashMap.put(root, set);
+		HashMap<Integer, IntHashSet> hashMap = new HashMap<>(labelCount);
+		for (MutableList<IntHashSet> map : chunkMaps) {
+			for (IntHashSet set : map) {
+				if (!set.isEmpty())
+					hashMap.put(set.min(), set);
 			}
 		}
 
 		// set up a LUT to keep track of the minimum replacement value for each label
 		final HashMap<Integer, Integer> lutMap = new HashMap<>(labelCount);
-		for (ArrayList<HashSet<Integer>> map : chunkMaps) {
-			for (HashSet<Integer> set : map) {
-				for (Integer label : set) {
-					// start so that each label looks up itself
-					lutMap.put(label, label);
-				}
+		for (MutableList<IntHashSet> map : chunkMaps) {
+			for (IntHashSet set : map) {
+				// start so that each label looks up itself
+				set.forEach(label -> lutMap.put(label, label));
 			}
 		}
 
@@ -511,10 +506,12 @@ public class ConnectedComponents {
 		boolean somethingChanged = true;
 		while (somethingChanged) {
 			somethingChanged = false;
-			for (Map.Entry<Integer, HashSet<Integer>> pair : hashMap.entrySet()) {
-				HashSet<Integer> set = pair.getValue();
-				int key = pair.getKey();
-				for (Integer label : set) {
+			for (Entry<Integer, IntHashSet> pair : hashMap.entrySet()) {
+				final IntHashSet set = pair.getValue();
+				final int key = pair.getKey();
+				MutableIntIterator iterator = set.intIterator();
+				while (iterator.hasNext()) {
+					final int label = iterator.next();
 					int lutValue = lutMap.get(label);
 					// lower the lut lookup value to the root of this set
 					if (lutValue > key) {
@@ -527,7 +524,9 @@ public class ConnectedComponents {
 						// move all the set's labels to the lower root
 						hashMap.get(lutValue).addAll(set);
 						// update all the set's lut lookups with the new root
-						for (Integer l : set) {
+						MutableIntIterator iter = set.intIterator();
+						while (iter.hasNext()) {
+							final int l = iter.next();
 							lutMap.put(l, lutValue);
 						}
 						set.clear();
@@ -549,9 +548,9 @@ public class ConnectedComponents {
 	 * @return LUT as a 2D int array, with an int[] array per chunk
 	 */
 	private static int[][] lutFromLutMap(final HashMap<Integer, Integer> lutMap,
-			final ArrayList<ArrayList<HashSet<Integer>>> chunkMaps, final int[] chunkIDOffsets) {
+			final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
 		// count number of unique labels in the LUT
-		HashSet<Integer> lutLabels = new HashSet<>();
+		IntHashSet lutLabels = new IntHashSet();
 		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
 			lutLabels.add(pair.getValue());
 		}
@@ -561,15 +560,14 @@ public class ConnectedComponents {
 		// assign incremental replacement values
 		// translate old
 		final HashMap<Integer, Integer> lutLut = new HashMap<>(nLabels);
-		int value = 1;
-		for (Integer lutValue : lutLabels) {
+		final AtomicInteger value = new AtomicInteger(1);
+		lutLabels.forEach(lutValue -> {
 			if (lutValue == 0) {
 				lutLut.put(0, 0);
-				continue;
+			} else {
+			  lutLut.put(lutValue, value.getAndIncrement());
 			}
-			lutLut.put(lutValue, value);
-			value++;
-		}
+		});
 
 		// lutLut now contains mapping from the old lut value (the lutLut 'key') to the
 		// new lut value (lutLut 'value')
@@ -602,12 +600,10 @@ public class ConnectedComponents {
 	 * @param lut label LUT
 	 * @param chunkIDOffsets ID offsets 
 	 * @param startSlices start slices per chunk
-	 * @param w image width
-	 * @param h image height
 	 * @param d image depth
 	 */
 	private static void applyLUT(final int[][] particleLabels, final int[][] lut, final int[] chunkIDOffsets,
-			final int[] startSlices, final int w, final int h, final int d) {
+			final int[] startSlices, final int d) {
 		final int nChunks = chunkIDOffsets.length;
 
 		final Thread[] threads = new Thread[nChunks];
@@ -648,13 +644,11 @@ public class ConnectedComponents {
 	 * @param centre   current pixel's label (with offset)
 	 * @param IDoffset chunk's ID offset
 	 */
-	private static void addNeighboursToMap(final List<HashSet<Integer>> map, final int[] nbh, final int centre,
+	private static void addNeighboursToMap(final List<IntHashSet> map, final int[] nbh, final int centre,
 			final int IDoffset) {
-		final int l = nbh.length;
-		int lastNonZero = -1;
-		for (int i = 0; i < l; i++) {
-			final int val = nbh[i];
 
+		int lastNonZero = -1;
+		for (final int val : nbh) {
 			// skip background, self-similar, and the last label added
 			// adding them again is a redundant waste of time
 			if (val == 0 || val == centre || val == lastNonZero)
@@ -674,12 +668,10 @@ public class ConnectedComponents {
 	 * @param nbh    a neighbourhood in the image.
 	 * @param centre current pixel's map index (label - IDoffset)
 	 */
-	private static void addChunkNeighboursToMap(final List<HashSet<Integer>> map, final int[] nbh, final int centre) {
-		final int l = nbh.length;
-		final HashSet<Integer> set = map.get(centre);
+	private static void addChunkNeighboursToMap(final List<IntHashSet> map, final int[] nbh, final int centre) {
+		final IntHashSet set = map.get(centre);
 		int lastNonZero = -1;
-		for (int i = 0; i < l; i++) {
-			final int val = nbh[i];
+		for (final int val : nbh) {
 			// skip background
 			// and the last non-zero value (already added)
 			if (val == 0 || val == lastNonZero)
@@ -944,10 +936,8 @@ public class ConnectedComponents {
 	 * @return minimum label of neighbours and ID
 	 */
 	private static int getMinTag(final int[] neighbourhood, final int ID) {
-		final int l = neighbourhood.length;
 		int minTag = ID;
-		for (int i = 0; i < l; i++) {
-			final int tagv = neighbourhood[i];
+		for (final int tagv : neighbourhood) {
 			if (tagv == 0)
 				continue;
 			if (tagv < minTag)
@@ -965,13 +955,13 @@ public class ConnectedComponents {
 	 * @param IDoffset this chunk's ID offset
 	 * @param nextIDOffset ID offset of the next chunk
 	 */
-	private static void expandMap(final List<HashSet<Integer>> map, final int ID,
+	private static void expandMap(final List<IntHashSet> map, final int ID,
 			final int IDoffset, final int nextIDOffset) {
 		if (ID >= nextIDOffset) {
 			throw new IllegalArgumentException("ID "+ID+" is greater than the allowed range (max "+(nextIDOffset-1)+")");
 		}
 		while (ID - IDoffset >= map.size()) {
-			final HashSet<Integer> set = new HashSet<>();
+			final IntHashSet set = new IntHashSet();
 			set.add(map.size() + IDoffset);
 			map.add(set);
 		}
@@ -981,8 +971,7 @@ public class ConnectedComponents {
 	 * @return number of particles in the image
 	 */
 	public int getNParticles() {
-		final int n = nParticles;
-		return n;
+		return nParticles;
 	}
 
 	/**
