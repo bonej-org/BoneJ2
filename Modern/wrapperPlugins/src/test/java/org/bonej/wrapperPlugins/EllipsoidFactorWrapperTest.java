@@ -82,7 +82,7 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
 
         final CommandModule module =
                 command().run(EllipsoidFactorWrapper.class, true, "inputImage", imgPlus, "runs", 1,
-                        "seedOnTopologyPreserving", false, "skipRatio", 0).get();
+                        "seedOnTopologyPreserving", false, "skipRatio", 1).get();
 
         assertFalse("Sanity check failed: method cancelled", module.isCanceled());
         verify(MOCK_REPORTER, timeout(1000)).reportEvent(anyString());
