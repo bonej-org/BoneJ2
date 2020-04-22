@@ -136,6 +136,7 @@ public class Moments implements PlugIn, DialogListener {
 		gd.addCheckbox("Align result", true);
 		gd.addCheckbox("Show axes (2D)", false);
 		gd.addCheckbox("Show axes (3D)", true);
+		gd.addCheckbox("Record unit vectors", false);
 		gd.addDialogListener(this);
 		gd.showDialog();
 		if (gd.wasCanceled()) {
@@ -162,6 +163,7 @@ public class Moments implements PlugIn, DialogListener {
 		final boolean doAlign = gd.getNextBoolean();
 		final boolean doAxes = gd.getNextBoolean();
 		final boolean doAxes3D = gd.getNextBoolean();
+		final boolean doVerboseUnitVectors = gd.getNextBoolean();
 
 		final double[] centroid = getCentroid3D(imp, startSlice, endSlice, min, max,
 			m, c);
@@ -193,6 +195,17 @@ public class Moments implements PlugIn, DialogListener {
 		ri.setResultInRow(imp, "I1 (kg.m²)", E.getD().get(2, 2));
 		ri.setResultInRow(imp, "I2 (kg.m²)", E.getD().get(1, 1));
 		ri.setResultInRow(imp, "I3 (kg.m²)", E.getD().get(0, 0));
+		if (doVerboseUnitVectors) {
+			ri.setResultInRow(imp, "vX0", E.getV().get(0, 0));
+			ri.setResultInRow(imp, "vY0", E.getV().get(1, 0));
+			ri.setResultInRow(imp, "vZ0", E.getV().get(2, 0));
+			ri.setResultInRow(imp, "vX1", E.getV().get(0, 1));
+			ri.setResultInRow(imp, "vY1", E.getV().get(1, 1));
+			ri.setResultInRow(imp, "vZ1", E.getV().get(2, 1));
+			ri.setResultInRow(imp, "vX2", E.getV().get(0, 2));
+			ri.setResultInRow(imp, "vY2", E.getV().get(1, 2));
+			ri.setResultInRow(imp, "vZ2", E.getV().get(2, 2));
+		}
 		ri.updateTable();
 
 		if (doAlign) alignToPrincipalAxes(imp, E.getV(), centroid, startSlice,
