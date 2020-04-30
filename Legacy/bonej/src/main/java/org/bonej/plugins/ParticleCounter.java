@@ -285,7 +285,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					rt.addValue("SA (" + units + "²)", surfaceAreas[i]);
 				}
 				if (doFeret) {
-					rt.addValue("Feret (" + units + ")", ferets[i]);
+					rt.addValue("Feret (" + units + ")", ferets[i * 7]);
+					rt.addValue("FeretAx (" + units + ")", ferets[i * 7 + 1]);
+					rt.addValue("FeretAy (" + units + ")", ferets[i * 7 + 2]);
+					rt.addValue("FeretAz (" + units + ")", ferets[i * 7 + 3]);
+					rt.addValue("FeretBx (" + units + ")", ferets[i * 7 + 4]);
+					rt.addValue("FeretBy (" + units + ")", ferets[i * 7 + 5]);
+					rt.addValue("FeretBz (" + units + ")", ferets[i * 7 + 6]);
 				}
 				if (doSurfaceVolume) {
 					rt.addValue("Encl. Vol. (" + units + "³)", surfaceVolumes[i]);

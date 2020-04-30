@@ -24,6 +24,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.plugins;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -41,7 +42,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
-import ij.plugin.filter.PlugInFilter;
 import marchingcubes.MCTriangulator;
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
 import sc.fiji.analyzeSkeleton.SkeletonResult;
@@ -718,20 +718,25 @@ public class ParticleAnalysis {
 	 * algorithm.
 	 *
 	 * @param surfacePoints points of all the particles.
-	 * @return Feret diameters of the surfaces.
+	 * @return Feret diameters and x, y, z coordinates of the two feret points of each surface,
+	 * packed in a double so that the feret diameter of particle i is found at [i * 7] and the
+	 * points' coordinates are in the following 6 positions in ax, ay, az, bx, by, bz order.
 	 */
 	static double[] getFerets(final List<List<Point3f>> surfacePoints) {
 		Thread[] threads = Multithreader.newThreads();
 		final int nSurfaces = surfacePoints.size();
-		final double[] ferets = new double[nSurfaces];
+		//distance, xa, ya, za, xb, yb, zb
+		final double[] ferets = new double[nSurfaces * 7];
 		AtomicInteger ai = new AtomicInteger(0);
 		for (int thread = 0; thread < threads.length; thread++) {
 			threads[thread] = new Thread(() -> {
 				for (int i = ai.getAndIncrement(); i < nSurfaces; i = ai.getAndIncrement()) {
 					final List<Point3f> surface = surfacePoints.get(i);
 				
+					final int j = i * 7;
+					
 					if (surface == null) {
-						ferets[i] = Double.NaN;
+						Arrays.fill(ferets, j, j + 7, Double.NaN);
 						continue;
 					}
 					
@@ -740,6 +745,8 @@ public class ParticleAnalysis {
 					ListIterator<Point3f> itb;
 					Point3f a;
 					Point3f b;
+					Point3f feretA = new Point3f();
+					Point3f feretB = new Point3f();
 					double feret = 0;
 					while (ita.hasNext()) {
 						// for all the points
@@ -749,10 +756,21 @@ public class ParticleAnalysis {
 						itb = surface.listIterator(ita.nextIndex());
 						while (itb.hasNext()) {
 							b = itb.next();
-							feret = Math.max(feret, a.distance(b));
+							final double distance = a.distance(b);
+							if (distance > feret) {
+								feret = distance;
+								feretA = a;
+								feretB = b;
+							}
 						}
 					}
-					ferets[i] = feret;
+					ferets[j] = feret;
+					ferets[j + 1] = feretA.x;
+					ferets[j + 2] = feretA.y;
+					ferets[j + 3] = feretA.z;
+					ferets[j + 4] = feretB.x;
+					ferets[j + 5] = feretB.y;
+					ferets[j + 6] = feretB.z;
 				}
 			});
 		}
