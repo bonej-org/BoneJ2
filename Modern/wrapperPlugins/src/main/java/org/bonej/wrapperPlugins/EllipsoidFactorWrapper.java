@@ -33,6 +33,7 @@ import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.plugin.frame.Recorder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +51,6 @@ import java.util.stream.Stream;
 
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.units.UnitService;
-import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -436,7 +436,9 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	private List<Vector3d> getSkeletonPoints() {
 		ImagePlus skeleton;
 		final List<Vector3d> skeletonPoints = new ArrayList<>();
-
+		// Override macro recording, so that it doesn't record the call to Skeletonize
+		boolean wasRecording = Recorder.record;
+		Recorder.record = false;
 		try {
 			final CommandModule skeletonizationModule =
 					commandService.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true).get();
@@ -444,6 +446,8 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		} catch (InterruptedException | ExecutionException e) {
 			logService.error(e);
 			return skeletonPoints;
+		} finally {
+			Recorder.record = wasRecording;
 		}
 
 		final ImageStack skeletonStack = skeleton.getImageStack();
