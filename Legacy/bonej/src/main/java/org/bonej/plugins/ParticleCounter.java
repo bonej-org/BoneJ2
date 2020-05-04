@@ -399,6 +399,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 			if (doAxesImage) {
 				ParticleDisplay.displayPrincipalAxes(univ, eigens, centroids, particleSizes);
+				if (doFeret) {
+					ParticleDisplay.displayMaxFeret(univ, ferets);
+				}
 			}
 			if (doEllipsoidImage) {
 				//ellipsoids are an Object[] array (1D)

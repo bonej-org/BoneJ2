@@ -35,6 +35,7 @@ import org.scijava.vecmath.Point3f;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
+import customnode.CustomLineMesh;
 import customnode.CustomPointMesh;
 import ij.IJ;
 import ij.ImagePlus;
@@ -323,6 +324,48 @@ public class ParticleDisplay {
 			displayAxes(univ, centroids[p], eVec.getArray(), lengths, 0.0f, "Principal Axes " + p);
 		}
 	}
+	
+	/**
+	 * Display Feret points and axis in the 3D Viewer
+	 * 
+	 * @param univ 3D Viewer universe
+	 * @param ferets array of results from {@link ParticleAnalysis#getFerets(List)}
+	 */
+	static void displayMaxFeret(final Image3DUniverse univ, double[][] ferets) {
+		final int nParticles = ferets.length;
+
+		for (int p = 1; p < nParticles; p++) {
+			IJ.showStatus("Rendering Ferets...");
+			IJ.showProgress(p, nParticles);
+			
+			final double[] f = ferets[p];
+			
+			if (Double.isNaN(f[0]))
+				continue;
+			
+			final Point3f a = new Point3f((float) f[1], (float) f[2], (float) f[3]);
+			final Point3f b = new Point3f((float) f[4], (float) f[5], (float) f[6]);
+			
+			final List<Point3f> points = Arrays.asList(a, b);
+			
+			final CustomPointMesh feretPointMesh = new CustomPointMesh(points);
+			
+			feretPointMesh.setPointSize(5.0f);
+			final float red = 0.0f;
+			final float green = 1.0f;
+			final float blue = 0.5f;
+			final Color3f cColour = new Color3f(red, green, blue);
+			feretPointMesh.setColor(cColour);
+			
+			try {
+				univ.addCustomMesh(feretPointMesh, "Feret " + p);
+				univ.addLineMesh(points, cColour, "Feret axis " + p, false);
+			} catch (final NullPointerException npe) {
+				IJ.log("3D Viewer was closed before rendering completed.");
+				return;
+			}
+		}
+	}
 
 	/**
 	 * Display ellipsoids in the 3D Viewer as point clouds
@@ -408,6 +451,8 @@ public class ParticleDisplay {
 			IJ.showStatus("Rendering surfaces...");
 			IJ.showProgress(p, nSurfaces);
 			final List<Point3f> surfacePoint = surfacePoints.get(p);
+			if (surfacePoint == null)
+				continue;
 			if (!surfacePoint.isEmpty()) {
 				Color3f colour = getColour(p, nSurfaces, colourMode, volumes, eigens, splitValue);
 				// Add the mesh
