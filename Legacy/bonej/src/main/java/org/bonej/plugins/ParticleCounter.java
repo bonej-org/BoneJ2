@@ -233,7 +233,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		if (doSurfaceArea) {
 			surfaceAreas = ParticleAnalysis.getSurfaceAreas(surfacePoints);
 		}
-		double[] ferets = new double[nParticles];
+		double[][] ferets = new double[nParticles][7];
 		if (doFeret) {
 			ferets = ParticleAnalysis.getFerets(surfacePoints);
 		}
@@ -285,7 +285,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					rt.addValue("SA (" + units + "²)", surfaceAreas[i]);
 				}
 				if (doFeret) {
-					rt.addValue("Feret (" + units + ")", ferets[i]);
+					rt.addValue("Feret (" + units + ")", ferets[i][0]);
+					rt.addValue("FeretAx (" + units + ")", ferets[i][1]);
+					rt.addValue("FeretAy (" + units + ")", ferets[i][2]);
+					rt.addValue("FeretAz (" + units + ")", ferets[i][3]);
+					rt.addValue("FeretBx (" + units + ")", ferets[i][4]);
+					rt.addValue("FeretBy (" + units + ")", ferets[i][5]);
+					rt.addValue("FeretBz (" + units + ")", ferets[i][6]);
 				}
 				if (doSurfaceVolume) {
 					rt.addValue("Encl. Vol. (" + units + "³)", surfaceVolumes[i]);
