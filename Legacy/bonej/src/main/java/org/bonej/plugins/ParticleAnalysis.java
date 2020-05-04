@@ -655,9 +655,11 @@ public class ParticleAnalysis {
 					point.y += yOffset;
 					point.z += zOffset;
 				}
-				surfacePoints.add(points);
 				if (points.isEmpty()) {
 					IJ.log("Particle " + p + " resulted in 0 surface points");
+					surfacePoints.add(null);
+				} else {
+					surfacePoints.add(points);
 				}
 			} else {
 				surfacePoints.add(null);
@@ -717,45 +719,47 @@ public class ParticleAnalysis {
 	 * Get the Feret diameter of a surface. Uses an inefficient brute-force
 	 * algorithm.
 	 *
-	 * @param surfacePoints points of all the particles.
+	 * @param surfacePoints points from a surface mesher
+	 * @throws IllegalArgumentException if there are less than 12 points (a tetrahedron)
 	 * @return Feret diameters and x, y, z coordinates of the two feret points of each surface,
 	 * packed in a double so that the feret diameter of particle i is found at [i * 7] and the
 	 * points' coordinates are in the following 6 positions in ax, ay, az, bx, by, bz order.
 	 */
-	static double[] getFerets(final List<List<Point3f>> surfacePoints) {
+	static double[][] getFerets(final List<List<Point3f>> surfacePoints) {
 		Thread[] threads = Multithreader.newThreads();
 		final int nSurfaces = surfacePoints.size();
 		//distance, xa, ya, za, xb, yb, zb
-		final double[] ferets = new double[nSurfaces * 7];
+		final double[][] ferets = new double[nSurfaces][7];
 		AtomicInteger ai = new AtomicInteger(0);
 		for (int thread = 0; thread < threads.length; thread++) {
 			threads[thread] = new Thread(() -> {
 				for (int i = ai.getAndIncrement(); i < nSurfaces; i = ai.getAndIncrement()) {
 					final List<Point3f> surface = surfacePoints.get(i);
-				
-					final int j = i * 7;
+					
 					
 					if (surface == null) {
-						Arrays.fill(ferets, j, j + 7, Double.NaN);
+						Arrays.fill(ferets[i], Double.NaN);
 						continue;
 					}
 					
+					final int nPoints = surface.size();
+					
+					//4 triangles * 3 points for the minimal tetrahedron
+					if (nPoints < 12) {
+						Arrays.fill(ferets[i], Double.NaN);
+						throw new IllegalArgumentException("Mesh for particle "+i+" has too few points: "+nPoints);
+					}
+					
 					// check all the point pairs in this surface
-					ListIterator<Point3f> ita = surface.listIterator();
-					ListIterator<Point3f> itb;
-					Point3f a;
-					Point3f b;
+					Point3f a = new Point3f();
+					Point3f b = new Point3f();
 					Point3f feretA = new Point3f();
 					Point3f feretB = new Point3f();
 					double feret = 0;
-					while (ita.hasNext()) {
-						// for all the points
-						a = ita.next();
-						// check all the pairs after this point
-						// (the other direction has already been checked)
-						itb = surface.listIterator(ita.nextIndex());
-						while (itb.hasNext()) {
-							b = itb.next();
+					for (int p = 0; p < nPoints; p++) {
+						a = surface.get(p);
+						for (int q = p + 1; q < nPoints; q++) {
+							b = surface.get(q);
 							final double distance = a.distance(b);
 							if (distance > feret) {
 								feret = distance;
@@ -764,13 +768,13 @@ public class ParticleAnalysis {
 							}
 						}
 					}
-					ferets[j] = feret;
-					ferets[j + 1] = feretA.x;
-					ferets[j + 2] = feretA.y;
-					ferets[j + 3] = feretA.z;
-					ferets[j + 4] = feretB.x;
-					ferets[j + 5] = feretB.y;
-					ferets[j + 6] = feretB.z;
+					ferets[i][0] = feret;
+					ferets[i][1] = feretA.x;
+					ferets[i][2] = feretA.y;
+					ferets[i][3] = feretA.z;
+					ferets[i][4] = feretB.x;
+					ferets[i][5] = feretB.y;
+					ferets[i][6] = feretB.z;
 				}
 			});
 		}
