@@ -31,6 +31,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 
@@ -41,7 +42,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -50,7 +50,6 @@ import java.util.stream.Stream;
 
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.units.UnitService;
-import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
@@ -90,8 +89,6 @@ import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandModule;
-import org.scijava.command.CommandService;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -99,6 +96,8 @@ import org.scijava.plugin.Plugin;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
+
+import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
  * ImageJ plugin to describe the local geometry of a binary image in an
@@ -140,8 +139,6 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter
 	private UIService uiService;
 	@SuppressWarnings("unused")
-	@Parameter
-	private CommandService commandService;
     @Parameter
 	private UnitService unitService;
 	//main input image
@@ -196,9 +193,11 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
 	private Table<DefaultColumn<Double>, Double> resultsTable;
 
+	private ImgPlus<BitType> inputAsBitType;
+
 	@Override
 	public void run() {
-		final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
+		inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 
 		int totalEllipsoids = 0;
 		List<ImgPlus> outputList = null;
@@ -434,18 +433,11 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 	// region --seed point finding--
 
 	private List<Vector3d> getSkeletonPoints() {
-		ImagePlus skeleton;
+		final ImagePlus skeleton = copyAsBinaryImagePlus(inputAsBitType);
+		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
+		skeletoniser.setup("", skeleton);
+		skeletoniser.run(null);
 		final List<Vector3d> skeletonPoints = new ArrayList<>();
-
-		try {
-			final CommandModule skeletonizationModule =
-					commandService.run("org.bonej.wrapperPlugins.SkeletoniseWrapper", true).get();
-			skeleton = (ImagePlus) skeletonizationModule.getOutput("skeleton");
-		} catch (InterruptedException | ExecutionException e) {
-			logService.error(e);
-			return skeletonPoints;
-		}
-
 		final ImageStack skeletonStack = skeleton.getImageStack();
 		for (int z = 0; z < skeleton.getStackSize(); z++) {
 			final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
@@ -457,8 +449,26 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 				}
 			}
 		}
-		skeleton.close();
 		return skeletonPoints;
+	}
+
+	private static ImagePlus copyAsBinaryImagePlus(final ImgPlus<BitType> inputAsBitType) {
+		// TODO Don't assume that 0, 1, 2 are X, Y, Z
+		final int w = (int) inputAsBitType.dimension(0);
+		final int h = (int) inputAsBitType.dimension(1);
+		final int d = (int) inputAsBitType.dimension(2);
+		final ImagePlus imagePlus = IJ.createImage(inputAsBitType.getName(), w, h, d, 8);
+		final ImageStack stack = imagePlus.getStack();
+		final Cursor<BitType> cursor = inputAsBitType.cursor();
+		final int[] position = new int[3];
+		while (cursor.hasNext()) {
+			cursor.next();
+			if (cursor.get().get()) {
+				cursor.localize(position);
+				stack.setVoxel(position[0], position[1], position[2], 0xFF);
+			}
+		}
+		return imagePlus;
 	}
 
 	private List<Vector3d> getDistanceRidgePoints(final ImgPlus<BitType> imp) {
