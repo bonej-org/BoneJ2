@@ -76,11 +76,11 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final Checkbox vvvBox = (Checkbox) checkboxes.get(9);
 		vvvBox.setEnabled(elBox.getState() || momBox.getState());
 		// link show stack 3d to volume resampling
-		final Checkbox box = (Checkbox) checkboxes.get(17);
+		final Checkbox box = (Checkbox) checkboxes.get(18);
 		final TextField numb = (TextField) numbers.get(4);
 		numb.setEnabled(box.getState());
 		// link show surfaces, gradient choice and split value
-		final Checkbox surfbox = (Checkbox) checkboxes.get(13);
+		final Checkbox surfbox = (Checkbox) checkboxes.get(14);
 		final Choice col = (Choice) choices.get(0);
 		final TextField split = (TextField) numbers.get(3);
 		col.setEnabled(surfbox.getState());
@@ -162,7 +162,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		gd.addChoice("Surface colours", items, items[0]);
 		gd.addNumericField("Split value", 0, 3, 7, units + "³");
 		gd.addNumericField("Volume_resampling", 2, 0);
-
+		gd.addHelp("https://imagej.net/BoneJ#Particle_Analyser");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		if (gd.wasCanceled()) {
