@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.geometry.FitEllipsoid;
@@ -720,7 +719,6 @@ public class ParticleAnalysis {
 	 * algorithm.
 	 *
 	 * @param surfacePoints points from a surface mesher
-	 * @throws IllegalArgumentException if there are less than 12 points (a tetrahedron)
 	 * @return Feret diameters and x, y, z coordinates of the two feret points of each surface,
 	 * packed in a double so that the feret diameter of particle i is found at [i * 7] and the
 	 * points' coordinates are in the following 6 positions in ax, ay, az, bx, by, bz order.
@@ -747,19 +745,16 @@ public class ParticleAnalysis {
 					//4 triangles * 3 points for the minimal tetrahedron
 					if (nPoints < 12) {
 						Arrays.fill(ferets[i], Double.NaN);
-						throw new IllegalArgumentException("Mesh for particle "+i+" has too few points: "+nPoints);
 					}
 					
 					// check all the point pairs in this surface
-					Point3f a = new Point3f();
-					Point3f b = new Point3f();
 					Point3f feretA = new Point3f();
 					Point3f feretB = new Point3f();
 					double feret = 0;
 					for (int p = 0; p < nPoints; p++) {
-						a = surface.get(p);
+						Point3f a = surface.get(p);
 						for (int q = p + 1; q < nPoints; q++) {
-							b = surface.get(q);
+							Point3f b = surface.get(q);
 							final double distance = a.distance(b);
 							if (distance > feret) {
 								feret = distance;
