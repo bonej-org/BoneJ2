@@ -68,8 +68,8 @@ import ij.process.ImageStatistics;
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public final class CommonWrapperTests {
 
-	static <C extends Command> void testNullImageCancelsPlugin(final Gateway imageJ,
-															   final Class<C> commandClass) {
+	public static <C extends Command> void testNullImageCancelsPlugin(final Gateway imageJ,
+																	  final Class<C> commandClass) {
 		// SETUP
 		final UserInterface oldUI = imageJ.ui().getDefaultUI();
 		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
@@ -91,8 +91,8 @@ public final class CommonWrapperTests {
 		}
 	}
 
-	static <C extends Command> void test2DImageCancelsPlugin(final Gateway imageJ,
-		final Class<C> commandClass) {
+	public static <C extends Command> void test2DImageCancelsPlugin(final Gateway imageJ,
+																	final Class<C> commandClass) {
 		// SETUP
 		final UserInterface oldUI = imageJ.ui().getDefaultUI();
 		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
@@ -123,8 +123,8 @@ public final class CommonWrapperTests {
 		}
 	}
 
-	static <C extends Command> void testNonBinaryImageCancelsPlugin(
-		final Gateway imageJ, final Class<C> commandClass) {
+	public static <C extends Command> void testNonBinaryImageCancelsPlugin(
+			final Gateway imageJ, final Class<C> commandClass) {
 		// SETUP
 		final UserInterface oldUI = imageJ.ui().getDefaultUI();
 		final UserInterface mockUI = mockUIDialogPrompt(imageJ);

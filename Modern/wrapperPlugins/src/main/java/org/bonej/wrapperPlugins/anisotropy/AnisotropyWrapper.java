@@ -21,7 +21,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package org.bonej.wrapperPlugins;
+package org.bonej.wrapperPlugins.anisotropy;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;

@@ -21,7 +21,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package org.bonej.wrapperPlugins;
+package org.bonej.wrapperPlugins.anisotropy;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,6 +46,10 @@ import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.view.Views;
 
+import org.bonej.wrapperPlugins.AbstractWrapperTest;
+import org.bonej.wrapperPlugins.CommonWrapperTests;
+import org.bonej.wrapperPlugins.SlowWrapperTest;
+import org.bonej.wrapperPlugins.anisotropy.AnisotropyWrapper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
