@@ -171,7 +171,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 			true, "inputImage", hyperSheets, "lines", 1, "directions", 1).get();
 
 		assertTrue(module.isCanceled());
-		assertEquals("Anisotropy could not be calculated - too few points", module
+		assertEquals("Anisotropy cannot be calculated - minimum directions = 9", module
 			.getCancelReason());
 	}
 

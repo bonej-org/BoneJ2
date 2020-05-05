@@ -36,7 +36,6 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.util.ValuePair;
 
-import org.apache.commons.math3.random.RandomGenerator;
 import org.joml.Intersectiond;
 import org.joml.Vector2d;
 import org.joml.Vector3d;
@@ -132,7 +131,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 			increment = 1.0;
 		}
 		if (milLength == null) {
-			milLength = 100.0 * getDiagonal();
+			milLength = 100.0 * calculateLongestDiagonal(interval);
 		}
 		if (seed != null) {
 			random.setSeed(seed);
@@ -176,6 +175,13 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	 */
 	public static void setSeed(final long seed) {
 		ParallelLineMIL.seed = seed;
+	}
+
+	public static double calculateLongestDiagonal(final RandomAccessibleInterval<?> interval) {
+		final long[] dimensions = new long[interval.numDimensions()];
+		interval.dimensions(dimensions);
+		final long sqSum = Arrays.stream(dimensions).map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
 	}
 
 	// region -- Helper methods --
@@ -244,14 +250,6 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		}
 		final double length = Math.abs(segment.tMax - segment.tMin);
 		return new ValuePair<>(length, intercepts);
-	}
-
-	private double getDiagonal() {
-		final RandomAccessibleInterval<B> interval = in();
-		final long[] dimensions = new long[interval.numDimensions()];
-		interval.dimensions(dimensions);
-		final long sqSum = Arrays.stream(dimensions).map(x -> x * x).sum();
-		return Math.sqrt(sqSum);
 	}
 
 	private long sampleSegment(final RandomAccessible<B> interval,
