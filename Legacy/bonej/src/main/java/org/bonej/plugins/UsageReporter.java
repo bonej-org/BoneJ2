@@ -166,7 +166,7 @@ public final class UsageReporter {
 	 *          average statistics
 	 * @return The instance of UsageReporter ready to send() a report
 	 */
-	public static UsageReporter reportEvent(final String category,
+	private static UsageReporter reportEvent(final String category,
 		final String action, final String label, final Integer value)
 	{
 		if (!Prefs.get(ReporterOptions.OPTOUTKEY, false)) return INSTANCE;
