@@ -8,7 +8,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.DoubleStream;
 
 import net.imagej.ops.OpService;
 import net.imagej.ops.linalg.rotate.Rotate3d;
@@ -20,13 +19,13 @@ import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.logic.BitType;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
 import org.bonej.ops.mil.ParallelLineGenerator;
 import org.bonej.ops.mil.ParallelLineMIL;
 import org.bonej.ops.mil.PlaneParallelLineGenerator;
-import org.joml.Matrix3d;
 import org.joml.Matrix3dc;
 import org.joml.Matrix4dc;
 import org.joml.Quaterniond;
@@ -63,6 +62,7 @@ class DegreeOfAnisotropy {
     private double degreeOfAnisotropy;
     private ExecutorService executor;
     private List<Vector3dc> pointCloud;
+    private Long seed;
 
     DegreeOfAnisotropy(final AnisotropyWrapper<?> wrapper) {
         wrapper.context().inject(this);
@@ -85,6 +85,11 @@ class DegreeOfAnisotropy {
 
     void setLinesPerDirection(final int lines) { linesPerDirection = lines; }
 
+    void setSeed(final long seed) {
+        this.seed = seed;
+        ParallelLineMIL.setSeed(seed);
+    }
+
     void calculate(final RandomAccessibleInterval<BitType> interval)
             throws EllipsoidFittingFailedException, ExecutionException, InterruptedException {
         this.interval = interval;
@@ -97,7 +102,7 @@ class DegreeOfAnisotropy {
     private void initialise() {
         calculateMILVectorBaseLength();
         planeSections = (long) Math.sqrt(linesPerDirection);
-        quaternionGenerator = new UnitSphereRandomVectorGenerator(4);
+        createQuaternionGenerator();
         matchOps();
         createExecutorService();
     }
@@ -105,6 +110,15 @@ class DegreeOfAnisotropy {
     private void calculateMILVectorBaseLength() {
         final double diagonal = ParallelLineMIL.calculateLongestDiagonal(interval);
         mILVectorBaseLength = diagonal * linesPerDirection;
+    }
+
+    private void createQuaternionGenerator() {
+        if (seed == null) {
+            quaternionGenerator = new UnitSphereRandomVectorGenerator(4);
+        } else {
+            quaternionGenerator = new UnitSphereRandomVectorGenerator(4,
+                    new MersenneTwister(seed));
+        }
     }
 
     private void matchOps() {
@@ -142,7 +156,10 @@ class DegreeOfAnisotropy {
 
     private PlaneParallelLineGenerator createLineGenerator() {
         final Quaterniondc rotation = nextRandomRotation();
-        return new PlaneParallelLineGenerator(interval, rotation, rotateOp, planeSections);
+        final PlaneParallelLineGenerator generator =
+                new PlaneParallelLineGenerator(interval, rotation, rotateOp, planeSections);
+        if (seed != null) { generator.setSeed(seed); }
+        return generator;
     }
 
     private Quaterniondc nextRandomRotation() {
