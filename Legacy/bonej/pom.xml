@@ -129,6 +129,12 @@
             <groupId>sc.fiji</groupId>
             <artifactId>Skeletonize3D_</artifactId>
         </dependency>
+        
+        <!-- SciJava dependencies for backported functionality -->
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>scijava-common</artifactId>
+        </dependency>
 
         <!-- Other dependencies -->
         <dependency>
