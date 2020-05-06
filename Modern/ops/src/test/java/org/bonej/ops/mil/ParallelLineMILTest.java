@@ -69,7 +69,7 @@ public class ParallelLineMILTest {
 		final double milLength2 = 400.0;
 		final Img<BitType> emptyStack = ArrayImgs.bits(100, 100, 100);
 		final ParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(XY_SHEETS, IDENTITY_ROTATION, rotateOp, 2L);
+				new PlaneParallelLineGenerator(emptyStack, IDENTITY_ROTATION, rotateOp, 2L);
 
 		// EXECUTE
 		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
