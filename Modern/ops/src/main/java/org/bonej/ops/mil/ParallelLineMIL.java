@@ -25,6 +25,7 @@ package org.bonej.ops.mil;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import net.imagej.ops.Contingent;
 import net.imagej.ops.Op;
@@ -111,7 +112,6 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	@Parameter(required = false, persist = false)
 	private Double increment;
 
-	private final Random random = new Random();
 	private static Long seed = null;
 
 	/**
@@ -133,6 +133,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		if (milLength == null) {
 			milLength = 100.0 * calculateLongestDiagonal(interval);
 		}
+		final Random random = new Random();
 		if (seed != null) {
 			random.setSeed(seed);
 		}
@@ -148,7 +149,8 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 			if (totalLength + length > milLength) {
 				segment = limitSegment(milLength, totalLength, segment);
 			}
-			final ValuePair<Double, Long> mILValues = mILValues(interval, segment, increment);
+			final ValuePair<Double, Long> mILValues =
+					mILValues(interval, segment, increment, random);
 			if (mILValues == null) {
 				continue;
 			}
@@ -169,7 +171,7 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	 * Sets the seed of the underlying random number generator
 	 * <p>
 	 * Only affects the random offset 0 &lt; o &lt; increment added to the sampling points
-	 * (see {@link #sampleSegment(RandomAccessible, Segment, Vector3dc, double)})
+	 * (see {@link #sampleSegment(RandomAccessible, Segment, Vector3dc, double, Random)})
 	 * </p>
 	 * @param seed seed value
 	 */
@@ -241,10 +243,11 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 	}
 
 	private ValuePair<Double, Long> mILValues(final RandomAccessible<B> interval,
-											  final Segment segment, final double increment)
+											  final Segment segment, final double increment,
+											  final Random random)
 	{
 		final long intercepts = sampleSegment(interval, segment, segment.line.direction,
-			increment);
+			increment, random);
 		if (intercepts < 0) {
 			return null;
 		}
@@ -252,8 +255,9 @@ public class ParallelLineMIL<B extends BooleanType<B>> extends
 		return new ValuePair<>(length, intercepts);
 	}
 
-	private long sampleSegment(final RandomAccessible<B> interval,
-							   final Segment segment, final Vector3dc direction, final double increment)
+	private long sampleSegment(final RandomAccessible<B> interval, final Segment segment,
+							   final Vector3dc direction, final double increment,
+							   final Random random)
 	{
 		// Add a random offset so that sampling doesn't always start from where the segment
 		// enters the interval
