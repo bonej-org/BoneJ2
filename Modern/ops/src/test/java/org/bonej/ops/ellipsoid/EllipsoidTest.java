@@ -27,6 +27,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -170,7 +171,7 @@ public class EllipsoidTest {
 	}
 
 	@Test
-	public void testSamplePoints() {
+	public void testSamplePointsAreOnEllipsoidSurface() {
 		// SETUP
 		final double a = 2.0;
 		final double b = 3.0;
@@ -191,10 +192,9 @@ public class EllipsoidTest {
 		final AxisAngle4d invRotation = new AxisAngle4d();
 		invRotation.set(orientation);
 		invRotation.angle = -invRotation.angle;
-		final Quaterniondc q = new Quaterniond(new AxisAngle4d(invRotation.angle, invRotation.x, invRotation.y, invRotation.z));
+		final Quaterniondc q = new Quaterniond(invRotation);
 		final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> inverseRotation =
-			Hybrids.binaryCFI1(IMAGE_J.op(), Rotate3d.class, Vector3d.class,
-					new Vector3d(), q);
+			Hybrids.binaryCFI1(IMAGE_J.op(), Rotate3d.class, Vector3d.class, new Vector3d(), q);
 		ellipsoid.setOrientation(orientation);
 		final long n = 10;
 		final Function<Vector3d, Double> ellipsoidEq = (Vector3d p) -> {
@@ -378,17 +378,11 @@ public class EllipsoidTest {
 
 		ellipsoid.setOrientation(orientation);
 		orientation.scale(1.234);
+		final Matrix3d currentOrientation = new Matrix3d();
+		ellipsoid.getOrientation().get3x3(currentOrientation);
 
-		final Matrix4d m = ellipsoid.getOrientation();
-		// @formatter:off
-		final Matrix3dc result = new Matrix3d(
-				m.m00(), m.m01(), m.m02(),
-				m.m10(), m.m11(), m.m12(),
-				m.m20(), m.m21(), m.m22()
-		);
-		// @formatter:on
-		assertEquals("Setter copied values incorrectly or set a reference",
-			original, result);
+		assertTrue("Setter copied values incorrectly or set a reference",
+			original.equals(currentOrientation, 1e-12));
 	}
 
 	@Test
@@ -491,6 +485,50 @@ public class EllipsoidTest {
 		final Ellipsoid ellipsoid = new Ellipsoid(1, 2, 3);
 
 		ellipsoid.setSemiAxes(new Vector3d(), new Vector3d(), null);
+	}
+
+	@Test
+	public void testGetRadii() {
+		final double a = 1;
+		final double b = 2;
+		final double c = 3;
+		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c);
+
+		final double[] radii = ellipsoid.getRadii();
+
+		assertEquals(a, radii[0], 1e-12);
+		assertEquals(b, radii[1], 1e-12);
+		assertEquals(c, radii[2], 1e-12);
+	}
+
+	@Test
+	public void testGetEigenMatrix() {
+		final double a = 1;
+		final double b = 2;
+		final double c = 3;
+		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c);
+		final Matrix3dc expected = new Matrix3d();
+
+		final Matrix3dc result = ellipsoid.getEigenMatrix();
+
+		assertTrue(expected.equals(result, 1e-12));
+	}
+
+	@Test
+	public void testEigenValues() {
+		final double a = 1;
+		final double b = 2;
+		final double c = 3;
+		final Ellipsoid ellipsoid = new Ellipsoid(a, b, c);
+		final double eVA = 1.0 / (a * a);
+		final double eVB = 1.0 / (b * b);
+		final double eVC = 1.0 / (c * c);
+
+		final double[] eigenValues = ellipsoid.getEigenValues();
+
+		assertEquals(eVC, eigenValues[0], 1e-12);
+		assertEquals(eVB, eigenValues[1], 1e-12);
+		assertEquals(eVA, eigenValues[2], 1e-12);
 	}
 
 	@AfterClass

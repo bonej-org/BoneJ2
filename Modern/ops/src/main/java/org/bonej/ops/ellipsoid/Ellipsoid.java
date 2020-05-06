@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import net.imagej.ops.OpEnvironment;
@@ -214,7 +215,7 @@ public class Ellipsoid {
 	/**
 	 * Sets the values of the orientation vectors of the ellipsoid.
 	 * <p>
-	 * The 1st column vector will correspond to radius {@link #a}, and the 3rd to
+	 * The 1st column vector will correspond to the axis with radius {@link #a}, and the 3rd to
 	 * radius {@link #c}.
 	 * </p>
 	 *
@@ -249,13 +250,35 @@ public class Ellipsoid {
 	}
 
 	/**
+	 * Gets the radii of the ellipsoid in ascending order.
+	 *
+	 * @return radii from shortest to longest.
+	 */
+	public double[] getRadii() { return new double[]{ a, b, c }; }
+
+	/**
+	 * Gets the eigen vectors of the ellipsoid in a matrix.
+	 *
+	 * @return a matrix with the eigen vectors as its columns.
+	 */
+	public Matrix3dc getEigenMatrix() { return orientation; }
+
+	/**
+	 * Gets the eigen values of the ellipsoid.
+	 *
+	 * @return eigen values in descending order. First corresponds to the eigen value of the longest
+	 * axis.
+	 */
+	public double[] getEigenValues() {
+		return DoubleStream.of(c, b, a).map(x -> x * x).map(x -> 1.0 / x).toArray();
+	}
+
+	/**
 	 * Gets the volume of the ellipsoid.
 	 *
 	 * @return ellipsoid volume.
 	 */
-	public double getVolume() {
-		return (4.0 / 3.0) * Math.PI * a * b * c;
-	}
+	public double getVolume() { return (4.0 / 3.0) * Math.PI * a * b * c; }
 
 	/**
 	 * Initializes the ellipsoid point sampling function.
