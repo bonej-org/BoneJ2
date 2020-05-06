@@ -173,7 +173,8 @@ public final class UsageReporter {
 		utms = "utms=" + session + "&";
 		session++;
 		final String val = (value == null) ? "" : "(" + value + ")";
-		utme = "utme=5(" + category + "*" + action + "*" + label + ")" + val + "&";
+		final String lab = (label == null) ? "" : label;
+		utme = "utme=5(" + category + "*" + action + "*" + lab + ")" + val + "&";
 		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
 		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
 
