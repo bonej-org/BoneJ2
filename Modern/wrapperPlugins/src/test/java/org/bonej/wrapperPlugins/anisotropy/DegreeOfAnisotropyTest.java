@@ -10,6 +10,7 @@ import net.imglib2.type.logic.BitType;
 
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import org.bonej.wrapperPlugins.anisotropy.DegreeOfAnisotropy.Results;
 import org.joml.Matrix3dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -29,17 +30,17 @@ public class DegreeOfAnisotropyTest {
     private static ImageJ IMAGE_J = new ImageJ();
     private static AnisotropyWrapper<?> mockWrapper;
     private static Img<BitType> xySheets = createXYSheets();
-    private static DegreeOfAnisotropy emptyStackCalculator;
-    private static DegreeOfAnisotropy xySheetsCalculator;
+    private static Results emptyStackResults;
+    private static Results xySheetsResults;
 
     @Test
     public void testEmptyStackDA() {
-        assertEquals(0.0, emptyStackCalculator.getDegreeOfAnisotropy(), 1e-12);
+        assertEquals(0.0, emptyStackResults.degreeOfAnisotropy, 1e-12);
     }
 
     @Test
     public void testEmptyStackRadii() {
-        final double[] radii = emptyStackCalculator.getRadii();
+        final double[] radii = emptyStackResults.radii;
         assertEquals(radii[0], radii[1], 1e-10);
         assertEquals(radii[1], radii[2], 1e-10);
     }
@@ -52,21 +53,20 @@ public class DegreeOfAnisotropyTest {
         degreeOfAnisotropy.setSamplingDirections(100);
         degreeOfAnisotropy.setSeed(SEED);
 
-        degreeOfAnisotropy.calculate(binaryNoise);
-        final double dA = degreeOfAnisotropy.getDegreeOfAnisotropy();
+        final Results results = degreeOfAnisotropy.calculate(binaryNoise);
 
-        assertEquals(0.043318339051122035, dA, 1e-12);
+        assertEquals(0.043318339051122035, results.degreeOfAnisotropy, 1e-12);
     }
 
     @Test
     public void testXYSheetsDA() {
-        final double dA = xySheetsCalculator.getDegreeOfAnisotropy();
+        final double dA = xySheetsResults.degreeOfAnisotropy;
         assertEquals(0.9900879398296404, dA, 1e-12);
     }
 
     @Test
     public void testXYSheetsRadii() {
-        final double[] radii = xySheetsCalculator.getRadii();
+        final double[] radii = xySheetsResults.radii;
         assertEquals(4.677484949735923, radii[0], 1e-12);
         assertEquals(15.004677262978667, radii[1], 1e-12);
         assertEquals(46.98188461474766, radii[2], 1e-12);
@@ -77,7 +77,7 @@ public class DegreeOfAnisotropyTest {
         final Vector3dc xAxis = new Vector3d(1, 0, 0);
         final Vector3dc yAxis = new Vector3d(0, 1, 0);
         final Vector3dc zAxis = new Vector3d(0, 0, 1);
-        final Matrix3dc eigenMatrix = xySheetsCalculator.getEigenMatrix();
+        final Matrix3dc eigenMatrix = xySheetsResults.eigenVectors;
         final Vector3d ev1 = new Vector3d();
         eigenMatrix.getColumn(0, ev1);
         final Vector3d ev2 = new Vector3d();
@@ -98,8 +98,8 @@ public class DegreeOfAnisotropyTest {
 
     @Test
     public void testXYSheetsEigenValues() {
-        final double[] radii = xySheetsCalculator.getRadii();
-        final double[] eigenValues = xySheetsCalculator.getEigenValues();
+        final double[] radii = xySheetsResults.radii;
+        final double[] eigenValues = xySheetsResults.eigenValues;
         assertEquals(1.0 / (radii[2] * radii[2]), eigenValues[0], 1e-12);
         assertEquals(1.0 / (radii[1] * radii[1]), eigenValues[1], 1e-12);
         assertEquals(1.0 / (radii[0] * radii[0]), eigenValues[2], 1e-12);
@@ -107,7 +107,7 @@ public class DegreeOfAnisotropyTest {
 
     @Test
     public void testXYSheetsMILVectors() {
-        assertEquals(DIRECTIONS, xySheetsCalculator.getMILVectors().size());
+        assertEquals(DIRECTIONS, xySheetsResults.mILVectors.size());
     }
 
     @Test(expected = EllipsoidFittingFailedException.class)
@@ -138,25 +138,25 @@ public class DegreeOfAnisotropyTest {
     public static void oneTimeSetup() throws Exception {
         mockWrapper = Mockito.mock(AnisotropyWrapper.class);
         when(mockWrapper.context()).thenReturn(IMAGE_J.context());
-        setupEmptyStackDA();
-        setupXYSheetsDA();
+        calculateEmptyResults();
+        calculateXYSheetsResults();
     }
 
-    private static void setupXYSheetsDA() throws Exception {
-        xySheetsCalculator = new DegreeOfAnisotropy(mockWrapper);
-        xySheetsCalculator.setLinesPerDirection(25);
-        xySheetsCalculator.setSamplingDirections(DIRECTIONS);
-        xySheetsCalculator.setSeed(SEED);
-        xySheetsCalculator.calculate(xySheets);
+    private static void calculateXYSheetsResults() throws Exception {
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(mockWrapper);
+        degreeOfAnisotropy.setLinesPerDirection(25);
+        degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
+        degreeOfAnisotropy.setSeed(SEED);
+        xySheetsResults = degreeOfAnisotropy.calculate(xySheets);
     }
 
-    private static void setupEmptyStackDA() throws Exception {
-        emptyStackCalculator = new DegreeOfAnisotropy(mockWrapper);
-        emptyStackCalculator.setLinesPerDirection(25);
-        emptyStackCalculator.setSamplingDirections(DIRECTIONS);
-        emptyStackCalculator.setSeed(SEED);
+    private static void calculateEmptyResults() throws Exception {
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(mockWrapper);
+        degreeOfAnisotropy.setLinesPerDirection(25);
+        degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
+        degreeOfAnisotropy.setSeed(SEED);
         final Img<BitType> emptyStack = ArrayImgs.bits(50, 50, 50);
-        emptyStackCalculator.calculate(emptyStack);
+        emptyStackResults = degreeOfAnisotropy.calculate(emptyStack);
     }
 
     @AfterClass
@@ -165,8 +165,6 @@ public class DegreeOfAnisotropyTest {
         IMAGE_J = null;
         mockWrapper = null;
         xySheets = null;
-        xySheetsCalculator = null;
-        emptyStackCalculator = null;
     }
 
     private Img<BitType> createBinaryNoise() {

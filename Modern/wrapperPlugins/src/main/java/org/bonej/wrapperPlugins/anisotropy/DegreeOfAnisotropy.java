@@ -46,9 +46,7 @@ class DegreeOfAnisotropy {
     // with data at hand. Other data may need a different number.
     static final int DEFAULT_LINES = 10_000;
     private final AnisotropyWrapper<?> progressObserver;
-    private RandomAccessibleInterval<BitType> interval;
     private double samplingPointDistance = MINIMUM_SAMPLING_DISTANCE;
-    private double mILVectorBaseLength;
     private long samplingDirections = DEFAULT_DIRECTIONS;
     private int linesPerDirection = DEFAULT_LINES;
     private long planeSections;
@@ -57,27 +55,13 @@ class DegreeOfAnisotropy {
     private BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
     private BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d>
             milOp;
-    private UnitSphereRandomVectorGenerator quaternionGenerator;
-    private Ellipsoid ellipsoid;
-    private double degreeOfAnisotropy;
-    private ExecutorService executor;
-    private List<Vector3dc> pointCloud;
+    private UnitSphereRandomVectorGenerator directionGenerator;
     private Long seed;
 
     DegreeOfAnisotropy(final AnisotropyWrapper<?> wrapper) {
         wrapper.context().inject(this);
         progressObserver = wrapper;
     }
-
-    double getDegreeOfAnisotropy() { return degreeOfAnisotropy; }
-
-    Matrix3dc getEigenMatrix() { return ellipsoid.getEigenMatrix(); }
-
-    double[] getEigenValues() { return ellipsoid.getEigenValues(); }
-
-    List<Vector3dc> getMILVectors() { return pointCloud; }
-
-    double[] getRadii() { return ellipsoid.getRadii(); }
 
     void setSamplingPointDistance(final double distance) { samplingPointDistance = distance; }
 
@@ -90,81 +74,89 @@ class DegreeOfAnisotropy {
         ParallelLineMIL.setSeed(seed);
     }
 
-    void calculate(final RandomAccessibleInterval<BitType> interval)
+    Results calculate(final RandomAccessibleInterval<BitType> image)
             throws EllipsoidFittingFailedException, ExecutionException, InterruptedException {
-        this.interval = interval;
-        initialise();
-        drawMILVectors();
-        solveBestFittingEllipsoid();
-        calculateDegreeOfAnisotropy();
+        initialise(image);
+        final List<Vector3dc> mILVectors = drawMILVectors(image);
+        final Ellipsoid ellipsoid = solveBestFittingEllipsoid(mILVectors);
+        return writeResults(ellipsoid, mILVectors);
     }
 
-    private void initialise() {
-        calculateMILVectorBaseLength();
+    private void initialise(final RandomAccessibleInterval<BitType> image) {
         planeSections = (long) Math.sqrt(linesPerDirection);
-        createQuaternionGenerator();
-        matchOps();
-        createExecutorService();
+        createDirectionGenerator();
+        rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
+                new Vector3d(), new Quaterniond());
+        initialiseMILOp(image);
     }
 
-    private void calculateMILVectorBaseLength() {
-        final double diagonal = ParallelLineMIL.calculateLongestDiagonal(interval);
-        mILVectorBaseLength = diagonal * linesPerDirection;
-    }
-
-    private void createQuaternionGenerator() {
+    private void createDirectionGenerator() {
         if (seed == null) {
-            quaternionGenerator = new UnitSphereRandomVectorGenerator(4);
+            directionGenerator = new UnitSphereRandomVectorGenerator(4);
         } else {
-            quaternionGenerator = new UnitSphereRandomVectorGenerator(4,
+            directionGenerator = new UnitSphereRandomVectorGenerator(4,
                     new MersenneTwister(seed));
         }
     }
 
-    private void matchOps() {
-        rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
-                new Vector3d(), new Quaterniond());
-        // Op matching requires any non-null ParallelLineGenerator
-        final ParallelLineGenerator generator = createLineGenerator();
+    private void initialiseMILOp(final RandomAccessibleInterval<BitType> image) {
+        final ParallelLineGenerator generator = createLineGenerator(image);
+        final double baseLength = calculateMILVectorBaseLength(image);
+        // Op matching requires a non-null generator
         milOp = Functions.binary(opService, ParallelLineMIL.class, Vector3d.class,
-                interval, generator, mILVectorBaseLength, samplingPointDistance);
+                image, generator, baseLength, samplingPointDistance);
     }
 
-    private void createExecutorService() {
-        final int cores = Runtime.getRuntime().availableProcessors();
-        executor = Executors.newFixedThreadPool(cores);
+    private double calculateMILVectorBaseLength(final RandomAccessibleInterval<BitType> image) {
+        final double diagonal = ParallelLineMIL.calculateLongestDiagonal(image);
+        return diagonal * linesPerDirection;
     }
 
-    private void drawMILVectors() throws ExecutionException, InterruptedException {
-        final List<Callable<Vector3dc>> tasks = createMILTasks();
-        final List<Future<Vector3dc>> futures = executor.invokeAll(tasks);
-        pointCloud = finishAll(futures);
+    private List<Vector3dc> drawMILVectors(final RandomAccessibleInterval<BitType> image)
+            throws ExecutionException, InterruptedException {
+        final List<Callable<Vector3dc>> tasks = createMILTasks(image);
+        final List<Future<Vector3dc>> futures = submit(tasks);
+        return finishAll(futures);
     }
 
-    private List<Callable<Vector3dc>> createMILTasks() {
-        return generate(this::createMILTask).limit(samplingDirections).collect(toList());
+    private List<Callable<Vector3dc>> createMILTasks(
+            final RandomAccessibleInterval<BitType> image) {
+        return generate(() -> createMILTask(image)).limit(samplingDirections).collect(toList());
     }
 
-    private Callable<Vector3dc> createMILTask() {
-        final PlaneParallelLineGenerator generator = createLineGenerator();
+    private Callable<Vector3dc> createMILTask(final RandomAccessibleInterval<BitType> image) {
+        final PlaneParallelLineGenerator generator = createLineGenerator(image);
         return () -> {
-            final Vector3dc mILVector = milOp.calculate(interval, generator);
+            final Vector3dc mILVector = milOp.calculate(image, generator);
             progressObserver.directionFinished();
             return mILVector;
         };
     }
 
-    private PlaneParallelLineGenerator createLineGenerator() {
-        final Quaterniondc rotation = nextRandomRotation();
+    private PlaneParallelLineGenerator createLineGenerator(
+            final RandomAccessibleInterval<BitType> image) {
+        final Quaterniondc direction = nextRandomDirection();
         final PlaneParallelLineGenerator generator =
-                new PlaneParallelLineGenerator(interval, rotation, rotateOp, planeSections);
+                new PlaneParallelLineGenerator(image, direction, rotateOp, planeSections);
         if (seed != null) { generator.setSeed(seed); }
         return generator;
     }
 
-    private Quaterniondc nextRandomRotation() {
-        final double[] v = quaternionGenerator.nextVector();
+    private Quaterniondc nextRandomDirection() {
+        final double[] v = directionGenerator.nextVector();
         return new Quaterniond(v[0], v[1], v[2], v[3]);
+    }
+
+
+    private List<Future<Vector3dc>> submit(final List<Callable<Vector3dc>> tasks)
+            throws InterruptedException {
+        final ExecutorService executor = createExecutorService();
+        return executor.invokeAll(tasks);
+    }
+
+    private ExecutorService createExecutorService() {
+        final int cores = Runtime.getRuntime().availableProcessors();
+        return Executors.newFixedThreadPool(cores);
     }
 
     private static List<Vector3dc> finishAll(final List<Future<Vector3dc>> futures)
@@ -176,18 +168,44 @@ class DegreeOfAnisotropy {
         return mILVectors;
     }
 
-    private void solveBestFittingEllipsoid() throws EllipsoidFittingFailedException {
-        final Matrix4dc quadric = (Matrix4dc) opService.run(Quadric.class, pointCloud);
+    private Ellipsoid solveBestFittingEllipsoid(final List<Vector3dc> mILVectors)
+            throws EllipsoidFittingFailedException {
+        final Matrix4dc quadric = (Matrix4dc) opService.run(Quadric.class, mILVectors);
         final Optional<?> solution = (Optional<?>) opService.run(QuadricToEllipsoid.class, quadric);
         if (!solution.isPresent()) {
             throw new EllipsoidFittingFailedException();
         }
-        ellipsoid = (Ellipsoid) solution.get();
+        return (Ellipsoid) solution.get();
     }
 
-    private void calculateDegreeOfAnisotropy() {
+    private Results writeResults(final Ellipsoid ellipsoid, final List<Vector3dc> mILVectors) {
+        final double dA = calculateDegreeOfAnisotropy(ellipsoid);
+        final double[] radii = ellipsoid.getRadii();
+        final Matrix3dc eigenMatrix = ellipsoid.getEigenMatrix();
+        final double[] eigenValues = ellipsoid.getEigenValues();
+        return new Results(dA, radii, eigenMatrix, eigenValues, mILVectors);
+    }
+
+    private double calculateDegreeOfAnisotropy(final Ellipsoid ellipsoid) {
         final double cSq = ellipsoid.getC() * ellipsoid.getC();
         final double aSq = ellipsoid.getA() * ellipsoid.getA();
-        degreeOfAnisotropy = 1.0 - (1.0 / cSq) / (1.0 / aSq);
+        return 1.0 - (1.0 / cSq) / (1.0 / aSq);
+    }
+
+    static class Results {
+        final double degreeOfAnisotropy;
+        final double[] radii;
+        final Matrix3dc eigenVectors;
+        final double[] eigenValues;
+        final List<Vector3dc> mILVectors;
+
+        Results(final double degreeOfAnisotropy, final double[] radii, final Matrix3dc eigenVectors,
+                final double[] eigenValues, final List<Vector3dc> mILVectors) {
+            this.degreeOfAnisotropy = degreeOfAnisotropy;
+            this.radii = radii;
+            this.eigenVectors = eigenVectors;
+            this.eigenValues = eigenValues;
+            this.mILVectors = mILVectors;
+        }
     }
 }

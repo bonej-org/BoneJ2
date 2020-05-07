@@ -53,6 +53,7 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.utilities.Visualiser;
+import org.bonej.wrapperPlugins.anisotropy.DegreeOfAnisotropy.Results;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
@@ -168,7 +169,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	public void run() {
 		initialise();
 		calculateHyperStackDAs();
-		showResults();
+		outputResultsTable();
 		reportUsage();
 	}
 
@@ -192,26 +193,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		find3DSubspaces();
 	}
 
-	private void calculateHyperStackDAs() {
-		for (int i = 0; i < subspaces.size(); i++) {
-			statusService.showStatus("Anisotropy: sampling 3D subspace #" + (i + 1));
-			calculate3DSubspaceDA(subspaces.get(i));
-		}
-	}
-
-	private void showResults() {
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
-	}
-
-	private void reportUsage() {
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefService, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
 	private void initialiseDegreeOfAnisotropy() {
 		degreeOfAnisotropy = new DegreeOfAnisotropy(this);
 		degreeOfAnisotropy.setSamplingDirections(directions);
@@ -224,11 +205,17 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		subspaces = HyperstackUtils.split3DSubspaces(bitImgPlus).collect(toList());
 	}
 
+	private void calculateHyperStackDAs() {
+		for (int i = 0; i < subspaces.size(); i++) {
+			statusService.showStatus("Anisotropy: sampling 3D subspace #" + (i + 1));
+			calculate3DSubspaceDA(subspaces.get(i));
+		}
+	}
+
 	private void calculate3DSubspaceDA(final Subspace<BitType> subspace) {
 		try {
-			degreeOfAnisotropy.calculate(subspace.interval);
-			writeResults(subspace);
-			displayMILVectors(subspace);
+			final Results results = degreeOfAnisotropy.calculate(subspace.interval);
+			addResults(subspace, results);
 		} catch (final EllipsoidFittingFailedException e) {
 			cancelMacroSafe(this, "Anisotropy could not be calculated - ellipsoid fitting failed");
 		} catch (final ExecutionException | InterruptedException e) {
@@ -237,18 +224,28 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		}
 	}
 
-	private void writeResults(final Subspace<BitType> subspace)
+	private void addResults(final Subspace<BitType> subspace, final Results results) {
+		final String name = getSubspaceName(subspace);
+		writeToTable(name, results);
+		visualise(name, results.mILVectors);
+	}
+
+	private String getSubspaceName(final Subspace<BitType> subspace) {
+		final String suffix = subspace.toString();
+		return suffix.isEmpty() ? inputImage.getName() : inputImage.getName() + " " + suffix;
+	}
+
+	private void writeToTable(final String label, final Results results)
 	{
-		final String label = getSubspaceName(subspace);
-		SharedTable.add(label, "Degree of anisotropy", degreeOfAnisotropy.getDegreeOfAnisotropy());
+		SharedTable.add(label, "Degree of anisotropy", results.degreeOfAnisotropy);
 		if (printRadii) {
-			final double[] radii = degreeOfAnisotropy.getRadii();
+			final double[] radii = results.radii;
 			SharedTable.add(label, "Radius a", radii[0]);
 			SharedTable.add(label, "Radius b", radii[1]);
 			SharedTable.add(label, "Radius c", radii[2]);
 		}
 		if (printEigens) {
-			final Matrix3dc eigenVectors = degreeOfAnisotropy.getEigenMatrix();
+			final Matrix3dc eigenVectors = results.eigenVectors;
 			SharedTable.add(label, "m00", eigenVectors.m00());
 			SharedTable.add(label, "m01", eigenVectors.m01());
 			SharedTable.add(label, "m02", eigenVectors.m02());
@@ -258,25 +255,30 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 			SharedTable.add(label, "m20", eigenVectors.m20());
 			SharedTable.add(label, "m21", eigenVectors.m21());
 			SharedTable.add(label, "m22", eigenVectors.m22());
-			final double[] eigenValues = degreeOfAnisotropy.getEigenValues();
+			final double[] eigenValues = results.eigenValues;
 			SharedTable.add(label, "D1", eigenValues[0]);
 			SharedTable.add(label, "D2", eigenValues[1]);
 			SharedTable.add(label, "D3", eigenValues[2]);
 		}
 	}
 
-	private void displayMILVectors(final Subspace<BitType> subspace) {
-		if (!displayMILVectors) {
-			return;
+	private void visualise(final String title, final List<Vector3dc> mILVectors) {
+		if (displayMILVectors) {
+			Visualiser.display3DPoints(mILVectors, title);
 		}
-		final List<Vector3dc> mILVectors = degreeOfAnisotropy.getMILVectors();
-		final String title = "MIL points of " + getSubspaceName(subspace);
-		Visualiser.display3DPoints(mILVectors, title);
 	}
 
-	private String getSubspaceName(final Subspace<BitType> subspace) {
-		final String suffix = subspace.toString();
-		return suffix.isEmpty() ? inputImage.getName() : inputImage.getName() + " " + suffix;
+	private void outputResultsTable() {
+		if (SharedTable.hasData()) {
+			resultsTable = SharedTable.getTable();
+		}
+	}
+
+	private void reportUsage() {
+		if (reporter == null) {
+			reporter = UsageReporter.getInstance(prefService, pluginService, commandService);
+		}
+		reporter.reportEvent(getClass().getName());
 	}
 
 	@SuppressWarnings("unused")
