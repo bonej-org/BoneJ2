@@ -32,6 +32,7 @@ import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
+import org.scijava.Context;
 import org.scijava.plugin.Parameter;
 
 import static java.util.stream.Collectors.toList;
@@ -45,7 +46,7 @@ class DegreeOfAnisotropy {
     // The default number of lines was found to be sensible after experimenting
     // with data at hand. Other data may need a different number.
     static final int DEFAULT_LINES = 10_000;
-    private final AnisotropyWrapper<?> progressObserver;
+    private AnisotropyWrapper<?> progressObserver;
     private double samplingPointDistance = MINIMUM_SAMPLING_DISTANCE;
     private long samplingDirections = DEFAULT_DIRECTIONS;
     private int linesPerDirection = DEFAULT_LINES;
@@ -58,10 +59,9 @@ class DegreeOfAnisotropy {
     private UnitSphereRandomVectorGenerator directionGenerator;
     private Long seed;
 
-    DegreeOfAnisotropy(final AnisotropyWrapper<?> wrapper) {
-        wrapper.context().inject(this);
-        progressObserver = wrapper;
-    }
+    DegreeOfAnisotropy(final Context context) { context.inject(this); }
+
+    void setProgressObserver(final AnisotropyWrapper<?> observer) { progressObserver = observer; }
 
     void setSamplingPointDistance(final double distance) { samplingPointDistance = distance; }
 
@@ -128,9 +128,15 @@ class DegreeOfAnisotropy {
         final PlaneParallelLineGenerator generator = createLineGenerator(image);
         return () -> {
             final Vector3dc mILVector = milOp.calculate(image, generator);
-            progressObserver.directionFinished();
+            updateProgress();
             return mILVector;
         };
+    }
+
+    private void updateProgress() {
+        if (progressObserver != null) {
+            progressObserver.directionFinished();
+        }
     }
 
     private PlaneParallelLineGenerator createLineGenerator(

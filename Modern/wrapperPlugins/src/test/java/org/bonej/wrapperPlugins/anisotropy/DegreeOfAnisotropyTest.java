@@ -22,13 +22,11 @@ import org.mockito.Mockito;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class DegreeOfAnisotropyTest {
     private static final long SEED = 12345L;
     private static final int DIRECTIONS = 100;
     private static ImageJ IMAGE_J = new ImageJ();
-    private static AnisotropyWrapper<?> mockWrapper;
     private static Img<BitType> xySheets = createXYSheets();
     private static Results emptyStackResults;
     private static Results xySheetsResults;
@@ -48,7 +46,7 @@ public class DegreeOfAnisotropyTest {
     @Test
     public void testBinaryNoiseDA() throws Exception {
         final Img<BitType> binaryNoise = createBinaryNoise();
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(mockWrapper);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
         degreeOfAnisotropy.setLinesPerDirection(25);
         degreeOfAnisotropy.setSamplingDirections(100);
         degreeOfAnisotropy.setSeed(SEED);
@@ -112,7 +110,7 @@ public class DegreeOfAnisotropyTest {
 
     @Test(expected = EllipsoidFittingFailedException.class)
     public void testEllipsoidFittingFailingThrowsException() throws Exception {
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(mockWrapper);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
         degreeOfAnisotropy.setLinesPerDirection(1);
         degreeOfAnisotropy.setSamplingDirections(Quadric.MIN_DATA);
         degreeOfAnisotropy.setSeed(SEED);
@@ -121,13 +119,13 @@ public class DegreeOfAnisotropyTest {
     }
 
     @Test
-    public void testObserverIsNotified() throws Exception {
-        final AnisotropyWrapper<?> observer = Mockito.mock(AnisotropyWrapper.class);
-        when(observer.context()).thenReturn(IMAGE_J.context());
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(observer);
+    public void testObserverIsNotifiedForEveryDirection() throws Exception {
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
         degreeOfAnisotropy.setLinesPerDirection(25);
         degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
         degreeOfAnisotropy.setSeed(SEED);
+        final AnisotropyWrapper<?> observer = Mockito.mock(AnisotropyWrapper.class);
+        degreeOfAnisotropy.setProgressObserver(observer);
 
         degreeOfAnisotropy.calculate(xySheets);
 
@@ -136,14 +134,12 @@ public class DegreeOfAnisotropyTest {
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
-        mockWrapper = Mockito.mock(AnisotropyWrapper.class);
-        when(mockWrapper.context()).thenReturn(IMAGE_J.context());
         calculateEmptyResults();
         calculateXYSheetsResults();
     }
 
     private static void calculateXYSheetsResults() throws Exception {
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(mockWrapper);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
         degreeOfAnisotropy.setLinesPerDirection(25);
         degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
         degreeOfAnisotropy.setSeed(SEED);
@@ -151,7 +147,7 @@ public class DegreeOfAnisotropyTest {
     }
 
     private static void calculateEmptyResults() throws Exception {
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(mockWrapper);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
         degreeOfAnisotropy.setLinesPerDirection(25);
         degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
         degreeOfAnisotropy.setSeed(SEED);
@@ -163,7 +159,6 @@ public class DegreeOfAnisotropyTest {
     public static void oneTimeTearDown() {
         IMAGE_J.context().dispose();
         IMAGE_J = null;
-        mockWrapper = null;
         xySheets = null;
     }
 

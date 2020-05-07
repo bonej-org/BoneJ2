@@ -194,10 +194,11 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void initialiseDegreeOfAnisotropy() {
-		degreeOfAnisotropy = new DegreeOfAnisotropy(this);
+		degreeOfAnisotropy = new DegreeOfAnisotropy(getContext());
 		degreeOfAnisotropy.setSamplingDirections(directions);
 		degreeOfAnisotropy.setLinesPerDirection(lines);
 		degreeOfAnisotropy.setSamplingPointDistance(samplingIncrement);
+		degreeOfAnisotropy.setProgressObserver(this);
 	}
 
 	private void find3DSubspaces() {
