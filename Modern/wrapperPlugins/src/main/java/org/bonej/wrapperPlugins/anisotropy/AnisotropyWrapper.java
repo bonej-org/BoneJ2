@@ -180,6 +180,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		AnisotropyWrapper.reporter = reporter;
 	}
 
+	// Called from multiple threads, but don't add "synchronized" - that has caused dead lock
+	// It's enough to show some progress instead of 100 % accurate progress
 	void directionFinished() {
 		directionProgress++;
 		statusService.showProgress(directionProgress, directions);
