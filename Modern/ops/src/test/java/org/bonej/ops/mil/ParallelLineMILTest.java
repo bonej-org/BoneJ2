@@ -23,6 +23,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.mil;
 
+import static org.bonej.ops.mil.PlaneParallelLineGenerator.createFromInterval;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -69,7 +70,7 @@ public class ParallelLineMILTest {
 		final double milLength2 = 400.0;
 		final Img<BitType> emptyStack = ArrayImgs.bits(100, 100, 100);
 		final ParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(emptyStack, IDENTITY_ROTATION, rotateOp, 2L);
+				createFromInterval(emptyStack, IDENTITY_ROTATION, rotateOp, 2L);
 
 		// EXECUTE
 		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
@@ -93,7 +94,7 @@ public class ParallelLineMILTest {
 		// SETUP
 		final double milLength = 100.0;
 		final ParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(XY_SHEETS, IDENTITY_ROTATION, rotateOp, 2L);
+				createFromInterval(XY_SHEETS, IDENTITY_ROTATION, rotateOp, 2L);
 
 		// EXECUTE
 		final Vector3dc milVector = (Vector3dc) IMAGE_J.op().run(ParallelLineMIL.class,
@@ -129,7 +130,7 @@ public class ParallelLineMILTest {
 		final Quaterniond zAxis = new Quaterniond(new AxisAngle4d(0.0, 0, 0, 1));
 		final long sections = 2L;
 		final ParallelLineGenerator zGenerator =
-				new PlaneParallelLineGenerator(XY_SHEETS, zAxis, rotateOp, sections);
+				createFromInterval(XY_SHEETS, zAxis, rotateOp, sections);
 		final double milLength = SIZE * sections * sections;
 
 		// EXECUTE
@@ -184,7 +185,7 @@ public class ParallelLineMILTest {
 		});
 		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 4.0, 0, 1, 0));
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(binaryNoise, rotation, rotateOp, 16);
+				createFromInterval(binaryNoise, rotation, rotateOp, 16);
 		generator.resetAndSetSeed(seed);
 		ParallelLineMIL.setSeed(seed);
 

@@ -37,6 +37,7 @@ import org.scijava.plugin.Parameter;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;
+import static org.bonej.ops.mil.PlaneParallelLineGenerator.createFromInterval;
 
 class DegreeOfAnisotropy {
     final static double MINIMUM_SAMPLING_DISTANCE = Math.sqrt(3.0);
@@ -143,7 +144,7 @@ class DegreeOfAnisotropy {
             final RandomAccessibleInterval<BitType> image) {
         final Quaterniondc rotation = nextRandomRotation();
         final PlaneParallelLineGenerator generator =
-                new PlaneParallelLineGenerator(image, rotation, rotateOp, planeSections);
+                createFromInterval(image, rotation, rotateOp, planeSections);
         if (seed != null) { generator.resetAndSetSeed(seed); }
         return generator;
     }

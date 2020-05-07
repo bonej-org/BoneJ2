@@ -26,6 +26,7 @@ package org.bonej.ops.mil;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;
 import static org.bonej.ops.mil.ParallelLineGenerator.Line;
+import static org.bonej.ops.mil.PlaneParallelLineGenerator.createFromInterval;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -74,17 +75,17 @@ public class PlaneParallelLineGeneratorTest {
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfIntervalNull() {
-		new PlaneParallelLineGenerator(null, IDENTITY, rotateOp, 1);
+		createFromInterval(null, IDENTITY, rotateOp, 1);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfRotationNull() {
-		new PlaneParallelLineGenerator(IMG, null, rotateOp, 1);
+		createFromInterval(IMG, null, rotateOp, 1);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testConstructorThrowsNPEIfOpNull() {
-		new PlaneParallelLineGenerator(IMG, IDENTITY, null, 1);
+		createFromInterval(IMG, IDENTITY, null, 1);
 	}
 
 	@Test
@@ -92,7 +93,7 @@ public class PlaneParallelLineGeneratorTest {
 		thrown.expect(IllegalArgumentException.class);
 		thrown.expectMessage("Sections must be positive");
 
-		new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 0);
+		createFromInterval(IMG, IDENTITY, rotateOp, 0);
 	}
 
 	@Test
@@ -101,7 +102,7 @@ public class PlaneParallelLineGeneratorTest {
 		thrown.expectMessage("Interval must be 3D");
 		final ArrayImg<BitType, LongArray> twoDImg = ArrayImgs.bits(SIZE, SIZE);
 
-		new PlaneParallelLineGenerator(twoDImg, IDENTITY, rotateOp, 1);
+		createFromInterval(twoDImg, IDENTITY, rotateOp, 1);
 	}
 
 	@Test
@@ -112,7 +113,7 @@ public class PlaneParallelLineGeneratorTest {
 		final Vector3d expectedDirection = IMAGE_J.op().linalg().rotate(
 			new Vector3d(0, 0, 1), rotation);
 		final PlaneParallelLineGenerator
-				plane = new PlaneParallelLineGenerator(IMG, rotation, rotateOp, 1);
+				plane = createFromInterval(IMG, rotation, rotateOp, 1);
 
 		// EXECUTE
 		final Vector3dc direction = plane.getDirection();
@@ -124,7 +125,7 @@ public class PlaneParallelLineGeneratorTest {
 	@Test
 	public void testAllQuadrantsCovered() {
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+				createFromInterval(IMG, IDENTITY, rotateOp, 2L);
 
 		final long quadrants = generate(generator::nextLine).limit(4).map(l -> l.point)
 				.map(PlaneParallelLineGeneratorTest::identifyQuadrant).distinct().count();
@@ -137,7 +138,7 @@ public class PlaneParallelLineGeneratorTest {
 	public void testFirstQuadrantChanges() {
 		// SETUP
 		PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+				createFromInterval(IMG, IDENTITY, rotateOp, 2L);
 		final int initialQuadrant = identifyQuadrant(generator.nextLine().point);
 		final int max = 100_000;
 		int generated = 0;
@@ -147,7 +148,7 @@ public class PlaneParallelLineGeneratorTest {
 		// There's a non-zero chance that the next cycle just happens to generate the same quadrant
 		// - it is random after all. So let's repeat for good measure.
 		while (generated < max) {
-			generator = new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+			generator = createFromInterval(IMG, IDENTITY, rotateOp, 2L);
 			final int quadrant = identifyQuadrant(generator.nextLine().point);
 			if (quadrant != initialQuadrant) {
 				changed = true;
@@ -163,7 +164,7 @@ public class PlaneParallelLineGeneratorTest {
 	public void testSectionOffsetChangesBetweenCycles() {
 		// SETUP
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+				createFromInterval(IMG, IDENTITY, rotateOp, 2L);
 		final Vector3dc o = new Vector3d();
 		final String msg = "Sanity check failed - no point in the first quadrant!";
 		long generated = 0;
@@ -208,7 +209,7 @@ public class PlaneParallelLineGeneratorTest {
 			2.0);
 		final Vector3dc normal = new Vector3d(0, 0, 1);
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 2L);
+				createFromInterval(IMG, IDENTITY, rotateOp, 2L);
 
 		// EXECUTE
 		final Stream<Line> origins = generate(generator::nextLine).limit(4);
@@ -232,7 +233,7 @@ public class PlaneParallelLineGeneratorTest {
 		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 2.0,
 			0, 1, 0));
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(IMG, rotation, rotateOp, 2L);
+				createFromInterval(IMG, rotation, rotateOp, 2L);
 
 		// EXECUTE
 		final Stream<Line> origins = generate(generator::nextLine).limit(4);
@@ -249,7 +250,7 @@ public class PlaneParallelLineGeneratorTest {
 	@Test
 	public void testSetSeed() {
 		final PlaneParallelLineGenerator generator =
-				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 16L);
+				createFromInterval(IMG, IDENTITY, rotateOp, 16L);
 
 		generator.resetAndSetSeed(0xc0ff33);
 		final Line l = generator.nextLine();

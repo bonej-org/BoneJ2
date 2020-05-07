@@ -41,15 +41,7 @@ import static org.apache.commons.math3.util.MathArrays.shuffle;
 
 /**
  * A class that generates random lines that pass through a plane in 3D.
- * <p>
- * All the lines pass through a point on a d * d plane, where d = the longest diagonal of a 3D interval.
- * The lines are also normal to the plane.
- * </p>
- * <p>
- * The plane is d * d so that it's big enough that normal lines passing through it cover the entire interval,
- * regardless of the orientation of the plane. However, this means that nextLine() might return a line
- * that entirely misses the interval.
- * </p>
+ *
  * @author Richard Domander
  */
 public class PlaneParallelLineGenerator implements ParallelLineGenerator {
@@ -68,35 +60,36 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	private int sectionCycle;
 
 	/**
-	 * Creates and initializes an instance for generating lines.
-	 *
+	 * Creates a generator whose lines cover the given interval.
+	 * <p>
+	 * NB: the lines generated may not intersect the interval.
+	 * </p>
+	 * <p>
+	 * Creates d * d plane, where d = the longest diagonal of a 3D interval. This way the plane is
+	 * large enough to cover the entire interval regardless of its orientation. Conversely,
+	 * depending on the orientation the plane may extend beyond the interval.
+	 * </p>
+	 * <p>
+	 * The plane is centered on the centroid of the interval.
+	 * </p>
 	 * @param interval a 3D interval through which the lines pass.
 	 * @param rotation rotation of the plane.
 	 * @param rotateOp an op the generator needs for rotating vectors
 	 * @param sectionsPerDimension number of plane sections line generation cycles through
-	 * @param <I> type of the interval.
 	 * @throws IllegalArgumentException if sectionsPerDimension is not positive, or interval is not 3D.
 	 */
-	public <I extends Interval> PlaneParallelLineGenerator(final I interval,
-														   final Quaterniondc rotation,
-														   final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp,
-														   final long sectionsPerDimension)
-			throws IllegalArgumentException
-	{
+	public static PlaneParallelLineGenerator createFromInterval(final Interval interval,
+																final Quaterniondc rotation,
+																final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp,
+																final long sectionsPerDimension)
+			throws IllegalArgumentException {
 		validateParameters(interval, sectionsPerDimension);
-		size = findPlaneSize(interval);
-		planeOrigin = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
-		centroid = findCentroid(interval);
-		this.rotateOp = rotateOp;
-		this.rotation = rotation;
-		this.normal = calculateNormal();
-		this.sectionsPerDimension = sectionsPerDimension;
-		sectionSize =  1.0 / sectionsPerDimension;
-		sectionOrder = createSectionOrder();
-		resetSectionCycle();
+		final double size = findPlaneSize(interval);
+		final Vector3dc centroid = findCentroid(interval);
+		return new PlaneParallelLineGenerator(size, centroid, rotation, rotateOp, sectionsPerDimension);
 	}
 
-	private void validateParameters(final Interval interval, long sectionsPerDimension)
+	private static void validateParameters(final Interval interval, long sectionsPerDimension)
 			throws IllegalArgumentException {
 		if (interval.numDimensions() != 3) {
 			throw new IllegalArgumentException("Interval must be 3D");
@@ -106,16 +99,32 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 		}
 	}
 
-	private static <I extends Interval> double findPlaneSize(final I interval) {
+	private static double findPlaneSize(final Interval interval) {
 		final long sqSum = LongStream.of(interval.dimension(0), interval.dimension(
 				1), interval.dimension(2)).map(x -> x * x).sum();
 		return Math.sqrt(sqSum);
 	}
 
-	private static <I extends Interval> Vector3dc findCentroid(final I interval) {
+	private static Vector3dc findCentroid(final Interval interval) {
 		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
 				.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
 		return new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
+	}
+
+	private PlaneParallelLineGenerator(final double size, final Vector3dc centroid,
+									  final Quaterniondc rotation,
+									  final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp,
+									  final long sectionsPerDimension) {
+		this.size = size;
+		planeOrigin = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
+		this.centroid = centroid;
+		this.rotateOp = rotateOp;
+		this.rotation = rotation;
+		this.normal = calculateNormal();
+		this.sectionsPerDimension = sectionsPerDimension;
+		sectionSize =  1.0 / sectionsPerDimension;
+		sectionOrder = createSectionOrder();
+		resetSectionCycle();
 	}
 
 	private Vector3dc calculateNormal() {
@@ -153,10 +162,7 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	 * Each line has the same random offset within its section. This offset is randomized when the
 	 * cycle resets. The order of the quadrants is randomised as well.
 	 * </p>
-	 * <p>
-	 * NB: the line might miss the interval the class was initialised with!
-	 * </p>
-	 * @return a line passing through a point on a plane described by the class.
+	 * @return a line that passes through a point on the instance's plane and is normal to it.
 	 */
 	@Override
 	public Line nextLine() {
