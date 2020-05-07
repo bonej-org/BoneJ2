@@ -32,13 +32,15 @@ import net.imglib2.Interval;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.joml.Quaterniondc;
+import org.joml.Vector2d;
+import org.joml.Vector2dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import static org.apache.commons.math3.util.MathArrays.shuffle;
 
 /**
- * A class that generates random lines that pass through a plane.
+ * A class that generates random lines that pass through a plane in 3D.
  * <p>
  * All the lines pass through a point on a d * d plane, where d = the longest diagonal of a 3D interval.
  * The lines are also normal to the plane.
@@ -51,55 +53,95 @@ import static org.apache.commons.math3.util.MathArrays.shuffle;
  * @author Richard Domander
  */
 public class PlaneParallelLineGenerator implements ParallelLineGenerator {
-
 	private final double size;
-	private final Vector3dc translation;
+	private final Vector3dc planeOrigin;
 	private final Vector3dc centroid;
-	private final Vector3dc direction;
+	private final Vector3dc normal;
 	private final RandomGenerator random = new MersenneTwister();
 	private final Quaterniondc rotation;
 	private final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
-	private final long sections;
+	private final long sectionsPerDimension;
 	private final double sectionSize;
-	private double uOffset = 0.0;
-	private double tOffset = 0.0;
-	private final int[] order;
-	private int cycle;
+	private double xSectionOffset;
+	private double ySectionOffset;
+	private final int[] sectionOrder;
+	private int sectionCycle;
 
 	/**
 	 * Creates and initializes an instance for generating lines.
 	 *
 	 * @param interval a 3D interval through which the lines pass.
-	 * @param direction the direction of the lines through the interval described as a rotation.
+	 * @param rotation rotation of the plane.
 	 * @param rotateOp an op the generator needs for rotating vectors
-	 * @param sections number of sections each line point coordinate is generated from.
+	 * @param sectionsPerDimension number of plane sections line generation cycles through
 	 * @param <I> type of the interval.
-	 * @throws IllegalArgumentException if sections is not positive, or interval is not 3D.
+	 * @throws IllegalArgumentException if sectionsPerDimension is not positive, or interval is not 3D.
 	 */
-	public <I extends Interval> PlaneParallelLineGenerator(final I interval, final Quaterniondc direction,
+	public <I extends Interval> PlaneParallelLineGenerator(final I interval,
+														   final Quaterniondc rotation,
 														   final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp,
-														   final long sections) throws IllegalArgumentException
+														   final long sectionsPerDimension)
+			throws IllegalArgumentException
 	{
-		if (sections < 1) {
-			throw new IllegalArgumentException("Sections must be positive");
-		}
+		validateParameters(interval, sectionsPerDimension);
+		size = findPlaneSize(interval);
+		planeOrigin = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
+		centroid = findCentroid(interval);
+		this.rotateOp = rotateOp;
+		this.rotation = rotation;
+		this.normal = calculateNormal();
+		this.sectionsPerDimension = sectionsPerDimension;
+		sectionSize =  1.0 / sectionsPerDimension;
+		sectionOrder = createSectionOrder();
+		resetSectionCycle();
+	}
 
+	private void validateParameters(final Interval interval, long sectionsPerDimension)
+			throws IllegalArgumentException {
 		if (interval.numDimensions() != 3) {
 			throw new IllegalArgumentException("Interval must be 3D");
 		}
+		if (sectionsPerDimension < 1) {
+			throw new IllegalArgumentException("Sections must be positive");
+		}
+	}
 
-		size = findPlaneSize(interval);
-		translation = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
-		centroid = findCentroid(interval);
-		this.rotateOp = rotateOp;
-		this.rotation = direction;
-		this.direction = createDirection();
-		this.sections = sections;
-		sectionSize =  1.0 / sections;
-		final int sectionsSq = (int) (sections * sections);
+	private static <I extends Interval> double findPlaneSize(final I interval) {
+		final long sqSum = LongStream.of(interval.dimension(0), interval.dimension(
+				1), interval.dimension(2)).map(x -> x * x).sum();
+		return Math.sqrt(sqSum);
+	}
 
-		order = new int[sectionsSq];
-		initOrder();
+	private static <I extends Interval> Vector3dc findCentroid(final I interval) {
+		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
+				.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
+		return new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
+	}
+
+	private Vector3dc calculateNormal() {
+		final Vector3d normal = new Vector3d(0, 0, 1);
+		rotateOp.mutate1(normal, rotation);
+		return normal;
+	}
+
+	private int[] createSectionOrder() {
+		final int length = (int) (sectionsPerDimension * sectionsPerDimension);
+		final int[] order = new int[length];
+		fillZeroToLengthMinusOne(order);
+		return order;
+	}
+
+	private static void fillZeroToLengthMinusOne(final int[] array) {
+		for (int i = 0; i < array.length; i++) {
+			array[i] = i;
+		}
+	}
+
+	private void resetSectionCycle() {
+		sectionCycle = 0;
+		shuffle(sectionOrder, random);
+		xSectionOffset = random.nextDouble() * sectionSize;
+		ySectionOffset = random.nextDouble() * sectionSize;
 	}
 
 	/**
@@ -118,25 +160,38 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	 */
 	@Override
 	public Line nextLine() {
-        if (cycle == 0) {
-			shuffle(order, random);
-			uOffset = random.nextDouble() * sectionSize;
-			tOffset = random.nextDouble() * sectionSize;
+		final Vector3dc point = nextSectionPoint();
+		return new Line(point, normal);
+	}
+
+	private Vector3dc nextSectionPoint() {
+		final Vector2dc coordinates = nextSectionCoordinates();
+		final Vector3d sectionPoint = new Vector3d(coordinates.x(), coordinates.y(), 0);
+		return applyPlaneTransformation(sectionPoint);
+	}
+
+	private Vector2dc nextSectionCoordinates() {
+		final long ySection = sectionOrder[sectionCycle] / sectionsPerDimension;
+		final long xSection = sectionOrder[sectionCycle] - ySection * sectionsPerDimension;
+		final double x = xSection * sectionSize + xSectionOffset;
+		final double y = ySection * sectionSize + ySectionOffset;
+		updateSectionCycle();
+		return new Vector2d(x, y);
+	}
+
+	private void updateSectionCycle() {
+		sectionCycle++;
+		if (sectionCycle >= sectionOrder.length) {
+			resetSectionCycle();
 		}
+	}
 
-		final long uSection = order[cycle] / sections;
-		final long tSection = order[cycle] - uSection * sections;
-		final double u = uSection * sectionSize + uOffset;
-		final double t = tSection * sectionSize + tOffset;
-
-		final Vector3dc point = createOrigin(t, u);
-
-		cycle++;
-		if (cycle >= order.length) {
-			cycle = 0;
-		}
-
-		return new Line(point, direction);
+	private Vector3dc applyPlaneTransformation(final Vector3d point) {
+		point.mul(size);
+		point.add(planeOrigin);
+		rotateOp.mutate1(point, rotation);
+		point.add(centroid);
+		return point;
 	}
 
 	/**
@@ -146,62 +201,18 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	 */
 	@Override
 	public Vector3dc getDirection() {
-		return direction;
+		return normal;
 	}
 
 	/**
-	 * Sets the seed of the underlying random number generator
+	 * Resets the generator, and starts generating lines with the given seed
 	 *
 	 * @param seed seed value
 	 * @see RandomGenerator#setSeed(long)
 	 */
-	public void setSeed(final long seed) { random.setSeed(seed); }
-
-	/**
-	 * Resets the cycle of the line generation
-	 *
-	 * @see #nextLine()
-	 */
-	public void reset() {
-		cycle = 0;
-		// Order needs to be reset to initial permutation {1, 2, 3 ... n},
-		// so that reset(); setSeed(seed); always produces the same sequence.
-		initOrder();
+	public void resetAndSetSeed(final long seed) {
+		random.setSeed(seed);
+		fillZeroToLengthMinusOne(sectionOrder);
+		resetSectionCycle();
 	}
-
-	// region -- Helper methods --
-	private Vector3dc createDirection() {
-		final Vector3d direction = new Vector3d(0, 0, 1);
-		rotateOp.mutate1(direction, rotation);
-		return direction;
-	}
-
-	private Vector3dc createOrigin(final double t, final double u) {
-		final double x = t * size;
-		final double y = u * size;
-		final Vector3d origin = new Vector3d(x, y, 0);
-		origin.add(translation);
-		rotateOp.mutate1(origin, rotation);
-		origin.add(centroid);
-		return origin;
-	}
-
-	private static <I extends Interval> Vector3dc findCentroid(final I interval) {
-		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
-			.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
-		return new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
-	}
-
-	private static <I extends Interval> double findPlaneSize(final I interval) {
-		final long sqSum = LongStream.of(interval.dimension(0), interval.dimension(
-			1), interval.dimension(2)).map(x -> x * x).sum();
-		return Math.sqrt(sqSum);
-	}
-
-	private void initOrder() {
-		for (int i = 0; i < order.length; i++) {
-			order[i] = i;
-		}
-	}
-	// endregion
 }

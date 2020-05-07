@@ -106,17 +106,6 @@ public class PlaneParallelLineGeneratorTest {
 
 	@Test
 	public void testGetDirection() {
-		final Vector3d expectedDirection = new Vector3d(0, 0, 1);
-		final PlaneParallelLineGenerator
-				plane = new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 1);
-
-		final Vector3dc direction = plane.getDirection();
-
-		assertEquals("Incorrect direction", expectedDirection, direction);
-	}
-
-	@Test
-	public void testGetDirectionRotation() {
 		// SETUP
 		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 2.0,
 			0, 1, 0));
@@ -129,7 +118,7 @@ public class PlaneParallelLineGeneratorTest {
 		final Vector3dc direction = plane.getDirection();
 
 		// VERIFY
-		assertEquals("Direction rotated incorrectly", expectedDirection, direction);
+		assertEquals(expectedDirection, direction);
 	}
 
 	@Test
@@ -262,13 +251,11 @@ public class PlaneParallelLineGeneratorTest {
 		final PlaneParallelLineGenerator generator =
 				new PlaneParallelLineGenerator(IMG, IDENTITY, rotateOp, 16L);
 
-		generator.setSeed(0xc0ff33);
+		generator.resetAndSetSeed(0xc0ff33);
 		final Line l = generator.nextLine();
-		generator.reset();
-		generator.setSeed(0xc0ff33);
+		generator.resetAndSetSeed(0xc0ff33);
 		final Line m = generator.nextLine();
-		generator.reset();
-		generator.setSeed(0xc0c0a);
+		generator.resetAndSetSeed(0xc0c0a);
 		final Line n = generator.nextLine();
 
 		assertEquals(l.point, m.point);

@@ -56,7 +56,7 @@ class DegreeOfAnisotropy {
     private BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
     private BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d>
             milOp;
-    private UnitSphereRandomVectorGenerator directionGenerator;
+    private UnitSphereRandomVectorGenerator rotationGenerator;
     private Long seed;
 
     DegreeOfAnisotropy(final Context context) { context.inject(this); }
@@ -92,9 +92,9 @@ class DegreeOfAnisotropy {
 
     private void createDirectionGenerator() {
         if (seed == null) {
-            directionGenerator = new UnitSphereRandomVectorGenerator(4);
+            rotationGenerator = new UnitSphereRandomVectorGenerator(4);
         } else {
-            directionGenerator = new UnitSphereRandomVectorGenerator(4,
+            rotationGenerator = new UnitSphereRandomVectorGenerator(4,
                     new MersenneTwister(seed));
         }
     }
@@ -141,15 +141,15 @@ class DegreeOfAnisotropy {
 
     private PlaneParallelLineGenerator createLineGenerator(
             final RandomAccessibleInterval<BitType> image) {
-        final Quaterniondc direction = nextRandomDirection();
+        final Quaterniondc rotation = nextRandomRotation();
         final PlaneParallelLineGenerator generator =
-                new PlaneParallelLineGenerator(image, direction, rotateOp, planeSections);
-        if (seed != null) { generator.setSeed(seed); }
+                new PlaneParallelLineGenerator(image, rotation, rotateOp, planeSections);
+        if (seed != null) { generator.resetAndSetSeed(seed); }
         return generator;
     }
 
-    private Quaterniondc nextRandomDirection() {
-        final double[] v = directionGenerator.nextVector();
+    private Quaterniondc nextRandomRotation() {
+        final double[] v = rotationGenerator.nextVector();
         return new Quaterniond(v[0], v[1], v[2], v[3]);
     }
 

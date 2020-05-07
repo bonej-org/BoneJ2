@@ -53,21 +53,21 @@ public class DegreeOfAnisotropyTest {
 
         final Results results = degreeOfAnisotropy.calculate(binaryNoise);
 
-        assertEquals(0.043318339051122035, results.degreeOfAnisotropy, 1e-12);
+        assertEquals(0.04537121660135046, results.degreeOfAnisotropy, 1e-12);
     }
 
     @Test
     public void testXYSheetsDA() {
         final double dA = xySheetsResults.degreeOfAnisotropy;
-        assertEquals(0.9900879398296404, dA, 1e-12);
+        assertEquals(0.9896177816153787, dA, 1e-12);
     }
 
     @Test
     public void testXYSheetsRadii() {
         final double[] radii = xySheetsResults.radii;
-        assertEquals(4.677484949735923, radii[0], 1e-12);
-        assertEquals(15.004677262978667, radii[1], 1e-12);
-        assertEquals(46.98188461474766, radii[2], 1e-12);
+        assertEquals(4.803749088691813, radii[0], 1e-12);
+        assertEquals(15.68222374009066, radii[1], 1e-12);
+        assertEquals(47.144956047058514, radii[2], 1e-12);
     }
 
     @Test
@@ -86,11 +86,11 @@ public class DegreeOfAnisotropyTest {
         // It isn't guaranteed which way of the axes of the ellipsoid point,
         // they can point to the opposite direction of the expected
         assertEquals("The short axis of the ellipsoid should be (roughly) parallel to z-axis",
-                0.9764361735420987, Math.abs(zAxis.dot(ev1)), 1e-12);
+                0.9803894575261133, Math.abs(zAxis.dot(ev1)), 1e-12);
         assertEquals("Ellipsoid axis should be (roughly) parallel to y-axis",
-                0.8820734061182398, Math.abs(yAxis.dot(ev2)), 1e-12);
+                0.8534651229751004, Math.abs(yAxis.dot(ev2)), 1e-12);
         assertEquals("Ellipsoid axis should be (roughly) parallel to x-axis",
-                0.8979117353710572, Math.abs(xAxis.dot(ev3)), 1e-12);
+                0.8705957215622186, Math.abs(xAxis.dot(ev3)), 1e-12);
     }
 
 

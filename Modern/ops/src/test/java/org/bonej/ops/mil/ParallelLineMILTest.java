@@ -185,7 +185,7 @@ public class ParallelLineMILTest {
 		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 4.0, 0, 1, 0));
 		final PlaneParallelLineGenerator generator =
 				new PlaneParallelLineGenerator(binaryNoise, rotation, rotateOp, 16);
-		generator.setSeed(seed);
+		generator.resetAndSetSeed(seed);
 		ParallelLineMIL.setSeed(seed);
 
 		// EXECUTE
@@ -193,7 +193,7 @@ public class ParallelLineMILTest {
 				binaryNoise, generator, milLength, 1.0);
 
 		// VERIFY
-		assertEquals(1.9908629972056058, milVector.length(), 1e-12);
+		assertEquals(1.946124502886379, milVector.length(), 1e-12);
 	}
 
 	@BeforeClass
