@@ -197,6 +197,31 @@ public class ParallelLineMILTest {
 		assertEquals(1.946124502886379, milVector.length(), 1e-12);
 	}
 
+	@Test
+	public void testRotateDirection() {
+		final Quaterniondc rotation = new Quaterniond(new AxisAngle4d(Math.PI / 4.0, 0, 0, 1));
+		final Vector3d expectedDirection = new Vector3d(0, 0, 1);
+		rotateOp.mutate1(expectedDirection, rotation);
+		final PlaneParallelLineGenerator generator =
+				createFromInterval(XY_SHEETS, IDENTITY_ROTATION, rotateOp, 1);
+
+		generator.rotateDirection(rotation);
+		assertTrue(generator.getDirection().equals(expectedDirection, 1e-12));
+
+		generator.rotateDirection(rotation);
+		assertTrue("Repeating the same rotation should give the same result",
+				generator.getDirection().equals(expectedDirection, 1e-12));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRotateDirectionIAEIfQuaternionNotUnit() {
+		final PlaneParallelLineGenerator generator =
+				createFromInterval(XY_SHEETS, IDENTITY_ROTATION, rotateOp, 1);
+		final Quaterniondc badRotation = new Quaterniond(1.0, 2.0, 3.0, 4.0);
+
+		generator.rotateDirection(badRotation);
+	}
+
 	@BeforeClass
 	public static void oneTimeSetup() {
 		rotateOp = Hybrids.binaryCFI1(IMAGE_J.op(), Rotate3d.class, Vector3d.class,
@@ -243,6 +268,9 @@ public class ParallelLineMILTest {
 		public Vector3dc getDirection() {
 			return direction;
 		}
+
+		@Override
+		public void rotateDirection(final Quaterniondc rotation) {}
 	}
 	// endregion
 }

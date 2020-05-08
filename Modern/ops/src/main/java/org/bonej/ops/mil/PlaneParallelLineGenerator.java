@@ -28,6 +28,7 @@ import net.imglib2.Interval;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector2d;
 import org.joml.Vector2dc;
@@ -45,9 +46,9 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	private final double size;
 	private final Vector3dc planeOrigin;
 	private final Vector3dc centroid;
-	private final Vector3dc normal;
+	private final Vector3d normal = new Vector3d();
 	private final RandomGenerator random = new MersenneTwister();
-	private final Quaterniondc rotation;
+	private final Quaterniond rotation = new Quaterniond();
 	private final BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	private final long sectionsPerDimension;
 	private final double sectionSize;
@@ -123,18 +124,17 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 		planeOrigin = new Vector3d(-size * 0.5, -size * 0.5, 0.0);
 		this.centroid = centroid;
 		this.rotateOp = rotateOp;
-		this.rotation = rotation;
-		this.normal = calculateNormal();
+		this.rotation.set(rotation);
+		rotateNormal();
 		this.sectionsPerDimension = sectionsPerDimension;
 		sectionSize =  1.0 / sectionsPerDimension;
 		sectionOrder = createSectionOrder();
 		resetSectionCycle();
 	}
 
-	private Vector3dc calculateNormal() {
-		final Vector3d normal = new Vector3d(0, 0, 1);
+	private void rotateNormal() {
+		normal.set(0, 0, 1);
 		rotateOp.mutate1(normal, rotation);
-		return normal;
 	}
 
 	private int[] createSectionOrder() {
@@ -218,6 +218,27 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	}
 
 	/**
+	 * Rotates the direction of the lines generated
+	 * <p>
+	 * Always rotates the default direction d = (0, 0, 1)
+	 * </p>
+	 * @param rotation a unit quaternion
+	 * @throws IllegalArgumentException if rotation is not a unit quaternion
+	 */
+	@Override
+	public void rotateDirection(final Quaterniondc rotation) throws IllegalArgumentException {
+		if (!isUnitQuaternion(rotation)) {
+			throw new IllegalArgumentException("Rotation is not a unit quaternion");
+		}
+		this.rotation.set(rotation);
+		rotateNormal();
+	}
+
+	private boolean isUnitQuaternion(final Quaterniondc q) {
+		return Math.abs(q.lengthSquared() - 1.0) < 1e-12;
+	}
+
+	/**
 	 * Resets the generator, and starts generating lines with the given seed
 	 *
 	 * @param seed seed value
@@ -225,6 +246,9 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	 */
 	public void resetAndSetSeed(final long seed) {
 		random.setSeed(seed);
+		// Resetting the order fto the default permutation guarantees that tests that use constant
+		// seed for random generation are repeatable. Re-shuffling the current random permutation
+		// would change results on each run.
 		fillZeroToLengthMinusOne(sectionOrder);
 		resetSectionCycle();
 	}

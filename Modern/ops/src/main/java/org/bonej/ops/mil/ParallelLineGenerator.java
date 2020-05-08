@@ -1,5 +1,6 @@
 package org.bonej.ops.mil;
 
+import org.joml.Quaterniondc;
 import org.joml.Vector3dc;
 
 /**
@@ -9,6 +10,8 @@ public interface ParallelLineGenerator {
     Line nextLine();
 
     Vector3dc getDirection();
+
+    void rotateDirection(final Quaterniondc rotation);
 
     /**
      * A line defined as a direction and point it passes through.
