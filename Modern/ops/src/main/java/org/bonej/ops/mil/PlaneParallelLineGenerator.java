@@ -23,9 +23,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.bonej.ops.mil;
 
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imglib2.Interval;
 
@@ -84,7 +81,7 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 																final long sectionsPerDimension)
 			throws IllegalArgumentException {
 		validateParameters(interval, sectionsPerDimension);
-		final double size = findPlaneSize(interval);
+		final double size = calculateLongestDiagonal(interval);
 		final Vector3dc centroid = findCentroid(interval);
 		return new PlaneParallelLineGenerator(size, centroid, rotation, rotateOp, sectionsPerDimension);
 	}
@@ -99,16 +96,23 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 		}
 	}
 
-	private static double findPlaneSize(final Interval interval) {
-		final long sqSum = LongStream.of(interval.dimension(0), interval.dimension(
-				1), interval.dimension(2)).map(x -> x * x).sum();
+	private static double calculateLongestDiagonal(final Interval interval) {
+		final long width = interval.dimension(0);
+		final long height = interval.dimension(1);
+		final long depth = interval.dimension(2);
+		final long sqSum = width*width + height*height + depth*depth;
 		return Math.sqrt(sqSum);
 	}
 
 	private static Vector3dc findCentroid(final Interval interval) {
-		final double[] coordinates = IntStream.range(0, 3).mapToDouble(d -> interval
-				.max(d) + 1 - interval.min(d)).map(d -> d / 2.0).toArray();
-		return new Vector3d(coordinates[0], coordinates[1], coordinates[2]);
+		final double centerX = findMidPoint(interval, 0);
+		final double centerY = findMidPoint(interval, 1);
+		final double centerZ = findMidPoint(interval, 2);
+		return new Vector3d(centerX, centerY, centerZ);
+	}
+
+	private static double findMidPoint(final Interval interval, final int d) {
+		return interval.dimension(d) * 0.5 + interval.min(d);
 	}
 
 	private PlaneParallelLineGenerator(final double size, final Vector3dc centroid,
@@ -161,6 +165,9 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	 * different quadrants of the plane. Calling nextLine() for the fifth time resets the cycle.
 	 * Each line has the same random offset within its section. This offset is randomized when the
 	 * cycle resets. The order of the quadrants is randomised as well.
+	 * </p>
+	 * <p>
+	 * The lines from different sections are evenly spaced.
 	 * </p>
 	 * @return a line that passes through a point on the instance's plane and is normal to it.
 	 */
