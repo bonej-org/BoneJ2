@@ -239,12 +239,12 @@ public class PlaneParallelLineGenerator implements ParallelLineGenerator {
 	}
 
 	/**
-	 * Resets the generator, and starts generating lines with the given seed
+	 * Sets the seed of the random line generation
 	 *
 	 * @param seed seed value
 	 * @see RandomGenerator#setSeed(long)
 	 */
-	public void resetAndSetSeed(final long seed) {
+	public void setSeed(final long seed) {
 		random.setSeed(seed);
 		// Resetting the order fto the default permutation guarantees that tests that use constant
 		// seed for random generation are repeatable. Re-shuffling the current random permutation

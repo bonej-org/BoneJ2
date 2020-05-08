@@ -252,11 +252,11 @@ public class PlaneParallelLineGeneratorTest {
 		final PlaneParallelLineGenerator generator =
 				createFromInterval(IMG, IDENTITY, rotateOp, 16L);
 
-		generator.resetAndSetSeed(0xc0ff33);
+		generator.setSeed(0xc0ff33);
 		final Line l = generator.nextLine();
-		generator.resetAndSetSeed(0xc0ff33);
+		generator.setSeed(0xc0ff33);
 		final Line m = generator.nextLine();
-		generator.resetAndSetSeed(0xc0c0a);
+		generator.setSeed(0xc0c0a);
 		final Line n = generator.nextLine();
 
 		assertEquals(l.point, m.point);

@@ -13,9 +13,9 @@ public interface ParallelLineGenerator {
 
     void rotateDirection(final Quaterniondc rotation);
 
-    /**
-     * A line defined as a direction and point it passes through.
-     */
+    void setSeed(final long seed);
+
+    /** A line defined as a direction and point it passes through. */
     final class Line {
         final Vector3dc point;
         final Vector3dc direction;

@@ -145,7 +145,7 @@ class DegreeOfAnisotropy {
         final Quaterniondc rotation = nextRandomRotation();
         final PlaneParallelLineGenerator generator =
                 createFromInterval(image, rotation, rotateOp, planeSections);
-        if (seed != null) { generator.resetAndSetSeed(seed); }
+        if (seed != null) { generator.setSeed(seed); }
         return generator;
     }
 
