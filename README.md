@@ -1,5 +1,5 @@
 # BoneJ
-BoneJ is a collection of Fiji/ImageJ plug-ins for skeletal biology. It provides free, open source tools for trabecular geometry and whole bone shape analysis. This repository hosts the modern and experimental incarnation of BoneJ in development. For ImageJ1 plug-ins, please visit http://bonej.org.
+BoneJ is a collection of Fiji/ImageJ plug-ins for skeletal biology. It provides free, open source tools for trabecular geometry and whole bone shape analysis. This repository hosts the modern incarnation of BoneJ in development. For legacy ImageJ1 plug-ins, which are no longer maintained, please visit http://bonej.org.
 
 [![Build Status](https://travis-ci.org/bonej-org/BoneJ2.svg?branch=master)](https://travis-ci.org/bonej-org/BoneJ2)
 
