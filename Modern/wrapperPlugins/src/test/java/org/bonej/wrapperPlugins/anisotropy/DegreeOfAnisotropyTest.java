@@ -17,11 +17,8 @@ import org.joml.Vector3dc;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class DegreeOfAnisotropyTest {
     private static final long SEED = 12345L;
@@ -46,10 +43,9 @@ public class DegreeOfAnisotropyTest {
     @Test
     public void testBinaryNoiseDA() throws Exception {
         final Img<BitType> binaryNoise = createBinaryNoise();
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
-        degreeOfAnisotropy.setLinesPerDirection(25);
-        degreeOfAnisotropy.setSamplingDirections(100);
-        degreeOfAnisotropy.setSeed(SEED);
+        final MILVectorSampler sampler = new MILVectorSampler(IMAGE_J.op(), DIRECTIONS, 25);
+        sampler.setSeed(SEED);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.op(), sampler);
 
         final Results results = degreeOfAnisotropy.calculate(binaryNoise);
 
@@ -110,27 +106,14 @@ public class DegreeOfAnisotropyTest {
 
     @Test(expected = EllipsoidFittingFailedException.class)
     public void testEllipsoidFittingFailingThrowsException() throws Exception {
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
-        degreeOfAnisotropy.setLinesPerDirection(1);
-        degreeOfAnisotropy.setSamplingDirections(Quadric.MIN_DATA);
-        degreeOfAnisotropy.setSeed(SEED);
+        final MILVectorSampler sampler = new MILVectorSampler(IMAGE_J.op(), Quadric.MIN_DATA, 1);
+        sampler.setSeed(SEED);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.op(), sampler);
 
         degreeOfAnisotropy.calculate(xySheets);
     }
 
-    @Test
-    public void testObserverIsNotifiedForEveryDirection() throws Exception {
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
-        degreeOfAnisotropy.setLinesPerDirection(25);
-        degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
-        degreeOfAnisotropy.setSeed(SEED);
-        final AnisotropyWrapper<?> observer = Mockito.mock(AnisotropyWrapper.class);
-        degreeOfAnisotropy.setProgressObserver(observer);
-
-        degreeOfAnisotropy.calculate(xySheets);
-
-        verify(observer, times(DIRECTIONS)).directionFinished();
-    }
+    // TODO Test with known points (mock MILVectorSampler)
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -139,18 +122,16 @@ public class DegreeOfAnisotropyTest {
     }
 
     private static void calculateXYSheetsResults() throws Exception {
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
-        degreeOfAnisotropy.setLinesPerDirection(25);
-        degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
-        degreeOfAnisotropy.setSeed(SEED);
+        final MILVectorSampler sampler = new MILVectorSampler(IMAGE_J.op(), DIRECTIONS, 25);
+        sampler.setSeed(SEED);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.op(), sampler);
         xySheetsResults = degreeOfAnisotropy.calculate(xySheets);
     }
 
     private static void calculateEmptyResults() throws Exception {
-        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.getContext());
-        degreeOfAnisotropy.setLinesPerDirection(25);
-        degreeOfAnisotropy.setSamplingDirections(DIRECTIONS);
-        degreeOfAnisotropy.setSeed(SEED);
+        final MILVectorSampler sampler = new MILVectorSampler(IMAGE_J.op(), DIRECTIONS, 25);
+        sampler.setSeed(SEED);
+        final DegreeOfAnisotropy degreeOfAnisotropy = new DegreeOfAnisotropy(IMAGE_J.op(), sampler);
         final Img<BitType> emptyStack = ArrayImgs.bits(50, 50, 50);
         emptyStackResults = degreeOfAnisotropy.calculate(emptyStack);
     }

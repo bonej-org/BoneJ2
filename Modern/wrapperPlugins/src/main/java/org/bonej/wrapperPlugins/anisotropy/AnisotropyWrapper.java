@@ -29,9 +29,9 @@ import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
-import static org.bonej.wrapperPlugins.anisotropy.DegreeOfAnisotropy.DEFAULT_DIRECTIONS;
-import static org.bonej.wrapperPlugins.anisotropy.DegreeOfAnisotropy.DEFAULT_LINES;
-import static org.bonej.wrapperPlugins.anisotropy.DegreeOfAnisotropy.MINIMUM_SAMPLING_DISTANCE;
+import static org.bonej.wrapperPlugins.anisotropy.MILVectorSampler.DEFAULT_DIRECTIONS;
+import static org.bonej.wrapperPlugins.anisotropy.MILVectorSampler.DEFAULT_LINES;
+import static org.bonej.wrapperPlugins.anisotropy.MILVectorSampler.MINIMUM_SAMPLING_DISTANCE;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
@@ -84,7 +84,7 @@ import org.scijava.widget.NumberWidget;
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Anisotropy")
 public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
-	ContextCommand
+	ContextCommand implements ProgressObserver
 {
 	private static final double MIN_INCREMENT = Precision.round(MINIMUM_SAMPLING_DISTANCE, 2);
 
@@ -162,8 +162,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private boolean calibrationWarned;
 	private static UsageReporter reporter;
 	private DegreeOfAnisotropy degreeOfAnisotropy;
-	private int directionProgress;
 	private List<Subspace<BitType>> subspaces;
+
+	@Override
+	public void updateProgress(final int current, final int maximum) {
+		statusService.showProgress(current, maximum);
+	}
 
 	@Override
 	public void run() {
@@ -180,13 +184,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		AnisotropyWrapper.reporter = reporter;
 	}
 
-	// Called from multiple threads, but don't add "synchronized" - that has caused dead lock
-	// It's enough to show some progress instead of 100 % accurate progress
-	void directionFinished() {
-		directionProgress++;
-		statusService.showProgress(directionProgress, directions);
-	}
-
 	// region -- Helper methods --
 
 	private void initialise() {
@@ -196,11 +193,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void initialiseDegreeOfAnisotropy() {
-		degreeOfAnisotropy = new DegreeOfAnisotropy(getContext());
-		degreeOfAnisotropy.setSamplingDirections(directions);
-		degreeOfAnisotropy.setLinesPerDirection(lines);
-		degreeOfAnisotropy.setSamplingPointDistance(samplingIncrement);
-		degreeOfAnisotropy.setProgressObserver(this);
+		final MILVectorSampler sampler =
+				new MILVectorSampler(opService, directions, lines, samplingIncrement);
+		sampler.setObserver(this);
+		degreeOfAnisotropy = new DegreeOfAnisotropy(opService, sampler);
 	}
 
 	private void find3DSubspaces() {
