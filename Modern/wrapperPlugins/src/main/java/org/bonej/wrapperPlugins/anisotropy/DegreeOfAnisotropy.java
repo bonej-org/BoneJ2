@@ -85,13 +85,13 @@ class DegreeOfAnisotropy {
 
     private void initialise(final RandomAccessibleInterval<BitType> image) {
         planeSections = (long) Math.sqrt(linesPerDirection);
-        createDirectionGenerator();
+        createRotationGenerator();
         rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
                 new Vector3d(), new Quaterniond());
         initialiseMILOp(image);
     }
 
-    private void createDirectionGenerator() {
+    private void createRotationGenerator() {
         if (seed == null) {
             rotationGenerator = new UnitSphereRandomVectorGenerator(4);
         } else {
