@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verify;
 
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -46,11 +45,6 @@ import ij.gui.NewImage;
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		FitEllipsoidWrapper.setReporter(MOCK_REPORTER);
-	}
 
 	@Test
 	public void test2DImageCancelsPlugin() {

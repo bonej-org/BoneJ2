@@ -121,7 +121,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  */
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor")
-public class EllipsoidFactorWrapper extends ContextCommand {
+public class EllipsoidFactorWrapper extends BoneJCommand {
 
 	private static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
 
@@ -294,7 +294,7 @@ public class EllipsoidFactorWrapper extends ContextCommand {
 		SharedTable.add(inputImage.getName(), "Min EF", min);
 		addResults(totalEllipsoids, fillingPercentage);
 		statusService.showStatus("Ellipsoid Factor completed");
-
+		reportUsage();
 	}
 
 	private List<ImgPlus> divideOutput(final List<ImgPlus> outputList, final int repetitions) {

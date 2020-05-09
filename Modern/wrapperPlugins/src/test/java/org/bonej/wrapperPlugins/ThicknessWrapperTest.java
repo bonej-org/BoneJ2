@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -57,11 +56,6 @@ import org.scijava.table.DefaultColumn;
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ThicknessWrapperTest extends AbstractWrapperTest {
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ThicknessWrapper.setReporter(MOCK_REPORTER);
-	}
 
 	@Test
 	public void test2DImageCancelsPlugin() {

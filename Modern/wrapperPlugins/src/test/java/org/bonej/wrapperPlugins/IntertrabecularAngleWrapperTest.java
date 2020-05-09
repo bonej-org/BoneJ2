@@ -54,7 +54,6 @@ import java.util.stream.Stream;
 
 import net.imagej.table.DefaultResultsTable;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -69,11 +68,6 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		IntertrabecularAngleWrapper.setReporter(MOCK_REPORTER);
-	}
 
 	@Test
 	public void testAngleResults() throws Exception {

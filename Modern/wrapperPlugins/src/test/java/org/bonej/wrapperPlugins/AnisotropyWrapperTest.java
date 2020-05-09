@@ -197,8 +197,6 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 
 	@BeforeClass
 	public static void oneTimeSetup() {
-		AnisotropyWrapper.setReporter(MOCK_REPORTER);
-
 		final String unit = "mm";
 		final double scale = 1.0;
 		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);

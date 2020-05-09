@@ -48,19 +48,14 @@ import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.joml.Matrix4dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
@@ -73,7 +68,7 @@ import org.scijava.ui.UIService;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fit ellipsoid")
-public class FitEllipsoidWrapper extends ContextCommand {
+public class FitEllipsoidWrapper extends BoneJCommand {
 
 	static {
 		// NB: Needed if you mix-and-match IJ1 and IJ2 in a class.
@@ -101,15 +96,8 @@ public class FitEllipsoidWrapper extends ContextCommand {
 	private StatusService statusService;
 	@Parameter
 	private UIService uiService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
 
 	private List<Vector3d> points;
-	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -135,17 +123,7 @@ public class FitEllipsoidWrapper extends ContextCommand {
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		FitEllipsoidWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	private void addResults(final Ellipsoid ellipsoid) {

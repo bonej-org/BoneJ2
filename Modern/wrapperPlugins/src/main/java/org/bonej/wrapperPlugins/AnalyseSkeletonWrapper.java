@@ -51,21 +51,15 @@ import org.apache.commons.math3.util.MathArrays;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.convert.ConvertService;
 import org.scijava.io.IOService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.DoubleColumn;
@@ -89,13 +83,11 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Analyse Skeleton")
-public class AnalyseSkeletonWrapper extends ContextCommand {
+public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	static {
 		LegacyInjector.preinit();
 	}
-
-	private static UsageReporter reporter;
 
 	@Parameter(label = "Input image", validater = "validateImage",
 		persist = false)
@@ -186,13 +178,6 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 	@Parameter
 	private StatusService statusService;
 
-	@Parameter
-	private PrefService prefService;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
-
 	private ImagePlus intensityImage;
 
 	@Override
@@ -232,17 +217,7 @@ public class AnalyseSkeletonWrapper extends ContextCommand {
 				shortestPaths.setCalibration(inputImage.getCalibration());
 			}
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefService, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		AnalyseSkeletonWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {

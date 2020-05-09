@@ -41,7 +41,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -58,12 +57,6 @@ import org.scijava.table.Table;
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class FractalDimensionWrapperTest extends AbstractWrapperTest {
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		FractalDimensionWrapper.setReporter(MOCK_REPORTER);
-	}
-
 	@Test
 	public void testNonBinaryImageCancelsFractalDimension() {
 		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),

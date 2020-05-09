@@ -33,19 +33,14 @@ import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import net.imagej.patcher.LegacyInjector;
 
 import org.bonej.utilities.ImagePlusUtil;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
 /**
@@ -54,7 +49,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Skeletonise")
-public class SkeletoniseWrapper extends ContextCommand {
+public class SkeletoniseWrapper extends BoneJCommand {
 
 	static {
 		LegacyInjector.preinit();
@@ -75,13 +70,6 @@ public class SkeletoniseWrapper extends ContextCommand {
 
 	@Parameter
 	private StatusService statusService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
-	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -91,17 +79,7 @@ public class SkeletoniseWrapper extends ContextCommand {
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		SkeletoniseWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	@SuppressWarnings("unused")

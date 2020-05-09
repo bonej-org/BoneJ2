@@ -46,7 +46,6 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -60,11 +59,6 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ConnectivityWrapperTest extends AbstractWrapperTest {
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ConnectivityWrapper.setReporter(MOCK_REPORTER);
-	}
 
 	@Test
 	public void test2DImageCancelsConnectivity() {

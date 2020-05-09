@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
@@ -54,20 +53,13 @@ import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.DoubleColumn;
@@ -92,8 +84,7 @@ import org.scijava.widget.NumberWidget;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fractal dimension")
-public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
-	extends ContextCommand
+public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> extends BoneJCommand
 {
 
 	@Parameter(validater = "validateImage")
@@ -155,29 +146,20 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 	private OpService opService;
 	@Parameter
 	private StatusService statusService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
 
 	private BinaryHybridCF<RandomAccessibleInterval<BitType>, Boolean, RandomAccessibleInterval<BitType>> hollowOp;
 	private UnaryFunctionOp<RandomAccessibleInterval<BitType>, List<ValuePair<DoubleType, DoubleType>>> boxCountOp;
 	private long autoMax;
-	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
 		statusService.showStatus("Fractal dimension: initialising");
-		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
-			inputImage);
-		matchOps(bitImgPlus);
-		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(Collectors.toList());
+
 		final List<Double> dimensions = new ArrayList<>();
 		final List<Double> rSquared = new ArrayList<>();
+		subspaces = find3DSubspaces(inputImage);
 		subspaceTables = new ArrayList<>();
+		matchOps(subspaces.get(0).interval);
 		subspaces.forEach(subspace -> {
 			final RandomAccessibleInterval<BitType> interval = subspace.interval;
 			statusService.showProgress(0, 3);
@@ -201,17 +183,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		FractalDimensionWrapper.reporter = reporter;
 	}
 
 	// region -- Helper methods --

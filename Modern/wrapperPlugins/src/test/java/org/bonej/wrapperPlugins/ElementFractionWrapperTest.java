@@ -45,7 +45,6 @@ import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -59,11 +58,6 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class ElementFractionWrapperTest extends AbstractWrapperTest {
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		ElementFractionWrapper.setReporter(MOCK_REPORTER);
-	}
 
 	@Test
 	public void testNonBinaryImageCancelsElementFraction() {

@@ -28,9 +28,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import net.imagej.ImgPlus;
 import net.imagej.mesh.Mesh;
 import net.imagej.mesh.naive.NaiveFloatMesh;
@@ -52,20 +49,13 @@ import net.imglib2.view.Views;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 
@@ -79,8 +69,7 @@ import org.scijava.table.Table;
  */
 @Plugin(type = Command.class,
 	menuPath = "Plugins>BoneJ>Fraction>Surface fraction")
-public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
-	extends ContextCommand
+public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> extends BoneJCommand
 {
 
 	/** Header of ratio column in the results table */
@@ -107,12 +96,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
 
 	/** Header of the thresholded volume column in the results table */
 	private String bVHeader;
@@ -120,15 +103,11 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 	private String tVHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
-	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
 		statusService.showStatus("Surface fraction: initializing");
-		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
-			inputImage);
-		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(Collectors.toList());
+		subspaces = find3DSubspaces(inputImage);
 		matchOps(subspaces.get(0).interval);
 		prepareResultDisplay();
 		for (int i = 0; i < subspaces.size(); i++) {
@@ -138,17 +117,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>>
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		SurfaceFractionWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	// region -- Helper methods --
