@@ -4,10 +4,12 @@ import net.imagej.ImageJ;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
+import org.bonej.wrapperPlugins.SlowWrapperTest;
 import org.joml.Vector3dc;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -42,6 +44,7 @@ public class MILVectorSamplerTest {
         mILVectors.forEach(v -> assertEquals(expectedLength, v.length(), 1e-12));
     }
 
+    @Category(SlowWrapperTest.class)
     @Test
     public void testObserverNotifiedForEveryDirection()
             throws ExecutionException, InterruptedException {
