@@ -52,6 +52,7 @@ public class MILVectorSampler {
     private double mILVectorBaseLength;
     private ProgressObserver observer;
     private long directionsSampled;
+    private final ExecutorService executorService;
 
     MILVectorSampler(final OpService opService, final long samplingDirections,
                      final long linesPerDirection) {
@@ -68,6 +69,12 @@ public class MILVectorSampler {
         rotationGenerator = new UnitSphereRandomVectorGenerator(4);
         rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
                 new Vector3d(), new Quaterniond());
+        executorService = createExecutorService();
+    }
+
+    private ExecutorService createExecutorService() {
+        final int cores = Runtime.getRuntime().availableProcessors();
+        return Executors.newFixedThreadPool(cores);
     }
 
     void setObserver(final ProgressObserver observer) { this.observer = observer; }
@@ -76,7 +83,7 @@ public class MILVectorSampler {
             throws ExecutionException, InterruptedException {
         initialiseFor(image);
         final List<Callable<Vector3dc>> tasks = createMILTasks(image);
-        final List<Future<Vector3dc>> futures = submit(tasks);
+        final List<Future<Vector3dc>> futures = executorService.invokeAll(tasks);
         return finishAll(futures);
     }
 
@@ -135,17 +142,6 @@ public class MILVectorSampler {
             directionsSampled++;
             observer.updateProgress((int) directionsSampled, (int) samplingDirections);
         }
-    }
-
-    private List<Future<Vector3dc>> submit(final List<Callable<Vector3dc>> tasks)
-            throws InterruptedException {
-        final ExecutorService executor = createExecutorService();
-        return executor.invokeAll(tasks);
-    }
-
-    private ExecutorService createExecutorService() {
-        final int cores = Runtime.getRuntime().availableProcessors();
-        return Executors.newFixedThreadPool(cores);
     }
 
     private static List<Vector3dc> finishAll(final List<Future<Vector3dc>> futures)
