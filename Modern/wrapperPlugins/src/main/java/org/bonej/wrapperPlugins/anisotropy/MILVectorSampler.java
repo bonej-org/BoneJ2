@@ -95,9 +95,8 @@ public class MILVectorSampler {
     private void matchMILOp(final RandomAccessibleInterval<BitType> image) {
         final double baseLength = calculateMILVectorBaseLength(image);
         if (milOp == null || baseLength != mILVectorBaseLength) {
-            // Op matching requires a non-null generator
-            // TODO Don't create with createLineGenerator(), affects the state of randomRotationGenerator!
-            final ParallelLineGenerator generator = createLineGenerator(image);
+            // Op matching requires any non-null generator
+            final ParallelLineGenerator generator = createLineGenerator(image, new Quaterniond());
             milOp = Functions.binary(opService, ParallelLineMIL.class, Vector3dc.class,
                     image, generator, baseLength, samplingPointDistance);
         }
@@ -115,7 +114,8 @@ public class MILVectorSampler {
     }
 
     private Callable<Vector3dc> createMILTask(final RandomAccessibleInterval<BitType> image) {
-        final PlaneParallelLineGenerator generator = createLineGenerator(image);
+        final Quaterniondc rotation = nextRandomRotation();
+        final PlaneParallelLineGenerator generator = createLineGenerator(image, rotation);
         return () -> {
             final Vector3dc mILVector = milOp.calculate(image, generator);
             notifyObserver();
@@ -124,8 +124,7 @@ public class MILVectorSampler {
     }
 
     private PlaneParallelLineGenerator createLineGenerator(
-            final RandomAccessibleInterval<BitType> image) {
-        final Quaterniondc rotation = nextRandomRotation();
+            final RandomAccessibleInterval<BitType> image, final Quaterniondc rotation) {
         final PlaneParallelLineGenerator generator =
                 createFromInterval(image, rotation, rotateOp, planeSections);
         if (seed != null) { generator.setSeed(seed); }
