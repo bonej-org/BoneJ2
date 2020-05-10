@@ -3,6 +3,7 @@ package org.bonej.wrapperPlugins.wrapperUtils;
 
 import static org.bonej.wrapperPlugins.wrapperUtils.UsageReporterOptions.OPTINKEY;
 import static org.bonej.wrapperPlugins.wrapperUtils.UsageReporterOptions.OPTINSET;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -10,13 +11,9 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
 import org.bonej.wrapperPlugins.SlowWrapperTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
@@ -84,45 +81,34 @@ public class UsageReporterTest {
 
 	@Category(SlowWrapperTest.class)
 	@Test
-	public void testIsAllowedPermissionNotSought() throws ExecutionException,
-		InterruptedException
-	{
+	public void testIsAllowedPermissionNotSought() {
 		// SETUP
 		final PrefService prefs = mock(PrefService.class);
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINSET, false))
-			.thenReturn(false);
+				.thenReturn(false);
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
-			.thenReturn(false);
+				.thenReturn(false);
 		final PluginService plugins = mock(PluginService.class);
-		@SuppressWarnings("unchecked")
-		final Future<CommandModule> future = mock(Future.class);
-		final CommandModule module = mock(CommandModule.class);
-		when(module.isCanceled()).thenReturn(false);
-		when(future.get()).thenReturn(module);
-		final CommandService commands = mock(CommandService.class);
-		when(commands.run(UsageReporterOptions.class, true)).thenReturn(future);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final CountingPrompter prompter = new CountingPrompter();
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, prompter);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
 
 		// VERIFY
 		// UsageReporterOptions should have been run
-		verify(commands, timeout(1000)).run(UsageReporterOptions.class, true);
+		assertEquals("User should have been prompted for opt in (once)", 1, prompter.promptCount);
 		// OPTINSET save data should been queried
 		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-			OPTINSET, false);
+				OPTINSET, false);
 		// OPTINKEY save data should been queried
 		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-			OPTINKEY, false);
+				OPTINKEY, false);
 		assertFalse(allowed);
 	}
 
 	@Test
-	public void testIsAllowedPermissionSought() throws ExecutionException,
-		InterruptedException
-	{
+	public void testIsAllowedPermissionSought() {
 		// SETUP
 		final PrefService prefs = mock(PrefService.class);
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINSET, false))
@@ -130,22 +116,23 @@ public class UsageReporterTest {
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
 			.thenReturn(false);
 		final PluginService plugins = mock(PluginService.class);
-		@SuppressWarnings("unchecked")
-		final Future<CommandModule> future = mock(Future.class);
-		final CommandModule module = mock(CommandModule.class);
-		when(module.isCanceled()).thenReturn(false);
-		when(future.get()).thenReturn(module);
-		final CommandService commands = mock(CommandService.class);
-		when(commands.run(UsageReporterOptions.class, true)).thenReturn(future);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final CountingPrompter prompter = new CountingPrompter();
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, prompter);
 
 		// EXECUTE
 		reporter.isAllowed();
 
 		// VERIFY
 		// UsageReporterOptions should not have been run
-		verify(commands, timeout(1000).times(0)).run(UsageReporterOptions.class,
-			true);
+		assertEquals("Usage reporter should not have prompted user", 0, prompter.promptCount);
+	}
+
+	private static class CountingPrompter implements OptInPrompter {
+		private int promptCount;
+
+		@Override
+		public void promptUser() {
+			promptCount++;
+		}
 	}
 }

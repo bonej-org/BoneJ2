@@ -36,9 +36,7 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 
-import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
@@ -79,13 +77,13 @@ public class UsageReporter {
 	private static boolean isFirstRun = true;
 	private static PrefService prefs;
 	private static PluginService plugins;
-	private static CommandService commandService;
 	private static UsageReporter instance;
 	private static String utms;
 	private static String utmn;
 	private static String utme;
 	private static String utmhid;
 	private static String utmcc;
+	private static OptInPrompter optInPrompter;
 
 	private UsageReporter() {}
 
@@ -106,19 +104,21 @@ public class UsageReporter {
 	public static UsageReporter getInstance(final PrefService prefs,
 		final PluginService plugins, final CommandService commandService)
 	{
+		return UsageReporter.getInstance(prefs, plugins, new CommandOptInPrompter(commandService));
+	}
+
+	public static UsageReporter getInstance(final PrefService prefs, final PluginService plugins,
+											final OptInPrompter optInPrompter) {
 		if (prefs == null) {
 			throw new NullPointerException("PrefService cannot be null");
 		}
 		if (plugins == null) {
 			throw new NullPointerException("PluginService cannot be null");
 		}
-		if (commandService == null) {
-			throw new NullPointerException("CommandService cannot be null");
-		}
 		if (instance == null) {
 			instance = new UsageReporter();
 		}
-		UsageReporter.commandService = commandService;
+		UsageReporter.optInPrompter = optInPrompter;
 		UsageReporter.plugins = plugins;
 		UsageReporter.prefs = prefs;
 		return instance;
@@ -284,19 +284,7 @@ public class UsageReporter {
 		final boolean permissionSought = prefs.getBoolean(
 			UsageReporterOptions.class, UsageReporterOptions.OPTINSET, false);
 		if (!permissionSought) {
-			System.out.println(
-				"User permission has not been sought, requesting it...\n");
-			try {
-				final CommandModule module = commandService.run(
-					UsageReporterOptions.class, true).get();
-				if (module.isCanceled()) {
-					return false;
-				}
-			}
-			catch (final InterruptedException | ExecutionException e) {
-				// TODO log with logService.trace
-				return false;
-			}
+			optInPrompter.promptUser();
 		}
 		return prefs.getBoolean(UsageReporterOptions.class,
 			UsageReporterOptions.OPTINKEY, false);
