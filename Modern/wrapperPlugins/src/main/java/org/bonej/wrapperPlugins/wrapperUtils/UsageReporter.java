@@ -40,6 +40,7 @@ import java.util.Random;
 import org.scijava.command.CommandService;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
+import org.scijava.util.VersionUtils;
 
 /**
  * Prepares and sends a report about BoneJ usage to be logged by <a href=
@@ -76,7 +77,6 @@ public class UsageReporter {
 	private static long lastTime;
 	private static boolean isFirstRun = true;
 	private static PrefService prefs;
-	private static PluginService plugins;
 	private static UsageReporter instance;
 	private static String utms;
 	private static String utmn;
@@ -97,29 +97,35 @@ public class UsageReporter {
 			System.out.println("Usage reporting forbidden by user\n");
 			return;
 		}
-		final String version = plugins.getPlugin(className).getVersion();
+		final String version = findVersion(className);
 		reportEvent(className, version);
 	}
 
-	public static UsageReporter getInstance(final PrefService prefs,
-		final PluginService plugins, final CommandService commandService)
-	{
-		return UsageReporter.getInstance(prefs, plugins, new CommandOptInPrompter(commandService));
+	private String findVersion(final String pluginClassName) {
+		String version = null;
+		try {
+			final Class<?> pluginClass = Class.forName(pluginClassName);
+			version = VersionUtils.getVersion(pluginClass);
+		} catch (ClassNotFoundException e) {
+			// TODO Log
+		}
+		return version == null ? "" : version;
 	}
 
-	public static UsageReporter getInstance(final PrefService prefs, final PluginService plugins,
+	public static UsageReporter getInstance(final PrefService prefs, final PluginService pluginService,
+											final CommandService commandService) {
+		return UsageReporter.getInstance(prefs, new CommandOptInPrompter(commandService));
+	}
+
+	public static UsageReporter getInstance(final PrefService prefs,
 											final OptInPrompter optInPrompter) {
 		if (prefs == null) {
 			throw new NullPointerException("PrefService cannot be null");
-		}
-		if (plugins == null) {
-			throw new NullPointerException("PluginService cannot be null");
 		}
 		if (instance == null) {
 			instance = new UsageReporter();
 		}
 		UsageReporter.optInPrompter = optInPrompter;
-		UsageReporter.plugins = plugins;
 		UsageReporter.prefs = prefs;
 		return instance;
 	}

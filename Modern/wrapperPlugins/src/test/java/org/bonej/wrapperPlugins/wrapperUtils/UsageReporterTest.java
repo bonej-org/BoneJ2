@@ -15,7 +15,6 @@ import org.bonej.wrapperPlugins.SlowWrapperTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandService;
-import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
 /**
@@ -34,10 +33,8 @@ public class UsageReporterTest {
 			.thenReturn(true);
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
 			.thenReturn(false);
-		final PluginService plugins = mock(PluginService.class);
 		final CommandService commands = mock(CommandService.class);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, commands);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
@@ -61,10 +58,8 @@ public class UsageReporterTest {
 			.thenReturn(true);
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
 			.thenReturn(true);
-		final PluginService plugins = mock(PluginService.class);
 		final CommandService commands = mock(CommandService.class);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, commands);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
@@ -88,9 +83,8 @@ public class UsageReporterTest {
 				.thenReturn(false);
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
 				.thenReturn(false);
-		final PluginService plugins = mock(PluginService.class);
 		final CountingPrompter prompter = new CountingPrompter();
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, prompter);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, prompter);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
@@ -115,9 +109,8 @@ public class UsageReporterTest {
 			.thenReturn(true);
 		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
 			.thenReturn(false);
-		final PluginService plugins = mock(PluginService.class);
 		final CountingPrompter prompter = new CountingPrompter();
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, prompter);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, prompter);
 
 		// EXECUTE
 		reporter.isAllowed();
