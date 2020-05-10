@@ -14,7 +14,7 @@ import org.junit.Test;
 public class UsageReporterTest {
 
 	@Test
-	public void testIsAllowedOptInFalse() {
+	public void testReporterDoesNotReportIfUserHasOptedOut() {
 		// SETUP
 		final FakePrefsAccess prefsAccess = new FakePrefsAccess(false, true);
 		final UsageReporter reporter = UsageReporter.getInstance(prefsAccess, new CountingPrompter());
@@ -27,7 +27,7 @@ public class UsageReporterTest {
 	}
 
 	@Test
-	public void testIsAllowedOptInTrue() {
+	public void testReporterReportsIfUserHasOptedIn() {
 		// SETUP
 		final FakePrefsAccess prefsAccess = new FakePrefsAccess(true, true);
 		final UsageReporter reporter = UsageReporter.getInstance(prefsAccess, new CountingPrompter());
@@ -40,23 +40,21 @@ public class UsageReporterTest {
 	}
 
 	@Test
-	public void testIsAllowedPermissionNotSought() {
+	public void testReporterPromptsOptInIfNotPromptedYet() {
 		// SETUP
 		final CountingPrompter prompter = new CountingPrompter();
 		final FakePrefsAccess prefsAccess = new FakePrefsAccess(false, false);
 		final UsageReporter reporter = UsageReporter.getInstance(prefsAccess, prompter);
 
 		// EXECUTE
-		final boolean allowed = reporter.isAllowed();
+		reporter.isAllowed();
 
 		// VERIFY
-		// UsageReporterOptions should have been run
 		assertEquals("User should have been prompted for opt in (once)", 1, prompter.promptCount);
-		assertFalse(allowed);
 	}
 
 	@Test
-	public void testIsAllowedPermissionSought() {
+	public void testReporterDoesNotPromptOptInIfAlreadyOptedOut() {
 		// SETUP
 		final CountingPrompter prompter = new CountingPrompter();
 		final FakePrefsAccess prefsAccess = new FakePrefsAccess(false, true);
