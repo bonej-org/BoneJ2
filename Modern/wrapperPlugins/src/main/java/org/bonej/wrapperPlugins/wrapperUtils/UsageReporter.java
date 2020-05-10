@@ -83,7 +83,7 @@ public class UsageReporter {
 	private static String utme;
 	private static String utmhid;
 	private static String utmcc;
-	private static OptInPrompter optInPrompter;
+	private OptInPrompter optInPrompter;
 
 	private UsageReporter() {}
 
@@ -124,8 +124,9 @@ public class UsageReporter {
 		}
 		if (instance == null) {
 			instance = new UsageReporter();
+		} else {
+			instance.optInPrompter = optInPrompter;
 		}
-		UsageReporter.optInPrompter = optInPrompter;
 		UsageReporter.prefs = prefs;
 		return instance;
 	}
