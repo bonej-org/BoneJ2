@@ -1,20 +1,10 @@
-
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import static org.bonej.wrapperPlugins.wrapperUtils.UsageReporterOptions.OPTINKEY;
-import static org.bonej.wrapperPlugins.wrapperUtils.UsageReporterOptions.OPTINSET;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import org.bonej.wrapperPlugins.SlowWrapperTest;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.scijava.prefs.PrefService;
 
 /**
  * Tests for {@link UsageReporter}.
@@ -23,65 +13,38 @@ import org.scijava.prefs.PrefService;
  */
 public class UsageReporterTest {
 
-	@Category(SlowWrapperTest.class)
 	@Test
 	public void testIsAllowedOptInFalse() {
 		// SETUP
-		final PrefService prefs = mock(PrefService.class);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINSET, false))
-			.thenReturn(true);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
-			.thenReturn(false);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, new CountingPrompter());
+		final FakePrefsAccess prefsAccess = new FakePrefsAccess(false, true);
+		final UsageReporter reporter = UsageReporter.getInstance(prefsAccess, new CountingPrompter());
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
 
 		// VERIFY
-		// OPTINSET save data should been queried
-		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-			OPTINSET, false);
-		// OPTINKEY save data should been queried
-		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-			OPTINKEY, false);
 		assertFalse(allowed);
 	}
 
-	@Category(SlowWrapperTest.class)
 	@Test
 	public void testIsAllowedOptInTrue() {
 		// SETUP
-		final PrefService prefs = mock(PrefService.class);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINSET, false))
-			.thenReturn(true);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
-			.thenReturn(true);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, new CountingPrompter());
+		final FakePrefsAccess prefsAccess = new FakePrefsAccess(true, true);
+		final UsageReporter reporter = UsageReporter.getInstance(prefsAccess, new CountingPrompter());
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
 
 		// VERIFY
-		// OPTINSET save data should been queried
-		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-			OPTINSET, false);
-		// OPTINKEY save data should been queried
-		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-			OPTINKEY, false);
 		assertTrue(allowed);
 	}
 
-	@Category(SlowWrapperTest.class)
 	@Test
 	public void testIsAllowedPermissionNotSought() {
 		// SETUP
-		final PrefService prefs = mock(PrefService.class);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINSET, false))
-				.thenReturn(false);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
-				.thenReturn(false);
 		final CountingPrompter prompter = new CountingPrompter();
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, prompter);
+		final FakePrefsAccess prefsAccess = new FakePrefsAccess(false, false);
+		final UsageReporter reporter = UsageReporter.getInstance(prefsAccess, prompter);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
@@ -89,25 +52,15 @@ public class UsageReporterTest {
 		// VERIFY
 		// UsageReporterOptions should have been run
 		assertEquals("User should have been prompted for opt in (once)", 1, prompter.promptCount);
-		// OPTINSET save data should been queried
-		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-				OPTINSET, false);
-		// OPTINKEY save data should been queried
-		verify(prefs, timeout(1000)).getBoolean(UsageReporterOptions.class,
-				OPTINKEY, false);
 		assertFalse(allowed);
 	}
 
 	@Test
 	public void testIsAllowedPermissionSought() {
 		// SETUP
-		final PrefService prefs = mock(PrefService.class);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINSET, false))
-			.thenReturn(true);
-		when(prefs.getBoolean(UsageReporterOptions.class, OPTINKEY, false))
-			.thenReturn(false);
 		final CountingPrompter prompter = new CountingPrompter();
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, prompter);
+		final FakePrefsAccess prefsAccess = new FakePrefsAccess(false, true);
+		final UsageReporter reporter = UsageReporter.getInstance(prefsAccess, prompter);
 
 		// EXECUTE
 		reporter.isAllowed();
@@ -124,5 +77,49 @@ public class UsageReporterTest {
 		public void promptUser() {
 			promptCount++;
 		}
+	}
+
+	private static class FakePrefsAccess implements UsagePrefsAccess {
+
+		private final boolean optedIn;
+		private final boolean optInPrompted;
+
+		private FakePrefsAccess(final boolean optedIn, final boolean optInPrompted) {
+			this.optedIn = optedIn;
+			this.optInPrompted = optInPrompted;
+		}
+
+		@Override
+		public boolean readOptedIn() {
+			return optedIn;
+		}
+
+		@Override
+		public boolean readOptInPrompted() {
+			return optInPrompted;
+		}
+
+		@Override
+		public int readCookie() {
+			return 0;
+		}
+
+		@Override
+		public int readCookie2() {
+			return 0;
+		}
+
+		@Override
+		public long readFirstTime() {
+			return 0;
+		}
+
+		@Override
+		public int readSessionKey() {
+			return 0;
+		}
+
+		@Override
+		public void writeSessionKey(int key) {}
 	}
 }

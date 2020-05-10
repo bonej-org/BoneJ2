@@ -76,7 +76,6 @@ public class UsageReporter {
 	private static long thisTime;
 	private static long lastTime;
 	private static boolean isFirstRun = true;
-	private static PrefService prefs;
 	private static UsageReporter instance;
 	private static String utms;
 	private static String utmn;
@@ -84,6 +83,7 @@ public class UsageReporter {
 	private static String utmhid;
 	private static String utmcc;
 	private OptInPrompter optInPrompter;
+	private static UsagePrefsAccess usagePrefsAccess;
 
 	private UsageReporter() {}
 
@@ -114,10 +114,10 @@ public class UsageReporter {
 
 	public static UsageReporter getInstance(final PrefService prefs, final PluginService pluginService,
 											final CommandService commandService) {
-		return UsageReporter.getInstance(prefs, new CommandOptInPrompter(commandService));
+		return UsageReporter.getInstance(new UsageIJ2PrefsAccess(prefs), new CommandOptInPrompter(commandService));
 	}
 
-	public static UsageReporter getInstance(final PrefService prefs,
+	public static UsageReporter getInstance(final UsagePrefsAccess prefs,
 											final OptInPrompter optInPrompter) {
 		if (prefs == null) {
 			throw new NullPointerException("PrefService cannot be null");
@@ -127,7 +127,7 @@ public class UsageReporter {
 		} else {
 			instance.optInPrompter = optInPrompter;
 		}
-		UsageReporter.prefs = prefs;
+		UsageReporter.usagePrefsAccess = prefs;
 		return instance;
 	}
 
@@ -136,18 +136,14 @@ public class UsageReporter {
 	 *
 	 * @return cookie string
 	 */
-	private static String getCookieString(final PrefService prefs) {
-		final int cookie = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.COOKIE, random.nextInt(Integer.MAX_VALUE));
-		final int cookie2 = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
-		final long firstTime = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
-		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.SESSIONKEY, 0);
+	private static String getCookieString() {
+		final int cookie = usagePrefsAccess.readCookie();
+		final int cookie2 = usagePrefsAccess.readCookie2();
+		final long firstTime = usagePrefsAccess.readFirstTime();
+		final int boneJSession = usagePrefsAccess.readSessionKey();
 		// thisTime is not correct, but a best guess
 		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
-			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +
+			lastTime + "." + thisTime + "." + boneJSession + "%3B%2B__utmz%3D" +
 			cookie + "." + thisTime +
 			".79.42.utmcsr%3Dgoogle%7Cutmccn%3D(organic)%7C" +
 			"utmcmd%3Dorganic%7Cutmctr%3DBoneJ%20Usage%20Reporter%3B";
@@ -160,13 +156,11 @@ public class UsageReporter {
 		return locale;
 	}
 
-	private static void initSessionVariables(final PrefService prefs) {
+	private static void initSessionVariables() {
 		System.out.println("First run of Usage Reporter for this BoneJ session.\n");
-		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.SESSIONKEY, 0);
+		final int bonejSession = usagePrefsAccess.readSessionKey();
 		System.out.print("bonejSession = " + bonejSession + "\n");
-		prefs.put(UsageReporterOptions.class, UsageReporterOptions.SESSIONKEY,
-			bonejSession + 1);
+		usagePrefsAccess.writeSessionKey(bonejSession + 1);
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final GraphicsEnvironment ge = GraphicsEnvironment
 			.getLocalGraphicsEnvironment();
@@ -197,7 +191,7 @@ public class UsageReporter {
 	 */
 	private static void reportEvent(final String action, final String label) {
 		if (isFirstRun) {
-			initSessionVariables(prefs);
+			initSessionVariables();
 		}
 
 		// set
@@ -215,7 +209,7 @@ public class UsageReporter {
 		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
 		else utmcnr = "utmcr=1&";
 
-		utmcc = getCookieString(prefs);
+		utmcc = getCookieString();
 		send();
 	}
 
@@ -288,12 +282,9 @@ public class UsageReporter {
 	 *         data
 	 */
 	boolean isAllowed() {
-		final boolean permissionSought = prefs.getBoolean(
-			UsageReporterOptions.class, UsageReporterOptions.OPTINSET, false);
-		if (!permissionSought) {
+		if (!usagePrefsAccess.readOptInPrompted()) {
 			optInPrompter.promptUser();
 		}
-		return prefs.getBoolean(UsageReporterOptions.class,
-			UsageReporterOptions.OPTINKEY, false);
+		return usagePrefsAccess.readOptedIn();
 	}
 }
