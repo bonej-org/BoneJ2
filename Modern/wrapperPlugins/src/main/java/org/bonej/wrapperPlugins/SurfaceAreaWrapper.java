@@ -127,9 +127,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 			saveMeshes(meshes);
 		}
 		calculateAreas(meshes);
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

@@ -169,9 +169,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 			statusService.showProgress(3, 3);
 		});
 		fillResultsTable(subspaces, dimensions, rSquared);
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

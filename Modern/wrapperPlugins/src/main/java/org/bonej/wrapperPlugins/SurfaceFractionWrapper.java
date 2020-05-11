@@ -100,9 +100,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			calculateSubspaceVolumes(subspaces.get(i), i + 1);
 			statusService.showProgress(i, subspaces.size());
 		}
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

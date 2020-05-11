@@ -102,9 +102,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			subspaceConnectivity(label, subspace.interval);
 		});
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

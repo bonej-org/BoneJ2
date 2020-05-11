@@ -107,9 +107,7 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 			return;
 		}
 		addResults(result.get());
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

@@ -110,9 +110,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			addResults(label, foregroundSize, totalSize, ratio);
 		}
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

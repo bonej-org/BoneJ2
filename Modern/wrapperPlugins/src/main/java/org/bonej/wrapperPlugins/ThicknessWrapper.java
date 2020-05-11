@@ -115,9 +115,7 @@ public class ThicknessWrapper extends BoneJCommand {
 			addMapResults(map);
 			thicknessMaps.put(foreground, map);
 		});
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		if (showMaps) {
 			final LUT fire = Common.makeFire();
 			trabecularMap = thicknessMaps.get(true);

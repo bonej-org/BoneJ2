@@ -366,9 +366,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			SharedTable.add(label, headers[12], results.getSpStartPosition()[i][1]);
 			SharedTable.add(label, headers[13], results.getSpStartPosition()[i][2]);
 		}
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 	}
 
 	private void showSkeleton(final Skeletonize3D_ skeletoniser,
