@@ -46,16 +46,11 @@ import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
@@ -69,7 +64,7 @@ import sc.fiji.localThickness.LocalThicknessWrapper;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Thickness")
-public class ThicknessWrapper extends ContextCommand {
+public class ThicknessWrapper extends BoneJCommand {
 
 	static {
 		LegacyInjector.preinit();
@@ -113,17 +108,10 @@ public class ThicknessWrapper extends ContextCommand {
 	private UIService uiService;
 	@Parameter
 	private StatusService statusService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
 	private boolean anisotropyWarned;
-	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -156,17 +144,7 @@ public class ThicknessWrapper extends ContextCommand {
 				spacingMap.setLut(fire);
 			}
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		ThicknessWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	private void addMapResults(final ImagePlus map) {

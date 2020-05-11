@@ -72,10 +72,7 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.utilities.Visualiser;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.joml.Matrix3d;
 import org.joml.Matrix4d;
 import org.joml.Matrix4dc;
@@ -87,13 +84,9 @@ import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.DialogPrompt.Result;
@@ -106,8 +99,7 @@ import org.scijava.widget.NumberWidget;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Anisotropy")
-public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
-	ContextCommand
+public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends BoneJCommand
 {
 
 	/**
@@ -199,13 +191,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UIService uiService;
 	@Parameter
 	private UnitService unitService;
-	@Parameter
-	private PrefService prefService;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
-	private static UsageReporter reporter;
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	private double milLength;
 
@@ -213,10 +198,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 	public void run() {
 		sections = (long) Math.sqrt(lines);
 		statusService.showStatus("Anisotropy: initialising");
-		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
-			inputImage);
-		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(toList());
+		subspaces = find3DSubspaces(inputImage);
 		calculateMILLength(subspaces.get(0).interval);
 		matchOps(subspaces.get(0).interval);
 		final List<Ellipsoid> ellipsoids = new ArrayList<>();
@@ -233,21 +215,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefService, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
+		reportUsage();
 	}
 
 	// region -- Helper methods --
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		AnisotropyWrapper.reporter = reporter;
-	}
-
-
 	private void calculateMILLength(final RandomAccessibleInterval<BitType> interval) {
 		final long[] dimensions = new long[interval.numDimensions()];
 		interval.dimensions(dimensions);

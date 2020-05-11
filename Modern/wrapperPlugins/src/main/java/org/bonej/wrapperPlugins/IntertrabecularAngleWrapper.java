@@ -51,18 +51,13 @@ import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.Table;
@@ -93,7 +88,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  */
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Inter-trabecular angles")
-public class IntertrabecularAngleWrapper extends ContextCommand {
+public class IntertrabecularAngleWrapper extends BoneJCommand {
 
 	public static final String NO_RESULTS_MSG =
 		"There were no results - try changing valence range or minimum trabecular length";
@@ -161,16 +156,9 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 	private StatusService statusService;
 	@Parameter
 	private UIService uiService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
 
 	private double[] coefficients;
 	private boolean anisotropyWarned;
-	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
@@ -204,17 +192,7 @@ public class IntertrabecularAngleWrapper extends ContextCommand {
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		IntertrabecularAngleWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {

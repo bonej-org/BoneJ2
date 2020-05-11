@@ -63,6 +63,7 @@ public abstract class AbstractWrapperTest {
     public static void basicOneTimeSetup() {
         imageJ = new ImageJ();
         commandService = imageJ.command();
+        BoneJCommand.setReporter(MOCK_REPORTER);
     }
 
     @Before
@@ -80,6 +81,7 @@ public abstract class AbstractWrapperTest {
 
     @AfterClass
     public static void basicOneTimeTearDown() {
+        BoneJCommand.setReporter(null);
         imageJ.context().dispose();
         imageJ = null;
         commandService = null;

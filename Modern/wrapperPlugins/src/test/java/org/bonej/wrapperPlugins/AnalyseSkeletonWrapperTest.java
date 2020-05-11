@@ -48,7 +48,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -459,11 +458,6 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		verify(MOCK_REPORTER, timeout(1000).times(0)).reportEvent(anyString());
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void testSetReporterThrowsNPEIfNull() {
-		AnalyseSkeletonWrapper.setReporter(null);
-	}
-
 	@Test
 	public void testSuccessfulRunReports() throws ExecutionException,
 		InterruptedException
@@ -480,11 +474,6 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		assertFalse("Sanity check failed: method cancelled", module.isCanceled());
 		verify(MOCK_REPORTER, timeout(1000)).reportEvent(anyString());
-	}
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		AnalyseSkeletonWrapper.setReporter(MOCK_REPORTER);
 	}
 
 	private void mockIntensityFileOpening(final String path) {

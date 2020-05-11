@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
@@ -63,21 +62,14 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
@@ -90,8 +82,7 @@ import org.scijava.widget.FileWidget;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Surface area")
-public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
-	ContextCommand
+public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends BoneJCommand
 {
 
 	static final String STL_WRITE_ERROR =
@@ -119,7 +110,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	private boolean exportSTL;
 
 	@Parameter
-	private OpService ops;
+	private OpService opService;
 	@Parameter
 	private LogService logService;
 	@Parameter
@@ -128,12 +119,6 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
 
 	private String path = "";
 	private String extension = "";
@@ -141,15 +126,11 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
 	private String unitHeader = "";
-	private static UsageReporter reporter;
 
 	@Override
 	public void run() {
 		statusService.showStatus("Surface area: initialising");
-		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(ops,
-			inputImage);
-		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(Collectors.toList());
+		subspaces = find3DSubspaces(inputImage);
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
 		final Map<String, Mesh> meshes = createMeshes(subspaces);
@@ -163,17 +144,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		SurfaceAreaWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	/**
@@ -312,9 +283,9 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
-		marchingCubesOp = Functions.unary(ops, MarchingCubes.class, Mesh.class,
+		marchingCubesOp = Functions.unary(opService, MarchingCubes.class, Mesh.class,
 			interval);
-		areaOp = Functions.unary(ops, BoundarySize.class, DoubleType.class,
+		areaOp = Functions.unary(opService, BoundarySize.class, DoubleType.class,
 			new NaiveFloatMesh());
 	}
 

@@ -29,9 +29,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import static org.scijava.ui.DialogPrompt.MessageType.INFORMATION_MESSAGE;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops.Topology.EulerCharacteristic26NFloating;
@@ -49,20 +46,12 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.command.CommandService;
-import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.plugin.PluginService;
-import org.scijava.prefs.PrefService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
@@ -73,7 +62,7 @@ import org.scijava.ui.UIService;
  * @author Richard Domander
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity>Connectivity (Modern)")
-public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends ContextCommand {
+public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends BoneJCommand {
 
 	static final String NEGATIVE_CONNECTIVITY =
 		"Connectivity is negative.\nThis usually happens if there are multiple particles or enclosed cavities.\n" +
@@ -99,12 +88,6 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
-	@Parameter
-	private PrefService prefs;
-	@Parameter
-	private PluginService pluginService;
-	@Parameter
-	private CommandService commandService;
 
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCharacteristicOp;
 	private UnaryHybridCF<RandomAccessibleInterval<BitType>, DoubleType> eulerCorrectionOp;
@@ -113,18 +96,14 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	private boolean negativityWarned;
 	/** The unit displayed in the results */
 	private String unitHeader;
-	private static UsageReporter reporter;
 	private int progress;
 	private static final int PROGRESS_STEPS = 3;
 
 	@Override
 	public void run() {
 		statusService.showStatus("Connectivity: initialising");
-		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService,
-			inputImage);
 		final String name = inputImage.getName();
-		final List<Subspace<BitType>> subspaces = HyperstackUtils.split3DSubspaces(
-			bitImgPlus).collect(Collectors.toList());
+		subspaces = find3DSubspaces(inputImage);
 
 		determineResultUnit();
 		matchOps(subspaces.get(0).interval);
@@ -139,17 +118,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 		if (SharedTable.hasData()) {
 			resultsTable = SharedTable.getTable();
 		}
-		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService, commandService);
-		}
-		reporter.reportEvent(getClass().getName());
-	}
-
-	static void setReporter(final UsageReporter reporter) {
-		if (reporter == null) {
-			throw new NullPointerException("Reporter cannot be null");
-		}
-		ConnectivityWrapper.reporter = reporter;
+		reportUsage();
 	}
 
 	private void addResults(final String label, final double eulerCharacteristic,

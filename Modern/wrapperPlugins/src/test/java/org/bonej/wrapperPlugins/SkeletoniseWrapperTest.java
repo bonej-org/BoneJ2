@@ -32,7 +32,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -49,11 +48,6 @@ import ij.measure.Calibration;
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class SkeletoniseWrapperTest extends AbstractWrapperTest {
-
-	@BeforeClass
-	public static void oneTimeSetup() {
-		SkeletoniseWrapper.setReporter(MOCK_REPORTER);
-	}
 
 	@Test
 	public void testCompositeImageCancelsPlugin() throws Exception {
