@@ -225,16 +225,20 @@ public class UsageReporter {
 				utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			System.out.println(url + "\n");
-			System.out.println(uc.getRequestProperty("User-Agent") + "\n");
-			try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
-					uc.getInputStream())))
-			{
-				reader.lines().forEachOrdered(System.out::println);
-			}
-			catch (final IOException e) {
-				System.out.println(e.getMessage() + "\n");
-			}
+			logReport(url, uc);
+		}
+		catch (final IOException e) {
+			System.out.println(e.getMessage() + "\n");
+		}
+	}
+
+	private static void logReport(final URL url, final URLConnection uc) {
+		System.out.println(url + "\n");
+		System.out.println(uc.getRequestProperty("User-Agent") + "\n");
+		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+				uc.getInputStream())))
+		{
+			reader.lines().forEachOrdered(System.out::println);
 		}
 		catch (final IOException e) {
 			System.out.println(e.getMessage() + "\n");

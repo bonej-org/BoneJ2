@@ -123,32 +123,31 @@ public final class UsageReporter {
 	 */
 	public void send() {
 		if (!isAllowed()) return;
-
-		URL url = null;
-		URLConnection uc = null;
 		try {
-			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
+			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
 				utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
-			uc = url.openConnection();
+			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			if (IJ.debugMode) IJ.log(url.toString());
-			if (IJ.debugMode) IJ.log(uc.getRequestProperty("User-Agent"));
-			try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
-					uc.getInputStream())))
-			{
-				if (IJ.debugMode) reader.lines().forEach(IJ::log);
-			}
-			catch (final IOException e) {
-				if (IJ.debugMode) {
-					IJ.error(e.getMessage());
-				}
+			if (IJ.debugMode) {
+				logRequest(url, uc);
 			}
 		}
 		catch (final IOException e) {
 			if (IJ.debugMode) {
 				IJ.error(e.getMessage());
 			}
+		}
+	}
+
+	private void logRequest(final URL url, final URLConnection uc) {
+		IJ.log(url.toString());
+		IJ.log(uc.getRequestProperty("User-Agent"));
+		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+				uc.getInputStream()))) {
+			reader.lines().forEach(IJ::log);
+		} catch (final IOException e) {
+			IJ.error(e.getMessage());
 		}
 	}
 
