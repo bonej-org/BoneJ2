@@ -48,6 +48,8 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
                 EllipsoidFactorWrapper.class);
     }
 
+
+
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
     @Test
     public void testCancelledRunDoesNotReport() throws ExecutionException,
@@ -62,7 +64,11 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
 
         // EXECUTE
         final CommandModule module = command().run(
-                EllipsoidFactorWrapper.class, true, "inputImage", empty).get();
+                EllipsoidFactorWrapper.class, true, "inputImage", empty, "nVectors", 100,
+                "vectorIncrement", 0.435, "skipRatio", 1, "contactSensitivity", 10, "maxIterations",
+                100, "maxDrift", 1.73, "minimumSemiAxis", 1.0, "runs", 1, "weightedAverageN", 1,
+                "seedOnDistanceRidge", true, "distanceThreshold", 0.6, "seedOnTopologyPreserving",
+                false).get();
 
         // VERIFY
         final String reason = module.getCancelReason();
@@ -70,6 +76,8 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
                 EllipsoidFactorWrapper.NO_ELLIPSOIDS_FOUND, reason);
         verify(MOCK_REPORTER, timeout(1000).times(0)).reportEvent(anyString());
     }
+
+    // run(nvectors=100 vectorincrement=0.435 skipratio=1 contactsensitivity=1 maxiterations=100 maxdrift=1.73 minimumsemiaxis=1.0 runs=1 weightedaveragen=1 seedondistanceridge=true distancethreshold=0.6 seedontopologypreserving=false);
 
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
     @Test
@@ -80,9 +88,12 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
         final Img<UnsignedByteType> img = createSphereImg();
         final ImgPlus<UnsignedByteType> imgPlus = new ImgPlus<>(img, "Sphere", xAxis, yAxis, zAxis);
 
-        final CommandModule module =
-                command().run(EllipsoidFactorWrapper.class, true, "inputImage", imgPlus, "runs", 1,
-                        "seedOnTopologyPreserving", false, "skipRatio", 1).get();
+        final CommandModule module = command().run(
+                EllipsoidFactorWrapper.class, true, "inputImage", imgPlus, "nVectors", 100,
+                "vectorIncrement", 0.435, "skipRatio", 1, "contactSensitivity", 10, "maxIterations",
+                100, "maxDrift", 1.73, "minimumSemiAxis", 1.0, "runs", 1, "weightedAverageN", 1,
+                "seedOnDistanceRidge", true, "distanceThreshold", 0.6, "seedOnTopologyPreserving",
+                false).get();
 
         assertFalse("Sanity check failed: method cancelled", module.isCanceled());
         verify(MOCK_REPORTER, timeout(1000)).reportEvent(anyString());
