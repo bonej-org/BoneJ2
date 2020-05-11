@@ -131,21 +131,19 @@ public final class UsageReporter {
 				utmsr + utmvp + utmsc + utmul + utmje + utmfl + utmcnr + utmdt +
 				utmhid + utmr + utmp + utmac + utmcc);
 			uc = url.openConnection();
-		}
-		catch (final IOException e) {
-			if (IJ.debugMode) {
-				IJ.error(e.getMessage());
+			uc.setRequestProperty("User-Agent", userAgentString());
+			if (IJ.debugMode) IJ.log(url.toString());
+			if (IJ.debugMode) IJ.log(uc.getRequestProperty("User-Agent"));
+			try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+					uc.getInputStream())))
+			{
+				if (IJ.debugMode) reader.lines().forEach(IJ::log);
 			}
-		}
-
-		uc.setRequestProperty("User-Agent", userAgentString());
-		if (IJ.debugMode) IJ.log(url.toString());
-		if (IJ.debugMode) IJ.log(uc.getRequestProperty("User-Agent"));
-
-		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
-			uc.getInputStream())))
-		{
-			if (IJ.debugMode) reader.lines().forEach(IJ::log);
+			catch (final IOException e) {
+				if (IJ.debugMode) {
+					IJ.error(e.getMessage());
+				}
+			}
 		}
 		catch (final IOException e) {
 			if (IJ.debugMode) {

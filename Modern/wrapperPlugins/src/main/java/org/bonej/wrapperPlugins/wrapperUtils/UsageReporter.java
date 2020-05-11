@@ -218,25 +218,23 @@ public class UsageReporter {
 	 */
 	private static void send() {
 		System.out.println("Sending report.\n");
-		URL url = null;
-		URLConnection uc = null;
 		try {
 			System.out.println("Usage reporting approved by user, preparing URL");
-			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
+			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
 				utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt + utmhid + utmr +
 				utmp + utmac + utmcc);
-			uc = url.openConnection();
-		}
-		catch (final IOException e) {
-			System.out.println(e.getMessage() + "\n");
-		}
-		uc.setRequestProperty("User-Agent", userAgentString());
-		System.out.println(url + "\n");
-		System.out.println(uc.getRequestProperty("User-Agent") + "\n");
-		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
-			uc.getInputStream())))
-		{
-			reader.lines().forEachOrdered(System.out::println);
+			final URLConnection uc = url.openConnection();
+			uc.setRequestProperty("User-Agent", userAgentString());
+			System.out.println(url + "\n");
+			System.out.println(uc.getRequestProperty("User-Agent") + "\n");
+			try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+					uc.getInputStream())))
+			{
+				reader.lines().forEachOrdered(System.out::println);
+			}
+			catch (final IOException e) {
+				System.out.println(e.getMessage() + "\n");
+			}
 		}
 		catch (final IOException e) {
 			System.out.println(e.getMessage() + "\n");
