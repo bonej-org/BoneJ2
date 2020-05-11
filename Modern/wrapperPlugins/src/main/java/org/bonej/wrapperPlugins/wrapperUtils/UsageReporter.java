@@ -218,8 +218,8 @@ public class UsageReporter {
 	 */
 	private static void send() {
 		System.out.println("Sending report.\n");
-		final URL url;
-		final URLConnection uc;
+		URL url = null;
+		URLConnection uc = null;
 		try {
 			System.out.println("Usage reporting approved by user, preparing URL");
 			url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
@@ -229,7 +229,6 @@ public class UsageReporter {
 		}
 		catch (final IOException e) {
 			System.out.println(e.getMessage() + "\n");
-			throw new AssertionError("Check your static Strings!");
 		}
 		uc.setRequestProperty("User-Agent", userAgentString());
 		System.out.println(url + "\n");

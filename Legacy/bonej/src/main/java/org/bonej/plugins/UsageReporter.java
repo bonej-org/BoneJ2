@@ -136,7 +136,6 @@ public final class UsageReporter {
 			if (IJ.debugMode) {
 				IJ.error(e.getMessage());
 			}
-			throw new AssertionError("Check your static Strings!");
 		}
 
 		uc.setRequestProperty("User-Agent", userAgentString());
