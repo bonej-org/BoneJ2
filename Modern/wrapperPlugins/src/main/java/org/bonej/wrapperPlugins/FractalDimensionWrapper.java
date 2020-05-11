@@ -111,9 +111,8 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 		callback = "enforceAutoParam", required = false)
 	private long translations;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private String translationInfo =
-		"NB: translations affect runtime significantly";
+	@Parameter(visibility = ItemVisibility.MESSAGE, required = false)
+	private String translationInfo = "NB: translations affect runtime significantly";
 
 	@Parameter(label = "Automatic parameters",
 		description = "Let the computer decide values for the parameters",
