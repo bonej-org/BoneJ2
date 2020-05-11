@@ -71,9 +71,9 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
 	/** Header of ratio column in the results table */
 	private static final String ratioHeader = "Volume ratio";
-	private static UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubes;
+	private static UnaryFunctionOp<RandomAccessibleInterval<?>, Mesh> marchingCubes;
 	private static UnaryFunctionOp<Mesh, DoubleType> meshVolume;
-	private static UnaryFunctionOp<RandomAccessibleInterval, RandomAccessibleInterval> raiCopy;
+	private static UnaryFunctionOp<RandomAccessibleInterval<?>, RandomAccessibleInterval> raiCopy;
 
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
