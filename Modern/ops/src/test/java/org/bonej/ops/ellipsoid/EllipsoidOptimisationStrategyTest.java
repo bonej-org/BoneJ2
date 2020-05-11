@@ -3,7 +3,6 @@ package org.bonej.ops.ellipsoid;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.stream.Stream;
 
 import net.imagej.ops.special.function.Functions;
@@ -159,9 +158,9 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 
 
 		//EXECUTE
-		EllipsoidOptimisationStrategy optimisation = new EllipsoidOptimisationStrategy();
 		final ArrayList<double[]> contactPoints = new ArrayList<>();
-		optimisation.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,6,6,6);
+		EllipsoidOptimisationStrategy
+				.findContactPointsForGivenDirections(e, contactPoints, vectors, cubeImage,6,6,6);
 
 		//VERIFY
 		assertEquals(3, contactPoints.size());
@@ -241,15 +240,9 @@ public class EllipsoidOptimisationStrategyTest extends AbstractOpTest {
 		//SET-UP
 		QuickEllipsoid tooSmall = new QuickEllipsoid(new double[]{0.3,0.3,0.3},new double[]{50,50,50},new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}});
 		QuickEllipsoid tooLarge = new QuickEllipsoid(new double[]{10,10,10},new double[]{50,50,50},new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}});
-
 		//by sampling only in directions away from image coordinates, both surface points should be out-of-bounds, and the ellipsoid
 		// is invalid as a consequence
 		QuickEllipsoid tooFarOutOfBounds = new QuickEllipsoid(new double[]{2,2,2},new double[]{0,0,0},new double[][]{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}});
-		double [][] vectors = new double[2][3];
-		vectors[0][2] = -1; //-z-direction
-		vectors[1][1] = -1; //-y-direction
-		final double[][] surfacePoints = tooFarOutOfBounds.getSurfacePoints(vectors);
-		final ArrayList<double[]> surfacePointList = new ArrayList<>(Arrays.asList(surfacePoints));
 
 		final EllipsoidOptimisationStrategy optimisation = (EllipsoidOptimisationStrategy) Functions.binary(ops, EllipsoidOptimisationStrategy.class, QuickEllipsoid.class,
 				new byte[10][10],

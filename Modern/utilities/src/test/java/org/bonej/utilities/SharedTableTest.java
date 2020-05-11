@@ -188,8 +188,8 @@ public class SharedTableTest {
 
 	@Test
 	public void testGetTableCopyPersists() {
-		final Table instance1 = SharedTable.getTable();
-		final Table instance2 = SharedTable.getTable();
+		final Table<?, ?> instance1 = SharedTable.getTable();
+		final Table<?, ?> instance2 = SharedTable.getTable();
 
 		assertSame(instance1, instance2);
 	}

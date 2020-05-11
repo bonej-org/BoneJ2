@@ -189,7 +189,7 @@ public class RoiManagerUtilTest {
 		final Roi roi1 = new Roi(2, 2, 2, 2);
 		final Roi roi2 = new Roi(6, 3, 2, 2);
 		final Roi roi3 = new Roi(2, 2, 2, 2);
-		final Roi rois[] = { roi3, roi1, roi2 };
+		final Roi[] rois = { roi3, roi1, roi2 };
 		roi1.setName("0002-0000-0001");
 		roi2.setName("0003-0000-0001");
 		roi3.setName("0001-0000-0001");
