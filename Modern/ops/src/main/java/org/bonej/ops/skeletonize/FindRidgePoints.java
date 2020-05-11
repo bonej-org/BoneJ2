@@ -59,7 +59,7 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
     {
         final long[] borderExpansion = new long[]{1,1,1};
         final long[] offset = new long[]{-1,-1,-1};
-        final IntervalView<BitType> offsetImage = Views.offset(image, offset);
+        final IntervalView<BitType> offsetImage = Views.translateInverse(image, offset);
         final IntervalView<BitType> expandedImage = Views.expandZero(offsetImage, borderExpansion);
 
         final RandomAccessibleInterval<R> distanceMap = ops().image().distancetransform(expandedImage);
