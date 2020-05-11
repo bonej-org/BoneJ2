@@ -182,6 +182,9 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		statusService.showProgress(3, PROGRESS_STEPS);
 		final Map<Integer, List<Vertex>> valenceMap = VertexUtils.groupByValence(
 			cleanGraph.getVertices(), minimumValence, maximumValence);
+		if (valenceMap.isEmpty()) {
+			cancelMacroSafe(this, NO_RESULTS_MSG);
+		}
 		statusService.showStatus("Intertrabecular angles: calculating angles");
 		statusService.showProgress(4, PROGRESS_STEPS);
 		final Map<Integer, DoubleStream> radianMap = createRadianMap(valenceMap);
@@ -197,12 +200,7 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 			final String heading = valence.toString();
 			angles.forEach(angle -> SharedTable.add(label, heading, angle));
 		});
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
-		else {
-			cancelMacroSafe(this, NO_RESULTS_MSG);
-		}
+		resultsTable = SharedTable.getTable();
 	}
 
 	private Graph[] analyzeSkeleton(final ImagePlus skeleton) {
