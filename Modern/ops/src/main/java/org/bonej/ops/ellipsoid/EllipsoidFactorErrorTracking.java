@@ -24,8 +24,7 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
 
 
     private int currentIteration;
-    private Img<FloatType> currentAverage;
-    private Img<FloatType> previousAverage;
+    private IterableInterval<FloatType> currentAverage;
 
     public EllipsoidFactorErrorTracking(OpService opService)
     {
@@ -33,6 +32,7 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
     }
     @Override
     public Map<String,Double> calculate(Img<FloatType> currentEllipsoidFactorImage) {
+        final IterableInterval<FloatType> previousAverage;
         if(currentIteration==0)
         {
             previousAverage = ArrayImgs.floats(currentEllipsoidFactorImage.dimension(0),currentEllipsoidFactorImage.dimension(1),currentEllipsoidFactorImage.dimension(2));
@@ -41,14 +41,13 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
         else
         {
             previousAverage = currentAverage;
-
-            currentAverage = (Img) ops().math().multiply(previousAverage,new FloatType(currentIteration));
-            currentAverage = (Img) ops().math().add(currentEllipsoidFactorImage, (IterableInterval<FloatType>) currentAverage);
-            currentAverage = (Img) ops().math().divide(currentAverage, new FloatType(currentIteration+1));
+            currentAverage = ops().math().multiply(previousAverage, new FloatType(currentIteration));
+            currentAverage = ops().math().add(currentEllipsoidFactorImage, currentAverage);
+            currentAverage = ops().math().divide(currentAverage, new FloatType(currentIteration+1));
         }
         currentIteration++;
 
-        final Img<FloatType> error = (Img) ops().math().subtract(previousAverage, (IterableInterval<FloatType>) currentAverage);
+        final IterableInterval<FloatType> error = ops().math().subtract(previousAverage, currentAverage);
         final Cursor<FloatType> cursor = error.cursor();
         while (cursor.hasNext()) {
             final float next = cursor.next().get();
@@ -71,7 +70,7 @@ public class EllipsoidFactorErrorTracking extends AbstractUnaryFunctionOp<Img<Fl
         double max = nonNanValues.get(count-1);
         double min = nonNanValues.get(0);
         double median = nonNanValues.get(count/2);
-        double mean = nonNanValues.stream().reduce((a,b) -> a+b).get()/((double) count);
+        double mean = nonNanValues.stream().reduce(Double::sum).get()/((double) count);
 
         final Map<String, Double> stats = new HashMap<>();
         stats.put("Mean",mean);
