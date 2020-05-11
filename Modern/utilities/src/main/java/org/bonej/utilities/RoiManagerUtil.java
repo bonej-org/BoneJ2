@@ -26,7 +26,6 @@ package org.bonej.utilities;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -104,15 +103,11 @@ public final class RoiManagerUtil {
 	// endregion
 
 	// region -- Helper methods --
-
-	private static int clamp(final int value, final int min, final int max) {
-		if (Integer.compare(value, min) < 0) {
-			return min;
+	private static int clamp(final int value, final int max) {
+		if (value < 0) {
+			return 0;
 		}
-		if (Integer.compare(value, max) > 0) {
-			return max;
-		}
-		return value;
+		return Math.min(value, max);
 	}
 
 	/**
@@ -344,10 +339,10 @@ public final class RoiManagerUtil {
 	static boolean getSafeRoiBounds(final Rectangle bounds, final int width,
 		final int height)
 	{
-		final int xMin = clamp(bounds.x, 0, width);
-		final int xMax = clamp(bounds.x + bounds.width, 0, width);
-		final int yMin = clamp(bounds.y, 0, height);
-		final int yMax = clamp(bounds.y + bounds.height, 0, height);
+		final int xMin = clamp(bounds.x, width);
+		final int xMax = clamp(bounds.x + bounds.width, width);
+		final int yMin = clamp(bounds.y, height);
+		final int yMax = clamp(bounds.y + bounds.height, height);
 		final int newWidth = xMax - xMin;
 		final int newHeight = yMax - yMin;
 

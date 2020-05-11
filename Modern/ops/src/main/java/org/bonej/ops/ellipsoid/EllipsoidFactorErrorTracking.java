@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.imagej.ops.OpEnvironment;
 import org.scijava.plugin.Plugin;
 
 import net.imagej.ops.Op;
