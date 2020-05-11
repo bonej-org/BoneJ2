@@ -232,6 +232,10 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			counter++;
 			totalEllipsoids += ellipsoids.size();
 		}
+		if (totalEllipsoids == 0) {
+			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
+			return;
+		}
 
 		if(runs>1)
 		{
@@ -555,11 +559,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		final String label = inputImage.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
 		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		} else {
-			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
-		}
+		resultsTable = SharedTable.getTable();
 	}
 
 	@SuppressWarnings("unused")
