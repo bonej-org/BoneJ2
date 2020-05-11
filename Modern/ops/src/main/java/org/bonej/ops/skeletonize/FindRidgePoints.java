@@ -38,8 +38,6 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
         final List<Vector3dc> seeds = new ArrayList<>();
         final Cursor<R> ridgeCursor = ridge.cursor();
         final long[] position = new long[3];
-        final long[] dimensionsMinusOne = new long[]{bitImage.dimension(0)-1, bitImage.dimension(1)-1, bitImage.dimension(2)-1};
-        final Dimensions innerImageDimensions = new FinalDimensions(dimensionsMinusOne);
         while (ridgeCursor.hasNext()) {
             ridgeCursor.fwd();
             final double localValue = ridgeCursor.get().getRealFloat();
@@ -74,7 +72,7 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
         final IterableInterval<R> ridge = ops().math().subtract(close, open);
 
         final Cursor<R> ridgeCursor = ridge.localizingCursor();
-        final Img openImg = (Img) open;
+        final Img<R> openImg = (Img<R>) open;
         final RandomAccess<R> openedRA = openImg.randomAccess();
         final long[] position = new long[3];
         while (ridgeCursor.hasNext()) {
