@@ -113,8 +113,7 @@ public class UsageReporterOptions extends ContextCommand {
 		prefs.put(getClass(), IJSESSIONKEY, 1);
 		prefs.put(getClass(), OPTINSET, true);
 		if (reporter == null) {
-			reporter = UsageReporter.getInstance(prefs, pluginService,
-				commandService);
+			reporter = UsageReporter.getInstance(prefs, pluginService, commandService, logService);
 		}
 		reporter.reportEvent(getClass().getName());
 	}

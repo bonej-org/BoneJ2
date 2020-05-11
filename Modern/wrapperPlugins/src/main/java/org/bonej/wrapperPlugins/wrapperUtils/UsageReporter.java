@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
+import org.scijava.log.Logger;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
@@ -86,6 +87,7 @@ public class UsageReporter {
 	private static String utme;
 	private static String utmhid;
 	private static String utmcc;
+	private static Logger logger;
 
 	private UsageReporter() {}
 
@@ -96,7 +98,7 @@ public class UsageReporter {
 	 */
 	public void reportEvent(final String className) {
 		if (!isAllowed()) {
-			System.out.println("Usage reporting forbidden by user\n");
+			logger.debug("Usage reporting forbidden by user");
 			return;
 		}
 		final String version = plugins.getPlugin(className).getVersion();
@@ -104,16 +106,10 @@ public class UsageReporter {
 	}
 
 	public static UsageReporter getInstance(final PrefService prefs,
-		final PluginService plugins, final CommandService commandService)
+		final PluginService plugins, final CommandService commandService, final Logger logger)
 	{
-		if (prefs == null) {
-			throw new NullPointerException("PrefService cannot be null");
-		}
-		if (plugins == null) {
-			throw new NullPointerException("PluginService cannot be null");
-		}
-		if (commandService == null) {
-			throw new NullPointerException("CommandService cannot be null");
+		if (prefs == null || plugins == null || commandService == null || logger == null) {
+			throw new NullPointerException("Services cannot be null");
 		}
 		if (instance == null) {
 			instance = new UsageReporter();
@@ -121,6 +117,7 @@ public class UsageReporter {
 		UsageReporter.commandService = commandService;
 		UsageReporter.plugins = plugins;
 		UsageReporter.prefs = prefs;
+		UsageReporter.logger = logger;
 		return instance;
 	}
 
@@ -154,10 +151,10 @@ public class UsageReporter {
 	}
 
 	private static void initSessionVariables(final PrefService prefs) {
-		System.out.println("First run of Usage Reporter for this BoneJ session.\n");
+		logger.debug("First run of Usage Reporter for this BoneJ session");
 		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
 			UsageReporterOptions.SESSIONKEY, 0);
-		System.out.print("bonejSession = " + bonejSession + "\n");
+		logger.debug("bonejSession = " + bonejSession);
 		prefs.put(UsageReporterOptions.class, UsageReporterOptions.SESSIONKEY,
 			bonejSession + 1);
 		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -217,9 +214,9 @@ public class UsageReporter {
 	 * 1-pixel GIF with lots of parameters set
 	 */
 	private static void send() {
-		System.out.println("Sending report.\n");
+		logger.debug("Sending report");
 		try {
-			System.out.println("Usage reporting approved by user, preparing URL");
+			logger.debug("Usage reporting approved by user, preparing URL");
 			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
 				utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt + utmhid + utmr +
 				utmp + utmac + utmcc);
@@ -228,20 +225,20 @@ public class UsageReporter {
 			logReport(url, uc);
 		}
 		catch (final IOException e) {
-			System.out.println(e.getMessage() + "\n");
+			logger.trace(e.getMessage());
 		}
 	}
 
 	private static void logReport(final URL url, final URLConnection uc) {
-		System.out.println(url + "\n");
-		System.out.println(uc.getRequestProperty("User-Agent") + "\n");
+		logger.debug(url);
+		logger.debug(uc.getRequestProperty("User-Agent"));
 		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
 				uc.getInputStream())))
 		{
-			reader.lines().forEachOrdered(System.out::println);
+			reader.lines().forEach(line -> logger.debug(line));
 		}
 		catch (final IOException e) {
-			System.out.println(e.getMessage() + "\n");
+			logger.trace(e.getMessage());
 		}
 	}
 
@@ -285,8 +282,7 @@ public class UsageReporter {
 		final boolean permissionSought = prefs.getBoolean(
 			UsageReporterOptions.class, UsageReporterOptions.OPTINSET, false);
 		if (!permissionSought) {
-			System.out.println(
-				"User permission has not been sought, requesting it...\n");
+			logger.debug("User permission has not been sought, requesting it...");
 			try {
 				final CommandModule module = commandService.run(
 					UsageReporterOptions.class, true).get();
@@ -295,7 +291,7 @@ public class UsageReporter {
 				}
 			}
 			catch (final InterruptedException | ExecutionException e) {
-				// TODO log with logService.trace
+				logger.trace(e);
 				return false;
 			}
 		}
