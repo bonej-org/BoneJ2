@@ -87,7 +87,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<Double>> table =
-			(List<DefaultColumn<Double>>) module.getOutput("anglesTable");
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals(2, table.size());
 		final DefaultColumn<Double> threeColumn = table.get(0);
@@ -149,7 +149,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<Double>> table =
-			(List<DefaultColumn<Double>>) module.getOutput("anglesTable");
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals(1, table.size());
 		final DefaultColumn<Double> fiveColumn = table.get(0);

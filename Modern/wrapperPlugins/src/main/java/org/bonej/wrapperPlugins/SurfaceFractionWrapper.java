@@ -51,13 +51,10 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 
 /**
  * First this command creates a surface mesh from both all foreground voxels
@@ -80,23 +77,12 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
-
-	/**
-	 * The surface faction results in a {@link Table}
-	 * <p>
-	 * Null if there are no results
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
-
 	@Parameter
 	private OpService opService;
 	@Parameter
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
-
 	/** Header of the thresholded volume column in the results table */
 	private String bVHeader;
 	/** Header of the total volume column in the results table */

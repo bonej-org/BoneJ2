@@ -80,15 +80,12 @@ import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
-import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
@@ -173,14 +170,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 			required = false)
 	private boolean displayMILVectors;
 
-	/**
-	 * The anisotropy results in a {@link Table}.
-	 * <p>
-	 * Null if there are no results.
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
 	@Parameter
 	private LogService logService;
 	@Parameter

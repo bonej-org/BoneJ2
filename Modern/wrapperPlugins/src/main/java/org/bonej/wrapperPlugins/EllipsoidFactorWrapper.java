@@ -92,8 +92,6 @@ import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 
 import sc.fiji.skeletonize3D.Skeletonize3D_;
@@ -185,12 +183,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	private List<ImgPlus> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
-
-	/**
-	 * The EF results in a {@link Table}, null if there are no results
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
 
 	private ImgPlus<BitType> inputAsBitType;
 

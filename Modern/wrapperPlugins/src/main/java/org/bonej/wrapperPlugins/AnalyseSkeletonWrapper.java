@@ -60,12 +60,10 @@ import org.scijava.io.IOService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.IntColumn;
 import org.scijava.table.PrimitiveColumn;
-import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 import org.scijava.widget.FileWidget;
@@ -131,13 +129,6 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		description = "Show skeleton images labelled with their IDs",
 		required = false)
 	private boolean displaySkeletons;
-
-	/**
-	 * The results of the analysis in a {@link Table}, null if there are no
-	 * results.
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>,Double> resultsTable;
 
 	/**
 	 * Additional analysis details in a {@link DefaultGenericTable}, null if
