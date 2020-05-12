@@ -296,6 +296,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <excludedGroups>org.bonej.wrapperPlugins.SlowWrapperTest</excludedGroups>
+                            <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
                         </configuration>
                     </plugin>
                 </plugins>
