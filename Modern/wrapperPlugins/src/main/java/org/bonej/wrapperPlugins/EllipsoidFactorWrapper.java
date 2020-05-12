@@ -92,8 +92,6 @@ import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 
 import sc.fiji.skeletonize3D.Skeletonize3D_;
@@ -186,12 +184,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
-	/**
-	 * The EF results in a {@link Table}, null if there are no results
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
-
 	private ImgPlus<BitType> inputAsBitType;
 
 	@Override
@@ -239,6 +231,10 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			}
 			counter++;
 			totalEllipsoids += ellipsoids.size();
+		}
+		if (totalEllipsoids == 0) {
+			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
+			return;
 		}
 
 		if(runs>1)
@@ -563,11 +559,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		final String label = inputImage.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
 		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		} else {
-			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
-		}
+		resultsTable = SharedTable.getTable();
 	}
 
 	@SuppressWarnings("unused")

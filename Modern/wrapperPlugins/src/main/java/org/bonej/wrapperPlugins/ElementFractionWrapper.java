@@ -47,13 +47,10 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -74,16 +71,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
-
-	/**
-	 * The element faction results in a {@link Table}
-	 * <p>
-	 * Null if there are no results
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
-
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -123,9 +110,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
 			addResults(label, foregroundSize, totalSize, ratio);
 		}
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

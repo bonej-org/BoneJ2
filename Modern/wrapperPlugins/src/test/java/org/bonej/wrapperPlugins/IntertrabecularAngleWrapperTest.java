@@ -87,7 +87,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<Double>> table =
-			(List<DefaultColumn<Double>>) module.getOutput("anglesTable");
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals(2, table.size());
 		final DefaultColumn<Double> threeColumn = table.get(0);
@@ -149,7 +149,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<Double>> table =
-			(List<DefaultColumn<Double>>) module.getOutput("anglesTable");
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
 		assertNotNull(table);
 		assertEquals(1, table.size());
 		final DefaultColumn<Double> fiveColumn = table.get(0);
@@ -183,7 +183,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 	 * (or skeletonisation didn't change it)
 	 */
 	@Test
-	public void testNoImageWhenNoSkeletonisation() throws Exception {
+	public void testNoImageShownWhenSkeletonProducesEmptyGraph() throws Exception {
 		// SETUP
 		doNothing().when(MOCK_UI).show(any(ImagePlus.class));
 		final ImagePlus pixel = NewImage.createByteImage("Test", 3, 3, 1,
@@ -191,13 +191,10 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
 		// EXECUTE
-		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", pixel).get();
+		command().run(IntertrabecularAngleWrapper.class, true, "inputImage", pixel, "minimumValence",
+						3).get();
 
 		// VERIFY
-		assertEquals(
-			"Sanity check failed: plugin cancelled before image could have been shown",
-			NO_RESULTS_MSG, module.getCancelReason());
 		verify(MOCK_UI, after(250).never()).show(any(ImagePlus.class));
 	}
 

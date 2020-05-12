@@ -60,11 +60,9 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.GenericTable;
-import org.scijava.table.Table;
 import org.scijava.widget.NumberWidget;
 
 /**
@@ -128,15 +126,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 	private boolean showPoints;
 
 	/**
-	 * The fractal dimension and R² values for each 3D subspace in a table
-	 * <p>
-	 * Null if there are no results
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
-
-	/**
 	 * Tables containing the (-log(size), log(count)) points for each 3D subspace
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "Subspace points")
@@ -180,9 +169,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 			statusService.showProgress(3, 3);
 		});
 		fillResultsTable(subspaces, dimensions, rSquared);
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

@@ -64,14 +64,11 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
-import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.util.StringUtils;
 import org.scijava.widget.FileWidget;
@@ -94,21 +91,10 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
-
-	/**
-	 * The surface area results in a {@link Table}
-	 * <p>
-	 * Null if there are no results
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
-
 	@Parameter(label = "Export STL file(s)",
 		description = "Create a binary STL file from the surface mesh",
 		required = false)
 	private boolean exportSTL;
-
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -141,9 +127,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 			saveMeshes(meshes);
 		}
 		calculateAreas(meshes);
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

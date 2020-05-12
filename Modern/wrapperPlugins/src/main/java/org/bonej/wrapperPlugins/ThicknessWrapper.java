@@ -51,8 +51,6 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 import org.scijava.widget.ChoiceWidget;
 
@@ -95,15 +93,6 @@ public class ThicknessWrapper extends BoneJCommand {
 	@Parameter(label = "Trabecular spacing", type = ItemIO.OUTPUT)
 	private ImagePlus spacingMap;
 
-	/**
-	 * The calculated thickness statistics in a {@link Table}
-	 * <p>
-	 * Null if there are no results
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
-
 	@Parameter
 	private UIService uiService;
 	@Parameter
@@ -126,9 +115,7 @@ public class ThicknessWrapper extends BoneJCommand {
 			addMapResults(map);
 			thicknessMaps.put(foreground, map);
 		});
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		if (showMaps) {
 			final LUT fire = Common.makeFire();
 			trabecularMap = thicknessMaps.get(true);

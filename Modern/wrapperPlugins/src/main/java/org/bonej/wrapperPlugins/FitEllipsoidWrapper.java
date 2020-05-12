@@ -51,13 +51,10 @@ import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.joml.Matrix4dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
-import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
-import org.scijava.table.Table;
 import org.scijava.ui.UIService;
 
 /**
@@ -80,16 +77,6 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 	// there's no stable ROI system for ImageJ2 classes yet.
 	@Parameter(validater = "validateImage")
 	private ImagePlus inputImage;
-
-	/**
-	 * The ellipsoid results in a {@link Table}.
-	 * <p>
-	 * Null if there are no results.
-	 * </p>
-	 */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> resultsTable;
-
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -120,9 +107,7 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 			return;
 		}
 		addResults(result.get());
-		if (SharedTable.hasData()) {
-			resultsTable = SharedTable.getTable();
-		}
+		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
 

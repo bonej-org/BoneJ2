@@ -58,7 +58,6 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.table.DefaultColumn;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
@@ -141,9 +140,6 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		description = "Print the percentage of each of the type of edges that were culled after calling analyseSkeleton",
 		required = false, persistKey = "ITA_print_culled_edges")
 	private boolean printCulledEdgePercentages;
-	/** The ITA angles in a {@link Table}, null if there are no results */
-	@Parameter(type = ItemIO.OUTPUT, label = "BoneJ results")
-	private Table<DefaultColumn<Double>, Double> anglesTable;
 	/**
 	 * The ITA edge-end coordinates in a {@link Table}, null if there are no
 	 * results
@@ -186,6 +182,9 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		statusService.showProgress(3, PROGRESS_STEPS);
 		final Map<Integer, List<Vertex>> valenceMap = VertexUtils.groupByValence(
 			cleanGraph.getVertices(), minimumValence, maximumValence);
+		if (valenceMap.isEmpty()) {
+			cancelMacroSafe(this, NO_RESULTS_MSG);
+		}
 		statusService.showStatus("Intertrabecular angles: calculating angles");
 		statusService.showProgress(4, PROGRESS_STEPS);
 		final Map<Integer, DoubleStream> radianMap = createRadianMap(valenceMap);
@@ -201,12 +200,7 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 			final String heading = valence.toString();
 			angles.forEach(angle -> SharedTable.add(label, heading, angle));
 		});
-		if (SharedTable.hasData()) {
-			anglesTable = SharedTable.getTable();
-		}
-		else {
-			cancelMacroSafe(this, NO_RESULTS_MSG);
-		}
+		resultsTable = SharedTable.getTable();
 	}
 
 	private Graph[] analyzeSkeleton(final ImagePlus skeleton) {
