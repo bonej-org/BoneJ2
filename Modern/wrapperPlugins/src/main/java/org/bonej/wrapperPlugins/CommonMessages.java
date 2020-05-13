@@ -30,8 +30,8 @@ package org.bonej.wrapperPlugins;
  */
 public final class CommonMessages {
 
-	static final String WEIRD_SPATIAL = "Need a 2D or 3D image";
-	static final String NOT_3D_IMAGE = "Need a 3D image";
+	static final String WEIRD_SPATIAL = "Need a 2D (X, Y) or 3D (X, Y, Z) image";
+	static final String NOT_3D_IMAGE = "Need a 3D (X, Y, Z) image";
 	static final String HAS_TIME_DIMENSIONS = "Image cannot have time axis";
 	static final String HAS_CHANNEL_DIMENSIONS = "Image cannot be composite";
 	static final String NOT_BINARY = "Need a binary image";
