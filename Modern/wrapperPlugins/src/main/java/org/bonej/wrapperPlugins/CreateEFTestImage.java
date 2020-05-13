@@ -2,6 +2,8 @@ package org.bonej.wrapperPlugins;
 
 
 import net.imagej.ImgPlus;
+import net.imagej.axis.Axes;
+import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.array.ArrayLocalizingCursor;
@@ -57,7 +59,11 @@ public class CreateEFTestImage extends ContextCommand {
         drawRods(testImage);
         drawPlates(testImage);
         drawSurfboards(testImage);
-        testImgPlus = new ImgPlus<>(testImage,"Test EF image");
+
+        final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", 1.0);
+        final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "", 1.0);
+        final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "", 1.0);
+        testImgPlus = new ImgPlus<UnsignedIntType>(testImage,"Test EF image", xAxis, yAxis, zAxis);
     }
 
     private void drawSpheres(ArrayImg testImage) {
