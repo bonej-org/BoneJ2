@@ -121,10 +121,10 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 		SharedTable.add(label, "Conn. density " + unitHeader, connectivityDensity);
 	}
 
-	private double calculateConnectivityDensity(
-		final RandomAccessibleInterval subspace, final double connectivity)
+	private double calculateConnectivityDensity(final RandomAccessibleInterval<?> subspace,
+												final double connectivity)
 	{
-		final double elements = ((IterableRealInterval) subspace).size();
+		final double elements = ((IterableRealInterval<?>) subspace).size();
 		final double elementSize = ElementUtil.calibratedSpatialElementSize(
 			inputImage, unitService);
 		return connectivity / (elements * elementSize);

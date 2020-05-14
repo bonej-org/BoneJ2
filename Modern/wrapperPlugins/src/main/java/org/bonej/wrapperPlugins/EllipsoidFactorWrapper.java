@@ -144,7 +144,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	private ImgPlus<UnsignedIntType> inputImage;
 
 	//algorithm parameters
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String setup = "Setup";
 	@Parameter(label = "Vectors")
 	int nVectors = 100;

@@ -28,7 +28,6 @@ import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 
 @Plugin(type = Op.class)
 public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> {
-	private static Random rng = new Random();
 	@Parameter
 	private long[] imageDimensions;//TODO shift into OptimisationParameters
 	@Parameter
