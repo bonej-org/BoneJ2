@@ -125,10 +125,10 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 	private boolean showPoints;
 
 	/**
-	 * Tables containing the (-log(size), log(count)) points for each 3D subspace
+	 * Table containing the (-log(size), log(count)) points for each 3D subspace
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "Subspace points")
-	private List<GenericTable> subspaceTables;
+	private GenericTable pointsTable;
 
 	@Parameter
 	private OpService opService;
@@ -146,7 +146,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 		final List<Double> dimensions = new ArrayList<>();
 		final List<Double> rSquared = new ArrayList<>();
 		subspaces = find3DSubspaces(inputImage);
-		subspaceTables = new ArrayList<>();
 		matchOps(subspaces.get(0).interval);
 		subspaces.forEach(subspace -> {
 			final RandomAccessibleInterval<BitType> interval = subspace.interval;
@@ -163,7 +162,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 			dimensions.add(fitCurve(pairs)[1]);
 			rSquared.add(getRSquared(pairs));
 			if (showPoints) {
-				addSubspaceTable(subspace, pairs);
+				writePoints(subspace.toString(), pairs);
 			}
 			statusService.showProgress(3, 3);
 		});
@@ -173,22 +172,24 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 	}
 
 	// region -- Helper methods --
-
-	private void addSubspaceTable(final Subspace<BitType> subspace,
-		final Collection<ValuePair<DoubleType, DoubleType>> pairs)
+	private void writePoints(final String headerSuffix,
+							 final Collection<ValuePair<DoubleType, DoubleType>> points)
 	{
-		final String label = inputImage.getName() + " " + subspace;
-		final DoubleColumn xColumn = new DoubleColumn("-log(size)");
-		final DoubleColumn yColumn = new DoubleColumn("log(count)");
-		pairs.stream().map(p -> p.a.get()).forEach(xColumn::add);
-		pairs.stream().map(p -> p.b.get()).forEach(yColumn::add);
-		final GenericTable subspaceTable = new DefaultGenericTable();
-		subspaceTable.add(xColumn);
-		subspaceTable.add(yColumn);
-		for (int i = 0; i < subspaceTable.getRowCount(); i++) {
-			subspaceTable.setRowHeader(i, label);
+		if (pointsTable == null) {
+			pointsTable = new DefaultGenericTable();
 		}
-		subspaceTables.add(subspaceTable);
+		String sizeHeader = "-log(size)";
+		String countHeader= "log(count)";
+		if (!headerSuffix.isEmpty()) {
+			sizeHeader = sizeHeader + " " + headerSuffix;
+			countHeader = countHeader + " " + headerSuffix;
+		}
+		final DoubleColumn xColumn = new DoubleColumn(sizeHeader);
+		final DoubleColumn yColumn = new DoubleColumn(countHeader);
+		points.stream().map(p -> p.a.get()).forEach(xColumn::add);
+		points.stream().map(p -> p.b.get()).forEach(yColumn::add);
+		pointsTable.add(xColumn);
+		pointsTable.add(yColumn);
 	}
 
 	private boolean allValuesFinite(

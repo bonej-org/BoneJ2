@@ -26,10 +26,7 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.imagej.ImgPlus;
@@ -72,16 +69,10 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 	@Test
 	public void testPointResults() throws Exception {
 		// SETUP
-		final int expectedRows = 2;
-		final double[] expectedSizes = Stream.of(4.0, 2.0).mapToDouble(i -> -Math
-			.log(i)).toArray();
-		final double[] emptyCounts = Stream.of(0.0, 0.0).mapToDouble(Math::log)
-			.toArray();
-		final double[] cubeCounts = Stream.of(1.0, 8.0).mapToDouble(Math::log)
-			.toArray();
-		final double[][] expectedCounts = { emptyCounts, cubeCounts, cubeCounts,
-			emptyCounts };
-		final ImgPlus<BitType> imgPlus = createTestHyperStack("Test");
+		final double[] expectedSizes = new double[] { -Math.log(4), -Math.log(2) };
+		final double[] emptyCounts = new double[] { Math.log(0), Math.log(0) };
+		final double[] cubeCounts = new double[] { Math.log(1), Math.log(8) };
+		final ImgPlus<BitType> imgPlus = createTestHyperStack();
 
 		// EXECUTE
 		final CommandModule module = command().run(
@@ -90,28 +81,25 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 			"translations", 0L, "showPoints", true).get();
 
 		// VERIFY
-		final Collection<?> tables = (Collection<?>) module.getOutput(
-			"subspaceTables");
-		assertNotNull("Output not found!", tables);
-		assertEquals("Wrong number of tables", 4, tables.size());
-		final List<GenericTable> pointTables = tables.stream().map(
-			t -> (GenericTable) t).collect(Collectors.toList());
-		for (int i = 0; i < pointTables.size(); i++) {
-			final GenericTable table = pointTables.get(i);
-			assertEquals("Table has wrong number of columns", 2, table.size());
-			final DoubleColumn sizes = (DoubleColumn) table.get("-log(size)");
-			assertEquals("Size column has wrong number of rows", expectedRows, sizes
-				.size());
-			final DoubleColumn counts = (DoubleColumn) table.get("log(count)");
-			assertEquals("Count column has wrong number of rows", expectedRows, counts
-				.size());
-			for (int j = 0; j < expectedRows; j++) {
-				assertEquals("Incorrect log(count) value", expectedCounts[i][j], counts
-					.get(j), 1e-12);
-				assertEquals("Incorrect -log(box size) value", expectedSizes[j], sizes
-					.get(j), 1e-12);
-			}
-		}
+		final GenericTable pointsTable = (GenericTable) module.getOutput("pointsTable");
+		assertNotNull("Command should have returned a point table", pointsTable);
+		assertEquals("Table has wrong number of columns", 8, pointsTable.getColumnCount());
+		testColumn(pointsTable, "-log(size) Channel: 1, Time: 1", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 1, Time: 1", emptyCounts);
+		testColumn(pointsTable, "-log(size) Channel: 1, Time: 2", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 1, Time: 2", cubeCounts);
+		testColumn(pointsTable, "-log(size) Channel: 2, Time: 1", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 2, Time: 1", cubeCounts);
+		testColumn(pointsTable, "-log(size) Channel: 2, Time: 2", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 2, Time: 2", emptyCounts);
+	}
+
+	private void testColumn(final GenericTable table, final String header,
+							final double[] expectedValues) throws IllegalArgumentException {
+		final DoubleColumn column = (DoubleColumn) table.get(header);
+		assertEquals("Column has wrong number of rows", expectedValues.length, column.size());
+		assertEquals(expectedValues[0], column.get(0), 1e-12);
+		assertEquals(expectedValues[1], column.get(1), 1e-12);
 	}
 
 	@Test
@@ -119,12 +107,11 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 		// SETUP
 		final Iterator<String> expectedHeaders = 
 				Stream.of("Fractal dimension", "R²").iterator();
-		final String imageName = "Image";
 		final Iterator<Double> expectedDimensions = Stream.of(0.0,
 			1.4999999999999998, 1.4999999999999998, 0.0).iterator();
 		final Iterator<Double> expectedRSquares = Stream.of(Double.NaN,
 			0.7500000000000002, 0.7500000000000002, Double.NaN).iterator();
-		final ImgPlus<BitType> imgPlus = createTestHyperStack(imageName);
+		final ImgPlus<BitType> imgPlus = createTestHyperStack();
 
 		// EXECUTE
 		final CommandModule module = command().run(
@@ -148,8 +135,12 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 			expectedRSquares.next(), r2, 1e-12));
 	}
 
-	/** Create a hyperstack with a cuboid in two subspaces */
-	private ImgPlus<BitType> createTestHyperStack(final String imageName) {
+	/** Create a hyperstack with 2 channels and 2 frames
+	 * <p>
+	 * Subspaces (C0, F0) and (C1, F1) are empty. The other two have a cube in them.
+	 * </p>
+	 */
+	private ImgPlus<BitType> createTestHyperStack() {
 		final Img<BitType> img = ArrayImgs.bits(4, 4, 4, 2, 2);
 		IntervalView<BitType> cubeView = Views.offsetInterval(img, new long[] { 1,
 			1, 1, 1, 0 }, new long[] { 2, 2, 2, 1, 1 });
@@ -157,7 +148,7 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 		cubeView = Views.offsetInterval(img, new long[] { 1, 1, 1, 0, 1 },
 			new long[] { 2, 2, 2, 1, 1 });
 		cubeView.forEach(BitType::setOne);
-		return new ImgPlus<>(img, imageName, new DefaultLinearAxis(Axes.X),
+		return new ImgPlus<>(img, "Test image", new DefaultLinearAxis(Axes.X),
 			new DefaultLinearAxis(Axes.Y), new DefaultLinearAxis(Axes.Z),
 			new DefaultLinearAxis(Axes.CHANNEL), new DefaultLinearAxis(Axes.TIME));
 	}
