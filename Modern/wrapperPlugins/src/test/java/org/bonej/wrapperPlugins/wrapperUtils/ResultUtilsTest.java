@@ -90,14 +90,13 @@ public class ResultUtilsTest {
 	public void testGetSizeDescription() {
 		final String[] expected = { "Size", "Area", "Volume", "Size" };
 		final AxisType spatialAxis = Axes.get("Spatial", true);
-		final Axis axis = new DefaultLinearAxis(spatialAxis);
-		final ImgPlus mockImage = mock(ImgPlus.class);
+		final CalibratedAxis axis = new DefaultLinearAxis(spatialAxis);
+		final ImgPlus<?> mockImage = mock(ImgPlus.class);
 		when(mockImage.axis(anyInt())).thenReturn(axis);
 
 		for (int i = 0; i < expected.length; i++) {
 			final int dimensions = i + 1;
 			when(mockImage.numDimensions()).thenReturn(dimensions);
-			@SuppressWarnings("unchecked")
 			final String description = ResultUtils.getSizeDescription(mockImage);
 
 			assertEquals("Size description is incorrect", expected[i], description);

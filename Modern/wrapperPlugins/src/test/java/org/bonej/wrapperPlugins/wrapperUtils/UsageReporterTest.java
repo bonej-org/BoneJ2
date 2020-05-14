@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
+import org.scijava.log.LogService;
 import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
@@ -39,8 +40,8 @@ public class UsageReporterTest {
 			.thenReturn(false);
 		final PluginService plugins = mock(PluginService.class);
 		final CommandService commands = mock(CommandService.class);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final LogService logger = mock(LogService.class);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, commands, logger);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
@@ -66,8 +67,8 @@ public class UsageReporterTest {
 			.thenReturn(true);
 		final PluginService plugins = mock(PluginService.class);
 		final CommandService commands = mock(CommandService.class);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final LogService logger = mock(LogService.class);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, commands, logger);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
@@ -101,8 +102,8 @@ public class UsageReporterTest {
 		when(future.get()).thenReturn(module);
 		final CommandService commands = mock(CommandService.class);
 		when(commands.run(UsageReporterOptions.class, true)).thenReturn(future);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final LogService logger = mock(LogService.class);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, commands, logger);
 
 		// EXECUTE
 		final boolean allowed = reporter.isAllowed();
@@ -137,8 +138,8 @@ public class UsageReporterTest {
 		when(future.get()).thenReturn(module);
 		final CommandService commands = mock(CommandService.class);
 		when(commands.run(UsageReporterOptions.class, true)).thenReturn(future);
-		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins,
-			commands);
+		final LogService logger = mock(LogService.class);
+		final UsageReporter reporter = UsageReporter.getInstance(prefs, plugins, commands, logger);
 
 		// EXECUTE
 		reporter.isAllowed();

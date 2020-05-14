@@ -1,6 +1,5 @@
 package org.bonej.ops.skeletonize;
 
-import net.imagej.ImgPlus;
 import net.imagej.ops.Op;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imagej.ops.stats.IterableMax;
@@ -11,20 +10,16 @@ import net.imglib2.img.Img;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
-import org.scijava.ItemIO;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 
 @Plugin(name = "Find ridge points of a binary image", type = Op.class)
 public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends AbstractUnaryFunctionOp<RandomAccessibleInterval<BitType>,List<Vector3dc>> {
@@ -43,8 +38,6 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
         final List<Vector3dc> seeds = new ArrayList<>();
         final Cursor<R> ridgeCursor = ridge.cursor();
         final long[] position = new long[3];
-        final long[] dimensionsMinusOne = new long[]{bitImage.dimension(0)-1, bitImage.dimension(1)-1, bitImage.dimension(2)-1};
-        final Dimensions innerImageDimensions = new FinalDimensions(dimensionsMinusOne);
         while (ridgeCursor.hasNext()) {
             ridgeCursor.fwd();
             final double localValue = ridgeCursor.get().getRealFloat();
@@ -66,7 +59,7 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
     {
         final long[] borderExpansion = new long[]{1,1,1};
         final long[] offset = new long[]{-1,-1,-1};
-        final IntervalView<BitType> offsetImage = Views.offset(image, offset);
+        final IntervalView<BitType> offsetImage = Views.translateInverse(image, offset);
         final IntervalView<BitType> expandedImage = Views.expandZero(offsetImage, borderExpansion);
 
         final RandomAccessibleInterval<R> distanceMap = ops().image().distancetransform(expandedImage);
@@ -79,7 +72,7 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
         final IterableInterval<R> ridge = ops().math().subtract(close, open);
 
         final Cursor<R> ridgeCursor = ridge.localizingCursor();
-        final Img openImg = (Img) open;
+        final Img<R> openImg = (Img<R>) open;
         final RandomAccess<R> openedRA = openImg.randomAccess();
         final long[] position = new long[3];
         while (ridgeCursor.hasNext()) {
