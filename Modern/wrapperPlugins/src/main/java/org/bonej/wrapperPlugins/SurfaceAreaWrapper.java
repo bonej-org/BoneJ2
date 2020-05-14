@@ -108,7 +108,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 
 	private String path = "";
 	private String extension = "";
-	private UnaryFunctionOp<RandomAccessibleInterval, Mesh> marchingCubesOp;
+	private UnaryFunctionOp<RandomAccessibleInterval<?>, Mesh> marchingCubesOp;
 	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
 	private String unitHeader = "";

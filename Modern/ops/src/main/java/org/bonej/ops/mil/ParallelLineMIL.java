@@ -36,7 +36,6 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.util.ValuePair;
 
-import org.apache.commons.math3.random.RandomGenerator;
 import org.joml.Intersectiond;
 import org.joml.Vector2d;
 import org.joml.Vector3d;
