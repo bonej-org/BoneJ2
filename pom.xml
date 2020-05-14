@@ -11,7 +11,7 @@
 
     <groupId>org.bonej</groupId>
     <artifactId>pom-bonej</artifactId>
-    <version>7.0.5-SNAPSHOT</version>
+    <version>7.0.6-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>BoneJ Parent POM</name>
