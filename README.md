@@ -6,7 +6,7 @@ BoneJ is a collection of Fiji/ImageJ plug-ins for skeletal biology. It provides 
 ## Overview
 The code is in two main modules: `Legacy` and `Modern`. The code in `Legacy` is originally from [BoneJ1](http://bonej.org/legacy), but it has been refactored to manage its dependencies via Maven. Unlike BoneJ1, the plug-ins in `Legacy` work with Java 8 and the latest version of [Fiji](http://imagej.net/Fiji). However some of them still depend on [3D_Viewer](https://github.com/fiji/3D_Viewer), which is known to have issues with the latest versions of MacOS (see the [forum](https://forum.image.sc)). 
 
-The main development happens in the `Modern` module. It hosts the modernized versions of BoneJ plug-ins, which fully comply with the current ImageJ API. Our goal is that as code matures, `Modern` hosts only "thin" wrapper plug-ins. They should be responsible only for interacting with the user, and collecting and displaying results. The wrappers call algorithms from the [Ops framework](http://imagej.net/ImageJ_Ops), and utility code from `imagej-common`, `scifio` and other such core libraries.
+The main development happens in the `Modern` module. It hosts the modernized versions of BoneJ plug-ins, which fully comply with the current ImageJ API. Our goal is that as code matures, `Modern` hosts only "thin" wrapper plug-ins. They should be responsible only for interacting with the user, and collecting and displaying results. The wrappers call algorithms from the [Ops framework](http://imagej.net/ImageJ_Ops), specialised algorithms from BoneJ's own `Ops`, and utility code from `imagej-common`, `scifio` and other such core libraries.
 
 ## Links
 * [BoneJ wiki](https://github.com/bonej-org/BoneJ2/wiki) for technical documentation
