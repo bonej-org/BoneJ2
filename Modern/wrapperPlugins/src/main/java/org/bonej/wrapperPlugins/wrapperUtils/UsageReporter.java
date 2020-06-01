@@ -57,7 +57,7 @@ import org.scijava.prefs.PrefService;
 // Don't make class final - breaks Mockito
 public class UsageReporter {
 
-	private static final String ga = "http://www.google-analytics.com/__utm.gif?";
+	private static final String ga = "https://www.google-analytics.com/__utm.gif?";
 	private static final String utmwv = "utmwv=5.2.5&";
 	private static final String utmhn = "utmhn=bonej.org&";
 	private static final String utmcs = "utmcs=" + Charset.defaultCharset() + "&";

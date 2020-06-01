@@ -43,7 +43,7 @@ import org.scijava.plugin.Plugin;
  * the vector between the surface and the point. Then converts into Cartesian
  * coordinates to calculate the distance. Derivation of required terms courtesy
  * of Robert Nürnberg, Imperial College London (See <a href=
- * "http://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf">http://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf</a>).
+ * "https://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf">https://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf</a>).
  * Works for three-dimensional case only.
  * </p>
  *
@@ -153,7 +153,7 @@ public class DistanceFromEllipsoidSurfaceOp extends
 	/**
 	 * Calculates the inverse Jacobian matrix DF^{-1} multiplied by F(angles) -
 	 * details in (See <a href=
-	 * "http://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf">http://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf</a>)
+	 * "https://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf">https://wwwf.imperial.ac.uk/~rn/distance2ellipse.pdf</a>)
 	 * 
 	 * @param angles current estimate for ellipsoid surface angular parameters
 	 * @param ellipsoid ellipsoid to which the closest distance should be found

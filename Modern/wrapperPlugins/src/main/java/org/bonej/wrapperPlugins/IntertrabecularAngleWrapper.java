@@ -76,9 +76,9 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  * <p>
  * A wrapper UI class to calculate the inter-trabecular angles based on the
  * study by Reznikov et al (2016): (<a href=
- * "http://dx.doi.org/10.1016/j.actbio.2016.08.040">http://dx.doi.org/10.1016/j.actbio.2016.08.040
+ * "https://doi.org/10.1016/j.actbio.2016.08.040">https://doi.org/10.1016/j.actbio.2016.08.040
  * </a>). The original code used in that study can be found here: <a href=
- * "http://www.weizmann.ac.il/Structural_Biology/Weiner/ita-app">http://www.weizmann.ac.il/Structural_Biology/Weiner/ita-app</a>
+ * "https://www.weizmann.ac.il/Structural_Biology/Weiner/ita-app">https://www.weizmann.ac.il/Structural_Biology/Weiner/ita-app</a>
  * </p>
  *
  * @author Alessandro Felder

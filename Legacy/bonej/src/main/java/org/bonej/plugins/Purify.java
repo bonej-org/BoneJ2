@@ -51,7 +51,7 @@ import ij.plugin.PlugIn;
  * <p>
  * Odgaard A, Gundersen HJG (1993) Quantification of connectivity in cancellous
  * bone, with special emphasis on 3-D reconstructions. Bone 14: 173-182.
- * <a href="http://dx.doi.org/10.1016/8756-3282(93)90245-6">doi:10.1016
+ * <a href="https://doi.org/10.1016/8756-3282(93)90245-6">doi:10.1016
  * /8756-3282(93)90245-6</a>
  * </p>
  *

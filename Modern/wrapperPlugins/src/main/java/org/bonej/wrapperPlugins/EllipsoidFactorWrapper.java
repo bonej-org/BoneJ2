@@ -112,7 +112,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  *
  * @author Michael Doube
  * @author Alessandro Felder
- * @see <a href="http://dx.doi.org/10.3389/fendo.2015.00015">
+ * @see <a href="https://doi.org/10.3389/fendo.2015.00015">
  *      "The ellipsoid factor for quantification of rods, plates, and intermediate forms in 3D geometries"
  *      Frontiers in Endocrinology (2015)</a>
  */

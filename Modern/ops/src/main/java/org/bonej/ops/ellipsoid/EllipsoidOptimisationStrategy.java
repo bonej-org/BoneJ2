@@ -275,7 +275,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	 * @param axis
 	 *            the rotation axis
 	 * @see <a href=
-	 *      "http://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle">Rotation
+	 *      "https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle">Rotation
 	 *      matrix from axis and angle</a>
 	 */
 	private static void rotateAboutAxis(final QuickEllipsoid ellipsoid, final double[] axis) {
