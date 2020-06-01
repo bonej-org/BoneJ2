@@ -217,7 +217,7 @@ public class Ellipsoid {
 	/**
 	 * Calculate the minimal axis-aligned bounding box of this ellipsoid Thanks to
 	 * Tavian Barnes for the simplification of the maths
-	 * http://tavianator.com/2014/06/exact-bounding-boxes-for-spheres-ellipsoids
+	 * https://tavianator.com/2014/06/exact-bounding-boxes-for-spheres-ellipsoids
 	 *
 	 * @return 6-element array containing x min, x max, y min, y max, z min, z max
 	 */

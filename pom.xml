@@ -20,7 +20,7 @@
     <inceptionYear>2016</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
-        <url>http://http://www.rvc.ac.uk/</url>
+        <url>https://www.rvc.ac.uk/</url>
     </organization>
     <licenses>
         <license>
@@ -87,7 +87,7 @@
         <mailingList>
             <name>Image.sc Forum</name>
             <subscribe>https://forum.image.sc/tags/bonej</subscribe>
-            <post>http://forum.image.sc/tags/bonej</post>
+            <post>https://forum.image.sc/tags/bonej</post>
         </mailingList>
     </mailingLists>
 

@@ -162,7 +162,7 @@ public final class FitEllipsoid {
 	 * </p>
 	 * <p>
 	 * See <a href=
-	 * "http://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
+	 * "https://www.mathworks.com/matlabcentral/fileexchange/24693-ellipsoid-fit"
 	 * >MATLAB script</a>
 	 * </p>
 	 * 

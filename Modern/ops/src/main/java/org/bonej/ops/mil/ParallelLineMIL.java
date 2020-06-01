@@ -65,15 +65,15 @@ import static org.bonej.ops.mil.ParallelLineGenerator.Line;
  * </p>
  * <ul>
  * <li>Moreno et al., <a href=
- * "http://liu.diva-portal.org/smash/get/diva2:533443/FULLTEXT01.pdf">On the
+ * "https://liu.diva-portal.org/smash/get/diva2:533443/FULLTEXT01.pdf">On the
  * Efficiency of the Mean Intercept Length Tensor</a></li>
  * <li>Odgaard A (1997) Three-dimensional methods for quantification of
  * cancellous bone architecture. Bone 20: 315-28. <a href=
- * "http://dx.doi.org/10.1016/S8756-3282(97)00007-0">doi:10.1016/S8756-3282(97)00007-0</a>.</li>
+ * "https://doi.org/10.1016/S8756-3282(97)00007-0">doi:10.1016/S8756-3282(97)00007-0</a>.</li>
  * <li>Harrigan TP, Mann RW (1984) Characterization of microstructural
  * anisotropy in orthotropic materials using a second rank tensor. J Mater Sci
  * 19: 761-767. <a href=
- * "http://dx.doi.org/10.1007/BF00540446">doi:10.1007/BF00540446</a>.</li>
+ * "https://doi.org/10.1007/BF00540446">doi:10.1007/BF00540446</a>.</li>
  * </ul>
  *
  * @author Richard Domander

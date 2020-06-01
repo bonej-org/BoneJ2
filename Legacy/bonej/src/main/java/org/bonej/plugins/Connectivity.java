@@ -74,21 +74,20 @@ import ij.plugin.PlugIn;
  *      Odgaard A, Gundersen HJG (1993) Quantification of connectivity in
  *      cancellous bone, with special emphasis on 3-D reconstructions. Bone 14:
  *      173-182.
- *      <a href="http://dx.doi.org/10.1016/8756-3282(93)90245-6">doi:10.1016
+ *      <a href="https://doi.org/10.1016/8756-3282(93)90245-6">doi:10.1016
  *      /8756-3282(93)90245-6</a>
  *      </p>
  *      <p>
  *      Lee TC, Kashyap RL, Chu CN (1994) Building Skeleton Models via 3-D
  *      Medial Surface Axis Thinning Algorithms. CVGIP: Graphical Models and
  *      Image Processing 56: 462-478.
- *      <a href="http://dx.doi.org/10.1006/cgip.1994.1042" >doi:10.1006/cgip.
+ *      <a href="https://doi.org/10.1006/cgip.1994.1042" >doi:10.1006/cgip.
  *      1994.1042</a>
  *      </p>
  *      <p>
  *      Several of the methods are based on Ignacio Arganda-Carreras's
- *      Skeletonize3D_ plugin: <a href=
- *      "http://imagejdocu.tudor.lu/doku.php?id=plugin:morphology:skeletonize3d:start"
- *      >Skeletonize3D homepage</a>
+ *      Skeletonize3D_ plugin: <a href="https://imagej.net/Skeletonize3D">
+ *      Skeletonize3D homepage</a>
  *      </p>
  *
  */
