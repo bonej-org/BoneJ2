@@ -34,6 +34,7 @@ import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
+import ij.measure.Calibration;
 
 import io.scif.FormatException;
 import io.scif.services.FormatService;
@@ -302,13 +303,14 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		final DefaultGenericTable table = new DefaultGenericTable();
 		final List<PrimitiveColumn<?, ?>> columns = Arrays.asList(new IntColumn(
 			"# Skeleton"), new IntColumn("# Branch"), new DoubleColumn(
-				"Branch length"), new IntColumn("V1 x"), new IntColumn("V1 y"),
-			new IntColumn("V1 z"), new IntColumn("V2 x"), new IntColumn("V2 y"),
-			new IntColumn("V2 z"), new DoubleColumn("Euclidean distance"),
+				"Branch length"), new DoubleColumn("V1 x"), new DoubleColumn("V1 y"),
+			new DoubleColumn("V1 z"), new DoubleColumn("V2 x"), new DoubleColumn("V2 y"),
+			new DoubleColumn("V2 z"), new DoubleColumn("Euclidean distance"),
 			new DoubleColumn("running average length"), new DoubleColumn(
 				"average intensity (inner 3rd)"), new DoubleColumn(
 					"average intensity"));
 		final Graph[] graphs = results.getGraph();
+		final Calibration cal = inputImage.getCalibration();
 		for (int i = 0; i < graphs.length; i++) {
 			final ArrayList<Edge> edges = graphs[i].getEdges();
 			// Sort into descending order by length
@@ -319,15 +321,18 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 				((IntColumn) columns.get(1)).add((j + 1));
 				((DoubleColumn) columns.get(2)).add((edge.getLength()));
 				final Point point = edge.getV1().getPoints().get(0);
-				((IntColumn) columns.get(3)).add((point.x));
-				((IntColumn) columns.get(4)).add((point.y));
-				((IntColumn) columns.get(5)).add((point.z));
+				((DoubleColumn) columns.get(3)).add((point.x) * cal.pixelWidth);
+				((DoubleColumn) columns.get(4)).add((point.y) * cal.pixelHeight);
+				((DoubleColumn) columns.get(5)).add((point.z) * cal.pixelDepth);
 				final Point point2 = edge.getV2().getPoints().get(0);
-				((IntColumn) columns.get(6)).add((point2.x));
-				((IntColumn) columns.get(7)).add((point2.y));
-				((IntColumn) columns.get(8)).add((point2.z));
-				final double distance = MathArrays.distance(new double[] { point.x,
-					point.y, point.z }, new double[] { point2.x, point2.y, point2.z });
+				((DoubleColumn) columns.get(6)).add((point2.x) * cal.pixelWidth);
+				((DoubleColumn) columns.get(7)).add((point2.y) * cal.pixelHeight);
+				((DoubleColumn) columns.get(8)).add((point2.z) * cal.pixelDepth);
+				final double distance = MathArrays.distance(
+					new double[] { point.x * cal.pixelWidth,
+						point.y * cal.pixelHeight, point.z * cal.pixelDepth },
+					new double[] { point2.x * cal.pixelWidth, 
+						point2.y * cal.pixelHeight, point2.z * cal.pixelDepth });
 				((DoubleColumn) columns.get(9)).add((distance));
 				((DoubleColumn) columns.get(10)).add((edge.getLength_ra()));
 				((DoubleColumn) columns.get(11)).add((edge.getColor3rd()));

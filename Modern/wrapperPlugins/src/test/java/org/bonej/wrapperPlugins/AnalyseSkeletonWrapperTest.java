@@ -42,6 +42,7 @@ import static org.mockito.Mockito.when;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
+import ij.measure.Calibration;
 
 import java.io.File;
 import java.util.Collection;
@@ -70,13 +71,18 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 		line.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 		line.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
-		final String length = String.valueOf(Math.sqrt(2.0));
+		final String length = String.valueOf(Math.sqrt(2.0) / 2);
+		Calibration cal = line.getCalibration();
+		cal.pixelWidth = 0.5;
+		cal.pixelHeight = 0.5;
+		cal.pixelDepth = 0.5;
+		line.setCalibration(cal);
 		final String[] expectedHeaders = { "# Skeleton", "# Branch",
 			"Branch length", "V1 x", "V1 y", "V1 z", "V2 x", "V2 y", "V2 z",
 			"Euclidean distance", "running average length",
 			"average intensity (inner 3rd)", "average intensity" };
-		final String[] expectedValues = { "1", "1", length, "1", "1", "0", "2", "2",
-			"0", length, length, "255.0", "255.0" };
+		final String[] expectedValues = { "1", "1", length, "0.5", "0.5", "0.0", "1.0", "1.0",
+			"0.0", length, length, "255.0", "255.0" };
 
 		// EXECUTE
 		final CommandModule module = command().run(
@@ -94,7 +100,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			assertEquals("Column has incorrect header", expectedHeaders[i], column
 				.getHeader());
 			assertEquals("Column has wrong number of rows", 1, column.size());
-			assertEquals("Column has an incorrect value", expectedValues[i], String
+			assertEquals("Column "+i+" has an incorrect value", expectedValues[i], String
 				.valueOf(column.get(0)));
 		}
 	}
