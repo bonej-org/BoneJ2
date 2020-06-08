@@ -340,9 +340,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			}
 		}
 		table.addAll(columns);
-		if (!table.isEmpty()) {
-			verboseTable = table;
-		}
+		verboseTable = table;
 	}
 
 	private void showResults(final SkeletonResult results) {
