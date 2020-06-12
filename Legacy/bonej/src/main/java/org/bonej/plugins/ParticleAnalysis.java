@@ -142,57 +142,7 @@ public class ParticleAnalysis {
 
 		if (doExclude) {
 			// do the edge filtering check. Set all edge particles to 0 in the lut
-
-			// scan faces
-			// top and bottom faces
-			for (int y = 0; y < h; y++) {
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int pt = particleLabels[0][index + x];
-					if (pt > 0) {
-						lut[pt] = 0;
-						runLutNeeded = true;
-					}
-					final int pb = particleLabels[d - 1][index + x];
-					if (pb > 0) {
-						lut[pb] = 0;
-						runLutNeeded = true;
-					}
-				}
-			}
-
-			// west and east faces
-			for (int z = 0; z < d; z++) {
-				for (int y = 0; y < h; y++) {
-					final int pw = particleLabels[z][y * w];
-					final int pe = particleLabels[z][y * w + w - 1];
-					if (pw > 0) {
-						lut[pw] = 0;
-						runLutNeeded = true;
-					}
-					if (pe > 0) {
-						lut[pe] = 0;
-						runLutNeeded = true;
-					}
-				}
-			}
-
-			// north and south faces
-			final int lastRow = w * (h - 1);
-			for (int z = 0; z < d; z++) {
-				for (int x = 0; x < w; x++) {
-					final int pn = particleLabels[z][x];
-					final int ps = particleLabels[z][lastRow + x];
-					if (pn > 0) {
-						lut[pn] = 0;
-						runLutNeeded = true;
-					}
-					if (ps > 0) {
-						lut[ps] = 0;
-						runLutNeeded = true;
-					}
-				}
-			}
+			runLutNeeded = replaceEdgeParticles(particleLabels, w, h, d, lut, 0);
 		}
 
 		// check the arrays only if needed
@@ -261,6 +211,76 @@ public class ParticleAnalysis {
 			}
 			Multithreader.startAndJoin(threads);
 		}
+	}
+
+	/**
+	 * Find particles touching the image sides and replace their labels with
+	 * another label. Setting the replacement value p to the background value 0 
+	 * will delete a particle.
+	 * 
+	 * @param particleLabels particle label array
+	 * @param w image width
+	 * @param h image height
+	 * @param d image depth
+	 * @param lut look-up table
+	 * @param p value to replace edge particle with
+	 * @return true if the lut was changed and the label array needs to be updated
+	 */
+	private boolean replaceEdgeParticles(int[][] particleLabels,
+		final int w, final int h, final int d, int[] lut, final int p)
+	{
+		boolean runLutNeeded = false;
+		// scan faces
+		// top and bottom faces
+		for (int y = 0; y < h; y++) {
+			final int index = y * w;
+			for (int x = 0; x < w; x++) {
+				final int pt = particleLabels[0][index + x];
+				if (pt > 0) {
+					lut[pt] = p;
+					runLutNeeded = true;
+				}
+				final int pb = particleLabels[d - 1][index + x];
+				if (pb > 0) {
+					lut[pb] = p;
+					runLutNeeded = true;
+				}
+			}
+		}
+
+		// west and east faces
+		for (int z = 0; z < d; z++) {
+			for (int y = 0; y < h; y++) {
+				final int pw = particleLabels[z][y * w];
+				final int pe = particleLabels[z][y * w + w - 1];
+				if (pw > 0) {
+					lut[pw] = p;
+					runLutNeeded = true;
+				}
+				if (pe > 0) {
+					lut[pe] = p;
+					runLutNeeded = true;
+				}
+			}
+		}
+
+		// north and south faces
+		final int lastRow = w * (h - 1);
+		for (int z = 0; z < d; z++) {
+			for (int x = 0; x < w; x++) {
+				final int pn = particleLabels[z][x];
+				final int ps = particleLabels[z][lastRow + x];
+				if (pn > 0) {
+					lut[pn] = p;
+					runLutNeeded = true;
+				}
+				if (ps > 0) {
+					lut[ps] = p;
+					runLutNeeded = true;
+				}
+			}
+		}
+		return runLutNeeded;
 	}
 
 	/**
