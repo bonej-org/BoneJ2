@@ -388,7 +388,8 @@ public class ConnectedComponents {
 					}
 				}
 				// there is always one too many IDs per chunk, so trim the last one off
-				chunkMap.remove(chunkMap.size() - 1);
+				if (chunkMap.size() > 0)
+					chunkMap.remove(chunkMap.size() - 1);
 			});
 		}
 		Multithreader.startAndJoin(threads);
