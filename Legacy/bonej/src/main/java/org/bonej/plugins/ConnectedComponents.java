@@ -168,7 +168,7 @@ public class ConnectedComponents {
 	private static int[][] generateLut(ArrayList<MutableList<IntHashSet>> chunkMaps, int[] chunkIDOffsets) {
 		// merge labels between the HashSets, handling the chunk offsets and indexes
 		bucketFountain(chunkMaps, chunkIDOffsets);
-
+		
 		HashMap<Integer, Integer> lutMap = makeLutMap(chunkMaps);
 
 		return lutFromLutMap(lutMap, chunkMaps, chunkIDOffsets);
@@ -240,8 +240,12 @@ public class ConnectedComponents {
 				// label image IDs have the chunk ID offset
 				int ID = IDoffset;
 
-				if (ID == 0)
+				if (ID == 0) {
+					//set up the background ID = 0
+					chunkMap.add(new IntHashSet(1));
+					chunkMap.get(0).add(0);
 					ID = 1;
+				}
 
 				final int startSlice = startSlices[chunk];
 
@@ -388,8 +392,12 @@ public class ConnectedComponents {
 					}
 				}
 				// there is always one too many IDs per chunk, so trim the last one off
-				if (chunkMap.size() > 0)
-					chunkMap.remove(chunkMap.size() - 1);
+				// unless the map is empty
+				if (chunkMap.size() > 0 ) {
+					//don't remove the background element
+					if (ID == 1 && chunkMap.size() == 1) {}
+					else chunkMap.remove(chunkMap.size() - 1);
+				}
 			});
 		}
 		Multithreader.startAndJoin(threads);
