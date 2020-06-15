@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -122,6 +123,193 @@ public class Purify implements PlugIn {
 		UsageReporter.reportEvent(this).send();
 	}
 
+
+	/**
+	 * Show a Results table containing some performance information
+	 *
+	 * @param duration time elapsed in purifying.
+	 * @param imp the purified image.
+	 */
+	private static void showResults(final double duration, final ImagePlus imp)
+	{
+		final ResultsTable rt = ResultsTable.getResultsTable();
+		rt.incrementCounter();
+		rt.addLabel(imp.getTitle());
+		rt.addValue("Threads", Runtime.getRuntime().availableProcessors());
+		rt.addValue("Slices", imp.getImageStackSize());
+		rt.addValue("Duration (s)", duration);
+		rt.show("Results");
+	}
+
+	/**
+	 * Find all foreground and particles in an image and remove all but the
+	 * largest. Foreground is 26-connected and background is 8-connected.
+	 *
+	 * @param imp input image
+	 * @return purified image
+	 */
+	static ImagePlus purify(final ImagePlus imp)
+	{
+
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int nSlices = imp.getNSlices();
+		
+		final ConnectedComponents connector = new ConnectedComponents();
+		final ParticleAnalysis pa = new ParticleAnalysis();
+
+		int[][] particleLabels = connector.run(imp, ConnectedComponents.FORE);
+		byte[][] workArray = connector.getWorkArray();
+		final int nFgParticles = connector.getNParticles();
+		
+		// index 0 is background particle's size...
+		long[] particleSizes = pa.getParticleSizes(particleLabels, nFgParticles);
+		removeSmallParticles(workArray, particleLabels, particleSizes, ConnectedComponents.FORE);
+
+		ImageStack stack = new ImageStack(w, h);
+		for (int z = 0; z < nSlices; z++) {
+			stack.addSlice(imp.getStack().getSliceLabel(z + 1), workArray[z]);
+		}
+		//halfPurifiedImp has only one big foreground particle
+		ImagePlus halfPurifiedImp = new ImagePlus("Half Purified", stack);
+			
+		//particleLabels is now background particles of the half-purified image
+		particleLabels = connector.run(halfPurifiedImp, ConnectedComponents.BACK);
+		halfPurifiedImp = null;
+		final int nBgParticles = connector.getNParticles();
+		particleSizes = pa.getParticleSizes(particleLabels, nBgParticles);
+		final int biggestParticle = getBiggestParticleLabel(particleSizes);
+		final IntHashSet labelList = getParticlesTouchingEdges(particleLabels, w, h, nSlices);
+		relabelEdgeTouchingParticles(particleLabels, labelList, biggestParticle);
+		
+		workArray = connector.getWorkArray();
+		removeSmallParticles(workArray, particleLabels, particleSizes, ConnectedComponents.BACK);
+		
+		stack = new ImageStack(w, h);
+		for (int z = 0; z < nSlices; z++) {
+			stack.addSlice(imp.getStack().getSliceLabel(z + 1), workArray[z]);
+		}
+		final ImagePlus purified = new ImagePlus("Purified", stack);
+		purified.setCalibration(imp.getCalibration());
+		IJ.showStatus("Image Purified");
+		IJ.showProgress(1.0);
+		return purified;
+	}
+	
+	/**
+	 * Find the label of the largest particle in the image, excluding 0 (which is the opposite phase label).
+	 * @param particleSizes
+	 * @return label of the largest particle
+	 */
+	private static int getBiggestParticleLabel(final long[] particleSizes) {
+		long max = 0;
+		int biggestParticleLabel = 0;
+		final int nPartSizes = particleSizes.length;
+		for (int i = 1; i < nPartSizes; i++) {
+			if (particleSizes[i] > max) {
+				max = particleSizes[i];
+				biggestParticleLabel = i;
+			}
+		}
+		return biggestParticleLabel;
+	}
+	
+	/**
+	 * Get a list of labels for all the particles that touch the sides.
+	 * 
+	 * @param particleLabels
+	 * @param w image width
+	 * @param h image height
+	 * @param d image depth
+	 * @return list of particle IDs that touch the sides
+	 */
+	private static IntHashSet getParticlesTouchingEdges(final int[][] particleLabels,
+		final int w, final int h, final int d) {
+		
+		final IntHashSet labelList = new IntHashSet();
+		
+		// scan faces
+		// top and bottom faces
+		for (int y = 0; y < h; y++) {
+			final int index = y * w;
+			for (int x = 0; x < w; x++) {
+				final int pt = particleLabels[0][index + x];
+				if (pt > 0) {
+					labelList.add(pt);
+				}
+				final int pb = particleLabels[d - 1][index + x];
+				if (pb > 0) {
+					labelList.add(pb);
+				}
+			}
+		}
+
+		// west and east faces
+		for (int z = 0; z < d; z++) {
+			for (int y = 0; y < h; y++) {
+				final int pw = particleLabels[z][y * w];
+				final int pe = particleLabels[z][y * w + w - 1];
+				if (pw > 0) {
+					labelList.add(pw);
+				}
+				if (pe > 0) {
+					labelList.add(pe);
+				}
+			}
+		}
+
+		// north and south faces
+		final int lastRow = w * (h - 1);
+		for (int z = 0; z < d; z++) {
+			for (int x = 0; x < w; x++) {
+				final int pn = particleLabels[z][x];
+				final int ps = particleLabels[z][lastRow + x];
+				if (pn > 0) {
+					labelList.add(pn);
+				}
+				if (ps > 0) {
+					labelList.add(ps);
+				}
+			}
+		}
+		return labelList;
+	}
+	
+	/**
+	 * Replace all particles in the label list with a new value
+	 * 
+	 * @param particleLabels
+	 * @param labelList
+	 * @param newLabel
+	 */
+	private static void relabelEdgeTouchingParticles(final int[][] particleLabels, final IntHashSet labelList,
+		final int newLabel) {
+		if (newLabel == 0 || newLabel < 0) {
+			throw new IllegalArgumentException("replacement label cannot be 0 (that would be background) or < 0");
+		}
+		
+		final int nSlices = particleLabels.length;
+		final int wh = particleLabels[0].length;
+		final Thread[] threads = Multithreader.newThreads();
+		final AtomicInteger ai = new AtomicInteger(0);
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < nSlices; z = ai.getAndIncrement()) {
+					final int[] sliceParticleLabels = particleLabels[z];
+					for (int i = 0; i < wh; i++) {
+						final int particleID = sliceParticleLabels[i];
+						if (particleID > 0) {
+							if (labelList.contains(particleID)) {
+								sliceParticleLabels[i] = newLabel;
+							}
+						}
+					}
+				}
+			});
+		}
+		Multithreader.startAndJoin(threads);
+	}
+	
 	/**
 	 * Remove all but the largest phase particle from workArray
 	 *
@@ -162,88 +350,5 @@ public class Purify implements PlugIn {
 			});
 		}
 		Multithreader.startAndJoin(threads);
-	}
-
-	/**
-	 * Show a Results table containing some performance information
-	 *
-	 * @param duration time elapsed in purifying.
-	 * @param imp the purified image.
-	 */
-	private static void showResults(final double duration, final ImagePlus imp)
-	{
-		final ResultsTable rt = ResultsTable.getResultsTable();
-		rt.incrementCounter();
-		rt.addLabel(imp.getTitle());
-		rt.addValue("Threads", Runtime.getRuntime().availableProcessors());
-		rt.addValue("Slices", imp.getImageStackSize());
-		rt.addValue("Duration (s)", duration);
-		rt.show("Results");
-	}
-
-	/**
-	 * Find all foreground and particles in an image and remove all but the
-	 * largest. Foreground is 26-connected and background is 8-connected.
-	 *
-	 * @param imp input image
-	 * @return purified image
-	 */
-	static ImagePlus purify(final ImagePlus imp)
-	{
-
-		final ConnectedComponents connector = new ConnectedComponents();
-		final ParticleAnalysis pa = new ParticleAnalysis();
-
-		int[][] particleLabels = connector.run(imp, ConnectedComponents.FORE);
-		byte[][] workArray = connector.getWorkArray();
-		final int nFgParticles = connector.getNParticles();
-		
-		// index 0 is background particle's size...
-		long[] particleSizes = pa.getParticleSizes(particleLabels, nFgParticles);
-		removeSmallParticles(workArray, particleLabels, particleSizes, ConnectedComponents.FORE);
-
-		ImageStack stack = new ImageStack(imp.getWidth(), imp.getHeight());
-		final int nSlices = workArray.length;
-		for (int z = 0; z < nSlices; z++) {
-			stack.addSlice(imp.getStack().getSliceLabel(z + 1), workArray[z]);
-		}
-		//halfPurifiedImp has only one big foreground particle
-		ImagePlus halfPurifiedImp = new ImagePlus("Half Purified", stack);
-			
-		//particleLabels is now background particles of the half-purified image
-		particleLabels = connector.run(halfPurifiedImp, ConnectedComponents.BACK);
-		halfPurifiedImp = null;
-		final int nBgParticles = connector.getNParticles();
-		particleSizes = pa.getParticleSizes(particleLabels, nBgParticles);
-		workArray = connector.getWorkArray();
-		removeSmallParticles(workArray, particleLabels, particleSizes, ConnectedComponents.BACK);
-		
-		stack = new ImageStack(imp.getWidth(), imp.getHeight());
-		for (int z = 0; z < nSlices; z++) {
-			stack.addSlice(imp.getStack().getSliceLabel(z + 1), workArray[z]);
-		}
-		final ImagePlus purified = new ImagePlus("Purified", stack);
-		purified.setCalibration(imp.getCalibration());
-		IJ.showStatus("Image Purified");
-		IJ.showProgress(1.0);
-		return purified;
-	}
-	
-	/**
-	 * Find the label of the largest particle in the image, excluding 0 (which is the opposite phase label).
-	 * @param particleSizes
-	 * @return label of the largest particle
-	 */
-	private static int getBiggestParticleLabel(final long[] particleSizes) {
-		long max = 0;
-		int biggestParticleLabel = 0;
-		final int nPartSizes = particleSizes.length;
-		for (int i = 1; i < nPartSizes; i++) {
-			if (particleSizes[i] > max) {
-				max = particleSizes[i];
-				biggestParticleLabel = i;
-			}
-		}
-		return biggestParticleLabel;
-	}
+	}	
 }
