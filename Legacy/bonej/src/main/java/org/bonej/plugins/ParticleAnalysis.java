@@ -307,8 +307,10 @@ public class ParticleAnalysis {
 		this.particleSizes = new long[nParticles];
 		for (int i = 0; i < nParticles; i++) {
 			long partSum = 0;
-			for (int z = 0; z < d; z++)
-				partSum += partSizes[z][i];
+			for (int z = 0; z < d; z++) {
+				if (partSizes[z] != null)
+					partSum += partSizes[z][i];
+			}
 			this.particleSizes[i] = partSum;
 		}
 		return this.particleSizes.clone();
