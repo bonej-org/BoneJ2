@@ -247,7 +247,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		final String suffix = subspace.toString();
 		final String label = suffix.isEmpty() ? imageName : imageName + " " +
 			suffix;
-		SharedTable.add(label, "Degree of anisotropy", anisotropy);
+		SharedTable.add(label, "DA", anisotropy);
 		if (printRadii) {
 			SharedTable.add(label, "Radius a", ellipsoid.getA());
 			SharedTable.add(label, "Radius b", ellipsoid.getB());
