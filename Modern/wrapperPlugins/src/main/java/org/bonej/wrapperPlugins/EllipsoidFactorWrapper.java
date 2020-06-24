@@ -201,7 +201,10 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	@Parameter(label = "Seed points on topology-preserving skeletonization ", description = "Tick this if you would like ellipsoids to be seeded on the topology-preserving skeletonization (\"Skeletonize3D\").")
 	private boolean seedOnTopologyPreserving = false;
 
-	@Parameter(label = "Show secondary images")
+	@Parameter(label = "Show Flinn plots")
+	private boolean showFlinnPlots = false;
+
+	@Parameter(label = "Show verbose output images")
 	private boolean showSecondaryImages = false;
 
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
@@ -239,7 +242,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			//add result of this run to overall result
 			//TODO do not match Op every time
 			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
-					ellipsoids, showSecondaryImages);
+					ellipsoids, showFlinnPlots, showSecondaryImages);
 
 			if(outputList!=null)
 			{
@@ -438,12 +441,15 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			quickEllipsoids.addAll(skeletonSeededEllipsoids);
 		}
 
-		final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
-		final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
-		final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
-		seedPointImage = new ImgPlus<>(seedImage, "Seed points", xAxis, yAxis, zAxis);
-		seedPointImage.setChannelMaximum(0, 1);
-		seedPointImage.setChannelMinimum(0, 0);
+		if(showSecondaryImages)
+		{
+			final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
+			final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
+			final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
+			seedPointImage = new ImgPlus<>(seedImage, "Seed points", xAxis, yAxis, zAxis);
+			seedPointImage.setChannelMaximum(0, 1);
+			seedPointImage.setChannelMinimum(0, 0);
+		}
 		quickEllipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		final long stop = System.currentTimeMillis();
 		logService.info("Found " + quickEllipsoids.size() + " ellipsoids in " + (stop - start) + " ms");

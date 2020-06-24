@@ -63,6 +63,9 @@ public class EllipsoidFactorOutputGenerator extends
     private static final long FLINN_PLOT_DIMENSION = 501;
 
     @Parameter(required = false)
+    boolean showFlinnPlots = false;
+
+    @Parameter(required = false)
     boolean showSecondaryImages = false;
 
     private List<ImgPlus> eFOutputs;
@@ -72,7 +75,7 @@ public class EllipsoidFactorOutputGenerator extends
         eFOutputs = new ArrayList<>();
         calculatePrimaryOutputs(idImage, ellipsoids);
 
-        if(showSecondaryImages)
+        if(showFlinnPlots || showSecondaryImages)
         {
             calculateSecondaryOutputs(idImage, ellipsoids);
         }
@@ -82,9 +85,16 @@ public class EllipsoidFactorOutputGenerator extends
             postProcessWeightedAveraging(idImage);
         }
 
+
         //divide EF-image by volume image
+        //volume image added to verbose outputs only if needed, but must always be calculated
+        ImgPlus volumeImage = createVolumeImage(ellipsoids, idImage);
+        if(showSecondaryImages)
+        {
+            eFOutputs.add(volumeImage);
+        }
         final Cursor<? extends RealType> eFCursor = eFOutputs.get(0).cursor();
-        final Cursor<? extends RealType> vCursor = eFOutputs.get(1).cursor();
+        final Cursor<? extends RealType> vCursor = volumeImage.cursor();
         while(eFCursor.hasNext())
         {
             eFCursor.fwd();
@@ -92,7 +102,6 @@ public class EllipsoidFactorOutputGenerator extends
 
             eFCursor.get().setReal(eFCursor.get().getRealDouble()/vCursor.get().getRealDouble());
         }
-
         return eFOutputs;
     }
 
@@ -137,8 +146,6 @@ public class EllipsoidFactorOutputGenerator extends
 
     private void calculatePrimaryOutputs(IterableInterval idImage, List<QuickEllipsoid> ellipsoids) {
         eFOutputs.add(createEFImage(ellipsoids, idImage));
-        eFOutputs.add(createVolumeImage(ellipsoids, idImage));
-        eFOutputs.add(createIDImage(idImage, ellipsoids));
     }
 
 
@@ -155,16 +162,22 @@ public class EllipsoidFactorOutputGenerator extends
         final double[] bCRatios = ellipsoids.parallelStream()
                 .mapToDouble(e -> e.getSortedRadii()[1] / e.getSortedRadii()[2]).toArray();
 
-        //add to output list
-        eFOutputs.add(createRadiusImage(as,idImage,"a"));
-        eFOutputs.add(createRadiusImage(bs,idImage,"b"));
-        eFOutputs.add(createRadiusImage(cs,idImage,"c"));
+        if (showFlinnPlots) {
+            eFOutputs.add(createFlinnPlotImage(aBRatios, bCRatios));
+            eFOutputs.add(createFlinnPeakPlot(aBRatios, bCRatios, idImage));
+        }
 
-        eFOutputs.add(createAxisRatioImage(aBRatios, idImage, "a/b"));
-        eFOutputs.add(createAxisRatioImage(bCRatios, idImage, "b/c"));
+        if (showSecondaryImages) {
+            eFOutputs.add(createIDImage(idImage, ellipsoids));
 
-        eFOutputs.add(createFlinnPlotImage(aBRatios,bCRatios));
-        eFOutputs.add(createFlinnPeakPlot(aBRatios,bCRatios,idImage));
+            //add to output list
+            eFOutputs.add(createRadiusImage(as, idImage, "a"));
+            eFOutputs.add(createRadiusImage(bs, idImage, "b"));
+            eFOutputs.add(createRadiusImage(cs, idImage, "c"));
+
+            eFOutputs.add(createAxisRatioImage(aBRatios, idImage, "a/b"));
+            eFOutputs.add(createAxisRatioImage(bCRatios, idImage, "b/c"));
+        }
     }
 
     //region: create outputs
