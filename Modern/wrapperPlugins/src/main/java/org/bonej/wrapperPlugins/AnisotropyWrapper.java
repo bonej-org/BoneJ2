@@ -178,8 +178,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		persist = false, required = false, callback = "applyMinimum")
 	private boolean recommendedMin;
 	
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
-	private String instruction = "NB parameter values can affect results significantly";
 	private boolean calibrationWarned;
 	
 	@Parameter(label = "Show radii",

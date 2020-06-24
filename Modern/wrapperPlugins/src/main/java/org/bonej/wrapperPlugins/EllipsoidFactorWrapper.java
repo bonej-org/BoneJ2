@@ -114,7 +114,6 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.ItemIO;
-import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
@@ -172,8 +171,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	private ImgPlus<UnsignedIntType> inputImage;
 
 	//algorithm parameters
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
-	private String setup = "Setup";
 	@Parameter(label = "Vectors")
 	int nVectors = 100;
 	@Parameter(label = "Sampling increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.", min="0.01", max = "0.99")
