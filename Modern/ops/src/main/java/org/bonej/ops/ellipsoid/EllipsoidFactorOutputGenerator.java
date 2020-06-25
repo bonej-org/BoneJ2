@@ -68,6 +68,9 @@ public class EllipsoidFactorOutputGenerator extends
     @Parameter(required = false)
     boolean showSecondaryImages = false;
 
+    @Parameter(required = false)
+    String inputName = "";
+
     private List<ImgPlus> eFOutputs;
 
     @Override
@@ -171,12 +174,12 @@ public class EllipsoidFactorOutputGenerator extends
             eFOutputs.add(createIDImage(idImage, ellipsoids));
 
             //add to output list
-            eFOutputs.add(createRadiusImage(as, idImage, "a"));
-            eFOutputs.add(createRadiusImage(bs, idImage, "b"));
-            eFOutputs.add(createRadiusImage(cs, idImage, "c"));
+            eFOutputs.add(createRadiusImage(as, idImage, inputName+"_a"));
+            eFOutputs.add(createRadiusImage(bs, idImage, inputName+"_b"));
+            eFOutputs.add(createRadiusImage(cs, idImage, inputName+"_c"));
 
-            eFOutputs.add(createAxisRatioImage(aBRatios, idImage, "a/b"));
-            eFOutputs.add(createAxisRatioImage(bCRatios, idImage, "b/c"));
+            eFOutputs.add(createAxisRatioImage(aBRatios, idImage, inputName+"_a/b"));
+            eFOutputs.add(createAxisRatioImage(bCRatios, idImage, inputName+"_b/c"));
         }
     }
 
@@ -194,7 +197,7 @@ public class EllipsoidFactorOutputGenerator extends
             final int integer = cursor.get().getInteger();
             cursor1.get().set(integer);
         }
-        ImgPlus eIdImage = new ImgPlus<>(ints,"ID");
+        ImgPlus eIdImage = new ImgPlus<>(ints,inputName+"_ID");
         eIdImage.setChannelMaximum(0, ellipsoids.size() / 10.0f);
         eIdImage.setChannelMinimum(0, -1.0f);
         return eIdImage;
@@ -206,7 +209,7 @@ public class EllipsoidFactorOutputGenerator extends
         final double[] ellipsoidFactors = ellipsoids.parallelStream()
                 .mapToDouble(EllipsoidFactorOutputGenerator::computeWeightedEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactors, idImage, ellipsoidFactorImage);
-        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
+        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, inputName+"_EF");
         efImage.setChannelMaximum(0,1);
         efImage.setChannelMinimum(0, -1);
         efImage.initializeColorTables(1);
@@ -238,7 +241,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> volumeImage = createNaNImg(idImage);
         final double[] volumes = ellipsoids.parallelStream().mapToDouble(QuickEllipsoid::getVolume).toArray();
         mapValuesToImage(volumes, idImage, volumeImage);
-        ImgPlus vImage = new ImgPlus(volumeImage,"Volume");
+        ImgPlus vImage = new ImgPlus(volumeImage,inputName+"_volume");
         vImage.setChannelMaximum(0, ellipsoids.get(0).getVolume());
         vImage.setChannelMinimum(0, -1.0f);
         return vImage;
@@ -266,7 +269,7 @@ public class EllipsoidFactorOutputGenerator extends
             flinnPeakPlotRA.get().set(currentValue + 1.0f);
         }
 
-        ImgPlus flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, "Flinn Peak Plot");
+        ImgPlus flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, inputName+"_Flinn_peak_plot");
 
         flinnPeakPlotImage.setChannelMaximum(0, 255.0f);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
@@ -292,7 +295,7 @@ public class EllipsoidFactorOutputGenerator extends
             flinnRA.setPosition(y, 1);
             flinnRA.get().setOne();
         }
-        ImgPlus flinnPlotImage = new ImgPlus<>(flinnPlot, "Unweighted Flinn Plot");
+        ImgPlus flinnPlotImage = new ImgPlus<>(flinnPlot, inputName+"_unweighted_Flinn_plot");
         flinnPlotImage.setChannelMaximum(0, 255.0f);
         flinnPlotImage.setChannelMinimum(0, 0.0f);
 

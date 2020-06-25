@@ -245,7 +245,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			//add result of this run to overall result
 			//TODO do not match Op every time
 			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
-					ellipsoids, showFlinnPlots, showSecondaryImages);
+					ellipsoids, showFlinnPlots, showSecondaryImages, inputImage.getName().split("\\.")[0]);
 
 			if(outputList!=null)
 			{
@@ -459,7 +459,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
 			final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
 			final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
-			seedPointImage = new ImgPlus<>(seedImage, "Seed points", xAxis, yAxis, zAxis);
+			seedPointImage = new ImgPlus<>(seedImage, inputImage.getName().split("\\.")[0]+"_seed_points", xAxis, yAxis, zAxis);
 			seedPointImage.setChannelMaximum(0, 1);
 			seedPointImage.setChannelMinimum(0, 0);
 		}
