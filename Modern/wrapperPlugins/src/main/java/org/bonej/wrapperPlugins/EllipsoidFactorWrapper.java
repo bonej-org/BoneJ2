@@ -204,6 +204,9 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	@Parameter(label = "Show Flinn plots")
 	private boolean showFlinnPlots = false;
 
+	@Parameter(label = "Show algorithm convergence")
+	private boolean showConvergence = false;
+
 	@Parameter(label = "Show verbose output images")
 	private boolean showSecondaryImages = false;
 
@@ -247,15 +250,21 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			if(outputList!=null)
 			{
 				outputList = sumOutput(outputList, currentOutputList, counter);
-				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
-				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
-				SharedTable.add(inputImage.getName(),"median change "+i,errors.get("Median"));
-				SharedTable.add(inputImage.getName(),"maximum change "+i,errors.get("Max"));
+				if(showConvergence)
+				{
+					final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
+					errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
+					SharedTable.add(inputImage.getName(),"median change "+i,errors.get("Median"));
+					SharedTable.add(inputImage.getName(),"maximum change "+i,errors.get("Max"));
+				}
 			}
 			else{
 				outputList = currentOutputList;
-				SharedTable.add(inputImage.getName(),"median change "+i,2);
-				SharedTable.add(inputImage.getName(),"maximum change "+i,2);
+				if(showConvergence)
+				{
+					SharedTable.add(inputImage.getName(), "median change " + i, 2);
+					SharedTable.add(inputImage.getName(), "maximum change " + i, 2);
+				}
 			}
 			counter++;
 			totalEllipsoids += ellipsoids.size();
@@ -315,7 +324,11 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		SharedTable.add(inputImage.getName(), "Max EF", max);
 		final double min = stats.getMin();
 		SharedTable.add(inputImage.getName(), "Min EF", min);
-		addResults(totalEllipsoids, fillingPercentage);
+		if(showConvergence)
+		{
+			addResults(totalEllipsoids, fillingPercentage);
+		}
+		resultsTable = SharedTable.getTable();
 		statusService.showStatus("Ellipsoid Factor completed");
 		reportUsage();
 	}
@@ -590,7 +603,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		final String label = inputImage.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
 		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
-		resultsTable = SharedTable.getTable();
 	}
 
 	@SuppressWarnings("unused")
