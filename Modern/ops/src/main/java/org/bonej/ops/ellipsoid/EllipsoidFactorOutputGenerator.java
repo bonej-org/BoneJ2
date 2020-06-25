@@ -78,6 +78,8 @@ public class EllipsoidFactorOutputGenerator extends
         eFOutputs = new ArrayList<>();
         calculatePrimaryOutputs(idImage, ellipsoids);
 
+        //volume image must always be calculated
+        eFOutputs.add(createVolumeImage(ellipsoids, idImage));
         if(showFlinnPlots || showSecondaryImages)
         {
             calculateSecondaryOutputs(idImage, ellipsoids);
@@ -88,16 +90,9 @@ public class EllipsoidFactorOutputGenerator extends
             postProcessWeightedAveraging(idImage);
         }
 
-
-        //divide EF-image by volume image
-        //volume image added to verbose outputs only if needed, but must always be calculated
-        ImgPlus volumeImage = createVolumeImage(ellipsoids, idImage);
-        if(showSecondaryImages)
-        {
-            eFOutputs.add(volumeImage);
-        }
+        //divide EF-image by volume image (which now contains sum of volumes for each ID)
         final Cursor<? extends RealType> eFCursor = eFOutputs.get(0).cursor();
-        final Cursor<? extends RealType> vCursor = volumeImage.cursor();
+        final Cursor<? extends RealType> vCursor = eFOutputs.get(1).cursor();
         while(eFCursor.hasNext())
         {
             eFCursor.fwd();
@@ -105,6 +100,13 @@ public class EllipsoidFactorOutputGenerator extends
 
             eFCursor.get().setReal(eFCursor.get().getRealDouble()/vCursor.get().getRealDouble());
         }
+
+        //remove volume image if we don't want it
+        if(!showSecondaryImages)
+        {
+            eFOutputs.remove(1);
+        }
+
         return eFOutputs;
     }
 

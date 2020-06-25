@@ -74,11 +74,11 @@ public class EllipsoidFactorOutputGeneratorTest extends AbstractOpTest {
         final List<QuickEllipsoid> ellipsoids = getEllipsoids();
 
         //EXECUTE
-        final List<ImgPlus> primaryEfOutputs = (List<ImgPlus>) ops.run(EllipsoidFactorOutputGenerator.class,idImage,ellipsoids,false);
-        final List<ImgPlus> allEfOutputs = (List<ImgPlus>) ops.run(EllipsoidFactorOutputGenerator.class,idImage,ellipsoids,true);
+        final List<ImgPlus> primaryEfOutputs = (List<ImgPlus>) ops.run(EllipsoidFactorOutputGenerator.class,idImage,ellipsoids,false,false,"test_image");
+        final List<ImgPlus> allEfOutputs = (List<ImgPlus>) ops.run(EllipsoidFactorOutputGenerator.class,idImage,ellipsoids,true,true,"test_image");
 
         //VERIFY
-        assertEquals("Wrong number of primary outputs", 3,primaryEfOutputs.size());
+        assertEquals("Wrong number of primary outputs", 1,primaryEfOutputs.size());
         assertEquals("Wrong overall number of outputs", 10,allEfOutputs.size());
         allEfOutputs.forEach(out -> assertNotNull("No null outputs expected.", out));
     }
