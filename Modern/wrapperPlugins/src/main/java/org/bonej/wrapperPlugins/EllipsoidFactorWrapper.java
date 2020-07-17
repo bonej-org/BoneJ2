@@ -183,8 +183,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	private int maxIterations = 100;
 	@Parameter(label = "Maximum drift", description = "Maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
 	private double maxDrift = Math.sqrt(3);
-	@Parameter(label = "Minimum semi axis", description = "Minimum length for the longest semi-axis needed for an ellipsoid to be valid. Defaults to unit voxel", min="0")
-	private double minimumSemiAxis = 1.0;
 
 	//averaging / smoothing
 	@Parameter(label = "Repetitions", description = "Number of currentIteration over which to average EF value", min="1")
@@ -414,7 +412,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		final byte[][] pixels = imgPlusToByteArray(imp);
 		final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
 		final List<QuickEllipsoid> quickEllipsoids = new ArrayList<>();
-		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift, minimumSemiAxis);
+		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift);
 		if (seedOnDistanceRidge) {
 			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 			List<Vector3d> ridgePoints = getDistanceRidgePoints(inputAsBitType);

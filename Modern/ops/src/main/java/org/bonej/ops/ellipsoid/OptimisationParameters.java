@@ -39,14 +39,12 @@ public class OptimisationParameters {
     public final int contactSensitivity;
     public final int maxIterations;
     public final double maxDrift;
-    public final double minimumSemiAxis;
 
-    public OptimisationParameters(double inc, int n, int cs, int maxIt, double maxDr, double minSemiAxis){
+    public OptimisationParameters(double inc, int n, int cs, int maxIt, double maxDr){
         vectorIncrement = inc;
         nVectors = n;
         contactSensitivity = cs;
         maxIterations = maxIt;
         maxDrift = maxDr;
-        minimumSemiAxis = minSemiAxis;
     }
 }
