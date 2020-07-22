@@ -276,10 +276,10 @@ public class EllipsoidFactorOutputGenerator extends
         flinnPeakPlotImage.setChannelMaximum(0, 255.0f);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
         DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/FLINN_PLOT_DIMENSION);
-        xFlinnAxis.setUnit("");
+        xFlinnAxis.setUnit("b/c");
         DefaultLinearAxis yFlinnAxis = new DefaultLinearAxis(Axes.get("a/b",true),-1.0/FLINN_PLOT_DIMENSION);
         yFlinnAxis.setOrigin(FLINN_PLOT_DIMENSION);
-        yFlinnAxis.setUnit("");
+        yFlinnAxis.setUnit("a/b");
 
         flinnPeakPlotImage.setAxis(xFlinnAxis,0);
         flinnPeakPlotImage.setAxis(yFlinnAxis,1);
@@ -304,10 +304,10 @@ public class EllipsoidFactorOutputGenerator extends
         flinnPlotImage.setChannelMaximum(0, 255.0f);
         flinnPlotImage.setChannelMinimum(0, 0.0f);
         DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/FLINN_PLOT_DIMENSION);
-        xFlinnAxis.setUnit("");
+        xFlinnAxis.setUnit("b/c");
         DefaultLinearAxis yFlinnAxis = new DefaultLinearAxis(Axes.get("a/b",true),-1.0/FLINN_PLOT_DIMENSION);
         yFlinnAxis.setOrigin(FLINN_PLOT_DIMENSION);
-        yFlinnAxis.setUnit("");
+        yFlinnAxis.setUnit("a/b");
 
         flinnPlotImage.setAxis(xFlinnAxis,0);
         flinnPlotImage.setAxis(yFlinnAxis,1);
