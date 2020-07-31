@@ -226,6 +226,9 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 				new EllipsoidFactorErrorTracking(opService);
 
 		int counter = 0;
+		double[] medianErrors = new double[runs];
+		double[] maxErrors = new double[runs];
+
 		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
 			final List<QuickEllipsoid> ellipsoids = runEllipsoidOptimisation(inputImage);
@@ -253,16 +256,16 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 				{
 					final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
 					errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
-					SharedTable.add(inputImage.getName(),"median change "+i,errors.get("Median"));
-					SharedTable.add(inputImage.getName(),"maximum change "+i,errors.get("Max"));
+					medianErrors[i] = errors.get("Median");
+					maxErrors[i] = errors.get("Max");
 				}
 			}
 			else{
 				outputList = currentOutputList;
 				if(showConvergence)
 				{
-					SharedTable.add(inputImage.getName(), "median change " + i, 2);
-					SharedTable.add(inputImage.getName(), "maximum change " + i, 2);
+					medianErrors[i] = 2.0; // start with maximum possible error in first run (as no previous runs exist)
+					maxErrors[i] = 2.0;
 				}
 			}
 			counter++;
@@ -327,6 +330,11 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		SharedTable.add(inputImage.getName(), "Min EF", min);
 		if(showConvergence)
 		{
+			for(int i=0; i<runs; i++)
+			{
+				SharedTable.add(inputImage.getName(),"median change "+i, medianErrors[i]);
+				SharedTable.add(inputImage.getName(),"maximum change "+i, maxErrors[i]);
+			}
 			addResults(totalEllipsoids, fillingPercentage);
 		}
 		resultsTable = SharedTable.getTable();
