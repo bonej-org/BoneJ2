@@ -330,7 +330,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		SharedTable.add(inputImage.getName(), "Min EF", min);
 		if(showConvergence)
 		{
-			for(int i=0; i<runs; i++)
+			for(int i=1; i<runs; i++)
 			{
 				SharedTable.add(inputImage.getName(),"median change "+i, medianErrors[i]);
 				SharedTable.add(inputImage.getName(),"maximum change "+i, maxErrors[i]);
