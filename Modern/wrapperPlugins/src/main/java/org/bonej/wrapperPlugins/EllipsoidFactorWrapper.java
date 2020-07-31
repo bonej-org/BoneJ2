@@ -76,6 +76,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.units.UnitService;
 import net.imglib2.type.numeric.integer.ByteType;
@@ -288,7 +289,9 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 				// set spatial axis for first 3 dimensions (ID is 4d)
 				for(int dim = 0; dim<3; dim++)
 				{
-					imgPlus.setAxis(inputImage.axis(dim), dim);
+					CalibratedAxis axis = inputImage.axis(dim);
+					axis.setUnit(inputImage.axis(dim).unit());
+					imgPlus.setAxis(axis, dim);
 				}
 				if("Volume".equals(imgPlus.getName())) {
 					final Cursor<RealType> cursor = imgPlus.cursor();
@@ -457,6 +460,9 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
 			final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
 			final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
+			xAxis.setUnit(inputImage.axis(0).unit());
+			yAxis.setUnit(inputImage.axis(1).unit());
+			zAxis.setUnit(inputImage.axis(2).unit());
 			seedPointImage = new ImgPlus<>(seedImage, inputImage.getName().split("\\.")[0]+"_seed_points", xAxis, yAxis, zAxis);
 			seedPointImage.setChannelMaximum(0, 1);
 			seedPointImage.setChannelMinimum(0, 0);
