@@ -60,7 +60,7 @@ public class EllipsoidFactorOutputGenerator extends
         AbstractBinaryFunctionOp<IterableInterval<IntType>, List<QuickEllipsoid>, List<ImgPlus>>{
     // Several ellipsoids may fall in same bin if this is too small a number!
     // This will be ignored!
-    private static final long FLINN_PLOT_DIMENSION = 501;
+    private static final long FLINN_PLOT_DIMENSION = 512;
 
     @Parameter(required = false)
     boolean showFlinnPlots = false;
@@ -255,6 +255,7 @@ public class EllipsoidFactorOutputGenerator extends
         final RandomAccess<FloatType> flinnPeakPlotRA = flinnPeakPlot.randomAccess();
         final Cursor<IntType> idCursor = ellipsoidIDs.localizingCursor();
         final long[] position = new long[4];
+        float maxPixelCount = 0;
         while (idCursor.hasNext()) {
             idCursor.fwd();
             if (idCursor.get().getInteger() < 0) {
@@ -268,12 +269,15 @@ public class EllipsoidFactorOutputGenerator extends
             final long y = Math.round(aBRatios[localMaxEllipsoidID] * (FLINN_PLOT_DIMENSION - 1));
             flinnPeakPlotRA.setPosition(new long[]{x, FLINN_PLOT_DIMENSION - y - 1});
             final float currentValue = flinnPeakPlotRA.get().getRealFloat();
-            flinnPeakPlotRA.get().set(currentValue + 1.0f);
+            final float newValue = currentValue + 1.0f;
+            flinnPeakPlotRA.get().set(newValue);
+            if (newValue > maxPixelCount)
+            	maxPixelCount = newValue;
         }
 
         ImgPlus flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, inputName+"_Flinn_peak_plot");
 
-        flinnPeakPlotImage.setChannelMaximum(0, 255.0f);
+        flinnPeakPlotImage.setChannelMaximum(0, maxPixelCount);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
         DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/FLINN_PLOT_DIMENSION);
         xFlinnAxis.setUnit("b/c");
