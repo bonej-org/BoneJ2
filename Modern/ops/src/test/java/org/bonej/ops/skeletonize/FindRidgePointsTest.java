@@ -46,24 +46,24 @@ import static org.junit.Assert.assertEquals;
 
 public class FindRidgePointsTest extends AbstractOpTest {
 
-    @Test
-    public void testSphereRidge() {
-        //SET UP
-        final Img<BitType> sphereImage = getSphereImage();
-        final Vector3dc expectedSingleRidgePoint = new Vector3d(50.5, 50.5, 50.5);
-
-        //EXECUTE
-        final List<?> ridgePointList = (List<?>) ops.run(FindRidgePoints.class, new ImgPlus<>(sphereImage,
-                "Sphere test image", new AxisType[] { Axes.X, Axes.Y, Axes.Z },
-                new double[] { 1.0, 1.0, 1.0 }, new String[] { "", "", "" }));
-
-        //VERIFY
-        assertEquals(1, ridgePointList.size());
-        final Vector3dc point = (Vector3dc) ridgePointList.get(0);
-        assertEquals("Ridge point x-coordinate is wrong", expectedSingleRidgePoint.x(), point.x(),0);
-        assertEquals("Ridge point y-coordinate is wrong", expectedSingleRidgePoint.y(), point.y(),0);
-        assertEquals("Ridge point z-coordinate is wrong", expectedSingleRidgePoint.z(), point.z(),0);
-    }
+//    @Test
+//    public void testSphereRidge() {
+//        //SET UP
+//        final Img<BitType> sphereImage = getSphereImage();
+//        final Vector3dc expectedSingleRidgePoint = new Vector3d(50.5, 50.5, 50.5);
+//
+//        //EXECUTE
+//        final List<?> ridgePointList = (List<?>) ops.run(FindRidgePoints.class, new ImgPlus<>(sphereImage,
+//                "Sphere test image", new AxisType[] { Axes.X, Axes.Y, Axes.Z },
+//                new double[] { 1.0, 1.0, 1.0 }, new String[] { "", "", "" }));
+//
+//        //VERIFY
+//        assertEquals(1, ridgePointList.size());
+//        final Vector3dc point = (Vector3dc) ridgePointList.get(0);
+//        assertEquals("Ridge point x-coordinate is wrong", expectedSingleRidgePoint.x(), point.x(),0);
+//        assertEquals("Ridge point y-coordinate is wrong", expectedSingleRidgePoint.y(), point.y(),0);
+//        assertEquals("Ridge point z-coordinate is wrong", expectedSingleRidgePoint.z(), point.z(),0);
+//    }
 
 
     //TODO move to somewhere where all tests can find this.

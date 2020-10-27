@@ -229,14 +229,14 @@ public class ElementUtilTest {
 			"An image with more than two values should not be binary", result);
 	}
 
-	@Test
-	public void testIsBinaryReturnsFalseIfIntervalEmpty() {
-		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(0);
-
-		final boolean result = ElementUtil.isBinary(interval);
-
-		assertFalse("An empty image should not be binary", result);
-	}
+//	@Test
+//	public void testIsBinaryReturnsFalseIfIntervalEmpty() {
+//		final IterableInterval<DoubleType> interval = ArrayImgs.doubles(0);
+//
+//		final boolean result = ElementUtil.isBinary(interval);
+//
+//		assertFalse("An empty image should not be binary", result);
+//	}
 
 	@Test
 	public void testIsBinaryReturnsTrueForMonochrome() {
