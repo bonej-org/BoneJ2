@@ -117,8 +117,8 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 		final double[] expectedRatios = { ratio, 0, 0, ratio };
 		final double[][] expectedValues = { expectedVolumes, expectedTotalVolumes,
 			expectedRatios };
-		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
-			"Total volume (" + unit + "³)", "Volume ratio" };
+		final String[] expectedHeaders = { "BV (" + unit + "³)",
+			"TV (" + unit + "³)", "BV/TV" };
 		// Create an hyperstack Img with a cube at (channel:0, frame:0) and (c:1,
 		// f:1)
 		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide, 2,
@@ -172,8 +172,8 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 		final double[] expectedRatios = { 0, ratio };
 		final double[][] expectedValues = { expectedAreas, expectedTotalAreas,
 			expectedRatios };
-		final String[] expectedHeaders = { "Bone area (" + unit + "\u00B2)",
-			"Total area (" + unit + "\u00B2)", "Area ratio" };
+		final String[] expectedHeaders = { "BA (" + unit + "\u00B2)",
+			"TA (" + unit + "\u00B2)", "BA/TA" };
 		// Create an 2D image with two channels with a square drawn on channel 2
 		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, 2);
 		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 1 }).forEach(

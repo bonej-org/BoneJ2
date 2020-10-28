@@ -168,13 +168,12 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private void prepareResultDisplay() {
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
-			exponent);
+			String.valueOf(exponent));
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
-		boneSizeHeader = "Bone " + sizeDescription.toLowerCase() + " " + unitHeader;
-		totalSizeHeader = "Total " + sizeDescription.toLowerCase() + " " +
-			unitHeader;
-		ratioHeader = sizeDescription + " ratio";
+		boneSizeHeader = "B" + sizeDescription + " " + unitHeader;
+		totalSizeHeader = "T" + sizeDescription + " " + unitHeader;
+		ratioHeader = "B" + sizeDescription + "/T" + sizeDescription;
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
 			unitService);
 

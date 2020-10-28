@@ -117,7 +117,6 @@ public class ConnectedComponents {
 		final int nChunks = nSlices < minSlicesPerChunk * nProcessors
 				? (int) Math.ceil((double) nSlices / (double) minSlicesPerChunk)
 				: nProcessors;
-
 		// set up chunk sizes - last chunk is the remainder
 		final int slicesPerChunk = (int) Math.ceil((double) nSlices / (double) nChunks);
 
@@ -136,9 +135,10 @@ public class ConnectedComponents {
 
 		// set up a map split into one per chunk
 		final ArrayList<MutableList<IntHashSet>> chunkMaps = new ArrayList<>(nChunks);
+		// assume there is a new particle label for every 10000 pixels
+		final int initialArrayCapacity = 1 + (int)((long) w * (long) h * slicesPerChunk / 10000);
+		
 		for (int chunk = 0; chunk < nChunks; chunk++) {
-			// assume there is a new particle label for every 10000 pixels
-			final int initialArrayCapacity = 1 + w * h * slicesPerChunk / 10000;
 			final MutableList<IntHashSet> map = FastList.newList(initialArrayCapacity);
 			chunkMaps.add(map);
 		}

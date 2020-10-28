@@ -60,10 +60,16 @@ public class EllipsoidFactorOutputGenerator extends
         AbstractBinaryFunctionOp<IterableInterval<IntType>, List<QuickEllipsoid>, List<ImgPlus>>{
     // Several ellipsoids may fall in same bin if this is too small a number!
     // This will be ignored!
-    private static final long FLINN_PLOT_DIMENSION = 501;
+    private static final long FLINN_PLOT_DIMENSION = 512;
+
+    @Parameter(required = false)
+    boolean showFlinnPlots = false;
 
     @Parameter(required = false)
     boolean showSecondaryImages = false;
+
+    @Parameter(required = false)
+    String inputName = "";
 
     private List<ImgPlus> eFOutputs;
 
@@ -72,7 +78,9 @@ public class EllipsoidFactorOutputGenerator extends
         eFOutputs = new ArrayList<>();
         calculatePrimaryOutputs(idImage, ellipsoids);
 
-        if(showSecondaryImages)
+        //volume image must always be calculated
+        eFOutputs.add(createVolumeImage(ellipsoids, idImage));
+        if(showFlinnPlots || showSecondaryImages)
         {
             calculateSecondaryOutputs(idImage, ellipsoids);
         }
@@ -82,7 +90,7 @@ public class EllipsoidFactorOutputGenerator extends
             postProcessWeightedAveraging(idImage);
         }
 
-        //divide EF-image by volume image
+        //divide EF-image by volume image (which now contains sum of volumes for each ID)
         final Cursor<? extends RealType> eFCursor = eFOutputs.get(0).cursor();
         final Cursor<? extends RealType> vCursor = eFOutputs.get(1).cursor();
         while(eFCursor.hasNext())
@@ -91,6 +99,12 @@ public class EllipsoidFactorOutputGenerator extends
             vCursor.fwd();
 
             eFCursor.get().setReal(eFCursor.get().getRealDouble()/vCursor.get().getRealDouble());
+        }
+
+        //remove volume image if we don't want it
+        if(!showSecondaryImages)
+        {
+            eFOutputs.remove(1);
         }
 
         return eFOutputs;
@@ -137,8 +151,6 @@ public class EllipsoidFactorOutputGenerator extends
 
     private void calculatePrimaryOutputs(IterableInterval idImage, List<QuickEllipsoid> ellipsoids) {
         eFOutputs.add(createEFImage(ellipsoids, idImage));
-        eFOutputs.add(createVolumeImage(ellipsoids, idImage));
-        eFOutputs.add(createIDImage(idImage, ellipsoids));
     }
 
 
@@ -155,16 +167,22 @@ public class EllipsoidFactorOutputGenerator extends
         final double[] bCRatios = ellipsoids.parallelStream()
                 .mapToDouble(e -> e.getSortedRadii()[1] / e.getSortedRadii()[2]).toArray();
 
-        //add to output list
-        eFOutputs.add(createRadiusImage(as,idImage,"a"));
-        eFOutputs.add(createRadiusImage(bs,idImage,"b"));
-        eFOutputs.add(createRadiusImage(cs,idImage,"c"));
+        if (showFlinnPlots) {
+            eFOutputs.add(createFlinnPlotImage(aBRatios, bCRatios));
+            eFOutputs.add(createFlinnPeakPlot(aBRatios, bCRatios, idImage));
+        }
 
-        eFOutputs.add(createAxisRatioImage(aBRatios, idImage, "a/b"));
-        eFOutputs.add(createAxisRatioImage(bCRatios, idImage, "b/c"));
+        if (showSecondaryImages) {
+            eFOutputs.add(createIDImage(idImage, ellipsoids));
 
-        eFOutputs.add(createFlinnPlotImage(aBRatios,bCRatios));
-        eFOutputs.add(createFlinnPeakPlot(aBRatios,bCRatios,idImage));
+            //add to output list
+            eFOutputs.add(createRadiusImage(as, idImage, inputName+"_a"));
+            eFOutputs.add(createRadiusImage(bs, idImage, inputName+"_b"));
+            eFOutputs.add(createRadiusImage(cs, idImage, inputName+"_c"));
+
+            eFOutputs.add(createAxisRatioImage(aBRatios, idImage, inputName+"_a/b"));
+            eFOutputs.add(createAxisRatioImage(bCRatios, idImage, inputName+"_b/c"));
+        }
     }
 
     //region: create outputs
@@ -181,7 +199,7 @@ public class EllipsoidFactorOutputGenerator extends
             final int integer = cursor.get().getInteger();
             cursor1.get().set(integer);
         }
-        ImgPlus eIdImage = new ImgPlus<>(ints,"ID");
+        ImgPlus eIdImage = new ImgPlus<>(ints,inputName+"_ID");
         eIdImage.setChannelMaximum(0, ellipsoids.size() / 10.0f);
         eIdImage.setChannelMinimum(0, -1.0f);
         return eIdImage;
@@ -193,7 +211,7 @@ public class EllipsoidFactorOutputGenerator extends
         final double[] ellipsoidFactors = ellipsoids.parallelStream()
                 .mapToDouble(EllipsoidFactorOutputGenerator::computeWeightedEllipsoidFactor).toArray();
         mapValuesToImage(ellipsoidFactors, idImage, ellipsoidFactorImage);
-        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, "EF");
+        final ImgPlus<FloatType> efImage = new ImgPlus<>(ellipsoidFactorImage, inputName+"_EF");
         efImage.setChannelMaximum(0,1);
         efImage.setChannelMinimum(0, -1);
         efImage.initializeColorTables(1);
@@ -225,7 +243,7 @@ public class EllipsoidFactorOutputGenerator extends
         final Img<FloatType> volumeImage = createNaNImg(idImage);
         final double[] volumes = ellipsoids.parallelStream().mapToDouble(QuickEllipsoid::getVolume).toArray();
         mapValuesToImage(volumes, idImage, volumeImage);
-        ImgPlus vImage = new ImgPlus(volumeImage,"Volume");
+        ImgPlus vImage = new ImgPlus(volumeImage,inputName+"_volume");
         vImage.setChannelMaximum(0, ellipsoids.get(0).getVolume());
         vImage.setChannelMinimum(0, -1.0f);
         return vImage;
@@ -237,6 +255,7 @@ public class EllipsoidFactorOutputGenerator extends
         final RandomAccess<FloatType> flinnPeakPlotRA = flinnPeakPlot.randomAccess();
         final Cursor<IntType> idCursor = ellipsoidIDs.localizingCursor();
         final long[] position = new long[4];
+        float maxPixelCount = 0;
         while (idCursor.hasNext()) {
             idCursor.fwd();
             if (idCursor.get().getInteger() < 0) {
@@ -250,18 +269,21 @@ public class EllipsoidFactorOutputGenerator extends
             final long y = Math.round(aBRatios[localMaxEllipsoidID] * (FLINN_PLOT_DIMENSION - 1));
             flinnPeakPlotRA.setPosition(new long[]{x, FLINN_PLOT_DIMENSION - y - 1});
             final float currentValue = flinnPeakPlotRA.get().getRealFloat();
-            flinnPeakPlotRA.get().set(currentValue + 1.0f);
+            final float newValue = currentValue + 1.0f;
+            flinnPeakPlotRA.get().set(newValue);
+            if (newValue > maxPixelCount)
+            	maxPixelCount = newValue;
         }
 
-        ImgPlus flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, "Flinn Peak Plot");
+        ImgPlus flinnPeakPlotImage = new ImgPlus<>(flinnPeakPlot, inputName+"_Flinn_peak_plot");
 
-        flinnPeakPlotImage.setChannelMaximum(0, 255.0f);
+        flinnPeakPlotImage.setChannelMaximum(0, maxPixelCount);
         flinnPeakPlotImage.setChannelMinimum(0, 0.0f);
         DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/FLINN_PLOT_DIMENSION);
-        xFlinnAxis.setUnit("");
+        xFlinnAxis.setUnit("b/c");
         DefaultLinearAxis yFlinnAxis = new DefaultLinearAxis(Axes.get("a/b",true),-1.0/FLINN_PLOT_DIMENSION);
         yFlinnAxis.setOrigin(FLINN_PLOT_DIMENSION);
-        yFlinnAxis.setUnit("");
+        yFlinnAxis.setUnit("a/b");
 
         flinnPeakPlotImage.setAxis(xFlinnAxis,0);
         flinnPeakPlotImage.setAxis(yFlinnAxis,1);
@@ -279,17 +301,17 @@ public class EllipsoidFactorOutputGenerator extends
             flinnRA.setPosition(y, 1);
             flinnRA.get().setOne();
         }
-        ImgPlus flinnPlotImage = new ImgPlus<>(flinnPlot, "Unweighted Flinn Plot");
+        ImgPlus flinnPlotImage = new ImgPlus<>(flinnPlot, inputName+"_unweighted_Flinn_plot");
         flinnPlotImage.setChannelMaximum(0, 255.0f);
         flinnPlotImage.setChannelMinimum(0, 0.0f);
 
         flinnPlotImage.setChannelMaximum(0, 255.0f);
         flinnPlotImage.setChannelMinimum(0, 0.0f);
         DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/FLINN_PLOT_DIMENSION);
-        xFlinnAxis.setUnit("");
+        xFlinnAxis.setUnit("b/c");
         DefaultLinearAxis yFlinnAxis = new DefaultLinearAxis(Axes.get("a/b",true),-1.0/FLINN_PLOT_DIMENSION);
         yFlinnAxis.setOrigin(FLINN_PLOT_DIMENSION);
-        yFlinnAxis.setUnit("");
+        yFlinnAxis.setUnit("a/b");
 
         flinnPlotImage.setAxis(xFlinnAxis,0);
         flinnPlotImage.setAxis(yFlinnAxis,1);

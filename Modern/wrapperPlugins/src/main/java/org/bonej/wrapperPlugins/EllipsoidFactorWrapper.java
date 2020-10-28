@@ -76,6 +76,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.units.UnitService;
 import net.imglib2.type.numeric.integer.ByteType;
@@ -114,7 +115,6 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.ItemIO;
-import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
@@ -172,8 +172,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	private ImgPlus<UnsignedIntType> inputImage;
 
 	//algorithm parameters
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
-	private String setup = "Setup";
 	@Parameter(label = "Vectors")
 	int nVectors = 100;
 	@Parameter(label = "Sampling increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.", min="0.01", max = "0.99")
@@ -186,8 +184,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	private int maxIterations = 100;
 	@Parameter(label = "Maximum drift", description = "Maximum distance ellipsoid may drift from seed point. Defaults to unit voxel diagonal length", min="0")
 	private double maxDrift = Math.sqrt(3);
-	@Parameter(label = "Minimum semi axis", description = "Minimum length for the longest semi-axis needed for an ellipsoid to be valid. Defaults to unit voxel", min="0")
-	private double minimumSemiAxis = 1.0;
 
 	//averaging / smoothing
 	@Parameter(label = "Repetitions", description = "Number of currentIteration over which to average EF value", min="1")
@@ -204,7 +200,13 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	@Parameter(label = "Seed points on topology-preserving skeletonization ", description = "Tick this if you would like ellipsoids to be seeded on the topology-preserving skeletonization (\"Skeletonize3D\").")
 	private boolean seedOnTopologyPreserving = false;
 
-	@Parameter(label = "Show secondary images")
+	@Parameter(label = "Show Flinn plots")
+	private boolean showFlinnPlots = false;
+
+	@Parameter(label = "Show algorithm convergence")
+	private boolean showConvergence = false;
+
+	@Parameter(label = "Show verbose output images")
 	private boolean showSecondaryImages = false;
 
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
@@ -224,6 +226,9 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 				new EllipsoidFactorErrorTracking(opService);
 
 		int counter = 0;
+		double[] medianErrors = new double[runs];
+		double[] maxErrors = new double[runs];
+
 		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
 			final List<QuickEllipsoid> ellipsoids = runEllipsoidOptimisation(inputImage);
@@ -242,20 +247,26 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			//add result of this run to overall result
 			//TODO do not match Op every time
 			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
-					ellipsoids, showSecondaryImages);
+					ellipsoids, showFlinnPlots, showSecondaryImages, inputImage.getName().split("\\.")[0]);
 
 			if(outputList!=null)
 			{
 				outputList = sumOutput(outputList, currentOutputList, counter);
-				final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
-				errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
-				SharedTable.add(inputImage.getName(),"median change "+i,errors.get("Median"));
-				SharedTable.add(inputImage.getName(),"maximum change "+i,errors.get("Max"));
+				if(showConvergence)
+				{
+					final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
+					errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
+					medianErrors[i] = errors.get("Median");
+					maxErrors[i] = errors.get("Max");
+				}
 			}
 			else{
 				outputList = currentOutputList;
-				SharedTable.add(inputImage.getName(),"median change "+i,2);
-				SharedTable.add(inputImage.getName(),"maximum change "+i,2);
+				if(showConvergence)
+				{
+					medianErrors[i] = 2.0; // start with maximum possible error in first run (as no previous runs exist)
+					maxErrors[i] = 2.0;
+				}
 			}
 			counter++;
 			totalEllipsoids += ellipsoids.size();
@@ -281,7 +292,9 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 				// set spatial axis for first 3 dimensions (ID is 4d)
 				for(int dim = 0; dim<3; dim++)
 				{
-					imgPlus.setAxis(inputImage.axis(dim), dim);
+					CalibratedAxis axis = inputImage.axis(dim);
+					axis.setUnit(inputImage.axis(dim).unit());
+					imgPlus.setAxis(axis, dim);
 				}
 				if("Volume".equals(imgPlus.getName())) {
 					final Cursor<RealType> cursor = imgPlus.cursor();
@@ -315,7 +328,16 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		SharedTable.add(inputImage.getName(), "Max EF", max);
 		final double min = stats.getMin();
 		SharedTable.add(inputImage.getName(), "Min EF", min);
-		addResults(totalEllipsoids, fillingPercentage);
+		if(showConvergence)
+		{
+			for(int i=1; i<runs; i++)
+			{
+				SharedTable.add(inputImage.getName(),"median change "+i, medianErrors[i]);
+				SharedTable.add(inputImage.getName(),"maximum change "+i, maxErrors[i]);
+			}
+			addResults(totalEllipsoids, fillingPercentage);
+		}
+		resultsTable = SharedTable.getTable();
 		statusService.showStatus("Ellipsoid Factor completed");
 		reportUsage();
 	}
@@ -401,7 +423,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		final byte[][] pixels = imgPlusToByteArray(imp);
 		final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
 		final List<QuickEllipsoid> quickEllipsoids = new ArrayList<>();
-		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift, minimumSemiAxis);
+		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift);
 		if (seedOnDistanceRidge) {
 			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 			List<Vector3d> ridgePoints = getDistanceRidgePoints(inputAsBitType);
@@ -441,12 +463,18 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 			quickEllipsoids.addAll(skeletonSeededEllipsoids);
 		}
 
-		final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
-		final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
-		final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
-		seedPointImage = new ImgPlus<>(seedImage, "Seed points", xAxis, yAxis, zAxis);
-		seedPointImage.setChannelMaximum(0, 1);
-		seedPointImage.setChannelMinimum(0, 0);
+		if(showSecondaryImages)
+		{
+			final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
+			final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
+			final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
+			xAxis.setUnit(inputImage.axis(0).unit());
+			yAxis.setUnit(inputImage.axis(1).unit());
+			zAxis.setUnit(inputImage.axis(2).unit());
+			seedPointImage = new ImgPlus<>(seedImage, inputImage.getName().split("\\.")[0]+"_seed_points", xAxis, yAxis, zAxis);
+			seedPointImage.setChannelMaximum(0, 1);
+			seedPointImage.setChannelMinimum(0, 0);
+		}
 		quickEllipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		final long stop = System.currentTimeMillis();
 		logService.info("Found " + quickEllipsoids.size() + " ellipsoids in " + (stop - start) + " ms");
@@ -587,7 +615,6 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		final String label = inputImage.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
 		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
-		resultsTable = SharedTable.getTable();
 	}
 
 	@SuppressWarnings("unused")

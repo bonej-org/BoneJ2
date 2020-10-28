@@ -81,7 +81,6 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.joml.Vector3d;
 import org.scijava.ItemIO;
-import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
@@ -149,8 +148,7 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		description = "Nodes with centroids closer than this value to any image boundary will not be included in results",
 		style = NumberWidget.SPINNER_STYLE)
 	private int marginCutOff;
-	@Parameter(label = "Calibrated minimum length",
-		visibility = ItemVisibility.MESSAGE, persist = false)
+	@SuppressWarnings("unused")
 	private String realLength = "";
 	@Parameter(label = "Iterate pruning",
 		description = "If true, iterate pruning as long as short edges remain, or stop after a single pass",

@@ -148,8 +148,8 @@ public class ConnectivityWrapperTest extends AbstractWrapperTest {
 		// Create an test image of a cuboid
 		final String unit = "mm";
 		final List<String> expectedHeaders = Arrays.asList("Euler char. (χ)",
-			"Corrected Euler (χ + Δχ)", "Connectivity", String.format(
-				"Conn. density (%s³)", unit));
+			"Corr. Euler (χ + Δχ)", "Connectivity", String.format(
+				"Conn.D (%s⁻³)", unit));
 		final long size = 3;
 		final double scale = 0.9;
 		final long spaceSize = size * size * size;

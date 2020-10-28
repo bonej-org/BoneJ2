@@ -98,7 +98,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 {
 
 	/** Header of ratio column in the results table */
-	private static final String ratioHeader = "Volume ratio";
+	private static final String ratioHeader = "BV/TV";
 	private static UnaryFunctionOp<RandomAccessibleInterval<?>, Mesh> marchingCubes;
 	private static UnaryFunctionOp<Mesh, DoubleType> meshVolume;
 	private static UnaryFunctionOp<RandomAccessibleInterval<?>, RandomAccessibleInterval> raiCopy;
@@ -193,9 +193,9 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private void prepareResultDisplay() {
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
-			exponent);
-		bVHeader = "Bone volume " + unitHeader;
-		tVHeader = "Total volume " + unitHeader;
+			String.valueOf(exponent));
+		bVHeader = "BV " + unitHeader;
+		tVHeader = "TV " + unitHeader;
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
 			unitService);
 	}

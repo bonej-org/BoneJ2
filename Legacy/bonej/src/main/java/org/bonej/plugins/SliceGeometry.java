@@ -128,11 +128,11 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	/**
 	 * 2nd moment of area around minimum principal axis (shorter axis, larger I)
 	 */
-	private double[] Imax;
+	private double[] Imin;
 	/**
 	 * 2nd moment of area around maximum principal axis (longer axis, smaller I)
 	 */
-	private double[] Imin;
+	private double[] Imax;
 	/** product moment of area, should be 0 if theta calculated perfectly */
 	private double[] Ipm;
 	/** length of major axis */
@@ -144,9 +144,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	/** maximum distance from maximum principal axis (shorter) */
 	private double[] maxRadMax;
 	/** Section modulus around minimum principal axis */
-	private double[] Zmax;
-	/** Section modulus around maximum principal axis */
 	private double[] Zmin;
+	/** Section modulus around maximum principal axis */
+	private double[] Zmax;
 	/** Maximum diameter */
 	private double[] feretMax;
 	/** Angle of maximum diameter */
@@ -355,8 +355,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			rt.addValue("Imin (" + units + "^4)", Imin[s]);
 			rt.addValue("Imax (" + units + "^4)", Imax[s]);
 			rt.addValue("Ipm (" + units + "^4)", Ipm[s]);
-			rt.addValue("Zmax (" + units + "³)", Zmax[s]);
 			rt.addValue("Zmin (" + units + "³)", Zmin[s]);
+			rt.addValue("Zmax (" + units + "³)", Zmax[s]);
 			rt.addValue("Zpol (" + units + "³)", Zpol[s]);
 			rt.addValue("Feret Min (" + units + ")", feretMin[s]);
 			rt.addValue("Feret Max (" + units + ")", feretMax[s]);
@@ -598,15 +598,15 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 		// Get I and Z around the principal axes
 		final double[][] result = calculateAngleMoments(imp, min, max, theta);
-		Imax = result[0];
-		Imin = result[1];
+		Imin = result[0];
+		Imax = result[1];
 		Ipm = result[2];
 		R1 = result[3];
 		R2 = result[4];
 		maxRadMin = result[5];
 		maxRadMax = result[6];
-		Zmax = result[7];
-		Zmin = result[8];
+		Zmin = result[7];
+		Zmax = result[8];
 		Zpol = result[9];
 
 		// optionally get I and Z around some user-defined axes

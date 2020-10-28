@@ -83,7 +83,6 @@ import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.scijava.ItemIO;
-import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
@@ -138,9 +137,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 		min = "0", style = NumberWidget.SPINNER_STYLE,
 		callback = "enforceAutoParam", required = false)
 	private long translations;
-
-	@Parameter(visibility = ItemVisibility.MESSAGE, required = false)
-	private String translationInfo = "NB: translations affect runtime significantly";
 
 	@Parameter(label = "Automatic parameters",
 		description = "Let the computer decide values for the parameters",

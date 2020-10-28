@@ -302,7 +302,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	}
 
 	private void prepareResults() {
-		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '²');
+		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, "²");
 
 		if (isAxesMatchingSpatialCalibration(inputImage)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);

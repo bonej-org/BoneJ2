@@ -65,7 +65,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	@Parameter
 	private static EllipsoidConstrainStrategy constrainStrategy;
 	@Parameter(required = false)
-	private OptimisationParameters algorithmParameters = new OptimisationParameters(0.435,100,1,100,1.73, 1.0);
+	private OptimisationParameters algorithmParameters = new OptimisationParameters(0.435,100,1,100,1.73);
 	double stackVolume;
 
 
@@ -556,12 +556,6 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		if (totalIterations == absoluteMaxIterations) {
 			logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 					+ ") seems to be out of control, nullifying after " + totalIterations + " iterations");
-			return null;
-		}
-
-		if (ellipsoid.getSortedRadii()[2]<algorithmParameters.minimumSemiAxis) {
-			logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
-					+ ") is too small, nullifying after " + totalIterations + " iterations");
 			return null;
 		}
 

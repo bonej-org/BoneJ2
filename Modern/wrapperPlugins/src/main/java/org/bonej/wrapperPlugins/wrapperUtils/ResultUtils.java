@@ -119,7 +119,7 @@ public final class ResultUtils {
 
 	/**
 	 * Returns a verbal description of the size of the elements in the given
-	 * space, e.g. "Area" for 2D images.
+	 * space, e.g. "A" for 2D images and "V" for 3D images.
 	 *
 	 * @param space an N-dimensional space.
 	 * @param <S> type of the space.
@@ -131,10 +131,10 @@ public final class ResultUtils {
 	{
 		final long dimensions = AxisUtils.countSpatialDimensions(space);
 		if (dimensions == 2) {
-			return "Area";
+			return "A";
 		}
 		if (dimensions == 3) {
-			return "Volume";
+			return "V";
 		}
 		return "Size";
 	}
@@ -154,7 +154,7 @@ public final class ResultUtils {
 	 * @return the unit string with the exponent.
 	 */
 	public static <S extends AnnotatedSpace<CalibratedAxis>> String getUnitHeader(
-		final S space, final UnitService unitService, final char exponent)
+		final S space, final UnitService unitService, final String exponent)
 	{
 		final Optional<String> unit = AxisUtils.getSpatialUnit(space, unitService);
 		if (!unit.isPresent()) {

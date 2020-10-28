@@ -63,7 +63,6 @@ import java.util.stream.Stream;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
-import net.imagej.axis.Axis;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
@@ -116,7 +115,7 @@ public class ResultUtilsTest {
 
 	@Test
 	public void testGetSizeDescription() {
-		final String[] expected = { "Size", "Area", "Volume", "Size" };
+		final String[] expected = { "Size", "A", "V", "Size" };
 		final AxisType spatialAxis = Axes.get("Spatial", true);
 		final CalibratedAxis axis = new DefaultLinearAxis(spatialAxis);
 		final ImgPlus<?> mockImage = mock(ImgPlus.class);
@@ -139,7 +138,7 @@ public class ResultUtilsTest {
 	@Test
 	public void testGetUnitHeader() {
 		final String unit = "mm";
-		final char exponent = '³';
+		final String exponent = "³";
 		final DefaultLinearAxis axis = new DefaultLinearAxis(Axes.X, unit);
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
@@ -156,14 +155,14 @@ public class ResultUtilsTest {
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, "³");
 
 		assertTrue("Unit header should be empty", result.isEmpty());
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testGetUnitHeaderThrowsNPEIfSpaceNull() {
-		ResultUtils.getUnitHeader(null, unitService, '³');
+		ResultUtils.getUnitHeader(null, unitService, "³");
 	}
 
 	@Test(expected = NullPointerException.class)
@@ -172,7 +171,7 @@ public class ResultUtilsTest {
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image",
 			new DefaultLinearAxis(Axes.X, "mm"));
 
-		ResultUtils.getUnitHeader(imgPlus, null, '³');
+		ResultUtils.getUnitHeader(imgPlus, null, "³");
 	}
 
 	@Test
@@ -212,7 +211,7 @@ public class ResultUtilsTest {
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, "³");
 
 		assertEquals(expected, result);
 	}
@@ -225,7 +224,7 @@ public class ResultUtilsTest {
 		final Img<DoubleType> img = ArrayImgs.doubles(10);
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", axis);
 
-		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, '³');
+		final String result = ResultUtils.getUnitHeader(imgPlus, unitService, "³");
 
 		assertEquals(expected, result);
 	}

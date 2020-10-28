@@ -144,9 +144,9 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 		}
 
 		SharedTable.add(label, "Euler char. (χ)", eulerCharacteristic);
-		SharedTable.add(label, "Corrected Euler (χ + Δχ)", deltaEuler);
+		SharedTable.add(label, "Corr. Euler (χ + Δχ)", deltaEuler);
 		SharedTable.add(label, "Connectivity", connectivity);
-		SharedTable.add(label, "Conn. density " + unitHeader, connectivityDensity);
+		SharedTable.add(label, "Conn.D " + unitHeader, connectivityDensity);
 	}
 
 	private double calculateConnectivityDensity(final RandomAccessibleInterval<?> subspace,
@@ -159,7 +159,7 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 	}
 
 	private void determineResultUnit() {
-		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, '³');
+		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, "⁻³");
 	}
 
 	// region -- Helper methods --

@@ -117,8 +117,8 @@ public class SurfaceFractionWrapperTest extends AbstractWrapperTest {
 		final double totalVolume = ((imgWidth - 1) * (imgHeight - 1) * (imgDepth -
 			1)) * scaleCubed;
 		final double ratio = cubeVolume / totalVolume;
-		final String[] expectedHeaders = { "Bone volume (" + unit + "³)",
-			"Total volume (" + unit + "³)", "Volume ratio" };
+		final String[] expectedHeaders = { "BV (" + unit + "³)",
+			"TV (" + unit + "³)", "BV/TV" };
 		final double[][] expectedValues = { { 0.0, cubeVolume, cubeVolume, 0.0 }, {
 			totalVolume, totalVolume, totalVolume, totalVolume }, { 0.0, ratio, ratio,
 				0.0 } };

@@ -178,8 +178,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		persist = false, required = false, callback = "applyMinimum")
 	private boolean recommendedMin;
 	
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
-	private String instruction = "NB parameter values can affect results significantly";
 	private boolean calibrationWarned;
 	
 	@Parameter(label = "Show radii",
@@ -247,7 +245,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		final String suffix = subspace.toString();
 		final String label = suffix.isEmpty() ? imageName : imageName + " " +
 			suffix;
-		SharedTable.add(label, "Degree of anisotropy", anisotropy);
+		SharedTable.add(label, "DA", anisotropy);
 		if (printRadii) {
 			SharedTable.add(label, "Radius a", ellipsoid.getA());
 			SharedTable.add(label, "Radius b", ellipsoid.getB());

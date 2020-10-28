@@ -120,17 +120,11 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		persist = false)
 	private ImagePlus inputImage;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, columns = 1, persist = false)
-	private String loopSection = "-- LOOPS --";
-
 	@Parameter(label = "Cycle pruning method",
 		description = "Which method is used to prune cycles in the skeleton graph",
 		required = false, style = ChoiceWidget.LIST_BOX_STYLE, choices = { "None",
 			"Shortest branch", "Lowest intensity voxel", "Lowest intensity branch" })
 	private String pruneCycleMethod = "None";
-
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
-	private String endPointSection = "-- END-POINTS --";
 
 	@Parameter(label = "Prune ends",
 		description = "Prune very short edges with no slabs", required = false)
@@ -140,9 +134,6 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		description = "Exclude the current selection from pruning",
 		required = false, visibility = ItemVisibility.INVISIBLE, persist = false)
 	private boolean excludeRoi;
-
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
-	private String resultSection = "-- RESULTS AND OUTPUT --";
 
 	@Parameter(label = "Calculate largest shortest paths",
 		description = "Calculate and display the largest shortest skeleton paths",
