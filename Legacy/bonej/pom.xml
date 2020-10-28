@@ -123,7 +123,6 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>LocalThickness_</artifactId>
-            <version>${LocalThickness_.version}</version>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>

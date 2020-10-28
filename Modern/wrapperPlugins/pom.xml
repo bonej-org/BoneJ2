@@ -132,11 +132,6 @@
             <groupId>net.imagej</groupId>
             <artifactId>imagej</artifactId>
             <exclusions>
-                <!-- Try removing after pom-scijava 29.x.x -->
-                <exclusion>
-                    <groupId>com.miglayout</groupId>
-                    <artifactId>miglayout</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>org.scala-lang.modules</groupId>
                     <artifactId>scala-xml_2.12</artifactId>
@@ -154,13 +149,6 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
-            <!-- Try removing after pom-scijava 29.x.x -->
-            <exclusions>
-                <exclusion>
-                    <groupId>com.miglayout</groupId>
-                    <artifactId>miglayout</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
@@ -182,13 +170,6 @@
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
             <optional>true</optional>
-            <!-- Try removing after pom-scijava 29.x.x -->
-            <exclusions>
-                <exclusion>
-                    <groupId>com.miglayout</groupId>
-                    <artifactId>miglayout</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- Fiji dependencies -->
@@ -199,7 +180,6 @@
         <dependency>
             <groupId>sc.fiji</groupId>
             <artifactId>LocalThickness_</artifactId>
-            <version>${LocalThickness_.version}</version>
         </dependency>
         <dependency>
             <groupId>sc.fiji</groupId>
@@ -218,13 +198,6 @@
         <dependency>
             <groupId>org.scijava</groupId>
             <artifactId>scijava-ui-swing</artifactId>
-            <!-- Try removing after pom-scijava 29.x.x -->
-            <exclusions>
-                <exclusion>
-                    <groupId>com.miglayout</groupId>
-                    <artifactId>miglayout</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- ImgLib2 dependencies -->
@@ -250,14 +223,6 @@
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
         </dependency>
-        <!-- Needed for UI. Try removing after pom-scijava 29.x.x -->
-        <dependency>
-            <groupId>com.miglayout</groupId>
-            <artifactId>miglayout-swing</artifactId>
-            <version>5.2</version>
-            <scope>runtime</scope>
-        </dependency>
-
         <!-- Testing dependencies -->
         <dependency>
             <groupId>junit</groupId>
