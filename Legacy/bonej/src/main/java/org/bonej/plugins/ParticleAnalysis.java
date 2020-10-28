@@ -145,50 +145,48 @@ public class ParticleAnalysis {
 
 			// scan faces
 			// top and bottom faces
-			for (int y = 0; y < h; y++) {
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int pt = particleLabels[0][index + x];
-					if (pt > 0) {
-						lut[pt] = 0;
-						runLutNeeded = true;
-					}
-					final int pb = particleLabels[d - 1][index + x];
-					if (pb > 0) {
-						lut[pb] = 0;
-						runLutNeeded = true;
-					}
+			final int[] top = particleLabels[0];
+			final int[] bottom = particleLabels[d - 1];
+			final int wh = top.length;
+			for (int i = 0; i < wh; i++) {
+				final int pt = top[i];
+				if (pt > 0) {
+					lut[pt] = 0;
+					runLutNeeded = true;
+				}
+				final int pb = bottom[i];
+				if (pb > 0) {
+					lut[pb] = 0;
+					runLutNeeded = true;
 				}
 			}
 
 			// west and east faces
-			for (int z = 0; z < d; z++) {
-				for (int y = 0; y < h; y++) {
-					final int pw = particleLabels[z][y * w];
-					final int pe = particleLabels[z][y * w + w - 1];
-					if (pw > 0) {
-						lut[pw] = 0;
-						runLutNeeded = true;
-					}
-					if (pe > 0) {
-						lut[pe] = 0;
-						runLutNeeded = true;
-					}
-				}
-			}
-
-			// north and south faces
+		  // north and south faces
 			final int lastRow = w * (h - 1);
 			for (int z = 0; z < d; z++) {
+				final int[] slice = particleLabels[z];
 				for (int x = 0; x < w; x++) {
-					final int pn = particleLabels[z][x];
-					final int ps = particleLabels[z][lastRow + x];
+					final int pn = slice[x];
+					final int ps = slice[lastRow + x];
 					if (pn > 0) {
 						lut[pn] = 0;
 						runLutNeeded = true;
 					}
 					if (ps > 0) {
 						lut[ps] = 0;
+						runLutNeeded = true;
+					}
+				}
+				for (int y = 0; y < h; y++) {
+					final int pw = slice[y * w];
+					final int pe = slice[y * w + w - 1];
+					if (pw > 0) {
+						lut[pw] = 0;
+						runLutNeeded = true;
+					}
+					if (pe > 0) {
+						lut[pe] = 0;
 						runLutNeeded = true;
 					}
 				}

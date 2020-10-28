@@ -230,45 +230,44 @@ public class Purify implements PlugIn {
 		
 		// scan faces
 		// top and bottom faces
-		for (int y = 0; y < h; y++) {
-			final int index = y * w;
-			for (int x = 0; x < w; x++) {
-				final int pt = particleLabels[0][index + x];
-				if (pt > 0) {
-					labelList.add(pt);
-				}
-				final int pb = particleLabels[d - 1][index + x];
-				if (pb > 0) {
-					labelList.add(pb);
-				}
+		final int[] top = particleLabels[0];
+		final int[] bottom = particleLabels[d - 1];
+		final int wh = top.length;
+		for (int i = 0; i < wh; i++) {
+			final int pt = top[i];
+			if (pt > 0) {
+				labelList.add(pt);
+			}
+			final int pb = bottom[i];
+			if (pb > 0) {
+				labelList.add(pb);
 			}
 		}
 
 		// west and east faces
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int pw = particleLabels[z][y * w];
-				final int pe = particleLabels[z][y * w + w - 1];
-				if (pw > 0) {
-					labelList.add(pw);
-				}
-				if (pe > 0) {
-					labelList.add(pe);
-				}
-			}
-		}
-
 		// north and south faces
 		final int lastRow = w * (h - 1);
 		for (int z = 0; z < d; z++) {
+			final int[] slice = particleLabels[z];
 			for (int x = 0; x < w; x++) {
-				final int pn = particleLabels[z][x];
-				final int ps = particleLabels[z][lastRow + x];
+				final int pn = slice[x];
+				final int ps = slice[lastRow + x];
 				if (pn > 0) {
 					labelList.add(pn);
 				}
 				if (ps > 0) {
 					labelList.add(ps);
+				}
+			}
+			for (int y = 0; y < h; y++) {
+				final int yw = y * w;
+				final int pw = slice[yw];
+				final int pe = slice[yw + w - 1];
+				if (pw > 0) {
+					labelList.add(pw);
+				}
+				if (pe > 0) {
+					labelList.add(pe);
 				}
 			}
 		}
