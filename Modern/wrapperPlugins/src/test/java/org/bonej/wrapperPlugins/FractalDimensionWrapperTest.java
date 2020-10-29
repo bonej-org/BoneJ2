@@ -94,33 +94,33 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 			FractalDimensionWrapper.class);
 	}
 
-//	@Test
-//	public void testPointResults() throws Exception {
-//		// SETUP
-//		final double[] expectedSizes = new double[] { -Math.log(4), -Math.log(2) };
-//		final double[] emptyCounts = new double[] { Math.log(0), Math.log(0) };
-//		final double[] cubeCounts = new double[] { Math.log(1), Math.log(8) };
-//		final ImgPlus<BitType> imgPlus = createTestHyperStack();
-//
-//		// EXECUTE
-//		final CommandModule module = command().run(
-//			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
-//			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
-//			"translations", 0L, "showPoints", true).get();
-//
-//		// VERIFY
-//		final GenericTable pointsTable = (GenericTable) module.getOutput("pointsTable");
-//		assertNotNull("Command should have returned a point table", pointsTable);
-//		assertEquals("Table has wrong number of columns", 8, pointsTable.getColumnCount());
-//		testColumn(pointsTable, "-log(size) Channel: 1, Time: 1", expectedSizes);
-//		testColumn(pointsTable, "log(count) Channel: 1, Time: 1", emptyCounts);
-//		testColumn(pointsTable, "-log(size) Channel: 1, Time: 2", expectedSizes);
-//		testColumn(pointsTable, "log(count) Channel: 1, Time: 2", cubeCounts);
-//		testColumn(pointsTable, "-log(size) Channel: 2, Time: 1", expectedSizes);
-//		testColumn(pointsTable, "log(count) Channel: 2, Time: 1", cubeCounts);
-//		testColumn(pointsTable, "-log(size) Channel: 2, Time: 2", expectedSizes);
-//		testColumn(pointsTable, "log(count) Channel: 2, Time: 2", emptyCounts);
-//	}
+	@Test
+	public void testPointResults() throws Exception {
+		// SETUP
+		final double[] expectedSizes = new double[] { -Math.log(4), -Math.log(2) };
+		final double[] emptyCounts = new double[] { Math.log(0), Math.log(0) };
+		final double[] cubeCounts = new double[] { Math.log(1), Math.log(8) };
+		final ImgPlus<BitType> imgPlus = createTestHyperStack();
+
+		// EXECUTE
+		final CommandModule module = command().run(
+			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
+			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
+			"translations", 0L, "showPoints", true).get();
+
+		// VERIFY
+		final GenericTable pointsTable = (GenericTable) module.getOutput("pointsTable");
+		assertNotNull("Command should have returned a point table", pointsTable);
+		assertEquals("Table has wrong number of columns", 8, pointsTable.getColumnCount());
+		testColumn(pointsTable, "-log(size) Channel: 1, Time: 1", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 1, Time: 1", emptyCounts);
+		testColumn(pointsTable, "-log(size) Channel: 1, Time: 2", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 1, Time: 2", cubeCounts);
+		testColumn(pointsTable, "-log(size) Channel: 2, Time: 1", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 2, Time: 1", cubeCounts);
+		testColumn(pointsTable, "-log(size) Channel: 2, Time: 2", expectedSizes);
+		testColumn(pointsTable, "log(count) Channel: 2, Time: 2", emptyCounts);
+	}
 
 	private void testColumn(final GenericTable table, final String header,
 							final double[] expectedValues) throws IllegalArgumentException {
@@ -130,38 +130,38 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 		assertEquals(expectedValues[1], column.get(1), 1e-12);
 	}
 
-//	@Test
-//	public void testResults() throws Exception {
-//		// SETUP
-//		final Iterator<String> expectedHeaders = 
-//				Stream.of("Fractal dimension", "R²").iterator();
-//		final Iterator<Double> expectedDimensions = Stream.of(0.0,
-//			1.4999999999999998, 1.4999999999999998, 0.0).iterator();
-//		final Iterator<Double> expectedRSquares = Stream.of(Double.NaN,
-//			0.7500000000000002, 0.7500000000000002, Double.NaN).iterator();
-//		final ImgPlus<BitType> imgPlus = createTestHyperStack();
-//
-//		// EXECUTE
-//		final CommandModule module = command().run(
-//			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
-//			"startBoxSize", 4, "smallestBoxSize", 1, "scaleFactor", 2.0,
-//			"translations", 0L).get();
-//
-//		// VERIFY
-//		@SuppressWarnings("unchecked")
-//		final Table<DefaultColumn<Double>, Double> table =
-//			(Table<DefaultColumn<Double>, Double>) module.getOutput("resultsTable");
-//		assertEquals("Wrong number of columns", 2, table.size());
-//		table.forEach(column -> assertEquals(
-//			"Column has an incorrect number of rows", 4, column.size()));
-//		table.stream().map(Column::getHeader).forEach(header -> assertEquals(
-//			"Column has an incorrect header", header, expectedHeaders.next()));
-//		table.get("Fractal dimension").forEach(dimension -> assertEquals(
-//			"Fractal dimension column has a wrong value", expectedDimensions.next(),
-//			dimension, 1e-12));
-//		table.get("R²").forEach(r2 -> assertEquals("R² column has a wrong value",
-//			expectedRSquares.next(), r2, 1e-12));
-//	}
+	@Test
+	public void testResults() throws Exception {
+		// SETUP
+		final Iterator<String> expectedHeaders = 
+				Stream.of("Fractal dimension", "R²").iterator();
+		final Iterator<Double> expectedDimensions = Stream.of(0.0,
+			1.4999999999999998, 1.4999999999999998, 0.0).iterator();
+		final Iterator<Double> expectedRSquares = Stream.of(Double.NaN,
+			0.7500000000000002, 0.7500000000000002, Double.NaN).iterator();
+		final ImgPlus<BitType> imgPlus = createTestHyperStack();
+
+		// EXECUTE
+		final CommandModule module = command().run(
+			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
+			"startBoxSize", 4, "smallestBoxSize", 1, "scaleFactor", 2.0,
+			"translations", 0L).get();
+
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final Table<DefaultColumn<Double>, Double> table =
+			(Table<DefaultColumn<Double>, Double>) module.getOutput("resultsTable");
+		assertEquals("Wrong number of columns", 2, table.size());
+		table.forEach(column -> assertEquals(
+			"Column has an incorrect number of rows", 4, column.size()));
+		table.stream().map(Column::getHeader).forEach(header -> assertEquals(
+			"Column has an incorrect header", header, expectedHeaders.next()));
+		table.get("Fractal dimension").forEach(dimension -> assertEquals(
+			"Fractal dimension column has a wrong value", expectedDimensions.next(),
+			dimension, 1e-12));
+		table.get("R²").forEach(r2 -> assertEquals("R² column has a wrong value",
+			expectedRSquares.next(), r2, 1e-12));
+	}
 
 	/** Create a hyperstack with 2 channels and 2 frames
 	 * <p>
