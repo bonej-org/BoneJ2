@@ -151,26 +151,6 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		assertNull(module.getOutput("verboseTable"));
 	}
 
-//	@Test
-//	public void testBadFormatIntensityImageCancelsPlugin() throws Exception {
-//		// SETUP
-//		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
-//		final File exceptionFile = mock(File.class);
-//		when(exceptionFile.getAbsolutePath()).thenReturn("file.foo");
-//		when(MOCK_UI.chooseFile(any(File.class), anyString())).thenReturn(
-//			exceptionFile);
-//
-//		// EXECUTE
-//		final CommandModule module = command().run(
-//			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus,
-//			"pruneCycleMethod", "Lowest intensity voxel").get();
-//
-//		// VERIFY
-//		assertTrue("Plugin should have cancelled", module.isCanceled());
-//		assertEquals("Cancel reason is incorrect", "Image format is not recognized",
-//			module.getCancelReason());
-//	}
-
 	@Test
 	public void testCompositeImageCancelsPlugin() throws Exception {
 		// SETUP
