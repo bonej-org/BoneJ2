@@ -108,11 +108,6 @@
             <groupId>net.imagej</groupId>
             <artifactId>imagej</artifactId>
             <exclusions>
-                <!-- Try removing after pom-scijava 29.x.x -->
-                <exclusion>
-                    <groupId>com.miglayout</groupId>
-                    <artifactId>miglayout</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>org.scala-lang.modules</groupId>
                     <artifactId>scala-xml_2.12</artifactId>
@@ -126,12 +121,6 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-ops</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.miglayout</groupId>
-                    <artifactId>miglayout</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
@@ -172,13 +161,6 @@
         <dependency>
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
-        </dependency>
-        <!-- Needed for UI. Try removing after pom-scijava 29.x.x -->
-        <dependency>
-            <groupId>com.miglayout</groupId>
-            <artifactId>miglayout-swing</artifactId>
-            <version>5.2</version>
-            <scope>runtime</scope>
         </dependency>
 
         <!-- Testing dependencies -->

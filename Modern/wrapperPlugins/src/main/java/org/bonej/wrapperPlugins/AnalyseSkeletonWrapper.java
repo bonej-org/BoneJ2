@@ -86,6 +86,7 @@ import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.convert.ConvertService;
 import org.scijava.io.IOService;
+import org.scijava.io.location.FileLocation;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -294,7 +295,8 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			return;
 		}
 		try {
-			formatService.getFormat(file.getAbsolutePath());
+			FileLocation location = new FileLocation(file.getAbsolutePath()); 
+			formatService.getFormat(location);
 			final Dataset dataset = (Dataset) ioService.open(file.getAbsolutePath());
 			if (!isValidIntensityImage(dataset)) {
 				return;
