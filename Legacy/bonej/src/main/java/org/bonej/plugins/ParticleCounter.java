@@ -236,6 +236,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int[][] particleLabels = (int[][]) result[1];
 		final long[] particleSizes = (long[]) result[2];
 		final int nParticles = particleSizes.length;
+		
+		if (nParticles > ConnectedComponents.MAX_FINAL_LABEL)
+			IJ.log("Number of particles ("+nParticles+") exceeds the accurate display range (2^23) of the 32-bit float particle image");
 
 		final double[] volumes = ParticleAnalysis.getVolumes(imp, particleSizes);
 		
