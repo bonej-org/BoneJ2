@@ -84,7 +84,9 @@ public class ConnectedComponents {
 	/** Background value */
 	public static final int BACK = 0;
 	/** 2^23 - greatest integer that can be represented precisely by a float */
-	static final int MAX_LABEL = 8388608;
+	public static final int MAX_FINAL_LABEL = 8388608;
+	/** maximum label value to use during intermediate processing */
+	static final int MAX_LABEL = Integer.MAX_VALUE;
 
 	/** number of particle labels */
 	private static int nParticles;
