@@ -305,7 +305,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		double min = gd.getNextNumber();
 		double max = gd.getNextNumber();
 		m = gd.getNextNumber();
-		c = gd.getNextNumber();
+		c = gd.getNextNumber();;
 		doPartialVolume = gd.getNextBoolean();
 		background = gd.getNextNumber();
 		foreground = gd.getNextNumber();
