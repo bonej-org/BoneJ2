@@ -225,6 +225,12 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			IJ.noImage();
 			return;
 		}
+		Roi roi = imp.getRoi();
+		if (roi == null) {}
+		else if (roi.getType() != Roi.RECTANGLE) {
+			IJ.showMessage("ROI Error", "Slice Geometry expects only one rectangular ROI");
+			return;
+		}
 		cal = imp.getCalibration();
 		vW = cal.pixelWidth;
 		vH = cal.pixelHeight;
