@@ -227,10 +227,11 @@ public class Connectivity implements PlugIn {
 			threads[thread] = new Thread(new Runnable() {
 				@Override
 				public void run() {
+					final byte[] octant = new byte[9];
 					for (int z = ai.getAndIncrement(); z <= depth; z = ai.getAndIncrement()) {
 						for (int y = 0; y <= height; y++) {
 							for (int x = 0; x <= width; x++) {
-								final byte[] octant = getOctant(stack, x, y, z);
+								getOctant(stack, octant, x, y, z);
 								if (octant[0] == 0)
 									continue;
 								sumEulerInt[z] += getDeltaEuler(octant);
@@ -263,27 +264,28 @@ public class Connectivity implements PlugIn {
 	 *
 	 * @param stack
 	 *            3D image (ImageStack)
+	 * @param octant 9-element array containing the octant pixel values in elements 1-9
+	 * 					and a check value in element 0 (0 if octant empty, 1 if not empty)
 	 * @param x
 	 *            x- coordinate
 	 * @param y
 	 *            y- coordinate
 	 * @param z
 	 *            z- coordinate (in image stacks the indexes start at 1)
-	 * @return corresponding 8-pixel octant (0 if out of image)
 	 */
-	private byte[] getOctant(final ImageStack stack, final int x, final int y, final int z) {
-		final byte[] octant = new byte[9];
+	private void getOctant(final ImageStack stack, final byte[] octant, final int x, final int y, final int z) {
 		
-		final int x1 = x - 1;
 		final int y1 = y - 1;
 		final int z1 = z - 1;
-
-		octant[1] = getPixel(stack, x1, y1, z1);
-		octant[2] = getPixel(stack, x1, y, z1);
+		
+		//reset the check element
+		octant[0] = 0;
+		octant[1] = octant[3];
+		octant[2] = octant[4];
 		octant[3] = getPixel(stack, x, y1, z1);
 		octant[4] = getPixel(stack, x, y, z1);
-		octant[5] = getPixel(stack, x1, y1, z);
-		octant[6] = getPixel(stack, x1, y, z);
+		octant[5] = octant[7];
+		octant[6] = octant[8];
 		octant[7] = getPixel(stack, x, y1, z);
 		octant[8] = getPixel(stack, x, y, z);
 		
@@ -293,7 +295,6 @@ public class Connectivity implements PlugIn {
 				break;
 			}
 
-		return octant;
 	} /* end getNeighborhood */
 
 	/*
@@ -333,9 +334,6 @@ public class Connectivity implements PlugIn {
 	 * @return or false if the point is Euler invariant or not
 	 */
 	private int getDeltaEuler(final byte[] octant) {
-		if (octant[0] == 0)
-			return 0;
-		
 		char n = 1;
 		if (octant[8] == -1) {
 			if (octant[1] == -1) n |= 128;
