@@ -227,13 +227,25 @@ public class Connectivity implements PlugIn {
 			threads[thread] = new Thread(new Runnable() {
 				@Override
 				public void run() {
+					byte o1 = 0, o2 = 0, o3 = 0, o4 = 0, o5 = 0, o6 = 0, o7 = 0, o8 = 0;
 					for (int z = ai.getAndIncrement(); z <= depth; z = ai.getAndIncrement()) {
 						for (int y = 0; y <= height; y++) {
 							for (int x = 0; x <= width; x++) {
-								final byte[] octant = getOctant(stack, x, y, z);
-								if (octant[0] == 0)
-									continue;
-								sumEulerInt[z] += getDeltaEuler(octant);
+								
+								final int y1 = y - 1;
+								final int z1 = z - 1;
+								
+								o1 = o3;
+								o2 = o4;
+								o3 = getPixel(stack, x, y1, z1);
+								o4 = getPixel(stack, x, y, z1);
+								o5 = o7;
+								o6 = o8;
+								o7 = getPixel(stack, x, y1, z);
+								o8 = getPixel(stack, x, y, z);
+
+							  if ( o1 != 0 || o2 != 0 || o3 != 0 || o4 != 0 || o5 != 0 || o6 != 0 || o7 != 0 || o8 != 0 )
+							  	sumEulerInt[z] += getDeltaEuler(o1, o2, o3, o4, o5, o6, o7, o8);
 							}
 						}
 					}
@@ -254,51 +266,6 @@ public class Connectivity implements PlugIn {
 		return;
 	}
 
-	/*
-	 * -----------------------------------------------------------------------
-	 */
-	/**
-	 * Get octant of a vertex at (0,0,0) of a voxel (upper top left) in a 3D
-	 * image (0 border conditions)
-	 *
-	 * @param stack
-	 *            3D image (ImageStack)
-	 * @param x
-	 *            x- coordinate
-	 * @param y
-	 *            y- coordinate
-	 * @param z
-	 *            z- coordinate (in image stacks the indexes start at 1)
-	 * @return corresponding 8-pixel octant (0 if out of image)
-	 */
-	private byte[] getOctant(final ImageStack stack, final int x, final int y, final int z) {
-		final byte[] octant = new byte[9];
-		
-		final int x1 = x - 1;
-		final int y1 = y - 1;
-		final int z1 = z - 1;
-
-		octant[1] = getPixel(stack, x1, y1, z1);
-		octant[2] = getPixel(stack, x1, y, z1);
-		octant[3] = getPixel(stack, x, y1, z1);
-		octant[4] = getPixel(stack, x, y, z1);
-		octant[5] = getPixel(stack, x1, y1, z);
-		octant[6] = getPixel(stack, x1, y, z);
-		octant[7] = getPixel(stack, x, y1, z);
-		octant[8] = getPixel(stack, x, y, z);
-		
-		for (int i = 1; i < 9; i++)
-			if (octant[i] != 0) {
-				octant[0] = 1;
-				break;
-			}
-
-		return octant;
-	} /* end getNeighborhood */
-
-	/*
-	 * -----------------------------------------------------------------------
-	 */
 	/**
 	 * Get pixel in 3D image stack (0 border conditions)
 	 *
@@ -322,62 +289,57 @@ public class Connectivity implements PlugIn {
 	/**
 	 * Get delta euler value for an octant (~= vertex) from look up table
 	 *
-	 * Only use this method when there is at least one foreground voxel in
+	 * Use this method only when there is at least one foreground voxel in
 	 * octant.
 	 *
-	 * In binary images, foreground is -1, background = 0
-	 *
-	 * @param octant
-	 *            9 element array containing nVoxels in zeroth element and 8
-	 *            voxel values
-	 * @return or false if the point is Euler invariant or not
+	 * In binary images, foreground is -1, background = 0. o1 = 08 are the octant values.
+	 * @return delta Euler for the octant or false if the point is Euler invariant or not
 	 */
-	private int getDeltaEuler(final byte[] octant) {
-		if (octant[0] == 0)
-			return 0;
+	private int getDeltaEuler(final byte o1, final byte o2, final byte o3, final byte o4,
+		final byte o5, final byte o6, final byte o7, final byte o8) {
 		
 		char n = 1;
-		if (octant[8] == -1) {
-			if (octant[1] == -1) n |= 128;
-			if (octant[2] == -1) n |= 64;
-			if (octant[3] == -1) n |= 32;
-			if (octant[4] == -1) n |= 16;
-			if (octant[5] == -1) n |= 8;
-			if (octant[6] == -1) n |= 4;
-			if (octant[7] == -1) n |= 2;
+		if (o8 == -1) {
+			if (o1 == -1) n |= 128;
+			if (o2 == -1) n |= 64;
+			if (o3 == -1) n |= 32;
+			if (o4 == -1) n |= 16;
+			if (o5 == -1) n |= 8;
+			if (o6 == -1) n |= 4;
+			if (o7 == -1) n |= 2;
 		}
-		else if (octant[7] == -1) {
-			if (octant[2] == -1) n |= 128;
-			if (octant[4] == -1) n |= 64;
-			if (octant[1] == -1) n |= 32;
-			if (octant[3] == -1) n |= 16;
-			if (octant[6] == -1) n |= 8;
-			if (octant[5] == -1) n |= 2;
+		else if (o7 == -1) {
+			if (o2 == -1) n |= 128;
+			if (o4 == -1) n |= 64;
+			if (o1 == -1) n |= 32;
+			if (o3 == -1) n |= 16;
+			if (o6 == -1) n |= 8;
+			if (o5 == -1) n |= 2;
 		}
-		else if (octant[6] == -1) {
-			if (octant[3] == -1) n |= 128;
-			if (octant[1] == -1) n |= 64;
-			if (octant[4] == -1) n |= 32;
-			if (octant[2] == -1) n |= 16;
-			if (octant[5] == -1) n |= 4;
+		else if (o6 == -1) {
+			if (o3 == -1) n |= 128;
+			if (o1 == -1) n |= 64;
+			if (o4 == -1) n |= 32;
+			if (o2 == -1) n |= 16;
+			if (o5 == -1) n |= 4;
 		}
-		else if (octant[5] == -1) {
-			if (octant[4] == -1) n |= 128;
-			if (octant[3] == -1) n |= 64;
-			if (octant[2] == -1) n |= 32;
-			if (octant[1] == -1) n |= 16;
+		else if (o5 == -1) {
+			if (o4 == -1) n |= 128;
+			if (o3 == -1) n |= 64;
+			if (o2 == -1) n |= 32;
+			if (o1 == -1) n |= 16;
 		}
-		else if (octant[4] == -1) {
-			if (octant[1] == -1) n |= 8;
-			if (octant[3] == -1) n |= 4;
-			if (octant[2] == -1) n |= 2;
+		else if (o4 == -1) {
+			if (o1 == -1) n |= 8;
+			if (o3 == -1) n |= 4;
+			if (o2 == -1) n |= 2;
 		}
-		else if (octant[3] == -1) {
-			if (octant[2] == -1) n |= 8;
-			if (octant[1] == -1) n |= 4;
+		else if (o3 == -1) {
+			if (o2 == -1) n |= 8;
+			if (o1 == -1) n |= 4;
 		}
-		else if (octant[2] == -1) {
-			if (octant[1] == -1) n |= 2;
+		else if (o2 == -1) {
+			if (o1 == -1) n |= 2;
 		}
 		else return 1;
 
