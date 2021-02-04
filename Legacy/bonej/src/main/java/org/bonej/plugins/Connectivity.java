@@ -260,7 +260,9 @@ public class Connectivity implements PlugIn {
 	 */
 	/**
 	 * Get octant of a vertex at (0,0,0) of a voxel (upper top left) in a 3D
-	 * image (0 border conditions)
+	 * image (0 border conditions). Assumes x-y-z raster scan order to re-use 
+	 * previously-visited pixels, and is unsuitable for use as a random
+	 * octant lookup method.
 	 *
 	 * @param stack
 	 *            3D image (ImageStack)
