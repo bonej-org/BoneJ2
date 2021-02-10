@@ -157,6 +157,7 @@ public final class UsageReporter {
 				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
+			//the next line appears to be necessary to complete the HTTP request
 			try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
 				uc.getInputStream()))) {
 					if (IJ.debugMode) {
