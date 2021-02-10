@@ -157,25 +157,22 @@ public final class UsageReporter {
 				utmhid + utmr + utmp + utmac + utmcc);
 			final URLConnection uc = url.openConnection();
 			uc.setRequestProperty("User-Agent", userAgentString());
-			if (IJ.debugMode) {
-				logRequest(url, uc);
+			//the next line appears to be necessary to complete the HTTP request
+			try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
+				uc.getInputStream()))) {
+					if (IJ.debugMode) {
+						IJ.log(url.toString());
+						IJ.log(uc.getRequestProperty("User-Agent"));
+						reader.lines().forEach(IJ::log);
+					}
+			} catch (final IOException e) {
+				IJ.error(e.getMessage());
 			}
 		}
 		catch (final IOException e) {
 			if (IJ.debugMode) {
 				IJ.error(e.getMessage());
 			}
-		}
-	}
-
-	private void logRequest(final URL url, final URLConnection uc) {
-		IJ.log(url.toString());
-		IJ.log(uc.getRequestProperty("User-Agent"));
-		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
-				uc.getInputStream()))) {
-			reader.lines().forEach(IJ::log);
-		} catch (final IOException e) {
-			IJ.error(e.getMessage());
 		}
 	}
 
