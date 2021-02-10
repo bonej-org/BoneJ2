@@ -171,63 +171,6 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			any());
 	}
 
-	@Test
-	public void testIntensityImageChannelsCancelPlugin() throws Exception {
-		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 3, 8);
-		final String intensityPath =
-			"8bit-signed&pixelType=int8&planarDims=2&lengths=5,5,3&axes=X,Y,Channel.fake";
-		mockIntensityFileOpening(intensityPath);
-
-		// EXECUTE
-		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
-			"pruneCycleMethod", "Lowest intensity voxel").get();
-
-		// VERIFY
-		assertTrue(module.isCanceled());
-		assertEquals("The intensity image can't have a channel dimension", module
-			.getCancelReason());
-	}
-
-	@Test
-	public void testIntensityImageFramesCancelPlugin() throws Exception {
-		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 3, 8);
-		final String intensityPath =
-			"8bit-signed&pixelType=int8&planarDims=2&lengths=5,5,3&axes=X,Y,Time.fake";
-		mockIntensityFileOpening(intensityPath);
-
-		// EXECUTE
-		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
-			"pruneCycleMethod", "Lowest intensity voxel").get();
-
-		// VERIFY
-		assertTrue(module.isCanceled());
-		assertEquals("The intensity image can't have a time dimension", module
-			.getCancelReason());
-	}
-
-	@Test
-	public void testIntensityImageMismatchingDimensionsCancelPlugin()
-		throws Exception
-	{
-		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 1, 8);
-		final String intensityPath =
-			"8bit-signed&pixelType=int8&planarDims=2&lengths=5,5,3&axes=X,Y,Z.fake";
-		mockIntensityFileOpening(intensityPath);
-
-		// EXECUTE
-		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
-			"pruneCycleMethod", "Lowest intensity voxel").get();
-
-		// VERIFY
-		assertTrue(module.isCanceled());
-		assertEquals(
-			"The intensity image should match the dimensionality of the input image",
-			module.getCancelReason());
-	}
-
 	/**
 	 * Test that no skeleton image pops open, when the input is already a skeleton
 	 * (or skeletonisation didn't change it)
@@ -273,25 +216,6 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 	public void testNonBinaryImageCancelsPlugin() {
 		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
 			AnalyseSkeletonWrapper.class);
-	}
-
-	@Test
-	public void testNot8BitIntensityImageCancelsPlugin() throws Exception {
-		// SETUP
-		final ImagePlus inputImage = IJ.createImage("test", 3, 3, 3, 8);
-		final String intensityPath =
-			"16bit-unsigned&pixelType=uint16&planarDims=2&lengths=10,11,3&axes=X,Y,Z.fake";
-		mockIntensityFileOpening(intensityPath);
-
-		// EXECUTE
-		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", inputImage,
-			"pruneCycleMethod", "Lowest intensity voxel").get();
-
-		// VERIFY
-		assertTrue(module.isCanceled());
-		assertEquals("The intensity image needs to be 8-bit greyscale", module
-			.getCancelReason());
 	}
 
 	@Test
@@ -488,12 +412,5 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		assertFalse("Sanity check failed: method cancelled", module.isCanceled());
 		verify(MOCK_REPORTER, timeout(1000)).reportEvent(anyString());
-	}
-
-	private void mockIntensityFileOpening(final String path) {
-		final File intensityFile = mock(File.class);
-		when(intensityFile.getAbsolutePath()).thenReturn(path);
-		when(MOCK_UI.chooseFile(any(File.class), anyString())).thenReturn(
-			intensityFile);
 	}
 }
