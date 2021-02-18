@@ -115,13 +115,20 @@ public class ConnectedComponents {
 		final int nProcessors = Runtime.getRuntime().availableProcessors();
 		final int minSlicesPerChunk = 10;
 
-		// set up number of chunks
-		final int nChunks = nSlices < minSlicesPerChunk * nProcessors
-				? (int) Math.ceil((double) nSlices / (double) minSlicesPerChunk)
-				: nProcessors;
-		// set up chunk sizes - last chunk is the remainder
-		final int slicesPerChunk = (int) Math.ceil((double) nSlices / (double) nChunks);
-
+		// set up number of chunks and chunk sizes
+		int nChunks = 1;
+		int slicesPerChunk = nSlices;
+		if (nSlices < minSlicesPerChunk) {
+			slicesPerChunk = nSlices;
+			nChunks = 1;
+		} else if (nSlices <= minSlicesPerChunk * nProcessors) {
+			slicesPerChunk = minSlicesPerChunk;
+			nChunks = (int) Math.ceil((double) nSlices / (double) minSlicesPerChunk); 
+		} else if (nSlices > minSlicesPerChunk * nProcessors) {
+			nChunks = nProcessors;
+			slicesPerChunk = (int) Math.floor((double) nSlices / (double) nChunks);
+		}
+		
 		// set up start slice array
 		final int[] startSlices = new int[nChunks];
 		for (int i = 0; i < nChunks; i++) {
