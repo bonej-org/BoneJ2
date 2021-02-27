@@ -161,10 +161,17 @@ public class Purify implements PlugIn {
 		int[][] particleLabels = connector.run(imp, ConnectedComponents.FORE);
 		byte[][] workArray = connector.getWorkArray();
 		final int nFgParticles = connector.getNParticles();
+		//if there are no foreground particles, stop processing and return
+		//there is always one particle, pixel value & label = 0, representing background
+		if (nFgParticles == 1)
+			return imp;
 		
 		// index 0 is background particle's size...
 		long[] particleSizes = pa.getParticleSizes(particleLabels, nFgParticles);
-		removeSmallParticles(workArray, particleLabels, particleSizes, ConnectedComponents.FORE);
+		//no need to remove particles when there is only one foreground particle
+		//>2 because label 0 is for background, label 1 is for the first foreground particle
+		if (nFgParticles > 2)
+			removeSmallParticles(workArray, particleLabels, particleSizes, ConnectedComponents.FORE);
 
 		ImageStack stack = new ImageStack(w, h);
 		for (int z = 0; z < nSlices; z++) {
