@@ -520,6 +520,104 @@ public class ParticleAnalysis {
 	}
 	
 	/**
+	 * Get the limits of each particle in the directions defined by an 
+	 * eigenvector tensor (usually the principal axes).
+	 * 
+	 * @param imp input image, needed for calibration
+	 * @param particleLabels label image
+	 * @param tensors array of rotation matrices, one per particle
+	 * @param nParticles number of particles
+	 * @return array of min and max distances from the  for each of 
+	 */
+	static double[][] getAxisAlignedBoundingBox(final ImagePlus imp, final int[][] particleLabels,
+		final Matrix[] tensors, final int nParticles){
+		
+		double[][] limits = new double[nParticles][6];
+		for (int i = 0; i < nParticles; i++) {
+			limits[i][0] = Double.MAX_VALUE; // 0 min
+			limits[i][1] = -Double.MAX_VALUE; // 0 max
+			limits[i][2] = Double.MAX_VALUE; // 1 min
+			limits[i][3] = -Double.MAX_VALUE; // 1 max
+			limits[i][4] = Double.MAX_VALUE; // 2 min
+			limits[i][5] = -Double.MAX_VALUE; // 2 max
+		}
+		
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		
+		double[][] v = new double[3][3];
+		for (int z = 0; z < d; z++) {
+			final double zd = z * vD;
+			for (int y = 0; y < h; y++) {
+				final double yh = y * vH;
+				final int index = y * w;
+				for (int x = 0; x < w; x++) {
+					final double xw = x * vW;
+					
+					//could go faster by filtering out background, should be index 0
+					final int i = particleLabels[z][index + x];
+					v = tensors[i].getArray();
+					final double v00 = v[0][0];
+					final double v10 = v[1][0];
+					final double v20 = v[2][0];
+					final double v01 = v[0][1];
+					final double v11 = v[1][1];
+					final double v21 = v[2][1];
+					final double v02 = v[0][2];
+					final double v12 = v[1][2];
+					final double v22 = v[2][2];
+					
+					final double xdv00 = xw * v00;
+					final double xdv01 = xw * v01;
+					final double xdv02 = xw * v02;
+					final double yhv10 = yh * v10;
+					final double yhv11 = yh * v11;
+					final double yhv12 = yh * v12;
+					final double zdv20 = zd * v20;
+					final double zdv21 = zd * v21;
+					final double zdv22 = zd * v22;
+					
+					final double xT = xdv00 + yhv10 + zdv20;
+					final double yT = xdv01 + yhv11 + zdv21;
+					final double zT = xdv02 + yhv12 + zdv22;
+			
+					limits[i][0] = Math.min(limits[i][0], xT);
+					limits[i][1] = Math.max(limits[i][1], xT);
+					limits[i][2] = Math.min(limits[i][2], yT);
+					limits[i][3] = Math.max(limits[i][3], yT);
+					limits[i][4] = Math.min(limits[i][4], zT);
+					limits[i][5] = Math.max(limits[i][5], zT);
+				}
+			}
+		}
+		
+		final double[][] boxDimensions = new double[nParticles][6];
+		
+		for (int i = 0; i < nParticles; i++) {
+			//centroid is average of the two limits
+			final double cx = (limits[i][0] + limits[i][1]) / 2;
+			final double cy = (limits[i][2] + limits[i][3]) / 2;
+			final double cz = (limits[i][4] + limits[i][5]) / 2;
+			
+			//particle's length along each tensor axis is difference between limits
+			final double d0 = limits[i][1] - limits[i][0];
+			final double d1 = limits[i][3] - limits[i][2];
+			final double d2 = limits[i][5] - limits[i][4];
+			
+			final double[] box = {cx, cy, cz, d0, d1, d2};
+			
+			boxDimensions[i] = box;
+		}
+		
+		return boxDimensions;
+	}
+	
+	/**
 	 * Get the Euler characteristic of each particle
 	 *
 	 * @param imp an image.
