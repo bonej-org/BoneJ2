@@ -74,7 +74,7 @@ import ij.process.ImageProcessor;
  * This implementation scales as O(n) or slightly better and is well suited to large images.
  * 
  * @author Michael Doube
- * @see <a href="https://doi.org/10.1101/2020.02.28.969139">doi:10.1101/2020.02.28.969139</a>
+ * @see <a href="https://doi.org/10.1098/rsos.201784">doi:10.1098/rsos.201784</a>
  *
  */
 public class ConnectedComponents {
