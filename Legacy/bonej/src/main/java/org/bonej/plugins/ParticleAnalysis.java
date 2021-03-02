@@ -527,13 +527,14 @@ public class ParticleAnalysis {
 	 * @param particleLabels label image
 	 * @param tensors array of rotation matrices, one per particle
 	 * @param nParticles number of particles
-	 * @return array of min and max distances from the  for each of 
+	 * @return array of box dimensions, each containing the centre x, y, z
+	 * coordinates and box width, height and depth.
 	 */
-	static double[][] getAxisAlignedBoundingBox(final ImagePlus imp, final int[][] particleLabels,
+	static double[][] getAxisAlignedBoundingBoxes(final ImagePlus imp, final int[][] particleLabels,
 		final Matrix[] tensors, final int nParticles){
 		
 		double[][] limits = new double[nParticles][6];
-		for (int i = 0; i < nParticles; i++) {
+		for (int i = 1; i < nParticles; i++) {
 			limits[i][0] = Double.MAX_VALUE; // 0 min
 			limits[i][1] = -Double.MAX_VALUE; // 0 max
 			limits[i][2] = Double.MAX_VALUE; // 1 min
@@ -559,9 +560,10 @@ public class ParticleAnalysis {
 				for (int x = 0; x < w; x++) {
 					final double xw = x * vW;
 					
-					//could go faster by filtering out background, should be index 0
 					final int i = particleLabels[z][index + x];
+					if (i == 0) continue;
 					v = tensors[i].getArray();
+					
 					final double v00 = v[0][0];
 					final double v10 = v[1][0];
 					final double v20 = v[2][0];
@@ -596,7 +598,7 @@ public class ParticleAnalysis {
 			}
 		}
 		
-		final double[][] boxDimensions = new double[nParticles][6];
+		final double[][] alignedBoxes = new double[nParticles][6];
 		
 		for (int i = 0; i < nParticles; i++) {
 			//centroid is average of the two limits
@@ -611,10 +613,33 @@ public class ParticleAnalysis {
 			
 			final double[] box = {cx, cy, cz, d0, d1, d2};
 			
-			boxDimensions[i] = box;
+			alignedBoxes[i] = box;
 		}
 		
-		return boxDimensions;
+		return alignedBoxes;
+	}
+	
+	/**
+	 * Overloaded method that accepts the EVD of each particle and unwraps its Matrixes
+	 * for convenience.
+	 * 
+	 * @param imp ImagePlus
+	 * @param particleLabels 
+	 * @param eigens array of 3 × 3 rotation matrices (inertia tensors)
+	 * @param nParticles 
+	 * @return dimensions of the axis aligned bounding box, aligned to the eigenvectors
+	 * of the supplied eigenvalue decomposition.
+	 */
+	static double[][] getAxisAlignedBoundingBoxes(final ImagePlus imp, final int[][] particleLabels,
+		final EigenvalueDecomposition[] eigens, final int nParticles){
+		
+		final Matrix[] tensors = new Matrix[nParticles];
+		
+		for (int i = 1; i < nParticles; i++) {
+			tensors[i] = eigens[i].getV();
+		}
+		
+		return getAxisAlignedBoundingBoxes(imp, particleLabels, tensors, nParticles);
 	}
 	
 	/**

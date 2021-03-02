@@ -165,8 +165,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			"³");
 		gd.addNumericField("Surface_resampling", 2, 0);
 		final String[] headers2 = { "Graphical Results", " " };
-		final String[] labels2 = new String[9];
-		final boolean[] defaultValues2 = new boolean[9];
+		final String[] labels2 = new String[10];
+		final boolean[] defaultValues2 = new boolean[10];
 		labels2[0] = "Show_particle stack";
 		defaultValues2[0] = true;
 		labels2[1] = "Show_size stack";
@@ -185,6 +185,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues2[7] = true;
 		labels2[8] = "Draw_ellipsoids";
 		defaultValues2[8] = false;
+		labels2[9] = "Show_aligned_boxes";
+		defaultValues2[9] = false;
 		gd.addCheckboxGroup(5, 2, labels2, defaultValues2, headers2);
 		final String[] items = { "Gradient", "Split", "Orientation"};
 		gd.addChoice("Surface colours", items, items[0]);
@@ -221,6 +223,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean doEllipsoidImage = gd.getNextBoolean();
 		final boolean do3DOriginal = gd.getNextBoolean();
 		final boolean doEllipsoidStack = gd.getNextBoolean();
+		final boolean doAlignedBoxesImage = gd.getNextBoolean();
 		final int origResampling = (int) Math.floor(gd.getNextNumber());
 
 		// get the particles and do the analysis
@@ -248,8 +251,13 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int[][] limits = ParticleAnalysis.getParticleLimits(imp, particleLabels, nParticles);
 
 		EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
-		if (doMoments || doAxesImage || colourMode == ParticleDisplay.ORIENTATION) {
+		if (doMoments || doAxesImage || colourMode == ParticleDisplay.ORIENTATION || doAlignedBoxesImage) {
 			eigens = ParticleAnalysis.getEigens(imp, particleLabels, centroids);
+		}
+		
+		double[][] alignedBoxes = new double[nParticles][6];
+		if (doAlignedBoxesImage) { //TODO include numerical results option
+			alignedBoxes = ParticleAnalysis.getAxisAlignedBoundingBoxes(imp, particleLabels, eigens, nParticles);
 		}
 		
 		// set up resources for analysis
@@ -417,7 +425,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 		// show 3D renderings
 		if (doSurfaceImage || doCentroidImage || doAxesImage || do3DOriginal ||
-			doEllipsoidImage)
+			doEllipsoidImage || doAlignedBoxesImage)
 		{
 
 			final Image3DUniverse univ = new Image3DUniverse();
@@ -443,6 +451,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 			if (do3DOriginal) {
 				ParticleDisplay.display3DOriginal(imp, origResampling, univ);
+			}
+			if (doAlignedBoxesImage) {
+				ParticleDisplay.displayAlignedBoundingBoxes(alignedBoxes, eigens, univ);
 			}
 			univ.show();
 		}
