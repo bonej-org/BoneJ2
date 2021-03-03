@@ -159,6 +159,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues[9] = false;
 		labels[10] = "Skeletons";
 		defaultValues[10] = false;
+		labels[11] = "Aligned boxes";
+		defaultValues[11] = false;
 		gd.addCheckboxGroup(6, 2, labels, defaultValues, headers);
 		gd.addNumericField("Min Volume", 0, 3, 7, units + "³");
 		gd.addNumericField("Max Volume", Double.POSITIVE_INFINITY, 3, 7, units +
@@ -185,7 +187,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues2[7] = true;
 		labels2[8] = "Draw_ellipsoids";
 		defaultValues2[8] = false;
-		labels2[9] = "Show_aligned_boxes";
+		labels2[9] = "Show_aligned_boxes (3D)";
 		defaultValues2[9] = false;
 		gd.addCheckboxGroup(5, 2, labels2, defaultValues2, headers2);
 		final String[] items = { "Gradient", "Split", "Orientation"};
@@ -212,6 +214,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean doEllipsoids = gd.getNextBoolean();
 		final boolean doVerboseUnitVectors = gd.getNextBoolean();
 		final boolean doSkeletons = gd.getNextBoolean();
+		final boolean doAlignedBoxes = gd.getNextBoolean();
 		final boolean doParticleImage = gd.getNextBoolean();
 		final boolean doParticleSizeImage = gd.getNextBoolean();
 		final boolean doThickImage = gd.getNextBoolean();
@@ -251,12 +254,12 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final int[][] limits = ParticleAnalysis.getParticleLimits(imp, particleLabels, nParticles);
 
 		EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
-		if (doMoments || doAxesImage || colourMode == ParticleDisplay.ORIENTATION || doAlignedBoxesImage) {
+		if (doMoments || doAxesImage || colourMode == ParticleDisplay.ORIENTATION || doAlignedBoxes || doAlignedBoxesImage) {
 			eigens = ParticleAnalysis.getEigens(imp, particleLabels, centroids);
 		}
 		
 		double[][] alignedBoxes = new double[nParticles][6];
-		if (doAlignedBoxesImage) { //TODO include numerical results option
+		if (doAlignedBoxes || doAlignedBoxesImage) {
 			alignedBoxes = ParticleAnalysis.getAxisAlignedBoundingBoxes(imp, particleLabels, eigens, nParticles);
 		}
 		
@@ -320,6 +323,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				rt.addValue("x Cent (" + units + ")", centroids[i][0]);
 				rt.addValue("y Cent (" + units + ")", centroids[i][1]);
 				rt.addValue("z Cent (" + units + ")", centroids[i][2]);
+				if (doAlignedBoxes) {
+					rt.addValue("Box x (" + units + ")", alignedBoxes[i][0]);
+					rt.addValue("Box y (" + units + ")", alignedBoxes[i][1]);
+					rt.addValue("Box z (" + units + ")", alignedBoxes[i][2]);
+					rt.addValue("Box l0 (" + units + ")", alignedBoxes[i][3]);
+					rt.addValue("Box l1 (" + units + ")", alignedBoxes[i][4]);
+					rt.addValue("Box l2 (" + units + ")", alignedBoxes[i][5]);
+				}
 				if (doSurfaceArea) {
 					rt.addValue("SA (" + units + "²)", surfaceAreas[i]);
 				}
