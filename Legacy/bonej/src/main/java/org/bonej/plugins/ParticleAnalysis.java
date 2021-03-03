@@ -574,9 +574,9 @@ public class ParticleAnalysis {
 					final double v12 = v[1][2];
 					final double v22 = v[2][2];
 					
-					final double xdv00 = xw * v00;
-					final double xdv01 = xw * v01;
-					final double xdv02 = xw * v02;
+					final double xwv00 = xw * v00;
+					final double xwv01 = xw * v01;
+					final double xwv02 = xw * v02;
 					final double yhv10 = yh * v10;
 					final double yhv11 = yh * v11;
 					final double yhv12 = yh * v12;
@@ -584,27 +584,46 @@ public class ParticleAnalysis {
 					final double zdv21 = zd * v21;
 					final double zdv22 = zd * v22;
 					
-					final double xT = xdv00 + yhv10 + zdv20;
-					final double yT = xdv01 + yhv11 + zdv21;
-					final double zT = xdv02 + yhv12 + zdv22;
+					final double l0 = xwv00 + yhv10 + zdv20;
+					final double l1 = xwv01 + yhv11 + zdv21;
+					final double l2 = xwv02 + yhv12 + zdv22;
 			
-					limits[i][0] = Math.min(limits[i][0], xT);
-					limits[i][1] = Math.max(limits[i][1], xT);
-					limits[i][2] = Math.min(limits[i][2], yT);
-					limits[i][3] = Math.max(limits[i][3], yT);
-					limits[i][4] = Math.min(limits[i][4], zT);
-					limits[i][5] = Math.max(limits[i][5], zT);
+					limits[i][0] = Math.min(limits[i][0], l0);
+					limits[i][1] = Math.max(limits[i][1], l0);
+					limits[i][2] = Math.min(limits[i][2], l1);
+					limits[i][3] = Math.max(limits[i][3], l1);
+					limits[i][4] = Math.min(limits[i][4], l2);
+					limits[i][5] = Math.max(limits[i][5], l2);
 				}
 			}
 		}
 		
 		final double[][] alignedBoxes = new double[nParticles][6];
 		
-		for (int i = 0; i < nParticles; i++) {
-			//centroid is average of the two limits
-			final double cx = (limits[i][0] + limits[i][1]) / 2;
-			final double cy = (limits[i][2] + limits[i][3]) / 2;
-			final double cz = (limits[i][4] + limits[i][5]) / 2;
+		for (int i = 1; i < nParticles; i++) {
+			//centroid in rotated coordinate frame is average of the two limits
+			final double c0 = (limits[i][0] + limits[i][1]) / 2; //long axis 0th column
+			final double c1 = (limits[i][2] + limits[i][3]) / 2; //medium axis 1st column
+			final double c2 = (limits[i][4] + limits[i][5]) / 2; //short axis 2nd column
+			
+			//rotate back to original coordinate frame by multiplying by the inverse
+			final double[][] vi = tensors[i].inverse().getArray();
+			
+			final double c2vi20 = c2 * vi[2][0];
+			final double c2vi21 = c2 * vi[2][1];
+			final double c2vi22 = c2 * vi[2][2];
+			
+			final double c1vi10 = c1 * vi[1][0];
+			final double c1vi11 = c1 * vi[1][1];
+			final double c1vi12 = c1 * vi[1][2];
+			
+			final double c0vi00 = c0 * vi[0][0];
+			final double c0vi01 = c0 * vi[0][1];
+			final double c0vi02 = c0 * vi[0][2];
+			
+			final double cx = c2vi20 + c1vi10 + c0vi00;
+			final double cy = c2vi21 + c1vi11 + c0vi01;
+			final double cz = c2vi22 + c1vi12 + c0vi02;
 			
 			//particle's length along each tensor axis is difference between limits
 			final double d0 = limits[i][1] - limits[i][0];
