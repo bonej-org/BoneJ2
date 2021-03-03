@@ -1047,9 +1047,9 @@ public class Moments implements PlugIn, DialogListener {
 				IJ.showProgress(z, dT);
 				final ImageProcessor targetIP = targetProcessors[z];
 				final double zD = z * vS - zTc;
-				final double zDeVI00 = zD * eVI20;
-				final double zDeVI01 = zD * eVI21;
-				final double zDeVI02 = zD * eVI22;
+				final double zDeVI20 = zD * eVI20;
+				final double zDeVI21 = zD * eVI21;
+				final double zDeVI22 = zD * eVI22;
 				for (int y = 0; y < hT; y++) {
 					final double yD = y * vS - yTc;
 					final double yDeVI10 = yD * eVI10;
@@ -1057,9 +1057,9 @@ public class Moments implements PlugIn, DialogListener {
 					final double yDeVI12 = yD * eVI12;
 					for (int x = 0; x < wT; x++) {
 						final double xD = x * vS - xTc;
-						final double xAlign = xD * eVI00 + yDeVI10 + zDeVI00 + xTc;
-						final double yAlign = xD * eVI01 + yDeVI11 + zDeVI01 + yTc;
-						final double zAlign = xD * eVI02 + yDeVI12 + zDeVI02 + zTc;
+						final double xAlign = xD * eVI00 + yDeVI10 + zDeVI20 + xTc;
+						final double yAlign = xD * eVI01 + yDeVI11 + zDeVI21 + yTc;
+						final double zAlign = xD * eVI02 + yDeVI12 + zDeVI22 + zTc;
 						// possibility to do some voxel interpolation instead
 						// of just rounding in next 3 lines
 						final int xA = (int) Math.floor((xAlign + dXc) / vW);
