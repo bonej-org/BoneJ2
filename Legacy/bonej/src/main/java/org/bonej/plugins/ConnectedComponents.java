@@ -74,7 +74,7 @@ import ij.process.ImageProcessor;
  * This implementation scales as O(n) or slightly better and is well suited to large images.
  * 
  * @author Michael Doube
- * @see <a href="https://doi.org/10.1101/2020.02.28.969139">doi:10.1101/2020.02.28.969139</a>
+ * @see <a href="https://doi.org/10.1098/rsos.201784">doi:10.1098/rsos.201784</a>
  *
  */
 public class ConnectedComponents {
@@ -115,13 +115,20 @@ public class ConnectedComponents {
 		final int nProcessors = Runtime.getRuntime().availableProcessors();
 		final int minSlicesPerChunk = 10;
 
-		// set up number of chunks
-		final int nChunks = nSlices < minSlicesPerChunk * nProcessors
-				? (int) Math.ceil((double) nSlices / (double) minSlicesPerChunk)
-				: nProcessors;
-		// set up chunk sizes - last chunk is the remainder
-		final int slicesPerChunk = (int) Math.ceil((double) nSlices / (double) nChunks);
-
+		// set up number of chunks and chunk sizes
+		int nChunks = 1;
+		int slicesPerChunk = nSlices;
+		if (nSlices < minSlicesPerChunk) {
+			slicesPerChunk = nSlices;
+			nChunks = 1;
+		} else if (nSlices <= minSlicesPerChunk * nProcessors) {
+			slicesPerChunk = minSlicesPerChunk;
+			nChunks = (int) Math.ceil((double) nSlices / (double) minSlicesPerChunk); 
+		} else if (nSlices > minSlicesPerChunk * nProcessors) {
+			nChunks = nProcessors;
+			slicesPerChunk = (int) Math.floor((double) nSlices / (double) nChunks);
+		}
+		
 		// set up start slice array
 		final int[] startSlices = new int[nChunks];
 		for (int i = 0; i < nChunks; i++) {
