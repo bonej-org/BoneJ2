@@ -404,44 +404,72 @@ public class ParticleAnalysis {
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 		final int nParticles = centroids.length;
-		final EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
-		final double[][] momentTensors = new double[nParticles][6];
-		for (int z = 0; z < d; z++) {
-			final double zVd = z * vD;
-			for (int y = 0; y < h; y++) {
-				final double yVh = y * vH;
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int p = particleLabels[z][index + x];
-					if (p > 0) {
-						final double xVw = x * vW;
-						final double dx = xVw - centroids[p][0];
-						final double dy = yVh - centroids[p][1];
-						final double dz = zVd - centroids[p][2];
-						momentTensors[p][0] += dy * dy + dz * dz + voxVhVd; // Ixx
-						momentTensors[p][1] += dx * dx + dz * dz + voxVwVd; // Iyy
-						momentTensors[p][2] += dy * dy + dx * dx + voxVhVw; // Izz
-						momentTensors[p][3] += dx * dy; // Ixy
-						momentTensors[p][4] += dx * dz; // Ixz
-						momentTensors[p][5] += dy * dz; // Iyz
+
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		final List<double[][]> listOfTensors = Collections.synchronizedList(new ArrayList<>());
+		
+		for (int thread = 0; thread < threads.length; thread++) {
+
+			final double[][] threadTensors = new double[nParticles][6];
+
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+					final double zVd = z * vD;
+					final int[] slice = particleLabels[z];
+					for (int y = 0; y < h; y++) {
+						final double yVh = y * vH;
+						final int index = y * w;
+						for (int x = 0; x < w; x++) {
+							final int p = slice[index + x];
+							if (p == 0) continue;
+							final double xVw = x * vW;
+							final double dx = xVw - centroids[p][0];
+							final double dy = yVh - centroids[p][1];
+							final double dz = zVd - centroids[p][2];
+							threadTensors[p][0] += dy * dy + dz * dz + voxVhVd; // Ixx
+							threadTensors[p][1] += dx * dx + dz * dz + voxVwVd; // Iyy
+							threadTensors[p][2] += dy * dy + dx * dx + voxVhVw; // Izz
+							threadTensors[p][3] += dx * dy; // Ixy
+							threadTensors[p][4] += dx * dz; // Ixz
+							threadTensors[p][5] += dy * dz; // Iyz
+						}
 					}
 				}
-			}
+			});
+			listOfTensors.add(threadTensors);
+		}
+		Multithreader.startAndJoin(threads);
+		
+		final double[][] momentTensors = new double[nParticles][6];
+		Iterator<double[][]> iter = listOfTensors.iterator();
+		while (iter.hasNext()) {
+			final double[][] threadTensors = iter.next();
 			for (int p = 1; p < nParticles; p++) {
-				final double[][] inertiaTensor = new double[3][3];
-				inertiaTensor[0][0] = momentTensors[p][0];
-				inertiaTensor[1][1] = momentTensors[p][1];
-				inertiaTensor[2][2] = momentTensors[p][2];
-				inertiaTensor[0][1] = -momentTensors[p][3];
-				inertiaTensor[0][2] = -momentTensors[p][4];
-				inertiaTensor[1][0] = -momentTensors[p][3];
-				inertiaTensor[1][2] = -momentTensors[p][5];
-				inertiaTensor[2][0] = -momentTensors[p][4];
-				inertiaTensor[2][1] = -momentTensors[p][5];
-				final Matrix inertiaTensorMatrix = new Matrix(inertiaTensor);
-				final EigenvalueDecomposition E = new EigenvalueDecomposition(inertiaTensorMatrix);
-				eigens[p] = E;
+				momentTensors[p][0] += threadTensors[p][0];
+				momentTensors[p][1] += threadTensors[p][1];
+				momentTensors[p][2] += threadTensors[p][2];
+				momentTensors[p][3] += threadTensors[p][3];
+				momentTensors[p][4] += threadTensors[p][4];
+				momentTensors[p][5] += threadTensors[p][5];
 			}
+		}
+		
+		final EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
+		for (int p = 1; p < nParticles; p++) {
+			final double[][] inertiaTensor = new double[3][3];
+			inertiaTensor[0][0] = momentTensors[p][0];
+			inertiaTensor[1][1] = momentTensors[p][1];
+			inertiaTensor[2][2] = momentTensors[p][2];
+			inertiaTensor[0][1] = -momentTensors[p][3];
+			inertiaTensor[0][2] = -momentTensors[p][4];
+			inertiaTensor[1][0] = -momentTensors[p][3];
+			inertiaTensor[1][2] = -momentTensors[p][5];
+			inertiaTensor[2][0] = -momentTensors[p][4];
+			inertiaTensor[2][1] = -momentTensors[p][5];
+			final Matrix inertiaTensorMatrix = new Matrix(inertiaTensor);
+			final EigenvalueDecomposition E = new EigenvalueDecomposition(inertiaTensorMatrix);
+			eigens[p] = E;
 		}
 		return eigens;
 	}
