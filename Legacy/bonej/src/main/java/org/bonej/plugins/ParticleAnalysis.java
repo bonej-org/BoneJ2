@@ -54,6 +54,7 @@ package org.bonej.plugins;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -348,7 +349,7 @@ public class ParticleAnalysis {
 		
 		final AtomicInteger ai = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
-		ArrayList<double[][]> listOfSums = new ArrayList<>();
+		final List<double[][]> listOfSums = Collections.synchronizedList(new ArrayList<>());
 		for (int thread = 0; thread < threads.length; thread++) {
 			final double[][] threadSums = new double[nParticles][3];
 			threads[thread] = new Thread(() -> {
@@ -515,29 +516,71 @@ public class ParticleAnalysis {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
-		final int[][] limits = new int[nParticles][6];
-		for (int i = 0; i < nParticles; i++) {
-			limits[i][0] = Integer.MAX_VALUE; // x min
-			limits[i][1] = 0; // x max
-			limits[i][2] = Integer.MAX_VALUE; // y min
-			limits[i][3] = 0; // y max
-			limits[i][4] = Integer.MAX_VALUE; // z min
-			limits[i][5] = 0; // z max
-		}
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int i = particleLabels[z][index + x];
-					limits[i][0] = Math.min(limits[i][0], x);
-					limits[i][1] = Math.max(limits[i][1], x);
-					limits[i][2] = Math.min(limits[i][2], y);
-					limits[i][3] = Math.max(limits[i][3], y);
-					limits[i][4] = Math.min(limits[i][4], z);
-					limits[i][5] = Math.max(limits[i][5], z);
+		
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		final List<int[][]> listOfLimits = Collections.synchronizedList(new ArrayList<>());
+		for (int thread = 0; thread < threads.length; thread++) {
+			//set up a limit range for each thread and particle
+			final int[][] threadLimits = new int[nParticles][6];
+			for (int p = 0; p < nParticles; p++) {
+				threadLimits[p][0] = Integer.MAX_VALUE; // x min
+				threadLimits[p][1] = 0; // x max
+				threadLimits[p][2] = Integer.MAX_VALUE; // y min
+				threadLimits[p][3] = 0; // y max
+				threadLimits[p][4] = Integer.MAX_VALUE; // z min
+				threadLimits[p][5] = 0; // z max
+			}
+			
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+					final int[] slice = particleLabels[z];
+					for (int y = 0; y < h; y++) {
+						final int index = y * w;
+						for (int x = 0; x < w; x++) {
+							final int p = slice[index + x];
+							final int[] threadLimitsP = threadLimits[p];
+							threadLimitsP[0] = Math.min(x, threadLimitsP[0]);
+							threadLimitsP[1] = Math.max(x, threadLimitsP[1]);
+							threadLimitsP[2] = Math.min(y, threadLimitsP[2]);
+							threadLimitsP[3] = Math.max(y, threadLimitsP[3]);
+							threadLimitsP[4] = Math.min(z, threadLimitsP[4]);
+							threadLimitsP[5] = Math.max(z, threadLimitsP[5]);
+							threadLimits[p] = threadLimitsP;
+						}
+					}
 				}
+			});
+			listOfLimits.add(threadLimits);
+		}
+		Multithreader.startAndJoin(threads);
+		
+		final int[][] limits = new int[nParticles][6];
+		for (int p = 0; p < nParticles; p++) {
+			limits[p][0] = Integer.MAX_VALUE; // x min
+			limits[p][1] = 0; // x max
+			limits[p][2] = Integer.MAX_VALUE; // y min
+			limits[p][3] = 0; // y max
+			limits[p][4] = Integer.MAX_VALUE; // z min
+			limits[p][5] = 0; // z max
+		}
+		
+		Iterator<int[][]> iter = listOfLimits.iterator();
+		while (iter.hasNext()) {
+			final int[][] threadLimits = iter.next();
+			for (int p = 0; p < nParticles; p++) {
+				final int[] threadP = threadLimits[p];
+				final int[] limitsP = limits[p];
+				limitsP[0] = Math.min(threadP[0], limitsP[0]);
+				limitsP[1] = Math.max(threadP[1], limitsP[1]);
+				limitsP[2] = Math.min(threadP[2], limitsP[2]);
+				limitsP[3] = Math.max(threadP[3], limitsP[3]);
+				limitsP[4] = Math.min(threadP[4], limitsP[4]);
+				limitsP[5] = Math.max(threadP[5], limitsP[5]);
+				limits[p] = limitsP; 
 			}
 		}
+
 		return limits;
 	}
 	

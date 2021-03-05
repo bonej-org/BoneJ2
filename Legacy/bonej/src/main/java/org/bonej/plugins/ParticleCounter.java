@@ -248,7 +248,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 		final double[] volumes = ParticleAnalysis.getVolumes(imp, particleSizes);
 		
-		//centroids and limits could run in separate threads - they do not depend on one another
 		final double[][] centroids = ParticleAnalysis.getCentroids(imp, particleLabels,
 			particleSizes);
 		final int[][] limits = ParticleAnalysis.getParticleLimits(imp, particleLabels, nParticles);
