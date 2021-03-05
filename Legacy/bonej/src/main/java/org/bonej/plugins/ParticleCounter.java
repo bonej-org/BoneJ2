@@ -248,9 +248,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 		final double[] volumes = ParticleAnalysis.getVolumes(imp, particleSizes);
 		
-		final double[][] centroids = ParticleAnalysis.getCentroids(imp, particleLabels,
-			particleSizes);
-		final int[][] limits = ParticleAnalysis.getParticleLimits(imp, particleLabels, nParticles);
+		final Object[] boxes = ParticleAnalysis.getBoundingBoxes(imp, particleLabels, particleSizes);
+		
+		final double[][] centroids = (double[][]) boxes[0];
+		final int[][] limits = (int[][]) boxes[1];
 
 		EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
 		if (doMoments || doAxesImage || colourMode == ParticleDisplay.ORIENTATION || doAlignedBoxes || doAlignedBoxesImage) {

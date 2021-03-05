@@ -334,64 +334,6 @@ public class ParticleAnalysis {
 	}
 
 	/**
-	 * Get the centroids of all the particles in real units
-	 *
-	 * @param imp            an image.
-	 * @param particleLabels particles in the image.
-	 * @param particleSizes  sizes of the particles
-	 * @return double[][] containing all the particles' centroids
-	 */
-	static double[][] getCentroids(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final int nParticles = particleSizes.length;
-		
-		final AtomicInteger ai = new AtomicInteger(0);
-		final Thread[] threads = Multithreader.newThreads();
-		final List<double[][]> listOfSums = Collections.synchronizedList(new ArrayList<>());
-		for (int thread = 0; thread < threads.length; thread++) {
-			final double[][] threadSums = new double[nParticles][3];
-			threads[thread] = new Thread(() -> {
-				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
-					final int[] slice = particleLabels[z];
-					for (int y = 0; y < h; y++) {
-						final int index = y * w;
-						for (int x = 0; x < w; x++) {
-							final int particle = slice[index + x];
-							threadSums[particle][0] += x;
-							threadSums[particle][1] += y;
-							threadSums[particle][2] += z;
-						}
-					}
-				}
-				
-			});
-			listOfSums.add(threadSums);
-		}
-		Multithreader.startAndJoin(threads);
-		
-		final double[][] sums = new double[nParticles][3];
-		for (int i = 0; i < threads.length; i++) {
-			final double[][] threadSums = listOfSums.get(i);
-			for (int p = 0; p < nParticles; p++) {
-				sums[p][0] += threadSums[p][0];
-				sums[p][1] += threadSums[p][1];
-				sums[p][2] += threadSums[p][2];
-			}
-		}
-		
-		final Calibration cal = imp.getCalibration();
-		final double[][] centroids = new double[nParticles][3];
-		for (int p = 0; p < nParticles; p++) {
-			centroids[p][0] = cal.pixelWidth * sums[p][0] / particleSizes[p];
-			centroids[p][1] = cal.pixelHeight * sums[p][1] / particleSizes[p];
-			centroids[p][2] = cal.pixelDepth * sums[p][2] / particleSizes[p];
-		}
-		return centroids;
-	}
-
-	/**
 	 * Get the mean and standard deviation of pixel values &gt;0 for each particle
 	 * in a particle label work array
 	 *
@@ -505,22 +447,30 @@ public class ParticleAnalysis {
 	}
 
 	/**
-	 * Get the minimum and maximum x, y and z coordinates of each particle
+	 * Get the centroid and minimum and maximum x, y and z coordinates of each particle
 	 *
 	 * @param imp            ImagePlus (used for stack size)
 	 * @param particleLabels work array containing labelled particles
-	 * @param nParticles     number of particles in the image
-	 * @return int[][] containing x, y and z minima and maxima.
+	 * @param particleSizes sizes of the particles in pixel counts
+	 * @return 2-element Object array containing for each particle the centroid (in calibrated units as double[nParticles][3]) and the 
+	 * min and max x, y and z limits (in uncalibrated pixel units as int[nParticles][6]).
 	 */
-	static int[][] getParticleLimits(final ImagePlus imp, final int[][] particleLabels, final int nParticles) {
+	static Object[] getBoundingBoxes(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes) {
+		
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
+		final int nParticles = particleSizes.length;
 		
 		final AtomicInteger ai = new AtomicInteger(0);
 		final Thread[] threads = Multithreader.newThreads();
 		final List<int[][]> listOfLimits = Collections.synchronizedList(new ArrayList<>());
+		final List<double[][]> listOfSums = Collections.synchronizedList(new ArrayList<>());
+		
 		for (int thread = 0; thread < threads.length; thread++) {
+			
+			final double[][] threadSums = new double[nParticles][3];
+			
 			//set up a limit range for each thread and particle
 			final int[][] threadLimits = new int[nParticles][6];
 			for (int p = 0; p < nParticles; p++) {
@@ -539,6 +489,11 @@ public class ParticleAnalysis {
 						final int index = y * w;
 						for (int x = 0; x < w; x++) {
 							final int p = slice[index + x];
+							
+							threadSums[p][0] += x;
+							threadSums[p][1] += y;
+							threadSums[p][2] += z;
+							
 							final int[] threadLimitsP = threadLimits[p];
 							threadLimitsP[0] = Math.min(x, threadLimitsP[0]);
 							threadLimitsP[1] = Math.max(x, threadLimitsP[1]);
@@ -552,10 +507,13 @@ public class ParticleAnalysis {
 				}
 			});
 			listOfLimits.add(threadLimits);
+			listOfSums.add(threadSums);
 		}
 		Multithreader.startAndJoin(threads);
 		
 		final int[][] limits = new int[nParticles][6];
+		final double[][] sums = new double[nParticles][3];
+		
 		for (int p = 0; p < nParticles; p++) {
 			limits[p][0] = Integer.MAX_VALUE; // x min
 			limits[p][1] = 0; // x max
@@ -581,7 +539,26 @@ public class ParticleAnalysis {
 			}
 		}
 
-		return limits;
+		Iterator<double[][]> iterSums = listOfSums.iterator();
+		while (iterSums.hasNext()) {
+			final double[][] threadSums = iterSums.next();
+			for (int p = 0; p < nParticles; p++) {
+				sums[p][0] += threadSums[p][0];
+				sums[p][1] += threadSums[p][1];
+				sums[p][2] += threadSums[p][2];
+			}
+		}
+		
+		final Calibration cal = imp.getCalibration();
+		final double[][] centroids = new double[nParticles][3];
+		for (int p = 0; p < nParticles; p++) {
+			final long particleSize = particleSizes[p];
+			centroids[p][0] = cal.pixelWidth * sums[p][0] / particleSize;
+			centroids[p][1] = cal.pixelHeight * sums[p][1] / particleSize;
+			centroids[p][2] = cal.pixelDepth * sums[p][2] / particleSize;
+		}
+		
+		return new Object[] {centroids, limits};
 	}
 	
 	/**
