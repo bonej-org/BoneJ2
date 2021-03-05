@@ -489,6 +489,7 @@ public class ParticleAnalysis {
 						final int index = y * w;
 						for (int x = 0; x < w; x++) {
 							final int p = slice[index + x];
+							if (p == 0) continue;
 							
 							threadSums[p][0] += x;
 							threadSums[p][1] += y;
@@ -526,7 +527,7 @@ public class ParticleAnalysis {
 		Iterator<int[][]> iter = listOfLimits.iterator();
 		while (iter.hasNext()) {
 			final int[][] threadLimits = iter.next();
-			for (int p = 0; p < nParticles; p++) {
+			for (int p = 1; p < nParticles; p++) {
 				final int[] threadP = threadLimits[p];
 				final int[] limitsP = limits[p];
 				limitsP[0] = Math.min(threadP[0], limitsP[0]);
@@ -542,7 +543,7 @@ public class ParticleAnalysis {
 		Iterator<double[][]> iterSums = listOfSums.iterator();
 		while (iterSums.hasNext()) {
 			final double[][] threadSums = iterSums.next();
-			for (int p = 0; p < nParticles; p++) {
+			for (int p = 1; p < nParticles; p++) {
 				sums[p][0] += threadSums[p][0];
 				sums[p][1] += threadSums[p][1];
 				sums[p][2] += threadSums[p][2];
