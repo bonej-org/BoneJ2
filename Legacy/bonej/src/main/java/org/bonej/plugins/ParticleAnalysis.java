@@ -345,19 +345,41 @@ public class ParticleAnalysis {
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 		final int nParticles = particleSizes.length;
-		final double[][] sums = new double[nParticles][3];
-
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int particle = particleLabels[z][index + x];
-					sums[particle][0] += x;
-					sums[particle][1] += y;
-					sums[particle][2] += z;
+		
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		ArrayList<double[][]> listOfSums = new ArrayList<>();
+		for (int thread = 0; thread < threads.length; thread++) {
+			final double[][] threadSums = new double[nParticles][3];
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+					final int[] slice = particleLabels[z];
+					for (int y = 0; y < h; y++) {
+						final int index = y * w;
+						for (int x = 0; x < w; x++) {
+							final int particle = slice[index + x];
+							threadSums[particle][0] += x;
+							threadSums[particle][1] += y;
+							threadSums[particle][2] += z;
+						}
+					}
 				}
+				
+			});
+			listOfSums.add(threadSums);
+		}
+		Multithreader.startAndJoin(threads);
+		
+		final double[][] sums = new double[nParticles][3];
+		for (int i = 0; i < threads.length; i++) {
+			final double[][] threadSums = listOfSums.get(i);
+			for (int p = 0; p < nParticles; p++) {
+				sums[p][0] += threadSums[p][0];
+				sums[p][1] += threadSums[p][1];
+				sums[p][2] += threadSums[p][2];
 			}
 		}
+		
 		final Calibration cal = imp.getCalibration();
 		final double[][] centroids = new double[nParticles][3];
 		for (int p = 0; p < nParticles; p++) {
