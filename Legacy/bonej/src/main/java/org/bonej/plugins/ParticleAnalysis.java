@@ -473,7 +473,7 @@ public class ParticleAnalysis {
 			
 			//set up a limit range for each thread and particle
 			final int[][] threadLimits = new int[nParticles][6];
-			for (int p = 0; p < nParticles; p++) {
+			for (int p = 1; p < nParticles; p++) {
 				threadLimits[p][0] = Integer.MAX_VALUE; // x min
 				threadLimits[p][1] = 0; // x max
 				threadLimits[p][2] = Integer.MAX_VALUE; // y min
@@ -495,14 +495,12 @@ public class ParticleAnalysis {
 							threadSums[p][1] += y;
 							threadSums[p][2] += z;
 							
-							final int[] threadLimitsP = threadLimits[p];
-							threadLimitsP[0] = Math.min(x, threadLimitsP[0]);
-							threadLimitsP[1] = Math.max(x, threadLimitsP[1]);
-							threadLimitsP[2] = Math.min(y, threadLimitsP[2]);
-							threadLimitsP[3] = Math.max(y, threadLimitsP[3]);
-							threadLimitsP[4] = Math.min(z, threadLimitsP[4]);
-							threadLimitsP[5] = Math.max(z, threadLimitsP[5]);
-							threadLimits[p] = threadLimitsP;
+							threadLimits[p][0] = Math.min(threadLimits[p][0], x);
+							threadLimits[p][1] = Math.max(threadLimits[p][1], x);
+							threadLimits[p][2] = Math.min(threadLimits[p][2], y);
+							threadLimits[p][3] = Math.max(threadLimits[p][3], y);
+							threadLimits[p][4] = Math.min(threadLimits[p][4], z);
+							threadLimits[p][5] = Math.max(threadLimits[p][5], z);
 						}
 					}
 				}
@@ -515,7 +513,7 @@ public class ParticleAnalysis {
 		final int[][] limits = new int[nParticles][6];
 		final double[][] sums = new double[nParticles][3];
 		
-		for (int p = 0; p < nParticles; p++) {
+		for (int p = 1; p < nParticles; p++) {
 			limits[p][0] = Integer.MAX_VALUE; // x min
 			limits[p][1] = 0; // x max
 			limits[p][2] = Integer.MAX_VALUE; // y min
@@ -528,15 +526,12 @@ public class ParticleAnalysis {
 		while (iter.hasNext()) {
 			final int[][] threadLimits = iter.next();
 			for (int p = 1; p < nParticles; p++) {
-				final int[] threadP = threadLimits[p];
-				final int[] limitsP = limits[p];
-				limitsP[0] = Math.min(threadP[0], limitsP[0]);
-				limitsP[1] = Math.max(threadP[1], limitsP[1]);
-				limitsP[2] = Math.min(threadP[2], limitsP[2]);
-				limitsP[3] = Math.max(threadP[3], limitsP[3]);
-				limitsP[4] = Math.min(threadP[4], limitsP[4]);
-				limitsP[5] = Math.max(threadP[5], limitsP[5]);
-				limits[p] = limitsP; 
+				limits[p][0] = Math.min(limits[p][0], threadLimits[p][0]);
+				limits[p][1] = Math.max(limits[p][1], threadLimits[p][1]);
+				limits[p][2] = Math.min(limits[p][2], threadLimits[p][2]);
+				limits[p][3] = Math.max(limits[p][3], threadLimits[p][3]);
+				limits[p][4] = Math.min(limits[p][4], threadLimits[p][4]);
+				limits[p][5] = Math.max(limits[p][5], threadLimits[p][5]);
 			}
 		}
 
@@ -576,16 +571,6 @@ public class ParticleAnalysis {
 	static double[][] getAxisAlignedBoundingBoxes(final ImagePlus imp, final int[][] particleLabels,
 		final Matrix[] tensors, final int nParticles){
 		
-		double[][] limits = new double[nParticles][6];
-		for (int i = 1; i < nParticles; i++) {
-			limits[i][0] = Double.MAX_VALUE; // 0 min
-			limits[i][1] = -Double.MAX_VALUE; // 0 max
-			limits[i][2] = Double.MAX_VALUE; // 1 min
-			limits[i][3] = -Double.MAX_VALUE; // 1 max
-			limits[i][4] = Double.MAX_VALUE; // 2 min
-			limits[i][5] = -Double.MAX_VALUE; // 2 max
-		}
-		
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
@@ -594,63 +579,96 @@ public class ParticleAnalysis {
 		final double vH = cal.pixelHeight;
 		final double vD = cal.pixelDepth;
 		
-		double[][] v = new double[3][3];
-		for (int z = 0; z < d; z++) {
-			final double zd = z * vD;
-			for (int y = 0; y < h; y++) {
-				final double yh = y * vH;
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final double xw = x * vW;
-					
-					final int i = particleLabels[z][index + x];
-					if (i == 0) continue;
-					v = tensors[i].getArray();
-					
-					final double v00 = v[0][0];
-					final double v10 = v[1][0];
-					final double v20 = v[2][0];
-					final double v01 = v[0][1];
-					final double v11 = v[1][1];
-					final double v21 = v[2][1];
-					final double v02 = v[0][2];
-					final double v12 = v[1][2];
-					final double v22 = v[2][2];
-					
-					final double xwv00 = xw * v00;
-					final double xwv01 = xw * v01;
-					final double xwv02 = xw * v02;
-					final double yhv10 = yh * v10;
-					final double yhv11 = yh * v11;
-					final double yhv12 = yh * v12;
-					final double zdv20 = zd * v20;
-					final double zdv21 = zd * v21;
-					final double zdv22 = zd * v22;
-					
-					final double l0 = xwv00 + yhv10 + zdv20;
-					final double l1 = xwv01 + yhv11 + zdv21;
-					final double l2 = xwv02 + yhv12 + zdv22;
-			
-					limits[i][0] = Math.min(limits[i][0], l0);
-					limits[i][1] = Math.max(limits[i][1], l0);
-					limits[i][2] = Math.min(limits[i][2], l1);
-					limits[i][3] = Math.max(limits[i][3], l1);
-					limits[i][4] = Math.min(limits[i][4], l2);
-					limits[i][5] = Math.max(limits[i][5], l2);
-				}
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		final List<double[][]> listOfLimits = Collections.synchronizedList(new ArrayList<>());
+		
+		for (int thread = 0; thread < threads.length; thread++) {
+			double[][] threadLimits = new double[nParticles][6];
+			for (int p = 1; p < nParticles; p++) {
+				threadLimits[p][0] = Double.MAX_VALUE; // 0 min
+				threadLimits[p][1] = -Double.MAX_VALUE; // 0 max
+				threadLimits[p][2] = Double.MAX_VALUE; // 1 min
+				threadLimits[p][3] = -Double.MAX_VALUE; // 1 max
+				threadLimits[p][4] = Double.MAX_VALUE; // 2 min
+				threadLimits[p][5] = -Double.MAX_VALUE; // 2 max
 			}
+			threads[thread] = new Thread(() -> {
+				double[][] v = new double[3][3];
+				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+					final double zd = z * vD;
+					final int[] slice = particleLabels[z];
+					for (int y = 0; y < h; y++) {
+						final double yh = y * vH;
+						final int index = y * w;
+						for (int x = 0; x < w; x++) {
+							final double xw = x * vW;
+							
+							final int p = slice[index + x];
+							if (p == 0) continue;
+							v = tensors[p].getArray();
+							
+							final double xwv00 = xw * v[0][0];
+							final double xwv01 = xw * v[0][1];
+							final double xwv02 = xw * v[0][2];
+							final double yhv10 = yh * v[1][0];
+							final double yhv11 = yh * v[1][1];
+							final double yhv12 = yh * v[1][2];
+							final double zdv20 = zd * v[2][0];
+							final double zdv21 = zd * v[2][1];
+							final double zdv22 = zd * v[2][2];
+							
+							final double l0 = xwv00 + yhv10 + zdv20;
+							final double l1 = xwv01 + yhv11 + zdv21;
+							final double l2 = xwv02 + yhv12 + zdv22;
+					
+							threadLimits[p][0] = Math.min(threadLimits[p][0], l0);
+							threadLimits[p][1] = Math.max(threadLimits[p][1], l0);
+							threadLimits[p][2] = Math.min(threadLimits[p][2], l1);
+							threadLimits[p][3] = Math.max(threadLimits[p][3], l1);
+							threadLimits[p][4] = Math.min(threadLimits[p][4], l2);
+							threadLimits[p][5] = Math.max(threadLimits[p][5], l2);
+						}
+					}
+				}
+				
+			});
+			listOfLimits.add(threadLimits);
+		}
+		Multithreader.startAndJoin(threads);
+		
+		final double[][] limits = new double[nParticles][6];
+		for (int p = 1; p < nParticles; p++) {
+			limits[p][0] = Double.MAX_VALUE; // 0 min
+			limits[p][1] = -Double.MAX_VALUE; // 0 max
+			limits[p][2] = Double.MAX_VALUE; // 1 min
+			limits[p][3] = -Double.MAX_VALUE; // 1 max
+			limits[p][4] = Double.MAX_VALUE; // 2 min
+			limits[p][5] = -Double.MAX_VALUE; // 2 max
+		}
+		
+		for (int thread = 0; thread < threads.length; thread++) {
+			final double[][] threadLimits = listOfLimits.get(thread);
+				for (int p = 1; p < nParticles; p++) {
+					limits[p][0] = Math.min(limits[p][0], threadLimits[p][0]);
+					limits[p][1] = Math.max(limits[p][1], threadLimits[p][1]);
+					limits[p][2] = Math.min(limits[p][2], threadLimits[p][2]);
+					limits[p][3] = Math.max(limits[p][3], threadLimits[p][3]);
+					limits[p][4] = Math.min(limits[p][4], threadLimits[p][4]);
+					limits[p][5] = Math.max(limits[p][5], threadLimits[p][5]);
+				}
 		}
 		
 		final double[][] alignedBoxes = new double[nParticles][6];
 		
-		for (int i = 1; i < nParticles; i++) {
+		for (int p = 1; p < nParticles; p++) {
 			//centroid in rotated coordinate frame is average of the two limits
-			final double c0 = (limits[i][0] + limits[i][1]) / 2; //long axis 0th column
-			final double c1 = (limits[i][2] + limits[i][3]) / 2; //medium axis 1st column
-			final double c2 = (limits[i][4] + limits[i][5]) / 2; //short axis 2nd column
+			final double c0 = (limits[p][0] + limits[p][1]) / 2; //long axis 0th column
+			final double c1 = (limits[p][2] + limits[p][3]) / 2; //medium axis 1st column
+			final double c2 = (limits[p][4] + limits[p][5]) / 2; //short axis 2nd column
 			
 			//rotate back to original coordinate frame by multiplying by the inverse
-			final double[][] vi = tensors[i].inverse().getArray();
+			final double[][] vi = tensors[p].inverse().getArray();
 			
 			final double c2vi20 = c2 * vi[2][0];
 			final double c2vi21 = c2 * vi[2][1];
@@ -669,13 +687,13 @@ public class ParticleAnalysis {
 			final double cz = c2vi22 + c1vi12 + c0vi02;
 			
 			//particle's length along each tensor axis is difference between limits
-			final double d0 = limits[i][1] - limits[i][0];
-			final double d1 = limits[i][3] - limits[i][2];
-			final double d2 = limits[i][5] - limits[i][4];
+			final double d0 = limits[p][1] - limits[p][0];
+			final double d1 = limits[p][3] - limits[p][2];
+			final double d2 = limits[p][5] - limits[p][4];
 			
 			final double[] box = {cx, cy, cz, d0, d1, d2};
 			
-			alignedBoxes[i] = box;
+			alignedBoxes[p] = box;
 		}
 		
 		return alignedBoxes;
