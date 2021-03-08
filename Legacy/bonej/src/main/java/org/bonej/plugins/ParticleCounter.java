@@ -264,7 +264,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		
 		// set up resources for analysis
-		ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
+		List<List<Point3f>> surfacePoints = new ArrayList<>();
 		if (doSurfaceArea || doSurfaceVolume || doSurfaceImage || doEllipsoids ||
 			doFeret || doEllipsoidStack)
 		{

@@ -892,37 +892,45 @@ public class ParticleAnalysis {
 	 * @param nParticles number of particles
 	 * @return list of surface meshes, one per particle
 	 */
-	static ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp, final int[][] particleLabels,
+	static List<List<Point3f>> getSurfacePoints(final ImagePlus imp, final int[][] particleLabels,
 			final int[][] limits, final int resampling, final int nParticles) {
 		final Calibration cal = imp.getCalibration();
-		final ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
-		final boolean[] channels = { true, false, false };
+		final List<List<Point3f>> surfacePoints = Collections.synchronizedList(new ArrayList<>(nParticles));
 		for (int p = 0; p < nParticles; p++) {
-			if (p > 0) {
-				final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels, limits, resampling);
-				// noinspection TypeMayBeWeakened
-				final MCTriangulator mct = new MCTriangulator();
-				@SuppressWarnings("unchecked")
-				final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels, resampling);
-
-				final double xOffset = (limits[p][0] - 1) * cal.pixelWidth;
-				final double yOffset = (limits[p][2] - 1) * cal.pixelHeight;
-				final double zOffset = (limits[p][4] - 1) * cal.pixelDepth;
-				for (final Point3f point : points) {
-					point.x += xOffset;
-					point.y += yOffset;
-					point.z += zOffset;
-				}
-				if (points.isEmpty()) {
-					IJ.log("Particle " + p + " resulted in 0 surface points");
-					surfacePoints.add(null);
-				} else {
-					surfacePoints.add(points);
-				}
-			} else {
-				surfacePoints.add(null);
-			}
+			surfacePoints.add(null);
 		}
+		final AtomicInteger ai = new AtomicInteger(1);
+		final Thread[] threads = Multithreader.newThreads();
+		final boolean[] channels = { true, false, false };
+
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int p = ai.getAndIncrement(); p < nParticles; p = ai.getAndIncrement()) {
+
+					final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels, limits, resampling);
+					// noinspection TypeMayBeWeakened
+					final MCTriangulator mct = new MCTriangulator();
+					@SuppressWarnings("unchecked")
+					final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels, resampling);
+
+					final double xOffset = (limits[p][0] - 1) * cal.pixelWidth;
+					final double yOffset = (limits[p][2] - 1) * cal.pixelHeight;
+					final double zOffset = (limits[p][4] - 1) * cal.pixelDepth;
+					for (final Point3f point : points) {
+						point.x += xOffset;
+						point.y += yOffset;
+						point.z += zOffset;
+					}
+					if (points.isEmpty()) {
+						IJ.log("Particle " + p + " resulted in 0 surface points");
+					} else {
+						surfacePoints.set(p, points);
+					}
+				}
+			});
+		}
+		Multithreader.startAndJoin(threads);
+		
 		return surfacePoints;
 	}
 
