@@ -57,6 +57,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.Multithreader;
+import org.eclipse.collections.api.block.procedure.primitive.IntProcedure;
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
@@ -65,6 +67,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
@@ -482,6 +485,71 @@ public class ConnectedComponents {
 		// iterate backwards through the chunk maps
 
 		final int nChunks = chunkIDOffsets.length;
+		final int[][] bucketLUT = new int[nChunks][];
+		
+		//for each chunk set up a thread
+		final Thread[] threads = new Thread[nChunks];
+		for (int thread = 0; thread < nChunks; thread++) {
+			final int chunk = thread;
+			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
+			final int nBuckets = map.size();
+			final int[] threadBucketLUT = new int[nBuckets];
+			final int IDoffset = chunkIDOffsets[chunk];
+			for (int i = 0; i < nBuckets; i++) {
+				//default is that each label sits in its same-numbered bucket minus IDoffset
+				threadBucketLUT[i] = i + IDoffset;
+			}
+			threads[thread] = new Thread(() -> {
+				for (int i = map.size() - 1; i >= 0; i--) {
+					final IntHashSet set = map.get(i);
+					if (!set.isEmpty()) {
+						//get the minimum that is greater than or equal to ID offset
+						int minLabel = Integer.MAX_VALUE;
+						//this iteration strategy may be slow
+						IntIterator intiter = set.intIterator();
+						while (intiter.hasNext()) {
+							final int label = intiter.next();
+							if (label >= IDoffset && label < minLabel) {
+								minLabel = label;
+							}
+						}
+						// move whole set's contents to a lower position in the map
+						if (minLabel < i + IDoffset) {
+							map.get(minLabel - IDoffset).addAll(set);
+							set.clear();
+						}
+					}
+				}
+				//now fill the LUT
+				boolean doItAgain = true;
+				while (doItAgain == true) {
+					doItAgain = false;
+					for (int i = 0; i < nBuckets; i++) {
+						final IntHashSet set = map.get(i);
+						if (set.isEmpty()) continue;
+						IntIterator iter = set.intIterator();
+						while (iter.hasNext()) {
+							final int label = iter.next();
+							if (label < IDoffset) continue; //ignore labels from lower chunks
+							final int labelID = label - IDoffset;
+							//check the current ID in the LUT
+							final int currentID = threadBucketLUT[labelID];
+							if (currentID == labelID) { //the normal case, each label ought to be present in the map only once and in a smaller or same value bucket
+								threadBucketLUT[labelID] = i;
+							} else if (currentID < i) { //this label was already found in a lower bucket
+								//maybe need to update the LUT for the set members prior to shifting
+								//to reduce false hits and iterations
+								map.get(currentID).addAll(set);
+								set.clear();
+								doItAgain = true;
+							}
+						}
+					}
+				}
+			});
+			bucketLUT[chunk] = threadBucketLUT;
+		}
+		Multithreader.startAndJoin(threads);
 
 		for (int chunk = nChunks - 1; chunk >= 0; chunk--) {
 			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
@@ -489,6 +557,7 @@ public class ConnectedComponents {
 			final MutableList<IntHashSet> priorMap = chunkMaps.get(priorChunk);
 			final int IDoffset = chunkIDOffsets[chunk];
 			final int priorIDoffset = chunkIDOffsets[priorChunk];
+			final int[] threadBucketLUT = bucketLUT[priorChunk];
 			for (int i = map.size() - 1; i >= 0; i--) {
 				final IntHashSet set = map.get(i);
 				if (!set.isEmpty()) {
@@ -498,7 +567,9 @@ public class ConnectedComponents {
 					// if minimum label is less than this chunk's offset, need
 					// to move set to previous chunk's map
 					if (minLabel < IDoffset) {
-						priorMap.get(minLabel - priorIDoffset).addAll(set);
+						final int priorLabelID = minLabel - priorIDoffset;
+						final int targetSet = threadBucketLUT[priorLabelID] - priorIDoffset;
+						priorMap.get(targetSet).addAll(set);
 						set.clear();
 						continue;
 					}
