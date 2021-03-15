@@ -52,10 +52,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.plugins;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.Multithreader;
@@ -63,7 +61,10 @@ import org.eclipse.collections.api.block.procedure.primitive.IntProcedure;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import ij.IJ;
@@ -181,7 +182,7 @@ public class ConnectedComponents {
 		// merge labels between the HashSets, handling the chunk offsets and indexes
 		bucketFountain(chunkMaps, chunkIDOffsets);
 		
-		HashMap<Integer, Integer> lutMap = makeLutMap(chunkMaps);
+		IntIntHashMap lutMap = makeLutMap(chunkMaps);
 
 		return lutFromLutMap(lutMap, chunkMaps, chunkIDOffsets);
 	}
@@ -590,7 +591,7 @@ public class ConnectedComponents {
 	 * @param chunkMaps list of collisions between labels
 	 * @return lutMap initial mapping of partial region labels to final labels
 	 */
-	private static HashMap<Integer, Integer> makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps) {
+	private static IntIntHashMap makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps) {
 		// count unique labels and particles
 		int labelCount = 0;
 		for (MutableList<IntHashSet> map : chunkMaps) {
@@ -602,7 +603,7 @@ public class ConnectedComponents {
 
 		// set up a 1D HashMap of HashSets with the minimum label
 		// set as the 'root' (key) of the hashMap
-		HashMap<Integer, IntHashSet> hashMap = new HashMap<>(labelCount);
+		IntObjectHashMap<IntHashSet> hashMap = new IntObjectHashMap<>(labelCount);
 		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
 				if (!set.isEmpty())
@@ -611,7 +612,7 @@ public class ConnectedComponents {
 		}
 
 		// set up a LUT to keep track of the minimum replacement value for each label
-		final HashMap<Integer, Integer> lutMap = new HashMap<>(labelCount);
+		final IntIntHashMap lutMap = new IntIntHashMap(labelCount);
 		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
 				// start so that each label looks up itself
@@ -623,9 +624,12 @@ public class ConnectedComponents {
 		boolean somethingChanged = true;
 		while (somethingChanged) {
 			somethingChanged = false;
-			for (Entry<Integer, IntHashSet> pair : hashMap.entrySet()) {
-				final IntHashSet set = pair.getValue();
-				final int key = pair.getKey();
+			Iterator<IntObjectPair<IntHashSet>> iterator2 = hashMap.keyValuesView().iterator();
+			while (iterator2.hasNext()) {
+			//for all the keyvalue pairs
+				IntObjectPair<IntHashSet> next = iterator2.next();
+				final int key = next.getOne();
+				final IntHashSet set = next.getTwo();
 				MutableIntIterator iterator = set.intIterator();
 				while (iterator.hasNext()) {
 					final int label = iterator.next();
@@ -664,19 +668,19 @@ public class ConnectedComponents {
 	 * @param chunkIDOffsets ID offsets
 	 * @return LUT as a 2D int array, with an int[] array per chunk
 	 */
-	private static int[][] lutFromLutMap(final HashMap<Integer, Integer> lutMap,
+	private static int[][] lutFromLutMap(final IntIntHashMap lutMap,
 			final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
 		// count number of unique labels in the LUT
 		IntHashSet lutLabels = new IntHashSet();
-		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
-			lutLabels.add(pair.getValue());
-		}
+		lutMap.forEachValue(value -> {
+			lutLabels.add(value);
+		});
 		final int nLabels = lutLabels.size();
 		nParticles = nLabels;
 
 		// assign incremental replacement values
 		// translate old
-		final HashMap<Integer, Integer> lutLut = new HashMap<>(nLabels);
+		final IntIntHashMap lutLut = new IntIntHashMap(nLabels);
 		final AtomicInteger value = new AtomicInteger(1);
 		lutLabels.forEach(lutValue -> {
 			if (lutValue == 0) {
@@ -688,11 +692,11 @@ public class ConnectedComponents {
 
 		// lutLut now contains mapping from the old lut value (the lutLut 'key') to the
 		// new lut value (lutLut 'value')
-		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
-			Integer oldLutValue = pair.getValue();
-			Integer newLutValue = lutLut.get(oldLutValue);
-			pair.setValue(newLutValue);
-		}
+		lutMap.forEachKey(key -> {
+			final int oldLutValue = lutMap.get(key);
+			final int newLutValue = lutLut.get(oldLutValue);
+			lutMap.put(key, newLutValue);
+		});
 
 		// translate the HashMap LUT to a chunkwise LUT, to be used in combination
 		// with the IDoffsets.
