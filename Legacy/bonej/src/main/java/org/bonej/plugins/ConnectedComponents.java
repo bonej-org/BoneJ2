@@ -324,7 +324,7 @@ public class ConnectedComponents {
 									centre = getMinTag(nbh, ID);
 
 									// add neighbourhood to map
-									addNeighboursToMap(chunkMap, nbh, centre, IDoffset);
+									addNeighboursToMap13(chunkMap, nbh, centre, IDoffset);
 
 									// assign the smallest particle label from the
 									// neighbours to the pixel
@@ -779,6 +779,24 @@ public class ConnectedComponents {
 		}
 	}
 
+	/**
+	 * Check pixels one-by-one to decide what needs to be done, in order to 
+	 * reduce neighbourhood array lookups and map+set accesses.
+	 *
+	 * @param map      a map of LUT values.
+	 * @param nbh      a neighbourhood in the image.
+	 * @param centre   current pixel's label (with offset)
+	 * @param IDoffset chunk's ID offset
+	 */
+	private static void addNeighboursToMap13(final List<IntHashSet> map, final int[] nbh, final int centre,
+			final int IDoffset) {
+
+		if (nbh[4] == centre)
+			return;
+		
+		addNeighboursToMap(map, nbh, centre, IDoffset);
+	}
+	
 	/**
 	 * Add all the neighbouring labels of a pixel to the map, except 0 (background).
 	 * The LUT gets updated with the minimum neighbour found, but this is only
