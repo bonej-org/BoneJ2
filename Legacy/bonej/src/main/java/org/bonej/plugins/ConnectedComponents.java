@@ -486,21 +486,30 @@ public class ConnectedComponents {
 
 		final int nChunks = chunkIDOffsets.length;
 		final int[][] bucketLUT = new int[nChunks][];
+		//simpler just to have a minLabel LUT for each chunk. If minLabel for this set is < IDOffset then need to do a merge to lower chunk
+		final int[][] chunkStitchLUT = new int[nChunks][];
 		
 		//for each chunk set up a thread
 		final Thread[] threads = new Thread[nChunks];
 		for (int thread = 0; thread < nChunks; thread++) {
 			final int chunk = thread;
 			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
-			final int nBuckets = map.size();
-			final int[] threadBucketLUT = new int[nBuckets];
+			final int mapSize = map.size();
+			//threadBucketLUT is index-to-index (address forwarding, sort of)
+			final int[] threadBucketLUT = new int[mapSize];
+			//stitchLUT array index is label - IDOffset, value is raw label
+			final int[] stitchLUT = new int[mapSize];
 			final int IDoffset = chunkIDOffsets[chunk];
-			for (int i = 0; i < nBuckets; i++) {
-				//default is that each label sits in its same-numbered bucket minus IDoffset
-				threadBucketLUT[i] = i + IDoffset;
+			for (int i = 0; i < mapSize; i++) {
+				//default is that each labelID points to itself - address forwarding
+				threadBucketLUT[i] = i;
+				//this one points to either itself or to labels in the previous chunk
+				stitchLUT[i] = i + IDoffset;
 			}
 			threads[thread] = new Thread(() -> {
-				for (int i = map.size() - 1; i >= 0; i--) {
+				//first merge buckets laterally, within the chunk, ignoring labels from the previous chunk
+				//just passively merging them
+				for (int i = mapSize - 1; i >= 0; i--) {
 					final IntHashSet set = map.get(i);
 					if (!set.isEmpty()) {
 						//get the minimum that is greater than or equal to ID offset
@@ -520,23 +529,30 @@ public class ConnectedComponents {
 						}
 					}
 				}
-				//now fill the LUT
+				//now fill the LUT and map for stitching between chunks
 				boolean doItAgain = true;
 				while (doItAgain == true) {
 					doItAgain = false;
-					for (int i = 0; i < nBuckets; i++) {
+					for (int i = 0; i < mapSize; i++) {
 						final IntHashSet set = map.get(i);
 						if (set.isEmpty()) continue;
 						IntIterator iter = set.intIterator();
 						while (iter.hasNext()) {
 							final int label = iter.next();
-							if (label < IDoffset) continue; //ignore labels from lower chunks
+							if (label < IDoffset) {
+								//only need to associate set with lowest label from prior chunk
+								if (label < stitchLUT[i])
+									stitchLUT[i] = label;
+								continue;
+							}
 							final int labelID = label - IDoffset;
-							//check the current ID in the LUT
+							//check the current ID in the LUT (remember values here are other array indexes, not raw labels)
 							final int currentID = threadBucketLUT[labelID];
 							if (currentID == labelID) { //the normal case, each label ought to be present in the map only once and in a smaller or same value bucket
 								threadBucketLUT[labelID] = i;
-							} else if (currentID < i) { //this label was already found in a lower bucket
+								continue;
+							}
+							if (currentID < i) { //this label was already found in a lower bucket
 								//maybe need to update the LUT for the set members prior to shifting
 								//to reduce false hits and iterations
 								map.get(currentID).addAll(set);
@@ -548,6 +564,7 @@ public class ConnectedComponents {
 				}
 			});
 			bucketLUT[chunk] = threadBucketLUT;
+			chunkStitchLUT[chunk] = stitchLUT;
 		}
 		Multithreader.startAndJoin(threads);
 
@@ -558,27 +575,22 @@ public class ConnectedComponents {
 			final int IDoffset = chunkIDOffsets[chunk];
 			final int priorIDoffset = chunkIDOffsets[priorChunk];
 			final int[] threadBucketLUT = bucketLUT[priorChunk];
+			final int[] stitchLUT = chunkStitchLUT[chunk];
+
 			for (int i = map.size() - 1; i >= 0; i--) {
+				final int targetLabel = stitchLUT[i];
+				if (targetLabel == i + IDoffset)
+					continue; //this set contains no labels from the prior chunk, so nothing to do
+
+				//if we get here then targetLabel belongs to the prior chunk
 				final IntHashSet set = map.get(i);
-				if (!set.isEmpty()) {
-					// find the minimum label in the set
-					int minLabel = set.min();
-					
-					// if minimum label is less than this chunk's offset, need
-					// to move set to previous chunk's map
-					if (minLabel < IDoffset) {
-						final int priorLabelID = minLabel - priorIDoffset;
-						final int targetSet = threadBucketLUT[priorLabelID] - priorIDoffset;
-						priorMap.get(targetSet).addAll(set);
-						set.clear();
-						continue;
-					}
-					// move whole set's contents to a lower position in the map
-					if (minLabel < i + IDoffset) {
-						map.get(minLabel - IDoffset).addAll(set);
-						set.clear();
-					}
-				}
+
+				// if minimum label is less than this chunk's offset, need
+				// to move set to previous chunk's map
+				final int priorLabelID = targetLabel - priorIDoffset;
+				final int targetSet = threadBucketLUT[priorLabelID];
+				priorMap.get(targetSet).addAll(set);
+				set.clear();
 			}
 		}
 	}
