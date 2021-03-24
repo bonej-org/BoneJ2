@@ -52,18 +52,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.plugins;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.Multithreader;
+import org.eclipse.collections.api.block.procedure.primitive.IntProcedure;
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
@@ -178,7 +182,7 @@ public class ConnectedComponents {
 		// merge labels between the HashSets, handling the chunk offsets and indexes
 		bucketFountain(chunkMaps, chunkIDOffsets);
 		
-		HashMap<Integer, Integer> lutMap = makeLutMap(chunkMaps);
+		IntIntHashMap lutMap = makeLutMap(chunkMaps);
 
 		return lutFromLutMap(lutMap, chunkMaps, chunkIDOffsets);
 	}
@@ -320,7 +324,7 @@ public class ConnectedComponents {
 									centre = getMinTag(nbh, ID);
 
 									// add neighbourhood to map
-									addNeighboursToMap(chunkMap, nbh, centre, IDoffset);
+									addNeighboursToMap13(chunkMap, nbh, centre, IDoffset);
 
 									// assign the smallest particle label from the
 									// neighbours to the pixel
@@ -481,6 +485,88 @@ public class ConnectedComponents {
 		// iterate backwards through the chunk maps
 
 		final int nChunks = chunkIDOffsets.length;
+		final int[][] bucketLUT = new int[nChunks][];
+		//simpler just to have a minLabel LUT for each chunk. If minLabel for this set is < IDOffset then need to do a merge to lower chunk
+		final int[][] chunkStitchLUT = new int[nChunks][];
+		
+		//for each chunk set up a thread
+		final Thread[] threads = new Thread[nChunks];
+		for (int thread = 0; thread < nChunks; thread++) {
+			final int chunk = thread;
+			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
+			final int mapSize = map.size();
+			//threadBucketLUT is index-to-index (address forwarding, sort of)
+			final int[] threadBucketLUT = new int[mapSize];
+			//stitchLUT array index is label - IDOffset, value is raw label
+			final int[] stitchLUT = new int[mapSize];
+			final int IDoffset = chunkIDOffsets[chunk];
+			for (int i = 0; i < mapSize; i++) {
+				//default is that each labelID points to itself - address forwarding
+				threadBucketLUT[i] = i;
+				//this one points to either itself or to labels in the previous chunk
+				stitchLUT[i] = i + IDoffset;
+			}
+			threads[thread] = new Thread(() -> {
+				//first merge buckets laterally, within the chunk, ignoring labels from the previous chunk
+				//just passively merging them
+				for (int i = mapSize - 1; i >= 0; i--) {
+					final IntHashSet set = map.get(i);
+					if (!set.isEmpty()) {
+						//get the minimum that is greater than or equal to ID offset
+						int minLabel = Integer.MAX_VALUE;
+						//this iteration strategy may be slow
+						IntIterator intiter = set.intIterator();
+						while (intiter.hasNext()) {
+							final int label = intiter.next();
+							if (label >= IDoffset && label < minLabel) {
+								minLabel = label;
+							}
+						}
+						// move whole set's contents to a lower position in the map
+						if (minLabel < i + IDoffset) {
+							map.get(minLabel - IDoffset).addAll(set);
+							set.clear();
+						}
+					}
+				}
+				//now fill the LUT and map for stitching between chunks
+				boolean doItAgain = true;
+				while (doItAgain == true) {
+					doItAgain = false;
+					for (int i = 0; i < mapSize; i++) {
+						final IntHashSet set = map.get(i);
+						if (set.isEmpty()) continue;
+						IntIterator iter = set.intIterator();
+						while (iter.hasNext()) {
+							final int label = iter.next();
+							if (label < IDoffset) {
+								//only need to associate set with lowest label from prior chunk
+								if (label < stitchLUT[i])
+									stitchLUT[i] = label;
+								continue;
+							}
+							final int labelID = label - IDoffset;
+							//check the current ID in the LUT (remember values here are other array indexes, not raw labels)
+							final int currentID = threadBucketLUT[labelID];
+							if (currentID == labelID) { //the normal case, each label ought to be present in the map only once and in a smaller or same value bucket
+								threadBucketLUT[labelID] = i;
+								continue;
+							}
+							if (currentID < i) { //this label was already found in a lower bucket
+								//maybe need to update the LUT for the set members prior to shifting
+								//to reduce false hits and iterations
+								map.get(currentID).addAll(set);
+								set.clear();
+								doItAgain = true;
+							}
+						}
+					}
+				}
+			});
+			bucketLUT[chunk] = threadBucketLUT;
+			chunkStitchLUT[chunk] = stitchLUT;
+		}
+		Multithreader.startAndJoin(threads);
 
 		for (int chunk = nChunks - 1; chunk >= 0; chunk--) {
 			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
@@ -488,25 +574,23 @@ public class ConnectedComponents {
 			final MutableList<IntHashSet> priorMap = chunkMaps.get(priorChunk);
 			final int IDoffset = chunkIDOffsets[chunk];
 			final int priorIDoffset = chunkIDOffsets[priorChunk];
+			final int[] threadBucketLUT = bucketLUT[priorChunk];
+			final int[] stitchLUT = chunkStitchLUT[chunk];
+
 			for (int i = map.size() - 1; i >= 0; i--) {
+				final int targetLabel = stitchLUT[i];
+				if (targetLabel == i + IDoffset)
+					continue; //this set contains no labels from the prior chunk, so nothing to do
+
+				//if we get here then targetLabel belongs to the prior chunk
 				final IntHashSet set = map.get(i);
-				if (!set.isEmpty()) {
-					// find the minimum label in the set
-					int minLabel = set.min();
-					
-					// if minimum label is less than this chunk's offset, need
-					// to move set to previous chunk's map
-					if (minLabel < IDoffset) {
-						priorMap.get(minLabel - priorIDoffset).addAll(set);
-						set.clear();
-						continue;
-					}
-					// move whole set's contents to a lower position in the map
-					if (minLabel < i + IDoffset) {
-						map.get(minLabel - IDoffset).addAll(set);
-						set.clear();
-					}
-				}
+
+				// if minimum label is less than this chunk's offset, need
+				// to move set to previous chunk's map
+				final int priorLabelID = targetLabel - priorIDoffset;
+				final int targetSet = threadBucketLUT[priorLabelID];
+				priorMap.get(targetSet).addAll(set);
+				set.clear();
 			}
 		}
 	}
@@ -519,7 +603,7 @@ public class ConnectedComponents {
 	 * @param chunkMaps list of collisions between labels
 	 * @return lutMap initial mapping of partial region labels to final labels
 	 */
-	private static HashMap<Integer, Integer> makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps) {
+	private static IntIntHashMap makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps) {
 		// count unique labels and particles
 		int labelCount = 0;
 		for (MutableList<IntHashSet> map : chunkMaps) {
@@ -531,7 +615,7 @@ public class ConnectedComponents {
 
 		// set up a 1D HashMap of HashSets with the minimum label
 		// set as the 'root' (key) of the hashMap
-		HashMap<Integer, IntHashSet> hashMap = new HashMap<>(labelCount);
+		IntObjectHashMap<IntHashSet> hashMap = new IntObjectHashMap<>(labelCount);
 		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
 				if (!set.isEmpty())
@@ -540,7 +624,7 @@ public class ConnectedComponents {
 		}
 
 		// set up a LUT to keep track of the minimum replacement value for each label
-		final HashMap<Integer, Integer> lutMap = new HashMap<>(labelCount);
+		final IntIntHashMap lutMap = new IntIntHashMap(labelCount);
 		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
 				// start so that each label looks up itself
@@ -552,9 +636,12 @@ public class ConnectedComponents {
 		boolean somethingChanged = true;
 		while (somethingChanged) {
 			somethingChanged = false;
-			for (Entry<Integer, IntHashSet> pair : hashMap.entrySet()) {
-				final IntHashSet set = pair.getValue();
-				final int key = pair.getKey();
+			Iterator<IntObjectPair<IntHashSet>> iterator2 = hashMap.keyValuesView().iterator();
+			while (iterator2.hasNext()) {
+			//for all the keyvalue pairs
+				IntObjectPair<IntHashSet> next = iterator2.next();
+				final int key = next.getOne();
+				final IntHashSet set = next.getTwo();
 				MutableIntIterator iterator = set.intIterator();
 				while (iterator.hasNext()) {
 					final int label = iterator.next();
@@ -593,19 +680,19 @@ public class ConnectedComponents {
 	 * @param chunkIDOffsets ID offsets
 	 * @return LUT as a 2D int array, with an int[] array per chunk
 	 */
-	private static int[][] lutFromLutMap(final HashMap<Integer, Integer> lutMap,
+	private static int[][] lutFromLutMap(final IntIntHashMap lutMap,
 			final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
 		// count number of unique labels in the LUT
 		IntHashSet lutLabels = new IntHashSet();
-		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
-			lutLabels.add(pair.getValue());
-		}
+		lutMap.forEachValue(value -> {
+			lutLabels.add(value);
+		});
 		final int nLabels = lutLabels.size();
 		nParticles = nLabels;
 
 		// assign incremental replacement values
 		// translate old
-		final HashMap<Integer, Integer> lutLut = new HashMap<>(nLabels);
+		final IntIntHashMap lutLut = new IntIntHashMap(nLabels);
 		final AtomicInteger value = new AtomicInteger(1);
 		lutLabels.forEach(lutValue -> {
 			if (lutValue == 0) {
@@ -617,11 +704,11 @@ public class ConnectedComponents {
 
 		// lutLut now contains mapping from the old lut value (the lutLut 'key') to the
 		// new lut value (lutLut 'value')
-		for (Map.Entry<Integer, Integer> pair : lutMap.entrySet()) {
-			Integer oldLutValue = pair.getValue();
-			Integer newLutValue = lutLut.get(oldLutValue);
-			pair.setValue(newLutValue);
-		}
+		lutMap.forEachKey(key -> {
+			final int oldLutValue = lutMap.get(key);
+			final int newLutValue = lutLut.get(oldLutValue);
+			lutMap.put(key, newLutValue);
+		});
 
 		// translate the HashMap LUT to a chunkwise LUT, to be used in combination
 		// with the IDoffsets.
@@ -704,6 +791,24 @@ public class ConnectedComponents {
 		}
 	}
 
+	/**
+	 * Check pixels one-by-one to decide what needs to be done, in order to 
+	 * reduce neighbourhood array lookups and map+set accesses.
+	 *
+	 * @param map      a map of LUT values.
+	 * @param nbh      a neighbourhood in the image.
+	 * @param centre   current pixel's label (with offset)
+	 * @param IDoffset chunk's ID offset
+	 */
+	private static void addNeighboursToMap13(final List<IntHashSet> map, final int[] nbh, final int centre,
+			final int IDoffset) {
+
+		if (nbh[4] == centre)
+			return;
+		
+		addNeighboursToMap(map, nbh, centre, IDoffset);
+	}
+	
 	/**
 	 * Add all the neighbouring labels of a pixel to the map, except 0 (background).
 	 * The LUT gets updated with the minimum neighbour found, but this is only

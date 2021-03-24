@@ -54,6 +54,7 @@ package org.bonej.plugins;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -333,42 +334,6 @@ public class ParticleAnalysis {
 	}
 
 	/**
-	 * Get the centroids of all the particles in real units
-	 *
-	 * @param imp            an image.
-	 * @param particleLabels particles in the image.
-	 * @param particleSizes  sizes of the particles
-	 * @return double[][] containing all the particles' centroids
-	 */
-	static double[][] getCentroids(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes) {
-		final int w = imp.getWidth();
-		final int h = imp.getHeight();
-		final int d = imp.getImageStackSize();
-		final int nParticles = particleSizes.length;
-		final double[][] sums = new double[nParticles][3];
-
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int particle = particleLabels[z][index + x];
-					sums[particle][0] += x;
-					sums[particle][1] += y;
-					sums[particle][2] += z;
-				}
-			}
-		}
-		final Calibration cal = imp.getCalibration();
-		final double[][] centroids = new double[nParticles][3];
-		for (int p = 0; p < nParticles; p++) {
-			centroids[p][0] = cal.pixelWidth * sums[p][0] / particleSizes[p];
-			centroids[p][1] = cal.pixelHeight * sums[p][1] / particleSizes[p];
-			centroids[p][2] = cal.pixelDepth * sums[p][2] / particleSizes[p];
-		}
-		return centroids;
-	}
-
-	/**
 	 * Get the mean and standard deviation of pixel values &gt;0 for each particle
 	 * in a particle label work array
 	 *
@@ -439,84 +404,350 @@ public class ParticleAnalysis {
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 		final int nParticles = centroids.length;
-		final EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
-		final double[][] momentTensors = new double[nParticles][6];
-		for (int z = 0; z < d; z++) {
-			final double zVd = z * vD;
-			for (int y = 0; y < h; y++) {
-				final double yVh = y * vH;
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int p = particleLabels[z][index + x];
-					if (p > 0) {
-						final double xVw = x * vW;
-						final double dx = xVw - centroids[p][0];
-						final double dy = yVh - centroids[p][1];
-						final double dz = zVd - centroids[p][2];
-						momentTensors[p][0] += dy * dy + dz * dz + voxVhVd; // Ixx
-						momentTensors[p][1] += dx * dx + dz * dz + voxVwVd; // Iyy
-						momentTensors[p][2] += dy * dy + dx * dx + voxVhVw; // Izz
-						momentTensors[p][3] += dx * dy; // Ixy
-						momentTensors[p][4] += dx * dz; // Ixz
-						momentTensors[p][5] += dy * dz; // Iyz
+
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		final List<double[][]> listOfTensors = Collections.synchronizedList(new ArrayList<>());
+		
+		for (int thread = 0; thread < threads.length; thread++) {
+
+			final double[][] threadTensors = new double[nParticles][6];
+
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+					final double zVd = z * vD;
+					final int[] slice = particleLabels[z];
+					for (int y = 0; y < h; y++) {
+						final double yVh = y * vH;
+						final int index = y * w;
+						for (int x = 0; x < w; x++) {
+							final int p = slice[index + x];
+							if (p == 0) continue;
+							final double xVw = x * vW;
+							final double dx = xVw - centroids[p][0];
+							final double dy = yVh - centroids[p][1];
+							final double dz = zVd - centroids[p][2];
+							threadTensors[p][0] += dy * dy + dz * dz + voxVhVd; // Ixx
+							threadTensors[p][1] += dx * dx + dz * dz + voxVwVd; // Iyy
+							threadTensors[p][2] += dy * dy + dx * dx + voxVhVw; // Izz
+							threadTensors[p][3] += dx * dy; // Ixy
+							threadTensors[p][4] += dx * dz; // Ixz
+							threadTensors[p][5] += dy * dz; // Iyz
+						}
 					}
 				}
-			}
+			});
+			listOfTensors.add(threadTensors);
+		}
+		Multithreader.startAndJoin(threads);
+		
+		final double[][] momentTensors = new double[nParticles][6];
+		Iterator<double[][]> iter = listOfTensors.iterator();
+		while (iter.hasNext()) {
+			final double[][] threadTensors = iter.next();
 			for (int p = 1; p < nParticles; p++) {
-				final double[][] inertiaTensor = new double[3][3];
-				inertiaTensor[0][0] = momentTensors[p][0];
-				inertiaTensor[1][1] = momentTensors[p][1];
-				inertiaTensor[2][2] = momentTensors[p][2];
-				inertiaTensor[0][1] = -momentTensors[p][3];
-				inertiaTensor[0][2] = -momentTensors[p][4];
-				inertiaTensor[1][0] = -momentTensors[p][3];
-				inertiaTensor[1][2] = -momentTensors[p][5];
-				inertiaTensor[2][0] = -momentTensors[p][4];
-				inertiaTensor[2][1] = -momentTensors[p][5];
-				final Matrix inertiaTensorMatrix = new Matrix(inertiaTensor);
-				final EigenvalueDecomposition E = new EigenvalueDecomposition(inertiaTensorMatrix);
-				eigens[p] = E;
+				momentTensors[p][0] += threadTensors[p][0];
+				momentTensors[p][1] += threadTensors[p][1];
+				momentTensors[p][2] += threadTensors[p][2];
+				momentTensors[p][3] += threadTensors[p][3];
+				momentTensors[p][4] += threadTensors[p][4];
+				momentTensors[p][5] += threadTensors[p][5];
 			}
+		}
+		
+		final EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
+		for (int p = 1; p < nParticles; p++) {
+			final double[][] inertiaTensor = new double[3][3];
+			inertiaTensor[0][0] = momentTensors[p][0];
+			inertiaTensor[1][1] = momentTensors[p][1];
+			inertiaTensor[2][2] = momentTensors[p][2];
+			inertiaTensor[0][1] = -momentTensors[p][3];
+			inertiaTensor[0][2] = -momentTensors[p][4];
+			inertiaTensor[1][0] = -momentTensors[p][3];
+			inertiaTensor[1][2] = -momentTensors[p][5];
+			inertiaTensor[2][0] = -momentTensors[p][4];
+			inertiaTensor[2][1] = -momentTensors[p][5];
+			final Matrix inertiaTensorMatrix = new Matrix(inertiaTensor);
+			final EigenvalueDecomposition E = new EigenvalueDecomposition(inertiaTensorMatrix);
+			eigens[p] = E;
 		}
 		return eigens;
 	}
 
 	/**
-	 * Get the minimum and maximum x, y and z coordinates of each particle
+	 * Get the centroid and minimum and maximum x, y and z coordinates of each particle
 	 *
 	 * @param imp            ImagePlus (used for stack size)
 	 * @param particleLabels work array containing labelled particles
-	 * @param nParticles     number of particles in the image
-	 * @return int[][] containing x, y and z minima and maxima.
+	 * @param particleSizes sizes of the particles in pixel counts
+	 * @return 2-element Object array containing for each particle the centroid (in calibrated units as double[nParticles][3]) and the 
+	 * min and max x, y and z limits (in uncalibrated pixel units as int[nParticles][6]).
 	 */
-	static int[][] getParticleLimits(final ImagePlus imp, final int[][] particleLabels, final int nParticles) {
+	static Object[] getBoundingBoxes(final ImagePlus imp, final int[][] particleLabels, final long[] particleSizes) {
+		
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
-		final int[][] limits = new int[nParticles][6];
-		for (int i = 0; i < nParticles; i++) {
-			limits[i][0] = Integer.MAX_VALUE; // x min
-			limits[i][1] = 0; // x max
-			limits[i][2] = Integer.MAX_VALUE; // y min
-			limits[i][3] = 0; // y max
-			limits[i][4] = Integer.MAX_VALUE; // z min
-			limits[i][5] = 0; // z max
-		}
-		for (int z = 0; z < d; z++) {
-			for (int y = 0; y < h; y++) {
-				final int index = y * w;
-				for (int x = 0; x < w; x++) {
-					final int i = particleLabels[z][index + x];
-					limits[i][0] = Math.min(limits[i][0], x);
-					limits[i][1] = Math.max(limits[i][1], x);
-					limits[i][2] = Math.min(limits[i][2], y);
-					limits[i][3] = Math.max(limits[i][3], y);
-					limits[i][4] = Math.min(limits[i][4], z);
-					limits[i][5] = Math.max(limits[i][5], z);
+		final int nParticles = particleSizes.length;
+		
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		final List<int[][]> listOfLimits = Collections.synchronizedList(new ArrayList<>());
+		final List<double[][]> listOfSums = Collections.synchronizedList(new ArrayList<>());
+		
+		for (int thread = 0; thread < threads.length; thread++) {
+			
+			final double[][] threadSums = new double[nParticles][3];
+			
+			//set up a limit range for each thread and particle
+			final int[][] threadLimits = new int[nParticles][6];
+			for (int p = 1; p < nParticles; p++) {
+				threadLimits[p][0] = Integer.MAX_VALUE; // x min
+				threadLimits[p][1] = 0; // x max
+				threadLimits[p][2] = Integer.MAX_VALUE; // y min
+				threadLimits[p][3] = 0; // y max
+				threadLimits[p][4] = Integer.MAX_VALUE; // z min
+				threadLimits[p][5] = 0; // z max
+			}
+			
+			threads[thread] = new Thread(() -> {
+				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+					final int[] slice = particleLabels[z];
+					for (int y = 0; y < h; y++) {
+						final int index = y * w;
+						for (int x = 0; x < w; x++) {
+							final int p = slice[index + x];
+							if (p == 0) continue;
+							
+							threadSums[p][0] += x;
+							threadSums[p][1] += y;
+							threadSums[p][2] += z;
+							
+							threadLimits[p][0] = Math.min(threadLimits[p][0], x);
+							threadLimits[p][1] = Math.max(threadLimits[p][1], x);
+							threadLimits[p][2] = Math.min(threadLimits[p][2], y);
+							threadLimits[p][3] = Math.max(threadLimits[p][3], y);
+							threadLimits[p][4] = Math.min(threadLimits[p][4], z);
+							threadLimits[p][5] = Math.max(threadLimits[p][5], z);
+						}
+					}
 				}
+			});
+			listOfLimits.add(threadLimits);
+			listOfSums.add(threadSums);
+		}
+		Multithreader.startAndJoin(threads);
+		
+		final int[][] limits = new int[nParticles][6];
+		final double[][] sums = new double[nParticles][3];
+		
+		for (int p = 1; p < nParticles; p++) {
+			limits[p][0] = Integer.MAX_VALUE; // x min
+			limits[p][1] = 0; // x max
+			limits[p][2] = Integer.MAX_VALUE; // y min
+			limits[p][3] = 0; // y max
+			limits[p][4] = Integer.MAX_VALUE; // z min
+			limits[p][5] = 0; // z max
+		}
+		
+		Iterator<int[][]> iter = listOfLimits.iterator();
+		while (iter.hasNext()) {
+			final int[][] threadLimits = iter.next();
+			for (int p = 1; p < nParticles; p++) {
+				limits[p][0] = Math.min(limits[p][0], threadLimits[p][0]);
+				limits[p][1] = Math.max(limits[p][1], threadLimits[p][1]);
+				limits[p][2] = Math.min(limits[p][2], threadLimits[p][2]);
+				limits[p][3] = Math.max(limits[p][3], threadLimits[p][3]);
+				limits[p][4] = Math.min(limits[p][4], threadLimits[p][4]);
+				limits[p][5] = Math.max(limits[p][5], threadLimits[p][5]);
 			}
 		}
-		return limits;
+
+		Iterator<double[][]> iterSums = listOfSums.iterator();
+		while (iterSums.hasNext()) {
+			final double[][] threadSums = iterSums.next();
+			for (int p = 1; p < nParticles; p++) {
+				sums[p][0] += threadSums[p][0];
+				sums[p][1] += threadSums[p][1];
+				sums[p][2] += threadSums[p][2];
+			}
+		}
+		
+		final Calibration cal = imp.getCalibration();
+		final double[][] centroids = new double[nParticles][3];
+		for (int p = 0; p < nParticles; p++) {
+			final long particleSize = particleSizes[p];
+			centroids[p][0] = cal.pixelWidth * sums[p][0] / particleSize;
+			centroids[p][1] = cal.pixelHeight * sums[p][1] / particleSize;
+			centroids[p][2] = cal.pixelDepth * sums[p][2] / particleSize;
+		}
+		
+		return new Object[] {centroids, limits};
+	}
+	
+	/**
+	 * Get the limits of each particle in the directions defined by an 
+	 * eigenvector tensor (usually the principal axes).
+	 * 
+	 * @param imp input image, needed for calibration
+	 * @param particleLabels label image
+	 * @param tensors array of rotation matrices, one per particle
+	 * @param nParticles number of particles
+	 * @return array of box dimensions, each containing the centre x, y, z
+	 * coordinates and box width, height and depth.
+	 */
+	static double[][] getAxisAlignedBoundingBoxes(final ImagePlus imp, final int[][] particleLabels,
+		final Matrix[] tensors, final int nParticles){
+		
+		final int w = imp.getWidth();
+		final int h = imp.getHeight();
+		final int d = imp.getImageStackSize();
+		Calibration cal = imp.getCalibration();
+		final double vW = cal.pixelWidth;
+		final double vH = cal.pixelHeight;
+		final double vD = cal.pixelDepth;
+		
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] threads = Multithreader.newThreads();
+		final List<double[][]> listOfLimits = Collections.synchronizedList(new ArrayList<>());
+		
+		for (int thread = 0; thread < threads.length; thread++) {
+			double[][] threadLimits = new double[nParticles][6];
+			for (int p = 1; p < nParticles; p++) {
+				threadLimits[p][0] = Double.MAX_VALUE; // 0 min
+				threadLimits[p][1] = -Double.MAX_VALUE; // 0 max
+				threadLimits[p][2] = Double.MAX_VALUE; // 1 min
+				threadLimits[p][3] = -Double.MAX_VALUE; // 1 max
+				threadLimits[p][4] = Double.MAX_VALUE; // 2 min
+				threadLimits[p][5] = -Double.MAX_VALUE; // 2 max
+			}
+			threads[thread] = new Thread(() -> {
+				double[][] v = new double[3][3];
+				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
+					final double zd = z * vD;
+					final int[] slice = particleLabels[z];
+					for (int y = 0; y < h; y++) {
+						final double yh = y * vH;
+						final int index = y * w;
+						for (int x = 0; x < w; x++) {
+							final double xw = x * vW;
+							
+							final int p = slice[index + x];
+							if (p == 0) continue;
+							v = tensors[p].getArray();
+							
+							final double xwv00 = xw * v[0][0];
+							final double xwv01 = xw * v[0][1];
+							final double xwv02 = xw * v[0][2];
+							final double yhv10 = yh * v[1][0];
+							final double yhv11 = yh * v[1][1];
+							final double yhv12 = yh * v[1][2];
+							final double zdv20 = zd * v[2][0];
+							final double zdv21 = zd * v[2][1];
+							final double zdv22 = zd * v[2][2];
+							
+							final double l0 = xwv00 + yhv10 + zdv20;
+							final double l1 = xwv01 + yhv11 + zdv21;
+							final double l2 = xwv02 + yhv12 + zdv22;
+					
+							threadLimits[p][0] = Math.min(threadLimits[p][0], l0);
+							threadLimits[p][1] = Math.max(threadLimits[p][1], l0);
+							threadLimits[p][2] = Math.min(threadLimits[p][2], l1);
+							threadLimits[p][3] = Math.max(threadLimits[p][3], l1);
+							threadLimits[p][4] = Math.min(threadLimits[p][4], l2);
+							threadLimits[p][5] = Math.max(threadLimits[p][5], l2);
+						}
+					}
+				}
+				
+			});
+			listOfLimits.add(threadLimits);
+		}
+		Multithreader.startAndJoin(threads);
+		
+		final double[][] limits = new double[nParticles][6];
+		for (int p = 1; p < nParticles; p++) {
+			limits[p][0] = Double.MAX_VALUE; // 0 min
+			limits[p][1] = -Double.MAX_VALUE; // 0 max
+			limits[p][2] = Double.MAX_VALUE; // 1 min
+			limits[p][3] = -Double.MAX_VALUE; // 1 max
+			limits[p][4] = Double.MAX_VALUE; // 2 min
+			limits[p][5] = -Double.MAX_VALUE; // 2 max
+		}
+		
+		for (int thread = 0; thread < threads.length; thread++) {
+			final double[][] threadLimits = listOfLimits.get(thread);
+				for (int p = 1; p < nParticles; p++) {
+					limits[p][0] = Math.min(limits[p][0], threadLimits[p][0]);
+					limits[p][1] = Math.max(limits[p][1], threadLimits[p][1]);
+					limits[p][2] = Math.min(limits[p][2], threadLimits[p][2]);
+					limits[p][3] = Math.max(limits[p][3], threadLimits[p][3]);
+					limits[p][4] = Math.min(limits[p][4], threadLimits[p][4]);
+					limits[p][5] = Math.max(limits[p][5], threadLimits[p][5]);
+				}
+		}
+		
+		final double[][] alignedBoxes = new double[nParticles][6];
+		
+		for (int p = 1; p < nParticles; p++) {
+			//centroid in rotated coordinate frame is average of the two limits
+			final double c0 = (limits[p][0] + limits[p][1]) / 2; //long axis 0th column
+			final double c1 = (limits[p][2] + limits[p][3]) / 2; //medium axis 1st column
+			final double c2 = (limits[p][4] + limits[p][5]) / 2; //short axis 2nd column
+			
+			//rotate back to original coordinate frame by multiplying by the inverse
+			final double[][] vi = tensors[p].inverse().getArray();
+			
+			final double c2vi20 = c2 * vi[2][0];
+			final double c2vi21 = c2 * vi[2][1];
+			final double c2vi22 = c2 * vi[2][2];
+			
+			final double c1vi10 = c1 * vi[1][0];
+			final double c1vi11 = c1 * vi[1][1];
+			final double c1vi12 = c1 * vi[1][2];
+			
+			final double c0vi00 = c0 * vi[0][0];
+			final double c0vi01 = c0 * vi[0][1];
+			final double c0vi02 = c0 * vi[0][2];
+			
+			final double cx = c2vi20 + c1vi10 + c0vi00;
+			final double cy = c2vi21 + c1vi11 + c0vi01;
+			final double cz = c2vi22 + c1vi12 + c0vi02;
+			
+			//particle's length along each tensor axis is difference between limits
+			final double d0 = limits[p][1] - limits[p][0];
+			final double d1 = limits[p][3] - limits[p][2];
+			final double d2 = limits[p][5] - limits[p][4];
+			
+			final double[] box = {cx, cy, cz, d0, d1, d2};
+			
+			alignedBoxes[p] = box;
+		}
+		
+		return alignedBoxes;
+	}
+	
+	/**
+	 * Overloaded method that accepts the EVD of each particle and unwraps its Matrixes
+	 * for convenience.
+	 * 
+	 * @param imp ImagePlus
+	 * @param particleLabels 
+	 * @param eigens array of 3 × 3 rotation matrices (inertia tensors)
+	 * @param nParticles 
+	 * @return dimensions of the axis aligned bounding box, aligned to the eigenvectors
+	 * of the supplied eigenvalue decomposition.
+	 */
+	static double[][] getAxisAlignedBoundingBoxes(final ImagePlus imp, final int[][] particleLabels,
+		final EigenvalueDecomposition[] eigens, final int nParticles){
+		
+		final Matrix[] tensors = new Matrix[nParticles];
+		
+		for (int i = 1; i < nParticles; i++) {
+			tensors[i] = eigens[i].getV();
+		}
+		
+		return getAxisAlignedBoundingBoxes(imp, particleLabels, tensors, nParticles);
 	}
 	
 	/**
@@ -661,37 +892,45 @@ public class ParticleAnalysis {
 	 * @param nParticles number of particles
 	 * @return list of surface meshes, one per particle
 	 */
-	static ArrayList<List<Point3f>> getSurfacePoints(final ImagePlus imp, final int[][] particleLabels,
+	static List<List<Point3f>> getSurfacePoints(final ImagePlus imp, final int[][] particleLabels,
 			final int[][] limits, final int resampling, final int nParticles) {
 		final Calibration cal = imp.getCalibration();
-		final ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
-		final boolean[] channels = { true, false, false };
+		final List<List<Point3f>> surfacePoints = Collections.synchronizedList(new ArrayList<>(nParticles));
 		for (int p = 0; p < nParticles; p++) {
-			if (p > 0) {
-				final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels, limits, resampling);
-				// noinspection TypeMayBeWeakened
-				final MCTriangulator mct = new MCTriangulator();
-				@SuppressWarnings("unchecked")
-				final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels, resampling);
-
-				final double xOffset = (limits[p][0] - 1) * cal.pixelWidth;
-				final double yOffset = (limits[p][2] - 1) * cal.pixelHeight;
-				final double zOffset = (limits[p][4] - 1) * cal.pixelDepth;
-				for (final Point3f point : points) {
-					point.x += xOffset;
-					point.y += yOffset;
-					point.z += zOffset;
-				}
-				if (points.isEmpty()) {
-					IJ.log("Particle " + p + " resulted in 0 surface points");
-					surfacePoints.add(null);
-				} else {
-					surfacePoints.add(points);
-				}
-			} else {
-				surfacePoints.add(null);
-			}
+			surfacePoints.add(null);
 		}
+		final AtomicInteger ai = new AtomicInteger(1);
+		final Thread[] threads = Multithreader.newThreads();
+		final boolean[] channels = { true, false, false };
+
+		for (int thread = 0; thread < threads.length; thread++) {
+			threads[thread] = new Thread(() -> {
+				for (int p = ai.getAndIncrement(); p < nParticles; p = ai.getAndIncrement()) {
+
+					final ImagePlus binaryImp = getBinaryParticle(p, imp, particleLabels, limits, resampling);
+					// noinspection TypeMayBeWeakened
+					final MCTriangulator mct = new MCTriangulator();
+					@SuppressWarnings("unchecked")
+					final List<Point3f> points = mct.getTriangles(binaryImp, 128, channels, resampling);
+
+					final double xOffset = (limits[p][0] - 1) * cal.pixelWidth;
+					final double yOffset = (limits[p][2] - 1) * cal.pixelHeight;
+					final double zOffset = (limits[p][4] - 1) * cal.pixelDepth;
+					for (final Point3f point : points) {
+						point.x += xOffset;
+						point.y += yOffset;
+						point.z += zOffset;
+					}
+					if (points.isEmpty()) {
+						IJ.log("Particle " + p + " resulted in 0 surface points");
+					} else {
+						surfacePoints.set(p, points);
+					}
+				}
+			});
+		}
+		Multithreader.startAndJoin(threads);
+		
 		return surfacePoints;
 	}
 

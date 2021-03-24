@@ -353,6 +353,113 @@ public class ParticleDisplay {
 		}
 	}
 	
+	static void displayAlignedBoundingBoxes(double[][] alignedBoxes,
+		final EigenvalueDecomposition[] eigens, Image3DUniverse univ)
+	{
+		final int nBoxes = alignedBoxes.length;
+		
+		for (int p = 1; p < nBoxes; p++) {
+			final double[] box = alignedBoxes[p];
+			final double cx = box[0];
+			final double cy = box[1];
+			final double cz = box[2];
+			
+			//use half-lengths because vertex positions are calculated as an offset from the centre
+			final double l0 = box[3] / 2;
+			final double l1 = box[4] / 2;
+			final double l2 = box[5] / 2;
+			
+			//get the unit vectors
+			final double[][] eVec = eigens[p].getV().getArray();
+			final double eV0x = eVec[0][0];
+			final double eV0y = eVec[1][0];
+			final double eV0z = eVec[2][0];
+			final double eV1x = eVec[0][1];
+			final double eV1y = eVec[1][1];
+			final double eV1z = eVec[2][1];
+			final double eV2x = eVec[0][2];
+			final double eV2y = eVec[1][2];
+			final double eV2z = eVec[2][2];
+			
+			//calculate the 3 semi-axis vectors
+			final double v0x = l0 * eV0x;
+			final double v0y = l0 * eV0y;
+			final double v0z = l0 * eV0z;
+			
+			final double v1x = l1 * eV1x;
+			final double v1y = l1 * eV1y;
+			final double v1z = l1 * eV1z;
+			
+			final double v2x = l2 * eV2x;
+			final double v2y = l2 * eV2y;
+			final double v2z = l2 * eV2z;
+			
+			//calculate the positions of 8 vertices by summing the vector components
+			Point3f v0 = new Point3f();
+			v0.x = (float)(cx - v0x - v1x - v2x);
+			v0.y = (float)(cy - v0y - v1y - v2y);
+			v0.z = (float)(cz - v0z - v1z - v2z);
+			
+			Point3f v1 = new Point3f();
+			v1.x = (float)(cx - v0x + v1x - v2x);
+			v1.y = (float)(cy - v0y + v1y - v2y);
+			v1.z = (float)(cz - v0z + v1z - v2z);
+			
+			Point3f v2 = new Point3f();
+			v2.x = (float)(cx - v0x + v1x + v2x);
+			v2.y = (float)(cy - v0y + v1y + v2y);
+			v2.z = (float)(cz - v0z + v1z + v2z);
+			
+			Point3f v3 = new Point3f();
+			v3.x = (float)(cx - v0x - v1x + v2x);
+			v3.y = (float)(cy - v0y - v1y + v2y);
+			v3.z = (float)(cz - v0z - v1z + v2z);
+			
+			Point3f v4 = new Point3f();
+			v4.x = (float)(cx + v0x - v1x - v2x);
+			v4.y = (float)(cy + v0y - v1y - v2y);
+			v4.z = (float)(cz + v0z - v1z - v2z);
+			
+			Point3f v5 = new Point3f();
+			v5.x = (float)(cx + v0x + v1x - v2x);
+			v5.y = (float)(cy + v0y + v1y - v2y);
+			v5.z = (float)(cz + v0z + v1z - v2z);
+			
+			Point3f v6 = new Point3f();
+			v6.x = (float)(cx + v0x + v1x + v2x);
+			v6.y = (float)(cy + v0y + v1y + v2y);
+			v6.z = (float)(cz + v0z + v1z + v2z);
+			
+			Point3f v7 = new Point3f();
+			v7.x = (float)(cx + v0x - v1x + v2x);
+			v7.y = (float)(cy + v0y - v1y + v2y);
+			v7.z = (float)(cz + v0z - v1z + v2z);
+			
+			//construct a mesh with consecutive pairs of vertices for each edge
+			final List<Point3f> mesh = new ArrayList<>();
+			mesh.add(v0); mesh.add(v1);
+			mesh.add(v1); mesh.add(v2);
+			mesh.add(v2); mesh.add(v3);
+			mesh.add(v3); mesh.add(v0);
+			mesh.add(v0); mesh.add(v4);
+			mesh.add(v1); mesh.add(v5);
+			mesh.add(v2); mesh.add(v6);
+			mesh.add(v3); mesh.add(v7);
+			mesh.add(v4); mesh.add(v5);
+			mesh.add(v5); mesh.add(v6);
+			mesh.add(v6); mesh.add(v7);
+			mesh.add(v7); mesh.add(v4);
+			
+			final Color3f aColour = new Color3f(1.0f, 1.0f, 0.0f);
+			try {
+				univ.addLineMesh(mesh, aColour, "aligned box "+p, false).setLocked(true);
+			} catch (final NullPointerException npe) {
+				IJ.log("3D Viewer was closed before rendering completed.");
+			}
+		}
+		
+	}
+	
 	/**
 	 * Display Feret points and axis in the 3D Viewer
 	 * 

@@ -159,14 +159,16 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues[9] = false;
 		labels[10] = "Skeletons";
 		defaultValues[10] = false;
+		labels[11] = "Aligned boxes";
+		defaultValues[11] = false;
 		gd.addCheckboxGroup(6, 2, labels, defaultValues, headers);
 		gd.addNumericField("Min Volume", 0, 3, 7, units + "³");
 		gd.addNumericField("Max Volume", Double.POSITIVE_INFINITY, 3, 7, units +
 			"³");
 		gd.addNumericField("Surface_resampling", 2, 0);
 		final String[] headers2 = { "Graphical Results", " " };
-		final String[] labels2 = new String[9];
-		final boolean[] defaultValues2 = new boolean[9];
+		final String[] labels2 = new String[10];
+		final boolean[] defaultValues2 = new boolean[10];
 		labels2[0] = "Show_particle stack";
 		defaultValues2[0] = true;
 		labels2[1] = "Show_size stack";
@@ -185,6 +187,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		defaultValues2[7] = true;
 		labels2[8] = "Draw_ellipsoids";
 		defaultValues2[8] = false;
+		labels2[9] = "Show_aligned_boxes (3D)";
+		defaultValues2[9] = false;
 		gd.addCheckboxGroup(5, 2, labels2, defaultValues2, headers2);
 		final String[] items = { "Gradient", "Split", "Orientation"};
 		gd.addChoice("Surface colours", items, items[0]);
@@ -210,6 +214,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean doEllipsoids = gd.getNextBoolean();
 		final boolean doVerboseUnitVectors = gd.getNextBoolean();
 		final boolean doSkeletons = gd.getNextBoolean();
+		final boolean doAlignedBoxes = gd.getNextBoolean();
 		final boolean doParticleImage = gd.getNextBoolean();
 		final boolean doParticleSizeImage = gd.getNextBoolean();
 		final boolean doThickImage = gd.getNextBoolean();
@@ -221,6 +226,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean doEllipsoidImage = gd.getNextBoolean();
 		final boolean do3DOriginal = gd.getNextBoolean();
 		final boolean doEllipsoidStack = gd.getNextBoolean();
+		final boolean doAlignedBoxesImage = gd.getNextBoolean();
 		final int origResampling = (int) Math.floor(gd.getNextNumber());
 
 		// get the particles and do the analysis
@@ -242,18 +248,23 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 		final double[] volumes = ParticleAnalysis.getVolumes(imp, particleSizes);
 		
-		//centroids and limits could run in separate threads - they do not depend on one another
-		final double[][] centroids = ParticleAnalysis.getCentroids(imp, particleLabels,
-			particleSizes);
-		final int[][] limits = ParticleAnalysis.getParticleLimits(imp, particleLabels, nParticles);
+		final Object[] boxes = ParticleAnalysis.getBoundingBoxes(imp, particleLabels, particleSizes);
+		
+		final double[][] centroids = (double[][]) boxes[0];
+		final int[][] limits = (int[][]) boxes[1];
 
 		EigenvalueDecomposition[] eigens = new EigenvalueDecomposition[nParticles];
-		if (doMoments || doAxesImage || colourMode == ParticleDisplay.ORIENTATION) {
+		if (doMoments || doAxesImage || colourMode == ParticleDisplay.ORIENTATION || doAlignedBoxes || doAlignedBoxesImage) {
 			eigens = ParticleAnalysis.getEigens(imp, particleLabels, centroids);
 		}
 		
+		double[][] alignedBoxes = new double[nParticles][6];
+		if (doAlignedBoxes || doAlignedBoxesImage) {
+			alignedBoxes = ParticleAnalysis.getAxisAlignedBoundingBoxes(imp, particleLabels, eigens, nParticles);
+		}
+		
 		// set up resources for analysis
-		ArrayList<List<Point3f>> surfacePoints = new ArrayList<>();
+		List<List<Point3f>> surfacePoints = new ArrayList<>();
 		if (doSurfaceArea || doSurfaceVolume || doSurfaceImage || doEllipsoids ||
 			doFeret || doEllipsoidStack)
 		{
@@ -312,6 +323,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				rt.addValue("x Cent (" + units + ")", centroids[i][0]);
 				rt.addValue("y Cent (" + units + ")", centroids[i][1]);
 				rt.addValue("z Cent (" + units + ")", centroids[i][2]);
+				if (doAlignedBoxes) {
+					rt.addValue("Box x (" + units + ")", alignedBoxes[i][0]);
+					rt.addValue("Box y (" + units + ")", alignedBoxes[i][1]);
+					rt.addValue("Box z (" + units + ")", alignedBoxes[i][2]);
+					rt.addValue("Box l0 (" + units + ")", alignedBoxes[i][3]);
+					rt.addValue("Box l1 (" + units + ")", alignedBoxes[i][4]);
+					rt.addValue("Box l2 (" + units + ")", alignedBoxes[i][5]);
+				}
 				if (doSurfaceArea) {
 					rt.addValue("SA (" + units + "²)", surfaceAreas[i]);
 				}
@@ -417,7 +436,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 
 		// show 3D renderings
 		if (doSurfaceImage || doCentroidImage || doAxesImage || do3DOriginal ||
-			doEllipsoidImage)
+			doEllipsoidImage || doAlignedBoxesImage)
 		{
 
 			final Image3DUniverse univ = new Image3DUniverse();
@@ -443,6 +462,9 @@ public class ParticleCounter implements PlugIn, DialogListener {
 			}
 			if (do3DOriginal) {
 				ParticleDisplay.display3DOriginal(imp, origResampling, univ);
+			}
+			if (doAlignedBoxesImage) {
+				ParticleDisplay.displayAlignedBoundingBoxes(alignedBoxes, eigens, univ);
 			}
 			univ.show();
 		}
