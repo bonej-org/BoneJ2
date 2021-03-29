@@ -608,7 +608,6 @@ public class ConnectedComponents {
 		int labelCount = 0;
 		for (MutableList<IntHashSet> map : chunkMaps) {
 			for (IntHashSet set : map) {
-				if (!set.isEmpty())
 					labelCount += set.size();
 			}
 		}
