@@ -57,7 +57,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.Multithreader;
-import org.eclipse.collections.api.block.procedure.primitive.IntProcedure;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.eclipse.collections.api.list.MutableList;
@@ -67,7 +66,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
-import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
@@ -91,6 +89,8 @@ public class ConnectedComponents {
 	public static final int MAX_FINAL_LABEL = 8388608;
 	/** maximum label value to use during intermediate processing */
 	static final int MAX_LABEL = Integer.MAX_VALUE;
+	/** minimum number of first labels to use multithreaded bucket fountain on */
+	private static final int BUCKET_FOUNTAIN_MULTITHREAD_MIN_LABELS = (int) 1E6;
 
 	/** number of particle labels */
 	private static int nParticles;
@@ -180,9 +180,9 @@ public class ConnectedComponents {
 	 */
 	private static int[][] generateLut(ArrayList<MutableList<IntHashSet>> chunkMaps, int[] chunkIDOffsets) {
 		// merge labels between the HashSets, handling the chunk offsets and indexes
-		bucketFountain(chunkMaps, chunkIDOffsets);
+		final int nFirstLabels = bucketFountain(chunkMaps, chunkIDOffsets);
 		
-		IntIntHashMap lutMap = makeLutMap(chunkMaps);
+		IntIntHashMap lutMap = makeLutMap(chunkMaps, nFirstLabels);
 
 		return lutFromLutMap(lutMap, chunkMaps, chunkIDOffsets);
 	}
@@ -480,11 +480,65 @@ public class ConnectedComponents {
 	 * @see <a href="https://en.wikipedia.org/wiki/Bucket_Fountain">Wikipedia: Bucket Fountain</a>
 	 * @param chunkMaps list of collisions between labels
 	 * @param chunkIDOffsets ID offsets
+	 * @return number of first labels
 	 */
-	private static void bucketFountain(final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
-		// iterate backwards through the chunk maps
-
+	private static int bucketFountain(final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets) {
 		final int nChunks = chunkIDOffsets.length;
+
+		//count the first labels
+		int nFirstLabels = 0;
+		for (int i = 0; i < nChunks; i++) {
+			nFirstLabels += chunkMaps.get(i).size();
+		}
+
+		//use multithreaded version only if there are lots of first labels to merge
+		if (nFirstLabels >= BUCKET_FOUNTAIN_MULTITHREAD_MIN_LABELS) {
+			bucketFountain(chunkMaps, chunkIDOffsets, nChunks);
+			return nFirstLabels;
+		}
+
+		//otherwise do the simpler single-threaded version
+	  // iterate backwards through the chunk maps
+		for (int chunk = nChunks - 1; chunk >= 0; chunk--) {
+			final MutableList<IntHashSet> map = chunkMaps.get(chunk);
+			final int priorChunk = chunk > 0 ? chunk - 1 : 0;
+			final MutableList<IntHashSet> priorMap = chunkMaps.get(priorChunk);
+			final int IDoffset = chunkIDOffsets[chunk];
+			final int priorIDoffset = chunkIDOffsets[priorChunk];
+			for (int i = map.size() - 1; i >= 0; i--) {
+				final IntHashSet set = map.get(i);
+				if (!set.isEmpty()) {
+					// find the minimum label in the set
+					int minLabel = set.min();
+
+					// if minimum label is less than this chunk's offset, need
+					// to move set to previous chunk's map
+					if (minLabel < IDoffset) {
+						priorMap.get(minLabel - priorIDoffset).addAll(set);
+						set.clear();
+						continue;
+					}
+					// move whole set's contents to a lower position in the map
+					if (minLabel < i + IDoffset) {
+						map.get(minLabel - IDoffset).addAll(set);
+						set.clear();
+					}
+				}
+			}
+		}
+		return nFirstLabels;
+	}
+
+	/**
+	 * Multithreaded version of bucket fountain, which merges sets of first label collisions
+	 * laterally within chunks and then vertically between pairs of adjacent chunks.
+	 * 
+	 * @param chunkMaps
+	 * @param chunkIDOffsets
+	 * @param nChunks
+	 */
+	private static void bucketFountain(final ArrayList<MutableList<IntHashSet>> chunkMaps, final int[] chunkIDOffsets, final int nChunks) {
+
 		final int[][] bucketLUT = new int[nChunks][];
 		//simpler just to have a minLabel LUT for each chunk. If minLabel for this set is < IDOffset then need to do a merge to lower chunk
 		final int[][] chunkStitchLUT = new int[nChunks][];
@@ -594,7 +648,7 @@ public class ConnectedComponents {
 			}
 		}
 	}
-
+	
 	/**
 	 * Check the labels within HashSets for consistency and merge them if needed.
 	 * Generate a label replacement LUT based on the index of the HashSet each label is
@@ -603,15 +657,7 @@ public class ConnectedComponents {
 	 * @param chunkMaps list of collisions between labels
 	 * @return lutMap initial mapping of partial region labels to final labels
 	 */
-	private static IntIntHashMap makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps) {
-		// count unique labels and particles
-		int labelCount = 0;
-		for (MutableList<IntHashSet> map : chunkMaps) {
-			for (IntHashSet set : map) {
-				if (!set.isEmpty())
-					labelCount += set.size();
-			}
-		}
+	private static IntIntHashMap makeLutMap(final ArrayList<MutableList<IntHashSet>> chunkMaps, final int labelCount) {
 
 		// set up a 1D HashMap of HashSets with the minimum label
 		// set as the 'root' (key) of the hashMap
