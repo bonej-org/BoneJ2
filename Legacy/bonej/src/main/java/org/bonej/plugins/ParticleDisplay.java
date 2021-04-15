@@ -63,13 +63,14 @@ import org.scijava.vecmath.Point3f;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
-import customnode.CustomLineMesh;
 import customnode.CustomPointMesh;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
+import ij.plugin.Converter;
 import ij.process.ByteProcessor;
+import ij.process.ImageConverter;
 import ij3d.Image3DUniverse;
 
 /**
@@ -86,6 +87,8 @@ public class ParticleDisplay {
 	static final int SPLIT = 1;
 	/** Surface colour style: orientation */
 	static final int ORIENTATION = 2;
+	/** Surface colour style: 3-3-2 lut */
+	static final int LUT_3_3_2 = 3;
 
 	// ----------------- STACK DISPLAY ---------------//
 
@@ -103,15 +106,16 @@ public class ParticleDisplay {
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 		final int wh = w * h;
-		final float[][] pL = new float[d][wh];
 		values[0] = 0; // don't colour the background
 		final ImageStack stack = new ImageStack(w, h);
 		for (int z = 0; z < d; z++) {
+			final int[] labelSlice = particleLabels[z];
+			final float[] pLSlice = new float[wh];
 			for (int i = 0; i < wh; i++) {
-				final int p = particleLabels[z][i];
-				pL[z][i] = (float) values[p];
+				final int p = labelSlice[i];
+				pLSlice[i] = (float) values[p];
 			}
-			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), pL[z]);
+			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), pLSlice);
 		}
 		final double max = Arrays.stream(values).max().orElse(0.0);
 		final ImagePlus impOut = new ImagePlus(imp.getShortTitle() + "_" + "volume", stack);
@@ -126,20 +130,20 @@ public class ParticleDisplay {
 	 * @param particleLabels particles labelled in the original image.
 	 * @param imp            original image, used for image dimensions, calibration
 	 *                       and titles
+	 * @param max						 maximum label to use to stretch the LUT
 	 * @return an image of the particles.
 	 */
-	static ImagePlus displayParticleLabels(final int[][] particleLabels, final ImagePlus imp) {
+	static ImagePlus displayParticleLabels(final int[][] particleLabels, final ImagePlus imp, final double max) {
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getImageStackSize();
 		final int wh = w * h;
 		final ImageStack stack = new ImageStack(w, h);
-		double max = 0;
 		for (int z = 0; z < d; z++) {
+			final int[] sliceLabels = particleLabels[z];
 			final float[] slicePixels = new float[wh];
 			for (int i = 0; i < wh; i++) {
-				slicePixels[i] = particleLabels[z][i];
-				max = Math.max(max, slicePixels[i]);
+				slicePixels[i] = sliceLabels[i];
 			}
 			stack.addSlice(imp.getImageStack().getSliceLabel(z + 1), slicePixels);
 		}
@@ -617,6 +621,26 @@ public class ParticleDisplay {
 			IJ.log("3D Viewer was closed before rendering completed.");
 		}
 	}
+	
+	/**
+	 * Display the input image in the 3D Viewer
+	 * 
+	 * @param imp particle label image stack with LUT applied
+	 * @param resampling pixel resampling for the viewer; minimum 1
+	 * @param univ 3D Viewer universe
+	 */
+	static void display3DParticlesRGB(final ImagePlus imp, final int resampling, final Image3DUniverse univ) {
+		//convert the float imp to an RGB imp
+		ImagePlus dupImp = imp.duplicate();
+		ImageConverter converter = new ImageConverter(dupImp);
+		converter.convertToRGB();
+		
+		try {
+			univ.addVoltex(dupImp, resampling).setLocked(true);
+		} catch (final NullPointerException npe) {
+			IJ.log("3D Viewer was closed before rendering completed.");
+		}
+	}
 
 	// ----------------- HELPER METHODS --------------//
 
@@ -650,6 +674,15 @@ public class ParticleDisplay {
 			}
 		} else if (colourMode == ORIENTATION) {
 			colour = ParticleDisplay.colourFromEigenVector(eigens[p]);
+		} else if (colourMode == LUT_3_3_2 ) {
+			//this is the 3-3-2 LUT formula from ij.plugin.LutLoader
+			final int i = (int) (256 * (double) p / nSurfaces);
+//		for (int i=0; i<256; i++) {
+			final int red = (i&0xe0);
+			final int green = ((i<<3)&0xe0);
+			final int blue = ((i<<6)&0xc0);
+			
+			colour = new Color3f((float)red/256f, (float)green/256f, (float)blue/256f);
 		}
 		return colour;
 	}

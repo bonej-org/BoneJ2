@@ -108,7 +108,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final TextField numb = (TextField) numbers.get(4);
 		numb.setEnabled(box.getState());
 		// link show surfaces, gradient choice and split value
-		final Checkbox surfbox = (Checkbox) checkboxes.get(14);
+		final Checkbox surfbox = (Checkbox) checkboxes.get(15);
 		final Choice col = (Choice) choices.get(0);
 		final TextField split = (TextField) numbers.get(3);
 		col.setEnabled(surfbox.getState());
@@ -190,8 +190,8 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		labels2[9] = "Show_aligned_boxes (3D)";
 		defaultValues2[9] = false;
 		gd.addCheckboxGroup(5, 2, labels2, defaultValues2, headers2);
-		final String[] items = { "Gradient", "Split", "Orientation"};
-		gd.addChoice("Surface colours", items, items[0]);
+		final String[] items = { "Gradient", "Split", "Orientation", "Labels (3-3-2 RGB)"};
+		gd.addChoice("Surface colours", items, items[3]);
 		gd.addNumericField("Split value", 0, 3, 7, units + "³");
 		gd.addNumericField("Volume_resampling", 2, 0);
 		gd.addHelp("https://imagej.net/BoneJ#Particle_Analyser");
@@ -224,7 +224,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		final boolean doCentroidImage = gd.getNextBoolean();
 		final boolean doAxesImage = gd.getNextBoolean();
 		final boolean doEllipsoidImage = gd.getNextBoolean();
-		final boolean do3DOriginal = gd.getNextBoolean();
+		final boolean do3DParticles = gd.getNextBoolean();
 		final boolean doEllipsoidStack = gd.getNextBoolean();
 		final boolean doAlignedBoxesImage = gd.getNextBoolean();
 		final int origResampling = (int) Math.floor(gd.getNextNumber());
@@ -422,8 +422,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		rt.show("Results");
 
 		// Show resulting image stacks
+		ImagePlus particleImage = null;
 		if (doParticleImage) {
-			ParticleDisplay.displayParticleLabels(particleLabels, imp).show();
+			particleImage = ParticleDisplay.displayParticleLabels(particleLabels, imp, nParticles);
+			particleImage.show();
 			IJ.run("3-3-2 RGB");
 		}
 		if (doParticleSizeImage) {
@@ -435,7 +437,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 
 		// show 3D renderings
-		if (doSurfaceImage || doCentroidImage || doAxesImage || do3DOriginal ||
+		if (doSurfaceImage || doCentroidImage || doAxesImage || do3DParticles ||
 			doEllipsoidImage || doAlignedBoxesImage)
 		{
 
@@ -460,8 +462,10 @@ public class ParticleCounter implements PlugIn, DialogListener {
 				//1D array
 				ParticleDisplay.displayEllipsoids(ellipsoids, univ);
 			}
-			if (do3DOriginal) {
-				ParticleDisplay.display3DOriginal(imp, origResampling, univ);
+			if (do3DParticles) {
+				if (particleImage == null)
+					particleImage = ParticleDisplay.displayParticleLabels(particleLabels, imp, nParticles);
+				ParticleDisplay.display3DParticlesRGB(particleImage, origResampling, univ);
 			}
 			if (doAlignedBoxesImage) {
 				ParticleDisplay.displayAlignedBoundingBoxes(alignedBoxes, eigens, univ);
