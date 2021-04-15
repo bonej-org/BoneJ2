@@ -607,23 +607,6 @@ public class ParticleDisplay {
 	/**
 	 * Display the input image in the 3D Viewer
 	 * 
-	 * @param imp Input image
-	 * @param resampling pixel resampling for the viewer; minimum 1
-	 * @param univ 3D Viewer universe
-	 */
-	static void display3DOriginal(final ImagePlus imp, final int resampling, final Image3DUniverse univ) {
-		final Color3f colour = new Color3f(1.0f, 1.0f, 1.0f);
-		final boolean[] channels = { true, true, true };
-		try {
-			univ.addVoltex(imp, colour, imp.getTitle(), 0, channels, resampling).setLocked(true);
-		} catch (final NullPointerException npe) {
-			IJ.log("3D Viewer was closed before rendering completed.");
-		}
-	}
-	
-	/**
-	 * Display the input image in the 3D Viewer
-	 * 
 	 * @param imp particle label image stack with LUT applied
 	 * @param resampling pixel resampling for the viewer; minimum 1
 	 * @param univ 3D Viewer universe
