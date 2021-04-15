@@ -68,7 +68,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
-import ij.plugin.Converter;
 import ij.process.ByteProcessor;
 import ij.process.ImageConverter;
 import ij3d.Image3DUniverse;
@@ -682,7 +681,7 @@ public class ParticleDisplay {
 			final int green = ((i<<3)&0xe0);
 			final int blue = ((i<<6)&0xc0);
 			
-			colour = new Color3f((float)red/256f, (float)green/256f, (float)blue/256f);
+			colour = new Color3f(red/256f, green/256f, blue/256f);
 		}
 		return colour;
 	}
