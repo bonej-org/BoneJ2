@@ -1,6 +1,8 @@
 package org.bonej.plugins.extensions;
 
 import java.awt.event.MouseEvent;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ij.IJ;
 import ij.gui.GenericDialog;
@@ -49,7 +51,17 @@ public class MouseSkeleton implements PlugIn {
 			if (c == null)
 				return;
 			String name = c.getName();
-			final int boneID = Integer.parseInt(name.replace("Surface ", ""));
+			Pattern p = Pattern.compile("\\d+");
+			Matcher m = p.matcher(name);
+			int boneID = -1;
+			boolean wasFound = false;
+			while (m.find()) {
+				boneID = Integer.parseInt(m.group());
+				wasFound = true;
+			}
+			if (!wasFound)
+				return;
+			
 			IJ.log("Picked "+name+" and extracted number "+boneID);
 			//need to put a dialog here
 			showDialogAndUpdateResults(boneID);
@@ -60,7 +72,8 @@ public class MouseSkeleton implements PlugIn {
 			GenericDialog gd = new NonBlockingGenericDialog("Set particle label");
 			int nRows = 10;
 			int nCols = (int) Math.floor(itemList.length / (double) nRows) + 1;
-			gd.addRadioButtonGroup("Select object", itemList, Math.min(nRows, itemList.length), nCols, itemList[0]);
+			gd.addRadioButtonGroup("Select name for particle "+boneID,
+				itemList, Math.min(nRows, itemList.length), nCols, itemList[0]);
 			gd.addTextAreas("", null, 1, 12);
 			gd.showDialog();
 			
