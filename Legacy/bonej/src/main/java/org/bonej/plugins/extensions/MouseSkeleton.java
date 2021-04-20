@@ -16,7 +16,8 @@ import ij3d.behaviors.InteractiveBehavior;
 public class MouseSkeleton implements PlugIn {
 
 	private Image3DUniverse univ;
-	private String[] itemList = {"clavicle", "humerus", "radius", "ulna", "femur", "tibia", "other"};
+	private String[] itemList = {"left clavicle", "left humerus", "left radius", "left ulna", "left femur", "left tibia",
+		"right clavicle", "right humerus", "right radius", "right ulna", "right femur", "right tibia", "other"};
 	
 	@Override
 	public void run(String arg) {
@@ -30,7 +31,9 @@ public class MouseSkeleton implements PlugIn {
 		univ = Image3DUniverse.universes.get(0);
 		
 		IJ.showMessage("Label Elements (3D)", 
-			"Hold down Ctrl and left click on surfaces in the 3D Viewer to label them.");
+			"Press Ctrl and left click on each particle in the 3D Viewer to label them.\n" +
+			"The label will appear in a new column in the Results window.\n" +
+			"Labelling will stay active until you close the 3D Viewer window.");
 		
 		univ.addInteractiveBehavior(new CustomBehavior(univ));
 		
@@ -63,22 +66,23 @@ public class MouseSkeleton implements PlugIn {
 				return;
 			
 			IJ.log("Picked "+name+" and extracted number "+boneID);
-			//need to put a dialog here
-			showDialogAndUpdateResults(boneID);
+
+			String particleName = showDialogAndUpdateResults(boneID);
+			c.setName(c.getName()+": "+particleName);
 		}
 
-		private void showDialogAndUpdateResults(final int boneID) {
+		private String showDialogAndUpdateResults(final int boneID) {
 			//set up the dialog
 			GenericDialog gd = new NonBlockingGenericDialog("Set particle label");
 			int nRows = 10;
 			int nCols = (int) Math.floor(itemList.length / (double) nRows) + 1;
 			gd.addRadioButtonGroup("Select name for particle "+boneID,
-				itemList, Math.min(nRows, itemList.length), nCols, itemList[0]);
+				itemList, Math.min(nRows, itemList.length / nCols), nCols, itemList[0]);
 			gd.addTextAreas("", null, 1, 12);
 			gd.showDialog();
 			
 			if (gd.wasCanceled())
-				return;
+				return "";
 			
 			//get the info and add it to the result table
 			String selectedItem = gd.getNextRadioButton();
@@ -89,6 +93,8 @@ public class MouseSkeleton implements PlugIn {
 			rt.setValue("particle name",( boneID - 1 ), selectedItem);
 			rt.updateResults();
 			rt.show(rt.getTitle());
+			
+			return selectedItem;
 		}
 	}
 }
