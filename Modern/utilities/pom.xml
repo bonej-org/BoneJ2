@@ -13,7 +13,7 @@
 
     <name>BoneJ2 utilities</name>
     <description>Utility methods for BoneJ2</description>
-    <url>https://imagej.net/BoneJ_experimental</url>
+    <url>https://imagej.github.io/plugins/bonej</url>
     <inceptionYear>2015</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
@@ -64,12 +64,12 @@
     <contributors>
         <contributor>
             <name>Richard Domander</name>
-            <url>https://imagej.net/User:Rdom</url>
+            <url>https://imagej.github.io/users/rimadoma</url>
             <properties><id>rimadoma</id></properties>
         </contributor>
         <contributor>
             <name>Curtis Rueden</name>
-            <url>https://imagej.net/User:Rueden</url>
+            <url>https://imagej.github.io/users/ctrueden</url>
             <properties><id>ctrueden</id></properties>
         </contributor>
     </contributors>
