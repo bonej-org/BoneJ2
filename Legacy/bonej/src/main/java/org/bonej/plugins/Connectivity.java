@@ -114,7 +114,7 @@ import ij.plugin.PlugIn;
  *      </p>
  *      <p>
  *      Several of the methods are based on Ignacio Arganda-Carreras's
- *      Skeletonize3D_ plugin: <a href="https://imagej.net/Skeletonize3D">
+ *      Skeletonize3D_ plugin: <a href="https://imagej.github.io/plugins/skeletonize3d">
  *      Skeletonize3D homepage</a>
  *      </p>
  *
