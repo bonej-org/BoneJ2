@@ -194,7 +194,7 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		gd.addChoice("Surface colours", items, items[0]);
 		gd.addNumericField("Split value", 0, 3, 7, units + "³");
 		gd.addNumericField("Volume_resampling", 2, 0);
-		gd.addHelp("https://imagej.net/BoneJ#Particle_Analyser");
+		gd.addHelp("https://imagej.github.io/plugins/bonej#particle-analyser");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		if (gd.wasCanceled()) {

@@ -16,7 +16,7 @@
 
     <name>BoneJ Parent POM</name>
     <description>Parent POM for BoneJ components</description>
-    <url>https://imagej.net/BoneJ2</url>
+    <url>https://imagej.github.io/plugins/bonej</url>
     <inceptionYear>2016</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
@@ -67,18 +67,18 @@
     <contributors>
         <contributor>
             <name>Richard Domander</name>
-            <url>https://imagej.net/User:Rdom</url>
+            <url>https://imagej.github.io/users/rimadoma</url>
             <properties><id>rimadoma</id></properties>
             <roles><role>founder</role></roles>
         </contributor>
         <contributor>
             <name>Curtis Rueden</name>
-            <url>https://imagej.net/User:Rueden</url>
+            <url>https://imagej.github.io/users/ctrueden</url>
             <properties><id>ctrueden</id></properties>
         </contributor>
         <contributor>
             <name>Mark Hiner</name>
-            <url>https://imagej.net/User:Hinerm</url>
+            <url>https://imagej.github.io/users/hinerm</url>
             <properties><id>hinerm</id></properties>
         </contributor>
     </contributors>
