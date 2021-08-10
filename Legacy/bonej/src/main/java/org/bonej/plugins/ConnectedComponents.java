@@ -52,6 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.bonej.plugins;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,6 +67,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
@@ -298,48 +300,78 @@ public class ConnectedComponents {
 					}
 
 					// use 13 neighbourhood for all but first slice
-					final int[] nbh = new int[13];
-					boolean lastPixelWasForeground = false;
+					final int[] neighborhood = new int[13];
 					final int wm1 = w - 1;
 					final int hm1 = h - 1;
 					int centre = 0;
 					for (int z = startSlice + 1; z <= endSlice; z++) {
+						final int[] priorSliceLabels = particleLabels[z - 1];
+						final int[] centreSliceLabels = particleLabels[z];
 						for (int y = 0; y < h; y++) {
 							final int rowIndex = y * w;
-							for (int x = 0; x < w; x++) {
-								final int arrayIndex = rowIndex + x;
-								if (workArray[z][arrayIndex] == FORE) {
-									
-									//for pixels in the middle of the slice,
-									if (lastPixelWasForeground && x > 0 && y > 0 && x < wm1 && y < hm1) {
-										 //slide the neighbourhood and 
-										// pick up 4 new labels from the label array
-										get13Neighborhood(nbh, particleLabels, x, y, z, w, centre);
-									} else {
-										// Find the minimum particleLabel in the
-										// neighbouring pixels - 13 pixels from label array
-										get13Neighborhood(nbh, particleLabels, x, y, z, w, h, nSlices);
-									}
+							
+							//reset the neighbourhood before beginning each row
+							Arrays.fill(neighborhood, 0);
+							centre = 0;
+							
+							//fill the leading edge of a new row
+							neighborhood[2] = y == 0 ? 0 : priorSliceLabels[rowIndex - w];
+							neighborhood[5] = priorSliceLabels[rowIndex];
+							neighborhood[8] = y < hm1 ? priorSliceLabels[rowIndex + w] : 0;
+							neighborhood[11] = y == 0 ? 0: centreSliceLabels[rowIndex - w];
+							
+							for (int x = 0; x < wm1; x++) {
+								//centre position in-plane
+								final int centreIndex = rowIndex + x;
+								//neighbours 2, 5, and 8 are in the prior z-plane to centre
+								final int n2 = y > 0 ? priorSliceLabels[centreIndex - w + 1] : 0;
+								final int n5 = priorSliceLabels[centreIndex + 1];
+								//handle the last edge by replacing neighbour 8 with 0
+								final int n8 = y < hm1 ? priorSliceLabels[centreIndex + w + 1] : 0;
+								//neighbour 11 is in same z-plane as centre and same xy as neighbour 2.
+								final int n11 = y > 0 ? centreSliceLabels[centreIndex - w + 1] : 0;
 
-									centre = getMinTag(nbh, ID);
+								//fill the neighbourhood, reusing already known values
+								fill13Neighborhood(neighborhood, n2, n5, n8, n11, centre);
 
+								centre = getMinTag(neighborhood, ID);
+								
+								if (workArray[z][centreIndex] == FORE) {
 									// add neighbourhood to map
-									addNeighboursToMap13(chunkMap, nbh, centre, IDoffset);
+									addNeighboursToMap13(chunkMap, neighborhood, centre, IDoffset);
 
 									// assign the smallest particle label from the
 									// neighbours to the pixel
-									particleLabels[z][arrayIndex] = centre;
-									
+									centreSliceLabels[centreIndex] = centre;
+
 									// increment the particle label
 									if (centre == ID) {
 										ID++;
+										IJ.log("ID = "+ID);
 										expandMap(chunkMap, ID, IDoffset, nextIDOffset);
 									}
-									lastPixelWasForeground = true;
-								} else {
-									lastPixelWasForeground = false;
 								}
 							}
+							//edge case for x = w - 1
+							final int centreIndex = y * w + w - 1;
+							fill13Neighborhood(neighborhood, 0, 0, 0, 0, centre);
+							
+							//this should probably be made its own static method ---------- snip
+							if (workArray[z][centreIndex] == FORE) {
+								// add neighbourhood to map
+								addNeighboursToMap13(chunkMap, neighborhood, centre, IDoffset);
+
+								// assign the smallest particle label from the
+								// neighbours to the pixel
+								centreSliceLabels[centreIndex] = centre;
+
+								// increment the particle label
+								if (centre == ID) {
+									ID++;
+									expandMap(chunkMap, ID, IDoffset, nextIDOffset);
+								}
+							}
+							//----------------- /snip
 						}
 					}
 				}
@@ -878,6 +910,30 @@ public class ConnectedComponents {
 		}
 	}
 
+	private static void fill13Neighborhood(final int[] neighborhood, 
+		final int n2, final int n5, final int n8, final int n11, final int n12) {
+		
+		neighborhood[0] = neighborhood[1];
+		neighborhood[1] = neighborhood[2];
+		neighborhood[2] = n2;
+
+		neighborhood[3] = neighborhood[4];
+		neighborhood[4] = neighborhood[5];
+		neighborhood[5] = n5;
+
+		neighborhood[6] = neighborhood[7];
+		neighborhood[7] = neighborhood[8];
+		neighborhood[8] = n8;
+
+		neighborhood[9] = neighborhood[10];
+		neighborhood[10] = neighborhood[11];
+		neighborhood[11] = n11;
+		
+		//use the last neighbourhood's centre value 
+		neighborhood[12] = n12;
+	}
+	
+	
 	/**
 	 * Get 13 neighborhood of a pixel in a 3D image (0 border conditions) Longhand,
 	 * hard-coded for speed. This neighbourhood contains the set of pixels that have
