@@ -166,6 +166,7 @@ public class Moments implements PlugIn, DialogListener {
 		gd.addCheckbox("Show axes (3D)", true);
 		gd.addCheckbox("Record unit vectors", false);
 		gd.addDialogListener(this);
+		gd.addHelp("https://imagej.net/plugins/bonej#moments-of-inertia");
 		gd.showDialog();
 		if (gd.wasCanceled()) {
 			return;

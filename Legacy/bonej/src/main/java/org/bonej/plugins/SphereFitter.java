@@ -128,6 +128,7 @@ public class SphereFitter implements PlugIn, DialogListener {
 		gd.addCheckbox("Add_to_ROI_Manager", false);
 		gd.addCheckbox("Clear_ROI_Manager", false);
 		gd.addDialogListener(this);
+		gd.addHelp("https://imagej.net/plugins/bonej#fit-sphere");
 		gd.showDialog();
 		if (gd.wasCanceled()) {
 			return;

@@ -274,7 +274,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		gd.addCheckbox("Partial_volume_compensation", false);
 		gd.addNumericField("Background", thresholds[0], 1, 6, pixUnits + " ");
 		gd.addNumericField("Foreground", thresholds[1], 1, 6, pixUnits + " ");
-		gd.addHelp("https://imagej.github.io/plugins/bonej#slice-geometry");
+		gd.addHelp("https://imagej.net/plugins/bonej#slice-geometry");
 		gd.addDialogListener(this);
 		gd.showDialog();
 		final String bone = gd.getNextChoice();

@@ -99,6 +99,7 @@ public class Purify implements PlugIn {
 		final GenericDialog gd = new GenericDialog("Setup");
 		gd.addCheckbox("Performance Log", false);
 		gd.addCheckbox("Make_copy", true);
+		gd.addHelp("https://imagej.net/plugins/bonej#purify");
 		gd.showDialog();
 		if (gd.wasCanceled()) return;
 		final boolean showPerformance = gd.getNextBoolean();

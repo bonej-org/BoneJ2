@@ -16,7 +16,7 @@
 
     <name>BoneJ Parent POM</name>
     <description>Parent POM for BoneJ components</description>
-    <url>https://imagej.github.io/plugins/bonej</url>
+    <url>https://imagej.net/plugins/bonej</url>
     <inceptionYear>2016</inceptionYear>
     <organization>
         <name>Royal Veterinary College</name>
