@@ -7,7 +7,7 @@ BoneJ is a collection of Fiji/ImageJ plug-ins for skeletal biology. It provides 
 > doi:[10.12688/wellcomeopenres.16619.1](https://doi.org/10.12688/wellcomeopenres.16619.1)
 
 ## Links
-* [User guide](https://imagej.github.io/plugins/bonej)
+* [User guide](https://imagej.net/plugins/bonej)
 * [ImageJ forum](https://forum.image.sc/tags/bonej)
 * [Developer documentation](https://github.com/bonej-org/BoneJ2/wiki)
 
