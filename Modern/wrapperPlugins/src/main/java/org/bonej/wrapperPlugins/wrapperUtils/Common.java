@@ -55,6 +55,9 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
+import java.io.IOException;
+import java.net.URL;
+
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.display.ColorTables;
@@ -69,6 +72,8 @@ import org.bonej.utilities.ImagePlusUtil;
 import org.scijava.Context;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
+import org.scijava.log.Logger;
+import org.scijava.platform.PlatformService;
 import org.scijava.ui.UIService;
 
 import ij.ImagePlus;
@@ -177,6 +182,25 @@ public final class Common {
 		for (int d = 0; d < dimensions; d++) {
 			final CalibratedAxis axis = source.axis(d);
 			target.setAxis(axis, d);
+		}
+	}
+	
+	/**
+	 * Shows a  help page on the imagej.net website, direction to the section indicated by 'section'.
+	 * 
+	 * @param section on the webpage in the format '#page-section'. If empty or not found,
+	 *  webpage opens at the top
+	 *  @param platformService
+	 * @param uiService 
+	 * @param logService 
+	 */
+	public static void showHelpPage(String section,
+		PlatformService platformService, UIService uiService, Logger logService) {
+		try {
+			platformService.open(new URL("https://imagej.net/plugins/bonej"+section));
+		} catch (final IOException e) {
+			uiService.showDialog("Something went wrong while opening the help page. Please try again.");
+			logService.trace(e);
 		}
 	}
 }

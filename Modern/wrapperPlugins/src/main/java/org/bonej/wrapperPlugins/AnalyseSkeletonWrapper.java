@@ -80,6 +80,7 @@ import org.apache.commons.math3.util.MathArrays;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
@@ -88,6 +89,7 @@ import org.scijava.convert.ConvertService;
 import org.scijava.io.IOService;
 import org.scijava.io.location.FileLocation;
 import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.table.DefaultGenericTable;
@@ -95,6 +97,7 @@ import org.scijava.table.DoubleColumn;
 import org.scijava.table.IntColumn;
 import org.scijava.table.PrimitiveColumn;
 import org.scijava.ui.UIService;
+import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 import org.scijava.widget.FileWidget;
 
@@ -150,6 +153,9 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		description = "Show skeleton images labelled with their IDs",
 		required = false)
 	private boolean displaySkeletons;
+	
+	@Parameter(label = "Help", description = "More about Analyse Skeleton", callback = "showHelpPage")
+	private Button button;
 
 	/**
 	 * Additional analysis details in a {@link DefaultGenericTable}, null if
@@ -189,7 +195,10 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	@Parameter
 	private StatusService statusService;
-
+	
+	@Parameter
+	private PlatformService platformService;
+	
 	private ImagePlus intensityImage;
 
 	@Override
@@ -230,6 +239,11 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			}
 		}
 		reportUsage();
+	}
+	
+	@SuppressWarnings("unused")
+	private void showHelpPage() {
+		Common.showHelpPage("#analyse-skeleton", platformService, uiService, logService);
 	}
 
 	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {

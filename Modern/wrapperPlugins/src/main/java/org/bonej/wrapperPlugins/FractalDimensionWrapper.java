@@ -81,15 +81,20 @@ import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.GenericTable;
+import org.scijava.ui.UIService;
+import org.scijava.widget.Button;
 import org.scijava.widget.NumberWidget;
 
 /**
@@ -147,6 +152,9 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 	@Parameter(label = "Show points",
 		description = "Show (log(size), -log(count)) points", required = false)
 	private boolean showPoints;
+	
+	@Parameter(label = "Help", description = "More about Fractal Dimension", callback = "showHelpPage")
+	private Button button;
 
 	/**
 	 * Table containing the (-log(size), log(count)) points for each 3D subspace
@@ -158,6 +166,12 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 	private OpService opService;
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private UIService uiService;
+	@Parameter
+	private PlatformService platformService;
 
 	private BinaryHybridCF<RandomAccessibleInterval<BitType>, Boolean, RandomAccessibleInterval<BitType>> hollowOp;
 	private UnaryFunctionOp<RandomAccessibleInterval<BitType>, List<ValuePair<DoubleType, DoubleType>>> boxCountOp;
@@ -194,6 +208,12 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 		resultsTable = SharedTable.getTable();
 		reportUsage();
 	}
+	
+	@SuppressWarnings("unused")
+	private void showHelpPage() {
+		Common.showHelpPage("#fractal-dimension", platformService, uiService, logService);
+	}
+	
 
 	// region -- Helper methods --
 	private void writePoints(final String headerSuffix,

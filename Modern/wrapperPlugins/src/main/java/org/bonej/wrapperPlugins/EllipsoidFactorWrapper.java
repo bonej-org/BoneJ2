@@ -118,9 +118,11 @@ import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
+import org.scijava.widget.Button;
 
 import sc.fiji.skeletonize3D.Skeletonize3D_;
 
@@ -166,6 +168,8 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	@SuppressWarnings("unused")
     @Parameter
 	private UnitService unitService;
+	@Parameter
+	private PlatformService platformService;
 	//main input image
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
@@ -213,7 +217,9 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	private List<ImgPlus> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
-
+	@Parameter(label = "Help", description = "More about Ellipsoid Factor", callback = "showHelpPage")
+	private Button button;
+	
 	private ImgPlus<BitType> inputAsBitType;
 
 	@Override
@@ -340,6 +346,11 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 		resultsTable = SharedTable.getTable();
 		statusService.showStatus("Ellipsoid Factor completed");
 		reportUsage();
+	}
+	
+	@SuppressWarnings("unused")
+	private void showHelpPage() {
+		Common.showHelpPage("#ellipsoid-factor", platformService, uiService, logService);
 	}
 
 	private List<ImgPlus> divideOutput(final List<ImgPlus> outputList, final int repetitions) {

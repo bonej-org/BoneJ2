@@ -83,11 +83,14 @@ import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.table.DoubleColumn;
 import org.scijava.table.Table;
 import org.scijava.ui.UIService;
+import org.scijava.widget.Button;
 import org.scijava.widget.NumberWidget;
 
 import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
@@ -166,6 +169,7 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		description = "Print the percentage of each of the type of edges that were culled after calling analyseSkeleton",
 		required = false, persistKey = "ITA_print_culled_edges")
 	private boolean printCulledEdgePercentages;
+
 	/**
 	 * The ITA edge-end coordinates in a {@link Table}, null if there are no
 	 * results
@@ -174,10 +178,16 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 	private ResultsTable centroidTable;
 	@Parameter(type = ItemIO.OUTPUT, label = "Edge culling percentages")
 	private ResultsTable culledEdgePercentagesTable;
+	@Parameter(label = "Help", description = "More about Intertrabecular Angles", callback = "showHelpPage")
+	private Button button;
 	@Parameter
 	private StatusService statusService;
 	@Parameter
 	private UIService uiService;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private PlatformService platformService;
 
 	private double[] coefficients;
 	private boolean anisotropyWarned;
@@ -218,6 +228,11 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
 		reportUsage();
+	}
+	
+	@SuppressWarnings("unused")
+	private void showHelpPage() {
+		Common.showHelpPage("#inter-trabecular-angles", platformService, uiService, logService);
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {

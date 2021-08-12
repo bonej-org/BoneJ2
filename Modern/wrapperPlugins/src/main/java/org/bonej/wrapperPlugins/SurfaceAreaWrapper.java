@@ -90,15 +90,18 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import org.scijava.util.StringUtils;
+import org.scijava.widget.Button;
 import org.scijava.widget.FileWidget;
 
 /**
@@ -123,6 +126,8 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 		description = "Create a binary STL file from the surface mesh",
 		required = false)
 	private boolean exportSTL;
+	@Parameter(label = "Help", description = "More about Surface Area", callback = "showHelpPage")
+	private Button button;
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -133,6 +138,8 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private PlatformService platformService;
 
 	private String path = "";
 	private String extension = "";
@@ -157,6 +164,11 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 		calculateAreas(meshes);
 		resultsTable = SharedTable.getTable();
 		reportUsage();
+	}
+	
+	@SuppressWarnings("unused")
+	private void showHelpPage() {
+		Common.showHelpPage("#surface-area", platformService, uiService, logService);
 	}
 
 	/**

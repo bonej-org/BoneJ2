@@ -100,6 +100,7 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.utilities.Visualiser;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.joml.Matrix3d;
 import org.joml.Matrix4d;
@@ -112,10 +113,12 @@ import org.scijava.ItemVisibility;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
+import org.scijava.widget.Button;
 import org.scijava.widget.NumberWidget;
 
 /**
@@ -194,6 +197,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 			description = "Show the vectors of the mean intercept lengths",
 			required = false)
 	private boolean displayMILVectors;
+	
+	@Parameter(label = "Help", description = "More about Anisotropy", callback = "showHelpPage")
+	private Button button;
 
 	@Parameter
 	private LogService logService;
@@ -205,6 +211,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	private UIService uiService;
 	@Parameter
 	private UnitService unitService;
+	@Parameter
+	private PlatformService platformService;
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	private double milLength;
 
@@ -228,6 +236,11 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		addResults(subspaces, ellipsoids);
 		resultsTable = SharedTable.getTable();
 		reportUsage();
+	}
+	
+	@SuppressWarnings("unused")
+	private void showHelpPage() {
+		Common.showHelpPage("#anisotropy", platformService, uiService, logService);
 	}
 
 	// region -- Helper methods --

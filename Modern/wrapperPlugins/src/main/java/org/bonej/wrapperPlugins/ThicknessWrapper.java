@@ -77,9 +77,12 @@ import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
+import org.scijava.platform.PlatformService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
+import org.scijava.widget.Button;
 import org.scijava.widget.ChoiceWidget;
 
 import sc.fiji.localThickness.LocalThicknessWrapper;
@@ -120,11 +123,18 @@ public class ThicknessWrapper extends BoneJCommand {
 
 	@Parameter(label = "Trabecular spacing", type = ItemIO.OUTPUT)
 	private ImagePlus spacingMap;
+	
+	@Parameter(label = "Help", description = "More about Thickness", callback = "showHelpPage")
+	private Button button;
 
 	@Parameter
 	private UIService uiService;
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private LogService logService;
+	@Parameter
+	private PlatformService platformService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
@@ -160,6 +170,11 @@ public class ThicknessWrapper extends BoneJCommand {
 			}
 		}
 		reportUsage();
+	}
+	
+	@SuppressWarnings("unused")
+	private void showHelpPage() {
+		Common.showHelpPage("#thickness", platformService, uiService, logService);
 	}
 
 	private void addMapResults(final ImagePlus map) {
