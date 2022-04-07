@@ -110,14 +110,14 @@
         <url>https://github.com/bonej-org/BoneJ2/issues</url>
     </issueManagement>
     <ciManagement>
-        <system>Travis CI</system>
-        <url>https://travis-ci.org/bonej-org/BoneJ2</url>
+        <system>GitHub Actions</system>
+        <url>https://github.com/bonej-org/BoneJ2/actions</url>
     </ciManagement>
 
     <properties>
         <license.licenseName>bsd_2</license.licenseName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
-        <releaseProfiles>deploy-to-scijava</releaseProfiles>
+        <releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
     </properties>
 
