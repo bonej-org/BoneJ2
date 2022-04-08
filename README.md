@@ -1,5 +1,5 @@
 
-[![Build Status](https://travis-ci.org/bonej-org/BoneJ2.svg?branch=master)](https://travis-ci.org/bonej-org/BoneJ2)
+[![Build Status](https://github.com/bonej-org/BoneJ2/actions/workflows/build-main.yml/badge.svg)](https://github.com/bonej-org/BoneJ2/actions/workflows/build-main.yml)
 # BoneJ
 BoneJ is a collection of Fiji/ImageJ plug-ins for skeletal biology. It provides free, open source tools for trabecular geometry and whole bone shape analysis. This repository hosts the modern incarnation of BoneJ in development. If you use BoneJ in your work please cite:
 
