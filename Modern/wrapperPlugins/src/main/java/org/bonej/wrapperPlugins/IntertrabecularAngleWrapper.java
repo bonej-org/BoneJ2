@@ -57,7 +57,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -83,6 +82,7 @@ import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.table.DoubleColumn;
@@ -178,6 +178,8 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 	private StatusService statusService;
 	@Parameter
 	private UIService uiService;
+	@Parameter
+	private LogService logService;
 
 	private double[] coefficients;
 	private boolean anisotropyWarned;
@@ -296,8 +298,14 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		}
 		// Without anisotropyWarned the warning is shown twice
 		if (!anisotropyWarned) {
-			if (!Common.warnAnisotropy(inputImage, uiService)) {
-				cancel(null);
+			if (uiService.isHeadless() && ImagePlusUtil.anisotropy(inputImage) < 1E-3) {
+				logService.warn("Image is anisotropic, results are likely to be wrong.");
+			}
+			else {
+				//warnAnisotropy needs to be refactored to remove dependence on UI
+				if (!Common.warnAnisotropy(inputImage, uiService)) {
+					cancel(null);
+				}
 			}
 			anisotropyWarned = true;
 		}
@@ -401,7 +409,6 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		if (graphs.length < 2) {
 			return;
 		}
-		uiService.showDialog(
-			"Image has multiple skeletons - processing the largest", WARNING_MESSAGE);
+		logService.warn("Image has multiple skeletons - processing the largest");
 	}
 }
