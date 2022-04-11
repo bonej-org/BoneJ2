@@ -186,26 +186,6 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assertEquals(10, fiveColumn.stream().filter(Objects::nonNull).count());
 	}
 
-	@Test
-	public void testMultipleGraphsShowsWarningDialog() throws Exception {
-		// SETUP
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(MOCK_UI.dialogPrompt(startsWith("Image has multiple skeletons"),
-			anyString(), eq(WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-		final ImagePlus pixels = NewImage.createByteImage("Test", 4, 4, 1,
-			FILL_BLACK);
-		pixels.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
-		pixels.getStack().getProcessor(1).set(3, 3, (byte) 0xFF);
-
-		// EXECUTE
-		command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
-			pixels).get();
-
-		// VERIFY
-		verify(MOCK_UI, timeout(1000)).dialogPrompt(startsWith(
-			"Image has multiple skeletons"), anyString(), eq(WARNING_MESSAGE), any());
-	}
-
 	/**
 	 * Test that no skeleton image pops open, when the input is already a skeleton
 	 * (or skeletonisation didn't change it)
