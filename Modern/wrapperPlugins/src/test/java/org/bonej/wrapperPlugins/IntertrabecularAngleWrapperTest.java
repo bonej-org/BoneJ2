@@ -291,28 +291,6 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 
 	}
 
-	/**
-	 * Test that the skeleton is displayed, when the input image gets skeletonised
-	 */
-	@Test
-	public void testSkeletonImageWhenSkeletonised() throws Exception {
-		// SETUP
-		doNothing().when(MOCK_UI).show(any(ImagePlus.class));
-		final ImagePlus square = NewImage.createByteImage("Test", 4, 4, 1,
-			FILL_BLACK);
-		square.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
-		square.getStack().getProcessor(1).set(1, 2, (byte) 0xFF);
-		square.getStack().getProcessor(1).set(2, 1, (byte) 0xFF);
-		square.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
-
-		// EXECUTE
-		command().run(IntertrabecularAngleWrapper.class, true, "inputImage",
-			square).get();
-
-		// VERIFY
-		verify(MOCK_UI, timeout(1000)).show(any(ImagePlus.class));
-	}
-
 	@Test
 	public void testTimeDimensionCancelsPlugin() throws Exception {
 		// SETUP

@@ -400,7 +400,6 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		final int iterations = skeletoniser.getThinningIterations();
 		if (iterations > 1) {
 			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-			uiService.show(skeleton);
 		}
 		return skeleton;
 	}
