@@ -26,28 +26,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/*
-BSD 2-Clause License
-Copyright (c) 2018, Michael Doube, Richard Domander, Alessandro Felder
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
 
 package org.bonej.wrapperPlugins;
 
@@ -56,6 +34,8 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.bonej.wrapperPlugins.IntertrabecularAngleWrapper.NO_RESULTS_MSG;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -77,6 +57,7 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -93,6 +74,7 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
  * 
  * @author Alessandro Felder
  * @author Richard Domander
+ * @author Michael Doube
  */
 @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
 public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
@@ -185,26 +167,61 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assertEquals(10, fiveColumn.size());
 		assertEquals(10, fiveColumn.stream().filter(Objects::nonNull).count());
 	}
-
+	
 	/**
-	 * Test that no skeleton image pops open, when the input is already a skeleton
-	 * (or skeletonisation didn't change it)
+	 * Check that the skeleton image is returned as output when requested
+	 * @throws ExecutionException
+	 * @throws InterruptedException
 	 */
 	@Test
-	public void testNoImageShownWhenSkeletonProducesEmptyGraph() throws Exception {
-		// SETUP
-		doNothing().when(MOCK_UI).show(any(ImagePlus.class));
-		final ImagePlus pixel = NewImage.createByteImage("Test", 3, 3, 1,
-			FILL_BLACK);
-		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
+	public void testShowSkeletonImageWhenRequested() throws ExecutionException,
+		InterruptedException
+	{
+		final URL resource = getClass().getClassLoader().getResource(
+				"test-skelly.zip");
+		assert resource != null;
+		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
 		// EXECUTE
-		command().run(IntertrabecularAngleWrapper.class, true, "inputImage", pixel, "minimumValence",
-						3).get();
+		final CommandModule module = command().run(
+			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
+			"marginCutOff", 0, "useClusters", true, "iteratePruning", false, "showSkeleton", true).get();
 
 		// VERIFY
-		verify(MOCK_UI, after(250).never()).show(any(ImagePlus.class));
+		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeletonImage");
+		assertNotNull(skeleton);
+		assertNotSame("Original image should not have been overwritten", skelly,
+			skeleton);
 	}
+	
+	/**
+	 * Check that the skeleton image is not returned as output when not requested
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 */
+	@Test
+	public void testDontShowSkeletonImageWhenNotRequested() throws ExecutionException,
+		InterruptedException
+	{
+		final URL resource = getClass().getClassLoader().getResource(
+				"test-skelly.zip");
+		assert resource != null;
+		final ImagePlus skelly = IJ.openImage(resource.getFile());
+
+		// EXECUTE
+		final CommandModule module = command().run(
+			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
+			"marginCutOff", 0, "useClusters", true, "iteratePruning", false, "showSkeleton", false).get();
+
+		// VERIFY
+		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeletonImage");
+		assertNull(skeleton);
+		assertNotSame("Original image should not have been overwritten", skelly,
+			skeleton);
+	}
+	
 
 	@Test
 	public void testNoResultsCancelsPlugin() throws Exception {
