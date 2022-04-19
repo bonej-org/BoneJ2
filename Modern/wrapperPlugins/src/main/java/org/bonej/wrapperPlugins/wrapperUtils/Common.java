@@ -118,7 +118,7 @@ public final class Common {
 
 	/**
 	 * Shows a warning dialog about image anisotropy, and asks if the user wants
-	 * to continue. If the 
+	 * to continue. If the plugin is running in headless mode, execution continues anyway, and a warning is printed to the log.
 	 *
 	 * @param image the current image open in ImageJ.
 	 * @param uiService used to display the warning dialog.
