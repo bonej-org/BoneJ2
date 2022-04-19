@@ -118,15 +118,16 @@ public final class Common {
 
 	/**
 	 * Shows a warning dialog about image anisotropy, and asks if the user wants
-	 * to continue.
+	 * to continue. If the plugin is running in headless mode, execution continues anyway, and a warning is printed to the log.
 	 *
 	 * @param image the current image open in ImageJ.
 	 * @param uiService used to display the warning dialog.
-	 * @return true if user chose OK_OPTION, or image is not anisotropic. False if
-	 *         user chose 'cancel' or they closed the dialog.
+	 * @param logService handles the warning text if the UI is headless
+	 * @return true if user chose OK_OPTION, or image is not anisotropic, or
+	 * execution is headless. False if user chose 'cancel' or they closed the dialog.
 	 */
 	public static boolean warnAnisotropy(final ImagePlus image,
-		final UIService uiService)
+		final UIService uiService, final LogService logService)
 	{
 		final double anisotropy = ImagePlusUtil.anisotropy(image);
 		if (anisotropy < 1E-3) {
@@ -134,6 +135,12 @@ public final class Common {
 		}
 		final String anisotropyPercent = String.format("(%.1f %%)", anisotropy *
 			100.0);
+		if (uiService.isHeadless()) {
+			logService.warn("The image is anisotropic " +
+					anisotropyPercent + ". Continuing anyway, but results "
+							+ "may be unreliable");
+			return true;
+		}
 		return uiService.showDialog("The image is anisotropic " +
 			anisotropyPercent + ". Continue anyway?", WARNING_MESSAGE,
 			OK_CANCEL_OPTION) == OK_OPTION;

@@ -77,6 +77,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
@@ -123,6 +124,8 @@ public class ThicknessWrapper extends BoneJCommand {
 
 	@Parameter
 	private UIService uiService;
+	@Parameter
+	private LogService logService;
 	@Parameter
 	private StatusService statusService;
 
@@ -257,7 +260,7 @@ public class ThicknessWrapper extends BoneJCommand {
 		}
 
 		if (!anisotropyWarned) {
-			if (!Common.warnAnisotropy(inputImage, uiService)) {
+			if (!Common.warnAnisotropy(inputImage, uiService, logService)) {
 				cancel(null);
 			}
 			anisotropyWarned = true;

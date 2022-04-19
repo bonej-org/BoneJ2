@@ -309,14 +309,8 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		}
 		// Without anisotropyWarned the warning is shown twice
 		if (!anisotropyWarned) {
-			if (uiService.isHeadless() && ImagePlusUtil.anisotropy(inputImage) < 1E-3) {
-				logService.warn("Image is anisotropic, results are likely to be wrong.");
-			}
-			else {
-				//warnAnisotropy needs to be refactored to remove dependence on UI
-				if (!Common.warnAnisotropy(inputImage, uiService)) {
-					cancel(null);
-				}
+			if (!Common.warnAnisotropy(inputImage, uiService, logService)) {
+				cancel(null);
 			}
 			anisotropyWarned = true;
 		}
