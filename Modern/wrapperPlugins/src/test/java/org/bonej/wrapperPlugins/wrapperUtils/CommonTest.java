@@ -154,8 +154,8 @@ public class CommonTest {
 		final UIService uiService = mock(UIService.class);
 		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
 			.thenReturn(CANCEL_OPTION);
-
-		assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+		final LogService logService = mock(LogService.class);
+		assertFalse(Common.warnAnisotropy(imagePlus, uiService, logService));
 		verify(uiService, timeout(1000)).showDialog(anyString(), any(
 			MessageType.class), any());
 	}
@@ -171,7 +171,8 @@ public class CommonTest {
 		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
 			.thenReturn(CLOSED_OPTION);
 
-		assertFalse(Common.warnAnisotropy(imagePlus, uiService));
+		final LogService logService = mock(LogService.class);
+		assertFalse(Common.warnAnisotropy(imagePlus, uiService, logService));
 		verify(uiService, timeout(1000)).showDialog(anyString(), any(
 			MessageType.class), any());
 	}
@@ -187,7 +188,8 @@ public class CommonTest {
 		when(uiService.showDialog(anyString(), any(MessageType.class), any()))
 			.thenReturn(OK_OPTION);
 
-		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
+		final LogService logService = mock(LogService.class);
+		assertTrue(Common.warnAnisotropy(imagePlus, uiService, logService));
 		verify(uiService, timeout(1000)).showDialog(anyString(), any(
 			MessageType.class), any());
 	}
@@ -200,17 +202,23 @@ public class CommonTest {
 		when(imagePlus.getCalibration()).thenReturn(isotropic);
 		final UIService uiService = mock(UIService.class);
 
-		assertTrue(Common.warnAnisotropy(imagePlus, uiService));
+		final LogService logService = mock(LogService.class);
+		assertTrue(Common.warnAnisotropy(imagePlus, uiService, logService));
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testWarnAnisotropyThrowsNPEIfImageNull() {
-		Common.warnAnisotropy(null, mock(UIService.class));
+		Common.warnAnisotropy(null, mock(UIService.class), mock(LogService.class));
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testWarnAnisotropyThrowsNPEIfUIServiceNull() {
-		Common.warnAnisotropy(mock(ImagePlus.class), null);
+		Common.warnAnisotropy(mock(ImagePlus.class), null, mock(LogService.class));
+	}
+	
+	@Test(expected = NullPointerException.class)
+	public void testWarnAnisotropyThrowsNPEIfLogServiceNull() {
+		Common.warnAnisotropy(mock(ImagePlus.class), mock(UIService.class), null);
 	}
 
 	@Test

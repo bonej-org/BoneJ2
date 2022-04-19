@@ -81,6 +81,7 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
@@ -111,6 +112,8 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 	private StatusService statusService;
 	@Parameter
 	private UIService uiService;
+	@Parameter
+	private LogService logService;
 
 	private List<Vector3d> points;
 
@@ -180,7 +183,7 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
-		if (!Common.warnAnisotropy(inputImage, uiService)) {
+		if (!Common.warnAnisotropy(inputImage, uiService, logService)) {
 			cancel(null);
 		}
 	}
