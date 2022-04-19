@@ -166,6 +166,10 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		description = "Print the percentage of each of the type of edges that were culled after calling analyseSkeleton",
 		required = false, persistKey = "ITA_print_culled_edges")
 	private boolean printCulledEdgePercentages;
+	@Parameter(label = "Show skeleton",
+		description = "Show skeletonisation",
+		required = false, persistKey = "ITA_show_skeleton")
+	private boolean showSkeleton = false;
 	/**
 	 * The ITA edge-end coordinates in a {@link Table}, null if there are no
 	 * results
@@ -174,6 +178,11 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 	private ResultsTable centroidTable;
 	@Parameter(type = ItemIO.OUTPUT, label = "Edge culling percentages")
 	private ResultsTable culledEdgePercentagesTable;
+	/**
+	 * Skeletonised image
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "Skeleton")
+	private ImagePlus skeletonImage;
 	@Parameter
 	private StatusService statusService;
 	@Parameter
@@ -189,6 +198,8 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		statusService.showStatus("Intertrabecular angles: Initialising...");
 		statusService.showStatus("Intertrabecular angles: skeletonising");
 		final ImagePlus skeleton = skeletonise();
+		if (showSkeleton)
+			skeletonImage = skeleton.duplicate();
 		statusService.showStatus("Intertrabecular angles: analysing skeletons");
 		statusService.showProgress(0, PROGRESS_STEPS);
 		final Graph[] graphs = analyzeSkeleton(skeleton);
@@ -400,7 +411,6 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		final int iterations = skeletoniser.getThinningIterations();
 		if (iterations > 1) {
 			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-			uiService.show(skeleton);
 		}
 		return skeleton;
 	}
