@@ -77,7 +77,6 @@ import net.imglib2.util.ValuePair;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
@@ -148,8 +147,6 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		description = "Nodes with centroids closer than this value to any image boundary will not be included in results",
 		style = NumberWidget.SPINNER_STYLE)
 	private int marginCutOff;
-	@SuppressWarnings("unused")
-	private String realLength = "";
 	@Parameter(label = "Iterate pruning",
 		description = "If true, iterate pruning as long as short edges remain, or stop after a single pass",
 		required = false, persistKey = "ITA_iterate")
@@ -190,12 +187,13 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 	@Parameter
 	private LogService logService;
 
-	private double[] coefficients;
+	private double[] pixelSpacing;
 	private boolean anisotropyWarned;
 
 	@Override
 	public void run() {
 		statusService.showStatus("Intertrabecular angles: Initialising...");
+		initRealLength();
 		statusService.showStatus("Intertrabecular angles: skeletonising");
 		final ImagePlus skeleton = skeletonise();
 		if (showSkeleton)
@@ -214,7 +212,7 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		statusService.showProgress(1, PROGRESS_STEPS);
 		final ValuePair<Graph, double[]> pruningResult = GraphPruning
 			.pruneShortEdges(largestGraph, minimumTrabecularLength, iteratePruning,
-				useClusters, coefficients);
+				useClusters, pixelSpacing);
 		final Graph cleanGraph = pruningResult.a;
 		statusService.showStatus(
 			"Intertrabecular angles: valence sorting trabeculae");
@@ -248,15 +246,6 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		analyser.setup("", skeleton);
 		analyser.run();
 		return analyser.getGraphs();
-	}
-
-	@SuppressWarnings("unused")
-	private void calculateRealLength() {
-		final double calibratedMinimumLength = minimumTrabecularLength *
-			coefficients[0];
-		final String unit = ResultUtils.getUnitHeader(inputImage);
-		realLength = String.join(" ", String.format("%.2g",
-			calibratedMinimumLength), unit);
 	}
 
 	private Map<Integer, DoubleStream> createRadianMap(
@@ -316,21 +305,17 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		}
 	}
 
-	@SuppressWarnings("unused")
 	private void initRealLength() {
 		if (inputImage == null || inputImage.getCalibration() == null) {
-			coefficients = new double[] { 1.0, 1.0, 1.0 };
-			realLength = String.join(" ", String.format("%.2g",
-				(double) minimumTrabecularLength));
+			pixelSpacing = new double[] { 1.0, 1.0, 1.0 };
 		}
 		else {
 			final Calibration calibration = inputImage.getCalibration();
-			coefficients = new double[] { calibration.pixelWidth,
+			pixelSpacing = new double[] { calibration.pixelWidth,
 				calibration.pixelHeight, calibration.pixelDepth };
-			calculateRealLength();
 		}
 	}
-
+	
 	private boolean isCloseToBoundary(final Vertex v) {
 		final Vector3d centroid = PointUtils.centroid(v.getPoints());
 		final int width = inputImage.getWidth();
