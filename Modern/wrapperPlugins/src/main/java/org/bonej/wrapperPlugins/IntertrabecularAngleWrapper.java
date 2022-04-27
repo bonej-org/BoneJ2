@@ -137,14 +137,14 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_max_valence",
 		callback = "enforceValidRange")
 	private int maximumValence = 3;
-	@Parameter(label = "Minimum trabecular length (px)", min = "0",
-		stepSize = "1",
-		description = "Minimum length for a trabecula to be kept from being fused into a node",
-		style = NumberWidget.SPINNER_STYLE, callback = "calculateRealLength",
-		persist = false, initializer = "initRealLength")
-	private int minimumTrabecularLength;
-	@Parameter(label = "Margin (px)", min = "0", stepSize = "1",
-		description = "Nodes with centroids closer than this value to any image boundary will not be included in results",
+	@Parameter(label = "Minimum trabecular length (real units)", min = "0.00",
+		stepSize = "0.1",
+		description = "Minimum length in calibrated units for a trabecula to be kept from being fused into a node",
+		style = NumberWidget.SPINNER_STYLE,
+		persist = false)
+	private double minimumTrabecularLength;
+	@Parameter(label = "Margin (pixels)", min = "0", stepSize = "1",
+		description = "Nodes with centroids closer than this value in pixels to any image boundary will not be included in results",
 		style = NumberWidget.SPINNER_STYLE)
 	private int marginCutOff;
 	@Parameter(label = "Iterate pruning",

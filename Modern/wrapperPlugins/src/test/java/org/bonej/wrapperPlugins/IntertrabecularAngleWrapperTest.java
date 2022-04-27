@@ -47,11 +47,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
+import ij.measure.Calibration;
 
 import java.net.URL;
 import java.util.Iterator;
@@ -80,7 +80,7 @@ import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 
 	@Test
-	public void testAngleResults() throws Exception {
+	public void testAngleResultsUncalibratedPixels() throws Exception {
 		// SETUP
 		final Predicate<Double> nonEmpty = Objects::nonNull;
 		final URL resource = getClass().getClassLoader().getResource(
@@ -115,6 +115,91 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assertEquals(2, fiveColumn.stream().filter(nonEmpty)
 			.filter(d -> d == Math.PI / 2).count());
 	}
+	
+	@Test
+	public void testAngleResultsIsotropicBigPixels() throws Exception {
+		// SETUP
+		final Predicate<Double> nonEmpty = Objects::nonNull;
+		final URL resource = getClass().getClassLoader().getResource(
+			"test-skelly.zip");
+		assert resource != null;
+		final ImagePlus skelly = IJ.openImage(resource.getFile());
+		Calibration cal = new Calibration();
+		cal.pixelDepth = 2;
+		cal.pixelHeight = 2;
+		cal.pixelWidth = 2;
+		skelly.setCalibration(cal);
+
+		// EXECUTE
+		final CommandModule module = command().run(
+			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 4,
+			"marginCutOff", 0, "useClusters", true, "iteratePruning", false).get();
+
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
+		assertNotNull(table);
+		assertEquals(2, table.size());
+		final DefaultColumn<Double> threeColumn = table.get(0);
+		assertEquals("3", threeColumn.getHeader());
+		assertEquals(10, threeColumn.size());
+		assertEquals(3, threeColumn.stream().filter(nonEmpty).count());
+		assertEquals(2, threeColumn.stream().filter(nonEmpty).distinct().count());
+		final DefaultColumn<Double> fiveColumn = table.get(1);
+		assertEquals("5", fiveColumn.getHeader());
+		assertEquals(10, fiveColumn.size());
+		assertEquals(10, fiveColumn.stream().filter(nonEmpty).count());
+		assertEquals(6, fiveColumn.stream().filter(nonEmpty).distinct().count());
+		assertEquals(1, fiveColumn.stream().filter(nonEmpty)
+			.filter(d -> d == Math.PI).count());
+		assertEquals(2, fiveColumn.stream().filter(nonEmpty)
+			.filter(d -> d == Math.PI / 2).count());
+	}
+	
+	@Test
+	public void testAngleResultsIsotropicSmallPixels() throws Exception {
+		// SETUP
+		final Predicate<Double> nonEmpty = Objects::nonNull;
+		final URL resource = getClass().getClassLoader().getResource(
+			"test-skelly.zip");
+		assert resource != null;
+		final ImagePlus skelly = IJ.openImage(resource.getFile());
+		Calibration cal = new Calibration();
+		cal.pixelDepth = 0.1; 
+		cal.pixelHeight = 0.1;
+		cal.pixelWidth = 0.1;
+		skelly.setCalibration(cal);
+
+		// EXECUTE
+		final CommandModule module = command().run(
+			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 0.2,
+			"marginCutOff", 0, "useClusters", true, "iteratePruning", false).get();
+
+		// VERIFY
+		@SuppressWarnings("unchecked")
+		final List<DefaultColumn<Double>> table =
+			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
+		assertNotNull(table);
+		assertEquals(2, table.size());
+		final DefaultColumn<Double> threeColumn = table.get(0);
+		assertEquals("3", threeColumn.getHeader());
+		assertEquals(10, threeColumn.size());
+		assertEquals(3, threeColumn.stream().filter(nonEmpty).count());
+		assertEquals(2, threeColumn.stream().filter(nonEmpty).distinct().count());
+		final DefaultColumn<Double> fiveColumn = table.get(1);
+		assertEquals("5", fiveColumn.getHeader());
+		assertEquals(10, fiveColumn.size());
+		assertEquals(10, fiveColumn.stream().filter(nonEmpty).count());
+		assertEquals(6, fiveColumn.stream().filter(nonEmpty).distinct().count());
+		assertEquals(1, fiveColumn.stream().filter(nonEmpty)
+			.filter(d -> d == Math.PI).count());
+		assertEquals(2, fiveColumn.stream().filter(nonEmpty)
+			.filter(d -> d == Math.PI / 2).count());
+	}
+	
 
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
