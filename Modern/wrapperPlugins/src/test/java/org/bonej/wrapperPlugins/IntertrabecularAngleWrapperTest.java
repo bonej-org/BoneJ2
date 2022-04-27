@@ -39,14 +39,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -67,7 +62,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
 import org.scijava.table.DefaultColumn;
-import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
 /**
  * Tests for {@link IntertrabecularAngleWrapper}
@@ -87,7 +81,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 			"test-skelly.zip");
 		assert resource != null;
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
-
+		
 		// EXECUTE
 		final CommandModule module = command().run(
 			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
@@ -200,7 +194,6 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 			.filter(d -> d == Math.PI / 2).count());
 	}
 	
-
 	@Test
 	public void testAnisotropicImageShowsWarningDialog() {
 		CommonWrapperTests.testAnisotropyWarning(imageJ(),
