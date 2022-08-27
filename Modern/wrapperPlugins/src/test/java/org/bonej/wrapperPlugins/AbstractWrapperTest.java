@@ -96,6 +96,7 @@ public abstract class AbstractWrapperTest {
 
     @Before
     public void setup() {
+    	  imageJ.ui().setHeadless(false);
         imageJ.ui().setDefaultUI(MOCK_UI);
         doNothing().when(MOCK_REPORTER).reportEvent(anyString());
     }
