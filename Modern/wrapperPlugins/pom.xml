@@ -216,12 +216,21 @@
             <artifactId>commons-math3</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.scif</groupId>
             <artifactId>scifio</artifactId>
         </dependency>
         <dependency>
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
+        </dependency>
+        <dependency>
+        	<groupId>org.json</groupId>
+        	<artifactId>org.json</artifactId>
+        	  <version>chargebee-1.0</version>
         </dependency>
         <!-- Testing dependencies -->
         <dependency>

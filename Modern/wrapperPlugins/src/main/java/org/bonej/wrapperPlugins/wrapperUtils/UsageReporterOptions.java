@@ -68,6 +68,8 @@ public class UsageReporterOptions extends ContextCommand {
 	/** unique ID for this particular BoneJ session */
 	static final String SESSIONKEY = "bonej2.report.bonejsession";
 	private static final String IJSESSIONKEY = "bonej2.report.ijsession";
+	static final String CLIENTID = "bonej2.report.client_id";
+	static final String USERID = "bonej2.report.user_id";
 	// TODO Make into one string (format with HTML)
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String message1 = "Allow usage data collection?";
@@ -118,6 +120,8 @@ public class UsageReporterOptions extends ContextCommand {
 		prefs.put(getClass(), FIRSTTIMEKEY, System.currentTimeMillis() / 1000);
 		prefs.put(getClass(), SESSIONKEY, 1);
 		prefs.put(getClass(), IJSESSIONKEY, 1);
+		prefs.put(getClass(), CLIENTID, new Random().nextInt(Integer.MAX_VALUE));
+		prefs.put(getClass(), USERID, new Random().nextInt(Integer.MAX_VALUE));
 		prefs.put(getClass(), OPTINSET, true);
 		if (reporter == null) {
 			reporter = UsageReporter.getInstance(prefs, pluginService, commandService, logService);

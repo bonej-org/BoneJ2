@@ -30,20 +30,24 @@
 
 package org.bonej.wrapperPlugins.wrapperUtils;
 
-import java.awt.Dimension;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.Toolkit;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
@@ -52,66 +56,37 @@ import org.scijava.plugin.PluginService;
 import org.scijava.prefs.PrefService;
 
 /**
- * Prepares and sends a report about BoneJ usage to be logged by <a href=
- * "https://developers.google.com/analytics/resources/concepts/gaConceptsTrackingOverview">
- * Google Analytics event tracking</a>
+ * Prepares and sends a report about BoneJ usage to be logged by 
+ * Google Analytics event tracking following the <a
+ * href="https://developers.google.com/analytics/devguides/collection/protocol/ga4/reference?client_type=gtag>Measurement
+ * Protocol Reference</a>.
  *
  * @author Michael Doube
  * @author Richard Domander
  */
-// TODO Instead of System.out print debug stuff with LogService
-// TODO Instead of System.out print status messages with StatusService
 // Don't make class final - breaks Mockito
 public class UsageReporter {
 
-	private static final String ga = "https://www.google-analytics.com/__utm.gif?";
-	private static final String utmwv = "utmwv=5.2.5&";
-	private static final String utmhn = "utmhn=bonej.org&";
-	private static final String utmcs = "utmcs=" + Charset.defaultCharset() + "&";
-	private static final String utmac = "utmac=UA-366405-8&";
-	private static final String utmdt = "utmdt=bonej.org%20Usage%20Statistics&";
-	private static final String utmt = "utmt=event&";
-	private static final String utmul = "utmul=" + getLocaleString() + "&";
-	private static final String utmje = "utmje=0&";
-	private static final String utmr = "utmr=-&";
-	private static final String utmp = "utmp=%2Fstats&";
+	private static final String ga = "https://www.google-analytics.com/mp/collect";
+	//It is in general poor form to include secrets hardcoded in plaintext, however,
+	//there seems to be little point in obscuring them because they can easily be revealed
+	//by anyone with access to this source (i.e. everyone) by calling e.g. HttpPost.getURI().
+	private static final String api_secret = "api_secret=xYQ4ppd_QLG4R0RypUrV3A";
+	private static final String measurement_id = "measurement_id=G-3VNZY4BX8Y";
 	private static final Random random = new Random();
-	private static String utmcnr = "";
-	private static String utmsr;
-	private static String utmvp;
-	private static String utmsc;
-	/** Incremented on each new event */
-	private static int session;
-	private static long thisTime;
-	private static long lastTime;
+	private static String class_name;
+	private static String display_size;
 	private static boolean isFirstRun = true;
 	private static PrefService prefs;
 	private static PluginService plugins;
 	private static CommandService commandService;
 	private static UsageReporter instance;
-	private static String utms;
-	private static String utmn;
-	private static String utme;
-	private static String utmhid;
-	private static String utmcc;
 	private static Logger logger;
+	private static CloseableHttpClient httpClient;
 
 	private UsageReporter() {}
-
-	/**
-	 * Reports a the usage of a plug-in to bonej.org
-	 *
-	 * @param className Name of the reporting plug-in's class
-	 */
-	public void reportEvent(final String className) {
-		if (!isAllowed()) {
-			logger.debug("Usage reporting forbidden by user");
-			return;
-		}
-		final String version = plugins.getPlugin(className).getVersion();
-		reportEvent(className, version);
-	}
-
+	
+	@SuppressWarnings("hiding")
 	public static UsageReporter getInstance(final PrefService prefs,
 		final PluginService plugins, final CommandService commandService, final Logger logger)
 	{
@@ -125,46 +100,37 @@ public class UsageReporter {
 		UsageReporter.plugins = plugins;
 		UsageReporter.prefs = prefs;
 		UsageReporter.logger = logger;
+		UsageReporter.httpClient = HttpClients.createDefault();
 		return instance;
 	}
 
 	/**
-	 * Create a string of cookie data for the gif URL
+	 * Reports a the usage of a plug-in to bonej.org
 	 *
-	 * @return cookie string
+	 * @param className Name of the reporting plug-in's class
 	 */
-	private static String getCookieString(final PrefService prefs) {
-		final int cookie = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.COOKIE, random.nextInt(Integer.MAX_VALUE));
-		final int cookie2 = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.COOKIE2, random.nextInt(Integer.MAX_VALUE));
-		final long firstTime = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.FIRSTTIMEKEY, random.nextInt(Integer.MAX_VALUE));
-		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
-			UsageReporterOptions.SESSIONKEY, 0);
-		// thisTime is not correct, but a best guess
-		return "utmcc=__utma%3D" + cookie + "." + cookie2 + "." + firstTime + "." +
-			lastTime + "." + thisTime + "." + bonejSession + "%3B%2B__utmz%3D" +
-			cookie + "." + thisTime +
-			".79.42.utmcsr%3Dgoogle%7Cutmccn%3D(organic)%7C" +
-			"utmcmd%3Dorganic%7Cutmctr%3DBoneJ%20Usage%20Reporter%3B";
+	public void reportEvent(final String className) {
+		if (!isAllowed()) {
+			logger.debug("Usage reporting forbidden by user");
+			return;
+		}
+
+		if (isFirstRun) {
+			initSessionVariables();
+		}
+
+		class_name = className;
+		
+		send();
 	}
 
-	private static String getLocaleString() {
-		String locale = Locale.getDefault().toString();
-		locale = locale.replace("_", "-");
-		locale = locale.toLowerCase(Locale.ENGLISH);
-		return locale;
-	}
-
-	private static void initSessionVariables(final PrefService prefs) {
+	private static void initSessionVariables() {
 		logger.debug("First run of Usage Reporter for this BoneJ session");
 		final int bonejSession = prefs.getInt(UsageReporterOptions.class,
 			UsageReporterOptions.SESSIONKEY, 0);
 		logger.debug("bonejSession = " + bonejSession);
 		prefs.put(UsageReporterOptions.class, UsageReporterOptions.SESSIONKEY,
 			bonejSession + 1);
-		final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final GraphicsEnvironment ge = GraphicsEnvironment
 			.getLocalGraphicsEnvironment();
 		int width = 0;
@@ -179,74 +145,96 @@ public class UsageReporter {
 				}
 			}
 		}
-		utmsr = "utmsr=" + screenSize.width + "x" + screenSize.height + "&";
-		utmvp = "utmvp=" + width + "x" + height + "&";
-		utmsc = "utmsc=24-bit&";
+		display_size = width + "x" + height;
 		isFirstRun = false;
 	}
 
 	/**
-	 * Sets the instance variables to appropriate values based on the system
-	 * parameters and method arguments and makes the URL request to Google
-	 *
-	 * @param action Google Analytics event action classification
-	 * @param label Google Analytics event label classification
-	 */
-	private static void reportEvent(final String action, final String label) {
-		if (isFirstRun) {
-			initSessionVariables(prefs);
-		}
-
-		// set
-		utms = "utms=" + session + "&";
-		session++;
-		utme = "utme=5(" + "Plugin%20Usage" + "*" + action + "*" + label + ")&";
-		utmn = "utmn=" + random.nextInt(Integer.MAX_VALUE) + "&";
-		utmhid = "utmhid=" + random.nextInt(Integer.MAX_VALUE) + "&";
-
-		final long time = System.currentTimeMillis() / 1000;
-		lastTime = thisTime;
-		if (lastTime == 0) lastTime = time;
-		thisTime = time;
-
-		if ("".equals(utmcnr)) utmcnr = "utmcn=1&";
-		else utmcnr = "utmcr=1&";
-
-		utmcc = getCookieString(prefs);
-		send();
-	}
-
-	/**
-	 * Send the report to Google Analytics in the form of an HTTP request for a
-	 * 1-pixel GIF with lots of parameters set
+	 * Send the report to Google Analytics in the form of a POST request
+	 * with parameters set in JSON format
 	 */
 	private static void send() {
 		logger.debug("Sending report");
 		try {
-			logger.debug("Usage reporting approved by user, preparing URL");
-			final URL url = new URL(ga + utmwv + utms + utmn + utmhn + utmt + utme + utmcs +
-				utmsr + utmvp + utmsc + utmul + utmje + utmcnr + utmdt + utmhid + utmr +
-				utmp + utmac + utmcc);
-			final URLConnection uc = url.openConnection();
-			uc.setRequestProperty("User-Agent", userAgentString());
-			logReport(url, uc);
+			logger.debug("Usage reporting approved by user, preparing POST request");
+			HttpPost httpPost = new HttpPost(ga + "?" + measurement_id + "&" + api_secret);
+			
+			//set the headers
+			httpPost.setProtocolVersion(HttpVersion.HTTP_1_1);
+			httpPost.setHeader(HttpHeaders.HOST, "www.google-analytics.com");
+			httpPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+			httpPost.setHeader(HttpHeaders.USER_AGENT, userAgentString());
+			logger.debug(httpPost.toString());
+			
+			// add JSON parameters
+			String json = makeJsonBody();
+			
+			StringEntity entity = new StringEntity(json);
+			httpPost.setEntity(entity);
+			logger.debug(EntityUtils.toString(httpPost.getEntity()));
+			
+			//send the POST request and retrieve the response
+			final CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
+			logger.debug(httpResponse.getStatusLine());
+
 		}
-		catch (final IOException e) {
+		catch (final Exception e) {
 			logger.trace(e.getMessage());
 		}
 	}
 
-	private static void logReport(final URL url, final URLConnection uc) {
-		logger.debug(url);
-		logger.debug(uc.getRequestProperty("User-Agent"));
-		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(
-				uc.getInputStream())))
-		{
-			reader.lines().forEach(line -> logger.debug(line));
+	private static String makeJsonBody() {
+
+		JSONObject jo = new JSONObject();
+
+		try {
+			jo.put("client_id", ""+prefs.getInt(UsageReporterOptions.class,
+				UsageReporterOptions.CLIENTID, random.nextInt(Integer.MAX_VALUE)));
+			jo.put("user_id", ""+prefs.getInt(UsageReporterOptions.class,
+				UsageReporterOptions.USERID, random.nextInt(Integer.MAX_VALUE)));
+			jo.put("timestamp_micros", ""+System.currentTimeMillis()*1000L);
+			jo.put("non_personalized_ads", true);
+			jo.put("events", getEventProperties());
 		}
-		catch (final IOException e) {
-			logger.trace(e.getMessage());
+		catch (JSONException exc) {
+			logger.trace(exc.getMessage());
 		}
+		
+		return jo.toString();
+	}
+
+	private static JSONArray getEventProperties() {
+		JSONArray eventArray = new JSONArray();
+		JSONObject eventHeadings = new JSONObject();
+		JSONObject eventParameters = new JSONObject();
+		
+		final String version = plugins.getPlugin(class_name).getVersion();
+
+		try {
+			eventHeadings.put("name", "plugin_usage");
+			
+			//list custom event parameters here
+			eventParameters.put("plugin", class_name);
+			eventParameters.put("version", version);
+			eventParameters.put("localisation", getLocaleString());
+			eventParameters.put("display_size", display_size);
+			
+			eventHeadings.put("params", eventParameters);
+			
+			eventArray.put(eventHeadings);
+		}
+		catch (JSONException exc) {
+			exc.printStackTrace();
+		}
+		
+		return eventArray;
+	}
+
+	private static String getLocaleString() {
+		String locale = Locale.getDefault().toString();
+		locale = locale.replace("_", "-");
+		locale = locale.toLowerCase(Locale.ENGLISH);
+		return locale;
 	}
 
 	private static String userAgentString() {
