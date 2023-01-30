@@ -33,6 +33,15 @@ public class RayCaster {
 	 * 
 	 * Multithreaded over z slices (usual pattern)
 	 * 
+	 * TODO improve efficiency by searching slices up and down (- and + in z) from the boundary pixel's slice.
+	 * If there are no visible skeleton points in a slice then don't search in any more distant slices.
+	 * Instead, return and continue the iteration on the next boundary pixel.
+	 * 
+	 * At the moment this is threaded over slices in the foreground image, but would need a reorganisation to sort out the skeleton points
+	 * into a list of lists, with the 0th index being the z-slice. Would need to think about how to do the threading model,
+	 * either each foreground pixel in its own thread, or each foreground pixel spawns a team of threads that does the sampling vectors,
+	 * bearing in mind the overhead involved in setting up a thread.
+	 * 
 	 * @param pixels
 	 * @return
 	 */
