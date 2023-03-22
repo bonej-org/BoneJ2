@@ -409,7 +409,7 @@ public class Ellipsoid {
 	 *
 	 * @return array containing minimal and maximal x values
 	 */
-	private double[] getXMinAndMax() {
+	public double[] getXMinAndMax() {
 		final double m11 = ev[0][0] * ra;
 		final double m12 = ev[0][1] * rb;
 		final double m13 = ev[0][2] * rc;
