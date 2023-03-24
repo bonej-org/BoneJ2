@@ -139,33 +139,6 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	}
 
 	/**
-	 * Check if all the spatial axes have a matching calibration, e.g. same unit,
-	 * same scaling.
-	 * <p>
-	 * NB: Public and static for testing purposes.
-	 * </p>
-	 *
-	 * @param space an N-dimensional space.
-	 * @param <T> type of the space
-	 * @return true if all spatial axes have matching calibration. Also returns
-	 *         true if none of them have a unit
-	 */
-	// TODO make into a utility method or remove if mesh area considers
-	// calibration in the future
-	static <T extends AnnotatedSpace<CalibratedAxis>> boolean
-		isAxesMatchingSpatialCalibration(final T space)
-	{
-		final boolean noUnits = spatialAxisStream(space).map(CalibratedAxis::unit)
-			.allMatch(StringUtils::isNullOrEmpty);
-		final boolean matchingUnit = spatialAxisStream(space).map(
-			CalibratedAxis::unit).distinct().count() == 1;
-		final boolean matchingScale = spatialAxisStream(space).map(a -> a
-			.averageScale(0, 1)).distinct().count() == 1;
-
-		return (matchingUnit || noUnits) && matchingScale;
-	}
-
-	/**
 	 * Writes the surface mesh as a binary, little endian STL file
 	 * <p>
 	 * NB: Public and static for testing purposes
@@ -283,7 +256,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	private void prepareResults() {
 		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, "²");
 
-		if (isAxesMatchingSpatialCalibration(inputImage)) {
+		if (AxisUtils.isSpatialCalibrationsIsotropic(inputImage, 0.001, unitService)) {
 			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
 			areaScale = scale * scale;
 		}

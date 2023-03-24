@@ -32,9 +32,7 @@ package org.bonej.wrapperPlugins;
 
 import static org.bonej.wrapperPlugins.SurfaceAreaWrapper.STL_WRITE_ERROR;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,7 +42,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.scijava.ui.DialogPrompt.MessageType.ERROR_MESSAGE;
-import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -117,101 +114,6 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 		// Verify that write error dialog got shown
 		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(startsWith(
 			STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibration() {
-		// Create a test image with uniform calibration
-		final String unit = "mm";
-		final double scale = 0.75;
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, scale);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, scale);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertTrue("Axes should have matching calibration", result);
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibrationDifferentScales() {
-		// Create a test image with different scales in calibration
-		final String unit = "mm";
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertFalse(
-			"Different scales in axes should mean that calibration doesn't match",
-			result);
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibrationDifferentUnits() {
-		// Create a test image with different units in calibration
-		final double scale = 0.75;
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "cm", scale);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "mm", scale);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertFalse(
-			"Different units in axes should mean that calibration doesn't match",
-			result);
-	}
-
-	@Test
-	public void testIsAxesMatchingSpatialCalibrationNoUnits() {
-		// Create a test image with no calibration units
-		final double scale = 0.75;
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", scale);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, null, scale);
-		final Img<BitType> img = ArrayImgs.bits(1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis);
-
-		final boolean result = SurfaceAreaWrapper.isAxesMatchingSpatialCalibration(
-			imgPlus);
-
-		assertTrue("No units should mean matching calibration", result);
-	}
-
-	@Test
-	public void testMismatchingCalibrationsShowsWarningDialog() throws Exception {
-		// Create a test image with different scales in spatial calibration
-		final String unit = "mm";
-		final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, unit, 0.5);
-		final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, unit, 0.6);
-		final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, unit, 0.6);
-		final DefaultLinearAxis tAxis = new DefaultLinearAxis(Axes.TIME);
-		final Img<BitType> img = ArrayImgs.bits(1, 1, 1, 1);
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
-			yAxis, zAxis, tAxis);
-
-		// Mock UI
-		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
-		when(MOCK_UI.dialogPrompt(eq(SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(
-			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
-
-		// Run plugin
-		command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
-			"exportSTL", false).get();
-
-		// Verify that warning dialog about result scaling got shown once
-		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(eq(
-			SurfaceAreaWrapper.BAD_SCALING), anyString(), eq(WARNING_MESSAGE), any());
 	}
 
 	@Test
