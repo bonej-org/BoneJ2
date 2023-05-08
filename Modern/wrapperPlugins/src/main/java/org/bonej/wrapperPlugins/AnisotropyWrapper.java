@@ -62,6 +62,8 @@ import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCFI1;
 import net.imagej.ops.special.hybrid.Hybrids;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
+import net.imagej.table.DefaultResultsTable;
+import net.imagej.table.ResultsTable;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -87,12 +89,13 @@ import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
-import org.scijava.ItemVisibility;
+import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.table.DoubleColumn;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UIService;
 import org.scijava.widget.NumberWidget;
@@ -127,7 +130,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	private static UnaryFunctionOp<List<Vector3dc>, Matrix4dc> solveQuadricOp;
 	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
 			ellipsoid -> 1.0 - (1.0/(ellipsoid.getC() * ellipsoid.getC())) / (1.0/(ellipsoid.getA() * ellipsoid.getA()));
-	@SuppressWarnings("unused")
 	
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
@@ -170,9 +172,14 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	private boolean printEigens;
 	
 	@Parameter(label = "Display MIL vectors",
-			description = "Show the vectors of the mean intercept lengths",
+			description = "Show the vectors of the mean intercept lengths in the 3D Viewer",
 			required = false)
 	private boolean displayMILVectors;
+	
+	@Parameter(label = "Print MIL vectors",
+			description = "Write the vectors of the mean intercept lengths to a table",
+			required = false)
+	private boolean printMILVectorsToTable;
 
 	@Parameter
 	private LogService logService;
@@ -184,6 +191,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	private UIService uiService;
 	@Parameter
 	private UnitService unitService;
+	
+	@Parameter(type = ItemIO.OUTPUT, label = "MIL Vectors")
+	private ResultsTable milVectorTable;
+	
 	private static BinaryHybridCFI1<Vector3d, Quaterniondc, Vector3d> rotateOp;
 	private double milLength;
 
@@ -262,6 +273,24 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 			addResult(subspace, anisotropy, ellipsoid);
 		}
 	}
+	
+	private void printMILVectors(final List<Vector3dc> pointCloud) {
+		if (!printMILVectorsToTable || pointCloud == null || pointCloud.isEmpty()) {
+			return;
+		}
+
+		final List<DoubleColumn> columns = Arrays.asList(
+			new DoubleColumn("x"), new DoubleColumn("y"), new DoubleColumn("z"));
+
+		for (int i = 0; i < pointCloud.size(); i++) {
+			final Vector3dc vector = pointCloud.get(i);
+			columns.get(0).add(vector.x());
+			columns.get(1).add(vector.y());
+			columns.get(2).add(vector.z());
+		}
+		milVectorTable = new DefaultResultsTable();
+		milVectorTable.addAll(columns);
+	}
 
 	@SuppressWarnings("unused")
 	private void initializeIncrement() {
@@ -337,6 +366,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 			}
 			if (displayMILVectors) {
 				Visualiser.display3DPoints(pointCloud, "MIL points");
+			}
+			if (printMILVectorsToTable) {
+				printMILVectors(pointCloud);
 			}
 			return ellipsoid.get();
 		}
