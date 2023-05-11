@@ -30,7 +30,6 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.utilities.Streamers.spatialAxisStream;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
@@ -49,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 
 import net.imagej.ImgPlus;
-import net.imagej.axis.CalibratedAxis;
 import net.imagej.mesh.Mesh;
 import net.imagej.mesh.Triangle;
 import net.imagej.mesh.naive.NaiveFloatMesh;
@@ -58,7 +56,6 @@ import net.imagej.ops.Ops.Geometric.BoundarySize;
 import net.imagej.ops.Ops.Geometric.MarchingCubes;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
-import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
@@ -78,7 +75,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 import org.scijava.util.StringUtils;
-import org.scijava.widget.FileWidget;
 
 /**
  * A wrapper command to calculate mesh surface area
@@ -98,10 +94,18 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 
 	@Parameter(validater = "validateImage")
 	private ImgPlus<T> inputImage;
-	@Parameter(label = "Export STL file(s)",
+	
+	@Parameter(label = "Export STL",
 		description = "Create a binary STL file from the surface mesh",
 		required = false)
 	private boolean exportSTL;
+	
+	@Parameter(label = "STL directory",
+			description = "Set the output directory for the binary STL",
+			required = false,
+			style = "directory")
+	private File stlDirectory;
+	
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -113,8 +117,6 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	@Parameter
 	private StatusService statusService;
 
-	private String path = "";
-	private String extension = "";
 	private UnaryFunctionOp<RandomAccessibleInterval<?>, Mesh> marchingCubesOp;
 	private UnaryFunctionOp<Mesh, DoubleType> areaOp;
 	private double areaScale;
@@ -123,14 +125,15 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	@Override
 	public void run() {
 		statusService.showStatus("Surface area: initialising");
+		if (exportSTL && stlDirectory == null) {
+			logService.log(logService.getLevel(), "You asked to save the STL file but no path was given.");
+			return;
+		}
 		subspaces = find3DSubspaces(inputImage);
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
 		final Map<String, Mesh> meshes = createMeshes(subspaces);
 		if (exportSTL) {
-			if (!getFileName()) {
-				return;
-			}
 			saveMeshes(meshes);
 		}
 		calculateAreas(meshes);
@@ -196,20 +199,6 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 		});
 	}
 
-	private String choosePath() {
-		final String initialName = stripFileExtension(inputImage.getName());
-		// The file dialog won't allow empty filenames, and it prompts when file
-		// already exists
-		final File file = uiService.chooseFile(new File(initialName),
-			FileWidget.SAVE_STYLE);
-		if (file == null) {
-			// User pressed cancel on file dialog
-			return null;
-		}
-
-		return file.getAbsolutePath();
-	}
-
 	private Map<String, Mesh> createMeshes(
 		final List<Subspace<BitType>> subspaces)
 	{
@@ -223,27 +212,6 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 		}
 		statusService.showProgress(subspaces.size(), subspaces.size());
 		return meshes;
-	}
-
-	private boolean getFileName() {
-		path = choosePath();
-		if (path == null) {
-			return false;
-		}
-
-		final String fileName = path.substring(path.lastIndexOf(File.separator) +
-			1);
-		final int dot = fileName.lastIndexOf(".");
-		if (dot >= 0) {
-			extension = fileName.substring(dot);
-			// TODO Verify extension if not .stl, when DialogPrompt YES/NO options
-			// work correctly
-			path = stripFileExtension(path);
-		}
-		else {
-			extension = ".stl";
-		}
-		return true;
 	}
 
 	private void matchOps(final RandomAccessibleInterval<BitType> interval) {
@@ -271,7 +239,8 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 		final Map<String, String> savingErrors = new HashMap<>();
 		meshes.forEach((key, subspaceMesh) -> {
 			final String subspaceId = key.replace(' ', '_').replaceAll("[,:]", "");
-			final String filePath = path + "_" + subspaceId + extension;
+			final String filePath = stlDirectory.getAbsolutePath() + 
+					stripFileExtension(inputImage.getName()) + "_" + subspaceId + ".stl";
 			try {
 				writeBinarySTLFile(filePath, subspaceMesh);
 			}
