@@ -172,7 +172,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(SurfaceAreaWrapper.class,
-			true, "inputImage", imgPlus, "exportSTL", false).get();
+			true, "inputImage", imgPlus, "exportSTL", false, "stlDirectory", "./").get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
