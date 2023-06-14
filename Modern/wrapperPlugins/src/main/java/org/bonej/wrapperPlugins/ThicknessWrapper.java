@@ -207,6 +207,7 @@ public class ThicknessWrapper extends BoneJCommand {
 		this.foreground = foreground;
 		final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
 		localThickness.setTitleSuffix(suffix);
+		localThickness.threshold = (int) (inputImage.getStatistics().max + 1) / 2;
 		localThickness.inverse = !foreground;
 	}
 
