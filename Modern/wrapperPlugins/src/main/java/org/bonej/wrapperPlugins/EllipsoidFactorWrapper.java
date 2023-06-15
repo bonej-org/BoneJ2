@@ -58,11 +58,10 @@ import java.util.stream.Stream;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.units.UnitService;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.type.numeric.integer.UnsignedIntType;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
@@ -125,7 +124,7 @@ import sc.fiji.skeletonize3D.Skeletonize3D_;
  */
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Ellipsoid Factor")
-public class EllipsoidFactorWrapper extends BoneJCommand {
+public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> extends BoneJCommand {
 
 	static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
 
@@ -148,7 +147,7 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	//main input image
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
-	private ImgPlus<UnsignedIntType> inputImage;
+	private ImgPlus<T> inputImage;
 
 	//algorithm parameters
 	@Parameter(label = "Vectors")
@@ -614,17 +613,19 @@ public class EllipsoidFactorWrapper extends BoneJCommand {
 	}
 
 	// endregion
-	static byte[][] imgPlusToByteArray(final ImgPlus<UnsignedByteType> imgPlus) {
+	static <T extends RealType<T>> byte[][] imgPlusToByteArray(final ImgPlus<T> imgPlus) {
 		final int w = (int) imgPlus.dimension(0);
 		final int h = (int) imgPlus.dimension(1);
 		final int d = (int) imgPlus.dimension(2);
 
 		final byte[][] pixels = new byte[d][w * h];
-		final Cursor<UnsignedByteType> cursor = imgPlus.localizingCursor();
+		final Cursor<T> cursor = imgPlus.localizingCursor();
 		final int[] position = new int[imgPlus.numDimensions()];
+		final T ZERO = imgPlus.firstElement().createVariable();
+		ZERO.setZero();
 		while (cursor.hasNext()) {
 			cursor.fwd();
-			if (cursor.get().getRealDouble() != 0.0) {
+			if (!cursor.get().valueEquals(ZERO)) {
 				cursor.localize(position);
 				pixels[position[2]][position[1] * w + position[0]] = (byte) 0xFF;
 			}
