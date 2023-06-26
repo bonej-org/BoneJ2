@@ -39,6 +39,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
+import ij.process.ImageStatistics;
 import ij.process.LUT;
 import ij.process.StackStatistics;
 
@@ -207,6 +208,8 @@ public class ThicknessWrapper extends BoneJCommand {
 		this.foreground = foreground;
 		final String suffix = foreground ? "_Tb.Th" : "_Tb.Sp";
 		localThickness.setTitleSuffix(suffix);
+		ImageStatistics stats = inputImage.getStatistics();
+		localThickness.threshold = (int) (stats.min + stats.max + 1) / 2;
 		localThickness.inverse = !foreground;
 	}
 
