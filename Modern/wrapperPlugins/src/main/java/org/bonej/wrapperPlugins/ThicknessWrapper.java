@@ -82,7 +82,7 @@ public class ThicknessWrapper extends BoneJCommand {
 	@Parameter(label = "Calculate:",
 		description = "Which thickness measures to calculate",
 		style = ChoiceWidget.RADIO_BUTTON_VERTICAL_STYLE, choices = {
-			"Trabecular thickness", "Trabecular spacing", "Both" })
+			"Trabecular thickness", "Trabecular separation", "Both" })
 	private String mapChoice = "Trabecular thickness";
 
 	@Parameter(label = "Show thickness maps",
@@ -98,8 +98,8 @@ public class ThicknessWrapper extends BoneJCommand {
 	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
 	private ImagePlus trabecularMap;
 
-	@Parameter(label = "Trabecular spacing", type = ItemIO.OUTPUT)
-	private ImagePlus spacingMap;
+	@Parameter(label = "Trabecular separation", type = ItemIO.OUTPUT)
+	private ImagePlus separationMap;
 
 	@Parameter
 	private UIService uiService;
@@ -134,11 +134,11 @@ public class ThicknessWrapper extends BoneJCommand {
 				trabecularMap.setDisplayRange(0.0, trabecularStats.max);
 				trabecularMap.setLut(fire);	
 			}
-			spacingMap = thicknessMaps.get(false);
-			if (spacingMap != null) {
-				final StackStatistics spacingStats = new StackStatistics(spacingMap);
-				spacingMap.setDisplayRange(0.0, spacingStats.max);
-				spacingMap.setLut(fire);
+			separationMap = thicknessMaps.get(false);
+			if (separationMap != null) {
+				final StackStatistics separationStats = new StackStatistics(separationMap);
+				separationMap.setDisplayRange(0.0, separationStats.max);
+				separationMap.setLut(fire);
 			}
 		}
 		reportUsage();
@@ -190,7 +190,7 @@ public class ThicknessWrapper extends BoneJCommand {
 		if ("Trabecular thickness".equals(mapChoice)) {
 			mapOptions.add(true);
 		}
-		else if ("Trabecular spacing".equals(mapChoice)) {
+		else if ("Trabecular separation".equals(mapChoice)) {
 			mapOptions.add(false);
 		}
 		else if ("Both".equals(mapChoice)) {
