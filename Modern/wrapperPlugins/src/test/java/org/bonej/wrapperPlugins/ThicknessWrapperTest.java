@@ -112,12 +112,12 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		final LUT trabecularMap = ((ImagePlus) module.getOutput("trabecularMap"))
 			.getLuts()[0];
-		final LUT spacingMap = ((ImagePlus) module.getOutput("spacingMap"))
+		final LUT separationMap = ((ImagePlus) module.getOutput("separationMap"))
 			.getLuts()[0];
 		assertArrayEquals("Trabecular map doesn't have the 'fire' LUT", fireLUT.getBytes(),
 				trabecularMap.getBytes());
-		assertArrayEquals("Spacing map doesn't have the 'fire' LUT", fireLUT
-				.getBytes(), spacingMap.getBytes());
+		assertArrayEquals("Separation map doesn't have the 'fire' LUT", fireLUT
+				.getBytes(), separationMap.getBytes());
 	}
 
 	@Test
@@ -134,7 +134,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 
 		// VERIFY
 		assertNotNull(module.getOutput("trabecularMap"));
-		assertNotNull(module.getOutput("spacingMap"));
+		assertNotNull(module.getOutput("separationMap"));
 	}
 
 	@Test
@@ -151,11 +151,11 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 
 		// VERIFY
 		assertNull(module.getOutput("trabecularMap"));
-		assertNull(module.getOutput("spacingMap"));
+		assertNull(module.getOutput("separationMap"));
 	}
 
 	@Test
-	public void testMapImagesTrabecularSpacing() throws ExecutionException,
+	public void testMapImagesTrabecularSeparation() throws ExecutionException,
 		InterruptedException
 	{
 		// SETUP
@@ -163,15 +163,15 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Trabecular spacing",
+			true, "inputImage", imagePlus, "mapChoice", "Trabecular separation",
 			"showMaps", true).get();
 
 		// VERIFY
-		final ImagePlus spacingMap = (ImagePlus) module.getOutput("spacingMap");
-		assertNotNull(spacingMap);
+		final ImagePlus separationMap = (ImagePlus) module.getOutput("separationMap");
+		assertNotNull(separationMap);
 		assertNull(module.getOutput("trabecularMap"));
 		assertNotSame("Original image should not have been overwritten", imagePlus,
-			spacingMap);
+			separationMap);
 	}
 
 	@Test
@@ -190,7 +190,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final ImagePlus trabecularMap = (ImagePlus) module.getOutput(
 			"trabecularMap");
 		assertNotNull(trabecularMap);
-		assertNull(module.getOutput("spacingMap"));
+		assertNull(module.getOutput("separationMap"));
 		assertNotSame("Original image should not have been overwritten", imagePlus,
 			trabecularMap);
 	}
