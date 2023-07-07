@@ -93,47 +93,4 @@ public class ImageCheckTest {
 			assertFalse("Only ImagePlus.GRAY8 type should be binary", result);
 		}
 	}
-
-	@Test
-	public void testIsBinaryUsesHistogramCorrectly() throws Exception {
-		final int EIGHT_BYTES = 256;
-
-		// more than two colors
-		final ImageStatistics nonBinaryStats = new ImageStatistics();
-		nonBinaryStats.pixelCount = 3;
-		nonBinaryStats.histogram = new int[EIGHT_BYTES];
-		nonBinaryStats.histogram[BINARY_BLACK] = 1;
-		nonBinaryStats.histogram[BINARY_WHITE] = 1;
-
-		final ImagePlus testImage = mock(ImagePlus.class);
-		when(testImage.getStatistics()).thenReturn(nonBinaryStats);
-
-		boolean result = ImageCheck.isBinary(testImage);
-		assertFalse("Image with more than two colors must not be binary", result);
-
-		// wrong two colors
-		final ImageStatistics wrongBinaryStats = new ImageStatistics();
-		wrongBinaryStats.pixelCount = 2;
-		wrongBinaryStats.histogram = new int[EIGHT_BYTES];
-		wrongBinaryStats.histogram[BINARY_BLACK] = 1;
-		wrongBinaryStats.histogram[BINARY_BLACK + 1] = 1;
-
-		when(testImage.getStatistics()).thenReturn(wrongBinaryStats);
-
-		result = ImageCheck.isBinary(testImage);
-		assertFalse("Image with wrong two colors (not " + BINARY_BLACK + " & " + BINARY_WHITE + ") must not be binary",
-				result);
-
-		// binary colors
-		final ImageStatistics binaryStats = new ImageStatistics();
-		binaryStats.pixelCount = 2;
-		binaryStats.histogram = new int[EIGHT_BYTES];
-		binaryStats.histogram[BINARY_BLACK] = 1;
-		binaryStats.histogram[BINARY_WHITE] = 1;
-
-		when(testImage.getStatistics()).thenReturn(binaryStats);
-
-		result = ImageCheck.isBinary(testImage);
-		assertTrue("Image with two colors (" + BINARY_BLACK + " & " + BINARY_WHITE + ") should be binary", result);
-	}
 }

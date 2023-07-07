@@ -30,9 +30,12 @@
 
 package org.bonej.utilities;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.measure.Calibration;
 import ij.process.ImageStatistics;
 
@@ -113,7 +116,23 @@ public final class ImagePlusUtil {
 	 *         image, false if more.
 	 */
 	public static boolean isBinary(final ImagePlus imp) {
-		final ImageStatistics stats = imp.getStatistics();
-		return stats.histogram[0] + stats.histogram[255] == stats.pixelCount;
+		if (imp.getType() != ImagePlus.GRAY8)
+			return false;
+		
+		ImageStack stack = imp.getStack();
+		AtomicBoolean binary = new AtomicBoolean(true);
+		ArrayList<Integer> sliceNumbers = new ArrayList<>();
+		for (int z = 1; z <= stack.size(); z++)
+			sliceNumbers.add(z);
+
+		sliceNumbers.parallelStream().forEach(z ->  
+		{
+			if (binary.get()) {
+				final ImageStatistics stats = stack.getProcessor(z).getStats();
+				if (stats.histogram[0] + stats.histogram[255] != stats.pixelCount)
+					binary.set(false);
+			}
+		});
+		return binary.get();
 	}
 }
