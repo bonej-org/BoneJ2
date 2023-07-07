@@ -153,14 +153,14 @@ public class ImagePlusUtilTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		final boolean result = ImagePlusUtil.isBinary(testImage);
 		assertTrue("Image with two colors (black & white) should be binary",
 			result);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void testIsBinaryColourThrowsNPEIfImageNull() {
-		ImagePlusUtil.isBinaryColour(null);
+		ImagePlusUtil.isBinary(null);
 	}
 
 	@Test
@@ -173,7 +173,7 @@ public class ImagePlusUtilTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		final boolean result = ImagePlusUtil.isBinary(testImage);
 		assertTrue("A monochrome image should be binary", result);
 	}
 
@@ -189,7 +189,7 @@ public class ImagePlusUtilTest {
 
 		when(testImage.getStatistics()).thenReturn(binaryStats);
 
-		final boolean result = ImagePlusUtil.isBinaryColour(testImage);
+		final boolean result = ImagePlusUtil.isBinary(testImage);
 		assertFalse("A multicolor image should be binary", result);
 	}
 

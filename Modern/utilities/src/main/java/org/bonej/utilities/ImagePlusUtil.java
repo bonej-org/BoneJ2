@@ -34,6 +34,7 @@ import java.util.Arrays;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import ij.process.ImageStatistics;
 
 /**
  * Utility methods for checking ImagePlus properties
@@ -104,14 +105,15 @@ public final class ImagePlusUtil {
 	}
 
 	/**
-	 * Checks if the image has only two different colours.
+	 * Checks if the image is 8-bit with only 0 and/or 255 pixel values,
+	 * which is the conventional method for setting binary images in ImageJ
 	 *
-	 * @param image an ImageJ1 style {@link ImagePlus}.
+	 * @param imp an ImageJ1 style {@link ImagePlus}.
 	 * @return true if there are only two distinct pixel values present in the
 	 *         image, false if more.
 	 */
-	public static boolean isBinaryColour(final ImagePlus image) {
-		return Arrays.stream(image.getStatistics().histogram).filter(p -> p > 0)
-			.count() <= 2;
+	public static boolean isBinary(final ImagePlus imp) {
+		final ImageStatistics stats = imp.getStatistics();
+		return stats.histogram[0] + stats.histogram[255] == stats.pixelCount;
 	}
 }

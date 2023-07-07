@@ -406,7 +406,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			return;
 		}
 
-		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
+		if (!ImagePlusUtil.isBinary(inputImage) || inputImage
 			.getBitDepth() != 8)
 		{
 			// AnalyzeSkeleton_ and Skeletonize_ cast to byte[], anything else than

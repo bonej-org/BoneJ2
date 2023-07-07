@@ -260,7 +260,7 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 			cancelMacroSafe(this, CommonMessages.NO_IMAGE_OPEN);
 			return;
 		}
-		if (inputImage.getBitDepth() != 8 || !ImagePlusUtil.isBinaryColour(
+		if (inputImage.getBitDepth() != 8 || !ImagePlusUtil.isBinary(
 			inputImage))
 		{
 			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);

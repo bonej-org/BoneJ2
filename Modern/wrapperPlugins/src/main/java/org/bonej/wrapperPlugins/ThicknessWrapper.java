@@ -231,7 +231,7 @@ public class ThicknessWrapper extends BoneJCommand {
 			return;
 		}
 
-		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
+		if (!ImagePlusUtil.isBinary(inputImage) || inputImage
 			.getBitDepth() != 8)
 		{
 			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
