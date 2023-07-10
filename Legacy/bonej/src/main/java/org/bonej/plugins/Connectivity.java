@@ -155,7 +155,7 @@ public class Connectivity implements PlugIn {
 		final double vW = cal.pixelWidth;
 		final double vH = cal.pixelHeight;
 		final double vD = cal.pixelDepth;
-		final double stackVolume = width * height * depth * vW * vH * vD;
+		final double stackVolume = (long) width * (long) height * depth * vW * vH * vD;
 		final double connDensity = connectivity / stackVolume;
 		return connDensity;
 	}
