@@ -202,7 +202,8 @@ public class QuickEllipsoid {
 
 		// if length closer than minor semiaxis length
 		// must be inside
-		if (length <= radii[0])
+		final double minRadius = radii[0];
+		if (length <= minRadius)
 			return true;
 
 		final double[][] h = getEllipsoidTensor();
@@ -316,8 +317,29 @@ public class QuickEllipsoid {
 	 * @return radii in ascending order
 	 */
 	public double[] getSortedRadii() {
-		final double[] sortedRadii = {ra, rb, rc};
-		Arrays.sort(sortedRadii);
+		double a = this.ra;
+		double b = this.rb;
+		double c = this.rc;
+		double temp = 0;
+
+		if (a > b) {
+			temp = a;
+			a = b;
+			b = temp;
+		}
+		if (b > c) {
+			temp = b;
+			b = c;
+			c = temp;
+		}
+		if (a > b) {
+			temp = a;
+			a = b;
+			b = temp;
+		}
+
+		final double[] sortedRadii = { a, b, c };
+
 		return sortedRadii;
 	}
 
@@ -345,15 +367,15 @@ public class QuickEllipsoid {
 		refreshRandomNumbersIfNeeded();
 
 		final double[] sortedRadii = getSortedRadii();
-		final double muMax = sortedRadii[1]* sortedRadii[2];
+		final double muMax = sortedRadii[1] * sortedRadii[2];
 		final double[][] surfacePoints = new double[n][3];
 		int surfacePointsFound = 0;
 		int attemptCounter = 0;
-		while (surfacePointsFound<n) {
-			final double[] v =  (attemptCounter<numberOfPreallocatedRandomNumbers)? sphereRandomVectors[attemptCounter] : sphereRng.nextVector();
+		while (surfacePointsFound < n) {
+			final double[] v =  (attemptCounter < numberOfPreallocatedRandomNumbers)? sphereRandomVectors[attemptCounter] : sphereRng.nextVector();
 			final double mu = getMu(v);
-			double rn = (attemptCounter<numberOfPreallocatedRandomNumbers) ? uniformRandomNumbers[attemptCounter] : rng.nextDouble();
-			if(rn<=mu/muMax) {
+			double rn = (attemptCounter < numberOfPreallocatedRandomNumbers) ? uniformRandomNumbers[attemptCounter] : rng.nextDouble();
+			if(rn <= mu / muMax) {
 				surfacePoints[surfacePointsFound] = new double[]{v[0], v[1], v[2]};
 				surfacePointsFound++;
 			}
@@ -363,15 +385,15 @@ public class QuickEllipsoid {
 	}
 
 	private void refreshRandomNumbersIfNeeded() {
-		if(sphereRandomVectors==null)
+		if(sphereRandomVectors == null)
 		{
 			sphereRandomVectors = new double[numberOfPreallocatedRandomNumbers][3];
 			uniformRandomNumbers = new double[numberOfPreallocatedRandomNumbers];
 		}
 
-		if((lastRefreshed % randomNumberRefreshmentPeriodicity)==0)
+		if((lastRefreshed % randomNumberRefreshmentPeriodicity) == 0)
 		{
-			for(int i=0;i<numberOfPreallocatedRandomNumbers;i++)
+			for(int i = 0; i < numberOfPreallocatedRandomNumbers; i++)
 			{
 				sphereRandomVectors[i] = sphereRng.nextVector();
 				uniformRandomNumbers[i] = rng.nextDouble();
@@ -381,10 +403,10 @@ public class QuickEllipsoid {
 	}
 
 	private double getMu(final double[] v) {
-		final double ra2 = ra*ra;
-		final double rb2 = rb*rb;
-		final double rc2 = rc*rc;
-		final double sqSum = ra2*rc2*v[0]*v[0]+ra2*rb2*v[2]*v[2]+rb2*rc2*v[0]*v[0];
+		final double ra2 = ra * ra;
+		final double rb2 = rb * rb;
+		final double rc2 = rc * rc;
+		final double sqSum = ra2 * rc2 * v[0] * v[0] + ra2 * rb2 * v[2] * v[2] + rb2 * rc2 * v[0] * v[0];
 		return Math.sqrt(sqSum);
 	}
 

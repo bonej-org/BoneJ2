@@ -32,6 +32,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+import java.util.Random;
+
 public class QuickEllipsoidTest {
     /**
      * Test for {@link QuickEllipsoid#getSurfacePoints(double[][])}
@@ -98,5 +101,20 @@ public class QuickEllipsoidTest {
         QuickEllipsoid e = new QuickEllipsoid(new double[]{1,2,3}, new double[]{1,1,1},new double[][]{{1,0,0},{0,1,0},{0,0,1}});
         assertFalse(e.contains(1,4,1));
         assertTrue(e.contains(1,1,2));
+    }
+    
+    @Test
+    public void testGetSortedRadii() {
+    	Random rand = new Random();
+    	for (int i = 0; i < 1000; i++) {
+    		final double a = rand.nextDouble();
+    		final double b = rand.nextDouble();
+    		final double c = rand.nextDouble();
+    		final double[] radii = {a, b, c};
+    		final double[] sortedRadii = {a , b, c};
+    		Arrays.sort(sortedRadii);
+    		QuickEllipsoid e = new QuickEllipsoid(radii, new double[]{1,1,1}, new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+    		assertArrayEquals(sortedRadii, e.getSortedRadii(), 0);
+    	}
     }
 }

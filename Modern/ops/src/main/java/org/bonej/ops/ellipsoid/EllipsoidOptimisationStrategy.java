@@ -91,16 +91,14 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 
 		for (int i = 0; i < contactPoints.size(); i++) {
 			final double[] p = contactPoints.get(i);
-			final double px = p[0];
-			final double py = p[1];
-			final double pz = p[2];
+			final double px = p[0] - cx;
+			final double py = p[1] - cy;
+			final double pz = p[2] - cz;
 
-			Vector3d distance = new Vector3d(px, py, pz);
-			distance.sub(new Vector3d(cx, cy, cz));
-			final double l = distance.length();
-			final double x = (px - cx) / l;
-			final double y = (py - cy) / l;
-			final double z = (pz - cz) / l;
+			final double l = Math.sqrt(px * px + py * py + pz * pz);
+			final double x = px / l;
+			final double y = py / l;
+			final double z = pz / l;
 			final double[] u = {x, y, z};
 			unitVectors[i] = u;
 		}
