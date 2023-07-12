@@ -316,8 +316,29 @@ public class QuickEllipsoid {
 	 * @return radii in ascending order
 	 */
 	public double[] getSortedRadii() {
-		final double[] sortedRadii = {ra, rb, rc};
-		Arrays.sort(sortedRadii);
+		double a = this.ra;
+		double b = this.rb;
+		double c = this.rc;
+		double temp = 0;
+
+		if (a > b) {
+			temp = a;
+			a = b;
+			b = temp;
+		}
+		if (b > c) {
+			temp = b;
+			b = c;
+			c = temp;
+		}
+		if (a > b) {
+			temp = a;
+			a = b;
+			b = temp;
+		}
+
+		final double[] sortedRadii = { a, b, c };
+
 		return sortedRadii;
 	}
 
