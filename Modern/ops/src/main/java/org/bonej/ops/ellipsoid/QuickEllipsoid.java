@@ -185,8 +185,7 @@ public class QuickEllipsoid {
 		final double vy = y - cy;
 		final double vz = z - cz;
 
-		final double[] radii = getSortedRadii();
-		final double maxRadius = radii[2];
+		final double maxRadius = Math.max(ra, Math.max(rb, rc));
 
 		// if further than maximal sphere's bounding box, must be outside
 		if (Math.abs(vx) > maxRadius || Math.abs(vy) > maxRadius || Math.abs(vz) > maxRadius)
@@ -202,7 +201,8 @@ public class QuickEllipsoid {
 
 		// if length closer than minor semiaxis length
 		// must be inside
-		if (length <= radii[0])
+		final double minRadius = Math.min(ra, Math.min(rb, rc));
+		if (length <= minRadius)
 			return true;
 
 		final double[][] h = getEllipsoidTensor();
