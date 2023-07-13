@@ -5,8 +5,6 @@ import java.util.List;
 
 import org.joml.Vector3d;
 
-import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
-
 /**
  * Find the pixels visible from skeleton points for further use in fitting
  * ellipsoids.
@@ -28,8 +26,9 @@ public class RayCaster {
 	private static final double STEP_SIZE = 1 / 2.3;
 
 	/**
-	 * Iterate over all skeleton points, checking whether each foreground point is
-	 * visible. will be very slow brute force.
+	 * Iterate over all skeleton points, checking whether each background surface point is
+	 * visible. Checkin for background surface points because these are the ones that will be excluded by the 
+	 * ellipsoid-fitting contains() method. will be very slow brute force.
 	 * 
 	 * Multithreaded over z slices using new parallel streams -> lambda pattern
 	 * 
@@ -42,7 +41,7 @@ public class RayCaster {
 	 * 
 	 * At the moment this is threaded over slices in the foreground image, but would need a reorganisation to sort out the skeleton points
 	 * into a list of lists, with the 0th index being the z-slice. Would need to think about how to do the threading model,
-	 * either each foreground pixel in its own thread, or each foreground pixel spawns a team of threads that does the sampling vectors,
+	 * either each surface pixel in its own thread, or each surface pixel spawns a team of threads that does the sampling vectors,
 	 * bearing in mind the overhead involved in setting up a thread.
 	 * 
 	 * @param pixels
@@ -70,35 +69,35 @@ public class RayCaster {
 				final int offset = y * w;
 				for (int x = 0; x < w; x++) {
 					final int value = slice[offset + x];
-					if (value == FORE) {
-						if (!isSurface(pixels, x, y, z, w, h, d))
-							continue;
-						//we found a surface point, now check all the skeleton points
-						
-					  //set up the bounding box
-						int xMin = 0;
-						int yMin = 0;
-						int zMin = 0;
-						int xMax = w;
-						int yMax = h;
-						int zMax = d;
-						ArrayList<Vector3d> invisibleSkeletonPoints = new ArrayList<>();
-						
-						for (int i = 0; i < nSkeletonPoints; i++) {
-							Vector3d v = skeletonPoints.get(i);
-							final int qx = (int) v.x;
-							final int qy = (int) v.y;
-							final int qz = (int) v.z;
-							//don't check visibility of skeleton points outside the bounding box
-							if (qx < xMin || qy < yMin || qz < zMin || qx > xMax || qy > yMax || qz > zMax)
-								continue;
-							final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
-								pixels);
-							if (isAVisiblePoint) {
-								// add this pixel to the list of points visible from this skeleton point
-								threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
-							} else {
-								invisibleSkeletonPoints.add(v);
+					if (value == BACK) {
+						if (isSurface(pixels, x, y, z, w, h, d)) {
+							//we found a surface point, now check all the skeleton points
+
+							//set up the bounding box
+							int xMin = 0;
+							int yMin = 0;
+							int zMin = 0;
+							int xMax = w;
+							int yMax = h;
+							int zMax = d;
+							ArrayList<Vector3d> invisibleSkeletonPoints = new ArrayList<>();
+
+							for (int i = 0; i < nSkeletonPoints; i++) {
+								Vector3d v = skeletonPoints.get(i);
+								final int qx = (int) v.x;
+								final int qy = (int) v.y;
+								final int qz = (int) v.z;
+								//don't check visibility of skeleton points outside the bounding box
+								if (qx < xMin || qy < yMin || qz < zMin || qx > xMax || qy > yMax || qz > zMax)
+									continue;
+								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
+									pixels);
+								if (isAVisiblePoint) {
+									// add this pixel to the list of points visible from this skeleton point
+									threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
+								} else {
+									invisibleSkeletonPoints.add(v);
+								}
 							}
 						}
 					}
@@ -120,7 +119,7 @@ public class RayCaster {
 	}
 
 	/**
-	 * Check whether this pixel (x, y, z) has any background neighbours (26
+	 * Check whether this pixel (x, y, z) has any foreground neighbours (26
 	 * neighbourhood)
 	 * 
 	 * @param x
@@ -129,65 +128,65 @@ public class RayCaster {
 	 * @param w
 	 * @param h
 	 * @param d
-	 * @return true if a background neighbour pixel is found, false otherwise
+	 * @return true if a foreground neighbour pixel is found, false otherwise
 	 */
 	private static boolean isSurface(final byte[][] image, final int x, final int y, final int z, final int w,
 			final int h, final int d) {
 
-		if (isBackgroundNeighbour(image, x - 1, y - 1, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y - 1, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y - 1, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x, y - 1, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y - 1, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y - 1, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x, y, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y + 1, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y + 1, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y + 1, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x, y + 1, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y + 1, z - 1, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y + 1, z - 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y - 1, z, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y - 1, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y - 1, z, w, h, d))
+		if (isForegoundNeighbour(image, x, y - 1, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y - 1, z, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y - 1, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y, z, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y, z, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y + 1, z, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y + 1, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y + 1, z, w, h, d))
+		if (isForegoundNeighbour(image, x, y + 1, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y + 1, z, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y + 1, z, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y - 1, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y - 1, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y - 1, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x, y - 1, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y - 1, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y - 1, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x, y, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x - 1, y + 1, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x - 1, y + 1, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x, y + 1, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x, y + 1, z + 1, w, h, d))
 			return true;
-		if (isBackgroundNeighbour(image, x + 1, y + 1, z + 1, w, h, d))
+		if (isForegoundNeighbour(image, x + 1, y + 1, z + 1, w, h, d))
 			return true;
 
-		// no background neighbours were found, x, y, z is not a surface pixel
+		// no foreground neighbours were found, x, y, z is not a surface pixel
 		return false;
 	}
 
@@ -202,12 +201,12 @@ public class RayCaster {
 	 * @param d
 	 * @return
 	 */
-	private static boolean isBackgroundNeighbour(final byte[][] image, final int x, final int y, final int z,
+	private static boolean isForegoundNeighbour(final byte[][] image, final int x, final int y, final int z,
 			final int w, final int h, final int d) {
-		// if pixel is within bounds and has background value it is a background
+		// if neighbour pixel is within bounds and has foreground value it is a foreground
 		// neighbour
 		if (withinBounds(x, y, z, w, h, d))
-			if (getPixel(image, x, y, z, w) == BACK)
+			if (getPixel(image, x, y, z, w) == FORE)
 				return true;
 
 		return false;
@@ -246,7 +245,7 @@ public class RayCaster {
 
 	/**
 	 * Check whether a straight line can be drawn between pixels p and q, which is
-	 * not occluded by any foreground pixel
+	 * not occluded by any background pixel
 	 * 
 	 * Note all units are in pixels, so need to decalibrate back to pixel integers.
 	 * 
@@ -284,7 +283,7 @@ public class RayCaster {
 
 		// starting at p, step along the vector until we arrive at q
 		// need to bump out of the starting pixel by a unit vector
-		// otherwise starting pixel may trigger a (wrong) foreground hit
+		// otherwise starting pixel may trigger a (wrong) background hit
 		double cursorX = px + ux;
 		double cursorY = py + uy;
 		double cursorZ = pz + uz;
@@ -303,8 +302,9 @@ public class RayCaster {
 			final int y = (int) Math.round(cursorY);
 			final int z = (int) Math.round(cursorZ);
 
-			// check if the pixel is foreground
-			if (pixels[z][y * w + x] == FORE)
+			// check if the pixel is background
+			// if we hit background then the skeleton point is not visible
+			if (pixels[z][y * w + x] == BACK)
 				return false;
 			// TODO make sure logic excludes the possibility
 			// of accidentally counting p or q as occluding pixels.
