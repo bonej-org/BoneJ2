@@ -2,10 +2,10 @@ package org.bonej.ops.ellipsoid;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.bonej.util.Multithreader;
 import org.joml.Vector3d;
+
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 
 /**
  * Find the pixels visible from skeleton points for further use in fitting
@@ -31,11 +31,14 @@ public class RayCaster {
 	 * Iterate over all skeleton points, checking whether each foreground point is
 	 * visible. will be very slow brute force.
 	 * 
-	 * Multithreaded over z slices (usual pattern)
+	 * Multithreaded over z slices using new parallel streams -> lambda pattern
 	 * 
 	 * TODO improve efficiency by searching slices up and down (- and + in z) from the boundary pixel's slice.
 	 * If there are no visible skeleton points in a slice then don't search in any more distant slices.
-	 * Instead, return and continue the iteration on the next boundary pixel.
+	 * Instead, return and continue the iteration on the next boundary pixel. Could expand this idea to x and y with
+	 * + and - directions, a bounding box, or exclusion sphere. Distance between surface point and skeleton point
+	 * is already calculated so just need an efficient way to set the exclusion criterion: 
+	 * if (distance > tooFarAway) continue; But how to set tooFarAway?
 	 * 
 	 * At the moment this is threaded over slices in the foreground image, but would need a reorganisation to sort out the skeleton points
 	 * into a list of lists, with the 0th index being the z-slice. Would need to think about how to do the threading model,
@@ -46,61 +49,68 @@ public class RayCaster {
 	 * @return
 	 */
 	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<Vector3d> skeletonPoints,
-			final byte[][] pixels, final int w, final int h, final int d) {
-		final Thread[] threads = Multithreader.newThreads();
-		final int nThreads = threads.length;
-		@SuppressWarnings("unchecked")
-		final ArrayList<ArrayList<int[]>>[] visibleCloudPointsArray = (ArrayList<ArrayList<int[]>>[]) new Object[nThreads];
+		final byte[][] pixels, final int w, final int h, final int d) {
 
 		final int nSkeletonPoints = skeletonPoints.size();
 
-		// give each thread its own list of lists, will be merged later
-		for (int i = 0; i < nThreads; i++) {
-			visibleCloudPointsArray[i] = new ArrayList<ArrayList<int[]>>(nSkeletonPoints);
+		ArrayList<Integer> sliceNumbers = new ArrayList<>();
+		@SuppressWarnings("unchecked")
+		final ArrayList<ArrayList<int[]>>[] visibleCloudPointsArray = (ArrayList<ArrayList<int[]>>[]) new Object[d];
+
+		for (int z = 0; z < d; z++) {
+			sliceNumbers.add(z);
+			visibleCloudPointsArray[z] = new ArrayList<>(nSkeletonPoints);
 		}
 
-		AtomicInteger ai = new AtomicInteger(0);
-		for (int thread = 0; thread < nThreads; thread++) {
-			final ArrayList<ArrayList<int[]>> threadVisibleCloudPoints = visibleCloudPointsArray[thread];
-			threads[thread] = new Thread(() -> {
-
-				// for (int z = 0; z < d; z++) {
-				for (int z = ai.getAndIncrement(); z < d; z = ai.getAndIncrement()) {
-					final byte[] slice = pixels[z];
-					for (int y = 0; y < h; y++) {
-						final int offset = y * w;
-						for (int x = 0; x < w; x++) {
-							final int value = slice[offset + x];
-							if (value == FORE) {
-								// continue if not a surface pixel because all 'middle' pixels are occluded.
-								if (!isSurface(pixels, x, y, z, w, h, d))
-									continue;
-								// look for fastest List iterator
-								for (int i = 0; i < nSkeletonPoints; i++) {
-									Vector3d v = skeletonPoints.get(i);
-									final int qx = (int) v.x;
-									final int qy = (int) v.y;
-									final int qz = (int) v.z;
-									final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
-											pixels);
-									if (isAVisiblePoint) {
-										// add this pixel to the list of points visible from this skeleton point
-										threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
-									}
-								}
+		//iterate in parallel over the stack slices
+		sliceNumbers.parallelStream().forEach(z -> {
+			final ArrayList<ArrayList<int[]>> threadVisibleCloudPoints = visibleCloudPointsArray[z];
+			final byte[] slice = pixels[z];
+			for (int y = 0; y < h; y++) {
+				final int offset = y * w;
+				for (int x = 0; x < w; x++) {
+					final int value = slice[offset + x];
+					if (value == FORE) {
+						if (!isSurface(pixels, x, y, z, w, h, d))
+							continue;
+						//we found a surface point, now check all the skeleton points
+						
+					  //set up the bounding box
+						int xMin = 0;
+						int yMin = 0;
+						int zMin = 0;
+						int xMax = w;
+						int yMax = h;
+						int zMax = d;
+						ArrayList<Vector3d> invisibleSkeletonPoints = new ArrayList<>();
+						
+						for (int i = 0; i < nSkeletonPoints; i++) {
+							Vector3d v = skeletonPoints.get(i);
+							final int qx = (int) v.x;
+							final int qy = (int) v.y;
+							final int qz = (int) v.z;
+							//don't check visibility of skeleton points outside the bounding box
+							if (qx < xMin || qy < yMin || qz < zMin || qx > xMax || qy > yMax || qz > zMax)
+								continue;
+							final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
+								pixels);
+							if (isAVisiblePoint) {
+								// add this pixel to the list of points visible from this skeleton point
+								threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
+							} else {
+								invisibleSkeletonPoints.add(v);
 							}
 						}
 					}
 				}
-			});
-		}
-		Multithreader.startAndJoin(threads);
+			}
+		});
 
 		// merge all the lists into one
 		// could be done in a parallel stream I guess
-		ArrayList<ArrayList<int[]>> visibleCloudPoints = new ArrayList<ArrayList<int[]>>(nSkeletonPoints);
-		for (int i = 0; i < nThreads; i++) {
-			ArrayList<ArrayList<int[]>> threadVisibleCloudPoints = visibleCloudPointsArray[i];
+		ArrayList<ArrayList<int[]>> visibleCloudPoints = new ArrayList<>(nSkeletonPoints);
+		for (int z = 0; z < d; z++) {
+			ArrayList<ArrayList<int[]>> threadVisibleCloudPoints = visibleCloudPointsArray[z];
 			for (int s = 0; s < nSkeletonPoints; s++) {
 				visibleCloudPoints.get(s).addAll(threadVisibleCloudPoints.get(s));
 			}
@@ -248,12 +258,12 @@ public class RayCaster {
 	 * @param qz
 	 * @param w        image width in pixels
 	 * @param stepSize increment distance along vector in pixels
-	 * @param image
+	 * @param pixels
 	 * @return true if it is possible to pass in a straight line from p to q without
 	 *         hitting an occluding pixel.
 	 */
 	private static boolean isVisible(final int px, final int py, final int pz, final int qx, final int qy, final int qz,
-			final int w, final int h, final int d, final double stepSize, final byte[][] pixels) {
+			final int w, final int h, final int d, final double stepSize, byte[][] pixels) {
 
 		// calculate unit vector between the two points
 		final double dx = qx - px;
@@ -261,7 +271,7 @@ public class RayCaster {
 		final double dz = qz - pz;
 
 		final double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
+		
 		// unit vector
 		final double ux = dx / distance;
 		final double uy = dy / distance;
