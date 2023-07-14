@@ -1,6 +1,7 @@
 package org.bonej.ops.ellipsoid;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.joml.Vector3d;
@@ -24,10 +25,13 @@ public class RayCaster {
 
 	/** Nyquist sampling of the edge length */
 	private static final double STEP_SIZE = 1 / 2.3;
+	
+	/** Number of skeleton points to check to determine starting size of bounding box */
+	private static final int BOX_SAMPLE_SIZE = 1000;
 
 	/**
-	 * Iterate over all skeleton points, checking whether each background surface point is
-	 * visible. Checkin for background surface points because these are the ones that will be excluded by the 
+	 * Iterate over all background surface points, checking whether each skeleton point is
+	 * visible. Checking for background surface points because these are the ones that will be excluded by the 
 	 * ellipsoid-fitting contains() method. will be very slow brute force.
 	 * 
 	 * Multithreaded over z slices using new parallel streams -> lambda pattern
@@ -50,6 +54,10 @@ public class RayCaster {
 	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<Vector3d> skeletonPoints,
 		final byte[][] pixels, final int w, final int h, final int d) {
 
+		//need to randomise skeleton points' order in the List so that bounding box isn't biased
+		//by the ordered way they were added to the list
+		Collections.shuffle(skeletonPoints);
+		
 		final int nSkeletonPoints = skeletonPoints.size();
 
 		ArrayList<Integer> sliceNumbers = new ArrayList<>();
@@ -73,16 +81,49 @@ public class RayCaster {
 						if (isSurface(pixels, x, y, z, w, h, d)) {
 							//we found a surface point, now check all the skeleton points
 
-							//set up the bounding box
-							int xMin = 0;
-							int yMin = 0;
-							int zMin = 0;
-							int xMax = w;
-							int yMax = h;
-							int zMax = d;
-							ArrayList<Vector3d> invisibleSkeletonPoints = new ArrayList<>();
+							//need this because sometimes there may be fewer skeleton points than box sampling points.
+							final int boxSampling = Math.min(BOX_SAMPLE_SIZE, nSkeletonPoints);
 
-							for (int i = 0; i < nSkeletonPoints; i++) {
+							ArrayList<Vector3d> visibleSkeletonPoints = new ArrayList<>();
+							ArrayList<Vector3d> occludedSkeletonPoints = new ArrayList<>();
+							
+							for (int i = 0; i < boxSampling; i++) {
+								Vector3d v = skeletonPoints.get(i);
+								final int qx = (int) v.x;
+								final int qy = (int) v.y;
+								final int qz = (int) v.z;
+								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
+									pixels);
+								if (isAVisiblePoint) {
+									visibleSkeletonPoints.add(v);
+								} else {
+									occludedSkeletonPoints.add(v);
+								}
+							}
+							
+							int[] boundingBox = calculateBoundingBox(x, y, z, visibleSkeletonPoints, occludedSkeletonPoints);
+							 
+							int xMin = boundingBox[0];
+							int yMin = boundingBox[1];
+							int zMin = boundingBox[2];
+							int xMax = boundingBox[3];
+							int yMax = boundingBox[4];
+							int zMax = boundingBox[5];
+							
+							for (int i = boxSampling; i < nSkeletonPoints; i++) {
+								
+								//periodically tune the bounding box
+								if (i > boxSampling && i % BOX_SAMPLE_SIZE == 0) {
+									boundingBox = calculateBoundingBox(x, y, z, visibleSkeletonPoints, occludedSkeletonPoints);
+
+									xMin = boundingBox[0];
+									yMin = boundingBox[1];
+									zMin = boundingBox[2];
+									xMax = boundingBox[3];
+									yMax = boundingBox[4];
+									zMax = boundingBox[5];
+
+								}
 								Vector3d v = skeletonPoints.get(i);
 								final int qx = (int) v.x;
 								final int qy = (int) v.y;
@@ -93,10 +134,12 @@ public class RayCaster {
 								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
 									pixels);
 								if (isAVisiblePoint) {
-									// add this pixel to the list of points visible from this skeleton point
+									// add this surface pixel (x, y, z) to the list of points visible from this skeleton point (i)
+									//which is what we need to feed to Ellipsoid.contains() later.
 									threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
+									visibleSkeletonPoints.add(v);
 								} else {
-									invisibleSkeletonPoints.add(v);
+									occludedSkeletonPoints.add(v);
 								}
 							}
 						}
@@ -116,6 +159,89 @@ public class RayCaster {
 		}
 
 		return visibleCloudPoints;
+	}
+
+	/**
+	 * @param x
+	 * @param y
+	 * @param z
+	 * @param visibleSkeletonPoints
+	 * @param occludedSkeletonPoints
+	 * @return
+	 */
+	private static int[] calculateBoundingBox(
+		final int x, final int y, final int z,
+		ArrayList<Vector3d> visibleSkeletonPoints,
+		ArrayList<Vector3d> occludedSkeletonPoints)
+	{
+		//+- x, y, z limits of visible points
+		//start with a tiny box centred on the surface point
+		int xMinVis = x;
+		int yMinVis = y;
+		int zMinVis = z;
+		int xMaxVis = x;
+		int yMaxVis = y;
+		int zMaxVis = z;
+
+		final int nVis = visibleSkeletonPoints.size();
+		
+		//expand the box to contain all the visible skeleton points
+		//by calculating the extreme (x, y, z)  values
+		for (int i = 0; i < nVis; i++) {
+			Vector3d v = visibleSkeletonPoints.get(i);
+			final int qx = (int) v.x;
+			final int qy = (int) v.y;
+			final int qz = (int) v.z;
+			
+			xMinVis = Math.min(xMinVis, qx);
+			yMinVis = Math.min(yMinVis, qy);
+			zMinVis = Math.min(zMinVis, qz);
+			
+			xMaxVis = Math.max(xMaxVis, qx);
+			yMaxVis = Math.max(yMaxVis, qy);
+			zMaxVis = Math.max(zMaxVis, qz);
+		}
+		
+		//now find the nearest occluded point outside the visible point box
+		
+		//+- x, y, z limits of occluded points
+		int xMinOcc = 0;
+		int yMinOcc = 0;
+		int zMinOcc = 0;
+		int xMaxOcc = Integer.MAX_VALUE;
+		int yMaxOcc = Integer.MAX_VALUE;
+		int zMaxOcc = Integer.MAX_VALUE;
+
+		final int nOcc = occludedSkeletonPoints.size();
+		
+		for (int i = 0; i < nOcc; i++) {
+			Vector3d v = occludedSkeletonPoints.get(i);
+			final int qx = (int) v.x;
+			final int qy = (int) v.y;
+			final int qz = (int) v.z;
+			
+			//q needs to be more extreme than the vis box
+			//and the least extreme occluded value
+
+			if (qx < xMinVis && qx > xMinOcc) xMinOcc = qx;
+			if (qy < yMinVis && qy > yMinOcc)	yMinOcc = qy;
+			if (qz < zMinVis && qz > zMinOcc)	zMinOcc = qz;
+			if (qx > xMaxVis && qx < xMaxOcc)	xMaxOcc = qx;
+			if (qy > yMaxVis && qy < yMaxOcc)	yMaxOcc = qy;
+			if (qz > zMaxVis && qz < zMaxOcc)	zMaxOcc = qz;
+			
+		}
+		
+		final int[] boundingBox = {
+			xMinOcc,
+			yMinOcc,
+			zMinOcc,
+			xMaxOcc,
+			yMaxOcc,
+			zMaxOcc
+		};
+		
+		return boundingBox;
 	}
 
 	/**
