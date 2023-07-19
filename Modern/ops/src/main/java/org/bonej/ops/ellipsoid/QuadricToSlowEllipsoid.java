@@ -50,7 +50,7 @@ import org.joml.Vector3dc;
 import org.scijava.plugin.Plugin;
 
 /**
- * Tries to create an {@link Ellipsoid} from a general equation of a quadratic
+ * Tries to create an {@link SlowEllipsoid} from a general equation of a quadratic
  * surface i.e. quadric.
  * <p>
  * The input equation must be in a matrix. If the quadric's polynomial in
@@ -70,12 +70,12 @@ import org.scijava.plugin.Plugin;
  * @see net.imagej.ops.stats.regression.leastSquares.Quadric
  */
 @Plugin(type = Op.class)
-public class QuadricToEllipsoid extends
-	AbstractUnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>>
+public class QuadricToSlowEllipsoid extends
+	AbstractUnaryFunctionOp<Matrix4dc, Optional<SlowEllipsoid>>
 {
 
 	@Override
-	public Optional<Ellipsoid> calculate(final Matrix4dc quadricSolution) {
+	public Optional<SlowEllipsoid> calculate(final Matrix4dc quadricSolution) {
 		final Vector3dc center = findCenter(quadricSolution);
 		final Matrix4dc translated = translateToCenter(quadricSolution, center);
 		final EigenDecomposition decomposition = solveEigenDecomposition(
@@ -87,7 +87,7 @@ public class QuadricToEllipsoid extends
 		}
 		final double[] radii = Arrays.stream(decomposition.getRealEigenvalues())
 			.map(ev -> Math.sqrt(1.0 / ev)).toArray();
-		final Ellipsoid ellipsoid = new Ellipsoid(radii[0], radii[1], radii[2]);
+		final SlowEllipsoid ellipsoid = new SlowEllipsoid(radii[0], radii[1], radii[2]);
 		ellipsoid.setCentroid(center);
 		final Matrix3dc orientation = toOrientationMatrix(decomposition);
 		ellipsoid.setOrientation(orientation);

@@ -57,8 +57,8 @@ import org.scijava.plugin.Plugin;
  */
 
 @Plugin(name = "Distance from Point to Ellipsoid Surface", type = Op.class)
-public class DistanceFromEllipsoidSurfaceOp extends
-	AbstractBinaryFunctionOp<Ellipsoid, Vector3dc, DoubleType>
+public class DistanceFromSlowEllipsoidSurfaceOp extends
+	AbstractBinaryFunctionOp<SlowEllipsoid, Vector3dc, DoubleType>
 {
 
 	/**
@@ -85,7 +85,7 @@ public class DistanceFromEllipsoidSurfaceOp extends
 	 *           {@link #maxIterations} is not positive.
 	 */
 	@Override
-	public DoubleType calculate(final Ellipsoid ellipsoid, final Vector3dc point)
+	public DoubleType calculate(final SlowEllipsoid ellipsoid, final Vector3dc point)
 		throws IllegalArgumentException
 	{
 		if (tolerance < 0.0) {
@@ -138,7 +138,7 @@ public class DistanceFromEllipsoidSurfaceOp extends
 	 * @return x(theta,phi)
 	 */
 	private static Vector3d getCartesianCoordinatesFromAngleParametrization(
-		final Vector2dc angles, final Ellipsoid ellipsoid)
+		final Vector2dc angles, final SlowEllipsoid ellipsoid)
 	{
 		final double theta = angles.x();
 		final double phi = angles.y();
@@ -168,7 +168,7 @@ public class DistanceFromEllipsoidSurfaceOp extends
 	 * @return inverse Jacobian matrix DF^{-1} times F(angles)
 	 */
 	private static Vector2d inverseJacobian(final Vector2dc angles,
-		final Ellipsoid ellipsoid, final Vector3dc point)
+		final SlowEllipsoid ellipsoid, final Vector3dc point)
 	{
 		final double a = ellipsoid.getA();
 		final double b = ellipsoid.getB();
@@ -224,7 +224,7 @@ public class DistanceFromEllipsoidSurfaceOp extends
 	 * @return point in ellipsoid coordinates
 	 */
 	static Vector3dc toEllipsoidCoordinates(final Vector3dc point,
-		final Ellipsoid ellipsoid)
+		final SlowEllipsoid ellipsoid)
 	{
 		final Vector3d translated = new Vector3d(ellipsoid.getCentroid());
 		translated.mul(-1.0);

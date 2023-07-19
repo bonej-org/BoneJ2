@@ -48,8 +48,8 @@ import net.imagej.ops.OpService;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.patcher.LegacyInjector;
 
-import org.bonej.ops.ellipsoid.Ellipsoid;
-import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
+import org.bonej.ops.ellipsoid.SlowEllipsoid;
+import org.bonej.ops.ellipsoid.QuadricToSlowEllipsoid;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.RoiManagerUtil;
 import org.bonej.utilities.SharedTable;
@@ -109,8 +109,8 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 		statusService.showStatus("Fit ellipsoid: determining ellipsoid parameters");
 		statusService.showProgress(1, 2);
 		@SuppressWarnings("unchecked")
-		final Optional<Ellipsoid> result = (Optional<Ellipsoid>) opService.run(
-			QuadricToEllipsoid.class, quadric);
+		final Optional<SlowEllipsoid> result = (Optional<SlowEllipsoid>) opService.run(
+			QuadricToSlowEllipsoid.class, quadric);
 		if (!result.isPresent()) {
 			cancelMacroSafe(this, "Can't fit ellipsoid to points.\n" +
 				"Try adding more point ROIs to the ROI Manager and try again.");
@@ -121,7 +121,7 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 		reportUsage();
 	}
 
-	private void addResults(final Ellipsoid ellipsoid) {
+	private void addResults(final SlowEllipsoid ellipsoid) {
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage);
 		final String label = inputImage.getTitle();
 		final Vector3dc centroid = ellipsoid.getCentroid();

@@ -58,7 +58,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests for {@link QuadricToEllipsoid}.
+ * Tests for {@link QuadricToSlowEllipsoid}.
  * <p>
  * Because an ellipsoid has rotational symmetries, we'll have to do with
  * asserting that the op returns an orientation symmetrical to the expected. I
@@ -67,7 +67,7 @@ import org.junit.Test;
  * 
  * @author Richard Domander
  */
-public class QuadricToEllipsoidTest {
+public class QuadricToSlowEllipsoidTest {
 
 	//@formatter:off
 	private static final Matrix4dc UNIT_SPHERE =
@@ -82,9 +82,9 @@ public class QuadricToEllipsoidTest {
 	// Constant seed for random generators
 	private static final long SEED = 0xc0ffee;
 	@SuppressWarnings("unchecked")
-	private static final UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoid =
+	private static final UnaryFunctionOp<Matrix4dc, Optional<SlowEllipsoid>> quadricToEllipsoid =
 
-		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToEllipsoid.class,
+		(UnaryFunctionOp) Functions.unary(IMAGE_J.op(), QuadricToSlowEllipsoid.class,
 			Optional.class, UNIT_SPHERE);
 	@SuppressWarnings("unchecked")
 	private static final BinaryFunctionOp<double[], Long, List<Vector3d>> ellipsoidPoints =
@@ -100,9 +100,9 @@ public class QuadricToEllipsoidTest {
                 0, 0, 1, 0,
                 0, 0, 0, -1);
         //@formatter:on
-		IMAGE_J.op().run(QuadricToEllipsoid.class, cone);
+		IMAGE_J.op().run(QuadricToSlowEllipsoid.class, cone);
 
-		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(cone);
+		final Optional<SlowEllipsoid> result = quadricToEllipsoid.calculate(cone);
 
 		assertFalse(result.isPresent());
 	}
@@ -138,11 +138,11 @@ public class QuadricToEllipsoidTest {
 		// EXECUTE
 		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(Quadric.class,
 			points);
-		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(quadric);
+		final Optional<SlowEllipsoid> result = quadricToEllipsoid.calculate(quadric);
 
 		// VERIFY
 		assertTrue(result.isPresent());
-		final Ellipsoid ellipsoid = result.get();
+		final SlowEllipsoid ellipsoid = result.get();
 		final Vector3dc centroid = new Vector3d(ellipsoid.getCentroid().x, ellipsoid
 			.getCentroid().y, ellipsoid.getCentroid().z);
 		assertTrue("Ellipsoid centre point is not within tolerance", epsilonEquals(
@@ -182,11 +182,11 @@ public class QuadricToEllipsoidTest {
 		// EXECUTE
 		final Matrix4dc quadric = (Matrix4dc) IMAGE_J.op().run(Quadric.class,
 			points);
-		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(quadric);
+		final Optional<SlowEllipsoid> result = quadricToEllipsoid.calculate(quadric);
 
 		// VERIFY
 		assertTrue(result.isPresent());
-		final Ellipsoid transformedEllipsoid = result.get();
+		final SlowEllipsoid transformedEllipsoid = result.get();
 		final Vector3d v = transformedEllipsoid.getCentroid();
 		assertTrue(epsilonEquals(centroid, new Vector3d(v.x, v.y, v.z), 1e-12));
 		assertEquals(radii[0], transformedEllipsoid.getA(), 1e-12);
@@ -200,11 +200,11 @@ public class QuadricToEllipsoidTest {
 		// A unit sphere has no orientation, so it's matrix will always be identity
 		final Matrix4d expectedOrientation = new Matrix4d().identity();
 
-		final Optional<Ellipsoid> result = quadricToEllipsoid.calculate(
+		final Optional<SlowEllipsoid> result = quadricToEllipsoid.calculate(
 			UNIT_SPHERE);
 
 		assertTrue(result.isPresent());
-		final Ellipsoid unitSphere = result.get();
+		final SlowEllipsoid unitSphere = result.get();
 		assertEquals(1.0, unitSphere.getA(), 1e-12);
 		assertEquals(1.0, unitSphere.getB(), 1e-12);
 		assertEquals(1.0, unitSphere.getC(), 1e-12);

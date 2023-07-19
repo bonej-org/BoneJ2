@@ -50,19 +50,19 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 /**
- * Tests for {@link DistanceFromEllipsoidSurfaceOp}.
+ * Tests for {@link DistanceFromSlowEllipsoidSurfaceOp}.
  *
  * @author Alessandro Felder
  */
-public class DistanceFromEllipsoidSurfaceOpTest {
+public class DistanceFromSlowEllipsoidSurfaceOpTest {
 
 	private static ImageJ IMAGE_J = new ImageJ();
 	private static final RandomVectorGenerator sphereRng =
 		new UnitSphereRandomVectorGenerator(3);
-	private static BinaryFunctionOp<Ellipsoid, Vector3dc, DoubleType> distanceFromEllipsoidSurfaceOp;
-	private static Ellipsoid axisAlignedEllipsoid;
-	private static Ellipsoid transformedEllipsoid;
-	private static Ellipsoid sphere;
+	private static BinaryFunctionOp<SlowEllipsoid, Vector3dc, DoubleType> distanceFromEllipsoidSurfaceOp;
+	private static SlowEllipsoid axisAlignedEllipsoid;
+	private static SlowEllipsoid transformedEllipsoid;
+	private static SlowEllipsoid sphere;
 	private final Supplier<Vector3dc> spherePointSupplier = () -> {
 		final double[] c = sphereRng.nextVector();
 		return new Vector3d(c[0], c[1], c[2]);
@@ -73,7 +73,7 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 
 	@Test(expected = ArithmeticException.class)
 	public void testArithmeticExceptionForZeroDeterminant() {
-		final Ellipsoid ellipsoid = new Ellipsoid(2.0, 2.0, 2.0);
+		final SlowEllipsoid ellipsoid = new SlowEllipsoid(2.0, 2.0, 2.0);
 		final Vector3dc origin = new Vector3d();
 		distanceFromEllipsoidSurfaceOp.calculate(ellipsoid, origin).get();
 	}
@@ -143,11 +143,11 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 
 	@Test
 	public void testRotationTransformation() {
-		final Ellipsoid ellipsoid = new Ellipsoid(1.0, 2.0, 3.0);
+		final SlowEllipsoid ellipsoid = new SlowEllipsoid(1.0, 2.0, 3.0);
 		ellipsoid.setOrientation(new Matrix3d(0, 0, 1, 0, -1, 0, 1, 0, 0));
 		final Vector3dc point = new Vector3d(0, 0, 8);
 
-		final Vector3dc rotated = DistanceFromEllipsoidSurfaceOp
+		final Vector3dc rotated = DistanceFromSlowEllipsoidSurfaceOp
 			.toEllipsoidCoordinates(point, ellipsoid);
 		assertEquals(8.0, rotated.x(), 1.0e-12);
 		assertEquals(0.0, rotated.y(), 1.0e-12);
@@ -187,11 +187,11 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 
 	@Test
 	public void testTranslationTransformation() {
-		final Ellipsoid ellipsoid = new Ellipsoid(2.0, 2.0, 2.0);
+		final SlowEllipsoid ellipsoid = new SlowEllipsoid(2.0, 2.0, 2.0);
 		ellipsoid.setCentroid(new Vector3d(5, 7, 8));
 		final Vector3dc point = new Vector3d(5, 7, 9);
 
-		final Vector3dc translated = DistanceFromEllipsoidSurfaceOp
+		final Vector3dc translated = DistanceFromSlowEllipsoidSurfaceOp
 			.toEllipsoidCoordinates(point, ellipsoid);
 		assertEquals(0.0, translated.x(), 1.0e-12);
 		assertEquals(0.0, translated.y(), 1.0e-12);
@@ -203,7 +203,7 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 	public void testCalculateThrowsIAEIfMaxIterationsNegative() {
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Max iterations must be positive");
-		IMAGE_J.op().run(DistanceFromEllipsoidSurfaceOp.class, sphere, new Vector3d(
+		IMAGE_J.op().run(DistanceFromSlowEllipsoidSurfaceOp.class, sphere, new Vector3d(
 			2, 0, 0), 1.0, -1);
 	}
 
@@ -211,28 +211,28 @@ public class DistanceFromEllipsoidSurfaceOpTest {
 	public void testCalculateThrowsIAEIfToleranceNegative() {
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Tolerance cannot be negative");
-		IMAGE_J.op().run(DistanceFromEllipsoidSurfaceOp.class, sphere, new Vector3d(
+		IMAGE_J.op().run(DistanceFromSlowEllipsoidSurfaceOp.class, sphere, new Vector3d(
 			2, 0, 0), -1.0, 100);
 	}
 
 	@BeforeClass
 	public static void oneTimeSetUp() {
-		axisAlignedEllipsoid = new Ellipsoid(1.0, 2.0, 3.0);
+		axisAlignedEllipsoid = new SlowEllipsoid(1.0, 2.0, 3.0);
 
 		// axisAlignedEllipsoid translated by (1,1,1) and rotated 30 degrees around
 		// x-axis
-		transformedEllipsoid = new Ellipsoid(1.0, 2.0, 3.0);
+		transformedEllipsoid = new SlowEllipsoid(1.0, 2.0, 3.0);
 		transformedEllipsoid.setOrientation(new Matrix3d(1, 0, 0, 0, Math.sqrt(
 			3.0) / 2.0, 0.5, 0, -0.5, Math.sqrt(3.0) / 2.0));
 		transformedEllipsoid.setCentroid(new Vector3d(1, 1, 1));
 
-		sphere = new Ellipsoid(2.0, 2.0, 2.0);
+		sphere = new SlowEllipsoid(2.0, 2.0, 2.0);
 	}
 
 	@BeforeClass
 	public static void setUpBeforeClass() {
 		distanceFromEllipsoidSurfaceOp = Functions.binary(IMAGE_J.op(),
-			DistanceFromEllipsoidSurfaceOp.class, DoubleType.class, Ellipsoid.class,
+			DistanceFromSlowEllipsoidSurfaceOp.class, DoubleType.class, SlowEllipsoid.class,
 			Vector3dc.class);
 	}
 

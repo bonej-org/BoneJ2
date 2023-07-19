@@ -59,7 +59,7 @@ import org.joml.Vector3dc;
  * @author Alessandro Felder
  */
 // TODO Should vectors also be (returned) in homogeneous coordinates (Vector4d)?
-public class Ellipsoid {
+public class SlowEllipsoid {
 
 	private final Vector3d centroid = new Vector3d();
 	private final Matrix3d orientation = new Matrix3d();
@@ -80,7 +80,7 @@ public class Ellipsoid {
 	 * @param b 2nd radius of the ellipsoid.
 	 * @param c largest radius of the ellipsoid.
 	 */
-	public Ellipsoid(final double a, final double b, final double c) {
+	public SlowEllipsoid(final double a, final double b, final double c) {
 		final double[] radii = { a, b, c };
 		Arrays.sort(radii);
 		setC(radii[2]);
@@ -96,7 +96,7 @@ public class Ellipsoid {
 	 * @param w a semi-axis of the ellipsoid.
 	 * @see #setSemiAxes(Vector3dc, Vector3dc, Vector3dc)
 	 */
-	public Ellipsoid(final Vector3dc u, final Vector3dc v, final Vector3dc w) {
+	public SlowEllipsoid(final Vector3dc u, final Vector3dc v, final Vector3dc w) {
 		setSemiAxes(u, v, w);
 	}
 

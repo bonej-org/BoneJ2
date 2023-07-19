@@ -72,8 +72,8 @@ import net.imglib2.type.numeric.RealType;
 
 import org.apache.commons.math3.random.RandomVectorGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
-import org.bonej.ops.ellipsoid.Ellipsoid;
-import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
+import org.bonej.ops.ellipsoid.SlowEllipsoid;
+import org.bonej.ops.ellipsoid.QuadricToSlowEllipsoid;
 import org.bonej.ops.mil.ParallelLineGenerator;
 import org.bonej.ops.mil.ParallelLineMIL;
 import org.bonej.ops.mil.PlaneParallelLineGenerator;
@@ -126,9 +126,9 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	// with data at hand. Other data may need a different number.
 	private static final int DEFAULT_LINES = 10_000;
 	private static BinaryFunctionOp<RandomAccessibleInterval<BitType>, ParallelLineGenerator, Vector3d> milOp;
-	private static UnaryFunctionOp<Matrix4dc, Optional<Ellipsoid>> quadricToEllipsoidOp;
+	private static UnaryFunctionOp<Matrix4dc, Optional<SlowEllipsoid>> quadricToEllipsoidOp;
 	private static UnaryFunctionOp<List<Vector3dc>, Matrix4dc> solveQuadricOp;
-	private final Function<Ellipsoid, Double> degreeOfAnisotropy =
+	private final Function<SlowEllipsoid, Double> degreeOfAnisotropy =
 			ellipsoid -> 1.0 - (1.0/(ellipsoid.getC() * ellipsoid.getC())) / (1.0/(ellipsoid.getA() * ellipsoid.getA()));
 	
 	@Parameter(validater = "validateImage")
@@ -205,11 +205,11 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		subspaces = find3DSubspaces(inputImage);
 		calculateMILLength(subspaces.get(0).interval);
 		matchOps(subspaces.get(0).interval);
-		final List<Ellipsoid> ellipsoids = new ArrayList<>();
+		final List<SlowEllipsoid> ellipsoids = new ArrayList<>();
 		for (int i = 0; i < subspaces.size(); i++) {
 			statusService.showStatus("Anisotropy: sampling subspace #" + (i + 1));
 			final RandomAccessibleInterval<BitType> interval = subspaces.get(i).interval;
-			final Ellipsoid ellipsoid = milEllipsoid(interval);
+			final SlowEllipsoid ellipsoid = milEllipsoid(interval);
 			if (ellipsoid == null) {
 				return;
 			}
@@ -229,7 +229,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	}
 
 	private void addResult(final Subspace<BitType> subspace,
-		final double anisotropy, final Ellipsoid ellipsoid)
+		final double anisotropy, final SlowEllipsoid ellipsoid)
 	{
 		final String imageName = inputImage.getName();
 		final String suffix = subspace.toString();
@@ -263,12 +263,12 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	}
 
 	private void addResults(final List<Subspace<BitType>> subspaces,
-		final List<Ellipsoid> ellipsoids)
+		final List<SlowEllipsoid> ellipsoids)
 	{
 		statusService.showStatus("Anisotropy: showing results");
 		for (int i = 0; i < subspaces.size(); i++) {
 			final Subspace<BitType> subspace = subspaces.get(i);
-			final Ellipsoid ellipsoid = ellipsoids.get(i);
+			final SlowEllipsoid ellipsoid = ellipsoids.get(i);
 			final double anisotropy = degreeOfAnisotropy.apply(ellipsoid);
 			addResult(subspace, anisotropy, ellipsoid);
 		}
@@ -327,7 +327,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		}
 	}
 
-	private Optional<Ellipsoid> fitEllipsoid(final List<Vector3dc> pointCloud) {
+	private Optional<SlowEllipsoid> fitEllipsoid(final List<Vector3dc> pointCloud) {
 		statusService.showStatus("Anisotropy: solving quadric equation");
 		final Matrix4dc quadric = solveQuadricOp.calculate(pointCloud);
 		statusService.showStatus("Anisotropy: fitting ellipsoid");
@@ -342,7 +342,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 			tmpPoints);
 		final Matrix4dc matchingMock = new Matrix4d();
 		quadricToEllipsoidOp = (UnaryFunctionOp) Functions.unary(opService,
-			QuadricToEllipsoid.class, Optional.class, matchingMock);
+			QuadricToSlowEllipsoid.class, Optional.class, matchingMock);
 		rotateOp = Hybrids.binaryCFI1(opService, Rotate3d.class, Vector3d.class,
 				new Vector3d(), new Quaterniond());
 		ParallelLineGenerator generator =
@@ -351,7 +351,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 				interval, generator, milLength, samplingIncrement);
 	}
 
-	private Ellipsoid milEllipsoid(final RandomAccessibleInterval<BitType> interval) {
+	private SlowEllipsoid milEllipsoid(final RandomAccessibleInterval<BitType> interval) {
 		final List<Vector3dc> pointCloud;
 		try {
 			pointCloud = runDirectionsInParallel(interval);
@@ -359,7 +359,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 				cancelMacroSafe(this, "Anisotropy could not be calculated - too few points");
 				return null;
 			}
-			final Optional<Ellipsoid> ellipsoid = fitEllipsoid(pointCloud);
+			final Optional<SlowEllipsoid> ellipsoid = fitEllipsoid(pointCloud);
 			if (!ellipsoid.isPresent()) {
 				cancelMacroSafe(this, "Anisotropy could not be calculated - ellipsoid fitting failed");
 				return null;
