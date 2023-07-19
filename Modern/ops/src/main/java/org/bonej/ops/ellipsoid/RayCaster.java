@@ -7,11 +7,11 @@ import java.util.List;
 import org.joml.Vector3d;
 
 /**
- * Find the pixels visible from skeleton points for further use in fitting
+ * Find the pixels visible from seed points for further use in fitting
  * ellipsoids.
  * 
- * The only pixels relevant for fitting an ellipsoid at a given skeleton point
- * are the points visible from that skeleton point.
+ * The only pixels relevant for fitting an ellipsoid at a given seed point
+ * are the points visible from that seed point.
  * 
  * @author Michael Doube
  *
@@ -26,24 +26,24 @@ public class RayCaster {
 	/** Nyquist sampling of the edge length */
 	private static final double STEP_SIZE = 1 / 2.3;
 	
-	/** Number of skeleton points to check to determine starting size of bounding box */
+	/** Number of seed points to check to determine starting size of bounding box */
 	private static final int BOX_SAMPLE_SIZE = 1000;
 
 	/**
-	 * Iterate over all background surface points, checking whether each skeleton point is
+	 * Iterate over all background surface points, checking whether each seed point is
 	 * visible. Checking for background surface points because these are the ones that will be excluded by the 
 	 * ellipsoid-fitting contains() method. will be very slow brute force.
 	 * 
 	 * Multithreaded over z slices using new parallel streams -> lambda pattern
 	 * 
 	 * TODO improve efficiency by searching slices up and down (- and + in z) from the boundary pixel's slice.
-	 * If there are no visible skeleton points in a slice then don't search in any more distant slices.
+	 * If there are no visible seed points in a slice then don't search in any more distant slices.
 	 * Instead, return and continue the iteration on the next boundary pixel. Could expand this idea to x and y with
-	 * + and - directions, a bounding box, or exclusion sphere. Distance between surface point and skeleton point
+	 * + and - directions, a bounding box, or exclusion sphere. Distance between surface point and seed point
 	 * is already calculated so just need an efficient way to set the exclusion criterion: 
 	 * if (distance > tooFarAway) continue; But how to set tooFarAway?
 	 * 
-	 * At the moment this is threaded over slices in the foreground image, but would need a reorganisation to sort out the skeleton points
+	 * At the moment this is threaded over slices in the foreground image, but would need a reorganisation to sort out the seed points
 	 * into a list of lists, with the 0th index being the z-slice. Would need to think about how to do the threading model,
 	 * either each surface pixel in its own thread, or each surface pixel spawns a team of threads that does the sampling vectors,
 	 * bearing in mind the overhead involved in setting up a thread.
@@ -51,14 +51,14 @@ public class RayCaster {
 	 * @param pixels
 	 * @return
 	 */
-	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<Vector3d> skeletonPoints,
+	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<Vector3d> seedPoints,
 		final byte[][] pixels, final int w, final int h, final int d) {
 
-		//need to randomise skeleton points' order in the List so that bounding box isn't biased
+		//need to randomise seed points' order in the List so that bounding box isn't biased
 		//by the ordered way they were added to the list
-		Collections.shuffle(skeletonPoints);
+		Collections.shuffle(seedPoints);
 		
-		final int nSkeletonPoints = skeletonPoints.size();
+		final int nSkeletonPoints = seedPoints.size();
 
 		ArrayList<Integer> sliceNumbers = new ArrayList<>();
 		@SuppressWarnings("unchecked")
@@ -79,16 +79,16 @@ public class RayCaster {
 					final int value = slice[offset + x];
 					if (value == BACK) {
 						if (isSurface(pixels, x, y, z, w, h, d)) {
-							//we found a surface point, now check all the skeleton points
+							//we found a surface point, now check all the seed points
 
-							//need this because sometimes there may be fewer skeleton points than box sampling points.
+							//need this because sometimes there may be fewer seed points than box sampling points.
 							final int boxSampling = Math.min(BOX_SAMPLE_SIZE, nSkeletonPoints);
 
 							ArrayList<Vector3d> visibleSkeletonPoints = new ArrayList<>();
 							ArrayList<Vector3d> occludedSkeletonPoints = new ArrayList<>();
 							
 							for (int i = 0; i < boxSampling; i++) {
-								Vector3d v = skeletonPoints.get(i);
+								Vector3d v = seedPoints.get(i);
 								final int qx = (int) v.x;
 								final int qy = (int) v.y;
 								final int qz = (int) v.z;
@@ -124,17 +124,17 @@ public class RayCaster {
 									zMax = boundingBox[5];
 
 								}
-								Vector3d v = skeletonPoints.get(i);
+								Vector3d v = seedPoints.get(i);
 								final int qx = (int) v.x;
 								final int qy = (int) v.y;
 								final int qz = (int) v.z;
-								//don't check visibility of skeleton points outside the bounding box
+								//don't check visibility of seed points outside the bounding box
 								if (qx < xMin || qy < yMin || qz < zMin || qx > xMax || qy > yMax || qz > zMax)
 									continue;
 								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
 									pixels);
 								if (isAVisiblePoint) {
-									// add this surface pixel (x, y, z) to the list of points visible from this skeleton point (i)
+									// add this surface pixel (x, y, z) to the list of points visible from this seed point (i)
 									//which is what we need to feed to Ellipsoid.contains() later.
 									threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
 									visibleSkeletonPoints.add(v);
@@ -185,7 +185,7 @@ public class RayCaster {
 
 		final int nVis = visibleSkeletonPoints.size();
 		
-		//expand the box to contain all the visible skeleton points
+		//expand the box to contain all the visible seed points
 		//by calculating the extreme (x, y, z)  values
 		for (int i = 0; i < nVis; i++) {
 			Vector3d v = visibleSkeletonPoints.get(i);
@@ -429,7 +429,7 @@ public class RayCaster {
 			final int z = (int) Math.round(cursorZ);
 
 			// check if the pixel is background
-			// if we hit background then the skeleton point is not visible
+			// if we hit background then the seed point is not visible
 			if (pixels[z][y * w + x] == BACK)
 				return false;
 			// TODO make sure logic excludes the possibility
