@@ -57,7 +57,7 @@ import net.imglib2.type.numeric.real.FloatType;
 
 @Plugin(name = "Generate Ellipsoid Factor Output", type = Op.class)
 public class EllipsoidFactorOutputGenerator extends
-        AbstractBinaryFunctionOp<IterableInterval<IntType>, List<QuickEllipsoid>, List<ImgPlus>>{
+        AbstractBinaryFunctionOp<IterableInterval<IntType>, List<Ellipsoid>, List<ImgPlus>>{
     // Several ellipsoids may fall in same bin if this is too small a number!
     // This will be ignored!
     private static final long FLINN_PLOT_DIMENSION = 512;
@@ -74,7 +74,7 @@ public class EllipsoidFactorOutputGenerator extends
     private List<ImgPlus> eFOutputs;
 
     @Override
-    public List<ImgPlus> calculate(IterableInterval<IntType> idImage, List<QuickEllipsoid> ellipsoids) {
+    public List<ImgPlus> calculate(IterableInterval<IntType> idImage, List<Ellipsoid> ellipsoids) {
         eFOutputs = new ArrayList<>();
         calculatePrimaryOutputs(idImage, ellipsoids);
 
@@ -149,12 +149,12 @@ public class EllipsoidFactorOutputGenerator extends
      }
 
 
-    private void calculatePrimaryOutputs(IterableInterval idImage, List<QuickEllipsoid> ellipsoids) {
+    private void calculatePrimaryOutputs(IterableInterval idImage, List<Ellipsoid> ellipsoids) {
         eFOutputs.add(createEFImage(ellipsoids, idImage));
     }
 
 
-    private void calculateSecondaryOutputs(IterableInterval idImage, List<QuickEllipsoid> ellipsoids) {
+    private void calculateSecondaryOutputs(IterableInterval idImage, List<Ellipsoid> ellipsoids) {
 
         //radii
         final double[] as = ellipsoids.parallelStream().mapToDouble(e -> e.getSortedRadii()[0]).toArray();
@@ -186,7 +186,7 @@ public class EllipsoidFactorOutputGenerator extends
     }
 
     //region: create outputs
-    private ImgPlus createIDImage(IterableInterval idImage, List<QuickEllipsoid> ellipsoids) {
+    private ImgPlus createIDImage(IterableInterval idImage, List<Ellipsoid> ellipsoids) {
         final ArrayImg<IntType, IntArray> ints = ArrayImgs.ints(idImage.dimension(0), idImage.dimension(1), idImage.dimension(2),idImage.dimension(3));
         final Cursor<IntType> cursor = idImage.localizingCursor();
         final Cursor<IntType> cursor1 = ints.localizingCursor();
@@ -205,7 +205,7 @@ public class EllipsoidFactorOutputGenerator extends
         return eIdImage;
     }
 
-    private ImgPlus<FloatType> createEFImage(final Collection<QuickEllipsoid> ellipsoids,
+    private ImgPlus<FloatType> createEFImage(final Collection<Ellipsoid> ellipsoids,
                                              final IterableInterval idImage) {
         final Img<FloatType> ellipsoidFactorImage = createNaNImg(idImage);
         final double[] ellipsoidFactors = ellipsoids.parallelStream()
@@ -238,10 +238,10 @@ public class EllipsoidFactorOutputGenerator extends
         return aToBAxisRatioImage;
     }
 
-    private ImgPlus createVolumeImage(final List<QuickEllipsoid> ellipsoids,
+    private ImgPlus createVolumeImage(final List<Ellipsoid> ellipsoids,
                                    final IterableInterval idImage) {
         final Img<FloatType> volumeImage = createNaNImg(idImage);
-        final double[] volumes = ellipsoids.parallelStream().mapToDouble(QuickEllipsoid::getVolume).toArray();
+        final double[] volumes = ellipsoids.parallelStream().mapToDouble(Ellipsoid::getVolume).toArray();
         mapValuesToImage(volumes, idImage, volumeImage);
         ImgPlus vImage = new ImgPlus(volumeImage,inputName+"_volume");
         vImage.setChannelMaximum(0, ellipsoids.get(0).getVolume());
@@ -322,7 +322,7 @@ public class EllipsoidFactorOutputGenerator extends
     //endregion
 
     //region: helper methods
-    private static double computeWeightedEllipsoidFactor(final QuickEllipsoid ellipsoid) {
+    private static double computeWeightedEllipsoidFactor(final Ellipsoid ellipsoid) {
         final double[] sortedRadii = ellipsoid.getSortedRadii();
         return (sortedRadii[0] / sortedRadii[1] - sortedRadii[1] / sortedRadii[2])*ellipsoid.getVolume();
     }

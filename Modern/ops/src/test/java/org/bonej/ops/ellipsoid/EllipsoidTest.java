@@ -35,9 +35,9 @@ import static org.junit.Assert.*;
 import java.util.Arrays;
 import java.util.Random;
 
-public class QuickEllipsoidTest {
+public class EllipsoidTest {
     /**
-     * Test for {@link QuickEllipsoid#getSurfacePoints(double[][])}
+     * Test for {@link Ellipsoid#getSurfacePoints(double[][])}
      *
      * searches in positive y and positive z directions for the surface point of an axis-aligned ellipsoid
      * with axis lengths (1,2,3) and centre (1,1,1)
@@ -59,7 +59,7 @@ public class QuickEllipsoidTest {
      */
     @Test
     public void testSurfacePoints() {
-        QuickEllipsoid e = new QuickEllipsoid(new double[]{1,2,3}, new double[]{1,1,1},new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        Ellipsoid e = new Ellipsoid(new double[]{1,2,3}, new double[]{1,1,1},new double[][]{{1,0,0},{0,1,0},{0,0,1}});
 
         double [][] vectors = new double[2][3];
         vectors[0][2] = 1; //z-direction
@@ -79,7 +79,7 @@ public class QuickEllipsoidTest {
     }
 
     /**
-     * Test for {@link QuickEllipsoid#contains(double, double, double)}
+     * Test for {@link Ellipsoid#contains(double, double, double)}
      *
      * ASCII sketch of situation in the x==1 plane:
      * '*' denotes ellipsoid centre
@@ -98,7 +98,7 @@ public class QuickEllipsoidTest {
 
     @Test
     public void testContains() {
-        QuickEllipsoid e = new QuickEllipsoid(new double[]{1,2,3}, new double[]{1,1,1},new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+        Ellipsoid e = new Ellipsoid(new double[]{1,2,3}, new double[]{1,1,1},new double[][]{{1,0,0},{0,1,0},{0,0,1}});
         assertFalse(e.contains(1,4,1));
         assertTrue(e.contains(1,1,2));
     }
@@ -113,7 +113,7 @@ public class QuickEllipsoidTest {
     		final double[] radii = {a, b, c};
     		final double[] sortedRadii = {a , b, c};
     		Arrays.sort(sortedRadii);
-    		QuickEllipsoid e = new QuickEllipsoid(radii, new double[]{1,1,1}, new double[][]{{1,0,0},{0,1,0},{0,0,1}});
+    		Ellipsoid e = new Ellipsoid(radii, new double[]{1,1,1}, new double[][]{{1,0,0},{0,1,0},{0,0,1}});
     		assertArrayEquals(sortedRadii, e.getSortedRadii(), 0);
     	}
     }

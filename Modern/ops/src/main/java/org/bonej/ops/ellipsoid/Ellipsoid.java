@@ -38,7 +38,7 @@ package org.bonej.ops.ellipsoid;
  * @author Michael Doube
  * @author Alessandro Felder
  */
-public class QuickEllipsoid {
+public class Ellipsoid {
 
 	/**
 	 * Eigenvalue matrix. Size-based ordering is not performed. They are in the same
@@ -74,7 +74,7 @@ public class QuickEllipsoid {
 	private double[][] eh;
 
 	/**
-	 * Construct an QuickEllipsoid from the radii (a,b,c), centroid (cx, cy, cz) and
+	 * Construct an Ellipsoid from the radii (a,b,c), centroid (cx, cy, cz) and
 	 * Eigenvectors.
 	 *
 	 * @param radii radii (a,b,c) as a double array
@@ -82,7 +82,7 @@ public class QuickEllipsoid {
 	 * @param eigenVectors the orientation of the ellipsoid.
 	 *
 	 */
-	public QuickEllipsoid(final double[] radii, final double[] centroid, final double[][] eigenVectors) {
+	public Ellipsoid(final double[] radii, final double[] centroid, final double[][] eigenVectors) {
 
 		ra = radii[0];
 		rb = radii[1];
@@ -229,16 +229,16 @@ public class QuickEllipsoid {
 	}
 
 	/**
-	 * Perform a deep copy of this QuickEllipsoid
+	 * Perform a deep copy of this Ellipsoid
 	 *
 	 * @return a copy of the instance.
 	 */
-	public QuickEllipsoid copy() {
+	public Ellipsoid copy() {
 		final double[][] clone = new double[ev.length][];
 		for (int i = 0; i < ev.length; i++) {
 			clone[i] = ev[i].clone();
 		}
-		return new QuickEllipsoid(new double[]{ra, rb, rc}, new double[]{cx, cy, cz}, clone);
+		return new Ellipsoid(new double[]{ra, rb, rc}, new double[]{cx, cy, cz}, clone);
 	}
 
 	/**
@@ -259,7 +259,7 @@ public class QuickEllipsoid {
 		final double b = rb + db;
 		final double c = rc + dc;
 		if (a <= 0 || b <= 0 || c <= 0) {
-			throw new IllegalArgumentException("QuickEllipsoid cannot have semiaxis <= 0");
+			throw new IllegalArgumentException("Ellipsoid cannot have semiaxis <= 0");
 		}
 		setRadii(a, b, c);
 	}

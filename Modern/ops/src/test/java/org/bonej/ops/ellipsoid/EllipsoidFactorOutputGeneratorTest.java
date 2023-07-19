@@ -53,7 +53,7 @@ public class EllipsoidFactorOutputGeneratorTest extends AbstractOpTest {
     public void testWeightedAverage(){
         IterableInterval<IntType> idImage = getSimpleIDImg();
 
-        List<QuickEllipsoid> ellipsoids = getEllipsoids();
+        List<Ellipsoid> ellipsoids = getEllipsoids();
 
         final List<ImgPlus> efOutputs = (List<ImgPlus>) ops.run(EllipsoidFactorOutputGenerator.class,idImage,ellipsoids);
         final Img<? extends RealType> efImg = efOutputs.get(0).getImg();
@@ -71,7 +71,7 @@ public class EllipsoidFactorOutputGeneratorTest extends AbstractOpTest {
     {
         //SET-UP
         final IterableInterval<IntType> idImage = Views.interval(getSimpleIDImg(),new long[]{0,0,0,0}, new long[]{4,4,0,4});
-        final List<QuickEllipsoid> ellipsoids = getEllipsoids();
+        final List<Ellipsoid> ellipsoids = getEllipsoids();
 
         //EXECUTE
         final List<ImgPlus> primaryEfOutputs = (List<ImgPlus>) ops.run(EllipsoidFactorOutputGenerator.class,idImage,ellipsoids,false,false,"test_image");
@@ -101,11 +101,11 @@ public class EllipsoidFactorOutputGeneratorTest extends AbstractOpTest {
         return idImage;
     }
 
-    private List<QuickEllipsoid> getEllipsoids() {
-        List<QuickEllipsoid> ellipsoids = new ArrayList<>();
+    private List<Ellipsoid> getEllipsoids() {
+        List<Ellipsoid> ellipsoids = new ArrayList<>();
         double[][] frame = new double[][]{{1,0,0},{0,1,0},{0,0,1}};
-        ellipsoids.add(new QuickEllipsoid(new double[]{10.0,1.0,1.0}, new double[3],frame));
-        ellipsoids.add(new QuickEllipsoid(new double[]{1.0,5.0,5.0}, new double[3],frame));
+        ellipsoids.add(new Ellipsoid(new double[]{10.0,1.0,1.0}, new double[3],frame));
+        ellipsoids.add(new Ellipsoid(new double[]{1.0,5.0,5.0}, new double[3],frame));
         return ellipsoids;
     }
 

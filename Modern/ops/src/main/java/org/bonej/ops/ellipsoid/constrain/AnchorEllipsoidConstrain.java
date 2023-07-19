@@ -28,7 +28,7 @@
  */
 package org.bonej.ops.ellipsoid.constrain;
 
-import org.bonej.ops.ellipsoid.QuickEllipsoid;
+import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.joml.Vector3d;
 
 import java.util.Random;
@@ -39,7 +39,7 @@ public class AnchorEllipsoidConstrain implements EllipsoidConstrainStrategy {
     private Vector3d direction;
 
     @Override
-    public void preConstrain(QuickEllipsoid ellipsoid, Vector3d fixedPoint) {
+    public void preConstrain(Ellipsoid ellipsoid, Vector3d fixedPoint) {
         double[] centre = ellipsoid.getCentre();
 
         direction = new Vector3d(fixedPoint.x - centre[0], fixedPoint.y - centre[1], fixedPoint.z - centre[2]);
@@ -54,7 +54,7 @@ public class AnchorEllipsoidConstrain implements EllipsoidConstrainStrategy {
     }
 
     @Override
-    public void postConstrain(QuickEllipsoid ellipsoid) {
+    public void postConstrain(Ellipsoid ellipsoid) {
         double[] centre = ellipsoid.getCentre();
         final double[] surfacePointAfter = ellipsoid
                 .getSurfacePoints(new double[][]{{direction.x, direction.y, direction.z}})[0];

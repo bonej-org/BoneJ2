@@ -114,7 +114,7 @@ public class EllipsoidOptimisationStrategy {
 	 *            the contact points of the ellipsoid
 	 * @return the torque vector
 	 */
-	static double[] calculateTorque(final QuickEllipsoid ellipsoid, final ArrayList<int[]> contactPoints) {
+	static double[] calculateTorque(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints) {
 
 		final double[] pc = ellipsoid.getCentre();
 		final double cx = pc[0];
@@ -131,7 +131,7 @@ public class EllipsoidOptimisationStrategy {
 		final double u = 2 / (c * c);
 
 		final double[][] rot = ellipsoid.getRotation();
-		final double[][] inv = QuickEllipsoid.transpose(rot);
+		final double[][] inv = Ellipsoid.transpose(rot);
 
 		double t0 = 0;
 		double t1 = 0;
@@ -182,7 +182,7 @@ public class EllipsoidOptimisationStrategy {
 	 *            the contact points
 	 * @return a double array that is the mean unit vector
 	 */
-	private static double[] contactPointUnitVector(final QuickEllipsoid ellipsoid,
+	private static double[] contactPointUnitVector(final Ellipsoid ellipsoid,
 			final ArrayList<int[]> contactPoints) {
 
 		final int nPoints = contactPoints.size();
@@ -266,7 +266,7 @@ public class EllipsoidOptimisationStrategy {
 	 *      "https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle">Rotation
 	 *      matrix from axis and angle</a>
 	 */
-	private static void rotateAboutAxis(final QuickEllipsoid ellipsoid, final double[] axis) {
+	private static void rotateAboutAxis(final Ellipsoid ellipsoid, final double[] axis) {
 		final double theta = 0.1;
 		final double sin = Math.sin(theta);
 		final double cos = Math.cos(theta);
@@ -311,7 +311,7 @@ public class EllipsoidOptimisationStrategy {
 		return normed;
 	}
 
-	static void wiggle(QuickEllipsoid ellipsoid) {
+	static void wiggle(Ellipsoid ellipsoid) {
 		final double b = Math.random() * 0.2 - 0.1;
 		final double c = Math.random() * 0.2 - 0.1;
 		final double a = Math.sqrt(1 - b * b - c * c);
@@ -335,7 +335,7 @@ public class EllipsoidOptimisationStrategy {
 		ellipsoid.rotate(rotation);
 	}
 
-	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints, final double a,
+	private void inflateToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final double a,
 			final double b, final double c, final int[][] boundaryPoints) {
 
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
@@ -352,7 +352,7 @@ public class EllipsoidOptimisationStrategy {
 		}
 	}
 
-	public QuickEllipsoid calculate(ArrayList<int[]> boundaryPointList, Vector3d seedPoint) {
+	public Ellipsoid calculate(ArrayList<int[]> boundaryPointList, Vector3d seedPoint) {
 		
 		final long start = System.currentTimeMillis();
 
@@ -376,7 +376,7 @@ public class EllipsoidOptimisationStrategy {
 		final double[] radii = {r, r, r};
 		final double[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
-		QuickEllipsoid ellipsoid = new QuickEllipsoid(radii, centre, axes);
+		Ellipsoid ellipsoid = new Ellipsoid(radii, centre, axes);
 		
   	final List<Double> volumeHistory = new ArrayList<>();
 		volumeHistory.add(ellipsoid.getVolume());
@@ -407,7 +407,7 @@ public class EllipsoidOptimisationStrategy {
 		// goal is maximal inscribed ellipsoid, maximal being defined by volume
 
 		// store a copy of the 'best ellipsoid so far'
-		QuickEllipsoid maximal = ellipsoid.copy();
+		Ellipsoid maximal = ellipsoid.copy();
 
 		// alternately try each axis
 		int totalIterations = 0;
@@ -563,7 +563,7 @@ public class EllipsoidOptimisationStrategy {
 		return minD - params.vectorIncrement;
 	}
 
-	private void orientAxes(QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints) {
+	private void orientAxes(Ellipsoid ellipsoid, ArrayList<int[]> contactPoints) {
 		// find the mean unit vector pointing to the points of contact from the
 		// centre
 		final double[] shortAxis = contactPointUnitVector(ellipsoid, contactPoints);
@@ -579,13 +579,13 @@ public class EllipsoidOptimisationStrategy {
 
 		// construct a rotation matrix
 		double[][] rotation = {shortAxis, middleAxis, longAxis};
-		rotation = QuickEllipsoid.transpose(rotation);
+		rotation = Ellipsoid.transpose(rotation);
 
 		// rotate ellipsoid to point this way...
 		ellipsoid.setRotation(rotation);
 	}
 
-	private void shrinkToFit(final QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
+	private void shrinkToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
 
 		// get the contact points
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
@@ -615,7 +615,7 @@ public class EllipsoidOptimisationStrategy {
 	 * @param contactPoints
 	 * @param boundaryPoints
 	 */
-	void turn(QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
+	void turn(Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
@@ -638,7 +638,7 @@ public class EllipsoidOptimisationStrategy {
 	 *         stack, if the smallest radius is less than half a pixel length, or if
 	 *         the volume of the ellipsoid exceeds that of the image stack
 	 */
-	boolean isInvalid(final QuickEllipsoid ellipsoid, final int w, final int h, final int d) {
+	boolean isInvalid(final Ellipsoid ellipsoid, final int w, final int h, final int d) {
 		double[][] surfacePoints = ellipsoid.getSurfacePoints(unitVectors);
 
 		final double minRadius = ellipsoid.getSortedRadii()[0];
@@ -661,7 +661,7 @@ public class EllipsoidOptimisationStrategy {
 
 	}
 
-	void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<int[]> contactPoints,
+	void findContactPoints(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints,
 			final int[][] boundaryPoints) {
 		
 		contactPoints.clear();
@@ -683,7 +683,7 @@ public class EllipsoidOptimisationStrategy {
 	 * @param contactPoints
 	 * @param seedPoint
 	 */
-	void bump(final QuickEllipsoid ellipsoid, final ArrayList<int[]> contactPoints, final double[] seedPoint) {
+	void bump(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints, final double[] seedPoint) {
 		
 		final double displacement = params.vectorIncrement / 2;
 
