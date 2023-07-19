@@ -84,7 +84,6 @@ import org.bonej.ops.ellipsoid.EllipsoidFactorOutputGenerator;
 import org.bonej.ops.ellipsoid.EllipsoidOptimisationStrategy;
 import org.bonej.ops.ellipsoid.OptimisationParameters;
 import org.bonej.ops.ellipsoid.Ellipsoid;
-import org.bonej.ops.ellipsoid.constrain.NoEllipsoidConstrain;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
@@ -409,9 +408,11 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			addPointsToDisplay(ridgePoints, seedImage, (byte) 1);
 
 			statusService.showStatus("Optimising distance-ridge-seeded ellipsoids from "+ridgePoints.size()+" seed points...");
+			
 			final BinaryFunctionOp<byte[][], Vector3d, Ellipsoid> medialOptimisation = Functions.binary(opService,
 					EllipsoidOptimisationStrategy.class, Ellipsoid.class, pixels, new Vector3d(),
-					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
+					new long[]{w, h, d},parameters);
+			
 			final AtomicInteger progress = new AtomicInteger();
 			final int points = ridgePoints.size();
 			final List<Ellipsoid> ridgePointEllipsoids = ridgePoints.parallelStream()
@@ -430,7 +431,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			statusService.showStatus("Optimising skeleton-seeded ellipsoids from "+skeletonPoints.size()+" seed points...");
 			final BinaryFunctionOp<byte[][], Vector3d, Ellipsoid> medialOptimisation = Functions.binary(opService,
 					EllipsoidOptimisationStrategy.class, Ellipsoid.class, pixels, new Vector3d(),
-					new long[]{w, h, d}, new NoEllipsoidConstrain(),parameters);
+					new long[]{w, h, d},parameters);
 			final AtomicInteger progress = new AtomicInteger();
 			final int points = skeletonPoints.size();
 			final List <Ellipsoid> skeletonSeededEllipsoids = skeletonPoints.parallelStream()

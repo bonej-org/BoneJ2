@@ -30,22 +30,14 @@ package org.bonej.ops.ellipsoid;
 
 import java.util.*;
 
-import org.bonej.ops.ellipsoid.constrain.EllipsoidConstrainStrategy;
 import org.bonej.geometry.Vectors;
-import org.joml.Vector3d;
 import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
-import org.scijava.plugin.Parameter;
-import org.scijava.plugin.Plugin;
-
-import net.imagej.ops.Op;
 
 /**
- * An Op that handles the stochastic optimisation of local ellipsoids for the Ellipsoid Factor algorithm
+ * Handles the stochastic optimisation of local ellipsoids for the Ellipsoid Factor algorithm
  * <p>
- *     Main inputs are a byte array representing the fore- and background, and a seeding point.
- *     The input {@link OptimisationParameters} regulate the optimisation.
- *     The input {@link EllipsoidConstrainStrategy} determine how the seed point is constrained.
+ *     Main inputs are an int[][] array representing the boundary points and a seeding point.
  *     The optimisation consists of a custom order of stochastically "bumping","wiggling" and "turning"
  *     the ellipsoid until it achieves a locally maximum volume.
  *     Returns a locally maximal ellipsoid.
@@ -54,23 +46,15 @@ import net.imagej.ops.Op;
  * @author Alessandro Felder
  */
 
-@Plugin(type = Op.class)
 public class EllipsoidOptimisationStrategy {
-	@Parameter
 	private long[] imageDimensions;
-	@Parameter
 	private LogService logService;
-	@Parameter(required = false)
 	private StatusService statusService;
-	@Parameter
-	private static EllipsoidConstrainStrategy constrainStrategy;
-	@Parameter(required = false)
 	private OptimisationParameters params = new OptimisationParameters(1, 100, 1.73, 0.435);
 	double stackVolume;
 	
 	/** unit vectors needed for testing whether ellipsoid is outside the volume */
 	private final double[][] unitVectors = Vectors.randomVectors(100);
-
 
 	private static double[] threeWayShuffle() {
 		final double[] a = {0, 0, 0};
@@ -152,7 +136,7 @@ public class EllipsoidOptimisationStrategy {
 			final double nx = s * x;
 			final double ny = t * y;
 			final double nz = u * z;
-			final double length = new Vector3d(nx, ny, nz).length();
+			final double length = Math.sqrt(nx * nx + ny * ny + nz * nz);
 			final double unx = nx / length;
 			final double uny = ny / length;
 			final double unz = nz / length;
@@ -352,7 +336,7 @@ public class EllipsoidOptimisationStrategy {
 		}
 	}
 
-	public Ellipsoid calculate(ArrayList<int[]> boundaryPointList, Vector3d seedPoint) {
+	public Ellipsoid calculate(ArrayList<int[]> boundaryPointList, int[] seedPoint) {
 		
 		final long start = System.currentTimeMillis();
 
@@ -367,11 +351,11 @@ public class EllipsoidOptimisationStrategy {
 		for (int i = 0; i < nBoundaryPoints; i++)
 			boundaryPoints[i] = boundaryPointList.get(i);
 		
-		// instantiate the ArrayList
+		// instantiate the contact point ArrayList
 		ArrayList<int[]> contactPoints = new ArrayList<>();
 		
 		// Instantiate a small spherical ellipsoid
-		final double[] centre = {seedPoint.get(0), seedPoint.get(1), seedPoint.get(2)};
+		final double[] centre = {seedPoint[0], seedPoint[1], seedPoint[2]};
 		double r = getInitialRadius(centre, boundaryPoints, contactPoints);		
 		final double[] radii = {r, r, r};
 		final double[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
@@ -416,9 +400,9 @@ public class EllipsoidOptimisationStrategy {
 		while (totalIterations < absoluteMaxIterations && noImprovementCount < params.maxIterations) {
 
 			// rotate a little bit
-			constrainStrategy.preConstrain(ellipsoid, seedPoint);
+//			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			wiggle(ellipsoid);
-			constrainStrategy.postConstrain(ellipsoid);
+//			constrainStrategy.postConstrain(ellipsoid);
 
 			// contract until no contact
 			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
@@ -438,14 +422,14 @@ public class EllipsoidOptimisationStrategy {
 
 			// bump a little away from the sides
 			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
-			constrainStrategy.preConstrain(ellipsoid, seedPoint);
+//			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			// if can't bump then do a wiggle
 			if (contactPoints.isEmpty()) {
 				wiggle(ellipsoid);
 			} else {
 				bump(ellipsoid, contactPoints, centre);
 			}
-			constrainStrategy.postConstrain(ellipsoid);
+//			constrainStrategy.postConstrain(ellipsoid);
 			// contract
 			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
 
@@ -463,9 +447,9 @@ public class EllipsoidOptimisationStrategy {
 				maximal = ellipsoid.copy();
 
 			// rotate a little bit
-			constrainStrategy.preConstrain(ellipsoid, seedPoint);
+//			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			turn(ellipsoid, contactPoints, boundaryPoints);
-			constrainStrategy.postConstrain(ellipsoid);
+//			constrainStrategy.postConstrain(ellipsoid);
 
 			// contract until no contact
 			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
@@ -640,6 +624,7 @@ public class EllipsoidOptimisationStrategy {
 	 */
 	boolean isInvalid(final Ellipsoid ellipsoid, final int w, final int h, final int d) {
 		double[][] surfacePoints = ellipsoid.getSurfacePoints(unitVectors);
+		final int nSurfacePoints = surfacePoints.length;
 
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
@@ -647,9 +632,10 @@ public class EllipsoidOptimisationStrategy {
 		}
 
 		int outOfBoundsCount = 0;
-		final int half = surfacePoints.length / 2;
+		final int half = nSurfacePoints / 2;
 
-		for (final double[] p : surfacePoints) {
+		for (int i = 0 ; i < nSurfacePoints; i++) {
+			final double[] p = surfacePoints[i];
 			if (isOutOfBounds((int) (p[0]), (int) (p[1]), (int) (p[2]), w, h, d))
 				outOfBoundsCount++;
 			if (outOfBoundsCount > half)
