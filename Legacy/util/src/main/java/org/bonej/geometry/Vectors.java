@@ -30,8 +30,6 @@
 
 package org.bonej.geometry;
 
-import java.util.stream.Stream;
-
 public final class Vectors {
 
 	private Vectors() {}
@@ -57,8 +55,11 @@ public final class Vectors {
 	 * @return 2D array (nVectors x 3) containing unit vectors
 	 */
 	public static double[][] randomVectors(final int nVectors) {
-		return Stream.generate(Vectors::randomVector).limit(nVectors).toArray(
-			double[][]::new);
+		final double[][] unitVectors = new double[nVectors][3];
+		for (int i = 0; i < nVectors; i++) {
+			unitVectors[i] = randomVector();
+		}
+		return unitVectors;
 	}
 
 	/**

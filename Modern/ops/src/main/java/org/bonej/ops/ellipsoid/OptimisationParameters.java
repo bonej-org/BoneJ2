@@ -34,17 +34,25 @@ package org.bonej.ops.ellipsoid;
  * @author Alessandro Felder
  */
 public class OptimisationParameters {
-    public final double vectorIncrement;
-    public final int nVectors;
     public final int contactSensitivity;
     public final int maxIterations;
     public final double maxDrift;
+		public final double vectorIncrement;
 
-    public OptimisationParameters(double inc, int n, int cs, int maxIt, double maxDr){
-        vectorIncrement = inc;
-        nVectors = n;
-        contactSensitivity = cs;
-        maxIterations = maxIt;
-        maxDrift = maxDr;
+    /**
+     * 
+     * @param contactSensitivity how many collisions between boundary points and the ellipsoid are
+     * tolerated before doing the next move.
+     * @param maximumIterations Number of times to try changing the ellipsoid before giving up
+     * @param maximumDrift Maximum distance the ellipsoid's centroid is allowed to drift from its seed point
+     * @param vectorIncrement Step size when moving through discrete space (in pixels)
+     */
+    public OptimisationParameters(int contactSensitivity, int maximumIterations,
+    	double maximumDrift, double vectorIncrement){
+    	
+        this.contactSensitivity = contactSensitivity;
+        this.maxIterations = maximumIterations;
+        this.maxDrift = maximumDrift;
+        this.vectorIncrement = vectorIncrement;
     }
 }

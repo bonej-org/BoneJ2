@@ -28,12 +28,6 @@
  */
 package org.bonej.ops.ellipsoid;
 
-import java.util.Arrays;
-
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
-
 /**
  * <p>
  * Represents an ellipsoid defined by its centroid, eigenvalues and 3x3
@@ -46,25 +40,19 @@ import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
  */
 public class QuickEllipsoid {
 
-	private RandomGenerator rng = new MersenneTwister();
-	private UnitSphereRandomVectorGenerator sphereRng = new UnitSphereRandomVectorGenerator(3,rng);
-	private final static int randomNumberRefreshmentPeriodicity = 100;
-	private final static int numberOfPreallocatedRandomNumbers = 150;
-	private int lastRefreshed = 0;
-	private double[][] sphereRandomVectors;
-	private double[] uniformRandomNumbers;
-
 	/**
 	 * Eigenvalue matrix. Size-based ordering is not performed. They are in the same
 	 * order as the eigenvectors.
 	 */
 	private final double[][] ed;
+	
 	/**
 	 * Centroid of ellipsoid (cx, cy, cz)
 	 */
 	private double cx;
 	private double cy;
 	private double cz;
+
 	/**
 	 * Radii (semiaxis lengths) of ellipsoid. Size-based ordering (e.g. a > b > c)
 	 * is not performed. They are in the same order as the eigenvalues and
@@ -79,6 +67,7 @@ public class QuickEllipsoid {
 	 * order as the eigenvalues.
 	 */
 	private double[][] ev;
+	
 	/**
 	 * 3x3 matrix describing shape of ellipsoid
 	 */
@@ -347,67 +336,29 @@ public class QuickEllipsoid {
 	public double[][] getSurfacePoints(final double[][] vectors) {
 		final int nPoints = vectors.length;
 		for (int p = 0; p < nPoints; p++) {
-			final double[] v = vectors[p];
-
-			// stretch the unit sphere into an ellipsoid
-			final double x = ra * v[0];
-			final double y = rb * v[1];
-			final double z = rc * v[2];
-			// rotate and translate the ellipsoid into position
-			final double vx = x * ev[0][0] + y * ev[0][1] + z * ev[0][2] + cx;
-			final double vy = x * ev[1][0] + y * ev[1][1] + z * ev[1][2] + cy;
-			final double vz = x * ev[2][0] + y * ev[2][1] + z * ev[2][2] + cz;
-
-			vectors[p] = new double[]{vx, vy, vz};
+			vectors[p] = getSurfacePoint(vectors[p]);
 		}
 		return vectors;
 	}
 
-	public double[][] getAxisAlignRandomlyDistributedSurfacePoints(int n) {
-		refreshRandomNumbersIfNeeded();
+	/**
+	 * Find the coordinates of the point on the ellipsoid found
+	 * by extending the given unit vector v from the centroid of this ellipsoid.
+	 *  
+	 * @param v 3-element unit vector
+	 * @return coordinates on the ellipsoid that the unit vector points to from the ellipsoid's centre
+	 */
+	public double[] getSurfacePoint(final double[] v) {
+		// stretch the unit sphere into an ellipsoid
+		final double x = ra * v[0];
+		final double y = rb * v[1];
+		final double z = rc * v[2];
+		// rotate and translate the ellipsoid into position
+		final double vx = x * ev[0][0] + y * ev[0][1] + z * ev[0][2] + cx;
+		final double vy = x * ev[1][0] + y * ev[1][1] + z * ev[1][2] + cy;
+		final double vz = x * ev[2][0] + y * ev[2][1] + z * ev[2][2] + cz;
 
-		final double[] sortedRadii = getSortedRadii();
-		final double muMax = sortedRadii[1] * sortedRadii[2];
-		final double[][] surfacePoints = new double[n][3];
-		int surfacePointsFound = 0;
-		int attemptCounter = 0;
-		while (surfacePointsFound < n) {
-			final double[] v =  (attemptCounter < numberOfPreallocatedRandomNumbers)? sphereRandomVectors[attemptCounter] : sphereRng.nextVector();
-			final double mu = getMu(v);
-			double rn = (attemptCounter < numberOfPreallocatedRandomNumbers) ? uniformRandomNumbers[attemptCounter] : rng.nextDouble();
-			if(rn <= mu / muMax) {
-				surfacePoints[surfacePointsFound] = new double[]{v[0], v[1], v[2]};
-				surfacePointsFound++;
-			}
-			attemptCounter++;
-		}
-		return surfacePoints;
-	}
-
-	private void refreshRandomNumbersIfNeeded() {
-		if(sphereRandomVectors == null)
-		{
-			sphereRandomVectors = new double[numberOfPreallocatedRandomNumbers][3];
-			uniformRandomNumbers = new double[numberOfPreallocatedRandomNumbers];
-		}
-
-		if((lastRefreshed % randomNumberRefreshmentPeriodicity) == 0)
-		{
-			for(int i = 0; i < numberOfPreallocatedRandomNumbers; i++)
-			{
-				sphereRandomVectors[i] = sphereRng.nextVector();
-				uniformRandomNumbers[i] = rng.nextDouble();
-			}
-		}
-		lastRefreshed++;
-	}
-
-	private double getMu(final double[] v) {
-		final double ra2 = ra * ra;
-		final double rb2 = rb * rb;
-		final double rc2 = rc * rc;
-		final double sqSum = ra2 * rc2 * v[0] * v[0] + ra2 * rb2 * v[2] * v[2] + rb2 * rc2 * v[0] * v[0];
-		return Math.sqrt(sqSum);
+		return new double[]{vx, vy, vz};
 	}
 
 	/**

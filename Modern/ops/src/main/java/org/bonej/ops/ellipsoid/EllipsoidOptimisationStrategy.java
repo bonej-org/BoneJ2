@@ -31,6 +31,7 @@ package org.bonej.ops.ellipsoid;
 import java.util.*;
 
 import org.bonej.ops.ellipsoid.constrain.EllipsoidConstrainStrategy;
+import org.bonej.geometry.Vectors;
 import org.joml.Vector3d;
 import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
@@ -38,7 +39,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import net.imagej.ops.Op;
-import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 
 /**
  * An Op that handles the stochastic optimisation of local ellipsoids for the Ellipsoid Factor algorithm
@@ -55,9 +55,9 @@ import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
  */
 
 @Plugin(type = Op.class)
-public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte[][], Vector3d, QuickEllipsoid> {
+public class EllipsoidOptimisationStrategy {
 	@Parameter
-	private long[] imageDimensions;//TODO shift into OptimisationParameters
+	private long[] imageDimensions;
 	@Parameter
 	private LogService logService;
 	@Parameter(required = false)
@@ -65,8 +65,11 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	@Parameter
 	private static EllipsoidConstrainStrategy constrainStrategy;
 	@Parameter(required = false)
-	private OptimisationParameters algorithmParameters = new OptimisationParameters(0.435,100,1,100,1.73);
+	private OptimisationParameters params = new OptimisationParameters(1, 100, 1.73, 0.435);
 	double stackVolume;
+	
+	/** unit vectors needed for testing whether ellipsoid is outside the volume */
+	private final double[][] unitVectors = Vectors.randomVectors(100);
 
 
 	private static double[] threeWayShuffle() {
@@ -79,30 +82,6 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		else
 			a[1] = 1;
 		return a;
-	}
-
-	private static double[][] findContactUnitVectors(final QuickEllipsoid ellipsoid,
-			final ArrayList<double[]> contactPoints) {
-		final double[][] unitVectors = new double[contactPoints.size()][3];
-		final double[] c = ellipsoid.getCentre();
-		final double cx = c[0];
-		final double cy = c[1];
-		final double cz = c[2];
-
-		for (int i = 0; i < contactPoints.size(); i++) {
-			final double[] p = contactPoints.get(i);
-			final double px = p[0] - cx;
-			final double py = p[1] - cy;
-			final double pz = p[2] - cz;
-
-			final double l = Math.sqrt(px * px + py * py + pz * pz);
-			final double x = px / l;
-			final double y = py / l;
-			final double z = pz / l;
-			final double[] u = {x, y, z};
-			unitVectors[i] = u;
-		}
-		return unitVectors;
 	}
 
 	/**
@@ -135,7 +114,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	 *            the contact points of the ellipsoid
 	 * @return the torque vector
 	 */
-	static double[] calculateTorque(final QuickEllipsoid ellipsoid, final Iterable<double[]> contactPoints) {
+	static double[] calculateTorque(final QuickEllipsoid ellipsoid, final ArrayList<int[]> contactPoints) {
 
 		final double[] pc = ellipsoid.getCentre();
 		final double cx = pc[0];
@@ -158,7 +137,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		double t1 = 0;
 		double t2 = 0;
 
-		for (final double[] p : contactPoints) {
+		for (final int[] p : contactPoints) {
 			// translate point to centre on origin
 			final double px = p[0] - cx;
 			final double py = p[1] - cy;
@@ -194,7 +173,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	}
 
 	/**
-	 * Calculate the mean unit vector between the ellipsoid's centroid and contact
+	 * Calculate the mean unit vector from the ellipsoid's centroid to the contact
 	 * points
 	 *
 	 * @param ellipsoid
@@ -204,7 +183,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	 * @return a double array that is the mean unit vector
 	 */
 	private static double[] contactPointUnitVector(final QuickEllipsoid ellipsoid,
-			final Collection<double[]> contactPoints) {
+			final ArrayList<int[]> contactPoints) {
 
 		final int nPoints = contactPoints.size();
 
@@ -218,11 +197,12 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		double xSum = 0;
 		double ySum = 0;
 		double zSum = 0;
-		for (final double[] p : contactPoints) {
+		for (int i = 0; i < nPoints; i++) {
+			int[] p = contactPoints.get(i);
 			final double x = p[0] - cx;
 			final double y = p[1] - cy;
 			final double z = p[2] - cz;
-			final double l = new Vector3d(x, y, z).length();
+			final double l = Math.sqrt(x * x + y * y + z * z);
 
 			xSum += x / l;
 			ySum += y / l;
@@ -232,7 +212,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		final double x = xSum / nPoints;
 		final double y = ySum / nPoints;
 		final double z = zSum / nPoints;
-		final double l = new Vector3d(x, y, z).length();
+		final double l = Math.sqrt(x * x + y * y + z * z);
 
 		return new double[]{x / l, y / l, z / l};
 	}
@@ -273,24 +253,6 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		final double y = z1 * x2 - x1 * z2;
 		final double z = x1 * y2 - y1 * x2;
 		return new double[]{x, y, z};
-	}
-
-	static void findContactPointsForGivenDirections(final QuickEllipsoid ellipsoid,
-			final ArrayList<double[]> contactPoints, final double[][] unitVectors, final byte[][] pixels, final int w,
-			final int h, final int d) {
-		contactPoints.clear();
-		final double[][] points = ellipsoid.getSurfacePoints(unitVectors);
-		for (final double[] p : points) {
-			final int x = (int) Math.floor(p[0]);
-			final int y = (int) Math.floor(p[1]);
-			final int z = (int) Math.floor(p[2]);
-			if (isOutOfBounds(x, y, z, w, h, d)) {
-				continue;
-			}
-			if (pixels[z][y * w + x] != -1) {
-				contactPoints.add(p);
-			}
-		}
 	}
 
 	/**
@@ -354,7 +316,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		final double c = Math.random() * 0.2 - 0.1;
 		final double a = Math.sqrt(1 - b * b - c * c);
 
-		final double k = Math.sqrt(a*a+b*b+c*c);
+		final double k = Math.sqrt(a * a + b * b + c * c);
 		// zeroth column, should be very close to [1, 0, 0]^T (mostly x)
 		final double[] zerothColumn = {a, b, c};
 
@@ -362,7 +324,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		final double[] firstColumn = {-b/k, a/k, 0};
 
 		// second column, should be very close to [0, 0, 1]^T
-		final double[] secondColumn = norm(new double[]{-a*c, -b*c, a*a+b*b});
+		final double[] secondColumn = norm(new double[]{-a * c, -b * c, a * a + b * b});
 
 		// array has subarrays as rows, need them as columns
 		double[][] rotation = {	{zerothColumn[0], firstColumn[0], secondColumn[0]},
@@ -373,26 +335,25 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		ellipsoid.rotate(rotation);
 	}
 
-	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final double a,
-			final double b, final double c, final byte[][] pixels, final int w, final int h, final int d) {
+	private void inflateToFit(final QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints, final double a,
+			final double b, final double c, final int[][] boundaryPoints) {
 
-		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 
-		final double av = a * algorithmParameters.vectorIncrement;
-		final double bv = b * algorithmParameters.vectorIncrement;
-		final double cv = c * algorithmParameters.vectorIncrement;
+		final double av = a * params.vectorIncrement;
+		final double bv = b * params.vectorIncrement;
+		final double cv = c * params.vectorIncrement;
 
 		int safety = 0;
-		while (contactPoints.size() < algorithmParameters.contactSensitivity && safety < algorithmParameters.maxIterations) {
+		while (contactPoints.size() < params.contactSensitivity && safety < params.maxIterations) {
 			ellipsoid.dilate(av, bv, cv);
-			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 			safety++;
 		}
 	}
 
-	@Override
-	public QuickEllipsoid calculate(byte[][] pixels, Vector3d seedPoint) {
-
+	public QuickEllipsoid calculate(ArrayList<int[]> boundaryPointList, Vector3d seedPoint) {
+		
 		final long start = System.currentTimeMillis();
 
 		final int w = (int) imageDimensions[0];
@@ -400,40 +361,38 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		final int d = (int) imageDimensions[2];
 		stackVolume = w * h * d;
 
+		//convert the list of boundary points to an array of 3D int coordinates
+		final int nBoundaryPoints = boundaryPointList.size();
+		final int[][] boundaryPoints = new int[nBoundaryPoints][3];
+		for (int i = 0; i < nBoundaryPoints; i++)
+			boundaryPoints[i] = boundaryPointList.get(i);
+		
+		// instantiate the ArrayList
+		ArrayList<int[]> contactPoints = new ArrayList<>();
+		
 		// Instantiate a small spherical ellipsoid
-		final double[] radii = {algorithmParameters.vectorIncrement, algorithmParameters.vectorIncrement, algorithmParameters.vectorIncrement};
 		final double[] centre = {seedPoint.get(0), seedPoint.get(1), seedPoint.get(2)};
+		double r = getInitialRadius(centre, boundaryPoints, contactPoints);		
+		final double[] radii = {r, r, r};
 		final double[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
 		QuickEllipsoid ellipsoid = new QuickEllipsoid(radii, centre, axes);
-
-		final List<Double> volumeHistory = new ArrayList<>();
-		volumeHistory.add(ellipsoid.getVolume());
-
-		// instantiate the ArrayList
-		ArrayList<double[]> contactPoints = new ArrayList<>();
-
-		// dilate the sphere until it hits the background
-		while (isContained(ellipsoid, contactPoints, pixels, w, h, d)) {
-			constrainStrategy.preConstrain(ellipsoid, seedPoint);
-			ellipsoid.dilate(algorithmParameters.vectorIncrement, algorithmParameters.vectorIncrement, algorithmParameters.vectorIncrement);
-			constrainStrategy.postConstrain(ellipsoid);
-		}
-
+		
+  	final List<Double> volumeHistory = new ArrayList<>();
 		volumeHistory.add(ellipsoid.getVolume());
 
 		orientAxes(ellipsoid, contactPoints);
 
 		// shrink the ellipsoid slightly
-		shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+		shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
 		ellipsoid.contract(0.1);
 
 		// dilate other two axes until number of contact points increases
 		// by contactSensitivity number of contacts
 
-		while (contactPoints.size() < algorithmParameters.contactSensitivity) {
-			ellipsoid.dilate(0, algorithmParameters.vectorIncrement, algorithmParameters.vectorIncrement);
-			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+		while (contactPoints.size() < params.contactSensitivity) {
+			ellipsoid.dilate(0, params.vectorIncrement, params.vectorIncrement);
+			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying at initial oblation");
@@ -453,8 +412,8 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		// alternately try each axis
 		int totalIterations = 0;
 		int noImprovementCount = 0;
-		final int absoluteMaxIterations = algorithmParameters.maxIterations * 10;
-		while (totalIterations < absoluteMaxIterations && noImprovementCount < algorithmParameters.maxIterations) {
+		final int absoluteMaxIterations = params.maxIterations * 10;
+		while (totalIterations < absoluteMaxIterations && noImprovementCount < params.maxIterations) {
 
 			// rotate a little bit
 			constrainStrategy.preConstrain(ellipsoid, seedPoint);
@@ -462,11 +421,11 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 			constrainStrategy.postConstrain(ellipsoid);
 
 			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
 
 			// dilate an axis
 			double[] abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
@@ -478,7 +437,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 				maximal = ellipsoid.copy();
 
 			// bump a little away from the sides
-			findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			// if can't bump then do a wiggle
 			if (contactPoints.isEmpty()) {
@@ -488,11 +447,11 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 			}
 			constrainStrategy.postConstrain(ellipsoid);
 			// contract
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
 
 			// dilate an axis
 			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
@@ -505,15 +464,15 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 
 			// rotate a little bit
 			constrainStrategy.preConstrain(ellipsoid, seedPoint);
-			turn(ellipsoid, contactPoints, pixels, w, h, d);
+			turn(ellipsoid, contactPoints, boundaryPoints);
 			constrainStrategy.postConstrain(ellipsoid);
 
 			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, pixels, w, h, d);
+			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
 
 			// dilate an axis
 			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], pixels, w, h, d);
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
@@ -570,7 +529,41 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		return ellipsoid;
 	}
 
-	private void orientAxes(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints) {
+	/**
+	 * Get an initial radius for an ellipsoid, which is a sphere that just fits in the boundary.
+	 * Also set an initial contact point to help orient the axes for the first time
+	 * 
+	 * @param centre
+	 * @param boundaryPoints
+	 * @param contactPoints
+	 * @return radius of the starting ellipsoid 
+	 */
+	private double getInitialRadius(final double[] centre,
+		final int[][] boundaryPoints, ArrayList<int[]> contactPoints){
+		
+		double cx = centre[0];
+		double cy = centre[1];
+		double cz = centre[2];
+		
+		double minD = Double.MAX_VALUE;
+		final int n = boundaryPoints.length;
+		for (int i = 0; i < n; i++) {
+			final int[] p = boundaryPoints[i];
+			final double dx = p[0] - cx;
+			final double dy = p[1] - cy;
+			final double dz = p[2] - cz;
+			final double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+			if (d < minD) {
+				minD = d;
+				contactPoints.clear();
+				contactPoints.add(p);
+			}
+			
+		}
+		return minD - params.vectorIncrement;
+	}
+
+	private void orientAxes(QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints) {
 		// find the mean unit vector pointing to the points of contact from the
 		// centre
 		final double[] shortAxis = contactPointUnitVector(ellipsoid, contactPoints);
@@ -592,20 +585,21 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		ellipsoid.setRotation(rotation);
 	}
 
-	private void shrinkToFit(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels,
-			final int w, final int h, final int d) {
+	private void shrinkToFit(final QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
 
 		// get the contact points
-		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 
-		// get the unit vectors to the contact points
-		final double[][] unitVectors = findContactUnitVectors(ellipsoid, contactPoints);
-
+		final int nContactPoints = contactPoints.size();
+		final int[][] contactPointArray = new int[nContactPoints][3];
+		for (int i = 0; i < nContactPoints; i++)
+			contactPointArray[i] = contactPoints.get(i);			
+		
 		// contract until no contact
 		int safety = 0;
-		while (!contactPoints.isEmpty() && safety < algorithmParameters.maxIterations) {
+		while (!contactPoints.isEmpty() && safety < params.maxIterations) {
 			ellipsoid.contract(0.01);
-			findContactPointsForGivenDirections(ellipsoid, contactPoints, unitVectors, pixels, w, h, d);
+			findContactPoints(ellipsoid, contactPoints, contactPointArray);
 			safety++;
 		}
 
@@ -616,42 +610,17 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	 * Rotate the ellipsoid theta radians around the unit vector formed by the sum
 	 * of torques effected by unit normals acting on the surface of the ellipsoid
 	 * (if the ellipsoid surface is in contact with the foreground boundary)
-	 *
+	 * 
 	 * @param ellipsoid
-	 *            the ellipsoid
-	 * @param w
-	 *            the image dimension in x
-	 * @param h
-	 *            the image dimension in y
-	 * @param d
-	 *            the image dimension in z
+	 * @param contactPoints
+	 * @param boundaryPoints
 	 */
-	void turn(QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints, final byte[][] pixels, final int w,
-			final int h, final int d) {
-		findContactPoints(ellipsoid, contactPoints, pixels, w, h, d);
+	void turn(QuickEllipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
+		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
 			rotateAboutAxis(ellipsoid, norm(torque));
 		}
-	}
-
-	private boolean isContained(final QuickEllipsoid ellipsoid, ArrayList<double[]> contactPoints,
-			final byte[][] pixels, final int w, final int h, final int d) {
-		final double[][] points = ellipsoid
-				.getSurfacePoints(ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(algorithmParameters.nVectors));
-		for (final double[] p : points) {
-			final int x = (int) Math.floor(p[0]);
-			final int y = (int) Math.floor(p[1]);
-			final int z = (int) Math.floor(p[2]);
-			if (isOutOfBounds(x, y, z, w, h, d))
-				continue;
-			if (pixels[z][y * w + x] != -1) {
-				contactPoints.clear();
-				contactPoints.addAll(Arrays.asList(points));
-				return false;
-			}
-		}
-		return true;
 	}
 
 	/**
@@ -670,7 +639,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 	 *         the volume of the ellipsoid exceeds that of the image stack
 	 */
 	boolean isInvalid(final QuickEllipsoid ellipsoid, final int w, final int h, final int d) {
-		double[][] surfacePoints = ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(algorithmParameters.nVectors);
+		double[][] surfacePoints = ellipsoid.getSurfacePoints(unitVectors);
 
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
@@ -678,7 +647,7 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 		}
 
 		int outOfBoundsCount = 0;
-		final int half = algorithmParameters.nVectors / 2;
+		final int half = surfacePoints.length / 2;
 
 		for (final double[] p : surfacePoints) {
 			if (isOutOfBounds((int) (p[0]), (int) (p[1]), (int) (p[2]), w, h, d))
@@ -692,26 +661,45 @@ public class EllipsoidOptimisationStrategy extends AbstractBinaryFunctionOp<byte
 
 	}
 
-	void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<double[]> contactPoints,
-			final byte[][] pixels, final int w, final int h, final int d) {
-		findContactPointsForGivenDirections(ellipsoid, contactPoints,
-				ellipsoid.getAxisAlignRandomlyDistributedSurfacePoints(algorithmParameters.nVectors), pixels, w, h, d);
+	void findContactPoints(final QuickEllipsoid ellipsoid, final ArrayList<int[]> contactPoints,
+			final int[][] boundaryPoints) {
+		
+		contactPoints.clear();
+		
+		final int n = boundaryPoints.length;
+		
+		for (int i = 0; i < n; i++) {
+			final int[] p = boundaryPoints[i]; 
+			if (ellipsoid.contains(p[0], p[1], p[2]))
+				contactPoints.add(p);
+		}
 	}
 
-	void bump(final QuickEllipsoid ellipsoid, final Collection<double[]> contactPoints, final double[] seedPoint) {
-		final double displacement = algorithmParameters.vectorIncrement / 2;
+	/**
+	 * Changed this to subtract along the contact vector which (I think)
+	 * moves the centroid AWAY from the contact point.
+	 * 
+	 * @param ellipsoid
+	 * @param contactPoints
+	 * @param seedPoint
+	 */
+	void bump(final QuickEllipsoid ellipsoid, final ArrayList<int[]> contactPoints, final double[] seedPoint) {
+		
+		final double displacement = params.vectorIncrement / 2;
 
 		final double[] c = ellipsoid.getCentre();
 		final double[] vector = contactPointUnitVector(ellipsoid, contactPoints);
-		final double x = c[0] + vector[0] * displacement;
-		final double y = c[1] + vector[1] * displacement;
-		final double z = c[2] + vector[2] * displacement;
+		final double x = c[0] - vector[0] * displacement;
+		final double y = c[1] - vector[1] * displacement;
+		final double z = c[2] - vector[2] * displacement;
 
-		Vector3d distance = new Vector3d(seedPoint[0], seedPoint[1], seedPoint[2]);
-		distance.sub(new Vector3d(x, y, z));
-		if (distance.length() < algorithmParameters.maxDrift)
+		final double xD = x - seedPoint[0];
+		final double yD = y - seedPoint[1];
+		final double zD = z - seedPoint[2];
+		final double drift = Math.sqrt(xD * xD + yD * yD + zD * zD); 
+				
+		if (drift < params.maxDrift)
 			ellipsoid.setCentroid(x, y, z);
 	}
-
 
 }
