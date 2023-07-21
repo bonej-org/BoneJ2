@@ -1,7 +1,6 @@
 package org.bonej.ops.ellipsoid;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Find the pixels visible from seed points for further use in fitting
@@ -48,10 +47,10 @@ public class RayCaster {
 	 * @param pixels
 	 * @return
 	 */
-	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<int[]> seedPoints,
+	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final int[][] seedPoints,
 		final byte[][] pixels, final int w, final int h, final int d) {
 
-		final int nSkeletonPoints = seedPoints.size();
+		final int nSkeletonPoints = seedPoints.length;
 
 		ArrayList<Integer> sliceNumbers = new ArrayList<>();
 		@SuppressWarnings("unchecked")
@@ -81,16 +80,16 @@ public class RayCaster {
 							ArrayList<int[]> occludedSkeletonPoints = new ArrayList<>();
 							
 							for (int i = 0; i < boxSampling; i++) {
-								int[] v = seedPoints.get(i);
-								final int qx = v[0];
-								final int qy = v[1];
-								final int qz = v[2];
+								final int[] p = seedPoints[i];
+								final int qx = p[0];
+								final int qy = p[1];
+								final int qz = p[2];
 								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, STEP_SIZE,
 									pixels);
 								if (isAVisiblePoint) {
-									visibleSkeletonPoints.add(v);
+									visibleSkeletonPoints.add(p);
 								} else {
-									occludedSkeletonPoints.add(v);
+									occludedSkeletonPoints.add(p);
 								}
 							}
 							
@@ -117,22 +116,22 @@ public class RayCaster {
 									zMax = boundingBox[5];
 
 								}
-								int[] v = seedPoints.get(i);
-								final int qx = v[0];
-								final int qy = v[1];
-								final int qz = v[2];
+								final int[] p = seedPoints[i];
+								final int qx = p[0];
+								final int qy = p[1];
+								final int qz = p[2];
 								//don't check visibility of seed points outside the bounding box
 								if (qx < xMin || qy < yMin || qz < zMin || qx > xMax || qy > yMax || qz > zMax)
 									continue;
 								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, STEP_SIZE,
 									pixels);
 								if (isAVisiblePoint) {
-									// add this surface pixel (x, y, z) to the list of points visible from this seed point (i)
+									// add this surface pixel (x, y, z) to the list of points visible from this seed point (p)
 									//which is what we need to feed to Ellipsoid.contains() later.
 									threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
-									visibleSkeletonPoints.add(v);
+									visibleSkeletonPoints.add(p);
 								} else {
-									occludedSkeletonPoints.add(v);
+									occludedSkeletonPoints.add(p);
 								}
 							}
 						}

@@ -222,14 +222,17 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			return;
 		}
 		
-//
-//			//assign one ellipsoid to each FG voxel
-//			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-//			final long start = System.currentTimeMillis();
-//			//TODO fix - it's uber-slow.
-//			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, ellipsoids);
-//			final long stop = System.currentTimeMillis();
-//			logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
+
+		//assign one ellipsoid to each FG voxel
+		statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
+		final long start = System.currentTimeMillis();
+		
+			//TODO fix - it's uber-slow.
+			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, ellipsoids);
+
+		final long stop = System.currentTimeMillis();
+		
+		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 //
 //			//add result of this run to overall result
 //			//TODO do not match Op every time
@@ -435,13 +438,13 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		}
 		
 		//thin out the seed points by the skip ratio setting
-		final List<int[]> seedPoints = applySkipRatio(allSeedPoints);
+		final List<int[]> seedPointsList = applySkipRatio(allSeedPoints);
 		
 		//optionally make an image containing the seed points, usually for debugging purposes
 		if(showSecondaryImages)	{
 			//set up an image for the seed points
 			final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
-			addPointsToDisplay(seedPoints, seedImage, (byte) 1);
+			addPointsToDisplay(seedPointsList, seedImage, (byte) 1);
 			final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
 			final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
 			final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
@@ -457,58 +460,71 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		//by the ordered way they were added to the list
 		//need to do it here to maintain a common index between the seed points and
 		//their associated boundary point lists
-		Collections.shuffle(seedPoints);
-		 
+		Collections.shuffle(seedPointsList);
+		final int nSeedPoints = seedPointsList.size();
+		
+		final int[][] seedPoints = new int[nSeedPoints][3];
+		
+		for (int i = 0; i < nSeedPoints; i++)
+			seedPoints[i] = seedPointsList.get(i);
+		
 		//get the boundary points by raytracing from surface pixels to seed points
-		ArrayList<ArrayList<int[]>> boundaryPointList = RayCaster.getVisibleClouds(seedPoints, pixels, w, h, d);
+		ArrayList<ArrayList<int[]>> boundaryPointLists = RayCaster.getVisibleClouds(seedPoints, pixels, w, h, d);
 				
 		//do the ellipsoid optimisation "runs" times, reusing the seed points and boundary points
 		for (int i = 0; i < runs; i++) {
 
-			statusService.showStatus("Optimising ellipsoids from "+seedPoints.size()+" seed points..." +
+			statusService.showStatus("Optimising ellipsoids from "+nSeedPoints+" seed points..." +
 					" (run "+ (i + 1) +"/"+ runs +")");
 
-			final int points = seedPoints.size();
-
 			//the list of ellipsoids for a single run
-			Ellipsoid[] ellipsoidArray = new Ellipsoid[points];
+			Ellipsoid[] ellipsoidArray = new Ellipsoid[nSeedPoints];
 			
 			final AtomicInteger progress = new AtomicInteger();
-			final ArrayList<Integer> seedNumbers = new ArrayList<>();
 			
 			//TODO keep an eye on whether reusing this instance across all the threads
 			//is thread safe
 			EllipsoidOptimisationStrategy optimiser = new EllipsoidOptimisationStrategy(
 				new long[] {w, h, d}, logService, statusService, parameters);
 			
-			for (int j = 0; j < points; j++) {
-				seedNumbers.add(j);
-			}
+			IntStream seeds = IntStream.range(0, nSeedPoints);
 			
 			//iterate over all the seed points and get an optimised ellipsoid for each.
 			// here, j is a common index to get the seed point that relates to the same boundary point
-			seedNumbers.parallelStream()
+			seeds.parallel()
 				//get a status update for user feedback
-				.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
+				.peek(pk -> statusService.showProgress(progress.getAndIncrement(), nSeedPoints))
 				
 				//iterate over all the seed numbers
 				.forEach(j -> {
 				
-				final ArrayList<int[]> boundaryPoints = boundaryPointList.get(j);
-				final int[] seedPoint = seedPoints.get(j);
+				final int[] seedPoint = seedPoints[j];
+				final ArrayList<int[]> boundaryPointList = boundaryPointLists.get(j);
+				
+				//convert the list of boundary points to an array of 3D int coordinates
+				final int nBoundaryPoints = boundaryPointList.size();
+				final int[][] boundaryPoints = new int[nBoundaryPoints][3];
+				for (int p = 0; p < nBoundaryPoints; p++)
+					boundaryPoints[p] = boundaryPointList.get(p);
 								
 				Ellipsoid ellipsoid = optimiser.calculate(boundaryPoints, seedPoint);
 				ellipsoidArray[j] = ellipsoid;				
 			});
 			
-			List<Ellipsoid> ellipsoids = new ArrayList<>(points);
-			Collections.addAll(ellipsoids, ellipsoidArray);
-			
+			List<Ellipsoid> ellipsoids = new ArrayList<>(nSeedPoints);
+						
 			//remove nulls that resulted from failed optimisation attempts
 			//the streamy filtery way
-			ellipsoids = ellipsoids.stream().filter(Objects::nonNull).collect(Collectors.toList());
+			//Collections.addAll(ellipsoids, ellipsoidArray);
+			//ellipsoids = ellipsoids.stream().filter(Objects::nonNull).collect(Collectors.toList());
 			//or the non-streamy way
 			//ellipsoids.removeIf(Objects::isNull);
+			
+			//or the C-style way
+			for (int p = 0; p < nSeedPoints; p++) {
+				if (ellipsoidArray[p] != null)
+					ellipsoids.add(ellipsoidArray[p]);
+			}
 
 			ellipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 
@@ -609,26 +625,37 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		return assignedVoxels.get();
 	}
 
-	private Img<IntType> assignEllipsoidIDs(final Img<BitType> mask, final List<Ellipsoid> ellipsoids) {
+	/**
+	 *TODO redo this with performance in mind 
+	 * 
+	 * 
+	 * @param mask
+	 * @param ellipsoids
+	 * @return
+	 */
+	private Img<IntType> assignEllipsoidIDs(final Img<BitType> mask, final Ellipsoid[][] ellipsoids) {
 
-		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask.dimension(1),weightedAverageN, mask.dimension(2));
-		idImage.forEach(c -> c.setInteger(-1));
-
-		for(int nn=0;nn<weightedAverageN;nn++) {
-			final int n = nn;
-			final Map<Ellipsoid, Integer> iDs = IntStream.range(0, ellipsoids.size()).boxed()
-					.collect(toMap(ellipsoids::get, Function.identity()));
-			final LongStream zRange = LongStream.range(0, mask.dimension(2));
-			zRange.parallel().forEach(z -> {
-				// multiply by image unit? make more intelligent bounding box?
-				final List<Ellipsoid> localEllipsoids = ellipsoids.stream()
-						.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
-				final long[] mins = {0, 0, z};
-				final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
-				final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs).localizingCursor();
-				colourSlice(idImage, maskSlice, localEllipsoids, iDs, n);
-			});
-		}
+		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask.dimension(1), weightedAverageN, mask.dimension(2));
+		
+//		idImage.forEach(c -> c.setInteger(-1));
+//
+//		for(int nn = 0; nn < weightedAverageN; nn++) {
+//			final int n = nn;
+//			final Map<Ellipsoid, Integer> iDs = IntStream.range(0, ellipsoids.length).boxed()
+//					.collect(toMap(ellipsoids::get, Function.identity()));
+//			
+//			final LongStream zRange = LongStream.range(0, mask.dimension(2));
+//			
+//			zRange.parallel().forEach(z -> {
+//				// multiply by image unit? make more intelligent bounding box?
+//				final List<Ellipsoid> localEllipsoids = ellipsoids.stream()
+//						.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
+//				final long[] mins = {0, 0, z};
+//				final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
+//				final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs).localizingCursor();
+//				colourSlice(idImage, maskSlice, localEllipsoids, iDs, n);
+//			});
+//		}
 		return idImage;
 	}
 

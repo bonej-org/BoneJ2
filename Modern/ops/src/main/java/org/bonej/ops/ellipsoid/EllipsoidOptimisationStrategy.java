@@ -345,7 +345,7 @@ public class EllipsoidOptimisationStrategy {
 		}
 	}
 
-	public Ellipsoid calculate(ArrayList<int[]> boundaryPointList, int[] seedPoint) {
+	public Ellipsoid calculate(int[][] boundaryPoints, int[] seedPoint) {
 		
 		final long start = System.currentTimeMillis();
 
@@ -354,12 +354,6 @@ public class EllipsoidOptimisationStrategy {
 		final int d = (int) imageDimensions[2];
 		stackVolume = w * h * d;
 
-		//convert the list of boundary points to an array of 3D int coordinates
-		final int nBoundaryPoints = boundaryPointList.size();
-		final int[][] boundaryPoints = new int[nBoundaryPoints][3];
-		for (int i = 0; i < nBoundaryPoints; i++)
-			boundaryPoints[i] = boundaryPointList.get(i);
-		
 		// instantiate the contact point ArrayList
 		ArrayList<int[]> contactPoints = new ArrayList<>();
 		
@@ -436,7 +430,7 @@ public class EllipsoidOptimisationStrategy {
 			if (contactPoints.isEmpty()) {
 				wiggle(ellipsoid);
 			} else {
-				bump(ellipsoid, contactPoints, centre);
+				bump(ellipsoid, contactPoints, seedPoint);
 			}
 //			constrainStrategy.postConstrain(ellipsoid);
 			// contract
@@ -674,11 +668,14 @@ public class EllipsoidOptimisationStrategy {
 	 * Changed this to subtract along the contact vector which (I think)
 	 * moves the centroid AWAY from the contact point.
 	 * 
+	 * If the bump would move the centroid further from the seed point
+	 * than the maximum drift allowed, then it is ignored.
+	 * 
 	 * @param ellipsoid
 	 * @param contactPoints
 	 * @param seedPoint
 	 */
-	void bump(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints, final double[] seedPoint) {
+	void bump(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints, final int[] seedPoint) {
 		
 		final double displacement = params.vectorIncrement / 2;
 
