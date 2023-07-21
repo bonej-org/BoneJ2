@@ -92,8 +92,6 @@ import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.joml.Vector3d;
-import org.joml.Vector3dc;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
@@ -421,7 +419,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final OptimisationParameters parameters = new OptimisationParameters(contactSensitivity, maxIterations, maxDrift, vectorIncrement);
 		
 		//Make a list to hold all the seed points
-		final List<Vector3d> allSeedPoints = new ArrayList<>();
+		final List<int[]> allSeedPoints = new ArrayList<>();
 		
 		//add the distance ridge seed points if that was chosen
 		if (seedOnDistanceRidge) {
@@ -434,7 +432,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		}
 		
 		//thin out the seed points by the skip ratio setting
-		final List<Vector3d> seedPoints = applySkipRatio(allSeedPoints);
+		final List<int[]> seedPoints = applySkipRatio(allSeedPoints);
 		
 		//optionally make an image containing the seed points, usually for debugging purposes
 		if(showSecondaryImages)	{
@@ -494,13 +492,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 				.forEach(j -> {
 				
 				final ArrayList<int[]> boundaryPoints = boundaryPointList.get(j);
-				final Vector3d seedVector = seedPoints.get(j);
-				
-				final int[] seedPoint = new int[3];
-				seedPoint[0] = (int) seedVector.x;
-				seedPoint[1] = (int) seedVector.y;
-				seedPoint[2] = (int) seedVector.z;
-				
+				final int[] seedPoint = seedPoints.get(j);
+								
 				Ellipsoid ellipsoid = optimiser.calculate(boundaryPoints, seedPoint);
 				ellipsoidArray[j] = ellipsoid;				
 			});
@@ -528,19 +521,19 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 	// region --seed point finding--
 
-	private List<Vector3d> getSkeletonPoints() {
+	private List<int[]> getSkeletonPoints() {
 		final ImagePlus skeleton = copyAsBinaryImagePlus(inputAsBitType);
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-		final List<Vector3d> skeletonPoints = new ArrayList<>();
+		final List<int[]> skeletonPoints = new ArrayList<>();
 		final ImageStack skeletonStack = skeleton.getImageStack();
 		for (int z = 0; z < skeleton.getStackSize(); z++) {
 			final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
 			for (int x = 0; x < skeleton.getWidth(); x++) {
 				for (int y = 0; y < skeleton.getHeight(); y++) {
 					if (slicePixels[y * skeleton.getWidth() + x] != 0) {
-						skeletonPoints.add(new Vector3d(x, y, z));
+						skeletonPoints.add(new int[] {x, y, z});
 					}
 				}
 			}
@@ -567,18 +560,20 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		return imagePlus;
 	}
 
-	private List<Vector3d> getDistanceRidgePoints(final ImgPlus<BitType> imp) {
-		final List<Vector3d> ridgePoints = (List<Vector3d>) opService.run(FindRidgePoints.class, imp, distanceThreshold);
+	private List<int[]> getDistanceRidgePoints(final ImgPlus<BitType> imp) {
+		final List<int[]> ridgePoints = (List<int[]>) opService.run(FindRidgePoints.class, imp, distanceThreshold);//TODO
 		logService.info("Found " + ridgePoints.size() + " distance-ridge-based points");
 		return ridgePoints;
 	}
 
-	private List<Vector3d> applySkipRatio(final List<Vector3d> seedPoints) {
+	private List<int[]> applySkipRatio(final List<int[]> seedPoints) {
 		if (skipRatio > 1) {
-			final int limit = seedPoints.size() / skipRatio;
-			final Random random = new Random();
-			final int skipper = random.nextInt(skipRatio);
-			return Stream.iterate(skipper, i -> i + skipRatio).limit(limit).map(seedPoints::get).collect(toList());
+			final int nSeedPoints = seedPoints.size();
+			List<int[]> trimmedList = new ArrayList<>(nSeedPoints / skipRatio);
+			final int randomStart = (new Random()).nextInt(skipRatio);
+			for (int i = randomStart; i < nSeedPoints; i += skipRatio )
+				trimmedList.add(seedPoints.get(i));
+			return trimmedList;
 		}
 		return seedPoints;
 	}
@@ -590,11 +585,11 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	 * @param seedImage
 	 * @param i
 	 */
-	private void addPointsToDisplay(final List<Vector3d> seedPoints, final Img<ByteType> seedImage,
+	private void addPointsToDisplay(final List<int[]> seedPoints, final Img<ByteType> seedImage,
 									final byte i) {
 		final RandomAccess<ByteType> access = seedImage.randomAccess();
-		for (final Vector3d p : seedPoints) {
-			access.setPosition(new int[]{(int) p.x, (int) p.y, (int) p.z});
+		for (final int[] p : seedPoints) {
+			access.setPosition(p);
 			access.get().set(i);
 		}
 	}
@@ -634,31 +629,31 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		return idImage;
 	}
 
+	//TODO this seems a bit inefficient
 	private void colourSlice(final RandomAccessible<IntType> idImage, final Cursor<BitType> mask,
 							 final Collection<Ellipsoid> localEllipsoids, final Map<Ellipsoid, Integer> iDs,
 							 final int nLargest) {
-		final long[] coordinates = new long[mask.numDimensions()];
+		final int[] point = new int[mask.numDimensions()];
 		while (mask.hasNext()) {
 			mask.fwd();
 			if (!mask.get().get()) {
 				continue;
 			}
-			mask.localize(coordinates);
-			final Vector3d point = new Vector3d(coordinates[0] + 0.5, coordinates[1] + 0.5, coordinates[2] + 0.5);
+			mask.localize(point);
 			colourID(localEllipsoids, idImage, point, iDs, nLargest);
 		}
 	}
 
 	private void colourID(final Collection<Ellipsoid> localEllipsoids,
-						  final RandomAccessible<IntType> ellipsoidIdentityImage, final Vector3dc point,
+						  final RandomAccessible<IntType> ellipsoidIdentityImage, final int[] point,
 						  final Map<Ellipsoid, Integer> iDs, int nLargest) {
 		final Optional<Ellipsoid> candidate = localEllipsoids.stream()
-				.filter(e -> e.contains(point.x(), point.y(), point.z())).skip(nLargest).findFirst();
+				.filter(e -> e.contains(point[0], point[1], point[2])).skip(nLargest).findFirst();
 		if (!candidate.isPresent()) {
 			return;
 		}
 		final RandomAccess<IntType> eIDRandomAccess = ellipsoidIdentityImage.randomAccess();
-		eIDRandomAccess.setPosition(new long[]{(long) point.x(), (long) point.y(), (long) nLargest, (long) point.z()});
+		eIDRandomAccess.setPosition(new long[]{point[0], point[1], nLargest, point[2]});
 		final Ellipsoid ellipsoid = candidate.get();
 		eIDRandomAccess.get().set(iDs.get(ellipsoid));
 	}

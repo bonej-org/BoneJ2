@@ -1,10 +1,7 @@
 package org.bonej.ops.ellipsoid;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-
-import org.joml.Vector3d;
 
 /**
  * Find the pixels visible from seed points for further use in fitting
@@ -51,7 +48,7 @@ public class RayCaster {
 	 * @param pixels
 	 * @return
 	 */
-	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<Vector3d> seedPoints,
+	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<int[]> seedPoints,
 		final byte[][] pixels, final int w, final int h, final int d) {
 
 		final int nSkeletonPoints = seedPoints.size();
@@ -80,15 +77,15 @@ public class RayCaster {
 							//need this because sometimes there may be fewer seed points than box sampling points.
 							final int boxSampling = Math.min(BOX_SAMPLE_SIZE, nSkeletonPoints);
 
-							ArrayList<Vector3d> visibleSkeletonPoints = new ArrayList<>();
-							ArrayList<Vector3d> occludedSkeletonPoints = new ArrayList<>();
+							ArrayList<int[]> visibleSkeletonPoints = new ArrayList<>();
+							ArrayList<int[]> occludedSkeletonPoints = new ArrayList<>();
 							
 							for (int i = 0; i < boxSampling; i++) {
-								Vector3d v = seedPoints.get(i);
-								final int qx = (int) v.x;
-								final int qy = (int) v.y;
-								final int qz = (int) v.z;
-								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
+								int[] v = seedPoints.get(i);
+								final int qx = v[0];
+								final int qy = v[1];
+								final int qz = v[2];
+								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, STEP_SIZE,
 									pixels);
 								if (isAVisiblePoint) {
 									visibleSkeletonPoints.add(v);
@@ -120,14 +117,14 @@ public class RayCaster {
 									zMax = boundingBox[5];
 
 								}
-								Vector3d v = seedPoints.get(i);
-								final int qx = (int) v.x;
-								final int qy = (int) v.y;
-								final int qz = (int) v.z;
+								int[] v = seedPoints.get(i);
+								final int qx = v[0];
+								final int qy = v[1];
+								final int qz = v[2];
 								//don't check visibility of seed points outside the bounding box
 								if (qx < xMin || qy < yMin || qz < zMin || qx > xMax || qy > yMax || qz > zMax)
 									continue;
-								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, h, d, STEP_SIZE,
+								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, STEP_SIZE,
 									pixels);
 								if (isAVisiblePoint) {
 									// add this surface pixel (x, y, z) to the list of points visible from this seed point (i)
@@ -167,8 +164,8 @@ public class RayCaster {
 	 */
 	private static int[] calculateBoundingBox(
 		final int x, final int y, final int z,
-		ArrayList<Vector3d> visibleSkeletonPoints,
-		ArrayList<Vector3d> occludedSkeletonPoints)
+		ArrayList<int[]> visibleSkeletonPoints,
+		ArrayList<int[]> occludedSkeletonPoints)
 	{
 		//+- x, y, z limits of visible points
 		//start with a tiny box centred on the surface point
@@ -184,10 +181,10 @@ public class RayCaster {
 		//expand the box to contain all the visible seed points
 		//by calculating the extreme (x, y, z)  values
 		for (int i = 0; i < nVis; i++) {
-			Vector3d v = visibleSkeletonPoints.get(i);
-			final int qx = (int) v.x;
-			final int qy = (int) v.y;
-			final int qz = (int) v.z;
+			int[] v = visibleSkeletonPoints.get(i);
+			final int qx = v[0];
+			final int qy = v[1];
+			final int qz = v[2];
 			
 			xMinVis = Math.min(xMinVis, qx);
 			yMinVis = Math.min(yMinVis, qy);
@@ -211,10 +208,10 @@ public class RayCaster {
 		final int nOcc = occludedSkeletonPoints.size();
 		
 		for (int i = 0; i < nOcc; i++) {
-			Vector3d v = occludedSkeletonPoints.get(i);
-			final int qx = (int) v.x;
-			final int qy = (int) v.y;
-			final int qz = (int) v.z;
+			int[] v = occludedSkeletonPoints.get(i);
+			final int qx = v[0];
+			final int qy = v[1];
+			final int qz = v[2];
 			
 			//q needs to be more extreme than the vis box
 			//and the least extreme occluded value
@@ -384,7 +381,7 @@ public class RayCaster {
 	 *         hitting an occluding pixel.
 	 */
 	private static boolean isVisible(final int px, final int py, final int pz, final int qx, final int qy, final int qz,
-			final int w, final int h, final int d, final double stepSize, byte[][] pixels) {
+			final int w, final double stepSize, byte[][] pixels) {
 
 		// calculate unit vector between the two points
 		final double dx = qx - px;
