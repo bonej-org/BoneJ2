@@ -50,11 +50,20 @@ public class EllipsoidOptimisationStrategy {
 	private long[] imageDimensions;
 	private LogService logService;
 	private StatusService statusService;
-	private OptimisationParameters params = new OptimisationParameters(1, 100, 1.73, 0.435);
+	private OptimisationParameters params;// = new OptimisationParameters(1, 100, 1.73, 0.435);
 	double stackVolume;
 	
 	/** unit vectors needed for testing whether ellipsoid is outside the volume */
 	private final double[][] unitVectors = Vectors.randomVectors(100);
+	
+	public EllipsoidOptimisationStrategy(
+		long[] imageDimensions, LogService logService,
+		StatusService statusService, OptimisationParameters params) {
+		this.imageDimensions = imageDimensions;
+		this.logService = logService;
+		this.statusService = statusService;
+		this.params = params;
+	}
 
 	private static double[] threeWayShuffle() {
 		final double[] a = {0, 0, 0};

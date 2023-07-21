@@ -44,6 +44,7 @@ import ij.ImageStack;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,6 +52,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -83,6 +85,7 @@ import org.bonej.ops.ellipsoid.EllipsoidFactorErrorTracking;
 import org.bonej.ops.ellipsoid.EllipsoidFactorOutputGenerator;
 import org.bonej.ops.ellipsoid.EllipsoidOptimisationStrategy;
 import org.bonej.ops.ellipsoid.OptimisationParameters;
+import org.bonej.ops.ellipsoid.RayCaster;
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.skeletonize.FindRidgePoints;
 import org.bonej.utilities.AxisUtils;
@@ -149,8 +152,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	private ImgPlus<T> inputImage;
 
 	//algorithm parameters
-	@Parameter(label = "Vectors")
-	int nVectors = 100;
+//	@Parameter(label = "Vectors")
+//	int nVectors = 100;
 	@Parameter(label = "Sampling increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.", min="0.01", max = "0.99")
 	private double vectorIncrement = 1 / 2.3;
 	@Parameter(label = "Skeleton points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.", min="1")
@@ -195,6 +198,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 	@Override
 	public void run() {
+		//TODO is this necessary?
+		//operations run on byte[][] array representing a 3D image
+		//only 3D binary (0,255) images need to be handled.
 		inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 
 		int totalEllipsoids = 0;
@@ -206,48 +212,53 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		double[] medianErrors = new double[runs];
 		double[] maxErrors = new double[runs];
 
-		for(int i = 0; i<runs; i++) {
 			//optimise ellipsoids
-			final List<Ellipsoid> ellipsoids = runEllipsoidOptimisation(inputImage);
+		//handle multpile runs inside runEllipsoidOptimisation
+			final List<List<Ellipsoid>> ellipsoids = runEllipsoidOptimisation(inputImage);
+			
+			//TODO need to check inside all the sub-lists
 			if (ellipsoids.isEmpty()) {
 				cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
 				return;
 			}
-
-			//assign one ellipsoid to each FG voxel
-			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-			final long start = System.currentTimeMillis();
-			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, ellipsoids);
-			final long stop = System.currentTimeMillis();
-			logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
-
-			//add result of this run to overall result
-			//TODO do not match Op every time
-			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
-					ellipsoids, showFlinnPlots, showSecondaryImages, inputImage.getName().split("\\.")[0]);
-
-			if(outputList!=null)
-			{
-				outputList = sumOutput(outputList, currentOutputList, counter);
-				if(showConvergence)
-				{
-					final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
-					errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
-					medianErrors[i] = errors.get("Median");
-					maxErrors[i] = errors.get("Max");
-				}
-			}
-			else{
-				outputList = currentOutputList;
-				if(showConvergence)
-				{
-					medianErrors[i] = 2.0; // start with maximum possible error in first run (as no previous runs exist)
-					maxErrors[i] = 2.0;
-				}
-			}
-			counter++;
-			totalEllipsoids += ellipsoids.size();
-		}
+//
+//			//assign one ellipsoid to each FG voxel
+//			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
+//			final long start = System.currentTimeMillis();
+//			//TODO fix - it's uber-slow.
+//			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, ellipsoids);
+//			final long stop = System.currentTimeMillis();
+//			logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
+//
+//			//add result of this run to overall result
+//			//TODO do not match Op every time
+//			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
+//					ellipsoids, showFlinnPlots, showSecondaryImages, inputImage.getName().split("\\.")[0]);
+//
+//			if(outputList!=null)
+//			{
+//				outputList = sumOutput(outputList, currentOutputList, counter);
+//				if(showConvergence)
+//				{
+//					final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
+//					errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
+//					medianErrors[i] = errors.get("Median");
+//					maxErrors[i] = errors.get("Max");
+//				}
+//			}
+//			else{
+//				outputList = currentOutputList;
+//				if(showConvergence)
+//				{
+//					medianErrors[i] = 2.0; // start with maximum possible error in first run (as no previous runs exist)
+//					maxErrors[i] = 2.0;
+//				}
+//			}
+//			counter++;
+//			totalEllipsoids += ellipsoids.size();
+		//}
+		
+		
 		if (totalEllipsoids == 0) {
 			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
 			return;
@@ -382,68 +393,54 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	}
 
 	/**
-	 * Using skeleton points as seeds, propagate along each vector until a boundary
-	 * is hit. Use the resulting cloud of boundary points as input into an ellipsoid
-	 * fit.
+	 * Using input image surface points as seeds, check whether each seed point is visible,
+	 * and thus available to use as a boundary point for the ellipsoid centred on the seed point.
+	 * Use the resulting clouds of boundary points as input into an ellipsoid fit.
+	 * 
+	 * Multiple runs re-use the same seed and boundary points and keep independent
+	 * lists of maximal ellipsoids.
 	 *
 	 * @param imp
 	 *            input image
 	 * @return array of fitted ellipsoids
 	 */
-	private List<Ellipsoid> runEllipsoidOptimisation(final ImgPlus imp) {
+	private List<List<Ellipsoid>> runEllipsoidOptimisation(final ImgPlus<T> imp) {
 		long start = System.currentTimeMillis();
 
 		final int w = (int) imp.dimension(0);
 		final int h = (int) imp.dimension(1);
 		final int d = (int) imp.dimension(2);
 
+		//make a primitive array for the boundary point ray tracing 
 		final byte[][] pixels = imgPlusToByteArray(imp);
-		final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
-		final List<Ellipsoid> ellipsoids = new ArrayList<>();
+		
+		//set up a List of Lists to hold the results of multiple runs on the same seed points & boundary points
+		List<List<Ellipsoid>> ellipsoidsList = new ArrayList<>();
+		
+		//set the optimisation parameters for the whole EF operation
 		final OptimisationParameters parameters = new OptimisationParameters(contactSensitivity, maxIterations, maxDrift, vectorIncrement);
+		
+		//Make a list to hold all the seed points
+		final List<Vector3d> allSeedPoints = new ArrayList<>();
+		
+		//add the distance ridge seed points if that was chosen
 		if (seedOnDistanceRidge) {
 			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
-			List<Vector3d> ridgePoints = getDistanceRidgePoints(inputAsBitType);
-			ridgePoints = applySkipRatio(ridgePoints);
-			addPointsToDisplay(ridgePoints, seedImage, (byte) 1);
-
-			statusService.showStatus("Optimising distance-ridge-seeded ellipsoids from "+ridgePoints.size()+" seed points...");
-			
-			final BinaryFunctionOp<byte[][], Vector3d, Ellipsoid> medialOptimisation = Functions.binary(opService,
-					EllipsoidOptimisationStrategy.class, Ellipsoid.class, pixels, new Vector3d(),
-					new long[]{w, h, d},parameters);
-			
-			final AtomicInteger progress = new AtomicInteger();
-			final int points = ridgePoints.size();
-			final List<Ellipsoid> ridgePointEllipsoids = ridgePoints.parallelStream()
-					.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
-					.map(sp -> medialOptimisation.calculate(pixels, sp)).filter(Objects::nonNull)
-					.collect(toList());
-			logService.info("Found " + ridgePointEllipsoids.size() + " distance-ridge-seeded ellipsoids.");
-			ellipsoids.addAll(ridgePointEllipsoids);
+			allSeedPoints.addAll(getDistanceRidgePoints(inputAsBitType));
 		}
 
 		if (seedOnTopologyPreserving) {
-			List<Vector3d> skeletonPoints = getSkeletonPoints();
-			skeletonPoints = applySkipRatio(skeletonPoints);
-			addPointsToDisplay(skeletonPoints, seedImage, (byte) 1);
-
-			statusService.showStatus("Optimising skeleton-seeded ellipsoids from "+skeletonPoints.size()+" seed points...");
-			final BinaryFunctionOp<byte[][], Vector3d, Ellipsoid> medialOptimisation = Functions.binary(opService,
-					EllipsoidOptimisationStrategy.class, Ellipsoid.class, pixels, new Vector3d(),
-					new long[]{w, h, d},parameters);
-			final AtomicInteger progress = new AtomicInteger();
-			final int points = skeletonPoints.size();
-			final List <Ellipsoid> skeletonSeededEllipsoids = skeletonPoints.parallelStream()
-					.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
-					.map(sp -> medialOptimisation.calculate(pixels, sp)).filter(Objects::nonNull)
-					.collect(toList());
-			logService.info("Found " + skeletonSeededEllipsoids.size() + " skeleton-seeded ellipsoids.");
-			ellipsoids.addAll(skeletonSeededEllipsoids);
+			allSeedPoints.addAll(getSkeletonPoints());
 		}
-
-		if(showSecondaryImages)
-		{
+		
+		//thin out the seed points by the skip ratio setting
+		final List<Vector3d> seedPoints = applySkipRatio(allSeedPoints);
+		
+		//optionally make an image containing the seed points, usually for debugging purposes
+		if(showSecondaryImages)	{
+			//set up an image for the seed points
+			final ArrayImg<ByteType, ByteArray> seedImage = ArrayImgs.bytes(w, h, d);
+			addPointsToDisplay(seedPoints, seedImage, (byte) 1);
 			final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
 			final DefaultLinearAxis yAxis = (DefaultLinearAxis) inputImage.axis(1);
 			final DefaultLinearAxis zAxis = (DefaultLinearAxis) inputImage.axis(2);
@@ -454,10 +451,79 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			seedPointImage.setChannelMaximum(0, 1);
 			seedPointImage.setChannelMinimum(0, 0);
 		}
-		ellipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
-		final long stop = System.currentTimeMillis();
-		logService.info("Found " + ellipsoids.size() + " ellipsoids in " + (stop - start) + " ms");
-		return ellipsoids;
+		
+		//need to randomise seed points' order in the List so that bounding box isn't biased
+		//by the ordered way they were added to the list
+		//need to do it here to maintain a common index between the seed points and
+		//their associated boundary point lists
+		Collections.shuffle(seedPoints);
+		 
+		//get the boundary points by raytracing from surface pixels to seed points
+		ArrayList<ArrayList<int[]>> boundaryPointList = RayCaster.getVisibleClouds(seedPoints, pixels, w, h, d);
+				
+		//do the ellipsoid optimisation "runs" times, reusing the seed points and boundary points
+		for (int i = 0; i < runs; i++) {
+
+			statusService.showStatus("Optimising ellipsoids from "+seedPoints.size()+" seed points..." +
+					" (run "+ (i + 1) +"/"+ runs +")");
+
+			final int points = seedPoints.size();
+
+			//the list of ellipsoids for a single run
+			Ellipsoid[] ellipsoidArray = new Ellipsoid[points];
+			
+			final AtomicInteger progress = new AtomicInteger();
+			final ArrayList<Integer> seedNumbers = new ArrayList<>();
+			
+			//TODO keep an eye on whether reusing this instance across all the threads
+			//is thread safe
+			EllipsoidOptimisationStrategy optimiser = new EllipsoidOptimisationStrategy(
+				new long[] {w, h, d}, logService, statusService, parameters);
+			
+			for (int j = 0; j < points; j++) {
+				seedNumbers.add(j);
+			}
+			
+			//iterate over all the seed points and get an optimised ellipsoid for each.
+			// here, j is a common index to get the seed point that relates to the same boundary point
+			seedNumbers.parallelStream()
+				//get a status update for user feedback
+				.peek(p -> statusService.showProgress(progress.getAndIncrement(), points))
+				
+				//iterate over all the seed numbers
+				.forEach(j -> {
+				
+				final ArrayList<int[]> boundaryPoints = boundaryPointList.get(j);
+				final Vector3d seedVector = seedPoints.get(j);
+				
+				final int[] seedPoint = new int[3];
+				seedPoint[0] = (int) seedVector.x;
+				seedPoint[1] = (int) seedVector.y;
+				seedPoint[2] = (int) seedVector.z;
+				
+				Ellipsoid ellipsoid = optimiser.calculate(boundaryPoints, seedPoint);
+				ellipsoidArray[j] = ellipsoid;				
+			});
+			
+			List<Ellipsoid> ellipsoids = new ArrayList<>(points);
+			Collections.addAll(ellipsoids, ellipsoidArray);
+			
+			//remove nulls that resulted from failed optimisation attempts
+			//the streamy filtery way
+			ellipsoids = ellipsoids.stream().filter(Objects::nonNull).collect(Collectors.toList());
+			//or the non-streamy way
+			//ellipsoids.removeIf(Objects::isNull);
+
+			ellipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
+
+			ellipsoidsList.add(ellipsoids);
+
+			final long stop = System.currentTimeMillis();
+			logService.info("Found " + ellipsoids.size() + " ellipsoids in " + (stop - start) + " ms" +
+					" (run "+ (i + 1) +"/"+ runs +")");
+		}
+		
+		return ellipsoidsList;
 	}
 
 	// region --seed point finding--
@@ -517,6 +583,13 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		return seedPoints;
 	}
 
+	/**
+	 * Debug method to visualise the seed points, not needed in normal operation
+	 * 
+	 * @param seedPoints
+	 * @param seedImage
+	 * @param i
+	 */
 	private void addPointsToDisplay(final List<Vector3d> seedPoints, final Img<ByteType> seedImage,
 									final byte i) {
 		final RandomAccess<ByteType> access = seedImage.randomAccess();

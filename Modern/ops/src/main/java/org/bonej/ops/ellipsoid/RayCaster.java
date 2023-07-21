@@ -54,10 +54,6 @@ public class RayCaster {
 	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final List<Vector3d> seedPoints,
 		final byte[][] pixels, final int w, final int h, final int d) {
 
-		//need to randomise seed points' order in the List so that bounding box isn't biased
-		//by the ordered way they were added to the list
-		Collections.shuffle(seedPoints);
-		
 		final int nSkeletonPoints = seedPoints.size();
 
 		ArrayList<Integer> sliceNumbers = new ArrayList<>();

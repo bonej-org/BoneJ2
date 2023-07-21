@@ -364,7 +364,7 @@ public class Ellipsoid {
 	/**
 	 * Gets the volume of this ellipsoid, calculated as PI * a * b * c * 4 / 3
 	 *
-	 * @return copy of the stored volume value.
+	 * @return ellipsoid's volume
 	 */
 	public double getVolume() {
 		return 4.0 * Math.PI * ra * rb * rc / 3.0;
