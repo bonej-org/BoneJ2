@@ -55,7 +55,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
@@ -210,15 +209,19 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		double[] medianErrors = new double[runs];
 		double[] maxErrors = new double[runs];
 
-			//optimise ellipsoids
-		//handle multpile runs inside runEllipsoidOptimisation
-			final List<List<Ellipsoid>> ellipsoids = runEllipsoidOptimisation(inputImage);
-			
-			//TODO need to check inside all the sub-lists
-			if (ellipsoids.isEmpty()) {
-				cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
-				return;
-			}
+		//optimise ellipsoids
+		//handle multiple runs inside runEllipsoidOptimisation
+		final Ellipsoid[][] ellipsoids = runEllipsoidOptimisation(inputImage);
+
+		//if no ellipsoids were found then cancel the plugin
+		int nEllipsoids = 0;
+		for (int i = 0; i < runs; i++)
+			nEllipsoids += ellipsoids[i].length;
+		if (nEllipsoids == 0) {
+			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
+			return;
+		}
+		
 //
 //			//assign one ellipsoid to each FG voxel
 //			statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
@@ -400,9 +403,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	 *
 	 * @param imp
 	 *            input image
-	 * @return array of fitted ellipsoids
+	 * @return 2D array of fitted ellipsoids
 	 */
-	private List<List<Ellipsoid>> runEllipsoidOptimisation(final ImgPlus<T> imp) {
+	private Ellipsoid[][] runEllipsoidOptimisation(final ImgPlus<T> imp) {
 		long start = System.currentTimeMillis();
 
 		final int w = (int) imp.dimension(0);
@@ -412,8 +415,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		//make a primitive array for the boundary point ray tracing 
 		final byte[][] pixels = imgPlusToByteArray(imp);
 		
-		//set up a List of Lists to hold the results of multiple runs on the same seed points & boundary points
-		List<List<Ellipsoid>> ellipsoidsList = new ArrayList<>();
+		//set up a 2D array to hold the results of multiple runs on the same seed points & boundary points
+		Ellipsoid[][] ellipsoidsArray = new Ellipsoid[runs][];
 		
 		//set the optimisation parameters for the whole EF operation
 		final OptimisationParameters parameters = new OptimisationParameters(contactSensitivity, maxIterations, maxDrift, vectorIncrement);
@@ -509,14 +512,14 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 			ellipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 
-			ellipsoidsList.add(ellipsoids);
+			ellipsoidsArray[i] = (Ellipsoid[]) ellipsoids.toArray();
 
 			final long stop = System.currentTimeMillis();
 			logService.info("Found " + ellipsoids.size() + " ellipsoids in " + (stop - start) + " ms" +
 					" (run "+ (i + 1) +"/"+ runs +")");
 		}
 		
-		return ellipsoidsList;
+		return ellipsoidsArray;
 	}
 
 	// region --seed point finding--
