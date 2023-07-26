@@ -41,8 +41,10 @@ import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.process.ByteProcessor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -127,6 +129,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 	static final String NO_ELLIPSOIDS_FOUND = "No ellipsoids were found - try modifying input parameters.";
 
+	private static final byte FORE = (byte) 0xFF;
+
 	//ImageJ services
 	@SuppressWarnings("unused")
 	@Parameter
@@ -191,14 +195,15 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
-	private ImgPlus<BitType> inputAsBitType;
+//	private ImgPlus<BitType> inputAsBitType;
 
 	@Override
 	public void run() {
 		//TODO is this necessary?
 		//operations run on byte[][] array representing a 3D image
 		//only 3D binary (0,255) images need to be handled.
-		inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
+//		inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
+		byte[][] pixels = imgPlusToByteArray(inputImage);
 
 		int totalEllipsoids = 0;
 		List<ImgPlus> outputList = null;
@@ -211,7 +216,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 		//optimise ellipsoids
 		//handle multiple runs inside runEllipsoidOptimisation
-		final Ellipsoid[][] ellipsoids = runEllipsoidOptimisation(inputImage);
+		final Ellipsoid[][] ellipsoids = runEllipsoidOptimisation(pixels);
 
 		//if no ellipsoids were found then cancel the plugin
 		int nEllipsoids = 0;
@@ -228,7 +233,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final long start = System.currentTimeMillis();
 		
 			//TODO fix - it's uber-slow.
-			final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(inputAsBitType, ellipsoids);
+		final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(pixels, ellipsoids);
 
 		final long stop = System.currentTimeMillis();
 		
@@ -300,9 +305,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		}
 
 		final ImgPlus EF = ellipsoidFactorOutputImages.get(0);
-		final double numberOfForegroundVoxels = countTrue(inputAsBitType);
-		final double numberOfAssignedVoxels = countAssignedVoxels(EF);
-		final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
+		final double numberOfForegroundPixels = countForegroundPixels(pixels);
+		final double numberOfAssignedPixels = countAssignedPixels(EF);
+		final double fillingPercentage = 100.0 * (numberOfAssignedPixels / numberOfForegroundPixels);
 
 
 		DescriptiveStatistics stats = new DescriptiveStatistics();
@@ -408,15 +413,12 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	 *            input image
 	 * @return 2D array of fitted ellipsoids
 	 */
-	private Ellipsoid[][] runEllipsoidOptimisation(final ImgPlus<T> imp) {
+	private Ellipsoid[][] runEllipsoidOptimisation(final byte[][] pixels) {
 		long start = System.currentTimeMillis();
 
-		final int w = (int) imp.dimension(0);
-		final int h = (int) imp.dimension(1);
-		final int d = (int) imp.dimension(2);
-
-		//make a primitive array for the boundary point ray tracing 
-		final byte[][] pixels = imgPlusToByteArray(imp);
+		final int w = (int) inputImage.dimension(0);
+		final int h = (int) inputImage.dimension(1);
+		final int d = (int) inputImage.dimension(2);
 		
 		//set up a 2D array to hold the results of multiple runs on the same seed points & boundary points
 		Ellipsoid[][] ellipsoidsArray = new Ellipsoid[runs][];
@@ -434,7 +436,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		}
 
 		if (seedOnTopologyPreserving) {
-			allSeedPoints.addAll(getSkeletonPoints());
+			allSeedPoints.addAll(getSkeletonPoints(pixels));
 		}
 		
 		//thin out the seed points by the skip ratio setting
@@ -540,18 +542,26 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 	// region --seed point finding--
 
-	private List<int[]> getSkeletonPoints() {
-		final ImagePlus skeleton = copyAsBinaryImagePlus(inputAsBitType);
+	private List<int[]> getSkeletonPoints(byte[][] pixels) {
+		final int w = (int) inputImage.dimension(0);
+		final int h = (int) inputImage.dimension(0);
+		final int d = pixels.length;
+		ImageStack stack = new ImageStack();
+		for (int z = 0; z < d; z++)
+			stack.addSlice(new ByteProcessor(w, h, pixels[z]));
+		
+		final ImagePlus imp = new ImagePlus();
+		imp.setStack(stack);
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
-		skeletoniser.setup("", skeleton);
+		skeletoniser.setup("", imp);
 		skeletoniser.run(null);
 		final List<int[]> skeletonPoints = new ArrayList<>();
-		final ImageStack skeletonStack = skeleton.getImageStack();
-		for (int z = 0; z < skeleton.getStackSize(); z++) {
+		final ImageStack skeletonStack = imp.getImageStack();
+		for (int z = 0; z < imp.getStackSize(); z++) {
 			final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
-			for (int x = 0; x < skeleton.getWidth(); x++) {
-				for (int y = 0; y < skeleton.getHeight(); y++) {
-					if (slicePixels[y * skeleton.getWidth() + x] != 0) {
+			for (int x = 0; x < imp.getWidth(); x++) {
+				for (int y = 0; y < imp.getHeight(); y++) {
+					if (slicePixels[y * imp.getWidth() + x] != 0) {
 						skeletonPoints.add(new int[] {x, y, z});
 					}
 				}
@@ -567,7 +577,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final int d = (int) inputAsBitType.dimension(2);
 		final ImagePlus imagePlus = IJ.createImage(inputAsBitType.getName(), w, h, d, 8);
 		final ImageStack stack = imagePlus.getStack();
-		final Cursor<BitType> cursor = inputAsBitType.cursor();
+		final Cursor<BitType> cursor = inputAsBitType.localizingCursor();
 		final int[] position = new int[3];
 		while (cursor.hasNext()) {
 			cursor.next();
@@ -615,7 +625,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	//endregion
 
 
-	private long countAssignedVoxels(final Iterable<FloatType> ellipsoidFactorImage) {
+	private long countAssignedPixels(final Iterable<FloatType> ellipsoidFactorImage) {
 		final LongType assignedVoxels = new LongType();
 		ellipsoidFactorImage.forEach(e -> {
 			if (Float.isFinite(e.get())) {
@@ -625,6 +635,31 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		return assignedVoxels.get();
 	}
 
+	
+	private long countForegroundPixels(final byte[][] pixels) {
+		
+		final int d = pixels.length;
+		final int wh = pixels[0].length;
+		
+		final long[] counts = new long[d];
+		
+		IntStream slices = IntStream.range(0, d);
+		
+		slices.parallel().forEach(z -> {
+			long sliceCount = 0;
+			final byte[] slicePixels = pixels[z];
+			for (int i = 0; i < wh; i++) {
+				if (slicePixels[i] == FORE) {
+					sliceCount++;
+				}
+			}
+			
+			counts[z] = sliceCount;
+		});
+		
+		return Arrays.stream(counts).sum();
+	}
+	
 	/**
 	 *TODO redo this with performance in mind 
 	 * 
@@ -633,9 +668,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	 * @param ellipsoids
 	 * @return
 	 */
-	private Img<IntType> assignEllipsoidIDs(final Img<BitType> mask, final Ellipsoid[][] ellipsoids) {
+	private Img<IntType> assignEllipsoidIDs(final byte[][] pixels, final Ellipsoid[][] ellipsoids) {
 
-		final Img<IntType> idImage = ArrayImgs.ints(mask.dimension(0), mask.dimension(1), weightedAverageN, mask.dimension(2));
+		final Img<IntType> idImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), weightedAverageN, inputImage.dimension(2));
 		
 //		idImage.forEach(c -> c.setInteger(-1));
 //
@@ -726,7 +761,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			cursor.fwd();
 			if (!cursor.get().valueEquals(ZERO)) {
 				cursor.localize(position);
-				pixels[position[2]][position[1] * w + position[0]] = (byte) 0xFF;
+				pixels[position[2]][position[1] * w + position[0]] = FORE;
 			}
 		}
 
