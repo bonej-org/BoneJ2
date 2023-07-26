@@ -571,25 +571,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		return skeletonPoints;
 	}
 
-	private static ImagePlus copyAsBinaryImagePlus(final ImgPlus<BitType> inputAsBitType) {
-		// TODO Don't assume that 0, 1, 2 are X, Y, Z
-		final int w = (int) inputAsBitType.dimension(0);
-		final int h = (int) inputAsBitType.dimension(1);
-		final int d = (int) inputAsBitType.dimension(2);
-		final ImagePlus imagePlus = IJ.createImage(inputAsBitType.getName(), w, h, d, 8);
-		final ImageStack stack = imagePlus.getStack();
-		final Cursor<BitType> cursor = inputAsBitType.localizingCursor();
-		final int[] position = new int[3];
-		while (cursor.hasNext()) {
-			cursor.next();
-			if (cursor.get().get()) {
-				cursor.localize(position);
-				stack.setVoxel(position[0], position[1], position[2], 0xFF);
-			}
-		}
-		return imagePlus;
-	}
-
 	private List<int[]> getDistanceRidgePoints(final ImgPlus<BitType> imp) {
 		final List<int[]> ridgePoints = (List<int[]>) opService.run(FindRidgePoints.class, imp, distanceThreshold);//TODO
 		logService.info("Found " + ridgePoints.size() + " distance-ridge-based points");
