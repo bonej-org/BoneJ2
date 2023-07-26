@@ -572,7 +572,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	}
 
 	private List<int[]> getDistanceRidgePoints(final ImgPlus<BitType> imp) {
-		final List<int[]> ridgePoints = (List<int[]>) opService.run(FindRidgePoints.class, imp, distanceThreshold);//TODO
+		final List<int[]> ridgePoints = (List<int[]>) opService.run(FindRidgePoints.class, imp, distanceThreshold);
 		logService.info("Found " + ridgePoints.size() + " distance-ridge-based points");
 		return ridgePoints;
 	}

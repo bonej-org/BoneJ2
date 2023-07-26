@@ -41,30 +41,34 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
-import org.joml.Vector3d;
-import org.joml.Vector3dc;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author Alessandro Felder
+ * @author Michael Doube
+ *
+ * @param <R>
+ */
 @Plugin(name = "Find ridge points of a binary image", type = Op.class)
-public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends AbstractUnaryFunctionOp<RandomAccessibleInterval<BitType>,List<Vector3dc>> {
+public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends AbstractUnaryFunctionOp<RandomAccessibleInterval<BitType>,List<int[]>> {
 
     @Parameter(persist = false, required = false)
     private DoubleType thresholdForBeingARidgePoint = new DoubleType(0.6);
 
     @Override
-    public List<Vector3dc> calculate(RandomAccessibleInterval<BitType> bitImage) {
+    public List<int[]> calculate(RandomAccessibleInterval<BitType> bitImage) {
         final Img<R> ridge = (Img<R>) createRidge(bitImage);
 
         IterableMax<R> iterableMax = new IterableMax<>();
         final double threshold = thresholdForBeingARidgePoint.getRealFloat() *
                 iterableMax.calculate(ridge).getRealFloat();
 
-        final List<Vector3dc> seeds = new ArrayList<>();
-        final Cursor<R> ridgeCursor = ridge.cursor();
+        final List<int[]> seeds = new ArrayList<>();
+        final Cursor<R> ridgeCursor = ridge.localizingCursor();
         final long[] position = new long[3];
         while (ridgeCursor.hasNext()) {
             ridgeCursor.fwd();
@@ -73,10 +77,10 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
                 continue;
             }
             ridgeCursor.localize(position);
-            final Vector3d seed = new Vector3d(position[0], position[1], position[2]);
+            final int[] seed = new int[] {(int) position[0], (int) position[1], (int) position[2]};
             // add 0.5 to centre of pixel, and subtract 1.0 because of ridge calculated on 1-expanded image!
             // equivalently, subtract 0.5:
-            seed.sub(0.5, 0.5, 0.5);
+//            seed.sub(0.5, 0.5, 0.5); //TODO check that corner-based pixels are still OK (i.e. pixel location is at floor() not round())
             seeds.add(seed);
         }
         return seeds;
