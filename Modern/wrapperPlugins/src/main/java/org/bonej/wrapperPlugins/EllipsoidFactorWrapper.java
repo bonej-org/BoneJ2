@@ -544,7 +544,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 	private List<int[]> getSkeletonPoints(byte[][] pixels) {
 		final int w = (int) inputImage.dimension(0);
-		final int h = (int) inputImage.dimension(0);
+		final int h = (int) inputImage.dimension(1);
 		final int d = pixels.length;
 		ImageStack stack = new ImageStack();
 		for (int z = 0; z < d; z++)
@@ -557,11 +557,12 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		skeletoniser.run(null);
 		final List<int[]> skeletonPoints = new ArrayList<>();
 		final ImageStack skeletonStack = imp.getImageStack();
-		for (int z = 0; z < imp.getStackSize(); z++) {
+		for (int z = 0; z < d; z++) {
 			final byte[] slicePixels = (byte[]) skeletonStack.getPixels(z + 1);
-			for (int x = 0; x < imp.getWidth(); x++) {
-				for (int y = 0; y < imp.getHeight(); y++) {
-					if (slicePixels[y * imp.getWidth() + x] != 0) {
+			for (int y = 0; y < h; y++) {
+				final int yw = y * w;
+				for (int x = 0; x < w; x++) {
+					if (slicePixels[yw + x] == FORE) {
 						skeletonPoints.add(new int[] {x, y, z});
 					}
 				}
