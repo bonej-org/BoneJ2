@@ -67,18 +67,24 @@ import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
+import net.imagej.ops.Ops.Create.ImgFactory;
 import net.imagej.ops.special.function.BinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imglib2.Cursor;
+import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
+import net.imglib2.img.cell.CellImgFactory;
+import net.imglib2.img.list.AbstractLongListImg.LongListLocalizingCursor;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -233,8 +239,18 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final long start = System.currentTimeMillis();
 		
 			//TODO fix - it's uber-slow.
-		final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(pixels, ellipsoids);
-
+//		final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(pixels, ellipsoids);
+		
+		//new model - 
+		//go through each foregorund pixel, find the maximal ellipsoids with averaging over multiple runs and maybe
+		//over n-biggest ellipsoids.
+		//how to average? Weighted by volume?
+		//average EF -> EF image
+		//average a, b, c -> a/b, b/c to Flinn plot? Also average a, b, c -> average EF?
+		//don't produce other outputs (yet)
+		final List<Img<FloatType>> outputImages = getOutputImagesFromEllipsoids(pixels, ellipsoids);
+		
+		
 		final long stop = System.currentTimeMillis();
 		
 		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
@@ -273,10 +289,10 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			return;
 		}
 
-		if(runs>1)
-		{
-			outputList = divideOutput(outputList, runs);
-		}
+//		if(runs>1)
+//		{
+//			outputList = divideOutput(outputList, runs);
+//		}
 
 		ellipsoidFactorOutputImages = outputList;
 
@@ -339,67 +355,183 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		reportUsage();
 	}
 
-	private List<ImgPlus> divideOutput(final List<ImgPlus> outputList, final int repetitions) {
-		final List<ImgPlus> divided = new ArrayList<>();
-		for (final ImgPlus floatTypes : outputList) {
-			final Img division = (Img) opService.math()
-					.divide(opService.convert().float32(floatTypes.getImg()),
-							new FloatType(repetitions));
-			final ImgPlus divisionImgPlus = new ImgPlus<>(division, floatTypes);
-			divisionImgPlus.setChannelMaximum(0, floatTypes.getChannelMaximum(0));
-			divisionImgPlus.setChannelMinimum(0, floatTypes.getChannelMinimum(0));
-			divided.add(divisionImgPlus);
-		}
-		return divided;
-	}
-
-	private List<ImgPlus> sumOutput(final List<ImgPlus> outputList,
-											   final List<ImgPlus> currentOutputList,
-											   final double nSum) {
-		final List<ImgPlus> summed = new ArrayList<>();
-		for(int i=0; i<outputList.size(); i++)
-		{
-			//this does not deal with NaNs the way we would like
-			//final Img addition = (Img) opService.math().add(outputList.get(i).getImg(), (IterableInterval<FloatType>) currentOutputList.get(i).getImg());
-
-			//workaround to avoid NaN addition, still dodgy, first nonNaN will get loads of weight.
-			final Img addition = outputList.get(i).getImg().copy();
-			final Cursor<? extends RealType> previousVal = outputList.get(i).cursor();
-			final Cursor<? extends RealType> currentVal = currentOutputList.get(i).getImg().cursor();
-			final Cursor<? extends RealType> nextVal = addition.cursor();
-
-			while(previousVal.hasNext())
-			{
-				previousVal.fwd();
-				currentVal.fwd();
-				nextVal.fwd();
-
-				final double p = previousVal.get().getRealDouble();
-				final double c = currentVal.get().getRealDouble();
-				// only need to care about XOR case
-				if(!Double.isFinite(c) ^ !Double.isFinite(p))
-				{
-					if(!Double.isFinite(c)){
-						nextVal.get().setReal(p*(1.0+1.0/nSum));
-					}
-					else
-					{
-						nextVal.get().setReal(c*(nSum+1));
+	/**
+	 * Calculate the output images
+	 * @param pixels
+	 * @param ellipsoids
+	 * @return List of output images: EF, Flinn Plot...
+	 */
+	private List<Img<FloatType>> getOutputImagesFromEllipsoids(byte[][] pixels, Ellipsoid[][] ellipsoids) {
+		
+		final int w = (int) inputImage.dimension(0);
+		final int h = (int) inputImage.dimension(1);
+		final int d = (int) inputImage.dimension(2);
+		
+		CellImgFactory<FloatType> imgFactory = new CellImgFactory<FloatType>(new FloatType(), 4);
+		
+		final Img<FloatType> efImg = imgFactory.create(w, h, d);
+		final Img<FloatType> flinn = imgFactory.create(512, 512);
+		
+		IntStream slices = IntStream.range(0, pixels.length);
+		
+		slices.parallel().forEach(z -> {
+			final byte[] slice = pixels[z];
+//			FinalInterval imgSlice = Intervals.hyperSlice(efImg, 2);
+//			Cursor<FloatType> efAccess = efImg.randomAccess(interval);
+			for (int y = 0; y < h; y++) {
+				final int yw = y * w;
+				for (int x = 0; x < w; x++) {
+					if (slice[yw + x] == FORE) {
+						//pack the result in to a double array for further use
+						double[] pixelResult = getMaximalEllipsoidAverages(x, y, z, ellipsoids);
+						
+						//set values in the output image
+						final double ef = pixelResult[5];
+//						efCursor.get
+						
 					}
 				}
-				else {
-					nextVal.get().setReal(p+c);
-				}
-
 			}
-			final ImgPlus additionImgPlus = new ImgPlus<>(addition, outputList.get(i));
-			additionImgPlus.setChannelMaximum(0, outputList.get(i).getChannelMaximum(0));
-			additionImgPlus.setChannelMinimum(0, outputList.get(i).getChannelMinimum(0));
-			summed.add(additionImgPlus);
-
-		}
-		return summed;
+		});
+		
+		// TODO Auto-generated method stub
+		return null;
 	}
+
+	/**
+	 * find the largest ellipsoid(s) that contain the point and return average measurements
+	 * @param x
+	 * @param y
+	 * @param z
+	 * @param ellipsoids
+	 * @return a double[] array listing: radii a, b, c; a/b, b/c; EF; //TODO rotation matrix 
+	 */
+	private double[] getMaximalEllipsoidAverages(int x, int y, int z, Ellipsoid[][] ellipsoids) {
+		final int nRuns = ellipsoids.length;
+		final double nRepeats = nRuns * weightedAverageN;
+		
+		double aSum = 0;
+		double bSum = 0;
+		double cSum = 0;
+		double abSum = 0;
+		double bcSum = 0;
+		double efSum = 0;
+		double vSum = 0;
+		
+		for (int i = 0; i < nRuns; i++) {
+			//get all the ellipsoids from a run, sorted large -> small
+			Ellipsoid[] ellipsoidRun = ellipsoids[i];
+			//get the user-specified number of maximal ellipsoids for this point (x, y, z) and this run
+			Ellipsoid[] maximalEllipsoids = getNMaximalEllipsoids(x, y, z, ellipsoidRun, weightedAverageN);
+			
+			//calculate weighted sums 
+			for (int j = 0; j < weightedAverageN; j++) {
+				Ellipsoid e = maximalEllipsoids[j];
+				if (e == null)
+					continue;
+				final double v = e.getVolume();
+				double[] radii = e.getSortedRadii();
+				final double a = radii[0];
+				final double b = radii[1];
+				final double c = radii[2];
+				aSum += a * v;
+				bSum += b * v;
+				cSum += c * v;
+				abSum += (a / b) * v;
+				bcSum += (b / c) * v;
+				efSum += (a / b - b / c) * v;
+				vSum += v;
+			}			
+		}
+		
+		//calculate weighted means
+		final double vn = vSum * nRepeats;
+		
+		final double a = aSum / vn;
+		final double b = bSum / vn;
+		final double c = cSum / vn;
+		final double ab = abSum / vn;
+		final double bc = bcSum / vn;
+		final double ef = efSum / vn;
+		
+		return new double[] { a, b, c, ab, bc, ef };
+	}
+
+	/**
+	 * Find the n maximal ellipsoids that contain the given point and return them in an array
+	 * 
+	 * @param x x-coordinate of the point
+	 * @param y y-coordinate of the point
+	 * @param z z-coordinate of the point
+	 * @param ellipsoidRun all the ellipsoids from a run of optimisation, sorted large -> small
+	 * @param averageOverN how many ellipsoids to find
+	 * @return array of ellipsoids that contain the point. elements could be null if not enough ellipsoids contain the point.
+	 */
+	private Ellipsoid[] getNMaximalEllipsoids(final int x, final int y, final int z, Ellipsoid[] ellipsoidRun, final int averageOverN) {
+		int foundCount = 0;
+		final int nEllipsoids = ellipsoidRun.length;
+		Ellipsoid[] maximalEllipsoids = new Ellipsoid[averageOverN];
+		for (int i = 0; i < nEllipsoids; i++) {
+			Ellipsoid e = ellipsoidRun[i];
+			
+			if (e.contains(x, y, z)) {
+				maximalEllipsoids[foundCount] = e;
+				foundCount++;
+			}
+			
+			if (foundCount == averageOverN)
+				break;
+		}
+		return maximalEllipsoids;
+	}
+
+//	private List<ImgPlus> sumOutput(final List<ImgPlus> outputList,
+//											   final List<ImgPlus> currentOutputList,
+//											   final double nSum) {
+//		final List<ImgPlus> summed = new ArrayList<>();
+//		for(int i=0; i<outputList.size(); i++)
+//		{
+//			//this does not deal with NaNs the way we would like
+//			//final Img addition = (Img) opService.math().add(outputList.get(i).getImg(), (IterableInterval<FloatType>) currentOutputList.get(i).getImg());
+//
+//			//workaround to avoid NaN addition, still dodgy, first nonNaN will get loads of weight.
+//			final Img addition = outputList.get(i).getImg().copy();
+//			final Cursor<? extends RealType> previousVal = outputList.get(i).cursor();
+//			final Cursor<? extends RealType> currentVal = currentOutputList.get(i).getImg().cursor();
+//			final Cursor<? extends RealType> nextVal = addition.cursor();
+//
+//			while(previousVal.hasNext())
+//			{
+//				previousVal.fwd();
+//				currentVal.fwd();
+//				nextVal.fwd();
+//
+//				final double p = previousVal.get().getRealDouble();
+//				final double c = currentVal.get().getRealDouble();
+//				// only need to care about XOR case
+//				if(!Double.isFinite(c) ^ !Double.isFinite(p))
+//				{
+//					if(!Double.isFinite(c)){
+//						nextVal.get().setReal(p*(1.0+1.0/nSum));
+//					}
+//					else
+//					{
+//						nextVal.get().setReal(c*(nSum+1));
+//					}
+//				}
+//				else {
+//					nextVal.get().setReal(p+c);
+//				}
+//
+//			}
+//			final ImgPlus additionImgPlus = new ImgPlus<>(addition, outputList.get(i));
+//			additionImgPlus.setChannelMaximum(0, outputList.get(i).getChannelMaximum(0));
+//			additionImgPlus.setChannelMinimum(0, outputList.get(i).getChannelMinimum(0));
+//			summed.add(additionImgPlus);
+//
+//		}
+//		return summed;
+//	}
 
 	/**
 	 * Using input image surface points as seeds, check whether each seed point is visible,
