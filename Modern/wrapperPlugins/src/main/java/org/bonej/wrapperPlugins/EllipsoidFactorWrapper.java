@@ -58,8 +58,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
+import net.imagej.display.ColorTables;
 import net.imagej.units.UnitService;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.ByteType;
@@ -190,14 +192,14 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	@Parameter(label = "Show Flinn plots")
 	private boolean showFlinnPlots = false;
 
-	@Parameter(label = "Show algorithm convergence")
-	private boolean showConvergence = false;
+//	@Parameter(label = "Show algorithm convergence")
+//	private boolean showConvergence = false;
 
 	@Parameter(label = "Show verbose output images")
 	private boolean showSecondaryImages = false;
 
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
-	private List<ImgPlus> ellipsoidFactorOutputImages;
+	private List<ImgPlus<FloatType>> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
@@ -232,7 +234,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
 			return;
 		}
-		
 
 		//assign one ellipsoid to each FG voxel
 		statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
@@ -248,8 +249,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		//average EF -> EF image
 		//average a, b, c -> a/b, b/c to Flinn plot? Also average a, b, c -> average EF?
 		//don't produce other outputs (yet)
-		final List<Img<FloatType>> outputImages = getOutputImagesFromEllipsoids(pixels, ellipsoids);
-		
+		final List<ImgPlus<FloatType>> outputImages = getOutputImagesFromEllipsoids(pixels, ellipsoids);
 		
 		final long stop = System.currentTimeMillis();
 		
@@ -284,43 +284,41 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		//}
 		
 		
-		if (totalEllipsoids == 0) {
-			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
-			return;
-		}
+//		if (totalEllipsoids == 0) {
+//			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
+//			return;
+//		}
 
 //		if(runs>1)
 //		{
 //			outputList = divideOutput(outputList, runs);
 //		}
 
-		ellipsoidFactorOutputImages = outputList;
-
 		//calibrate output images
 		final double voxelVolume = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
-		for(final ImgPlus imgPlus : ellipsoidFactorOutputImages)
-		{
-			if(imgPlus.numDimensions()>=3)
-			{
+		for(final Img<FloatType> img : outputImages) {
+			
+			ImgPlus<FloatType> imp = new ImgPlus<FloatType>(img);
+			//only do the 3D images: EF etc., not the 2D Flinn plot(s)
+			if(imp.numDimensions() >= 3) {
 				// set spatial axis for first 3 dimensions (ID is 4d)
-				for(int dim = 0; dim<3; dim++)
-				{
+				for (int dim = 0; dim < 3; dim++) {
 					CalibratedAxis axis = inputImage.axis(dim);
 					axis.setUnit(inputImage.axis(dim).unit());
-					imgPlus.setAxis(axis, dim);
+					imp.setAxis(axis, dim);
 				}
-				if("Volume".equals(imgPlus.getName())) {
-					final Cursor<RealType> cursor = imgPlus.cursor();
-					cursor.forEachRemaining(c ->
-					{
-						c.mul(voxelVolume);
-					});
-					imgPlus.setChannelMaximum(0,imgPlus.getChannelMaximum(0)*voxelVolume);
-				}
+//				if("Volume".equals(imgPlus.getName())) {
+//					final Cursor<RealType> cursor = imgPlus.cursor();
+//					cursor.forEachRemaining(c ->
+//					{
+//						c.mul(voxelVolume);
+//					});
+//					imgPlus.setChannelMaximum(0,imgPlus.getChannelMaximum(0)*voxelVolume);
+//				}
 			}
 		}
 
-		final ImgPlus EF = ellipsoidFactorOutputImages.get(0);
+		final ImgPlus<FloatType> EF = ellipsoidFactorOutputImages.get(0);
 		final double numberOfForegroundPixels = countForegroundPixels(pixels);
 		final double numberOfAssignedPixels = countAssignedPixels(EF);
 		final double fillingPercentage = 100.0 * (numberOfAssignedPixels / numberOfForegroundPixels);
@@ -341,15 +339,16 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		SharedTable.add(inputImage.getName(), "Max EF", max);
 		final double min = stats.getMin();
 		SharedTable.add(inputImage.getName(), "Min EF", min);
-		if(showConvergence)
-		{
-			for(int i=1; i<runs; i++)
-			{
-				SharedTable.add(inputImage.getName(),"median change "+i, medianErrors[i]);
-				SharedTable.add(inputImage.getName(),"maximum change "+i, maxErrors[i]);
-			}
-			addResults(totalEllipsoids, fillingPercentage);
-		}
+		//TODO move convergence analysis to the mean calculation
+//		if(showConvergence)
+//		{
+//			for(int i=1; i<runs; i++)
+//			{
+//				SharedTable.add(inputImage.getName(),"median change "+i, medianErrors[i]);
+//				SharedTable.add(inputImage.getName(),"maximum change "+i, maxErrors[i]);
+//			}
+//			addResults(totalEllipsoids, fillingPercentage);
+//		}
 		resultsTable = SharedTable.getTable();
 		statusService.showStatus("Ellipsoid Factor completed");
 		reportUsage();
@@ -361,23 +360,30 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	 * @param ellipsoids
 	 * @return List of output images: EF, Flinn Plot...
 	 */
-	private List<Img<FloatType>> getOutputImagesFromEllipsoids(byte[][] pixels, Ellipsoid[][] ellipsoids) {
+	private List<ImgPlus<FloatType>> getOutputImagesFromEllipsoids(byte[][] pixels, Ellipsoid[][] ellipsoids) {
 		
 		final int w = (int) inputImage.dimension(0);
 		final int h = (int) inputImage.dimension(1);
 		final int d = (int) inputImage.dimension(2);
+		final int flinnSize = 512;
 		
 		CellImgFactory<FloatType> imgFactory = new CellImgFactory<FloatType>(new FloatType(), 4);
 		
 		final Img<FloatType> efImg = imgFactory.create(w, h, d);
-		final Img<FloatType> flinn = imgFactory.create(512, 512);
+		final Img<FloatType> flinn = imgFactory.create(flinnSize, flinnSize);
+		//working array to hold  slice-wise sums
+		final double[][] flinnWorking = new double[pixels.length][flinnSize * flinnSize];
 		
 		IntStream slices = IntStream.range(0, pixels.length);
 		
 		slices.parallel().forEach(z -> {
 			final byte[] slice = pixels[z];
-//			FinalInterval imgSlice = Intervals.hyperSlice(efImg, 2);
-//			Cursor<FloatType> efAccess = efImg.randomAccess(interval);
+			final double[] flinnSlice = flinnWorking[z];
+			//TODO find out if there is a better way to synchronise the localisation in the array and the Img.
+			//options are to get an Interval which is a single z-slice
+			//or to make a float[] array that is then copied into the Img z-slice
+			//or a View?
+			RandomAccess<FloatType> efAccess = efImg.randomAccess();
 			for (int y = 0; y < h; y++) {
 				final int yw = y * w;
 				for (int x = 0; x < w; x++) {
@@ -385,17 +391,74 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 						//pack the result in to a double array for further use
 						double[] pixelResult = getMaximalEllipsoidAverages(x, y, z, ellipsoids);
 						
-						//set values in the output image
-						final double ef = pixelResult[5];
-//						efCursor.get
+						//add ellipsoid volume to coordinate in flinn plot
+						//TODO figure out what is a better way to do the average: before or after calculating ratios
+						double a = pixelResult[0];
+						double b = pixelResult[1];
+						double c = pixelResult[2];
+						double v = pixelResult[6];
 						
+						//calculate the coordinate
+						//y coordinate is flinnWidth * (1 - a/b) (lower left origin), x coordinate is flinnWidth * (b/c)
+						final int fx = (int) Math.floor(flinnSize * (b / c));
+						final int fy = (int) Math.floor(flinnSize * (1 - a / b)); 
+						flinnSlice[fy * flinnSize + fx] = v;
+						
+						//set values in the output image
+						final double ef = a / b - b / c;
+						//I am going to take a punt that this is slow
+						efAccess.setPositionAndGet(x, y, z).set((float)ef);
+					} else {
+						efAccess.setPositionAndGet(x, y, z).set(Float.NaN);
 					}
 				}
 			}
 		});
 		
-		// TODO Auto-generated method stub
-		return null;
+		final int flinnSize2 = flinnSize * flinnSize;
+		final float[] flinnArray = new float[flinnSize2];
+		
+		for (int z = 0; z < d; z++) {
+			final double[] zSlice = flinnWorking[z];
+			for (int i = 0; i < flinnSize2; i++) {
+				flinnArray[i] += (float) zSlice[i];
+			}
+		}
+		RandomAccess<FloatType> flinnAccess = flinn.randomAccess(flinn);
+		for (int y = 0; y < flinnSize; y++) {
+			final int yf = y * flinnSize;
+			for (int x = 0; x < flinnSize; x++) {
+				final float p = flinnArray[yf + x];
+				flinnAccess.setPositionAndGet(x, y).set(p);
+			}
+		}
+		
+		//get the Img pixel data ready for display by adding some metadata as ImgPlus
+		List<ImgPlus<FloatType>> outputImages = new ArrayList<>();
+		
+		ImgPlus<FloatType> efImp = new ImgPlus<>(efImg, inputImage.getName()+"_EF");
+        efImp.setChannelMaximum(0, 1);
+        efImp.setChannelMinimum(0, -1);
+        efImp.initializeColorTables(1);
+        efImp.setColorTable(ColorTables.FIRE,0);
+		
+        outputImages.add(efImp);
+
+        ImgPlus<FloatType> flinnImp = new ImgPlus<>(flinn, inputImage.getName()+"_Flinn");
+        double max = flinnImp.getChannelMaximum(0);
+        flinnImp.setChannelMinimum(0, 0.0);
+        flinnImp.setChannelMaximum(0, max);
+        DefaultLinearAxis xFlinnAxis = new DefaultLinearAxis(Axes.get("b/c",true),1.0/flinnSize);
+        xFlinnAxis.setUnit("b/c");
+        DefaultLinearAxis yFlinnAxis = new DefaultLinearAxis(Axes.get("a/b",true),-1.0/flinnSize);
+        yFlinnAxis.setOrigin(flinnSize);
+        yFlinnAxis.setUnit("a/b");
+        flinnImp.setAxis(xFlinnAxis,0);
+        flinnImp.setAxis(yFlinnAxis,1);
+        
+		outputImages.add(flinnImp);
+
+		return outputImages;
 	}
 
 	/**
@@ -404,7 +467,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	 * @param y
 	 * @param z
 	 * @param ellipsoids
-	 * @return a double[] array listing: radii a, b, c; a/b, b/c; EF; //TODO rotation matrix 
+	 * @return a double[] array listing: radii a, b, c; a/b, b/c; EF; volume (sum);  //TODO rotation matrix 
 	 */
 	private double[] getMaximalEllipsoidAverages(int x, int y, int z, Ellipsoid[][] ellipsoids) {
 		final int nRuns = ellipsoids.length;
@@ -454,7 +517,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final double bc = bcSum / vn;
 		final double ef = efSum / vn;
 		
-		return new double[] { a, b, c, ab, bc, ef };
+		return new double[] { a, b, c, ab, bc, ef, vSum };
 	}
 
 	/**
