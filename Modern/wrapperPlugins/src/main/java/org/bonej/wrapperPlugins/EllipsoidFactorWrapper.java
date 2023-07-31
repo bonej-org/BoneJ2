@@ -393,7 +393,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	 */
 	private double[] getMaximalEllipsoidAverages(int x, int y, int z, Ellipsoid[][] ellipsoids) {
 		final int nRuns = ellipsoids.length;
-		final double nRepeats = nRuns * weightedAverageN;
 		
 		double aSum = 0;
 		double bSum = 0;
@@ -429,15 +428,12 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			}			
 		}
 		
-		//calculate weighted means
-		final double vn = vSum * nRepeats;
-		
-		final double a = aSum / vn;
-		final double b = bSum / vn;
-		final double c = cSum / vn;
-		final double ab = abSum / vn;
-		final double bc = bcSum / vn;
-		final double ef = efSum / vn;
+		final double a = aSum / vSum;
+		final double b = bSum / vSum;
+		final double c = cSum / vSum;
+		final double ab = abSum / vSum;
+		final double bc = bcSum / vSum;
+		final double ef = efSum / vSum;
 		
 		return new double[] { a, b, c, ab, bc, ef, vSum };
 	}
