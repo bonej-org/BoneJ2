@@ -30,15 +30,11 @@
 
 package org.bonej.wrapperPlugins;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static net.imglib2.roi.Regions.countTrue;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
-import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ByteProcessor;
@@ -49,14 +45,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
@@ -69,11 +61,7 @@ import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
-import net.imagej.ops.Ops.Create.ImgFactory;
-import net.imagej.ops.special.function.BinaryFunctionOp;
-import net.imagej.ops.special.function.Functions;
 import net.imglib2.Cursor;
-import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.img.Img;
@@ -81,17 +69,12 @@ import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.cell.CellImgFactory;
-import net.imglib2.img.list.AbstractLongListImg.LongListLocalizingCursor;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.Intervals;
-import net.imglib2.view.Views;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.bonej.ops.ellipsoid.EllipsoidFactorErrorTracking;
-import org.bonej.ops.ellipsoid.EllipsoidFactorOutputGenerator;
 import org.bonej.ops.ellipsoid.EllipsoidOptimisationStrategy;
 import org.bonej.ops.ellipsoid.OptimisationParameters;
 import org.bonej.ops.ellipsoid.RayCaster;
@@ -161,8 +144,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	private ImgPlus<T> inputImage;
 
 	//algorithm parameters
-//	@Parameter(label = "Vectors")
-//	int nVectors = 100;
 	@Parameter(label = "Sampling increment", description = "Increment for vector searching in real units. Default is ~Nyquist sampling of a unit pixel.", min="0.01", max = "0.99")
 	private double vectorIncrement = 1 / 2.3;
 	@Parameter(label = "Skeleton points per ellipsoid", description = "Number of skeleton points per ellipsoid. Sets the granularity of the ellipsoid fields.", min="1")
@@ -192,8 +173,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	@Parameter(label = "Show Flinn plots")
 	private boolean showFlinnPlots = false;
 
-//	@Parameter(label = "Show algorithm convergence")
-//	private boolean showConvergence = false;
+	@Parameter(label = "Show algorithm convergence")
+	private boolean showConvergence = false;
 
 	@Parameter(label = "Show verbose output images")
 	private boolean showSecondaryImages = false;
@@ -203,14 +184,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
 	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
 
-//	private ImgPlus<BitType> inputAsBitType;
-
 	@Override
 	public void run() {
-		//TODO is this necessary?
-		//operations run on byte[][] array representing a 3D image
-		//only 3D binary (0,255) images need to be handled.
-//		inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
+
 		byte[][] pixels = imgPlusToByteArray(inputImage);
 
 		int totalEllipsoids = 0;
@@ -239,60 +215,15 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
 		final long start = System.currentTimeMillis();
 		
-			//TODO fix - it's uber-slow.
-//		final Img<IntType> ellipsoidIdentityImage = assignEllipsoidIDs(pixels, ellipsoids);
-		
 		//new model - 
-		//go through each foregorund pixel, find the maximal ellipsoids with averaging over multiple runs and maybe
+		//go through each foreground pixel, find the maximal ellipsoids with 
+		//volume-weighted averaging over multiple runs and
 		//over n-biggest ellipsoids.
-		//how to average? Weighted by volume?
-		//average EF -> EF image
-		//average a, b, c -> a/b, b/c to Flinn plot? Also average a, b, c -> average EF?
-		//don't produce other outputs (yet)
 		final List<ImgPlus<FloatType>> outputImages = getOutputImagesFromEllipsoids(pixels, ellipsoids);
 		
 		final long stop = System.currentTimeMillis();
 		
 		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
-//
-//			//add result of this run to overall result
-//			//TODO do not match Op every time
-//			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
-//					ellipsoids, showFlinnPlots, showSecondaryImages, inputImage.getName().split("\\.")[0]);
-//
-//			if(outputList!=null)
-//			{
-//				outputList = sumOutput(outputList, currentOutputList, counter);
-//				if(showConvergence)
-//				{
-//					final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
-//					errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
-//					medianErrors[i] = errors.get("Median");
-//					maxErrors[i] = errors.get("Max");
-//				}
-//			}
-//			else{
-//				outputList = currentOutputList;
-//				if(showConvergence)
-//				{
-//					medianErrors[i] = 2.0; // start with maximum possible error in first run (as no previous runs exist)
-//					maxErrors[i] = 2.0;
-//				}
-//			}
-//			counter++;
-//			totalEllipsoids += ellipsoids.size();
-		//}
-		
-		
-//		if (totalEllipsoids == 0) {
-//			cancelMacroSafe(this, NO_ELLIPSOIDS_FOUND);
-//			return;
-//		}
-
-//		if(runs>1)
-//		{
-//			outputList = divideOutput(outputList, runs);
-//		}
 
 		//calibrate output images
 		final double voxelVolume = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
@@ -307,14 +238,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 					axis.setUnit(inputImage.axis(dim).unit());
 					imp.setAxis(axis, dim);
 				}
-//				if("Volume".equals(imgPlus.getName())) {
-//					final Cursor<RealType> cursor = imgPlus.cursor();
-//					cursor.forEachRemaining(c ->
-//					{
-//						c.mul(voxelVolume);
-//					});
-//					imgPlus.setChannelMaximum(0,imgPlus.getChannelMaximum(0)*voxelVolume);
-//				}
 			}
 		}
 
@@ -322,7 +245,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final double numberOfForegroundPixels = countForegroundPixels(pixels);
 		final double numberOfAssignedPixels = countAssignedPixels(EF);
 		final double fillingPercentage = 100.0 * (numberOfAssignedPixels / numberOfForegroundPixels);
-
 
 		DescriptiveStatistics stats = new DescriptiveStatistics();
 		final Cursor<FloatType> cursor = EF.cursor();
@@ -340,15 +262,15 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final double min = stats.getMin();
 		SharedTable.add(inputImage.getName(), "Min EF", min);
 		//TODO move convergence analysis to the mean calculation
-//		if(showConvergence)
-//		{
+		if(showConvergence)
+		{
 //			for(int i=1; i<runs; i++)
 //			{
 //				SharedTable.add(inputImage.getName(),"median change "+i, medianErrors[i]);
 //				SharedTable.add(inputImage.getName(),"maximum change "+i, maxErrors[i]);
 //			}
-//			addResults(totalEllipsoids, fillingPercentage);
-//		}
+			addResults(totalEllipsoids, fillingPercentage);
+		}
 		resultsTable = SharedTable.getTable();
 		statusService.showStatus("Ellipsoid Factor completed");
 		reportUsage();
@@ -547,54 +469,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		}
 		return maximalEllipsoids;
 	}
-
-//	private List<ImgPlus> sumOutput(final List<ImgPlus> outputList,
-//											   final List<ImgPlus> currentOutputList,
-//											   final double nSum) {
-//		final List<ImgPlus> summed = new ArrayList<>();
-//		for(int i=0; i<outputList.size(); i++)
-//		{
-//			//this does not deal with NaNs the way we would like
-//			//final Img addition = (Img) opService.math().add(outputList.get(i).getImg(), (IterableInterval<FloatType>) currentOutputList.get(i).getImg());
-//
-//			//workaround to avoid NaN addition, still dodgy, first nonNaN will get loads of weight.
-//			final Img addition = outputList.get(i).getImg().copy();
-//			final Cursor<? extends RealType> previousVal = outputList.get(i).cursor();
-//			final Cursor<? extends RealType> currentVal = currentOutputList.get(i).getImg().cursor();
-//			final Cursor<? extends RealType> nextVal = addition.cursor();
-//
-//			while(previousVal.hasNext())
-//			{
-//				previousVal.fwd();
-//				currentVal.fwd();
-//				nextVal.fwd();
-//
-//				final double p = previousVal.get().getRealDouble();
-//				final double c = currentVal.get().getRealDouble();
-//				// only need to care about XOR case
-//				if(!Double.isFinite(c) ^ !Double.isFinite(p))
-//				{
-//					if(!Double.isFinite(c)){
-//						nextVal.get().setReal(p*(1.0+1.0/nSum));
-//					}
-//					else
-//					{
-//						nextVal.get().setReal(c*(nSum+1));
-//					}
-//				}
-//				else {
-//					nextVal.get().setReal(p+c);
-//				}
-//
-//			}
-//			final ImgPlus additionImgPlus = new ImgPlus<>(addition, outputList.get(i));
-//			additionImgPlus.setChannelMaximum(0, outputList.get(i).getChannelMaximum(0));
-//			additionImgPlus.setChannelMinimum(0, outputList.get(i).getChannelMinimum(0));
-//			summed.add(additionImgPlus);
-//
-//		}
-//		return summed;
-//	}
 
 	/**
 	 * Using input image surface points as seeds, check whether each seed point is visible,
@@ -849,25 +723,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 		final Img<IntType> idImage = ArrayImgs.ints(inputImage.dimension(0), inputImage.dimension(1), weightedAverageN, inputImage.dimension(2));
 		
-//		idImage.forEach(c -> c.setInteger(-1));
-//
-//		for(int nn = 0; nn < weightedAverageN; nn++) {
-//			final int n = nn;
-//			final Map<Ellipsoid, Integer> iDs = IntStream.range(0, ellipsoids.length).boxed()
-//					.collect(toMap(ellipsoids::get, Function.identity()));
-//			
-//			final LongStream zRange = LongStream.range(0, mask.dimension(2));
-//			
-//			zRange.parallel().forEach(z -> {
-//				// multiply by image unit? make more intelligent bounding box?
-//				final List<Ellipsoid> localEllipsoids = ellipsoids.stream()
-//						.filter(e -> Math.abs(e.getCentre()[2] - z) < e.getSortedRadii()[2]).collect(toList());
-//				final long[] mins = {0, 0, z};
-//				final long[] maxs = {mask.dimension(0) - 1, mask.dimension(1) - 1, z};
-//				final Cursor<BitType> maskSlice = Views.interval(mask, mins, maxs).localizingCursor();
-//				colourSlice(idImage, maskSlice, localEllipsoids, iDs, n);
-//			});
-//		}
 		return idImage;
 	}
 
@@ -924,6 +779,11 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	}
 
 	// endregion
+	/**
+	 * @param <T>
+	 * @param imgPlus
+	 * @return
+	 */
 	static <T extends RealType<T>> byte[][] imgPlusToByteArray(final ImgPlus<T> imgPlus) {
 		final int w = (int) imgPlus.dimension(0);
 		final int h = (int) imgPlus.dimension(1);
