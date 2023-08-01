@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -525,8 +526,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		
 		//need to randomise seed points' order in the List so that bounding box isn't biased
 		//by the ordered way they were added to the list
-		//need to do it here to maintain a common index between the seed points and
-		//their associated boundary point lists
 		Collections.shuffle(seedPointsList);
 		final int nSeedPoints = seedPointsList.size();
 		
@@ -536,7 +535,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			seedPoints[i] = seedPointsList.get(i);
 		
 		//get the boundary points by raytracing from surface pixels to seed points
-		ArrayList<ArrayList<int[]>> boundaryPointLists = RayCaster.getVisibleClouds(seedPoints, pixels, w, h, d);
+		HashMap<int[], ArrayList<int[]>> boundaryPointLists = RayCaster.getVisibleClouds(seedPoints, pixels, w, h, d);
 				
 		//do the ellipsoid optimisation "runs" times, reusing the seed points and boundary points
 		for (int i = 0; i < runs; i++) {
@@ -557,7 +556,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			IntStream seeds = IntStream.range(0, nSeedPoints);
 			
 			//iterate over all the seed points and get an optimised ellipsoid for each.
-			// here, j is a common index to get the seed point that relates to the same boundary point
 			seeds.parallel()
 				//get a status update for user feedback
 				.peek(pk -> statusService.showProgress(progress.getAndIncrement(), nSeedPoints))
@@ -566,7 +564,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 				.forEach(j -> {
 				
 				final int[] seedPoint = seedPoints[j];
-				final ArrayList<int[]> boundaryPointList = boundaryPointLists.get(j);
+				final ArrayList<int[]> boundaryPointList = boundaryPointLists.get(seedPoint);
 				
 				//convert the list of boundary points to an array of 3D int coordinates
 				final int nBoundaryPoints = boundaryPointList.size();

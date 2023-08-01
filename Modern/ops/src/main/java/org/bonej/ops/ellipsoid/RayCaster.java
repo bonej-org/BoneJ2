@@ -1,6 +1,8 @@
 package org.bonej.ops.ellipsoid;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.stream.IntStream;
 
 /**
  * Find the pixels visible from seed points for further use in fitting
@@ -47,23 +49,17 @@ public class RayCaster {
 	 * @param pixels
 	 * @return
 	 */
-	public static ArrayList<ArrayList<int[]>> getVisibleClouds(final int[][] seedPoints,
+	public static HashMap<int[], ArrayList<int[]>> getVisibleClouds(final int[][] seedPoints,
 		final byte[][] pixels, final int w, final int h, final int d) {
 
-		final int nSkeletonPoints = seedPoints.length;
+		final int nSeedPoints = seedPoints.length;
 
-		ArrayList<Integer> sliceNumbers = new ArrayList<>();
-		@SuppressWarnings("unchecked")
-		final ArrayList<ArrayList<int[]>>[] visibleCloudPointsArray = (ArrayList<ArrayList<int[]>>[]) new Object[d];
-
-		for (int z = 0; z < d; z++) {
-			sliceNumbers.add(z);
-			visibleCloudPointsArray[z] = new ArrayList<>(nSkeletonPoints);
-		}
-
+		//HashMap with boundaryPoint int[3] as key and seedPoints ArrayList<int[3]> as the value
+		//this is the opposite of what we want in the end
+		HashMap<int[], ArrayList<int[]>> seedPointsPerBoundaryPoint = new HashMap<>();
+		
 		//iterate in parallel over the stack slices
-		sliceNumbers.parallelStream().forEach(z -> {
-			final ArrayList<ArrayList<int[]>> threadVisibleCloudPoints = visibleCloudPointsArray[z];
+		IntStream.range(0, d).parallel().forEach( z -> {
 			final byte[] slice = pixels[z];
 			for (int y = 0; y < h; y++) {
 				final int offset = y * w;
@@ -74,10 +70,10 @@ public class RayCaster {
 							//we found a surface point, now check all the seed points
 
 							//need this because sometimes there may be fewer seed points than box sampling points.
-							final int boxSampling = Math.min(BOX_SAMPLE_SIZE, nSkeletonPoints);
+							final int boxSampling = Math.min(BOX_SAMPLE_SIZE, nSeedPoints);
 
-							ArrayList<int[]> visibleSkeletonPoints = new ArrayList<>();
-							ArrayList<int[]> occludedSkeletonPoints = new ArrayList<>();
+							ArrayList<int[]> visibleSeedPoints = new ArrayList<>();
+							ArrayList<int[]> occludedSeedPoints = new ArrayList<>();
 							
 							for (int i = 0; i < boxSampling; i++) {
 								final int[] p = seedPoints[i];
@@ -87,13 +83,13 @@ public class RayCaster {
 								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, STEP_SIZE,
 									pixels);
 								if (isAVisiblePoint) {
-									visibleSkeletonPoints.add(p);
+									visibleSeedPoints.add(p);
 								} else {
-									occludedSkeletonPoints.add(p);
+									occludedSeedPoints.add(p);
 								}
 							}
 							
-							int[] boundingBox = calculateBoundingBox(x, y, z, visibleSkeletonPoints, occludedSkeletonPoints);
+							int[] boundingBox = calculateBoundingBox(x, y, z, visibleSeedPoints, occludedSeedPoints);
 							 
 							int xMin = boundingBox[0];
 							int yMin = boundingBox[1];
@@ -102,11 +98,11 @@ public class RayCaster {
 							int yMax = boundingBox[4];
 							int zMax = boundingBox[5];
 							
-							for (int i = boxSampling; i < nSkeletonPoints; i++) {
+							for (int i = boxSampling; i < nSeedPoints; i++) {
 								
 								//periodically tune the bounding box
 								if (i > boxSampling && i % BOX_SAMPLE_SIZE == 0) {
-									boundingBox = calculateBoundingBox(x, y, z, visibleSkeletonPoints, occludedSkeletonPoints);
+									boundingBox = calculateBoundingBox(x, y, z, visibleSeedPoints, occludedSeedPoints);
 
 									xMin = boundingBox[0];
 									yMin = boundingBox[1];
@@ -125,32 +121,38 @@ public class RayCaster {
 									continue;
 								final boolean isAVisiblePoint = isVisible(x, y, z, qx, qy, qz, w, STEP_SIZE,
 									pixels);
-								if (isAVisiblePoint) {
-									// add this surface pixel (x, y, z) to the list of points visible from this seed point (p)
-									//which is what we need to feed to Ellipsoid.contains() later.
-									threadVisibleCloudPoints.get(i).add(new int[] { x, y, z });
-									visibleSkeletonPoints.add(p);
+								if (isAVisiblePoint) {									
+									visibleSeedPoints.add(p);
 								} else {
-									occludedSkeletonPoints.add(p);
+									occludedSeedPoints.add(p);
 								}
 							}
+							//enter the full list of visible seed points to the hashmap keyed to the boundary point
+							int[] boundaryPoint = new int[] {x, y, z};
+							seedPointsPerBoundaryPoint.put(boundaryPoint, visibleSeedPoints);
 						}
 					}
 				}
 			}
 		});
+		
+		//HashMap with seedPoint int[3] as key and boundary point ArrayList<int[3]> as the value
+		HashMap<int[], ArrayList<int[]>> boundaryPointsPerSeedPoint = new HashMap<>();
+		
+		IntStream.range(0, nSeedPoints).parallel().forEach(i -> {
+			boundaryPointsPerSeedPoint.put(seedPoints[i], new ArrayList<int[]>());
+		});
 
-		// merge all the lists into one
-		// could be done in a parallel stream I guess
-		ArrayList<ArrayList<int[]>> visibleCloudPoints = new ArrayList<>(nSkeletonPoints);
-		for (int z = 0; z < d; z++) {
-			ArrayList<ArrayList<int[]>> threadVisibleCloudPoints = visibleCloudPointsArray[z];
-			for (int s = 0; s < nSkeletonPoints; s++) {
-				visibleCloudPoints.get(s).addAll(threadVisibleCloudPoints.get(s));
-			}
-		}
+		//re-arrange the list to get list of boundaryPoints for each seedPoint
+		seedPointsPerBoundaryPoint.entrySet().stream().parallel().forEach(entry -> {
+			int[] boundaryPoint = entry.getKey();
+			ArrayList<int[]> seedPointList = entry.getValue();
+			seedPointList.forEach(seedPoint -> {
+				boundaryPointsPerSeedPoint.get(seedPoint).add(boundaryPoint);
+			});
+		});
 
-		return visibleCloudPoints;
+		return boundaryPointsPerSeedPoint;
 	}
 
 	/**
