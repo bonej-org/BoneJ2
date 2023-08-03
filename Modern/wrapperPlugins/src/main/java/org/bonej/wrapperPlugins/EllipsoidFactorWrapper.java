@@ -220,7 +220,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		//go through each foreground pixel, find the maximal ellipsoids with 
 		//volume-weighted averaging over multiple runs and
 		//over n-biggest ellipsoids.
-		final List<ImgPlus<FloatType>> outputImages = getOutputImagesFromEllipsoids(pixels, ellipsoids);
+		ellipsoidFactorOutputImages = getOutputImagesFromEllipsoids(pixels, ellipsoids);
 		
 		final long stop = System.currentTimeMillis();
 		
@@ -228,9 +228,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 		//calibrate output images
 		final double voxelVolume = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
-		for(final Img<FloatType> img : outputImages) {
+		for(final ImgPlus<FloatType> imp : ellipsoidFactorOutputImages) {
 			
-			ImgPlus<FloatType> imp = new ImgPlus<FloatType>(img);
 			//only do the 3D images: EF etc., not the 2D Flinn plot(s)
 			if(imp.numDimensions() >= 3) {
 				// set spatial axis for first 3 dimensions (ID is 4d)
@@ -553,10 +552,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			EllipsoidOptimisationStrategy optimiser = new EllipsoidOptimisationStrategy(
 				new long[] {w, h, d}, logService, statusService, parameters);
 			
-			IntStream seeds = IntStream.range(0, nSeedPoints);
-			
 			//iterate over all the seed points and get an optimised ellipsoid for each.
-			seeds.parallel()
+			IntStream.range(0, nSeedPoints).parallel()
 				//get a status update for user feedback
 				.peek(pk -> statusService.showProgress(progress.getAndIncrement(), nSeedPoints))
 				
@@ -565,6 +562,15 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 				
 				final int[] seedPoint = seedPoints[j];
 				final ArrayList<int[]> boundaryPointList = boundaryPointLists.get(seedPoint);
+				logService.info("Optimising ellipsoid seeded at ("+seedPoint[0]+", "+seedPoint[1]+", "+seedPoint[2]+
+						") within "+boundaryPointList.size()+" boundary points...");
+				boundaryPointList.forEach(s -> {
+					if (s == null) {
+						logService.info("Found a null boundary point!");
+						throw new IllegalArgumentException("Boundary point cannot be null");
+					}
+					logService.info("("+s[0]+", "+s[1]+", "+s[2]+")");
+				});
 				
 				//convert the list of boundary points to an array of 3D int coordinates
 				final int nBoundaryPoints = boundaryPointList.size();
@@ -593,10 +599,15 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 			ellipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 
-			ellipsoidsArray[i] = (Ellipsoid[]) ellipsoids.toArray();
+			final int nEllipsoids = ellipsoids.size();
+			final Ellipsoid[] ellipsoidRunArray = new Ellipsoid[nEllipsoids];
+			for (int e = 0; e < nEllipsoids; e++)
+				ellipsoidRunArray[e] = ellipsoids.get(e);
+				
+			ellipsoidsArray[i] = ellipsoidRunArray;
 
 			final long stop = System.currentTimeMillis();
-			logService.info("Found " + ellipsoids.size() + " ellipsoids in " + (stop - start) + " ms" +
+			logService.info("Found " + nEllipsoids + " ellipsoids in " + (stop - start) + " ms" +
 					" (run "+ (i + 1) +"/"+ runs +")");
 		}
 		
@@ -647,6 +658,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			final int randomStart = (new Random()).nextInt(skipRatio);
 			for (int i = randomStart; i < nSeedPoints; i += skipRatio )
 				trimmedList.add(seedPoints.get(i));
+			
+			logService.info("Trimmed seed point list to " + trimmedList.size() + " points");
 			return trimmedList;
 		}
 		return seedPoints;

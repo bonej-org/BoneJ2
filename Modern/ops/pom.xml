@@ -141,6 +141,11 @@
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
         </dependency>
+        <!-- better to move useful utilities into Modern, but this avoids duplication -->
+        <dependency>
+        	<groupId>org.bonej</groupId>
+        	<artifactId>bonej-legacy-util_</artifactId>
+        </dependency>
 
         <!-- Testing dependencies -->
         <dependency>

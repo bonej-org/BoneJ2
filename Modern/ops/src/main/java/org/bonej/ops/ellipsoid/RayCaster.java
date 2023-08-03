@@ -130,6 +130,7 @@ public class RayCaster {
 							//enter the full list of visible seed points to the hashmap keyed to the boundary point
 							int[] boundaryPoint = new int[] {x, y, z};
 							seedPointsPerBoundaryPoint.put(boundaryPoint, visibleSeedPoints);
+//							System.out.println("RayTracer found "+visibleSeedPoints.size()+" seed points for boundary point ("+x+", "+y+", "+z+")");
 						}
 					}
 				}
@@ -151,7 +152,13 @@ public class RayCaster {
 				boundaryPointsPerSeedPoint.get(seedPoint).add(boundaryPoint);
 			});
 		});
-
+		
+		boundaryPointsPerSeedPoint.entrySet().stream().forEach(entry -> {
+			final int[] seedPoint = entry.getKey();
+			final ArrayList<int[]> boundaryPoints = entry.getValue();
+			System.out.println("RayCaster found "+boundaryPoints.size()+" boundary points for seed point ("+seedPoint[0]+", "+seedPoint[1]+", "+seedPoint[2]+")");
+		});
+		
 		return boundaryPointsPerSeedPoint;
 	}
 

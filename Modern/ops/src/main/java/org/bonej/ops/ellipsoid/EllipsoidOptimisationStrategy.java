@@ -54,7 +54,7 @@ public class EllipsoidOptimisationStrategy {
 	double stackVolume;
 	
 	/** unit vectors needed for testing whether ellipsoid is outside the volume */
-	private final double[][] unitVectors = Vectors.randomVectors(100);
+	private final double[][] unitVectors = Vectors.randomVectors(20);
 	
 	public EllipsoidOptimisationStrategy(
 		long[] imageDimensions, LogService logService,
@@ -328,7 +328,7 @@ public class EllipsoidOptimisationStrategy {
 		ellipsoid.rotate(rotation);
 	}
 
-	private void inflateToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final double a,
+	void inflateToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final double a,
 			final double b, final double c, final int[][] boundaryPoints) {
 
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
@@ -359,29 +359,47 @@ public class EllipsoidOptimisationStrategy {
 		
 		// Instantiate a small spherical ellipsoid
 		final double[] centre = {seedPoint[0], seedPoint[1], seedPoint[2]};
-		double r = getInitialRadius(centre, boundaryPoints, contactPoints);		
+		double r = getInitialRadius(centre, boundaryPoints, contactPoints);
+		logService.info("Initial radius set to "+r);
+		int[] c = contactPoints.get(0);
+		logService.info("Initial contact point set to ("+c[0]+", "+c[1]+", "+c[2]+")");
 		final double[] radii = {r, r, r};
 		final double[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
 		Ellipsoid ellipsoid = new Ellipsoid(radii, centre, axes);
 		
-  	final List<Double> volumeHistory = new ArrayList<>();
+		final List<Double> volumeHistory = new ArrayList<>();
 		volumeHistory.add(ellipsoid.getVolume());
 
 		orientAxes(ellipsoid, contactPoints);
+		double[][] ev = ellipsoid.getRotation();
+		for (int i = 0; i < 3; i++) {
+			double[] v = ev[i];
+			logService.info("After intial orienting, Ellipsoid axis "+i+" has unit vector ["
+			+v[0]+", "+v[1]+", "+v[2]+"]^T");
+		}
 
 		// shrink the ellipsoid slightly
 		shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
 		ellipsoid.contract(0.1);
+		
+		double[] ec = ellipsoid.getCentre();
+		logService.info("After intial orienting and shrinking, Ellipsoid has centre ("+(int) ec[0]+", "+(int) ec[1]+", "+(int) ec[2]+")");
+		
+		double[] er = ellipsoid.getRadii();
+		logService.info("After intial orienting and shrinking, Ellipsoid has radii ("+ er[0]+", "+ er[1]+", "+ er[2]+")");
 
 		// dilate other two axes until number of contact points increases
 		// by contactSensitivity number of contacts
 
 		while (contactPoints.size() < params.contactSensitivity) {
 			ellipsoid.dilate(0, params.vectorIncrement, params.vectorIncrement);
+			er = ellipsoid.getRadii();
+			logService.info("Dilated to radii ("+ er[0]+", "+ er[1]+", "+ er[2]+")");
 			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
+			logService.info("Found "+contactPoints.size()+" contact points at initial oblation");
 			if (isInvalid(ellipsoid, w, h, d)) {
-				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
+				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying at initial oblation");
 				return null;
 			}
@@ -415,7 +433,7 @@ public class EllipsoidOptimisationStrategy {
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
-				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
+				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -441,7 +459,7 @@ public class EllipsoidOptimisationStrategy {
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
-				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
+				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -462,7 +480,7 @@ public class EllipsoidOptimisationStrategy {
 			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
-				logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
+				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
@@ -473,11 +491,6 @@ public class EllipsoidOptimisationStrategy {
 			// keep the maximal ellipsoid found
 			ellipsoid = maximal.copy();
 
-			if (ellipsoid.getVolume() > maximal.getVolume())
-				maximal = ellipsoid.copy();
-
-			// keep the maximal ellipsoid found
-			ellipsoid = maximal.copy();
 			// log its volume
 			volumeHistory.add(ellipsoid.getVolume());
 
@@ -498,14 +511,14 @@ public class EllipsoidOptimisationStrategy {
 		// this usually indicates that the ellipsoid
 		// grew out of control for some reason
 		if (totalIterations == absoluteMaxIterations) {
-			logService.debug("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
+			logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 					+ ") seems to be out of control, nullifying after " + totalIterations + " iterations");
 			return null;
 		}
 
 		final long stop = System.currentTimeMillis();
 
-		logService.debug("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
+		logService.info("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
 				+ (double) (stop - start) / totalIterations + " ms/iteration)");
 
 		String centreString = "("+(int) centre[0]+",  "+ (int) centre[1]+",  "+(int) centre[2]+")";
@@ -525,7 +538,7 @@ public class EllipsoidOptimisationStrategy {
 	 * @param contactPoints
 	 * @return radius of the starting ellipsoid 
 	 */
-	private double getInitialRadius(final double[] centre,
+	double getInitialRadius(final double[] centre,
 		final int[][] boundaryPoints, ArrayList<int[]> contactPoints){
 		
 		double cx = centre[0];
@@ -550,7 +563,7 @@ public class EllipsoidOptimisationStrategy {
 		return minD - params.vectorIncrement;
 	}
 
-	private void orientAxes(Ellipsoid ellipsoid, ArrayList<int[]> contactPoints) {
+	void orientAxes(Ellipsoid ellipsoid, ArrayList<int[]> contactPoints) {
 		// find the mean unit vector pointing to the points of contact from the
 		// centre
 		final double[] shortAxis = contactPointUnitVector(ellipsoid, contactPoints);
@@ -572,7 +585,7 @@ public class EllipsoidOptimisationStrategy {
 		ellipsoid.setRotation(rotation);
 	}
 
-	private void shrinkToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
+	void shrinkToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
 
 		// get the contact points
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
@@ -628,9 +641,15 @@ public class EllipsoidOptimisationStrategy {
 	boolean isInvalid(final Ellipsoid ellipsoid, final int w, final int h, final int d) {
 		double[][] surfacePoints = ellipsoid.getSurfacePoints(unitVectors);
 		final int nSurfacePoints = surfacePoints.length;
-
+		
+		for (int i = 0; i < nSurfacePoints; i++) {
+			double[] p = surfacePoints[i];
+			logService.info("Surface point at ("+(int) (p[0])+", "+(int) (p[1])+", "+(int) (p[2])+")");
+		}
+		
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
+			logService.info("Minimum radius too small!");
 			return true;
 		}
 
@@ -639,15 +658,21 @@ public class EllipsoidOptimisationStrategy {
 
 		for (int i = 0 ; i < nSurfacePoints; i++) {
 			final double[] p = surfacePoints[i];
-			if (isOutOfBounds((int) (p[0]), (int) (p[1]), (int) (p[2]), w, h, d))
+			if (isOutOfBounds((int) (p[0]), (int) (p[1]), (int) (p[2]), w, h, d)) {
 				outOfBoundsCount++;
-			if (outOfBoundsCount > half)
+				logService.info("Surface point at ("+(int) (p[0])+", "+(int) (p[1])+", "+(int) (p[2])+") is out of bounds");
+			}
+			if (outOfBoundsCount > half) {
+				logService.info("More than half the ellipsoid is outside the image!");
 				return true;
+			}
 		}
 
-		final double volume = ellipsoid.getVolume();
-		return volume > stackVolume;
-
+		if (ellipsoid.getVolume() > stackVolume) {
+			logService.info("Ellipsoid is bigger than the whole image!");
+		}
+		
+		return false;
 	}
 
 	void findContactPoints(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints,

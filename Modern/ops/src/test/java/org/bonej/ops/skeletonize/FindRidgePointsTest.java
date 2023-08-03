@@ -50,19 +50,19 @@ public class FindRidgePointsTest extends AbstractOpTest {
     public void testSphereRidge() {
         //SET UP
         final Img<BitType> sphereImage = getSphereImage();
-        final Vector3dc expectedSingleRidgePoint = new Vector3d(50.5, 50.5, 50.5);
+        final int[] expectedSingleRidgePoint = new int[] {50, 50, 50};
 
         //EXECUTE
-        final List<?> ridgePointList = (List<?>) ops.run(FindRidgePoints.class, new ImgPlus<>(sphereImage,
+        final List<int[]> ridgePointList = (List<int[]>) ops.run(FindRidgePoints.class, new ImgPlus<>(sphereImage,
                 "Sphere test image", new AxisType[] { Axes.X, Axes.Y, Axes.Z },
                 new double[] { 1.0, 1.0, 1.0 }, new String[] { "", "", "" }));
 
         //VERIFY
         assertEquals(1, ridgePointList.size());
-        final Vector3dc point = (Vector3dc) ridgePointList.get(0);
-        assertEquals("Ridge point x-coordinate is wrong", expectedSingleRidgePoint.x(), point.x(),0);
-        assertEquals("Ridge point y-coordinate is wrong", expectedSingleRidgePoint.y(), point.y(),0);
-        assertEquals("Ridge point z-coordinate is wrong", expectedSingleRidgePoint.z(), point.z(),0);
+        final int[] point = ridgePointList.get(0);
+        assertEquals("Ridge point x-coordinate is wrong", expectedSingleRidgePoint[0], point[0],0);
+        assertEquals("Ridge point y-coordinate is wrong", expectedSingleRidgePoint[1], point[1],0);
+        assertEquals("Ridge point z-coordinate is wrong", expectedSingleRidgePoint[2], point[2],0);
     }
 
 

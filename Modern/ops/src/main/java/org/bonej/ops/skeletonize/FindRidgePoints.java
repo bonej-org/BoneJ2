@@ -77,10 +77,8 @@ public class FindRidgePoints<R extends RealType<R> & NativeType<R>> extends Abst
                 continue;
             }
             ridgeCursor.localize(position);
-            final int[] seed = new int[] {(int) position[0], (int) position[1], (int) position[2]};
-            // add 0.5 to centre of pixel, and subtract 1.0 because of ridge calculated on 1-expanded image!
-            // equivalently, subtract 0.5:
-//            seed.sub(0.5, 0.5, 0.5); //TODO check that corner-based pixels are still OK (i.e. pixel location is at floor() not round())
+            //need to shift by -1 because the ridge image has been expanded (and shifted) by +1
+            final int[] seed = new int[] {(int) position[0] - 1, (int) position[1] - 1, (int) position[2] - 1};
             seeds.add(seed);
         }
         return seeds;

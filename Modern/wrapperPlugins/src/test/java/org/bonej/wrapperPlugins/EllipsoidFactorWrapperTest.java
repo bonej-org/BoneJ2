@@ -92,7 +92,7 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
 
         // EXECUTE
         final CommandModule module = command().run(
-                EllipsoidFactorWrapper.class, true, "inputImage", empty, "nVectors", 100,
+                EllipsoidFactorWrapper.class, true, "inputImage", empty,
                 "vectorIncrement", 0.435, "skipRatio", 1, "contactSensitivity", 10, "maxIterations",
                 100, "maxDrift", 1.73, "runs", 1, "weightedAverageN", 1,
                 "seedOnDistanceRidge", true, "distanceThreshold", 0.6, "seedOnTopologyPreserving",
@@ -117,8 +117,8 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
         final ImgPlus<UnsignedByteType> imgPlus = new ImgPlus<>(img, "Sphere", xAxis, yAxis, zAxis);
 
         final CommandModule module = command().run(
-                EllipsoidFactorWrapper.class, true, "inputImage", imgPlus, "nVectors", 100,
-                "vectorIncrement", 0.435, "skipRatio", 1, "contactSensitivity", 10, "maxIterations",
+                EllipsoidFactorWrapper.class, true, "inputImage", imgPlus,
+                "vectorIncrement", 0.435, "skipRatio", 1, "contactSensitivity", 1, "maxIterations",
                 100, "maxDrift", 1.73, "runs", 1, "weightedAverageN", 1,
                 "seedOnDistanceRidge", true, "distanceThreshold", 0.6, "seedOnTopologyPreserving",
                 false).get();

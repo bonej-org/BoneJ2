@@ -335,10 +335,11 @@ public class Ellipsoid {
 
 	public double[][] getSurfacePoints(final double[][] vectors) {
 		final int nPoints = vectors.length;
+		final double[][] surfacePoints = new double[nPoints][3];
 		for (int p = 0; p < nPoints; p++) {
-			vectors[p] = getSurfacePoint(vectors[p]);
+			surfacePoints[p] = getSurfacePoint(vectors[p]);
 		}
-		return vectors;
+		return surfacePoints;
 	}
 
 	/**
