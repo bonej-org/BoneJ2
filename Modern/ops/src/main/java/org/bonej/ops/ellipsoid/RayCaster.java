@@ -77,6 +77,9 @@ public class RayCaster {
 							
 							for (int i = 0; i < boxSampling; i++) {
 								final int[] p = seedPoints[i];
+								if (p == null) {
+									throw new NullPointerException("Found a null seedPoint!");
+								}
 								final int qx = p[0];
 								final int qy = p[1];
 								final int qz = p[2];
@@ -140,12 +143,12 @@ public class RayCaster {
 		//HashMap with seedPoint int[3] as key and boundary point ArrayList<int[3]> as the value
 		HashMap<int[], ArrayList<int[]>> boundaryPointsPerSeedPoint = new HashMap<>();
 		
-		IntStream.range(0, nSeedPoints).parallel().forEach(i -> {
+		IntStream.range(0, nSeedPoints).forEach(i -> {
 			boundaryPointsPerSeedPoint.put(seedPoints[i], new ArrayList<int[]>());
 		});
 
 		//re-arrange the list to get list of boundaryPoints for each seedPoint
-		seedPointsPerBoundaryPoint.entrySet().stream().parallel().forEach(entry -> {
+		seedPointsPerBoundaryPoint.entrySet().stream().forEach(entry -> {
 			int[] boundaryPoint = entry.getKey();
 			ArrayList<int[]> seedPointList = entry.getValue();
 			seedPointList.forEach(seedPoint -> {
