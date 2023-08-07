@@ -259,7 +259,7 @@ public class EllipsoidOptimisationStrategy {
 	 *      "https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle">Rotation
 	 *      matrix from axis and angle</a>
 	 */
-	private static void rotateAboutAxis(final Ellipsoid ellipsoid, final double[] axis) {
+	static void rotateAboutAxis(final Ellipsoid ellipsoid, final double[] axis) {
 		final double theta = 0.1;
 		final double sin = Math.sin(theta);
 		final double cos = Math.cos(theta);
@@ -305,24 +305,24 @@ public class EllipsoidOptimisationStrategy {
 	}
 
 	static void wiggle(Ellipsoid ellipsoid) {
-		final double b = Math.random() * 0.2 - 0.1;
-		final double c = Math.random() * 0.2 - 0.1;
-		final double a = Math.sqrt(1 - b * b - c * c);
+		//random angles between -0.1 and +0.1 radians
+		final double a = Math.random() * 0.1 - 0.5;
+		final double b = Math.random() * 0.1 - 0.5;
+		final double g = Math.random() * 0.1 - 0.5;
 
-		final double k = Math.sqrt(a * a + b * b + c * c);
-		// zeroth column, should be very close to [1, 0, 0]^T (mostly x)
-		final double[] zerothColumn = {a, b, c};
-
-		// first column, should be very close to [0, 1, 0]^T
-		final double[] firstColumn = {-b/k, a/k, 0};
-
-		// second column, should be very close to [0, 0, 1]^T
-		final double[] secondColumn = norm(new double[]{-a * c, -b * c, a * a + b * b});
-
+		final double sina = Math.sin(a);
+		final double sinb = Math.sin(b);
+		final double sing = Math.sin(g);
+		
+		final double cosa = Math.cos(a);
+		final double cosb = Math.cos(b);
+		final double cosg = Math.cos(g);
+	
 		// array has subarrays as rows, need them as columns
-		double[][] rotation = {	{zerothColumn[0], firstColumn[0], secondColumn[0]},
-								{zerothColumn[1], firstColumn[1], secondColumn[1]},
-								{zerothColumn[2], firstColumn[2], secondColumn[2]}
+		double[][] rotation = {
+			{cosa * cosb, sina * cosb, -sinb},
+			{cosa * sinb * sing - sina * cosg, sina * sinb * sing + cosa * cosg, cosb * sing},
+			{cosa * sinb * cosg + sina * sing, sina * sinb * cosg - cosa * sing, cosb * cosg}
 		};
 
 		ellipsoid.rotate(rotation);
@@ -449,12 +449,10 @@ public class EllipsoidOptimisationStrategy {
 				wiggle(ellipsoid);
 			} else {
 				ec = ellipsoid.getCentre();
-				logService.info("Before bumping, Ellipsoid has centre ("+ec[0]+", "+ec[1]+", "+ec[2]+")");
 				
 				bump(ellipsoid, contactPoints, seedPoint);
 				
 				ec = ellipsoid.getCentre();
-				logService.info("After bumping, Ellipsoid has centre ("+ec[0]+", "+ec[1]+", "+ec[2]+")");
 			}
 //			constrainStrategy.postConstrain(ellipsoid);
 			// contract
@@ -648,16 +646,14 @@ public class EllipsoidOptimisationStrategy {
 		double[][] surfacePoints = ellipsoid.getSurfacePoints(unitVectors);
 		final int nSurfacePoints = surfacePoints.length;
 		
-//		for (int i = 0; i < nSurfacePoints; i++) {
-//			double[] p = surfacePoints[i];
-//			logService.info("Surface point at ("+(int) (p[0])+", "+(int) (p[1])+", "+(int) (p[2])+")");
-//		}
-		
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
-			logService.info("Minimum radius too small!");
 			return true;
 		}
+		
+		if (ellipsoid.getVolume() > stackVolume) {
+		return true;
+	}
 
 		int outOfBoundsCount = 0;
 		final int half = nSurfacePoints / 2;
@@ -666,18 +662,11 @@ public class EllipsoidOptimisationStrategy {
 			final double[] p = surfacePoints[i];
 			if (isOutOfBounds((int) (p[0]), (int) (p[1]), (int) (p[2]), w, h, d)) {
 				outOfBoundsCount++;
-				logService.info("Surface point at ("+(int) (p[0])+", "+(int) (p[1])+", "+(int) (p[2])+") is out of bounds");
 			}
 			if (outOfBoundsCount > half) {
-				logService.info("More than half the ellipsoid is outside the image!");
 				return true;
 			}
-		}
-
-		if (ellipsoid.getVolume() > stackVolume) {
-			logService.info("Ellipsoid is bigger than the whole image!");
-		}
-		
+		}		
 		return false;
 	}
 
