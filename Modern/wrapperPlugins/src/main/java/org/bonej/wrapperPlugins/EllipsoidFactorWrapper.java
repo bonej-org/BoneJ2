@@ -569,7 +569,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 						logService.info("Found a null boundary point!");
 						throw new IllegalArgumentException("Boundary point cannot be null");
 					}
-					logService.info("("+s[0]+", "+s[1]+", "+s[2]+")");
 				});
 				
 				//convert the list of boundary points to an array of 3D int coordinates
