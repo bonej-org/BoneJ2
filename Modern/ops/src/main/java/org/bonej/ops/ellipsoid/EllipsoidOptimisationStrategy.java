@@ -574,7 +574,12 @@ public class EllipsoidOptimisationStrategy {
 
 		// find an orthogonal axis
 		final double[] xAxis = {1, 0, 0};
-		double[] middleAxis = crossProduct(shortAxis, xAxis);
+		final double[] yAxis = {0, 1, 0};
+		double[] middleAxis = new double[3];
+		if (shortAxis[0] == 1 || shortAxis[0] == -1)
+			middleAxis = crossProduct(shortAxis, yAxis);
+		else
+			middleAxis = crossProduct(shortAxis, xAxis);
 		middleAxis = norm(middleAxis);
 
 		// find a mutually orthogonal axis by forming the cross product

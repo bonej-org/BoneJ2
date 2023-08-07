@@ -52,7 +52,7 @@ public class EllipsoidOptimisationStrategyTest {
 	
 	@Test
 	public void testOrientAxis() {
-		final int nTests = 100;
+		final int nTests = 1000;
 		final double[][] unitVectors = Vectors.randomVectors(nTests);
 		EllipsoidOptimisationStrategy eos = new EllipsoidOptimisationStrategy(new long[] {10, 10, 10}, null, null, params);
 		//initialise an image-axis-aligned ellipsoid centred on 0,0,0 and with radii 10,10,10.
@@ -62,6 +62,7 @@ public class EllipsoidOptimisationStrategyTest {
 		ArrayList<int[]> contactPoints = new ArrayList<>();
 		for (int i = 0; i < nTests; i++) {
 			final double[] u = unitVectors[i];
+			
 			contactPoints.add(new int[] {(int) (u[0] * 10), (int) (u[1] * 10), (int) (u[2] * 10)});
 			
 			eos.orientAxes(e, contactPoints);
