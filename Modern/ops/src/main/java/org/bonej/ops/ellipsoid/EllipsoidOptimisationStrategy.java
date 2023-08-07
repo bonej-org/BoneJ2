@@ -437,18 +437,24 @@ public class EllipsoidOptimisationStrategy {
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
 				return null;
 			}
-
+			
 			if (ellipsoid.getVolume() > maximal.getVolume())
 				maximal = ellipsoid.copy();
 
-			// bump a little away from the sides
+			// find any boundary points touching the ellipsoid
 			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
 //			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			// if can't bump then do a wiggle
 			if (contactPoints.isEmpty()) {
 				wiggle(ellipsoid);
 			} else {
+				ec = ellipsoid.getCentre();
+				logService.info("Before bumping, Ellipsoid has centre ("+ec[0]+", "+ec[1]+", "+ec[2]+")");
+				
 				bump(ellipsoid, contactPoints, seedPoint);
+				
+				ec = ellipsoid.getCentre();
+				logService.info("After bumping, Ellipsoid has centre ("+ec[0]+", "+ec[1]+", "+ec[2]+")");
 			}
 //			constrainStrategy.postConstrain(ellipsoid);
 			// contract
@@ -642,10 +648,10 @@ public class EllipsoidOptimisationStrategy {
 		double[][] surfacePoints = ellipsoid.getSurfacePoints(unitVectors);
 		final int nSurfacePoints = surfacePoints.length;
 		
-		for (int i = 0; i < nSurfacePoints; i++) {
-			double[] p = surfacePoints[i];
-			logService.info("Surface point at ("+(int) (p[0])+", "+(int) (p[1])+", "+(int) (p[2])+")");
-		}
+//		for (int i = 0; i < nSurfacePoints; i++) {
+//			double[] p = surfacePoints[i];
+//			logService.info("Surface point at ("+(int) (p[0])+", "+(int) (p[1])+", "+(int) (p[2])+")");
+//		}
 		
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
@@ -702,13 +708,14 @@ public class EllipsoidOptimisationStrategy {
 	 */
 	void bump(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints, final int[] seedPoint) {
 		
-		final double displacement = params.vectorIncrement / 2;
+		final double displacement = params.vectorIncrement / 10;
 
 		final double[] c = ellipsoid.getCentre();
-		final double[] vector = contactPointUnitVector(ellipsoid, contactPoints);
-		final double x = c[0] - vector[0] * displacement;
-		final double y = c[1] - vector[1] * displacement;
-		final double z = c[2] - vector[2] * displacement;
+		final double[] u = contactPointUnitVector(ellipsoid, contactPoints);
+		
+		final double x = c[0] - u[0] * displacement;
+		final double y = c[1] - u[1] * displacement;
+		final double z = c[2] - u[2] * displacement;
 
 		final double xD = x - seedPoint[0];
 		final double yD = y - seedPoint[1];
