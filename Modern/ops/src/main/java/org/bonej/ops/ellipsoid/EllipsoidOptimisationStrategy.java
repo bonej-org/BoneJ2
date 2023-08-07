@@ -372,32 +372,17 @@ public class EllipsoidOptimisationStrategy {
 		volumeHistory.add(ellipsoid.getVolume());
 
 		orientAxes(ellipsoid, contactPoints);
-		double[][] ev = ellipsoid.getRotation();
-		for (int i = 0; i < 3; i++) {
-			double[] v = ev[i];
-			logService.info("After intial orienting, Ellipsoid axis "+i+" has unit vector ["
-			+v[0]+", "+v[1]+", "+v[2]+"]^T");
-		}
 
 		// shrink the ellipsoid slightly
 		shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
 		ellipsoid.contract(0.1);
 		
-		double[] ec = ellipsoid.getCentre();
-		logService.info("After intial orienting and shrinking, Ellipsoid has centre ("+(int) ec[0]+", "+(int) ec[1]+", "+(int) ec[2]+")");
-		
-		double[] er = ellipsoid.getRadii();
-		logService.info("After intial orienting and shrinking, Ellipsoid has radii ("+ er[0]+", "+ er[1]+", "+ er[2]+")");
-
 		// dilate other two axes until number of contact points increases
 		// by contactSensitivity number of contacts
 
 		while (contactPoints.size() < params.contactSensitivity) {
 			ellipsoid.dilate(0, params.vectorIncrement, params.vectorIncrement);
-			er = ellipsoid.getRadii();
-			logService.info("Dilated to radii ("+ er[0]+", "+ er[1]+", "+ er[2]+")");
 			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
-			logService.info("Found "+contactPoints.size()+" contact points at initial oblation");
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying at initial oblation");
@@ -448,11 +433,7 @@ public class EllipsoidOptimisationStrategy {
 			if (contactPoints.isEmpty()) {
 				wiggle(ellipsoid);
 			} else {
-				ec = ellipsoid.getCentre();
-				
-				bump(ellipsoid, contactPoints, seedPoint);
-				
-				ec = ellipsoid.getCentre();
+				bump(ellipsoid, contactPoints, seedPoint);				
 			}
 //			constrainStrategy.postConstrain(ellipsoid);
 			// contract
