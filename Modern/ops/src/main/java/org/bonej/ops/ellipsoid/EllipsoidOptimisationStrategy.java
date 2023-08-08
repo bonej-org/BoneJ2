@@ -305,10 +305,11 @@ public class EllipsoidOptimisationStrategy {
 	}
 
 	static void wiggle(Ellipsoid ellipsoid) {
-		//random angles between -0.1 and +0.1 radians
-		final double a = Math.random() * 0.1 - 0.5;
-		final double b = Math.random() * 0.1 - 0.5;
-		final double g = Math.random() * 0.1 - 0.5;
+		//random angles between -0.05 and +0.05 radians (range is 0.1 radians, 5.73°)
+		final double wiggleRange = 0.1;
+		final double a = Math.random() * wiggleRange - wiggleRange / 2;
+		final double b = Math.random() * wiggleRange - wiggleRange / 2;
+		final double g = Math.random() * wiggleRange - wiggleRange / 2;
 
 		final double sina = Math.sin(a);
 		final double sinb = Math.sin(b);
@@ -318,7 +319,6 @@ public class EllipsoidOptimisationStrategy {
 		final double cosb = Math.cos(b);
 		final double cosg = Math.cos(g);
 	
-		// array has subarrays as rows, need them as columns
 		double[][] rotation = {
 			{cosa * cosb, sina * cosb, -sinb},
 			{cosa * sinb * sing - sina * cosg, sina * sinb * sing + cosa * cosg, cosb * sing},
