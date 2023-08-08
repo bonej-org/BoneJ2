@@ -360,9 +360,6 @@ public class EllipsoidOptimisationStrategy {
 		// Instantiate a small spherical ellipsoid
 		final double[] centre = {seedPoint[0], seedPoint[1], seedPoint[2]};
 		double r = getInitialRadius(centre, boundaryPoints, contactPoints);
-		logService.info("Initial radius set to "+r);
-		int[] c = contactPoints.get(0);
-		logService.info("Initial contact point set to ("+c[0]+", "+c[1]+", "+c[2]+")");
 		final double[] radii = {r, r, r};
 		final double[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 

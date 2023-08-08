@@ -214,7 +214,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 		//assign one ellipsoid to each FG voxel
 		statusService.showStatus("Ellipsoid Factor: assigning EF to foreground voxels...");
-		final long start = System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 		
 		//new model - 
 		//go through each foreground pixel, find the maximal ellipsoids with 
@@ -222,10 +222,12 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		//over n-biggest ellipsoids.
 		ellipsoidFactorOutputImages = getOutputImagesFromEllipsoids(pixels, ellipsoids);
 		
-		final long stop = System.currentTimeMillis();
+		long stop = System.currentTimeMillis();
 		
 		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
 
+		start = System.currentTimeMillis();
+		logService.info("Calibrating output images...");
 		//calibrate output images
 		final double voxelVolume = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
 		for(final ImgPlus<FloatType> imp : ellipsoidFactorOutputImages) {
@@ -240,12 +242,20 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 				}
 			}
 		}
-
+		stop = System.currentTimeMillis();
+		logService.info("Output images calibrated in "+(stop - start)+" ms");
+		
+		start = System.currentTimeMillis();
+		logService.info("Calculating filling percentage...");
 		final ImgPlus<FloatType> EF = ellipsoidFactorOutputImages.get(0);
 		final double numberOfForegroundPixels = countForegroundPixels(pixels);
 		final double numberOfAssignedPixels = countAssignedPixels(EF);
 		final double fillingPercentage = 100.0 * (numberOfAssignedPixels / numberOfForegroundPixels);
+		stop = System.currentTimeMillis();
+		logService.info("Filling percentage calculated in "+(stop - start)+" ms");
 
+		start = System.currentTimeMillis();
+		logService.info("Calculating descriptive statistics...");
 		DescriptiveStatistics stats = new DescriptiveStatistics();
 		final Cursor<FloatType> cursor = EF.cursor();
 		while(cursor.hasNext()){
@@ -271,6 +281,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 //			}
 			addResults(totalEllipsoids, fillingPercentage);
 		}
+		stop = System.currentTimeMillis();
+		logService.info("Descriptive statistics calculated in "+(stop - start)+" ms");
+		
 		resultsTable = SharedTable.getTable();
 		statusService.showStatus("Ellipsoid Factor completed");
 		reportUsage();
@@ -318,13 +331,14 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 						double a = pixelResult[0];
 						double b = pixelResult[1];
 						double c = pixelResult[2];
-						double v = pixelResult[6];
 						
 						//calculate the coordinate
 						//y coordinate is flinnWidth * (1 - a/b) (lower left origin), x coordinate is flinnWidth * (b/c)
 						final int fx = (int) Math.floor(flinnSize * (b / c));
-						final int fy = (int) Math.floor(flinnSize * (1 - a / b)); 
-						flinnSlice[fy * flinnSize + fx] = v;
+						final int fy = (int) Math.floor(flinnSize * (1 - a / b));
+						//add 1 to the (b/c,a/b) coordinate for this pixel
+						//volume weighting occurs because bigger ellipsoids will appear more often and at a single coordinate
+						flinnSlice[fy * flinnSize + fx] += 1;
 						
 						//set values in the output image
 						final double ef = a / b - b / c;
@@ -533,9 +547,13 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		for (int i = 0; i < nSeedPoints; i++)
 			seedPoints[i] = seedPointsList.get(i);
 		
+		final long startRayTrace = System.currentTimeMillis();
+		logService.info("Gathering boundary point clouds for "+nSeedPoints+" seed points...");
 		//get the boundary points by raytracing from surface pixels to seed points
 		HashMap<int[], ArrayList<int[]>> boundaryPointLists = RayCaster.getVisibleClouds(seedPoints, pixels, w, h, d);
-				
+		final long stopRayTrace = System.currentTimeMillis();
+		logService.info("Boundary point clouds collected for "+nSeedPoints+" seed points in "+(stopRayTrace - startRayTrace)+" ms");
+		
 		//do the ellipsoid optimisation "runs" times, reusing the seed points and boundary points
 		for (int i = 0; i < runs; i++) {
 
