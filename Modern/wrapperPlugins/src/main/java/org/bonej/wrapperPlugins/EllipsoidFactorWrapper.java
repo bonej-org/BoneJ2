@@ -224,7 +224,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		
 		long stop = System.currentTimeMillis();
 		
-		logService.info("Found maximal ellipsoids in " + (stop - start) + " ms");
+		logService.info("Found maximal ellipsoids and generated output images in " + (stop - start) + " ms");
 
 		start = System.currentTimeMillis();
 		logService.info("Calibrating output images...");
