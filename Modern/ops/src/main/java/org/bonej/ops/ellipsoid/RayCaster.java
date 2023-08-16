@@ -56,11 +56,17 @@ public class RayCaster {
 
 		//HashMap with boundaryPoint int[3] as key and seedPoints ArrayList<int[3]> as the value
 		//this is the opposite of what we want in the end
-		HashMap<int[], ArrayList<int[]>> seedPointsPerBoundaryPoint = new HashMap<>();
+		//list of these, one per slice to avoid contention / synchronisation.
+		ArrayList<HashMap<int[], ArrayList<int[]>>> seedPointsPerBoundaryPointList = new ArrayList<>();
+		for (int i = 0; i < d; i++){
+			seedPointsPerBoundaryPointList.add(null);
+		}
+		
 		
 		//iterate in parallel over the stack slices
 		IntStream.range(0, d).parallel().forEach( z -> {
 			final byte[] slice = pixels[z];
+			final HashMap<int[], ArrayList<int[]>> seedPointsPerBoundaryPoint = new HashMap<>();
 			for (int y = 0; y < h; y++) {
 				final int offset = y * w;
 				for (int x = 0; x < w; x++) {
@@ -138,6 +144,7 @@ public class RayCaster {
 					}
 				}
 			}
+			seedPointsPerBoundaryPointList.set(z, seedPointsPerBoundaryPoint);
 		});
 		
 		//HashMap with seedPoint int[3] as key and boundary point ArrayList<int[3]> as the value
@@ -148,11 +155,13 @@ public class RayCaster {
 		});
 
 		//re-arrange the list to get list of boundaryPoints for each seedPoint
-		seedPointsPerBoundaryPoint.entrySet().stream().forEach(entry -> {
-			int[] boundaryPoint = entry.getKey();
-			ArrayList<int[]> seedPointList = entry.getValue();
-			seedPointList.forEach(seedPoint -> {
-				boundaryPointsPerSeedPoint.get(seedPoint).add(boundaryPoint);
+		seedPointsPerBoundaryPointList.forEach(seedPointsPerBoundaryPoint -> {
+			seedPointsPerBoundaryPoint.entrySet().stream().forEach(entry -> {
+				int[] boundaryPoint = entry.getKey();
+				ArrayList<int[]> seedPointList = entry.getValue();
+				seedPointList.forEach(seedPoint -> {
+					boundaryPointsPerSeedPoint.get(seedPoint).add(boundaryPoint);
+				});
 			});
 		});
 		
