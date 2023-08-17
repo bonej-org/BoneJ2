@@ -28,9 +28,44 @@
  */
 package org.bonej.ops.ellipsoid;
 
+import static org.jocl.CL.CL_CONTEXT_PLATFORM;
+import static org.jocl.CL.CL_DEVICE_NAME;
+import static org.jocl.CL.CL_DEVICE_TYPE_ALL;
+import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
+import static org.jocl.CL.CL_MEM_READ_ONLY;
+import static org.jocl.CL.CL_MEM_READ_WRITE;
+import static org.jocl.CL.CL_TRUE;
+import static org.jocl.CL.clBuildProgram;
+import static org.jocl.CL.clCreateBuffer;
+import static org.jocl.CL.clCreateCommandQueueWithProperties;
+import static org.jocl.CL.clCreateContext;
+import static org.jocl.CL.clCreateKernel;
+import static org.jocl.CL.clCreateProgramWithSource;
+import static org.jocl.CL.clEnqueueNDRangeKernel;
+import static org.jocl.CL.clEnqueueReadBuffer;
+import static org.jocl.CL.clGetDeviceIDs;
+import static org.jocl.CL.clGetDeviceInfo;
+import static org.jocl.CL.clGetPlatformIDs;
+import static org.jocl.CL.clSetKernelArg;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 import org.bonej.geometry.Vectors;
+import org.jocl.CL;
+import org.jocl.Pointer;
+import org.jocl.Sizeof;
+import org.jocl.cl_command_queue;
+import org.jocl.cl_context;
+import org.jocl.cl_context_properties;
+import org.jocl.cl_device_id;
+import org.jocl.cl_kernel;
+import org.jocl.cl_mem;
+import org.jocl.cl_platform_id;
+import org.jocl.cl_program;
+import org.jocl.cl_queue_properties;
 import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
 
@@ -44,9 +79,14 @@ import org.scijava.log.LogService;
  * </p>
  *
  * @author Alessandro Felder
+ * @author Michael Doube
  */
 
 public class EllipsoidOptimisationStrategy {
+	private static Object deviceName;
+	private static cl_context context;
+	private static cl_command_queue commandQueue;
+	private static cl_program program;
 	private long[] imageDimensions;
 	private LogService logService;
 	private StatusService statusService;
@@ -58,11 +98,13 @@ public class EllipsoidOptimisationStrategy {
 	
 	public EllipsoidOptimisationStrategy(
 		long[] imageDimensions, LogService logService,
-		StatusService statusService, OptimisationParameters params) {
+		StatusService statusService, OptimisationParameters params, boolean useGPU) {
 		this.imageDimensions = imageDimensions;
 		this.logService = logService;
 		this.statusService = statusService;
 		this.params = params;
+		if (useGPU)
+			initialiseCL();
 	}
 
 	private static double[] threeWayShuffle() {
@@ -329,9 +371,11 @@ public class EllipsoidOptimisationStrategy {
 	}
 
 	void inflateToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final double a,
-			final double b, final double c, final int[][] boundaryPoints) {
+			final double b, final double c, final int[][] boundaryPoints,
+			cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
 
-		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
+		findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
+			kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 
 		final double av = a * params.vectorIncrement;
 		final double bv = b * params.vectorIncrement;
@@ -340,7 +384,8 @@ public class EllipsoidOptimisationStrategy {
 		int safety = 0;
 		while (contactPoints.size() < params.contactSensitivity && safety < params.maxIterations) {
 			ellipsoid.dilate(av, bv, cv);
-			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
+			findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
+				kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 			safety++;
 		}
 	}
@@ -348,7 +393,46 @@ public class EllipsoidOptimisationStrategy {
 	public Ellipsoid calculate(int[][] boundaryPoints, int[] seedPoint) {
 		
 		final long start = System.currentTimeMillis();
+		
+		//----set up OpenCL
+		//set up flat array for OpenCL (array of double3 vectors)
+		final int nBoundaryPoints = boundaryPoints.length;
+		final double[] boundaryPointsAsFlatDoubleArray = new double[nBoundaryPoints * 4];
+		for (int p = 0; p < nBoundaryPoints; p++) {
+			final int[] bp = boundaryPoints[p];
+			boundaryPointsAsFlatDoubleArray[p * 4] = bp[0];
+			boundaryPointsAsFlatDoubleArray[p * 4 + 1] = bp[1];
+			boundaryPointsAsFlatDoubleArray[p * 4 + 2] = bp[2];
+		}
+		
+		//set up another array to hold a dot product for each boundary point
+    double[] dotProducts = new double[nBoundaryPoints];
+    
+    //Make pointers that will be passed to the kernel
+    Pointer boundaryPointsPointer = Pointer.to(boundaryPointsAsFlatDoubleArray);
+    Pointer dotProductsPointer = Pointer.to(dotProducts);
+    cl_mem boundaryPointVectorsMem = clCreateBuffer(context, 
+    	CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        Sizeof.cl_double3 * nBoundaryPoints, boundaryPointsPointer, null);
 
+    cl_mem dotProductMem = clCreateBuffer(context, 
+        CL_MEM_READ_WRITE, 
+        Sizeof.cl_double * nBoundaryPoints, null, null);
+    
+    // Set the work-item dimensions
+    final long global_work_size[] = new long[]{nBoundaryPoints};
+    
+    //create the kernel
+    final cl_kernel kernel = clCreateKernel(program, "ellipsoid_contains", null);
+    
+    //pass large working data input and output
+    clSetKernelArg(kernel, 4, Sizeof.cl_mem, Pointer.to(boundaryPointVectorsMem));
+    clSetKernelArg(kernel, 5, Sizeof.cl_mem, Pointer.to(dotProductMem));
+    
+    logService.info("Using OpenCL program extensions on "+deviceName);
+    
+    // OpenCL setup complete ---------------------------
+        
 		final int w = (int) imageDimensions[0];
 		final int h = (int) imageDimensions[1];
 		final int d = (int) imageDimensions[2];
@@ -371,7 +455,7 @@ public class EllipsoidOptimisationStrategy {
 		orientAxes(ellipsoid, contactPoints);
 
 		// shrink the ellipsoid slightly
-		shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
+		shrinkToFit(ellipsoid, contactPoints, boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 		ellipsoid.contract(0.1);
 		
 		// dilate other two axes until number of contact points increases
@@ -379,7 +463,8 @@ public class EllipsoidOptimisationStrategy {
 
 		while (contactPoints.size() < params.contactSensitivity) {
 			ellipsoid.dilate(0, params.vectorIncrement, params.vectorIncrement);
-			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
+			findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
+				kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying at initial oblation");
@@ -403,17 +488,15 @@ public class EllipsoidOptimisationStrategy {
 		while (totalIterations < absoluteMaxIterations && noImprovementCount < params.maxIterations) {
 
 			// rotate a little bit
-//			constrainStrategy.preConstrain(ellipsoid, seedPoint);
 			wiggle(ellipsoid);
-//			constrainStrategy.postConstrain(ellipsoid);
 
 			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
+			shrinkToFit(ellipsoid, contactPoints, boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 
 			// dilate an axis
 			double[] abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
-
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
+			
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
 						+ ") is invalid, nullifying after " + totalIterations + " iterations");
@@ -424,21 +507,22 @@ public class EllipsoidOptimisationStrategy {
 				maximal = ellipsoid.copy();
 
 			// find any boundary points touching the ellipsoid
-			findContactPoints(ellipsoid, contactPoints, boundaryPoints);
-//			constrainStrategy.preConstrain(ellipsoid, seedPoint);
+			findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
+				kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
+
 			// if can't bump then do a wiggle
 			if (contactPoints.isEmpty()) {
 				wiggle(ellipsoid);
 			} else {
 				bump(ellipsoid, contactPoints, seedPoint);				
 			}
-//			constrainStrategy.postConstrain(ellipsoid);
+
 			// contract
-			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
+			shrinkToFit(ellipsoid, contactPoints, boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 
 			// dilate an axis
 			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
@@ -450,16 +534,14 @@ public class EllipsoidOptimisationStrategy {
 				maximal = ellipsoid.copy();
 
 			// rotate a little bit
-//			constrainStrategy.preConstrain(ellipsoid, seedPoint);
-			turn(ellipsoid, contactPoints, boundaryPoints);
-//			constrainStrategy.postConstrain(ellipsoid);
+			turn(ellipsoid, contactPoints, boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 
 			// contract until no contact
-			shrinkToFit(ellipsoid, contactPoints, boundaryPoints);
+			shrinkToFit(ellipsoid, contactPoints, boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 
 			// dilate an axis
 			abc = threeWayShuffle();
-			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints);
+			inflateToFit(ellipsoid, contactPoints, abc[0], abc[1], abc[2], boundaryPoints, kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 
 			if (isInvalid(ellipsoid, w, h, d)) {
 				logService.info("Ellipsoid at (" + centre[0] + ", " + centre[1] + ", " + centre[2]
@@ -503,12 +585,19 @@ public class EllipsoidOptimisationStrategy {
 		logService.info("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
 				+ (double) (stop - start) / totalIterations + " ms/iteration)");
 
-		String centreString = "("+(int) centre[0]+",  "+ (int) centre[1]+",  "+(int) centre[2]+")";
 		if(statusService!=null) {
-			statusService.showStatus("Ellipsoid optimised at " + centreString);//non-null check needed for tests
+			statusService.showStatus("Ellipsoid optimised at " + centreString(centre));//non-null check needed for tests
 		}
 
 		return ellipsoid;
+	}
+
+	private String centreString(double[] centre) {
+		return centreString(new int[] {(int) centre[0], (int) centre[1], (int) centre[2]});
+	}
+	
+	private String centreString(int[] centre) {
+		return "("+centre[0]+", "+ centre[1]+", "+centre[2]+")";
 	}
 
 	/**
@@ -572,11 +661,13 @@ public class EllipsoidOptimisationStrategy {
 		ellipsoid.setRotation(rotation);
 	}
 
-	void shrinkToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
-
+	void shrinkToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints,
+		cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
+		
 		// get the contact points
-		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
-
+		findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
+			kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
+		
 		final int nContactPoints = contactPoints.size();
 		final int[][] contactPointArray = new int[nContactPoints][3];
 		for (int i = 0; i < nContactPoints; i++)
@@ -587,6 +678,8 @@ public class EllipsoidOptimisationStrategy {
 		while (!contactPoints.isEmpty() && safety < params.maxIterations) {
 			ellipsoid.contract(0.01);
 			findContactPoints(ellipsoid, contactPoints, contactPointArray);
+//			findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
+//				kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
 			safety++;
 		}
 
@@ -601,9 +694,18 @@ public class EllipsoidOptimisationStrategy {
 	 * @param ellipsoid
 	 * @param contactPoints
 	 * @param boundaryPoints
+	 * @param kernel 
+	 * @param global_work_size 
+	 * @param dotProductMem 
+	 * @param dotProductsPointer 
+	 * @param dotProducts 
 	 */
-	void turn(Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints) {
-		findContactPoints(ellipsoid, contactPoints, boundaryPoints);
+	void turn(Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints,
+		cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
+		
+		findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
+			kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
+		
 		if (!contactPoints.isEmpty()) {
 			final double[] torque = calculateTorque(ellipsoid, contactPoints);
 			rotateAboutAxis(ellipsoid, norm(torque));
@@ -628,15 +730,15 @@ public class EllipsoidOptimisationStrategy {
 	boolean isInvalid(final Ellipsoid ellipsoid, final int w, final int h, final int d) {
 		double[][] surfacePoints = ellipsoid.getSurfacePoints(unitVectors);
 		final int nSurfacePoints = surfacePoints.length;
-		
+
 		final double minRadius = ellipsoid.getSortedRadii()[0];
 		if (minRadius < 0.5) {
 			return true;
 		}
-		
+
 		if (ellipsoid.getVolume() > stackVolume) {
-		return true;
-	}
+			return true;
+		}
 
 		int outOfBoundsCount = 0;
 		final int half = nSurfacePoints / 2;
@@ -652,19 +754,76 @@ public class EllipsoidOptimisationStrategy {
 		}		
 		return false;
 	}
-
+	
+	/**
+	 * CPU version - better for small numbers of boundary points
+	 * 
+	 * @param ellipsoid
+	 * @param contactPoints
+	 * @param boundaryPoints
+	 */
 	void findContactPoints(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints,
-			final int[][] boundaryPoints) {
-		
+		final int[][] boundaryPoints) {
+
 		contactPoints.clear();
-		
+
 		final int n = boundaryPoints.length;
-		
+
 		for (int i = 0; i < n; i++) {
 			final int[] p = boundaryPoints[i]; 
 			if (ellipsoid.contains(p[0], p[1], p[2]))
 				contactPoints.add(p);
 		}
+	}
+
+	/**
+	 * GPU version, using OpenCL via JOCL. Better for large numbers (thousands) of boundary points.
+	 * 
+	 * @param ellipsoid
+	 * @param contactPoints
+	 * @param boundaryPoints
+	 * @param kernel
+	 * @param global_work_size
+	 * @param dotProductMem
+	 * @param dotProductsPointer
+	 * @param dotProducts
+	 */
+	void findContactPoints(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints, final int[][] boundaryPoints,
+		final cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
+		
+		final int n = dotProducts.length;
+		
+		contactPoints.clear();
+		
+  	//update the tensor and centre in the kernel
+  	setCentreAndTensor(kernel, ellipsoid.getCentre(), ellipsoid.getEllipsoidTensor());
+
+  	// Execute the kernel
+  	clEnqueueNDRangeKernel(commandQueue, kernel, 1, null,
+  		global_work_size, null, 0, null, null);
+
+  	// Read the output data
+  	clEnqueueReadBuffer(commandQueue, dotProductMem, CL_TRUE, 0,
+  		n * Sizeof.cl_double, dotProductsPointer, 0, null, null);
+
+  	//check all the dot products and if any are <= 1 they are inside the ellipsoid and contact points.
+  	for (int p = 0; p < n; p++) {
+  		if (dotProducts[p] <= 1) {
+  			contactPoints.add(boundaryPoints[p]);
+  		}
+  	}
+  		
+  	Arrays.fill(dotProducts, 0);
+		
+//		final int n = boundaryPoints.length;
+//		long start = System.nanoTime();
+//		for (int i = 0; i < n; i++) {
+//			final int[] p = boundaryPoints[i]; 
+//			if (ellipsoid.contains(p[0], p[1], p[2]))
+//				contactPoints.add(p);
+//		}
+//		long end = System.nanoTime();
+//		System.out.println("Checked contains() on "+n+" boundary points in "+(end-start)/1E6+" ms: "+(end-start)/(double) n+" ns per contains()");
 	}
 
 	/**
@@ -698,4 +857,126 @@ public class EllipsoidOptimisationStrategy {
 			ellipsoid.setCentroid(x, y, z);
 	}
 
+	
+	//GPU handling -----------------------------
+	
+  /**
+   * Initialize a default OpenCL context, command queue, program and kernel
+   */
+  private void initialiseCL()
+  {
+      // The platform, device type and device number
+      // that will be used
+      final int platformIndex = 0;
+      final long deviceType = CL_DEVICE_TYPE_ALL;
+      final int deviceIndex = 0;
+
+      // Enable exceptions and subsequently omit error checks in this sample
+      CL.setExceptionsEnabled(true);
+
+      // Obtain the number of platforms
+      int numPlatformsArray[] = new int[1];
+      clGetPlatformIDs(0, null, numPlatformsArray);
+      int numPlatforms = numPlatformsArray[0];
+
+      // Obtain a platform ID
+      cl_platform_id platforms[] = new cl_platform_id[numPlatforms];
+      clGetPlatformIDs(platforms.length, platforms, null);
+      cl_platform_id platform = platforms[platformIndex];
+
+      // Initialize the context properties
+      cl_context_properties contextProperties = new cl_context_properties();
+      contextProperties.addProperty(CL_CONTEXT_PLATFORM, platform);
+      
+      // Obtain the number of devices for the platform
+      int numDevicesArray[] = new int[1];
+      clGetDeviceIDs(platform, deviceType, 0, null, numDevicesArray);
+      int numDevices = numDevicesArray[0];
+      
+      // Obtain a device ID 
+      cl_device_id devices[] = new cl_device_id[numDevices];
+      clGetDeviceIDs(platform, deviceType, numDevices, devices, null);
+      cl_device_id device = devices[deviceIndex];
+
+      // CL_DEVICE_NAME
+      deviceName = getString(device, CL_DEVICE_NAME);
+      
+      // Create a context for the selected device
+      context = clCreateContext(
+          contextProperties, 1, new cl_device_id[]{device}, 
+          null, null, null);
+      
+      // Create a command-queue for the selected device
+      cl_queue_properties properties = new cl_queue_properties();
+      commandQueue = clCreateCommandQueueWithProperties(
+          context, device, properties, null);
+
+      String programSource = "";
+      try (InputStream inputStream = this.getClass().getResourceAsStream("ellipsoid_contains.cl")) {
+      	 ByteArrayOutputStream result = new ByteArrayOutputStream();
+      	 byte[] buffer = new byte[1024];
+      	 for (int length; (length = inputStream.read(buffer)) != -1; ) {
+      	     result.write(buffer, 0, length);
+      	 }
+      	 // StandardCharsets.UTF_8.name() > JDK 7
+      	 programSource = result.toString("UTF-8");
+			}
+			catch (IOException exc) {
+				exc.printStackTrace();
+			}
+      
+      // Create the program from the source code
+      program = clCreateProgramWithSource(context,
+          1, new String[]{ programSource }, null, null);
+      
+      // Build the program
+      clBuildProgram(program, 0, null, null, null, null);
+      
+      // Create the kernel - do kernel creation once per call to calculate()
+      //so that each ellipsoid gets optimised in its own kernel
+      //kernel = clCreateKernel(program, "ellipsoidContainsKernel", null);
+  }
+  
+  /**
+   * Returns the value of the device info parameter with the given name
+   *
+   * @param device The device
+   * @param paramName The parameter name
+   * @return The value
+   */
+  private static String getString(cl_device_id device, int paramName)
+  {
+      // Obtain the length of the string that will be queried
+      long size[] = new long[1];
+      clGetDeviceInfo(device, paramName, 0, null, size);
+
+      // Create a buffer of the appropriate size and fill it with the info
+      byte buffer[] = new byte[(int)size[0]];
+      clGetDeviceInfo(device, paramName, buffer.length, Pointer.to(buffer), null);
+
+      // Create a string from the buffer (excluding the trailing \0 byte)
+      return new String(buffer, 0, buffer.length-1);
+  }
+	
+  /**
+   * 
+   * @param kernel OpenCL kernel to update
+   * @param centre x,y,z centre coordinates
+   * @param h ellipsoid tensor
+   */
+  private static void setCentreAndTensor(cl_kernel kernel, double[] centre, double[][] h) {
+    //centre
+    final double[] C = new double[] {centre[0], centre[1], centre[2], 0};
+    clSetKernelArg(kernel, 0, Sizeof.cl_double3, Pointer.to(C));
+          
+    //tensor
+    final double[] Ha = new double[] {h[0][0], h[1][0], h[2][0], 0};
+    final double[] Hb = new double[] {h[0][1], h[1][1], h[2][1], 0};
+    final double[] Hc = new double[] {h[0][2], h[1][2], h[2][2], 0};
+    clSetKernelArg(kernel, 1, Sizeof.cl_double3, Pointer.to(Ha));
+    clSetKernelArg(kernel, 2, Sizeof.cl_double3, Pointer.to(Hb));
+    clSetKernelArg(kernel, 3, Sizeof.cl_double3, Pointer.to(Hc));
+  }
+  
+	
 }

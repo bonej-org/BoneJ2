@@ -141,6 +141,13 @@
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
         </dependency>
+        
+        <!-- GPU dependencies -->
+        <dependency>
+    	<groupId>org.jocl</groupId>
+    		<artifactId>jocl</artifactId>
+    	</dependency>
+
         <!-- better to move useful utilities into Modern, but this avoids duplication -->
         <dependency>
         	<groupId>org.bonej</groupId>

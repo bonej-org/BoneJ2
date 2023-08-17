@@ -54,7 +54,7 @@ public class EllipsoidOptimisationStrategyTest {
 	public void testOrientAxis() {
 		final int nTests = 1000;
 		final double[][] unitVectors = Vectors.randomVectors(nTests);
-		EllipsoidOptimisationStrategy eos = new EllipsoidOptimisationStrategy(new long[] {10, 10, 10}, null, null, params);
+		EllipsoidOptimisationStrategy eos = new EllipsoidOptimisationStrategy(new long[] {10, 10, 10}, null, null, params, false);
 		//initialise an image-axis-aligned ellipsoid centred on 0,0,0 and with radii 10,10,10.
 		final double[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 		Ellipsoid e = new Ellipsoid(new double[] {10, 10, 10}, new double[] {0, 0, 0}, axes);
@@ -86,7 +86,7 @@ public class EllipsoidOptimisationStrategyTest {
 		
 		//ellipsoid with volume greater than the image
 		Ellipsoid e = new Ellipsoid(new double[] {200, 200, 200}, new double[] {imageSize / 2, imageSize / 2, imageSize / 2}, axes);
-		EllipsoidOptimisationStrategy eos = new EllipsoidOptimisationStrategy(new long[] {imageSize, imageSize, imageSize}, null, null, params);
+		EllipsoidOptimisationStrategy eos = new EllipsoidOptimisationStrategy(new long[] {imageSize, imageSize, imageSize}, null, null, params, false);
 		assertTrue("Ellipsoid is bigger than image, should be invalid", eos.isInvalid(e, imageSize, imageSize, imageSize));
 		
 		//ellipsoid with a very small radius
@@ -112,7 +112,7 @@ public class EllipsoidOptimisationStrategyTest {
 		Ellipsoid e = new Ellipsoid(new double[] {10, 10, 10}, new double[] {0, 0, 0}, axes);
 		final int[] seedPoint = new int[] {0, 0, 0};
 		final ArrayList<int[]> contactPoint = new ArrayList<>();
-		EllipsoidOptimisationStrategy eos = new EllipsoidOptimisationStrategy(new long[] {100, 100, 100}, null, null, params);
+		EllipsoidOptimisationStrategy eos = new EllipsoidOptimisationStrategy(new long[] {100, 100, 100}, null, null, params, false);
 		
 		final int nTests = 100;
 		final double[][] u = Vectors.randomVectors(nTests);

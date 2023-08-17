@@ -567,8 +567,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			
 			//TODO keep an eye on whether reusing this instance across all the threads
 			//is thread safe
+			//TODO handle users that don't have an OpenCL context to use
 			EllipsoidOptimisationStrategy optimiser = new EllipsoidOptimisationStrategy(
-				new long[] {w, h, d}, logService, statusService, parameters);
+				new long[] {w, h, d}, logService, statusService, parameters, true);
 			
 			//iterate over all the seed points and get an optimised ellipsoid for each.
 			IntStream.range(0, nSeedPoints).parallel()
@@ -592,8 +593,10 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 				//convert the list of boundary points to an array of 3D int coordinates
 				final int nBoundaryPoints = boundaryPointList.size();
 				final int[][] boundaryPoints = new int[nBoundaryPoints][3];
-				for (int p = 0; p < nBoundaryPoints; p++)
+				
+				for (int p = 0; p < nBoundaryPoints; p++) {
 					boundaryPoints[p] = boundaryPointList.get(p);
+				}
 								
 				Ellipsoid ellipsoid = optimiser.calculate(boundaryPoints, seedPoint);
 				ellipsoidArray[j] = ellipsoid;				

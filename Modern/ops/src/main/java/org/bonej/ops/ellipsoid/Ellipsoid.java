@@ -211,7 +211,7 @@ public class Ellipsoid {
 	 *
 	 * @return 3×3 matrix containing H, the ellipsoid tensor
 	 */
-	private double[][] getEllipsoidTensor() {
+	protected double[][] getEllipsoidTensor() {
 		if (this.eh == null) {
 			this.eh = times(times(ev, ed), transpose(ev));
 		}
