@@ -46,6 +46,11 @@ import static org.jocl.CL.clEnqueueReadBuffer;
 import static org.jocl.CL.clGetDeviceIDs;
 import static org.jocl.CL.clGetDeviceInfo;
 import static org.jocl.CL.clGetPlatformIDs;
+import static org.jocl.CL.clReleaseCommandQueue;
+import static org.jocl.CL.clReleaseContext;
+import static org.jocl.CL.clReleaseKernel;
+import static org.jocl.CL.clReleaseMemObject;
+import static org.jocl.CL.clReleaseProgram;
 import static org.jocl.CL.clSetKernelArg;
 
 import java.io.ByteArrayOutputStream;
@@ -394,9 +399,14 @@ public class EllipsoidOptimisationStrategy {
 		
 		final long start = System.currentTimeMillis();
 		
+		final int nBoundaryPoints = boundaryPoints.length;
+		if (nBoundaryPoints < 6) {
+			logService.info("Too few boundary points to optimise this ellipsoid, nullifying");
+			return null;
+		}
+		
 		//----set up OpenCL
 		//set up flat array for OpenCL (array of double3 vectors)
-		final int nBoundaryPoints = boundaryPoints.length;
 		final double[] boundaryPointsAsFlatDoubleArray = new double[nBoundaryPoints * 4];
 		for (int p = 0; p < nBoundaryPoints; p++) {
 			final int[] bp = boundaryPoints[p];
@@ -411,6 +421,7 @@ public class EllipsoidOptimisationStrategy {
     //Make pointers that will be passed to the kernel
     Pointer boundaryPointsPointer = Pointer.to(boundaryPointsAsFlatDoubleArray);
     Pointer dotProductsPointer = Pointer.to(dotProducts);
+    
     cl_mem boundaryPointVectorsMem = clCreateBuffer(context, 
     	CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
         Sizeof.cl_double3 * nBoundaryPoints, boundaryPointsPointer, null);
@@ -423,13 +434,11 @@ public class EllipsoidOptimisationStrategy {
     final long global_work_size[] = new long[]{nBoundaryPoints};
     
     //create the kernel
-    final cl_kernel kernel = clCreateKernel(program, "ellipsoid_contains", null);
+    cl_kernel kernel = clCreateKernel(program, "ellipsoid_contains", null);
     
     //pass large working data input and output
     clSetKernelArg(kernel, 4, Sizeof.cl_mem, Pointer.to(boundaryPointVectorsMem));
     clSetKernelArg(kernel, 5, Sizeof.cl_mem, Pointer.to(dotProductMem));
-    
-    logService.info("Using OpenCL program extensions on "+deviceName);
     
     // OpenCL setup complete ---------------------------
         
@@ -580,6 +589,11 @@ public class EllipsoidOptimisationStrategy {
 			return null;
 		}
 
+		//cleanup the OpenCL resources
+		clReleaseMemObject(boundaryPointVectorsMem);
+		clReleaseMemObject(dotProductMem);
+    clReleaseKernel(kernel);
+		
 		final long stop = System.currentTimeMillis();
 
 		logService.info("Optimised ellipsoid in " + (stop - start) + " ms after " + totalIterations + " iterations ("
@@ -900,6 +914,7 @@ public class EllipsoidOptimisationStrategy {
 
       // CL_DEVICE_NAME
       deviceName = getString(device, CL_DEVICE_NAME);
+      logService.info("Using OpenCL program extensions on "+deviceName);
       
       // Create a context for the selected device
       context = clCreateContext(
@@ -912,7 +927,7 @@ public class EllipsoidOptimisationStrategy {
           context, device, properties, null);
 
       String programSource = "";
-      try (InputStream inputStream = this.getClass().getResourceAsStream("ellipsoid_contains.cl")) {
+      try (InputStream inputStream = getClass().getResourceAsStream("/ellipsoid_contains.cl")) {
       	 ByteArrayOutputStream result = new ByteArrayOutputStream();
       	 byte[] buffer = new byte[1024];
       	 for (int length; (length = inputStream.read(buffer)) != -1; ) {
@@ -935,6 +950,12 @@ public class EllipsoidOptimisationStrategy {
       // Create the kernel - do kernel creation once per call to calculate()
       //so that each ellipsoid gets optimised in its own kernel
       //kernel = clCreateKernel(program, "ellipsoidContainsKernel", null);
+  }
+  
+  public void shutdownCL() {
+    clReleaseProgram(program);
+    clReleaseCommandQueue(commandQueue);
+    clReleaseContext(context);
   }
   
   /**

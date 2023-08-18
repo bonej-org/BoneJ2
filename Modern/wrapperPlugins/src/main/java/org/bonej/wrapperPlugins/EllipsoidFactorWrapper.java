@@ -567,12 +567,11 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			
 			//TODO keep an eye on whether reusing this instance across all the threads
 			//is thread safe
-			//TODO handle users that don't have an OpenCL context to use
 			EllipsoidOptimisationStrategy optimiser = new EllipsoidOptimisationStrategy(
 				new long[] {w, h, d}, logService, statusService, parameters, true);
 			
 			//iterate over all the seed points and get an optimised ellipsoid for each.
-			IntStream.range(0, nSeedPoints).parallel()
+			IntStream.range(0, nSeedPoints)//.parallel()
 				//get a status update for user feedback
 				.peek(pk -> statusService.showProgress(progress.getAndIncrement(), nSeedPoints))
 				
@@ -601,6 +600,9 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 				Ellipsoid ellipsoid = optimiser.calculate(boundaryPoints, seedPoint);
 				ellipsoidArray[j] = ellipsoid;				
 			});
+			
+			//cleanup the OpenCL environment - allows VRAM to clear
+			optimiser.shutdownCL();
 			
 			List<Ellipsoid> ellipsoids = new ArrayList<>(nSeedPoints);
 						
