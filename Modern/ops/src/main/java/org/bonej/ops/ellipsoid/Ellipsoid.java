@@ -42,9 +42,9 @@ public class Ellipsoid {
 
 	/**
 	 * Eigenvalue matrix. Size-based ordering is not performed. They are in the same
-	 * order as the eigenvectors.
+	 * order as the eigenvectors. In Flat 9 format, so diagonal is on 0, 4, 8, rest is 0.
 	 */
-	private final double[][] ed;
+	private final double[] ed;
 	
 	/**
 	 * Centroid of ellipsoid (cx, cy, cz)
@@ -64,14 +64,14 @@ public class Ellipsoid {
 
 	/**
 	 * Eigenvector matrix Size-based ordering is not performed. They are in the same
-	 * order as the eigenvalues.
+	 * order as the eigenvalues. Flattened so that ev[3m + n] = ev[m][n].
 	 */
-	private double[][] ev;
+	private double[] ev;
 	
 	/**
-	 * 3x3 matrix describing shape of ellipsoid
+	 * 3x3 matrix describing shape of ellipsoid. Flattened so that ev[3m + n] = ev[m][n].
 	 */
-	private double[][] eh;
+	private double[] eh;
 
 	/**
 	 * Construct an Ellipsoid from the radii (a,b,c), centroid (cx, cy, cz) and
@@ -90,31 +90,32 @@ public class Ellipsoid {
 		this.cx = centroid[0];
 		this.cy = centroid[1];
 		this.cz = centroid[2];
-		ev = new double[3][3];
-		ed = new double[3][3];
-		eh = new double[3][3];
+		ev = new double[9];
+		ed = new double[9];
+		eh = new double[9];
 		setRotation(eigenVectors);
 		setEigenvalues();
 	}
 
 	/**
-	 * Transpose a 3x3 matrix in double[][] format. Does no error checking.
+	 * Transpose a 3x3 matrix in double[9] format. Does no error checking.
+	 * a[m][n] = a[3m + n]
 	 *
 	 * @param a
 	 *            a matrix.
 	 * @return new transposed matrix.
 	 */
-	public static double[][] transpose(final double[][] a) {
-		final double[][] t = new double[3][3];
-		t[0][0] = a[0][0];
-		t[0][1] = a[1][0];
-		t[0][2] = a[2][0];
-		t[1][0] = a[0][1];
-		t[1][1] = a[1][1];
-		t[1][2] = a[2][1];
-		t[2][0] = a[0][2];
-		t[2][1] = a[1][2];
-		t[2][2] = a[2][2];
+	public static double[] transpose(final double[] a) {
+		final double[] t = new double[9];
+		t[0] = a[0];
+		t[1] = a[3];
+		t[2] = a[6];
+		t[3] = a[1];
+		t[4] = a[4];
+		t[5] = a[7];
+		t[6] = a[2];
+		t[7] = a[5];
+		t[8] = a[8];
 		return t;
 	}
 
@@ -127,32 +128,32 @@ public class Ellipsoid {
 	 *            3x3 matrix
 	 * @return result of matrix multiplication, c = ab
 	 */
-	private static double[][] times(final double[][] a, final double[][] b) {
-		final double a00 = a[0][0];
-		final double a01 = a[0][1];
-		final double a02 = a[0][2];
-		final double a10 = a[1][0];
-		final double a11 = a[1][1];
-		final double a12 = a[1][2];
-		final double a20 = a[2][0];
-		final double a21 = a[2][1];
-		final double a22 = a[2][2];
-		final double b00 = b[0][0];
-		final double b01 = b[0][1];
-		final double b02 = b[0][2];
-		final double b10 = b[1][0];
-		final double b11 = b[1][1];
-		final double b12 = b[1][2];
-		final double b20 = b[2][0];
-		final double b21 = b[2][1];
-		final double b22 = b[2][2];
-		return new double[][]{
-				{a00 * b00 + a01 * b10 + a02 * b20, a00 * b01 + a01 * b11 + a02 * b21,
-						a00 * b02 + a01 * b12 + a02 * b22},
-				{a10 * b00 + a11 * b10 + a12 * b20, a10 * b01 + a11 * b11 + a12 * b21,
-						a10 * b02 + a11 * b12 + a12 * b22},
-				{a20 * b00 + a21 * b10 + a22 * b20, a20 * b01 + a21 * b11 + a22 * b21,
-						a20 * b02 + a21 * b12 + a22 * b22},};
+	private static double[] times(final double[] a, final double[] b) {
+		final double a00 = a[0];
+		final double a01 = a[1];
+		final double a02 = a[2];
+		final double a10 = a[3];
+		final double a11 = a[4];
+		final double a12 = a[5];
+		final double a20 = a[6];
+		final double a21 = a[7];
+		final double a22 = a[8];
+		final double b00 = b[0];
+		final double b01 = b[1];
+		final double b02 = b[2];
+		final double b10 = b[3];
+		final double b11 = b[4];
+		final double b12 = b[5];
+		final double b20 = b[6];
+		final double b21 = b[7];
+		final double b22 = b[8];
+		return new double[]{
+				a00 * b00 + a01 * b10 + a02 * b20, a00 * b01 + a01 * b11 + a02 * b21,
+						a00 * b02 + a01 * b12 + a02 * b22,
+				a10 * b00 + a11 * b10 + a12 * b20, a10 * b01 + a11 * b11 + a12 * b21,
+						a10 * b02 + a11 * b12 + a12 * b22,
+				a20 * b00 + a21 * b10 + a22 * b20, a20 * b01 + a21 * b11 + a22 * b21,
+						a20 * b02 + a21 * b12 + a22 * b22};
 	}
 
 	/**
@@ -195,11 +196,11 @@ public class Ellipsoid {
 		if (length <= minRadius)
 			return true;
 
-		final double[][] h = getEllipsoidTensor();
+		final double[] h = getEllipsoidTensor();
 
-		final double dot0 = vx * h[0][0] + vy * h[1][0] + vz * h[2][0];
-		final double dot1 = vx * h[0][1] + vy * h[1][1] + vz * h[2][1];
-		final double dot2 = vx * h[0][2] + vy * h[1][2] + vz * h[2][2];
+		final double dot0 = vx * h[0] + vy * h[3] + vz * h[6];
+		final double dot1 = vx * h[1] + vy * h[4] + vz * h[7];
+		final double dot2 = vx * h[2] + vy * h[5] + vz * h[8];
 
 		final double dot = dot0 * vx + dot1 * vy + dot2 * vz;
 
@@ -209,9 +210,9 @@ public class Ellipsoid {
 	/**
 	 * Gets an up to date ellipsoid tensor (H)
 	 *
-	 * @return 3×3 matrix containing H, the ellipsoid tensor
+	 * @return 3×3 matrix containing H, the ellipsoid tensor, as a flat double[9] where H[3m + n] = H[m][n]
 	 */
-	protected double[][] getEllipsoidTensor() {
+	protected double[] getEllipsoidTensor() {
 		if (this.eh == null) {
 			this.eh = times(times(ev, ed), transpose(ev));
 		}
@@ -234,11 +235,7 @@ public class Ellipsoid {
 	 * @return a copy of the instance.
 	 */
 	public Ellipsoid copy() {
-		final double[][] clone = new double[ev.length][];
-		for (int i = 0; i < ev.length; i++) {
-			clone[i] = ev[i].clone();
-		}
-		return new Ellipsoid(new double[]{ra, rb, rc}, new double[]{cx, cy, cz}, clone);
+		return new Ellipsoid(new double[]{ra, rb, rc}, new double[]{cx, cy, cz}, flat9ToSquare3x3(ev));
 	}
 
 	/**
@@ -280,14 +277,51 @@ public class Ellipsoid {
 	}
 
 	/**
-	 * Return a copy of the ellipsoid's eigenvector matrix
+	 * Return a copy of the ellipsoid's eigenvector matrix in 3x3 format
 	 *
 	 * @return a 3x3 rotation matrix
 	 */
 	public double[][] getRotation() {
+		return flat9ToSquare3x3(ev);
+	}
+	
+	/**
+	 * Return a copy of the ellipsoid's eigenvector matrix in 9x1 format
+	 *
+	 * @return a 3x3 rotation matrix in flat9 format: a[3m + n] = a[m][n]
+	 */
+	public double[] getRotationFlat9() {
 		return ev.clone();
 	}
 
+	private double[][] flat9ToSquare3x3(double[] a){
+		final double[][] b = new double[3][3];
+		b[0][0] = a[0];
+		b[0][1] = a[1];
+		b[0][2] = a[2];
+		b[1][0] = a[3];
+		b[1][1] = a[4];
+		b[1][2] = a[5];
+		b[2][0] = a[6];
+		b[2][1] = a[7];
+		b[2][2] = a[8];
+		return b;
+	}
+	
+	private double[] square3x3Toflat9(double[][] a){
+		final double[] b = new double[9];
+		b[0] = a[0][0];
+		b[1] = a[0][1];
+		b[2] = a[0][2];
+		b[3] = a[1][0];
+		b[4] = a[1][1];
+		b[5] = a[1][2];
+		b[6] = a[2][0];
+		b[7] = a[2][1];
+		b[8] = a[2][2];
+		return b;
+	}
+	
 	/**
 	 * Set rotation to the supplied rotation matrix. Does no error checking.
 	 *
@@ -295,6 +329,17 @@ public class Ellipsoid {
 	 *            a 3x3 rotation matrix
 	 */
 	public void setRotation(final double[][] rotation) {
+		ev = square3x3Toflat9(rotation);
+		update3x3Matrix();
+	}
+	
+	/**
+	 * Set rotation to the supplied rotation matrix. Does no error checking.
+	 *
+	 * @param rotation
+	 *            a 3x3 rotation matrix as a flat double[9] with rot[3m + n] = rot[m][n]
+	 */
+	public void setRotation(final double[] rotation) {
 		ev = rotation.clone();
 		update3x3Matrix();
 	}
@@ -355,9 +400,9 @@ public class Ellipsoid {
 		final double y = rb * v[1];
 		final double z = rc * v[2];
 		// rotate and translate the ellipsoid into position
-		final double vx = x * ev[0][0] + y * ev[0][1] + z * ev[0][2] + cx;
-		final double vy = x * ev[1][0] + y * ev[1][1] + z * ev[1][2] + cy;
-		final double vz = x * ev[2][0] + y * ev[2][1] + z * ev[2][2] + cz;
+		final double vx = x * ev[0] + y * ev[1] + z * ev[2] + cx;
+		final double vy = x * ev[3] + y * ev[4] + z * ev[3] + cy;
+		final double vz = x * ev[6] + y * ev[7] + z * ev[8] + cz;
 
 		return new double[]{vx, vy, vz};
 	}
@@ -375,10 +420,14 @@ public class Ellipsoid {
 	 * Rotate the ellipsoid by the given 3x3 Matrix
 	 *
 	 * @param rotation
-	 *            a 3x3 rotation matrix
+	 *            a 3x3 rotation matrix as 
 	 */
-	public void rotate(final double[][] rotation) {
+	public void rotate(final double[] rotation) {
 		setRotation(times(ev, rotation));
+	}
+	
+	public void rotate(final double[][] rotation) {
+		rotate(square3x3Toflat9(rotation));
 	}
 
 	/**
@@ -401,9 +450,9 @@ public class Ellipsoid {
 	 * Calculates eigenvalues from current radii
 	 */
 	private void setEigenvalues() {
-		ed[0][0] = 1 / (ra * ra);
-		ed[1][1] = 1 / (rb * rb);
-		ed[2][2] = 1 / (rc * rc);
+		ed[0] = 1 / (ra * ra);
+		ed[4] = 1 / (rb * rb);
+		ed[8] = 1 / (rc * rc);
 		update3x3Matrix();
 	}
 

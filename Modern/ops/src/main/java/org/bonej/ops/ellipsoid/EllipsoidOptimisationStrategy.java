@@ -170,8 +170,8 @@ public class EllipsoidOptimisationStrategy {
 		final double t = 2 / (b * b);
 		final double u = 2 / (c * c);
 
-		final double[][] rot = ellipsoid.getRotation();
-		final double[][] inv = Ellipsoid.transpose(rot);
+		final double[] rot = ellipsoid.getRotationFlat9();
+		final double[] inv = Ellipsoid.transpose(rot);
 
 		double t0 = 0;
 		double t1 = 0;
@@ -184,9 +184,9 @@ public class EllipsoidOptimisationStrategy {
 			final double pz = p[2] - cz;
 
 			// derotate the point
-			final double x = inv[0][0] * px + inv[0][1] * py + inv[0][2] * pz;
-			final double y = inv[1][0] * px + inv[1][1] * py + inv[1][2] * pz;
-			final double z = inv[2][0] * px + inv[2][1] * py + inv[2][2] * pz;
+			final double x = inv[0] * px + inv[1] * py + inv[2] * pz;
+			final double y = inv[3] * px + inv[4] * py + inv[5] * pz;
+			final double z = inv[6] * px + inv[7] * py + inv[8] * pz;
 
 			// calculate the unit normal on the centred and derotated ellipsoid
 			final double nx = s * x;
@@ -198,9 +198,9 @@ public class EllipsoidOptimisationStrategy {
 			final double unz = nz / length;
 
 			// rotate the normal back to the original ellipsoid
-			final double ex = rot[0][0] * unx + rot[0][1] * uny + rot[0][2] * unz;
-			final double ey = rot[1][0] * unx + rot[1][1] * uny + rot[1][2] * unz;
-			final double ez = rot[2][0] * unx + rot[2][1] * uny + rot[2][2] * unz;
+			final double ex = rot[0] * unx + rot[1] * uny + rot[2] * unz;
+			final double ey = rot[3] * unx + rot[4] * uny + rot[5] * unz;
+			final double ez = rot[6] * unx + rot[7] * uny + rot[8] * unz;
 
 			final double[] torqueVector = crossProduct(px, py, pz, ex, ey, ez);
 
@@ -323,9 +323,9 @@ public class EllipsoidOptimisationStrategy {
 		final double xycos1 = xy * cos1;
 		final double xzcos1 = xz * cos1;
 		final double yzcos1 = yz * cos1;
-		final double[][] rotation = {{cos + x * x * cos1, xycos1 - zsin, xzcos1 + ysin},
-				{xycos1 + zsin, cos + y * y * cos1, yzcos1 - xsin},
-				{xzcos1 - ysin, yzcos1 + xsin, cos + z * z * cos1},};
+		final double[] rotation = {cos + x * x * cos1, xycos1 - zsin, xzcos1 + ysin,
+				xycos1 + zsin, cos + y * y * cos1, yzcos1 - xsin,
+				xzcos1 - ysin, yzcos1 + xsin, cos + z * z * cos1};
 
 		ellipsoid.rotate(rotation);
 	}
@@ -366,10 +366,10 @@ public class EllipsoidOptimisationStrategy {
 		final double cosb = Math.cos(b);
 		final double cosg = Math.cos(g);
 	
-		double[][] rotation = {
-			{cosa * cosb, sina * cosb, -sinb},
-			{cosa * sinb * sing - sina * cosg, sina * sinb * sing + cosa * cosg, cosb * sing},
-			{cosa * sinb * cosg + sina * sing, sina * sinb * cosg - cosa * sing, cosb * cosg}
+		double[] rotation = {
+			cosa * cosb, sina * cosb, -sinb,
+			cosa * sinb * sing - sina * cosg, sina * sinb * sing + cosa * cosg, cosb * sing,
+			cosa * sinb * cosg + sina * sing, sina * sinb * cosg - cosa * sing, cosb * cosg
 		};
 
 		ellipsoid.rotate(rotation);
@@ -668,7 +668,11 @@ public class EllipsoidOptimisationStrategy {
 		longAxis = norm(longAxis);
 
 		// construct a rotation matrix
-		double[][] rotation = {shortAxis, middleAxis, longAxis};
+		double[] rotation = {
+			shortAxis[0], shortAxis[1], shortAxis[2],
+			middleAxis[0], middleAxis[1], middleAxis[2],
+			longAxis[0], longAxis[1], longAxis[2] 
+		};
 		rotation = Ellipsoid.transpose(rotation);
 
 		// rotate ellipsoid to point this way...
@@ -822,7 +826,7 @@ public class EllipsoidOptimisationStrategy {
 
   	//check all the dot products and if any are <= 1 they are inside the ellipsoid and contact points.
   	for (int p = 0; p < n; p++) {
-  		if (dotProducts[p] <= 1) {
+  		if (dotProducts[p] <= 1.0f) {
   			contactPoints.add(boundaryPoints[p]);
   		}
   	}
@@ -985,15 +989,15 @@ public class EllipsoidOptimisationStrategy {
    * @param centre x,y,z centre coordinates
    * @param h ellipsoid tensor
    */
-  private static void setCentreAndTensor(cl_kernel kernel, double[] centre, double[][] h) {
+  private static void setCentreAndTensor(cl_kernel kernel, double[] centre, double[] h) {
     //centre
     final float[] C = new float[] {(float) centre[0], (float) centre[1], (float) centre[2], 0};
     clSetKernelArg(kernel, 0, Sizeof.cl_float3, Pointer.to(C));
           
     //tensor
-    final float[] Ha = new float[] {(float)h[0][0], (float)h[1][0], (float)h[2][0], 0};
-    final float[] Hb = new float[] {(float)h[0][1], (float)h[1][1], (float)h[2][1], 0};
-    final float[] Hc = new float[] {(float)h[0][2], (float)h[1][2], (float)h[2][2], 0};
+    final float[] Ha = new float[] {(float)h[0], (float)h[3], (float)h[6], 0};
+    final float[] Hb = new float[] {(float)h[1], (float)h[4], (float)h[7], 0};
+    final float[] Hc = new float[] {(float)h[2], (float)h[5], (float)h[8], 0};
     clSetKernelArg(kernel, 1, Sizeof.cl_float3, Pointer.to(Ha));
     clSetKernelArg(kernel, 2, Sizeof.cl_float3, Pointer.to(Hb));
     clSetKernelArg(kernel, 3, Sizeof.cl_float3, Pointer.to(Hc));
