@@ -437,8 +437,8 @@ public class EllipsoidOptimisationStrategy {
     cl_kernel kernel = clCreateKernel(program, "ellipsoid_contains", null);
     
     //pass large working data input and output
-    clSetKernelArg(kernel, 4, Sizeof.cl_mem, Pointer.to(boundaryPointVectorsMem));
-    clSetKernelArg(kernel, 5, Sizeof.cl_mem, Pointer.to(dotProductMem));
+    clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(boundaryPointVectorsMem));
+    clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(dotProductMem));
     
     // OpenCL setup complete ---------------------------
         
@@ -990,18 +990,13 @@ public class EllipsoidOptimisationStrategy {
    * @param h ellipsoid tensor
    */
   private static void setCentreAndTensor(cl_kernel kernel, double[] centre, double[] h) {
-    //centre
-    final float[] C = new float[] {(float) centre[0], (float) centre[1], (float) centre[2], 0};
-    clSetKernelArg(kernel, 0, Sizeof.cl_float3, Pointer.to(C));
-          
-    //tensor
-    final float[] Ha = new float[] {(float)h[0], (float)h[3], (float)h[6], 0};
-    final float[] Hb = new float[] {(float)h[1], (float)h[4], (float)h[7], 0};
-    final float[] Hc = new float[] {(float)h[2], (float)h[5], (float)h[8], 0};
-    clSetKernelArg(kernel, 1, Sizeof.cl_float3, Pointer.to(Ha));
-    clSetKernelArg(kernel, 2, Sizeof.cl_float3, Pointer.to(Hb));
-    clSetKernelArg(kernel, 3, Sizeof.cl_float3, Pointer.to(Hc));
+  	//centre and tensor packed together as a single float16
+  	final float[] CH = {
+  		(float)centre[0], (float)centre[1], (float)centre[2], 0,
+  		(float)h[0], (float)h[3], (float)h[6], 0,
+  		(float)h[1], (float)h[4], (float)h[7], 0,
+  		(float)h[2], (float)h[5], (float)h[8], 0
+  	};
+  	clSetKernelArg(kernel, 0, Sizeof.cl_float16, Pointer.to(CH));
   }
-  
-	
 }
