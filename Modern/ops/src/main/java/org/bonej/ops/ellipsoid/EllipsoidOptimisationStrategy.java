@@ -377,7 +377,7 @@ public class EllipsoidOptimisationStrategy {
 
 	void inflateToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final double a,
 			final double b, final double c, final int[][] boundaryPoints,
-			cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
+			cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, float[] dotProducts) {
 
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
 			kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
@@ -406,29 +406,29 @@ public class EllipsoidOptimisationStrategy {
 		}
 		
 		//----set up OpenCL
-		//set up flat array for OpenCL (array of double3 vectors)
-		final double[] boundaryPointsAsFlatDoubleArray = new double[nBoundaryPoints * 4];
+		//set up flat array for OpenCL (array of float3 vectors)
+		final float[] boundaryPointsAsFlatFloatArray = new float[nBoundaryPoints * 4];
 		for (int p = 0; p < nBoundaryPoints; p++) {
 			final int[] bp = boundaryPoints[p];
-			boundaryPointsAsFlatDoubleArray[p * 4] = bp[0];
-			boundaryPointsAsFlatDoubleArray[p * 4 + 1] = bp[1];
-			boundaryPointsAsFlatDoubleArray[p * 4 + 2] = bp[2];
+			boundaryPointsAsFlatFloatArray[p * 4] = bp[0];
+			boundaryPointsAsFlatFloatArray[p * 4 + 1] = bp[1];
+			boundaryPointsAsFlatFloatArray[p * 4 + 2] = bp[2];
 		}
 		
 		//set up another array to hold a dot product for each boundary point
-    double[] dotProducts = new double[nBoundaryPoints];
+    float[] dotProducts = new float[nBoundaryPoints];
     
     //Make pointers that will be passed to the kernel
-    Pointer boundaryPointsPointer = Pointer.to(boundaryPointsAsFlatDoubleArray);
+    Pointer boundaryPointsPointer = Pointer.to(boundaryPointsAsFlatFloatArray);
     Pointer dotProductsPointer = Pointer.to(dotProducts);
     
     cl_mem boundaryPointVectorsMem = clCreateBuffer(context, 
     	CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        Sizeof.cl_double3 * nBoundaryPoints, boundaryPointsPointer, null);
+        Sizeof.cl_float3 * nBoundaryPoints, boundaryPointsPointer, null);
 
     cl_mem dotProductMem = clCreateBuffer(context, 
         CL_MEM_READ_WRITE, 
-        Sizeof.cl_double * nBoundaryPoints, null, null);
+        Sizeof.cl_float * nBoundaryPoints, null, null);
     
     // Set the work-item dimensions
     final long global_work_size[] = new long[]{nBoundaryPoints};
@@ -676,7 +676,7 @@ public class EllipsoidOptimisationStrategy {
 	}
 
 	void shrinkToFit(final Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints,
-		cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
+		cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, float[] dotProducts) {
 		
 		// get the contact points
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
@@ -715,7 +715,7 @@ public class EllipsoidOptimisationStrategy {
 	 * @param dotProducts 
 	 */
 	void turn(Ellipsoid ellipsoid, ArrayList<int[]> contactPoints, final int[][] boundaryPoints,
-		cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
+		cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, float[] dotProducts) {
 		
 		findContactPoints(ellipsoid, contactPoints, boundaryPoints, 
 			kernel, global_work_size, dotProductMem, dotProductsPointer, dotProducts);
@@ -803,7 +803,7 @@ public class EllipsoidOptimisationStrategy {
 	 * @param dotProducts
 	 */
 	void findContactPoints(final Ellipsoid ellipsoid, final ArrayList<int[]> contactPoints, final int[][] boundaryPoints,
-		final cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, double[] dotProducts) {
+		final cl_kernel kernel, long[] global_work_size, cl_mem dotProductMem, Pointer dotProductsPointer, float[] dotProducts) {
 		
 		final int n = dotProducts.length;
 		
@@ -818,7 +818,7 @@ public class EllipsoidOptimisationStrategy {
 
   	// Read the output data
   	clEnqueueReadBuffer(commandQueue, dotProductMem, CL_TRUE, 0,
-  		n * Sizeof.cl_double, dotProductsPointer, 0, null, null);
+  		n * Sizeof.cl_float, dotProductsPointer, 0, null, null);
 
   	//check all the dot products and if any are <= 1 they are inside the ellipsoid and contact points.
   	for (int p = 0; p < n; p++) {
@@ -987,16 +987,16 @@ public class EllipsoidOptimisationStrategy {
    */
   private static void setCentreAndTensor(cl_kernel kernel, double[] centre, double[][] h) {
     //centre
-    final double[] C = new double[] {centre[0], centre[1], centre[2], 0};
-    clSetKernelArg(kernel, 0, Sizeof.cl_double3, Pointer.to(C));
+    final float[] C = new float[] {(float) centre[0], (float) centre[1], (float) centre[2], 0};
+    clSetKernelArg(kernel, 0, Sizeof.cl_float3, Pointer.to(C));
           
     //tensor
-    final double[] Ha = new double[] {h[0][0], h[1][0], h[2][0], 0};
-    final double[] Hb = new double[] {h[0][1], h[1][1], h[2][1], 0};
-    final double[] Hc = new double[] {h[0][2], h[1][2], h[2][2], 0};
-    clSetKernelArg(kernel, 1, Sizeof.cl_double3, Pointer.to(Ha));
-    clSetKernelArg(kernel, 2, Sizeof.cl_double3, Pointer.to(Hb));
-    clSetKernelArg(kernel, 3, Sizeof.cl_double3, Pointer.to(Hc));
+    final float[] Ha = new float[] {(float)h[0][0], (float)h[1][0], (float)h[2][0], 0};
+    final float[] Hb = new float[] {(float)h[0][1], (float)h[1][1], (float)h[2][1], 0};
+    final float[] Hc = new float[] {(float)h[0][2], (float)h[1][2], (float)h[2][2], 0};
+    clSetKernelArg(kernel, 1, Sizeof.cl_float3, Pointer.to(Ha));
+    clSetKernelArg(kernel, 2, Sizeof.cl_float3, Pointer.to(Hb));
+    clSetKernelArg(kernel, 3, Sizeof.cl_float3, Pointer.to(Hc));
   }
   
 	
