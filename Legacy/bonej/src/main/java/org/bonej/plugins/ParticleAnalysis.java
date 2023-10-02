@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -970,6 +971,7 @@ public class ParticleAnalysis {
 	 * points' coordinates are in the following 6 positions in ax, ay, az, bx, by, bz order.
 	 */
 	static double[][] getFerets(final List<List<Point3f>> surfacePoints) {
+		
 		Thread[] threads = Multithreader.newThreads();
 		final int nSurfaces = surfacePoints.size();
 		//distance, xa, ya, za, xb, yb, zb
@@ -978,8 +980,8 @@ public class ParticleAnalysis {
 		for (int thread = 0; thread < threads.length; thread++) {
 			threads[thread] = new Thread(() -> {
 				for (int i = ai.getAndIncrement(); i < nSurfaces; i = ai.getAndIncrement()) {
-					final List<Point3f> surface = surfacePoints.get(i);
-					
+
+					final List<Point3f> surface = filterSurfacePoints(surfacePoints.get(i));
 					
 					if (surface == null) {
 						Arrays.fill(ferets[i], Double.NaN);
@@ -988,8 +990,8 @@ public class ParticleAnalysis {
 					
 					final int nPoints = surface.size();
 					
-					//4 triangles * 3 points for the minimal tetrahedron
-					if (nPoints < 12) {
+					//4 points for the minimal tetrahedron
+					if (nPoints < 4) {
 						Arrays.fill(ferets[i], Double.NaN);
 					}
 					
@@ -1039,6 +1041,8 @@ public class ParticleAnalysis {
 			if (surface == null)
 				return null;
 
+			surface = filterSurfacePoints(surface);
+			
 			final Iterator<Point3f> pointIter = surface.iterator();
 			final double[][] coOrdinates = new double[surface.size()][3];
 			int i = 0;
@@ -1086,5 +1090,27 @@ public class ParticleAnalysis {
 		crossVector.y = (float) (z1 * x2 - x1 * z2);
 		crossVector.z = (float) (x1 * y2 - y1 * x2);
 		return crossVector;
+	}
+	
+	/**
+	 * Remove redundant vertices from the surface point list that occur because 
+	 * triangles in the surface mesh share vertices.
+	 * 
+	 * It cuts down the number of points by a factor of 4-6, which should
+	 * speed up O(n²) processes like Feret max by a factor of 16-36×
+	 * 
+	 * @param surface list of surface points, in Point3f format 
+	 * @return the same points but with duplicates removed
+	 */
+	private static List<Point3f> filterSurfacePoints(final List<Point3f> surface){
+			if (surface == null)
+				return null;
+
+			HashSet<Point3f> filteredSurface = new HashSet<>();
+			final int nPoints = surface.size();
+			for (int i = 0; i < nPoints; i++) {
+				filteredSurface.add(surface.get(i));
+			}
+			return new ArrayList<>(filteredSurface);
 	}
 }
