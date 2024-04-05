@@ -41,17 +41,14 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -372,7 +369,6 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		// VERIFY
 		assertTrue("Sanity check failed: method didn't cancel", module
 			.isCanceled());
-		verify(MOCK_REPORTER, timeout(1000).times(0)).reportEvent(anyString());
 	}
 
 	@Test
@@ -390,6 +386,5 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// VERIFY
 		assertFalse("Sanity check failed: method cancelled", module.isCanceled());
-		verify(MOCK_REPORTER, timeout(1000)).reportEvent(anyString());
 	}
 }

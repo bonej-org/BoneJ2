@@ -86,7 +86,6 @@ public class SkeletoniseWrapper extends BoneJCommand {
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-		reportUsage();
 	}
 
 	@SuppressWarnings("unused")

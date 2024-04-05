@@ -207,7 +207,6 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
-		reportUsage();
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {

@@ -171,7 +171,6 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 		});
 		fillResultsTable(subspaces, dimensions, rSquared);
 		resultsTable = SharedTable.getTable();
-		reportUsage();
 	}
 
 	// region -- Helper methods --

@@ -449,7 +449,6 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 		IJ.showProgress(1.0);
 		IJ.showStatus("Particle Analysis Complete");
-		UsageReporter.reportEvent(this).send();
 	}
 	
 	/**

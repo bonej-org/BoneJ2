@@ -220,7 +220,6 @@ public class Moments implements PlugIn, DialogListener {
 
 		if (doAxes3D) show3DAxes(imp, E.getV(), centroid, startSlice, endSlice, min,
 			max);
-		UsageReporter.reportEvent(this).send();
 	}
 
 	/**

@@ -138,7 +138,6 @@ public class Connectivity implements PlugIn {
 		ri.setResultInRow(imp, "Connectivity", connectivity);
 		ri.setResultInRow(imp, "Conn.D (" + imp.getCalibration().getUnit() + "^-3)", connDensity);
 		ri.updateTable();
-		UsageReporter.reportEvent(this).send();
 		return;
 	}
 
