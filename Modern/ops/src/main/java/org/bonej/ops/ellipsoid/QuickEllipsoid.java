@@ -222,11 +222,11 @@ public class QuickEllipsoid {
 	 *
 	 * @return 3×3 matrix containing H, the ellipsoid tensor
 	 */
-	private double[][] getEllipsoidTensor() {
+	public double[][] getEllipsoidTensor() {
 		if (this.eh == null) {
 			this.eh = times(times(ev, ed), transpose(ev));
 		}
-		return this.eh;
+		return this.eh.clone();
 	}
 
 	/**
