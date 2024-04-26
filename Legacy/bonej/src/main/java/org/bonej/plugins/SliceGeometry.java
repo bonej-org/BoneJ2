@@ -462,7 +462,16 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			final double max)
 	{
 		final ImageStack stack = imp.getImageStack();
-		final Rectangle r = stack.getRoi();
+		int rx = 0; int ry = 0; int rwidth = 0; int rheight = 0;
+		if (imp.getRoi() == null) {
+			rwidth = imp.getWidth();
+			rheight = imp.getHeight();
+		} else {
+			rx = imp.getRoi().getBounds().x;
+			ry = imp.getRoi().getBounds().y;
+			rwidth = imp.getRoi().getBounds().width;
+			rheight = imp.getRoi().getBounds().height;
+		}
 		// 2D centroids
 		sliceCentroids = new double[2][al];
 		// pixel counters
@@ -473,8 +482,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		meanDensity = new double[al];
 		weightedCentroids = new double[2][al];
 		final double pixelArea = vW * vH;
-		final int roiXEnd = r.x + r.width;
-		final int roiYEnd = r.y + r.height;
+		final int roiXEnd = rx + rwidth;
+		final int roiYEnd = ry + rheight;
 		for (int s = startSlice; s <= endSlice; s++) {
 			IJ.showStatus("Calculating centroids...");
 			IJ.showProgress(s - startSlice, endSlice);
@@ -486,8 +495,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			double wSumX = 0;
 			double wSumY = 0;
 			final ImageProcessor ip = stack.getProcessor(s);
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
+			for (int y = ry; y < roiYEnd; y++) {
+				for (int x = rx; x < roiXEnd; x++) {
 					final double pixel = ip.get(x, y);
 					if (pixel >= min && pixel <= max) {
 						count++;
@@ -533,7 +542,16 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			final double max)
 	{
 		final ImageStack stack = imp.getImageStack();
-		final Rectangle r = stack.getRoi();
+		int rx = 0; int ry = 0; int rwidth = 0; int rheight = 0;
+		if (imp.getRoi() == null) {
+			rwidth = imp.getWidth();
+			rheight = imp.getHeight();
+		} else {
+			rx = imp.getRoi().getBounds().x;
+			ry = imp.getRoi().getBounds().y;
+			rwidth = imp.getRoi().getBounds().width;
+			rheight = imp.getRoi().getBounds().height;
+		}
 		theta = new double[al];
 		for (int s = startSlice; s <= endSlice; s++) {
 			IJ.showStatus("Calculating Ix and Iy...");
@@ -543,16 +561,16 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			double sxxs = 0;
 			double syys = 0;
 			double sxys = 0;
-			final int roiXEnd = r.x + r.width;
-			final int roiYEnd = r.y + r.height;
+			final int roiXEnd = rx + rwidth;
+			final int roiYEnd = ry + rheight;
 			if (emptySlices[s]) {
 				theta[s] = Double.NaN;
 				continue;
 			}
 			final ImageProcessor ip = stack.getProcessor(s);
 			double sumAreaFractions = 0;
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
+			for (int y = ry; y < roiYEnd; y++) {
+				for (int x = rx; x < roiXEnd; x++) {
 					final double pixel = ip.get(x, y);
 					if (pixel >= min && pixel <= max) {
 						final double xVw = x * vW;
@@ -615,7 +633,16 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			final double min, final double max, final double[] angles)
 	{
 		final ImageStack stack = imp.getImageStack();
-		final Rectangle r = stack.getRoi();
+		int rx = 0; int ry = 0; int rwidth = 0; int rheight = 0;
+		if (imp.getRoi() == null) {
+			rwidth = imp.getWidth();
+			rheight = imp.getHeight();
+		} else {
+			rx = imp.getRoi().getBounds().x;
+			ry = imp.getRoi().getBounds().y;
+			rwidth = imp.getRoi().getBounds().width;
+			rheight = imp.getRoi().getBounds().height;
+		}
 		final double[] I1 = new double[al];
 		final double[] I2 = new double[al];
 		final double[] Ip = new double[al];
@@ -654,15 +681,15 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				double maxRadCentreS = 0;
 				final double cosTheta = Math.cos(angles[s]);
 				final double sinTheta = Math.sin(angles[s]);
-				final int roiYEnd = r.y + r.height;
-				final int roiXEnd = r.x + r.width;
+				final int roiYEnd = ry + rheight;
+				final int roiXEnd = rx + rwidth;
 				final double xC = sliceCentroids[0][s];
 				final double yC = sliceCentroids[1][s];
 				final double cS = cslice[s];
 				double sumAreaFractions = 0;
-				for (int y = r.y; y < roiYEnd; y++) {
+				for (int y = ry; y < roiYEnd; y++) {
 					final double yYc = y * vH - yC;
-					for (int x = r.x; x < roiXEnd; x++) {
+					for (int x = rx; x < roiXEnd; x++) {
 						final double pixel = ip.get(x, y);
 						if (pixel >= min && pixel <= max) {
 							final double areaFraction = doPartialVolume ? filledFraction(
@@ -749,7 +776,16 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		maxCortThick3D = new double[al];
 		meanCortThick3D = new double[al];
 		stdevCortThick3D = new double[al];
-		final Rectangle r = imp.getProcessor().getRoi();
+		int rx = 0; int ry = 0; int rwidth = 0; int rheight = 0;
+		if (imp.getRoi() == null) {
+			rwidth = imp.getWidth();
+			rheight = imp.getHeight();
+		} else {
+			rx = imp.getRoi().getBounds().x;
+			ry = imp.getRoi().getBounds().y;
+			rwidth = imp.getRoi().getBounds().width;
+			rheight = imp.getRoi().getBounds().height;
+		}
 
 		// convert to binary
 		final ImagePlus binaryImp = convertToBinary(imp, min, max);
@@ -768,10 +804,10 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			double sumPix = 0;
 			double sliceMax = 0;
 			double pixCount = 0;
-			final int roiXEnd = r.x + r.width;
-			final int roiYEnd = r.y + r.height;
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
+			final int roiXEnd = rx + rwidth;
+			final int roiYEnd = ry + rheight;
+			for (int y = ry; y < roiYEnd; y++) {
+				for (int x = rx; x < roiXEnd; x++) {
 					final float pixel = Float.intBitsToFloat(ip.get(x, y));
 					if (pixel > 0) {
 						pixCount++;
@@ -785,8 +821,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			maxCortThick3D[s] = sliceMax;
 
 			double sumSquares = 0;
-			for (int y = r.y; y < roiYEnd; y++) {
-				for (int x = r.x; x < roiXEnd; x++) {
+			for (int y = ry; y < roiYEnd; y++) {
+				for (int x = rx; x < roiXEnd; x++) {
 					final float pixel = Float.intBitsToFloat(ip.get(x, y));
 					if (pixel > 0) {
 						final double d = sliceMean - pixel;
@@ -1035,7 +1071,16 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				}
 				final ImageProcessor ip = impT.getImageStack().getProcessor(s);
 				final ImagePlus sliceImp = new ImagePlus(" " + s, ip);
-				final Rectangle r = ip.getRoi();
+				int rx = 0; int ry = 0; int rwidth = 0; int rheight = 0;
+				if (sliceImp.getRoi() == null) {
+					rwidth = sliceImp.getWidth();
+					rheight = sliceImp.getHeight();
+				} else {
+					rx = sliceImp.getRoi().getBounds().x;
+					ry = sliceImp.getRoi().getBounds().y;
+					rwidth = sliceImp.getRoi().getBounds().width;
+					rheight = sliceImp.getRoi().getBounds().height;
+				}
 				// binarise
 				final ImagePlus binaryImp = convertToBinary(sliceImp, min, max);
 				final Calibration cal = impT.getCalibration();
@@ -1047,10 +1092,10 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				double sumPix = 0;
 				double sliceMax = 0;
 				double pixCount = 0;
-				final double roiXEnd = r.x + r.width;
-				final double roiYEnd = r.y + r.height;
-				for (int y = r.y; y < roiYEnd; y++) {
-					for (int x = r.x; x < roiXEnd; x++) {
+				final double roiXEnd = rx + rwidth;
+				final double roiYEnd = ry + rheight;
+				for (int y = ry; y < roiYEnd; y++) {
+					for (int x = rx; x < roiXEnd; x++) {
 						final float pixel = Float.intBitsToFloat(thickIp.get(x, y));
 						if (pixel > 0) {
 							pixCount++;
@@ -1064,8 +1109,8 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				maxThick[s] = sliceMax;
 
 				double sumSquares = 0;
-				for (int y = r.y; y < roiYEnd; y++) {
-					for (int x = r.x; x < roiXEnd; x++) {
+				for (int y = ry; y < roiYEnd; y++) {
+					for (int x = rx; x < roiXEnd; x++) {
 						final float pixel = Float.intBitsToFloat(thickIp.get(x, y));
 						if (pixel > 0) {
 							final double d = sliceMean - pixel;
