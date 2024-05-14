@@ -391,7 +391,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		if (do3DAnnotation) {
 			show3DAxes(imp);
 		}
-		UsageReporter.reportEvent(this).send();
 	}
 
 	private void initOrientationCheckBox(final GenericDialog gd) {

@@ -30,9 +30,6 @@ package org.bonej.wrapperPlugins;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -80,7 +77,7 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
 
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
     @Test
-    public void testCancelledRunDoesNotReport() throws ExecutionException,
+    public void testEmptyImageCancels() throws ExecutionException,
             InterruptedException
     {
         // SETUP
@@ -102,14 +99,13 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
         final String reason = module.getCancelReason();
         assertEquals("EF should have cancelled because there are no ellipsoids in an empty image",
                 EllipsoidFactorWrapper.NO_ELLIPSOIDS_FOUND, reason);
-        verify(MOCK_REPORTER, timeout(1000).times(0)).reportEvent(anyString());
     }
 
     // run(nvectors=100 vectorincrement=0.435 skipratio=1 contactsensitivity=1 maxiterations=100 maxdrift=1.73 minimumsemiaxis=1.0 runs=1 weightedaveragen=1 seedondistanceridge=true distancethreshold=0.6 seedontopologypreserving=false);
 
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
     @Test
-    public void testSuccessfulRunReports() throws ExecutionException, InterruptedException {
+    public void testSensibleInputDoesNotCancel() throws ExecutionException, InterruptedException {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", 1.0);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "", 1.0);
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "", 1.0);
@@ -124,7 +120,6 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
                 false).get();
 
         assertFalse("Sanity check failed: method cancelled", module.isCanceled());
-        verify(MOCK_REPORTER, timeout(1000)).reportEvent(anyString());
     }
 
     @Test
@@ -142,7 +137,6 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
 
     @BeforeClass
     public static void oneTimeSetup() {
-        EllipsoidFactorWrapper.setReporter(MOCK_REPORTER);
     }
 
     private static Img<UnsignedByteType> createSphereImg() {

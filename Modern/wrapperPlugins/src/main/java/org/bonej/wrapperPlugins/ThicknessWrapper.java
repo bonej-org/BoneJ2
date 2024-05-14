@@ -141,7 +141,6 @@ public class ThicknessWrapper extends BoneJCommand {
 				spacingMap.setLut(fire);
 			}
 		}
-		reportUsage();
 	}
 
 	private void addMapResults(final ImagePlus map) {

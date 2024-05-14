@@ -108,7 +108,6 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			statusService.showProgress(i, subspaces.size());
 		}
 		resultsTable = SharedTable.getTable();
-		reportUsage();
 	}
 
 	// region -- Helper methods --

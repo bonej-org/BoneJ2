@@ -31,7 +31,6 @@ package org.bonej.wrapperPlugins;
 
 import net.imagej.ImageJ;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.UsageReporter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -53,7 +52,6 @@ import static org.mockito.Mockito.mock;
  */
 public abstract class AbstractWrapperTest {
     private static ImageJ imageJ;
-    protected static final UsageReporter MOCK_REPORTER = mock(UsageReporter.class);
     protected static final UserInterface MOCK_UI = mock(UserInterface.class);
     private static CommandService commandService;
 
@@ -69,26 +67,22 @@ public abstract class AbstractWrapperTest {
     public static void basicOneTimeSetup() {
         imageJ = new ImageJ();
         commandService = imageJ.command();
-        BoneJCommand.setReporter(MOCK_REPORTER);
     }
 
     @Before
     public void setup() {
     	  imageJ.ui().setHeadless(false);
         imageJ.ui().setDefaultUI(MOCK_UI);
-        doNothing().when(MOCK_REPORTER).reportEvent(anyString());
     }
 
     @After
     public void tearDown() {
         Mockito.reset(MOCK_UI);
-        Mockito.reset(MOCK_REPORTER);
         SharedTable.reset();
     }
 
     @AfterClass
     public static void basicOneTimeTearDown() {
-        BoneJCommand.setReporter(null);
         imageJ.context().dispose();
         imageJ = null;
         commandService = null;

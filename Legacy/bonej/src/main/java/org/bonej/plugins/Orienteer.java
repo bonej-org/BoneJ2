@@ -243,8 +243,6 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 		if (WindowManager.getImageCount() == 0) return;
 		final ImagePlus imp = WindowManager.getCurrentImage();
 		setup(imp);
-
-		UsageReporter.reportEvent(this).send();
 	}
 
 	@Override

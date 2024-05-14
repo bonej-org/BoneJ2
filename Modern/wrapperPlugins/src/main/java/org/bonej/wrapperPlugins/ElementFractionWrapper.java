@@ -118,7 +118,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			addResults(label, foregroundSize, totalSize, ratio);
 		}
 		resultsTable = SharedTable.getTable();
-		reportUsage();
 	}
 
 	private void findSubspaces(final ImgPlus<T> inputImage) {

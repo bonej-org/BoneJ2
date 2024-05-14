@@ -110,7 +110,6 @@ public class ConnectivityWrapper<T extends RealType<T> & NativeType<T>> extends 
 			subspaceConnectivity(label, subspace.interval);
 		});
 		resultsTable = SharedTable.getTable();
-		reportUsage();
 	}
 
 	private void addResults(final String label, final double eulerCharacteristic,

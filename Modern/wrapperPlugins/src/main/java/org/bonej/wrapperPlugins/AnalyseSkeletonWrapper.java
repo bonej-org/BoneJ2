@@ -208,7 +208,6 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 				shortestPaths.setCalibration(inputImage.getCalibration());
 			}
 		}
-		reportUsage();
 	}
 
 	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {

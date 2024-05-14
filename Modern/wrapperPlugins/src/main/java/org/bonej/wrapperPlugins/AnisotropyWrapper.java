@@ -217,7 +217,6 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 		}
 		addResults(subspaces, ellipsoids);
 		resultsTable = SharedTable.getTable();
-		reportUsage();
 	}
 
 	// region -- Helper methods --

@@ -99,7 +99,6 @@ public class Purify implements PlugIn {
 		if (showPerformance) {
 			showResults(duration, imp);
 		}
-		UsageReporter.reportEvent(this).send();
 	}
 
 

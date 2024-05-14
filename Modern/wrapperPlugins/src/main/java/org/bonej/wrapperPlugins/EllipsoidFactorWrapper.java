@@ -317,7 +317,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		}
 		resultsTable = SharedTable.getTable();
 		statusService.showStatus("Ellipsoid Factor completed");
-		reportUsage();
 	}
 
 	private List<ImgPlus> divideOutput(final List<ImgPlus> outputList, final int repetitions) {

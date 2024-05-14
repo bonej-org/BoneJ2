@@ -75,7 +75,6 @@ public class DeleteSliceRange implements PlugIn {
 		imp.setStack(null, stack);
 
 		imp.show();
-		UsageReporter.reportEvent(this).send();
 	}
 
 	/**

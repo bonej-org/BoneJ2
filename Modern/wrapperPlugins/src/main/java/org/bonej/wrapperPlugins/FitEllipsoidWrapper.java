@@ -118,7 +118,6 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 		}
 		addResults(result.get());
 		resultsTable = SharedTable.getTable();
-		reportUsage();
 	}
 
 	private void addResults(final Ellipsoid ellipsoid) {
