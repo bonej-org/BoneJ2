@@ -77,7 +77,7 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
 
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
     @Test
-    public void testCancelledRunDoesNotReport() throws ExecutionException,
+    public void testEmptyImageCancels() throws ExecutionException,
             InterruptedException
     {
         // SETUP
@@ -105,7 +105,7 @@ public class EllipsoidFactorWrapperTest extends AbstractWrapperTest {
 
     @Category(org.bonej.wrapperPlugins.SlowWrapperTest.class)
     @Test
-    public void testSuccessfulRunReports() throws ExecutionException, InterruptedException {
+    public void testSensibleInputDoesNotCancel() throws ExecutionException, InterruptedException {
         final DefaultLinearAxis xAxis = new DefaultLinearAxis(Axes.X, "", 1.0);
         final DefaultLinearAxis yAxis = new DefaultLinearAxis(Axes.Y, "", 1.0);
         final DefaultLinearAxis zAxis = new DefaultLinearAxis(Axes.Z, "", 1.0);

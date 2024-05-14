@@ -354,7 +354,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 	}
 
 	@Test
-	public void testCancelledRunDoesNotReport() throws ExecutionException,
+	public void testEmptyImageCancels() throws ExecutionException,
 		InterruptedException
 	{
 		// SETUP
@@ -372,7 +372,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 	}
 
 	@Test
-	public void testSuccessfulRunReports() throws ExecutionException,
+	public void testSensibleInputDoesNotCancel() throws ExecutionException,
 		InterruptedException
 	{
 		// SETUP
