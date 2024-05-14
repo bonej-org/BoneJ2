@@ -47,7 +47,12 @@ public final class BoneList {
 	// Only add new bone names to the END of this list
 	private static final String[] boneList = { "unknown", "scapula", "humerus",
 		"radius", "ulna", "metacarpal", "pelvis", "femur", "tibia", "fibula",
-		"metatarsal", "calcaneus", "tibiotarsus", "tarsometatarsal", "sacrum" };
+		"metatarsal", "calcaneus", "tibiotarsus", "tarsometatarsal", "sacrum",
+		"mandible", "clavicle", "rib", "ilium", "os_penis", "os_clitoridis",
+		"coracoid", "proximal_phalanx", "distal_phalanx", "middle_phalanx", 
+		"intermediate_phalanx", "basihyoid", "ceratohyoid", "epihyoid", "thyrohyoid",
+		"stylohyoid", "tympanohyoid", "malleus", "incus", "stapes", "columella",
+		"ischium", "patella", "talus"};
 
 	private BoneList() {}
 
