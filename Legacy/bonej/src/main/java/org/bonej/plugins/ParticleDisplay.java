@@ -37,12 +37,11 @@ import java.util.List;
 
 import org.bonej.geometry.Ellipsoid;
 import org.bonej.geometry.FitEllipsoid;
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point3f;
+import org.jogamp.vecmath.Color3f;
+import org.jogamp.vecmath.Point3f;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
-import customnode.CustomLineMesh;
 import customnode.CustomPointMesh;
 import ij.IJ;
 import ij.ImagePlus;

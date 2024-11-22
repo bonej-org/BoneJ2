@@ -43,8 +43,8 @@ import org.bonej.util.BoneList;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.ThresholdGuesser;
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point3f;
+import org.jogamp.vecmath.Color3f;
+import org.jogamp.vecmath.Point3f;
 
 import customnode.CustomPointMesh;
 import ij.IJ;

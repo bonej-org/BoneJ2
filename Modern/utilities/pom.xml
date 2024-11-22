@@ -147,10 +147,10 @@
             <artifactId>scijava-table</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.scijava</groupId>
+            <groupId>org.jogamp.java3d</groupId>
             <artifactId>vecmath</artifactId>
         </dependency>
-
+        
         <!-- ImgLib2 dependencies -->
         <dependency>
             <groupId>net.imglib2</groupId>

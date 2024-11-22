@@ -45,8 +45,8 @@ import org.bonej.util.MatrixUtils;
 import org.bonej.util.Multithreader;
 import org.bonej.util.ResultInserter;
 import org.bonej.util.ThresholdGuesser;
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point3f;
+import org.jogamp.vecmath.Color3f;
+import org.jogamp.vecmath.Point3f;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;

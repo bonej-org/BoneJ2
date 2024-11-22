@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.geometry.FitEllipsoid;
 import org.bonej.util.Multithreader;
-import org.scijava.vecmath.Point3f;
+import org.jogamp.vecmath.Point3f;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;

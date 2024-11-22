@@ -141,7 +141,7 @@
             <artifactId>jama</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.scijava</groupId>
+            <groupId>org.jogamp.java3d</groupId>
             <artifactId>vecmath</artifactId>
         </dependency>
         <dependency>

@@ -33,8 +33,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.joml.Vector3dc;
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point3f;
+import org.jogamp.vecmath.Color3f;
+import org.jogamp.vecmath.Point3f;
 
 import customnode.CustomPointMesh;
 import ij3d.Image3DUniverse;

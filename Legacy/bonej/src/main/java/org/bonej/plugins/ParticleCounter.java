@@ -40,7 +40,7 @@ import java.util.List;
 import org.bonej.menuWrappers.ThicknessHelper;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
-import org.scijava.vecmath.Point3f;
+import org.jogamp.vecmath.Point3f;
 
 import Jama.EigenvalueDecomposition;
 
