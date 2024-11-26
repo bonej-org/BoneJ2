@@ -33,31 +33,18 @@ package org.bonej.utilities;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.awt.Polygon;
-import java.awt.Rectangle;
 import java.util.List;
-import java.util.Optional;
 
 import org.joml.Vector3d;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import ij.IJ;
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.gui.NewImage;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.gui.TextRoi;
 import ij.plugin.frame.RoiManager;
-import ij.process.ByteProcessor;
-import ij.process.ImageProcessor;
 
 /**
  * Unit tests for the {@link RoiManagerUtil RoiManagerUtil} class.

@@ -28,8 +28,6 @@
  */
 package org.bonej.ops.ellipsoid;
 
-import java.util.Arrays;
-
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;

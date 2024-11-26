@@ -39,8 +39,6 @@ import org.mockito.Mockito;
 import org.scijava.command.CommandService;
 import org.scijava.ui.UserInterface;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 
 /**

@@ -34,12 +34,10 @@ import net.imglib2.img.Img;
 import org.junit.Test;
 
 import net.imagej.ops.AbstractOpTest;
-import net.imglib2.IterableInterval;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.array.ArrayRandomAccess;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
-import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.FloatType;
 
 import static org.junit.Assert.assertEquals;
