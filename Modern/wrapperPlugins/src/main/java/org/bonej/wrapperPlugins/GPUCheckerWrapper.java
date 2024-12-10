@@ -8,10 +8,13 @@ import org.jocl.cl_device_id;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
+import ij.Prefs;
 import ij.gui.GenericDialog;
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Plus>Check GPUs")
 public class GPUCheckerWrapper implements Command {
+	
+	final static String PREF_BASE = "BoneJ.";
 	
 	@Override
 	public void run() {
@@ -24,13 +27,18 @@ public class GPUCheckerWrapper implements Command {
 
 		GenericDialog gd = new GenericDialog("Select GPUs");
 		for (int p = 0; p < platformNames.length; p++) {
-			gd.addMessage(platformNames[p]);
+			gd.addMessage(p + ": "+platformNames[p]);
+			if (devices[p].length == 0) {
+				gd.addMessage("No devices on this platform");
+				continue;
+			}
 			for (int d = 0; d < devices[p].length; d++) {
-				gd.addCheckbox(d+": "+ deviceNames[p][d], isCompliant[p][d]);
+				boolean useDevice = Prefs.get(PREF_BASE+"useDevice["+p+":"+d+"]", isCompliant[p][d]);
+				gd.addCheckbox(d+": "+ deviceNames[p][d], useDevice);
 			}
 		}
 		
-		gd.addCheckbox("Ignore selection and use all GPUs", false);
+		gd.addCheckbox("Ignore selection and use all GPUs", Prefs.get(PREF_BASE+"useAllDevices", false));
 		
 		List<?> checkboxes = gd.getCheckboxes();
 		int i = 0;
@@ -44,6 +52,12 @@ public class GPUCheckerWrapper implements Command {
 		
 		gd.showDialog();
 
-		//save the selection to the preferences (in what format - platform + device = true or false to use?)
+		for (int p = 0; p < platformNames.length; p++) {
+			for (int d = 0; d < devices[p].length; d++) {
+				Prefs.set(PREF_BASE+"useDevice["+p+":"+d+"]", gd.getNextBoolean());
+			}
+		}
+		
+		Prefs.set(PREF_BASE+"useAllDevices", gd.getNextBoolean());		
 	}
 }
