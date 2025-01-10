@@ -27,14 +27,14 @@ public class GPUCheckerWrapper implements Command {
 
 		GenericDialog gd = new GenericDialog("Select GPUs");
 		for (int p = 0; p < platformNames.length; p++) {
-			gd.addMessage(p + ": "+platformNames[p]);
+			gd.addMessage("Platform "+p+": "+platformNames[p]);
 			if (devices[p].length == 0) {
 				gd.addMessage("No devices on this platform");
 				continue;
 			}
 			for (int d = 0; d < devices[p].length; d++) {
 				boolean useDevice = Prefs.get(PREF_BASE+"useDevice["+p+":"+d+"]", isCompliant[p][d]);
-				gd.addCheckbox(d+": "+ deviceNames[p][d], useDevice);
+				gd.addCheckbox("Device "+d+": "+ deviceNames[p][d], useDevice);
 			}
 		}
 		
