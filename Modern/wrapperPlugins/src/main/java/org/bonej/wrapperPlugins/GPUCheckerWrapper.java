@@ -34,6 +34,8 @@ public class GPUCheckerWrapper implements Command {
 			}
 			for (int d = 0; d < devices[p].length; d++) {
 				boolean useDevice = Prefs.get(PREF_BASE+"useDevice["+p+":"+d+"]", isCompliant[p][d]);
+				if (Prefs.get(PREF_BASE+"useAllDevices", false))
+					useDevice = true;
 				gd.addCheckbox("Device_"+p+"-"+d+": "+ deviceNames[p][d], useDevice);
 			}
 		}
@@ -46,6 +48,8 @@ public class GPUCheckerWrapper implements Command {
 			for (int d = 0; d < devices[p].length; d++) {
 				Checkbox checkbox = (Checkbox) checkboxes.get(i);
 				checkbox.setEnabled(isCompliant[p][d]);
+				if (!isCompliant[p][d])
+					checkbox.setState(false);
 				i++;
 			}
 		}
