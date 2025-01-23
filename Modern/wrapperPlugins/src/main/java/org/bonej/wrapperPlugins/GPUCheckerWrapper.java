@@ -4,6 +4,7 @@ import java.awt.Checkbox;
 import java.util.List;
 
 import org.bonej.plus.DeviceCheck;
+import org.bonej.plus.Utilities;
 import org.jocl.cl_device_id;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
@@ -40,7 +41,7 @@ public class GPUCheckerWrapper implements Command {
 			}
 		}
 		
-		gd.addCheckbox("Ignore selection and use all GPUs", Prefs.get(PREF_BASE+"useAllDevices", false));
+		gd.addCheckbox("Use_all compliant GPUs", Prefs.get(PREF_BASE+"useAllDevices", false));
 		
 		List<?> checkboxes = gd.getCheckboxes();
 		int i = 0;
@@ -62,6 +63,9 @@ public class GPUCheckerWrapper implements Command {
 			}
 		}
 		
-		Prefs.set(PREF_BASE+"useAllDevices", gd.getNextBoolean());		
+		Prefs.set(PREF_BASE+"useAllDevices", gd.getNextBoolean());
+		//reset and clear any singleton classes that might be floating about
+		//note that multiple calls may lead to VRAM leak on NVIDIA cards, which don't let go of resources well
+		Utilities.purgePlusClasses();
 	}
 }
