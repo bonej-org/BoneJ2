@@ -66,6 +66,6 @@ public class GPUCheckerWrapper implements Command {
 		Prefs.set(PREF_BASE+"useAllDevices", gd.getNextBoolean());
 		//reset and clear any singleton classes that might be floating about
 		//note that multiple calls may lead to VRAM leak on NVIDIA cards, which don't let go of resources well
-		Utilities.purgePlusClasses();
+		Utilities.purgeAll();
 	}
 }
