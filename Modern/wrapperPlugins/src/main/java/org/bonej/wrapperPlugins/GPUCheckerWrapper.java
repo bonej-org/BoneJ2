@@ -25,6 +25,29 @@ public class GPUCheckerWrapper implements Command {
 		cl_device_id[][] devices = DeviceCheck.getAllDeviceIds();
 		String[][] deviceNames = DeviceCheck.getDeviceNames(devices);
 		boolean[][] isCompliant = DeviceCheck.getCompliance(devices);
+		
+		//clear Prefs of old deviceName entries
+		//fewer than 10 platforms in existence I think, but may need to be updated
+		//to handle severely Frankensteinish hardware configurations
+		int pl = 0;
+		boolean platformFound = true;
+		while(platformFound || pl < 10) {
+			int d = 0;
+			boolean deviceFound = true;
+			while (deviceFound || d < 10) {
+				if (Prefs.get(PREF_BASE+"deviceName["+pl+":"+d+"]", null) == null) {
+					deviceFound = false;
+					if (d == 0)
+						platformFound = false;
+				} else {
+					//setting to null removes the key and the value
+					Prefs.set(PREF_BASE+"deviceName["+pl+":"+d+"]", null);
+				}
+				d++;
+			}
+			pl++;
+		}
+		
 
 		GenericDialog gd = new GenericDialog("Select GPUs");
 		for (int p = 0; p < platformNames.length; p++) {
@@ -34,6 +57,8 @@ public class GPUCheckerWrapper implements Command {
 				continue;
 			}
 			for (int d = 0; d < devices[p].length; d++) {
+				//log in Prefs the name of each device
+				Prefs.set(PREF_BASE+"deviceName["+p+":"+d+"]", deviceNames[p][d]);
 				boolean useDevice = Prefs.get(PREF_BASE+"useDevice["+p+":"+d+"]", isCompliant[p][d]);
 				if (Prefs.get(PREF_BASE+"useAllDevices", false))
 					useDevice = true;
