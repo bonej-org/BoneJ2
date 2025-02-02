@@ -26,26 +26,30 @@ public class GPUCheckerWrapper implements Command {
 		String[][] deviceNames = DeviceCheck.getDeviceNames(devices);
 		boolean[][] isCompliant = DeviceCheck.getCompliance(devices);
 		
-		//clear Prefs of old deviceName entries
-		//fewer than 10 platforms in existence I think, but may need to be updated
+		//clear Prefs of old deviceName and useDevice entries
+		//around 10 platforms in existence I think, but may need to be updated
 		//to handle severely Frankensteinish hardware configurations
-		int pl = 0;
-		boolean platformFound = true;
-		while(platformFound || pl < 10) {
+		for (int pl = 0; pl < 20; pl++) {
 			int d = 0;
-			boolean deviceFound = true;
-			while (deviceFound || d < 10) {
-				if (Prefs.get(PREF_BASE+"deviceName["+pl+":"+d+"]", null) == null) {
-					deviceFound = false;
-					if (d == 0)
-						platformFound = false;
-				} else {
+			int noDeviceFoundCount = 0;
+			while (noDeviceFoundCount < 10) {
+				//if either deviceName or useDevice entry is present, this device was recorded in prefs
+				if (Prefs.get(PREF_BASE+"deviceName["+pl+":"+d+"]", null) != null || 
+					Prefs.get(PREF_BASE+"useDevice["+pl+":"+d+"]", null) != null) {
+					
+					System.out.println("Found a device listed in the prefs at "+pl+":"+d);
+				
 					//setting to null removes the key and the value
 					Prefs.set(PREF_BASE+"deviceName["+pl+":"+d+"]", null);
+					Prefs.set(PREF_BASE+"useDevice["+pl+":"+d+"]", null);
+					//reset the counter - loop will keep going for 10 empty devices after the last hit
+					noDeviceFoundCount = 0;
+				} else {
+//					System.out.println("No device listed in the prefs at "+pl+":"+d);
+					noDeviceFoundCount++;
 				}
 				d++;
 			}
-			pl++;
 		}
 		
 
