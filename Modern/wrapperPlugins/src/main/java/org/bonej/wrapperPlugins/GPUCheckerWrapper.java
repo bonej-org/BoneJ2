@@ -43,7 +43,7 @@ import ij.Prefs;
 import ij.gui.GenericDialog;
 
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Plus>Check GPUs")
-public class GPUCheckerWrapper implements Command {
+public class GPUCheckerWrapper extends BoneJCommand {
 	
 	final static String PREF_BASE = "BoneJ.";
 	
