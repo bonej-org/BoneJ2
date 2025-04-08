@@ -4,11 +4,13 @@ import java.awt.Checkbox;
 import java.util.List;
 
 import org.bonej.plus.DeviceCheck;
+import org.bonej.plus.Regulator;
 import org.bonej.plus.Utilities;
 import org.jocl.cl_device_id;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
+import ij.IJ;
 import ij.Prefs;
 import ij.gui.GenericDialog;
 
@@ -19,6 +21,10 @@ public class GPUCheckerWrapper implements Command {
 	
 	@Override
 	public void run() {
+		if (Regulator.getInstance().isLocked()) {
+			IJ.showMessage("BoneJ+", "A plugin is already running.");
+			return;
+		}
 		String[] platformNames = DeviceCheck.getPlatformNames(DeviceCheck.getPlatformIds());
 		for (int p = 0; p < platformNames.length; p++)
 			System.out.println("Found platform: "+platformNames[p]);
