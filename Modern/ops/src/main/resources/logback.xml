@@ -35,7 +35,7 @@
     </appender>
 
     <!-- Set the root logger level to INFO -->
-    <root level="INFO">
+    <root level="ERROR">
         <appender-ref ref="CONSOLE" />
     </root>
 </configuration>
