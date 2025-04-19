@@ -31,6 +31,7 @@ package org.bonej.wrapperPlugins;
 import java.awt.Checkbox;
 import java.util.List;
 
+import org.bonej.plus.BeanCounter;
 import org.bonej.plus.DeviceCheck;
 import org.bonej.plus.Regulator;
 import org.bonej.plus.Utilities;
@@ -53,6 +54,7 @@ public class GPUCheckerWrapper extends BoneJCommand {
 			IJ.showMessage("BoneJ+", "A plugin is already running.");
 			return;
 		}
+		BeanCounter.getInstance();
 		String[] platformNames = DeviceCheck.getPlatformNames(DeviceCheck.getPlatformIds());
 		for (int p = 0; p < platformNames.length; p++)
 			System.out.println("Found platform: "+platformNames[p]);
