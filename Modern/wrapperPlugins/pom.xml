@@ -113,8 +113,8 @@
         <!-- HACK: Avoid exception during test phase. -->
         <junit.version>4.10</junit.version>
     </properties>
-
-    <dependencies>
+ 
+     <dependencies>
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
@@ -243,8 +243,6 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-			<!-- overriding scijava version until scijava is updated -->
-            <version>4.11.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
