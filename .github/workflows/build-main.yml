@@ -19,11 +19,27 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
           cache: 'maven'
+      - name: Set up Maven settings
+        run: |
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>\${{ github.actor }}</username>
+                <password>\${{ secrets.BONEJ_PLUS_REPO }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
       - name: Set up CI environment
         run: .github/setup.sh
+        env:
+          BONEJ_PLUS_REPO: ${{ secrets.BONEJ_PLUS_REPO }}
       - name: Execute the build
         run: .github/build.sh
         env:
+          BONEJ_PLUS_REPO: ${{ secrets.BONEJ_PLUS_REPO }}
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           MAVEN_USER: ${{ secrets.MAVEN_USER }}
