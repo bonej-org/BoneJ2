@@ -126,5 +126,10 @@
             <id>scijava.public</id>
             <url>https://maven.scijava.org/content/groups/public</url>
         </repository>
+        <repository>
+        	<id>github</id>
+        	<name>GitHub Packages</name>
+        	<url>https://maven.pkg.github.com/bonej-org/bonej-plus</url>
+    	</repository>
     </repositories>
 </project>
