@@ -6,6 +6,10 @@ on:
       - master
     tags:
       - "*-[0-9]+.*"
+      
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   build:
@@ -32,7 +36,6 @@ jobs:
       - name: Execute the build
         run: .github/build.sh
         env:
-          BONEJ_PLUS_REPO: ${{ secrets.BONEJ_PLUS_REPO }}
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           MAVEN_USER: ${{ secrets.MAVEN_USER }}
