@@ -35,7 +35,7 @@ jobs:
       - name: Set up CI environment
         run: .github/setup.sh
         env:
-          BONEJ_PLUS_REPO: ${{ secrets.BONEJ_PLUS_REPO }
+          BONEJ_PLUS_REPO: ${{ secrets.BONEJ_PLUS_REPO }}
       - name: Execute the build
         run: .github/build.sh
         env:
