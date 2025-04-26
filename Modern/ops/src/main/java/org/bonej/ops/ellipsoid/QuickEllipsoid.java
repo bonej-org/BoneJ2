@@ -44,8 +44,8 @@ import org.apache.commons.math3.random.UnitSphereRandomVectorGenerator;
  */
 public class QuickEllipsoid {
 
-	private RandomGenerator rng = new MersenneTwister();
-	private UnitSphereRandomVectorGenerator sphereRng = new UnitSphereRandomVectorGenerator(3,rng);
+	private RandomGenerator rng;
+	private UnitSphereRandomVectorGenerator sphereRng;
 	private final static int randomNumberRefreshmentPeriodicity = 100;
 	private final static int numberOfPreallocatedRandomNumbers = 150;
 	private int lastRefreshed = 0;
@@ -383,6 +383,12 @@ public class QuickEllipsoid {
 	}
 
 	private void refreshRandomNumbersIfNeeded() {
+		if (rng == null)
+			 rng = new MersenneTwister();
+		
+		if (sphereRng == null)
+			sphereRng = new UnitSphereRandomVectorGenerator(3,rng);
+		
 		if(sphereRandomVectors == null)
 		{
 			sphereRandomVectors = new double[numberOfPreallocatedRandomNumbers][3];

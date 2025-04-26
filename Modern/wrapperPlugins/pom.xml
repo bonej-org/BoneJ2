@@ -113,8 +113,8 @@
         <!-- HACK: Avoid exception during test phase. -->
         <junit.version>4.10</junit.version>
     </properties>
-
-    <dependencies>
+ 
+     <dependencies>
         <!-- BoneJ dependencies -->
         <dependency>
             <groupId>org.bonej</groupId>
@@ -126,11 +126,11 @@
             <artifactId>bonej-ops</artifactId>
             <version>${project.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--        	<groupId>org.bonej</groupId>-->
-<!--        	<artifactId>bonej-plus</artifactId>-->
-<!--        	<version>0.0.1-SNAPSHOT</version>-->
-<!--        </dependency>-->
+        <dependency>
+        	<groupId>org.bonej</groupId>
+        	<artifactId>bonej-plus</artifactId>
+        	<version>0.0.3</version>
+        </dependency>
 
         <!-- ImageJ dependencies -->
         <dependency>
@@ -228,6 +228,10 @@
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jocl</groupId>
+            <artifactId>jocl</artifactId>
+        </dependency>
         <!-- Testing dependencies -->
         <dependency>
             <groupId>junit</groupId>
@@ -241,14 +245,8 @@
             </exclusions>
         </dependency>
         <dependency>
-    		<groupId>ch.qos.logback</groupId>
-    		<artifactId>logback-classic</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-			<!-- overriding scijava version until scijava is updated -->
-            <version>4.11.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
