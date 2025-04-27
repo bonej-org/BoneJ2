@@ -17,7 +17,7 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
           cache: 'maven'
-
+	  
       - name: Download BoneJ-plus JAR from BoneJ-plus Release
 	run: |
           curl -L \
