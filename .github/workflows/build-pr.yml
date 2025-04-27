@@ -18,23 +18,23 @@ jobs:
           distribution: 'zulu'
           cache: 'maven'
 
-      - name: Get BoneJ-plus asset ID from GitHub Release
+      - name: Get bonej-plus asset ID from GitHub Release
         id: get_bonej_plus_asset
         run: |
           ASSET_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.BONEJ_PLUS_REPO }}" \
-            https://api.github.com/repos/bonej-org/BoneJ-plus/releases/tags/bonej-plus-0.0.3 | \
+            https://api.github.com/repos/bonej-org/bonej-plus/releases/tags/bonej-plus-0.0.3 | \
             jq '.assets[] | select(.name=="bonej-plus-0.0.3.jar") | .id')
           echo "asset_id=$ASSET_ID" >> $GITHUB_ENV
 
-      - name: Download BoneJ-plus JAR by asset ID
+      - name: Download bonej-plus JAR by asset ID
         run: |
           curl -L \
             -H "Authorization: Bearer ${{ secrets.BONEJ_PLUS_REPO }}" \
             -H "Accept: application/octet-stream" \
-            https://api.github.com/repos/bonej-org/BoneJ-plus/releases/assets/${{ env.asset_id }} \
+            https://api.github.com/repos/bonej-org/bonej-plus/releases/assets/${{ env.asset_id }} \
             -o bonej-plus-0.0.3.jar
 
-      - name: Install BoneJ-plus into local Maven repository
+      - name: Install bonej-plus into local Maven repository
         run: |
           mvn install:install-file \
             -Dfile=bonej-plus-0.0.3.jar \
