@@ -19,7 +19,23 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
           cache: 'maven'
-          
+
+      - name: Download BoneJ-plus JAR from BoneJ-plus Release
+		run: |
+		      curl -L \
+		           -H "Authorization: Bearer ${{ secrets.BONEJ_PLUS_REPO }}" \
+		           -o bonej-plus-0.0.3.jar \
+		           https://github.com/bonej-org/bonej-plus/releases/download/bonej-plus-0.0.3/bonej-plus-0.0.3.jar
+
+      - name: Install BoneJ-plus into local Maven repository
+		run: |
+		      mvn install:install-file \
+		        -Dfile=bonej-plus-0.0.3.jar \
+		        -DgroupId=org.bonej \
+		        -DartifactId=bonej-plus \
+		        -Dversion=0.0.3 \
+		        -Dpackaging=jar
+		            
       - name: Set up CI environment
         run: .github/setup.sh
 
