@@ -17,12 +17,6 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
           cache: 'maven'
-
-      - name: Set up Maven settings
-        uses: s4u/maven-settings-action@v2
-        with:
-          servers: '[{"id": "github", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}]'
-          githubServer: false
           
       - name: Set up CI environment
         run: .github/setup.sh
