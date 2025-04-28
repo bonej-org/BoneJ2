@@ -17,13 +17,20 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
           cache: 'maven'
+          
+      - name: Extract bonej-plus version
+        id: extract_version
+        run: |
+          VERSION=$(grep -A 2 '<artifactId>bonej-plus</artifactId>' ./Modern/wrapperPlugins/pom.xml | grep '<version>' | sed -n 's|.*<version>\(.*\)</version>.*|\1|p')
+          echo "Found bonej-plus version $VERSION"
+          echo "bonej_plus_version=$VERSION" >> $GITHUB_ENV
 
       - name: Get bonej-plus asset ID from GitHub Release
         id: get_bonej_plus_asset
         run: |
           ASSET_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.BONEJ_PLUS_REPO }}" \
-            https://api.github.com/repos/bonej-org/bonej-plus/releases/tags/bonej-plus-0.0.3 | \
-            jq '.assets[] | select(.name=="bonej-plus-0.0.3.jar") | .id')
+            https://api.github.com/repos/bonej-org/bonej-plus/releases/tags/bonej-plus-${{env.bonej_plus_version}} | \
+            jq '.assets[] | select(.name=="bonej-plus-${{env.bonej_plus_version}}.jar") | .id')
           echo "asset_id=$ASSET_ID" >> $GITHUB_ENV
 
       - name: Download bonej-plus JAR by asset ID
@@ -32,15 +39,15 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.BONEJ_PLUS_REPO }}" \
             -H "Accept: application/octet-stream" \
             https://api.github.com/repos/bonej-org/bonej-plus/releases/assets/${{ env.asset_id }} \
-            -o bonej-plus-0.0.3.jar
+            -o bonej-plus-${{env.bonej_plus_version}}.jar
 
       - name: Install bonej-plus into local Maven repository
         run: |
           mvn install:install-file \
-            -Dfile=bonej-plus-0.0.3.jar \
+            -Dfile=bonej-plus-${{env.bonej_plus_version}}.jar \
             -DgroupId=org.bonej \
             -DartifactId=bonej-plus \
-            -Dversion=0.0.3 \
+            -Dversion=${{env.bonej_plus_version}} \
             -Dpackaging=jar
 
       - name: Set up CI environment
