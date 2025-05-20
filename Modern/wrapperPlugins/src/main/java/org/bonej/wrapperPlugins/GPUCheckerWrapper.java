@@ -32,6 +32,7 @@ import java.awt.Checkbox;
 import java.util.List;
 
 import org.bonej.plus.BeanCounter;
+import org.bonej.plus.BeanCounterPlugin;
 import org.bonej.plus.DeviceCheck;
 import org.bonej.plus.Regulator;
 import org.bonej.plus.Utilities;
@@ -54,7 +55,17 @@ public class GPUCheckerWrapper extends BoneJCommand {
 			IJ.showMessage("BoneJ+", "A plugin is already running.");
 			return;
 		}
-		BeanCounter.getInstance();
+		
+		//check balance, if empty then give the opportunity to top up
+		if (BeanCounter.getInstance().getBalance() <= 0) {
+			
+			(new BeanCounterPlugin()).run();
+			
+			//balance not topped up, quit.
+			if (BeanCounter.getInstance().getBalance() <= 0)
+				return;
+		}
+		
 		String[] platformNames = DeviceCheck.getPlatformNames(DeviceCheck.getPlatformIds());
 		for (int p = 0; p < platformNames.length; p++)
 			System.out.println("Found platform: "+platformNames[p]);
@@ -104,8 +115,6 @@ public class GPUCheckerWrapper extends BoneJCommand {
 			}
 		}
 		
-		gd.addCheckbox("Use_all compliant GPUs", Prefs.get(PREF_BASE+"useAllDevices", false));
-		
 		List<?> checkboxes = gd.getCheckboxes();
 		int i = 0;
 		for (int p = 0; p < platformNames.length; p++) {
@@ -125,8 +134,7 @@ public class GPUCheckerWrapper extends BoneJCommand {
 				Prefs.set(PREF_BASE+"useDevice["+p+":"+d+"]", gd.getNextBoolean());
 			}
 		}
-		
-		Prefs.set(PREF_BASE+"useAllDevices", gd.getNextBoolean());
+
 		//reset and clear any singleton classes that might be floating about
 		//note that multiple calls may lead to VRAM leak on NVIDIA cards, which don't let go of resources well
 		Utilities.purgeAll();
