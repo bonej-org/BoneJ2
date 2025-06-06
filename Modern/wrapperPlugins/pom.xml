@@ -119,17 +119,15 @@
         <dependency>
             <groupId>org.bonej</groupId>
             <artifactId>bonej-utilities</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bonej</groupId>
             <artifactId>bonej-ops</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
         	<groupId>org.bonej</groupId>
         	<artifactId>bonej-plus</artifactId>
-        	<version>0.0.5</version>
+        	<version>0.0.6</version>
         </dependency>
 
         <!-- ImageJ dependencies -->
