@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check token presence
+        run: |
+          test -n "${TOKEN}" || (echo "MISSING TOKEN" && exit 1)
+        env:
+          TOKEN: ${{ secrets.BONEJ_PLUS_REPO }}
+
       - uses: actions/checkout@v4
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -22,7 +28,7 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2          
+          restore-keys: ${{ runner.os }}-m2
 
       - name: Set up Maven settings
         uses: s4u/maven-settings-action@v2
