@@ -129,6 +129,8 @@
         <repository>
             <id>github</id>
             <url>https://maven.pkg.github.com/bonej-org/bonej-plus</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
         </repository>
     </repositories>
 </project>
