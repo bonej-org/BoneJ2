@@ -16,6 +16,9 @@ jobs:
         env:
           TOKEN: ${{ secrets.BONEJ_PLUS_REPO }}
 
+      - run: rm -rf ~/.m2/repository/org/bonej/bonej-plus/*-SNAPSHOT
+      - run: mvn -U -X -B clean install
+
       - uses: actions/checkout@v4
       - name: Set up Java
         uses: actions/setup-java@v4
