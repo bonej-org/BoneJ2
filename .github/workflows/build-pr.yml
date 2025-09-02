@@ -22,8 +22,11 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2          
-
+          restore-keys: ${{ runner.os }}-m2
+       
+      - name: Effective Maven settings
+        run: mvn help:effective-settings
+ 
       - name: Set up Maven settings
         uses: s4u/maven-settings-action@v2
         with:
