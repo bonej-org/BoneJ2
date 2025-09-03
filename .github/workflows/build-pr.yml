@@ -9,10 +9,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-# Needed if the cache is out of whack and needs to be totally refreshed
-#      - name: Clear Maven cache
-#        run: rm -rf ~/.m2/repository/*
-        
       - uses: actions/checkout@v4
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -36,9 +32,5 @@ jobs:
       - name: Set up CI environment
         run: .github/setup.sh
 
-#      Needed if there's some stale artefacts or config blocking the build'
-#      - name: Build with Maven
-#        run: mvn clean install -U
-          
       - name: Execute the build
         run: .github/build.sh
