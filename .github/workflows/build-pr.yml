@@ -17,6 +17,10 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
 
+# Needed if the cache is out of whack and needs to be totally refreshed
+#      - name: Clear Maven cache
+#        run: rm -rf ~/.m2/repository/*
+
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -33,5 +37,9 @@ jobs:
       - name: Set up CI environment
         run: .github/setup.sh
 
+#      Needed if there's some stale artefacts or config blocking the build'
+#      - name: Build with Maven
+#        run: mvn clean install -U
+          
       - name: Execute the build
         run: .github/build.sh
