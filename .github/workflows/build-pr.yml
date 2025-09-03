@@ -19,6 +19,10 @@ jobs:
       - name: Clear Maven cache
         run: rm -rf ~/.m2/repository/*
 
+      - name: Build with Maven
+        run: mvn clean install -U
+        working-directory: ./BoneJ2
+
       - uses: actions/checkout@v4
       - name: Set up Java
         uses: actions/setup-java@v4
