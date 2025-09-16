@@ -38,8 +38,8 @@ jobs:
         run: .github/setup.sh
 
 #      Needed if there's some stale artefacts or config blocking the build'
-      - name: Build with Maven
-        run: mvn clean install -U
+#      - name: Build with Maven
+#        run: mvn clean install -U
           
       - name: Execute the build
         run: .github/build.sh
