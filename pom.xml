@@ -125,6 +125,8 @@
         <repository>
             <id>scijava.public</id>
             <url>https://maven.scijava.org/content/groups/public</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
         </repository>
         <repository>
             <id>github</id>
