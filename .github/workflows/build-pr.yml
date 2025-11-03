@@ -20,7 +20,7 @@ jobs:
            java-version: '11'
            distribution: 'zulu'
            server-id: github-bonej-plus
-           server-username: GITHUB_ACTOR
+           server-username: ${{ secrets.PAT_USERNAME }}
            server-password: ${{ secrets.BONEJ_PLUS_REPO }}
 
       - name: Set up Java for beancounter repo
@@ -29,7 +29,7 @@ jobs:
            java-version: '11'
            distribution: 'zulu'
            server-id: github-beancounter
-           server-username: GITHUB_ACTOR
+           server-username: ${{ secrets.PAT_USERNAME }}
            server-password: ${{ secrets.BONEJ_PLUS_REPO }}
            
 # Needed if the cache is out of whack and needs to be totally refreshed
