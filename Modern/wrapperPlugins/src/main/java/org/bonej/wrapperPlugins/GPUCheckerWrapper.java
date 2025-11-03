@@ -31,8 +31,6 @@ package org.bonej.wrapperPlugins;
 import java.awt.Checkbox;
 import java.util.List;
 
-import org.bonej.plus.BeanCounter;
-import org.bonej.plus.BeanCounterPlugin;
 import org.bonej.plus.DeviceCheck;
 import org.bonej.plus.Regulator;
 import org.bonej.plus.Utilities;
@@ -40,6 +38,8 @@ import org.jocl.cl_device_id;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
+import ch.beancounter.BeanCounter;
+import ch.beancounter.BeanCounterPlugin;
 import ij.IJ;
 import ij.Prefs;
 import ij.gui.GenericDialog;
