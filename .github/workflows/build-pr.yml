@@ -8,15 +8,30 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+        contents: read
+        packages: read
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Java
+      - name: Set up Java for bonej-plus
         uses: actions/setup-java@v4
         with:
-          java-version: '8'
-          distribution: 'zulu'
+           java-version: '11'
+           distribution: 'zulu'
+           server-id: github-bonej-plus
+           server-username: GITHUB_ACTOR
+           server-password: ${{ secrets.BONEJ_PLUS_REPO }}
 
+      - name: Set up Java for beancounter repo
+        uses: actions/setup-java@v4
+        with:
+           java-version: '11'
+           distribution: 'zulu'
+           server-id: github-beancounter
+           server-username: GITHUB_ACTOR
+           server-password: ${{ secrets.BONEJ_PLUS_REPO }}
+           
 # Needed if the cache is out of whack and needs to be totally refreshed
 #      - name: Clear Maven cache
 #        run: rm -rf ~/.m2/repository/*
@@ -34,16 +49,6 @@ jobs:
 #          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-m2
-
-      - name: Set up Maven settings
-        uses: s4u/maven-settings-action@v2
-        with:
-          servers: > 
-            [
-               {"id": "github-bonej-plus", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"},
-               {"id": "github-beancounter", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}
-            ]
-          githubServer: false
 
       - name: Set up CI environment
         run: .github/setup.sh
