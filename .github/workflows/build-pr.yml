@@ -38,11 +38,8 @@ jobs:
       - name: Set up Maven settings
         uses: s4u/maven-settings-action@v2
         with:
-          servers: > 
-            [
-               {"id": "github-bonej-plus", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"},
-               {"id": "github-beancounter", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}
-            ]
+          servers: '[{"id": "github-bonej-plus", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}]'
+#               ,{"id": "github-beancounter", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}
           githubServer: false
 
       - name: Set up CI environment
