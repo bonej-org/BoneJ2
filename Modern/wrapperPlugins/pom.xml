@@ -129,12 +129,7 @@
         	<artifactId>bonej-plus</artifactId>
         	<version>0.0.12-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>ch.beancounter</groupId>
-            <artifactId>beancounter</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-
+        
         <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
