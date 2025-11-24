@@ -124,12 +124,7 @@
             <groupId>org.bonej</groupId>
             <artifactId>bonej-ops</artifactId>
         </dependency>
-        <dependency>
-        	<groupId>org.bonej</groupId>
-        	<artifactId>bonej-plus</artifactId>
-        	<version>0.0.11</version>
-        </dependency>
-
+        
         <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>

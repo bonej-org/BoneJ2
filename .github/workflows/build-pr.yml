@@ -25,6 +25,7 @@ jobs:
           rm -rf ~/.m2/repository/com/github/*
           rm -rf ~/.m2/repository/io/github/*
           rm -rf ~/.m2/repository/org/bonej/*
+          rm -rf ~/.m2/repository/ch/beancounter/*
 
       - name: Cache Maven packages
         uses: actions/cache@v3
@@ -37,7 +38,7 @@ jobs:
       - name: Set up Maven settings
         uses: s4u/maven-settings-action@v2
         with:
-          servers: '[{"id": "github", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}]'
+          servers: '[{"id": "github-bonej-plus", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"},{"id": "github-beancounter", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}]'
           githubServer: false
 
       - name: Set up CI environment
