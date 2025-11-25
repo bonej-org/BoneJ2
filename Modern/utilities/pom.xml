@@ -172,6 +172,8 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <!-- TODO remove this version override once scijava catches up -->
+            <version>5.20.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
