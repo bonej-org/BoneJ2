@@ -144,19 +144,6 @@
             <url>https://maven.scijava.org/content/groups/public</url>
             <releases><enabled>true</enabled></releases>
             <snapshots><enabled>false</enabled></snapshots>
-        </repository>
-        <repository>
-            <id>github-bonej-plus</id>
-            <url>https://maven.pkg.github.com/bonej-org/bonej-plus</url>
-            <releases><enabled>false</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
-        </repository>
-        <repository>
-            <id>github-beancounter</id>
-            <url>https://maven.pkg.github.com/bonej-org/beancounter</url>
-            <releases><enabled>false</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
-        </repository>
-        
+        </repository>        
     </repositories>
 </project>
