@@ -14,8 +14,8 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: '8'
-          distribution: 'zulu'
+          java-version: '21'
+          distribution: 'temurin'
 
 # Needed if the cache is out of whack and needs to be totally refreshed
 #      - name: Clear Maven cache
