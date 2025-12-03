@@ -100,9 +100,9 @@
     </modules>
 
     <scm>
-        <connection>scm:git:git://github.com/bonej-org/BoneJ2</connection>
+        <connection>scm:git:https://github.com/bonej-org/BoneJ2</connection>
         <developerConnection>scm:git:git@github.com:bonej-org/BoneJ2</developerConnection>
-        <tag>bonej-7.0.0</tag>
+        <tag>HEAD</tag>
         <url>https://github.com/bonej-org/BoneJ2</url>
     </scm>
     <issueManagement>
