@@ -75,6 +75,13 @@ import ij3d.Image3DUniverse;
  */
 
 public class SliceGeometry implements PlugIn, DialogListener {
+	
+	// Controls how per-pixel contributions to second moments are weighted
+	private enum MomentWeightingMode {
+		GEOMETRIC,
+		PARTIAL_AREA,
+		DENSITY
+	}
 
 	private Calibration cal;
 	private int al;
@@ -250,6 +257,14 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		gd.addMessage("Density calibration coefficients");
 		gd.addNumericField("Slope", 0, 4, 6, "g.cm^-3 / " + pixUnits + " ");
 		gd.addNumericField("Y_Intercept", 1.8, 4, 6, "g.cm^-3");
+		
+		final String[] weightingChoices = {
+				"Geometric (binary)",
+				"Partial area (filledFraction)",
+				"Density-weighted (experimental)"
+		};
+		gd.addChoice("Moment weighting", weightingChoices, weightingChoices[0]);
+
 		gd.addCheckbox("Partial_volume_compensation", false);
 		gd.addNumericField("Background", thresholds[0], 1, 6, pixUnits + " ");
 		gd.addNumericField("Foreground", thresholds[1], 1, 6, pixUnits + " ");
@@ -285,6 +300,12 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		double max = gd.getNextNumber();
 		m = gd.getNextNumber();
 		c = gd.getNextNumber();
+
+		//New code
+		final int weightingIdx = gd.getNextChoiceIndex();
+		final MomentWeightingMode weightingMode =
+        		MomentWeightingMode.values()[weightingIdx];
+
 		doPartialVolume = gd.getNextBoolean();
 		background = gd.getNextNumber();
 		foreground = gd.getNextNumber();
