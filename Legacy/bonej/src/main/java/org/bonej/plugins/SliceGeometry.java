@@ -265,7 +265,6 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		};
 		gd.addChoice("Moment weighting", weightingChoices, weightingChoices[0]);
 
-		gd.addCheckbox("Partial_volume_compensation", false);
 		gd.addNumericField("Background", thresholds[0], 1, 6, pixUnits + " ");
 		gd.addNumericField("Foreground", thresholds[1], 1, 6, pixUnits + " ");
 		gd.addHelp("https://imagej.github.io/plugins/bonej#slice-geometry");
@@ -301,12 +300,12 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		m = gd.getNextNumber();
 		c = gd.getNextNumber();
 
-		//New code
 		final int weightingIdx = gd.getNextChoiceIndex();
 		final MomentWeightingMode weightingMode =
         		MomentWeightingMode.values()[weightingIdx];
+		// Replaced  meaning of doPartialVolume with the dropdown choice
+		doPartialVolume = (weightingMode == MomentWeightingMode.PARTIAL_AREA);
 
-		doPartialVolume = gd.getNextBoolean();
 		background = gd.getNextNumber();
 		foreground = gd.getNextNumber();
 		if (background >= foreground || min >= max) {
