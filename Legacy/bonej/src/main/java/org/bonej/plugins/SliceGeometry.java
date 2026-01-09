@@ -174,6 +174,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 	private double background;
 	private double foreground;
 	private boolean doPartialVolume;
+	private MomentWeightingMode weightingMode = MomentWeightingMode.GEOMETRIC;
+
+
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
@@ -299,12 +302,12 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		double max = gd.getNextNumber();
 		m = gd.getNextNumber();
 		c = gd.getNextNumber();
-
+		// Harvest dropdown into this.weightingMode
 		final int weightingIdx = gd.getNextChoiceIndex();
-		final MomentWeightingMode weightingMode =
-        		MomentWeightingMode.values()[weightingIdx];
-		// Replaced  meaning of doPartialVolume with the dropdown choice
-		doPartialVolume = (weightingMode == MomentWeightingMode.PARTIAL_AREA);
+		this.weightingMode = MomentWeightingMode.values()[weightingIdx];
+
+		// Replaced meaning of doPartialVolume with the dropdown choice
+		doPartialVolume = (this.weightingMode == MomentWeightingMode.PARTIAL_AREA);
 
 		background = gd.getNextNumber();
 		foreground = gd.getNextNumber();
@@ -519,10 +522,12 @@ public class SliceGeometry implements PlugIn, DialogListener {
 					final double pixel = ip.get(x, y);
 					if (pixel >= min && pixel <= max) {
 						count++;
-						final double areaFraction = doPartialVolume ? filledFraction(pixel) : 1;
-						sumAreaFractions += areaFraction;
-						sumX += areaFraction * x;
-						sumY += areaFraction * y;
+						final double aW = (this.weightingMode == MomentWeightingMode.PARTIAL_AREA)
+						? filledFraction(pixel)
+						: 1.0;
+						sumAreaFractions += aW;
+						sumX += aW * x;
+						sumY += aW * y;
 						final double wP = pixel * this.m + this.c;
 						sumD += wP;
 						wSumX += x * wP;
@@ -532,12 +537,29 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			}
 			cslice[s] = count;
 			if (count > 0) {
-				sliceCentroids[0][s] = sumX * vW / sumAreaFractions;
-				sliceCentroids[1][s] = sumY * vH / sumAreaFractions;
+				
+				final double areaCx = sumX * vW / sumAreaFractions;
+				final double areaCy = sumY * vH / sumAreaFractions;
+
+				// Density-weighted centroid: only defined when the total density weight is non-zero.
+				// If sumD == 0 (e.g. empty slice or zero net weight), the centroid is undefined and
+				// we propagate NaN rather than allowing a divide-by-zero or arbitrary fallback.
+				final double densCx = (sumD != 0) ? (wSumX * vW / sumD) : Double.NaN;
+				final double densCy = (sumD != 0) ? (wSumY * vH / sumD) : Double.NaN;
+
+				weightedCentroids[0][s] = densCx;
+				weightedCentroids[1][s] = densCy;
+
+				if (this.weightingMode == MomentWeightingMode.DENSITY) {
+					sliceCentroids[0][s] = densCx;
+					sliceCentroids[1][s] = densCy;
+				} else {
+					sliceCentroids[0][s] = areaCx;
+					sliceCentroids[1][s] = areaCy;
+				}
+		
 				cortArea[s] = sumAreaFractions * pixelArea;
 				meanDensity[s] = sumD / count;
-				weightedCentroids[0][s] = wSumX * vW / sumD;
-				weightedCentroids[1][s] = wSumY * vH / sumD;
 				cstack += count;
 				emptySlices[s] = false;
 			}
@@ -546,6 +568,9 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				cortArea[s] = Double.NaN;
 				sliceCentroids[0][s] = Double.NaN;
 				sliceCentroids[1][s] = Double.NaN;
+				weightedCentroids[0][s] = Double.NaN;
+				weightedCentroids[1][s] = Double.NaN;
+				meanDensity[s] = Double.NaN;
 				cslice[s] = Double.NaN;
 			}
 		}
