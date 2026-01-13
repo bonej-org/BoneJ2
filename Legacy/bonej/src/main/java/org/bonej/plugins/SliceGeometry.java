@@ -363,6 +363,7 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			rt.addValue("Imin (" + units + "^4)", Imin[s]);
 			rt.addValue("Imax (" + units + "^4)", Imax[s]);
 			rt.addValue("Ipm (" + units + "^4)", Ipm[s]);
+			rt.addValue("J (" + units + "^4)", Imin[s] + Imax[s]);
 			rt.addValue("Zmin (" + units + "³)", Zmin[s]);
 			rt.addValue("Zmax (" + units + "³)", Zmax[s]);
 			rt.addValue("Zpol (" + units + "³)", Zpol[s]);
@@ -619,18 +620,23 @@ public class SliceGeometry implements PlugIn, DialogListener {
 					if (pixel >= min && pixel <= max) {
 						final double xVw = x * vW;
 						final double yVh = y * vH;
-						final double areaFraction = doPartialVolume ? filledFraction(pixel) : 1;
-						sumAreaFractions += areaFraction;
+						final double w = momentWeight(pixel);
+						if (w <= 0.0) continue;
+						sumAreaFractions += w;
 						// sum of distances from axis
-						sxs += xVw * areaFraction;
-						sys += yVh * areaFraction;
+						sxs += xVw * w;
+						sys += yVh * w;
 						// sum of squares of distances from axis
-						sxxs += xVw * xVw * areaFraction;
-						syys += yVh * yVh * areaFraction;
-						sxys += xVw * yVh * areaFraction;
+						sxxs += xVw * xVw * w;
+						syys += yVh * yVh * w;
+						sxys += xVw * yVh * w;
 					}
 				}
 			}
+			if (sumAreaFractions == 0) {
+				theta[s] = Double.NaN;
+				continue;
+}
 			// + /12 is for each pixel's own moment
 			final double Myys = sxxs - (sxs * sxs / sumAreaFractions) + sumAreaFractions * vW * vW / 12;
 			final double Mxxs = syys - (sys * sys / sumAreaFractions) + sumAreaFractions * vH * vH / 12;
@@ -736,29 +742,49 @@ public class SliceGeometry implements PlugIn, DialogListener {
 					for (int x = rx; x < roiXEnd; x++) {
 						final double pixel = ip.get(x, y);
 						if (pixel >= min && pixel <= max) {
-							final double areaFraction = doPartialVolume ? filledFraction(
-									pixel)
-									: 1;
-									sumAreaFractions += areaFraction;
-									final double xXc = x * vW - xC;
-									final double xCosTheta = x * vW * cosTheta;
-									final double yCosTheta = y * vH * cosTheta;
-									final double xSinTheta = x * vW * sinTheta;
-									final double ySinTheta = y * vH * sinTheta;
-									sxs += areaFraction * (xCosTheta + ySinTheta);
-									sys += areaFraction * (yCosTheta - xSinTheta);
-									sxxs += areaFraction * (xCosTheta + ySinTheta) * (xCosTheta + ySinTheta);
-									syys += areaFraction * (yCosTheta - xSinTheta) * (yCosTheta - xSinTheta);
-									sxys += areaFraction * (yCosTheta - xSinTheta) * (xCosTheta + ySinTheta);
-									maxRadMinS = Math.max(maxRadMinS, Math.abs(xXc * cosTheta + yYc *
-											sinTheta));
-									maxRadMaxS = Math.max(maxRadMaxS, Math.abs(yYc * cosTheta - xXc *
-											sinTheta));
-									maxRadCentreS = Math.max(maxRadCentreS, Math.sqrt(xXc * xXc +
-											yYc * yYc));
+							final double w = momentWeight(pixel);
+							if (w <= 0.0) continue;
+
+							sumAreaFractions += w;
+
+							final double xXc = x * vW - xC;
+							final double xCosTheta = x * vW * cosTheta;
+							final double yCosTheta = y * vH * cosTheta;
+							final double xSinTheta = x * vW * sinTheta;
+							final double ySinTheta = y * vH * sinTheta;
+
+							final double term1 = (xCosTheta + ySinTheta);
+							final double term2 = (yCosTheta - xSinTheta);
+
+							sxs  += w * term1;
+							sys  += w * term2;
+							sxxs += w * term1 * term1;
+							syys += w * term2 * term2;
+							sxys += w * term2 * term1;
+
+							maxRadMinS = Math.max(maxRadMinS, Math.abs(xXc * cosTheta + yYc *
+									sinTheta));
+							maxRadMaxS = Math.max(maxRadMaxS, Math.abs(yYc * cosTheta - xXc *
+									sinTheta));
+							maxRadCentreS = Math.max(maxRadCentreS, Math.sqrt(xXc * xXc +
+									yYc * yYc));
 						}
 					}
 				}
+				if (sumAreaFractions <= 0.0) {
+					I1[s] = Double.NaN;
+					I2[s] = Double.NaN;
+					Ip[s] = Double.NaN;
+					r1[s] = Double.NaN;
+					r2[s] = Double.NaN;
+					maxRad2[s] = Double.NaN;
+					maxRad1[s] = Double.NaN;
+					Z1[s] = Double.NaN;
+					Z2[s] = Double.NaN;
+					Zp[s] = Double.NaN;
+					continue;
+				}
+
 				maxRad2[s] = maxRadMinS;
 				maxRad1[s] = maxRadMaxS;
 				maxRadC[s] = maxRadCentreS;
@@ -769,9 +795,10 @@ public class SliceGeometry implements PlugIn, DialogListener {
 				Ip[s] = sxys - (sys * sxs / sumAreaFractions) + pixelMoments;
 				r1[s] = Math.sqrt(I2[s] / (cS * vW * vH * vW * vH));
 				r2[s] = Math.sqrt(I1[s] / (cS * vW * vH * vW * vH));
-				Z1[s] = I1[s] / maxRad2[s];
-				Z2[s] = I2[s] / maxRad1[s];
-				Zp[s] = (I1[s] + I2[s]) / maxRadC[s];
+				Z1[s] = (maxRad2[s] > 0) ? (I1[s] / maxRad2[s]) : Double.NaN;
+				Z2[s] = (maxRad1[s] > 0) ? (I2[s] / maxRad1[s]) : Double.NaN;
+				Zp[s] = (maxRadC[s] > 0) ? ((I1[s] + I2[s]) / maxRadC[s]) : Double.NaN;
+
 			}
 		}
 
@@ -1188,4 +1215,25 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		}
 		return (pixel - background) / (foreground - background);
 	}
+	/**
+	 * Per-pixel weighting for second-moment integrands.
+	 * - GEOMETRIC:      1
+	 * - PARTIAL_AREA:   filledFraction(pixel)
+	 * - DENSITY:        m*pixel + c  (clamped to 0 to avoid negative weights)
+	 * Negative inertias are physically meaningless	 
+	 * */
+	private double momentWeight(final double pixel) {
+		switch (this.weightingMode) {
+			case PARTIAL_AREA:
+				return filledFraction(pixel);
+			case DENSITY:
+				final double w = pixel * this.m + this.c;
+				return (w > 0) ? w : 0.0; // clamp negative weights to zero
+			case GEOMETRIC:
+			default:
+				return 1.0;
+		}
+	}
+
 }
+	
