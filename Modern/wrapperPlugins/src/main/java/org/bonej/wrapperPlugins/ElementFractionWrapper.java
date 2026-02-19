@@ -30,7 +30,6 @@
 
 package org.bonej.wrapperPlugins;
 
-import static java.util.stream.Collectors.toList;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.WEIRD_SPATIAL;
@@ -41,26 +40,29 @@ import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.ops.OpService;
 import net.imagej.units.UnitService;
-import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
+
 
 import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils;
-import org.bonej.wrapperPlugins.wrapperUtils.HyperstackUtils.Subspace;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import ij.ImagePlus;
+import ij.gui.Roi;
+import ij.gui.ShapeRoi;
+import ij.plugin.frame.RoiManager;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * This command estimates the size of the given sample by counting its
@@ -70,6 +72,7 @@ import java.util.stream.Stream;
  * results table. Results are shown in calibrated units, if possible.
  *
  * @author Richard Domander
+ * @author Michael Doube
  */
 @Plugin(type = Command.class,
 	menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction")
@@ -84,6 +87,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+    private RoiManager roiManager;
 
 	/** Header of the foreground (bone) volume column in the results table */
 	private String boneSizeHeader;
@@ -97,41 +102,85 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	@Override
 	public void run() {
 		statusService.showStatus("Element fraction: initializing");
-		findSubspaces(inputImage);
+//		findSubspaces(inputImage);
 		prepareResultDisplay();
 		final String name = inputImage.getName();
-		for (int i = 0; i < subspaces.size(); i++) {
-			final Subspace<BitType> subspace = subspaces.get(i);
-			statusService.showStatus("Element fraction: calculating subspace #" + (i +
-				1));
-			statusService.showProgress(i, subspaces.size());
-			// The value of each foreground element in a bit type image is 1, so we
-			// can count their number just by summing
-			final IterableInterval<BitType> interval = Views.flatIterable(
-				subspace.interval);
-			final double foregroundSize = opService.stats().sum(interval)
-				.getRealDouble() * elementSize;
-			final double totalSize = interval.size() * elementSize;
-			final double ratio = foregroundSize / totalSize;
-			final String suffix = subspace.toString();
-			final String label = suffix.isEmpty() ? name : name + " " + suffix;
-			addResults(label, foregroundSize, totalSize, ratio);
-		}
+		
+		//get the number of slices, channels and time points to iterate over
+		int xIdx = axisIndex(inputImage, Axes.X);
+		int yIdx = axisIndex(inputImage, Axes.Y);
+        int zIdx = axisIndex(inputImage, Axes.Z);
+        int tIdx = axisIndex(inputImage, Axes.TIME);
+        int cIdx = axisIndex(inputImage, Axes.CHANNEL);
+
+        //if an axis is missing, set its size to 1, otherwise get its size.
+        int w = (int) inputImage.dimension(xIdx);
+        int h = (int) inputImage.dimension(yIdx);
+        int cSize = (cIdx >= 0) ? (int) inputImage.dimension(cIdx) : 1;
+        int zSize = (zIdx >= 0) ? (int) inputImage.dimension(zIdx) : 1;
+        int tSize = (tIdx >= 0) ? (int) inputImage.dimension(tIdx) : 1;
+		
+        //check if there are any ROIs in the ROI manager and if not, ignore ROIs
+        final boolean limitToRoi = roiManager.getCount() > 0;
+      
+        //histogram accumulator
+        long[] histogramSum = new long[256];
+        
+        //default roi for the slice
+        final Roi wholeSliceRoi = new Roi(0, 0, w, h);
+        
+        //iterate over all the slices, and for each slice do the channels and time points too.
+        for (int z = 0; z < zSize; z++) {
+        	
+        	for (int t = 0; t < tSize; t++) {
+        		//use an ROI covering the whole slice if no ROI has been defined in the ROI Manager
+            	ShapeRoi sliceRoi = new ShapeRoi(wholeSliceRoi);
+            	//get the ROIs for this slice from the ROI manager as a unioned mask
+            	if (limitToRoi) {
+            		sliceRoi = getUnionRoi(z, t);
+            		//if no rois and limitToRoi is true, continue
+            		if (sliceRoi == null) continue;
+            	}
+            	
+        		for (int c = 0; c < cSize; c++) {
+        			//create a 2D view into the data
+        	        RandomAccessibleInterval<T> xyView = inputImage;
+        	        if (cIdx >= 0) xyView = Views.hyperSlice(xyView, cIdx, c);
+        	        if (zIdx >= 0) xyView = Views.hyperSlice(xyView, zIdx, z);
+        	        if (tIdx >= 0) xyView = Views.hyperSlice(xyView, tIdx, t);
+        		
+        	        //access the pixels of the xyView using an IJ1 ImagePlus
+        	        ImagePlus imp = ImageJFunctions.wrap(xyView, "XY View");
+        	        imp.setRoi(sliceRoi);
+        	        int[] histogram = imp.getProcessor().getHistogram();
+        	        
+        	        //don't run on non-8-bit images (using IJ1 binary convention of 0 & 255)
+        	        if (histogram.length != 256) 
+        	        	cancelMacroSafe(this, NOT_BINARY);
+
+        	        
+        	        //accumulate the histogram into the accumulator
+        	        for (int i = 0; i < 256; i++) {
+        	        	//detect any non-binary pixels (using the IJ1 convention of 0 & 255)
+        	        	if (i > 0 && i < 255 && histogram[i] > 0) 
+        	        		cancelMacroSafe(this, NOT_BINARY);
+
+        	        	histogramSum[i] += histogram[i]; 
+        	        }
+        		}
+        	}
+        }
+		
+        //summarise the result
+        long tvPix = histogramSum[0] + histogramSum[255];
+        long bvPix = histogramSum[255];
+        double pixelSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
+        
+        double bv = bvPix * pixelSize;
+        double tv = tvPix * pixelSize;
+		addResults(name, bv, tv, bv/tv);
+		
 		resultsTable = SharedTable.getTable();
-	}
-
-	private void findSubspaces(final ImgPlus<T> inputImage) {
-		if (AxisUtils.countSpatialDimensions(inputImage) == 3) {
-			subspaces = find3DSubspaces(inputImage);
-		} else {
-			subspaces = find2DSubspaces(inputImage);
-		}
-	}
-
-	private List<Subspace<BitType>> find2DSubspaces(final ImgPlus<T> inputImage) {
-		final List<AxisType> axisTypes = Stream.of(Axes.X, Axes.Y).collect(toList());
-		final ImgPlus<BitType> bitImgPlus = Common.toBitTypeImgPlus(opService, inputImage);
-		return HyperstackUtils.splitSubspaces(bitImgPlus, axisTypes).collect(toList());
 	}
 
 	private void addResults(final String label, final double foregroundSize,
@@ -164,14 +213,48 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			return;
 		}
 
-		if (!ElementUtil.isBinary(inputImage)) {
-			cancelMacroSafe(this, NOT_BINARY);
-		}
-
 		final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
 		if (spatialDimensions < 2 || spatialDimensions > 3) {
 			cancelMacroSafe(this, WEIRD_SPATIAL);
 		}
 	}
+	
+	/** Return the index of the given axis in the ImgPlus, or -1 if absent. */
+    private static int axisIndex(ImgPlus<?> img, AxisType axis) {
+        for (int d = 0; d < img.numDimensions(); d++) {
+            if (img.axis(d).type().equals(axis)) return d;
+        }
+        return -1;
+    }
+    
+    /**
+     * Get the union of all the ROIs on this slice for this timepoint
+     * 
+     * If ROIs don't have z or time position, they are applied to all z or time positions
+     * 
+     * @param z the 0-indexed z coordinate (NOT the 1-indexed slice)
+     * @param t the 0-indexed time coordinate (NOT the 1-indexed timepoint)
+     * @return the union of all the ROIs, or null if there are none for this z and t coordinate.
+     */
+    ShapeRoi getUnionRoi(int z, int t) {
+    	Roi[] allRois = roiManager.getRoisAsArray();
+    	List<ShapeRoi> sliceRois = new ArrayList<>();
+    	for (Roi roi : allRois) {
+    		if ((roi.getZPosition() == z + 1 || roi.getZPosition() == 0) && 
+    				//keep the ROI if it is for this timepoint or doesn't have a timepoint
+    				(roi.getTPosition() == t + 1 || roi.getTPosition() == 0)) {
+    			ShapeRoi sr = (roi instanceof ShapeRoi) ? (ShapeRoi) roi : new ShapeRoi(roi);
+    			sliceRois.add(sr);
+    		}
+    	}
+    	if (sliceRois.size() == 0) return null;
+    	ShapeRoi sliceRoi = sliceRois.get(0);
+    	for (int i = 1; i < sliceRois.size(); i++) {
+
+    		sliceRoi.or(sliceRois.get(i));
+    	}
+    	return sliceRoi;
+    }
+	
 	// endregion
 }
