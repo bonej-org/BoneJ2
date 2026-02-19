@@ -62,6 +62,8 @@ import ij.gui.ShapeRoi;
 import ij.plugin.frame.RoiManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -102,7 +104,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	@Override
 	public void run() {
 		statusService.showStatus("Element fraction: initializing");
-//		findSubspaces(inputImage);
 		prepareResultDisplay();
 		final String name = inputImage.getName();
 		
@@ -112,73 +113,112 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         int zIdx = axisIndex(inputImage, Axes.Z);
         int tIdx = axisIndex(inputImage, Axes.TIME);
         int cIdx = axisIndex(inputImage, Axes.CHANNEL);
-
+        System.out.println("axisIndex (w,h,d,t,c) = ("+xIdx+", "+yIdx+", "+zIdx+", "+tIdx+", "+cIdx+")");
+        
         //if an axis is missing, set its size to 1, otherwise get its size.
         int w = (int) inputImage.dimension(xIdx);
         int h = (int) inputImage.dimension(yIdx);
         int cSize = (cIdx >= 0) ? (int) inputImage.dimension(cIdx) : 1;
         int zSize = (zIdx >= 0) ? (int) inputImage.dimension(zIdx) : 1;
         int tSize = (tIdx >= 0) ? (int) inputImage.dimension(tIdx) : 1;
+        System.out.println("(w,h,d,t,c) = ("+w+", "+h+", "+zSize+", "+tSize+", "+cSize+")");
 		
         //check if there are any ROIs in the ROI manager and if not, ignore ROIs
         final boolean limitToRoi = roiManager.getCount() > 0;
       
-        //histogram accumulator
-        long[] histogramSum = new long[256];
-        
         //default roi for the slice
         final Roi wholeSliceRoi = new Roi(0, 0, w, h);
         
-        //iterate over all the slices, and for each slice do the channels and time points too.
-        for (int z = 0; z < zSize; z++) {
-        	
-        	for (int t = 0; t < tSize; t++) {
-        		//use an ROI covering the whole slice if no ROI has been defined in the ROI Manager
-            	ShapeRoi sliceRoi = new ShapeRoi(wholeSliceRoi);
-            	//get the ROIs for this slice from the ROI manager as a unioned mask
-            	if (limitToRoi) {
-            		sliceRoi = getUnionRoi(z, t);
-            		//if no rois and limitToRoi is true, continue
-            		if (sliceRoi == null) continue;
-            	}
-            	
-        		for (int c = 0; c < cSize; c++) {
+        //iterate over all the timpoints and channels, and for each iterate over z.
+        for (int t = 0; t < tSize; t++) {
+        	final int time = t;
+        	for (int c = 0; c < cSize; c++) {
+        		final int channel = c;
+        		statusService.showStatus("Element fraction: channel "+c+", time "+t);
+    	        
+        		//histogram accumulator, to sum over all slices in a (t, c)
+//    	        long[] histogramSum = new long[256];
+    	        
+    	        //per-thread counters of 0 and 255
+    	        long[] fgCount = new long[zSize];
+    	        long[] bgCount = new long[zSize];
+    	        
+    			ArrayList<Integer> sliceNumbers = new ArrayList<>();
+    			for (int z = 0; z < zSize; z++) {
+    				sliceNumbers.add(z);
+    			}
+    			sliceNumbers.parallelStream().forEach(z -> {
+//        		for (int z = 0; z < zSize; z++) {        			
+        			//use an ROI covering the whole slice if no ROI has been defined in the ROI Manager
+        			ShapeRoi sliceRoi = new ShapeRoi(wholeSliceRoi);
+        			//get the ROIs for this slice from the ROI manager as a unioned mask
+        			if (limitToRoi) {
+        				sliceRoi = getUnionRoi(z, time);
+        				//if no rois and limitToRoi is true stop this thread
+        				if (sliceRoi == null) return;
+        			}
+
         			//create a 2D view into the data
-        	        RandomAccessibleInterval<T> xyView = inputImage;
-        	        if (cIdx >= 0) xyView = Views.hyperSlice(xyView, cIdx, c);
-        	        if (zIdx >= 0) xyView = Views.hyperSlice(xyView, zIdx, z);
-        	        if (tIdx >= 0) xyView = Views.hyperSlice(xyView, tIdx, t);
+//        			RandomAccessibleInterval<T> xyView = inputImage;
+        			RandomAccessibleInterval<T> xyView = get2DSlice(inputImage, z, time, channel);
+
+//        			if (cIdx >= 0) xyView = Views.hyperSlice(xyView, cIdx, c);
+//        			if (zIdx >= 0) xyView = Views.hyperSlice(xyView, zIdx, z);
+//        			if (tIdx >= 0) xyView = Views.hyperSlice(xyView, tIdx, t);
+
+        			//access the pixels of the xyView using an IJ1 ImagePlus
+        			ImagePlus imp = ImageJFunctions.wrap(xyView, "XY View");
+        			imp.setRoi(sliceRoi);
+        			int[] histogram = imp.getProcessor().getHistogram();
+
+        			//don't run on non-8-bit images (using IJ1 binary convention of 0 & 255)
+        			if (histogram.length != 256) 
+        				cancelMacroSafe(this, NOT_BINARY);
+
+        			//accumulate the histogram into the accumulator
+//        			for (int i = 0; i < 256; i++) {
+//        				//detect any non-binary pixels (using the IJ1 convention of 0 & 255)
+//        				if (i > 0 && i < 255 && histogram[i] > 0) 
+//        					cancelMacroSafe(this, NOT_BINARY);
+//
+//        				histogramSum[i] += histogram[i]; 
+//        			}
+        			
+        			//check binary-ness as we go
+        			for (int i = 1; i < 255; i++)
+        				if (histogram[i] > 0)
+        					cancelMacroSafe(this, NOT_BINARY);
+        			
+        			//write the counts to a per-slice accumulator array
+        			fgCount[z] = histogram[255];
+        			bgCount[z] = histogram[0];
+        		});
+        		//after summing over all slices, add the result to the table
+                //summarise the result
         		
-        	        //access the pixels of the xyView using an IJ1 ImagePlus
-        	        ImagePlus imp = ImageJFunctions.wrap(xyView, "XY View");
-        	        imp.setRoi(sliceRoi);
-        	        int[] histogram = imp.getProcessor().getHistogram();
-        	        
-        	        //don't run on non-8-bit images (using IJ1 binary convention of 0 & 255)
-        	        if (histogram.length != 256) 
-        	        	cancelMacroSafe(this, NOT_BINARY);
-
-        	        
-        	        //accumulate the histogram into the accumulator
-        	        for (int i = 0; i < 256; i++) {
-        	        	//detect any non-binary pixels (using the IJ1 convention of 0 & 255)
-        	        	if (i > 0 && i < 255 && histogram[i] > 0) 
-        	        		cancelMacroSafe(this, NOT_BINARY);
-
-        	        	histogramSum[i] += histogram[i]; 
-        	        }
+        		long fg = 0;
+        		long bg = 0;
+        		for (int z = 0; z < zSize; z++) {
+        			fg += fgCount[z];
+        			bg += bgCount[z];
         		}
+        		
+                double tv = (fg + bg) * elementSize;
+                double bv = fg * elementSize;
+        
+                String label = name;
+                
+                //add a channel suffix if there is more than one channel
+                label = cSize > 1 ? label + " Channel: " + c : label; 
+                //add a comma between channel and timepoint if both are more than one
+                label = (cSize > 1 && tSize > 1) ? label +"," : label;
+                //add a time suffix if there is more than one timepoint
+                label = tSize > 1 ? label + " Time: " + t : label;
+                
+        		addResults(label, bv, tv, bv/tv);
+   		
         	}
         }
-		
-        //summarise the result
-        long tvPix = histogramSum[0] + histogramSum[255];
-        long bvPix = histogramSum[255];
-        double pixelSize = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
-        
-        double bv = bvPix * pixelSize;
-        double tv = tvPix * pixelSize;
-		addResults(name, bv, tv, bv/tv);
 		
 		resultsTable = SharedTable.getTable();
 	}
@@ -256,5 +296,40 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
     	return sliceRoi;
     }
 	
-	// endregion
+    public static <T> RandomAccessibleInterval<T> get2DSlice(ImgPlus<T> img, int z, int t, int c) {
+        // Get the indices of Z, TIME, and CHANNEL
+        int zIdx = axisIndex(img, Axes.Z);
+        int tIdx = axisIndex(img, Axes.TIME);
+        int cIdx = axisIndex(img, Axes.CHANNEL);
+
+        // Collect all non-spatial dimensions (Z, TIME, CHANNEL) and their target slice indices
+        List<DimensionSlice> dimensionsToSlice = new ArrayList<>();
+        if (zIdx >= 0 && img.dimension(zIdx) > 1) dimensionsToSlice.add(new DimensionSlice(zIdx, z));
+        if (tIdx >= 0 && img.dimension(tIdx) > 1) dimensionsToSlice.add(new DimensionSlice(tIdx, t));
+        if (cIdx >= 0 && img.dimension(cIdx) > 1) dimensionsToSlice.add(new DimensionSlice(cIdx, c));
+
+        // Sort dimensions by index in descending order
+        Collections.sort(dimensionsToSlice, Comparator.comparingInt(ds -> -ds.index));
+
+        // Slice along dimensions in descending order of their indices
+        RandomAccessibleInterval<T> view = img;
+        for (DimensionSlice ds : dimensionsToSlice) {
+            view = Views.hyperSlice(view, ds.index, ds.slice);
+        }
+
+        // The result is now a 2D XY slice
+        return view;
+    }
+
+    
+    // Helper class to store dimension index and slice index
+    private static class DimensionSlice {
+        int index;
+        int slice;
+
+        DimensionSlice(int index, int slice) {
+            this.index = index;
+            this.slice = slice;
+        }
+    }
 }
