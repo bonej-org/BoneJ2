@@ -90,8 +90,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private UnitService unitService;
 	@Parameter
 	private StatusService statusService;
-	@Parameter
-    private RoiManager roiManager;
 
 	/** Header of the foreground (bone) volume column in the results table */
 	private String boneSizeHeader;
@@ -101,6 +99,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private String ratioHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
+	private RoiManager roiManager;
+	
 
 	@Override
 	public void run() {
@@ -124,8 +124,10 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         int tSize = (tIdx >= 0) ? (int) inputImage.dimension(tIdx) : 1;
 //        System.out.println("(w,h,d,t,c) = ("+w+", "+h+", "+zSize+", "+tSize+", "+cSize+")");
 		
+        roiManager = RoiManager.getInstance2();
+        
         //check if there are any ROIs in the ROI manager and if not, ignore ROIs
-        final boolean limitToRoi = roiManager.getCount() > 0;
+        final boolean limitToRoi = (roiManager != null && roiManager.getCount() > 0);
         
         //default roi for the slice
         final Roi wholeSliceRoi = new Roi(0, 0, w, h);
