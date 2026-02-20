@@ -44,6 +44,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.view.Views;
 
 
@@ -113,7 +114,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         int zIdx = axisIndex(inputImage, Axes.Z);
         int tIdx = axisIndex(inputImage, Axes.TIME);
         int cIdx = axisIndex(inputImage, Axes.CHANNEL);
-        System.out.println("axisIndex (w,h,d,t,c) = ("+xIdx+", "+yIdx+", "+zIdx+", "+tIdx+", "+cIdx+")");
+//        System.out.println("axisIndex (w,h,d,t,c) = ("+xIdx+", "+yIdx+", "+zIdx+", "+tIdx+", "+cIdx+")");
         
         //if an axis is missing, set its size to 1, otherwise get its size.
         int w = (int) inputImage.dimension(xIdx);
@@ -121,11 +122,11 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         int cSize = (cIdx >= 0) ? (int) inputImage.dimension(cIdx) : 1;
         int zSize = (zIdx >= 0) ? (int) inputImage.dimension(zIdx) : 1;
         int tSize = (tIdx >= 0) ? (int) inputImage.dimension(tIdx) : 1;
-        System.out.println("(w,h,d,t,c) = ("+w+", "+h+", "+zSize+", "+tSize+", "+cSize+")");
+//        System.out.println("(w,h,d,t,c) = ("+w+", "+h+", "+zSize+", "+tSize+", "+cSize+")");
 		
         //check if there are any ROIs in the ROI manager and if not, ignore ROIs
         final boolean limitToRoi = roiManager.getCount() > 0;
-      
+        
         //default roi for the slice
         final Roi wholeSliceRoi = new Roi(0, 0, w, h);
         
@@ -135,10 +136,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         	for (int c = 0; c < cSize; c++) {
         		final int channel = c;
         		statusService.showStatus("Element fraction: channel "+c+", time "+t);
-    	        
-        		//histogram accumulator, to sum over all slices in a (t, c)
-//    	        long[] histogramSum = new long[256];
-    	        
+    	                
     	        //per-thread counters of 0 and 255
     	        long[] fgCount = new long[zSize];
     	        long[] bgCount = new long[zSize];
@@ -148,46 +146,32 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
     				sliceNumbers.add(z);
     			}
     			sliceNumbers.parallelStream().forEach(z -> {
+    				if (this.isCanceled()) return;
 //        		for (int z = 0; z < zSize; z++) {        			
         			//use an ROI covering the whole slice if no ROI has been defined in the ROI Manager
         			ShapeRoi sliceRoi = new ShapeRoi(wholeSliceRoi);
         			//get the ROIs for this slice from the ROI manager as a unioned mask
         			if (limitToRoi) {
-        				sliceRoi = getUnionRoi(z, time);
+        				sliceRoi = getUnionRoi(z, time, channel);
         				//if no rois and limitToRoi is true stop this thread
         				if (sliceRoi == null) return;
         			}
 
         			//create a 2D view into the data
-//        			RandomAccessibleInterval<T> xyView = inputImage;
         			RandomAccessibleInterval<T> xyView = get2DSlice(inputImage, z, time, channel);
-
-//        			if (cIdx >= 0) xyView = Views.hyperSlice(xyView, cIdx, c);
-//        			if (zIdx >= 0) xyView = Views.hyperSlice(xyView, zIdx, z);
-//        			if (tIdx >= 0) xyView = Views.hyperSlice(xyView, tIdx, t);
 
         			//access the pixels of the xyView using an IJ1 ImagePlus
         			ImagePlus imp = ImageJFunctions.wrap(xyView, "XY View");
         			imp.setRoi(sliceRoi);
         			int[] histogram = imp.getProcessor().getHistogram();
 
-        			//don't run on non-8-bit images (using IJ1 binary convention of 0 & 255)
-        			if (histogram.length != 256) 
-        				cancelMacroSafe(this, NOT_BINARY);
-
-        			//accumulate the histogram into the accumulator
-//        			for (int i = 0; i < 256; i++) {
-//        				//detect any non-binary pixels (using the IJ1 convention of 0 & 255)
-//        				if (i > 0 && i < 255 && histogram[i] > 0) 
-//        					cancelMacroSafe(this, NOT_BINARY);
-//
-//        				histogramSum[i] += histogram[i]; 
-//        			}
-        			
         			//check binary-ness as we go
         			for (int i = 1; i < 255; i++)
-        				if (histogram[i] > 0)
+        				if (histogram[i] > 0) {
+        					System.out.println("Cancelled non-binary on slice histogram check");
         					cancelMacroSafe(this, NOT_BINARY);
+        					return;
+        				}
         			
         			//write the counts to a per-slice accumulator array
         			fgCount[z] = histogram[255];
@@ -195,7 +179,10 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         		});
         		//after summing over all slices, add the result to the table
                 //summarise the result
-        		
+    			
+        		//don't show any results for cancelled plugins
+    			if (this.isCanceled()) return;
+    			
         		long fg = 0;
         		long bg = 0;
         		for (int z = 0; z < zSize; z++) {
@@ -256,6 +243,19 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 		final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
 		if (spatialDimensions < 2 || spatialDimensions > 3) {
 			cancelMacroSafe(this, WEIRD_SPATIAL);
+			inputImage = null;
+			return;
+		}
+//		
+		T type = inputImage.firstElement();
+		//enforce 8-bit (IJ1 binary is 0 and 255)
+		if (type instanceof UnsignedByteType)
+			return;
+		else {
+			System.out.println("Cancelled non-binary at initial validation");
+			cancelMacroSafe(this, NOT_BINARY);
+			inputImage = null;
+			return;
 		}
 	}
 	
@@ -268,21 +268,25 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
     }
     
     /**
-     * Get the union of all the ROIs on this slice for this timepoint
+     * Get the union of all the ROIs on this slice for this timepoint and channel
      * 
-     * If ROIs don't have z or time position, they are applied to all z or time positions
+     * If ROIs don't have z, time or channel position, they are applied to all z or time or channel positions
      * 
      * @param z the 0-indexed z coordinate (NOT the 1-indexed slice)
      * @param t the 0-indexed time coordinate (NOT the 1-indexed timepoint)
-     * @return the union of all the ROIs, or null if there are none for this z and t coordinate.
+     * @param c the 0-indexed channel coordinate (NOT the 1-indexed channel)
+     * @return the union of all the ROIs, or null if there are none for this z, t and c coordinate.
      */
-    ShapeRoi getUnionRoi(int z, int t) {
+    ShapeRoi getUnionRoi(int z, int t, int c) {
     	Roi[] allRois = roiManager.getRoisAsArray();
     	List<ShapeRoi> sliceRois = new ArrayList<>();
     	for (Roi roi : allRois) {
+    		//keep the ROI if if is for this slice or doesn't have a slice AND
     		if ((roi.getZPosition() == z + 1 || roi.getZPosition() == 0) && 
-    				//keep the ROI if it is for this timepoint or doesn't have a timepoint
-    				(roi.getTPosition() == t + 1 || roi.getTPosition() == 0)) {
+    				//keep the ROI if it is for this timepoint or doesn't have a timepoint AND
+    				(roi.getTPosition() == t + 1 || roi.getTPosition() == 0) &&
+    				//keep the ROI if it is for this channel or doesn't have a channel
+    				(roi.getCPosition() == c + 1 || roi.getCPosition() == 0)) {
     			ShapeRoi sr = (roi instanceof ShapeRoi) ? (ShapeRoi) roi : new ShapeRoi(roi);
     			sliceRois.add(sr);
     		}
@@ -290,7 +294,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
     	if (sliceRois.size() == 0) return null;
     	ShapeRoi sliceRoi = sliceRois.get(0);
     	for (int i = 1; i < sliceRois.size(); i++) {
-
     		sliceRoi.or(sliceRois.get(i));
     	}
     	return sliceRoi;
@@ -320,7 +323,6 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
         // The result is now a 2D XY slice
         return view;
     }
-
     
     // Helper class to store dimension index and slice index
     private static class DimensionSlice {
