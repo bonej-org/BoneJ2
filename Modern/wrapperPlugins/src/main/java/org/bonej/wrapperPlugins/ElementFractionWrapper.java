@@ -131,9 +131,11 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 				final int channel = c;
 				boolean aborted = IntStream.range(0, zSize).parallel().anyMatch(z -> {
 					statusService.showStatus("Element fraction: channel "+channel+", time "+time+", z "+z);
-					//counters for this thread
+					//counters for this thread and z-position
 					long total = 0;
 					long fg = 0;
+					totalCounts[z] = 0;
+					fgCounts[z] = 0;
 
 					//create a 2D view into the data
 					RandomAccessibleInterval<T> xyView = get2DSlice(inputImage, z, time, channel);
