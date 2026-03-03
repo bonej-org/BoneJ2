@@ -65,6 +65,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * This command estimates the size of the given sample by counting its
@@ -77,7 +78,7 @@ import java.util.List;
  * @author Michael Doube
  */
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction")
+menuPath = "Plugins>BoneJ>Fraction>Area/Volume fraction")
 public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> extends BoneJCommand
 {
 
@@ -98,115 +99,137 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private String ratioHeader;
 	/** The calibrated size of an element in the image */
 	private double elementSize;
-	
+
 
 	@Override
 	public void run() {
 		statusService.showStatus("Element fraction: initializing");
 		prepareResultDisplay();
 		final String name = inputImage.getName();
-		
+
 		//get the number of slices, channels and time points to iterate over
-        int zIdx = axisIndex(inputImage, Axes.Z);
-        int tIdx = axisIndex(inputImage, Axes.TIME);
-        int cIdx = axisIndex(inputImage, Axes.CHANNEL);
-//        System.out.println("axisIndex (w,h,d,t,c) = ("+xIdx+", "+yIdx+", "+zIdx+", "+tIdx+", "+cIdx+")");
-        
-        //if an axis is missing, set its size to 1, otherwise get its size.
-        int cSize = (cIdx >= 0) ? (int) inputImage.dimension(cIdx) : 1;
-        int zSize = (zIdx >= 0) ? (int) inputImage.dimension(zIdx) : 1;
-        int tSize = (tIdx >= 0) ? (int) inputImage.dimension(tIdx) : 1;
+		int zIdx = axisIndex(inputImage, Axes.Z);
+		int tIdx = axisIndex(inputImage, Axes.TIME);
+		int cIdx = axisIndex(inputImage, Axes.CHANNEL);
+		//        System.out.println("axisIndex (w,h,d,t,c) = ("+xIdx+", "+yIdx+", "+zIdx+", "+tIdx+", "+cIdx+")");
 
-		long fg = 0;
-		long total = 0;
-        //iterate over all the timepoints and channels, and for each iterate over z.
+		//if an axis is missing, set its size to 1, otherwise get its size.
+		int cSize = (cIdx >= 0) ? (int) inputImage.dimension(cIdx) : 1;
+		int zSize = (zIdx >= 0) ? (int) inputImage.dimension(zIdx) : 1;
+		int tSize = (tIdx >= 0) ? (int) inputImage.dimension(tIdx) : 1;
+
+		//thread-safe counters
+		long[] fgCounts = new long[zSize];
+		long[] totalCounts = new long[zSize];
+
+		//iterate over all the timepoints and channels, and for each iterate over z.
 		long start = System.nanoTime();
-		
-        for (int t = 0; t < tSize; t++) {
-        	final int time = t;
-        	for (int c = 0; c < cSize; c++) {
-        		final int channel = c;    	        
-        		for (int z = 0; z < zSize; z++) {
-        			statusService.showStatus("Element fraction: channel "+c+", time "+t+", z "+z);
 
-        			//create a 2D view into the data
-        			RandomAccessibleInterval<T> xyView = get2DSlice(inputImage, z, time, channel);
+		for (int t = 0; t < tSize; t++) {
+			final int time = t;
+			for (int c = 0; c < cSize; c++) {
+				final int channel = c;
+				boolean aborted = IntStream.range(0, zSize).parallel().anyMatch(z -> {
+					statusService.showStatus("Element fraction: channel "+channel+", time "+time+", z "+z);
+					//counters for this thread
+					long total = 0;
+					long fg = 0;
 
-        			//If the ROI Manager contains ROIs, use them
-        			if (!RoiManagerUtil.roiManagerIsEmpty()) {
+					//create a 2D view into the data
+					RandomAccessibleInterval<T> xyView = get2DSlice(inputImage, z, time, channel);
 
-        				//get a mask for this xyView from ROIs in the ROI Manager
-        				RandomAccessibleInterval<BitType> mask = 
-        						RoiManagerUtil.unionMaskFromRoiManager(xyView, z + 1, t + 1, c + 1);
+					//If the ROI Manager contains ROIs, use them
+					if (!RoiManagerUtil.roiManagerIsEmpty()) {
 
-        				//don't process slices that lack a mask
-        				if (mask == null) continue;
+						//get a mask for this xyView from ROIs in the ROI Manager
+						RandomAccessibleInterval<BitType> mask = 
+								RoiManagerUtil.unionMaskFromRoiManager(xyView, z + 1, time + 1, channel + 1);
 
-        				//Iterate over the mask and the slice
-        				Cursor<T> sliceCursor = Views.flatIterable(xyView).cursor();
-        				Cursor<BitType> maskCursor = Views.flatIterable(mask).cursor();
+						//don't process slices that lack a mask
+						if (mask == null) return false;
 
-        				while (maskCursor.hasNext()) {
-        					maskCursor.fwd();
-        					sliceCursor.fwd();
-        					//if we are inside an ROI
-        					if (maskCursor.get().get()) {
-        						total++;
-        						final double v = sliceCursor.get().getRealDouble();
-        						//if foreground
-        						if (v == 255.0) {
-        							fg++;
-        						} else if (v != 0.0) {
-        							cancelMacroSafe(this, NOT_BINARY);
-        						}
-        					}
-        				}
-        			//Otherwise process all pixels in the image
-        			} else {
-        				Cursor<T> sliceCursor = Views.flatIterable(xyView).cursor();
-        				while (sliceCursor.hasNext()) {
-        					sliceCursor.fwd();
-        					total++;
-        					final double v = sliceCursor.get().getRealDouble();
-    						//if foreground
-    						if (v == 255.0) {
-    							fg++;
-    						} else if (v != 0.0) {
-    							cancelMacroSafe(this, NOT_BINARY);
-    						}
-        				}
-        			}
-        		}
-    			
-        		long end = System.nanoTime();
-        		
-        		System.out.println("Volume fraction took "+(end-start) / 1E6+" ms");
-        		
-        		//don't show any results for cancelled plugins
-    			if (this.isCanceled()) return;
+						//Iterate over the mask and the slice
+						Cursor<T> sliceCursor = Views.flatIterable(xyView).cursor();
+						Cursor<BitType> maskCursor = Views.flatIterable(mask).cursor();
 
-                double tv = total * elementSize;
-                double bv = fg * elementSize;
-        
-                String label = name;
-                
-                //add a channel suffix if there is more than one channel
-                label = cSize > 1 ? label + " Channel: " + c : label; 
-                //add a comma between channel and timepoint if both are more than one
-                label = (cSize > 1 && tSize > 1) ? label +"," : label;
-                //add a time suffix if there is more than one timepoint
-                label = tSize > 1 ? label + " Time: " + t : label;
-                
-        		addResults(label, bv, tv, bv/tv);
-   		
-        	}
-        }
-		
+						while (maskCursor.hasNext()) {
+							maskCursor.fwd();
+							sliceCursor.fwd();
+							//if we are inside an ROI
+							if (maskCursor.get().get()) {
+								total++;
+								final double v = sliceCursor.get().getRealDouble();
+								//if foreground
+								if (v == 255.0) {
+									fg++;
+								} else if (v != 0.0) {
+									cancelMacroSafe(this, NOT_BINARY);
+									return true;
+								}
+							}
+						}
+						//Otherwise process all pixels in the image
+					} else {
+						Cursor<T> sliceCursor = Views.flatIterable(xyView).cursor();
+						while (sliceCursor.hasNext()) {
+							sliceCursor.fwd();
+							total++;
+							final double v = sliceCursor.get().getRealDouble();
+							//if foreground
+							if (v == 255.0) {
+								fg++;
+							} else if (v != 0.0) {
+								cancelMacroSafe(this, NOT_BINARY);
+								return true;
+							}
+						}
+					}
+					totalCounts[z] = total;
+					fgCounts[z] = fg;
+					//successful completion (aborted = false)
+					return false;
+				});
+
+				if (aborted) {
+					//no need to do anything
+				}
+
+				long end = System.nanoTime();
+
+				System.out.println("Volume fraction took "+(end-start) / 1E6+" ms");
+
+				//don't show any results for cancelled plugins
+				if (this.isCanceled()) return;
+
+				long total = 0;
+				long fg = 0;
+				for (int z = 0; z < zSize; z++) {
+					total += totalCounts[z];
+					fg += fgCounts[z];
+				}
+
+				double tv = total * elementSize;
+				double bv = fg * elementSize;
+
+				String label = name;
+
+				//add a channel suffix if there is more than one channel
+				label = cSize > 1 ? label + " Channel: " + c : label; 
+				//add a comma between channel and timepoint if both are more than one
+				label = (cSize > 1 && tSize > 1) ? label +"," : label;
+				//add a time suffix if there is more than one timepoint
+				label = tSize > 1 ? label + " Time: " + t : label;
+
+				addResults(label, bv, tv, bv/tv);
+
+			}
+		}
+
 		resultsTable = SharedTable.getTable();
 	}
 
 	private void addResults(final String label, final double foregroundSize,
-		final double totalSize, final double ratio)
+			final double totalSize, final double ratio)
 	{
 		SharedTable.add(label, boneSizeHeader, foregroundSize);
 		SharedTable.add(label, totalSizeHeader, totalSize);
@@ -217,14 +240,14 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private void prepareResultDisplay() {
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
-			String.valueOf(exponent));
+				String.valueOf(exponent));
 		final String sizeDescription = ResultUtils.getSizeDescription(inputImage);
 
 		boneSizeHeader = "B" + sizeDescription + " " + unitHeader;
 		totalSizeHeader = "T" + sizeDescription + " " + unitHeader;
 		ratioHeader = "B" + sizeDescription + "/T" + sizeDescription;
 		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
-			unitService);
+				unitService);
 
 	}
 
@@ -247,54 +270,53 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 		if (type instanceof UnsignedByteType)
 			return;
 		else {
-			System.out.println("Cancelled non-binary at initial validation");
 			inputImage = null;
 			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
 	}
-	
+
 	/** Return the index of the given axis in the ImgPlus, or -1 if absent. */
-    private static int axisIndex(ImgPlus<?> img, AxisType axis) {
-        for (int d = 0; d < img.numDimensions(); d++) {
-            if (img.axis(d).type().equals(axis)) return d;
-        }
-        return -1;
-    }
-    
-    public static <T> RandomAccessibleInterval<T> get2DSlice(ImgPlus<T> img, int z, int t, int c) {
-        // Get the indices of Z, TIME, and CHANNEL
-        int zIdx = axisIndex(img, Axes.Z);
-        int tIdx = axisIndex(img, Axes.TIME);
-        int cIdx = axisIndex(img, Axes.CHANNEL);
+	private static int axisIndex(ImgPlus<?> img, AxisType axis) {
+		for (int d = 0; d < img.numDimensions(); d++) {
+			if (img.axis(d).type().equals(axis)) return d;
+		}
+		return -1;
+	}
 
-        // Collect all non-spatial dimensions (Z, TIME, CHANNEL) and their target slice indices
-        List<DimensionSlice> dimensionsToSlice = new ArrayList<>();
-        if (zIdx >= 0 && img.dimension(zIdx) > 1) dimensionsToSlice.add(new DimensionSlice(zIdx, z));
-        if (tIdx >= 0 && img.dimension(tIdx) > 1) dimensionsToSlice.add(new DimensionSlice(tIdx, t));
-        if (cIdx >= 0 && img.dimension(cIdx) > 1) dimensionsToSlice.add(new DimensionSlice(cIdx, c));
+	public static <T> RandomAccessibleInterval<T> get2DSlice(ImgPlus<T> img, int z, int t, int c) {
+		// Get the indices of Z, TIME, and CHANNEL
+		int zIdx = axisIndex(img, Axes.Z);
+		int tIdx = axisIndex(img, Axes.TIME);
+		int cIdx = axisIndex(img, Axes.CHANNEL);
 
-        // Sort dimensions by index in descending order
-        Collections.sort(dimensionsToSlice, Comparator.comparingInt(ds -> -ds.index));
+		// Collect all non-spatial dimensions (Z, TIME, CHANNEL) and their target slice indices
+		List<DimensionSlice> dimensionsToSlice = new ArrayList<>();
+		if (zIdx >= 0 && img.dimension(zIdx) > 1) dimensionsToSlice.add(new DimensionSlice(zIdx, z));
+		if (tIdx >= 0 && img.dimension(tIdx) > 1) dimensionsToSlice.add(new DimensionSlice(tIdx, t));
+		if (cIdx >= 0 && img.dimension(cIdx) > 1) dimensionsToSlice.add(new DimensionSlice(cIdx, c));
 
-        // Slice along dimensions in descending order of their indices
-        RandomAccessibleInterval<T> view = img;
-        for (DimensionSlice ds : dimensionsToSlice) {
-            view = Views.hyperSlice(view, ds.index, ds.slice);
-        }
+		// Sort dimensions by index in descending order
+		Collections.sort(dimensionsToSlice, Comparator.comparingInt(ds -> -ds.index));
 
-        // The result is now a 2D XY slice
-        return view;
-    }
-    
-    // Helper class to store dimension index and slice index
-    private static class DimensionSlice {
-        int index;
-        int slice;
+		// Slice along dimensions in descending order of their indices
+		RandomAccessibleInterval<T> view = img;
+		for (DimensionSlice ds : dimensionsToSlice) {
+			view = Views.hyperSlice(view, ds.index, ds.slice);
+		}
 
-        DimensionSlice(int index, int slice) {
-            this.index = index;
-            this.slice = slice;
-        }
-    }
+		// The result is now a 2D XY slice
+		return view;
+	}
+
+	// Helper class to store dimension index and slice index
+	private static class DimensionSlice {
+		int index;
+		int slice;
+
+		DimensionSlice(int index, int slice) {
+			this.index = index;
+			this.slice = slice;
+		}
+	}
 }
