@@ -141,6 +141,36 @@ public final class AxisUtils {
 	}
 
 	/**
+	 * Checks whether the given annotated space contains any dimension (axis)
+	 * that is not one of the standard X, Y, Z, Channel, or Time axes.
+	 *
+	 * <p>This method is useful for detecting the presence of non-standard axes
+	 * (e.g., Angle, Lambda, Phase, etc.) in an image or dataset, which may require
+	 * special handling in algorithms or processing pipelines.</p>
+	 *
+	 * @param <S>  the type of the annotated space, which must extend {@code AnnotatedSpace<A>}
+	 * @param <A>  the type of the axis, which must extend {@code TypedAxis}
+	 * @param space the annotated space (e.g., image or dataset) to check for non-standard dimensions
+	 * @return     {@code true} if the space contains at least one axis that is not
+	 *             X, Y, Z, Channel, or Time; {@code false} otherwise
+	 *
+	 * @see AnnotatedSpace
+	 * @see TypedAxis
+	 * @see Axes
+	 */
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
+		hasNonXYZCTDimension(final S space)
+	{
+		return axisStream(space).anyMatch(a -> (
+			a.type() != Axes.X &&
+			a.type() != Axes.Y &&
+			a.type() != Axes.Z &&
+			a.type() != Axes.CHANNEL &&
+			a.type() != Axes.TIME
+		));
+	}
+	
+	/**
 	 * Checks if the spatial axes in the space have the same i.e. isotropic
 	 * scaling.
 	 * <p>

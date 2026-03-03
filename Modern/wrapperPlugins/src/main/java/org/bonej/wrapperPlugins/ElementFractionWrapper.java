@@ -266,6 +266,11 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			cancelMacroSafe(this, WEIRD_SPATIAL);
 			return;
 		}
+		
+		if (AxisUtils.hasNonXYZCTDimension(inputImage)) {
+			inputImage = null;
+			cancelMacroSafe(this, CommonMessages.HAS_NONSTANDARD_DIMENSIONS);
+		}
 
 		T type = inputImage.firstElement();
 		//enforce 8-bit (IJ1 binary is 0 and 255)
