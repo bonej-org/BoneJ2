@@ -93,7 +93,7 @@ public final class RoiManagerUtil {
 	 * 
 	 * @return true if there are no ROIs to process
 	 */
-	public static boolean isEmpty() {
+	public static boolean roiManagerIsEmpty() {
 		final RoiManager rm = RoiManager.getInstance2();
 		//if there are no ROIs or no ROI Manager
 		return (rm == null || rm.getCount() == 0);
@@ -107,24 +107,22 @@ public final class RoiManagerUtil {
 	 * @param z1 1-based Z position (IJ1 convention)
 	 * @param t1 1-based T position (IJ1 convention)
 	 * @param c1 1-based C position (IJ1 convention)
+	 * @return a BitType mask that represents all the ROIs active on this XY slice or null if the ROI
+	 * Manager is null or empty, or if there are no ROIs active on this XY slice.
 	 */
 	public static RandomAccessibleInterval<BitType> unionMaskFromRoiManager(
 			final RandomAccessibleInterval<?> xyView,
 			final int z1,
 			final int t1,
-			final int c1,
-			final boolean treatEmptyRoiManagerAsFull
+			final int c1
 			) {
-		final RoiManager rm = RoiManager.getInstance2();
+		
 		//if there are no ROIs or no ROI Manager
-		if (isEmpty()) {
-			if (treatEmptyRoiManagerAsFull)
-				//no ROIs so use all image pixels (apply an all-true mask)
-				return fullMaskLike(xyView);
-			else
-				// No ROIs so use no image pixels (apply an all-false mask)
-				return emptyMaskLike(xyView);
+		if (roiManagerIsEmpty()) {
+			return null;
 		}
+		
+		final RoiManager rm = RoiManager.getInstance2();
 
 		final Roi[] all = rm.getRoisAsArray();
 		final List<Roi> rois = new ArrayList<>();
@@ -132,7 +130,7 @@ public final class RoiManagerUtil {
 			if (matchesPlane(r, z1, t1, c1)) rois.add(r);
 		}
 		if (rois.isEmpty()) {
-			return emptyMaskLike(xyView);
+			return null;
 		}
 
 		// View geometry

@@ -120,42 +120,68 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 		long fg = 0;
 		long total = 0;
         //iterate over all the timepoints and channels, and for each iterate over z.
+		long start = System.nanoTime();
+		
         for (int t = 0; t < tSize; t++) {
         	final int time = t;
         	for (int c = 0; c < cSize; c++) {
-        		final int channel = c;
-        		statusService.showStatus("Element fraction: channel "+c+", time "+t);
-    	        
-        		for (int z = 0; z < zSize; z++) {        			
+        		final int channel = c;    	        
+        		for (int z = 0; z < zSize; z++) {
+        			statusService.showStatus("Element fraction: channel "+c+", time "+t+", z "+z);
 
         			//create a 2D view into the data
         			RandomAccessibleInterval<T> xyView = get2DSlice(inputImage, z, time, channel);
-        			
-        			//get a mask for this xyView from ROIs in the ROI Manager
-        			RandomAccessibleInterval<BitType> mask = 
-        					RoiManagerUtil.unionMaskFromRoiManager(xyView, z + 1, t + 1, c + 1, true);
 
-        			//Iterate over the mask and the slice
-        			Cursor<T> sliceCursor = Views.flatIterable(xyView).cursor();
-        			Cursor<BitType> maskCursor = Views.flatIterable(mask).cursor();
-        			
-        			while (maskCursor.hasNext()) {
-        				maskCursor.fwd();
-        				sliceCursor.fwd();
-        				//if we are inside an ROI
-        				if (maskCursor.get().get()) {
+        			//If the ROI Manager contains ROIs, use them
+        			if (!RoiManagerUtil.roiManagerIsEmpty()) {
+
+        				//get a mask for this xyView from ROIs in the ROI Manager
+        				RandomAccessibleInterval<BitType> mask = 
+        						RoiManagerUtil.unionMaskFromRoiManager(xyView, z + 1, t + 1, c + 1);
+
+        				//don't process slices that lack a mask
+        				if (mask == null) continue;
+
+        				//Iterate over the mask and the slice
+        				Cursor<T> sliceCursor = Views.flatIterable(xyView).cursor();
+        				Cursor<BitType> maskCursor = Views.flatIterable(mask).cursor();
+
+        				while (maskCursor.hasNext()) {
+        					maskCursor.fwd();
+        					sliceCursor.fwd();
+        					//if we are inside an ROI
+        					if (maskCursor.get().get()) {
+        						total++;
+        						final double v = sliceCursor.get().getRealDouble();
+        						//if foreground
+        						if (v == 255.0) {
+        							fg++;
+        						} else if (v != 0.0) {
+        							cancelMacroSafe(this, NOT_BINARY);
+        						}
+        					}
+        				}
+        			//Otherwise process all pixels in the image
+        			} else {
+        				Cursor<T> sliceCursor = Views.flatIterable(xyView).cursor();
+        				while (sliceCursor.hasNext()) {
+        					sliceCursor.fwd();
         					total++;
         					final double v = sliceCursor.get().getRealDouble();
-        					//if foreground
-        					if (v == 255.0) {
-        						fg++;
-        					} else if (v != 0.0) {
-        						cancelMacroSafe(this, NOT_BINARY);
-        					}
+    						//if foreground
+    						if (v == 255.0) {
+    							fg++;
+    						} else if (v != 0.0) {
+    							cancelMacroSafe(this, NOT_BINARY);
+    						}
         				}
         			}
         		}
     			
+        		long end = System.nanoTime();
+        		
+        		System.out.println("Volume fraction took "+(end-start) / 1E6+" ms");
+        		
         		//don't show any results for cancelled plugins
     			if (this.isCanceled()) return;
 
