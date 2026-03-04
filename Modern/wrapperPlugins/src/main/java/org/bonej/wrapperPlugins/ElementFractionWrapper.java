@@ -123,7 +123,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 		long[] totalCounts = new long[zSize];
 
 		//iterate over all the timepoints and channels, and for each iterate over z.
-		long start = System.nanoTime();
+//		long start = System.nanoTime();
 
 		for (int t = 0; t < tSize; t++) {
 			final int time = t;
@@ -196,9 +196,9 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 					//no need to do anything
 				}
 
-				long end = System.nanoTime();
+//				long end = System.nanoTime();
 
-				System.out.println("Volume fraction took "+(end-start) / 1E6+" ms");
+//				System.out.println("Volume fraction took "+(end-start) / 1E6+" ms");
 
 				//don't show any results for cancelled plugins
 				if (this.isCanceled()) return;
@@ -223,11 +223,11 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 				label = tSize > 1 ? label + " Time: " + t : label;
 
 				addResults(label, bv, tv, bv/tv);
-
+				
+			    // Ensure SharedTable is populated
+			    resultsTable = SharedTable.getTable();
 			}
-		}
-
-		resultsTable = SharedTable.getTable();
+		}	
 	}
 
 	private void addResults(final String label, final double foregroundSize,

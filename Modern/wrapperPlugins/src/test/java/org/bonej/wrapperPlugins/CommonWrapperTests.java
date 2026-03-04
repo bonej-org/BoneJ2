@@ -153,7 +153,7 @@ public final class CommonWrapperTests {
 
 			// VERIFY
 			assertTrue(
-					"An image with more than two colours should have cancelled the plugin",
+					"An image with more than two values should have cancelled the plugin",
 					module.isCanceled());
 			assertEquals("Cancel reason is incorrect", CommonMessages.NOT_BINARY, module
 					.getCancelReason());
@@ -189,7 +189,7 @@ public final class CommonWrapperTests {
 
 			// VERIFY
 			assertTrue(
-					"An image with more than two colours should have cancelled the plugin",
+					"An image with more than two values should have cancelled the plugin",
 					module.isCanceled());
 			assertEquals("Cancel reason is incorrect",
 					CommonMessages.NOT_8_BIT_BINARY_IMAGE, module.getCancelReason());

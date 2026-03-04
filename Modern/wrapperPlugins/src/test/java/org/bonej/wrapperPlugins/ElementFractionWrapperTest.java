@@ -48,7 +48,7 @@ import net.imagej.axis.AxisType;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.type.logic.BitType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
@@ -80,6 +80,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testResults3DHyperstack() throws Exception {
+		System.out.println("testResults3DHyperstack()");
 		// SETUP
 		final String unit = "mm";
 		final double scale = 0.9;
@@ -98,25 +99,25 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 			expectedRatios };
 		final String[] expectedHeaders = { "BV (" + unit + "³)",
 			"TV (" + unit + "³)", "BV/TV" };
-		// Create an hyperstack Img with a cube at (channel:0, frame:0) and (c:1,
-		// f:1)
-		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, stackSide, 2,
-			2);
-		Views.interval(img, new long[] { 1, 1, 1, 0, 0 }, new long[] { 5, 5, 5, 0,
-			0 }).forEach(BitType::setOne);
-		Views.interval(img, new long[] { 1, 1, 1, 1, 1 }, new long[] { 5, 5, 5, 1,
-			1 }).forEach(BitType::setOne);
+		// Create a hyperstack Img with a cube at (channel:0, frame:0) and (c:1, f:1)
+		final Img<UnsignedByteType> img = ArrayImgs.unsignedBytes(stackSide, stackSide, stackSide, 2, 2);
+		Views.interval(img, new long[] { 1, 1, 1, 0, 0 }, new long[] { 5, 5, 5, 0, 0 }).forEach(t -> t.set(255));
+		Views.interval(img, new long[] { 1, 1, 1, 1, 1 }, new long[] { 5, 5, 5, 1, 1 }).forEach(t -> t.set(255));
+		
 		// Wrap Img in a calibrated ImgPlus
 		final double[] calibration = { scale, scale, scale, 1.0, 1.0 };
 		final String[] units = { unit, unit, unit, "", "" };
 		final AxisType[] axes = { Axes.X, Axes.Y, Axes.Z, Axes.TIME, Axes.CHANNEL };
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Cube", axes,
-			calibration, units);
-
+		final ImgPlus<UnsignedByteType> imgPlus = new ImgPlus<>(img, "Cube", axes,
+				calibration, units);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
 
+		//Make sure the plugin wasn't cancelled
+		assertTrue(module.getCancelReason(), !module.isCanceled());
+		
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<Double>> table =
@@ -138,6 +139,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testResultsComposite2D() throws Exception {
+		System.out.println("testResultsComposite2D()");
 		// SETUP
 		final String unit = "mm";
 		final int squareSide = 5;
@@ -154,24 +156,27 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 		final String[] expectedHeaders = { "BA (" + unit + "\u00B2)",
 			"TA (" + unit + "\u00B2)", "BA/TA" };
 		// Create an 2D image with two channels with a square drawn on channel 2
-		final Img<BitType> img = ArrayImgs.bits(stackSide, stackSide, 2);
-		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 1 }).forEach(
-			BitType::setOne);
+		final Img<UnsignedByteType> img = ArrayImgs.unsignedBytes(stackSide, stackSide, 2);
+		// Set the square region to 255 (foreground)
+		Views.interval(img, new long[] { 1, 1, 1 }, new long[] { 5, 5, 1 }).forEach(t -> t.set(255));
 		// Wrap Img in an ImgPlus
 		final double[] calibration = { 1.0, 1.0, 1.0 };
 		final String[] units = { unit, unit, "" };
 		final AxisType[] axes = { Axes.X, Axes.Y, Axes.CHANNEL };
-		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Square", axes,
-			calibration, units);
+		final ImgPlus<UnsignedByteType> imgPlus = new ImgPlus<>(img, "Square", axes, calibration, units);
 
 		// EXECUTE
 		final CommandModule module = command().run(
 			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+		
+		//Make sure the plugin wasn't cancelled
+		assertTrue(module.getCancelReason(), !module.isCanceled());
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
 		final List<DefaultColumn<Double>> table =
 			(List<DefaultColumn<Double>>) module.getOutput("resultsTable");
+		
 		assertNotNull(table);
 		assertEquals("Wrong number of columns", 3, table.size());
 		for (int i = 0; i < 3; i++) {
