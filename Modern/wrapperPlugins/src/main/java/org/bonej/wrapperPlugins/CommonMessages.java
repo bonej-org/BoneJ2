@@ -45,6 +45,7 @@ public final class CommonMessages {
 	static final String NOT_8_BIT_BINARY_IMAGE = "Need an 8-bit binary image";
 	static final String NO_IMAGE_OPEN = "No image open";
 	static final String NO_SKELETONS = "Image contained no skeletons";
+	static final String HAS_NONSTANDARD_DIMENSIONS = "Image has non-standard dimensions";
 
 	private CommonMessages() {}
 }
