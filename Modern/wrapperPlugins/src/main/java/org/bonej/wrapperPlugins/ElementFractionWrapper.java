@@ -267,6 +267,12 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			return;
 		}
 		
+		if (!AxisUtils.hasXYDimensions(inputImage)) {
+			inputImage = null;
+			cancelMacroSafe(this, WEIRD_SPATIAL);
+			return;
+		}
+		
 		if (AxisUtils.hasNonXYZCTDimension(inputImage)) {
 			inputImage = null;
 			cancelMacroSafe(this, CommonMessages.HAS_NONSTANDARD_DIMENSIONS);

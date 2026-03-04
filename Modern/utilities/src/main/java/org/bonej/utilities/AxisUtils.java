@@ -36,6 +36,7 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import net.imagej.axis.Axes;
 import net.imagej.axis.CalibratedAxis;
@@ -124,6 +125,25 @@ public final class AxisUtils {
 		hasSpatialDimensions(final S space)
 	{
 		return axisStream(space).anyMatch(a -> a.type().isSpatial());
+	}
+	
+	/**
+	 * Checks if the given annotated space contains both X and Y axes.
+	 *
+	 * @param space the annotated space to check
+	 * @return true if both X and Y axes are present, false otherwise
+	 */
+	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
+	    hasXYDimensions(final S space)
+	{
+	    boolean hasX = false;
+	    boolean hasY = false;
+	    for (A axis : axisStream(space).collect(Collectors.toList())) {
+	        if (axis.type() == Axes.X) hasX = true;
+	        if (axis.type() == Axes.Y) hasY = true;
+	        if (hasX && hasY) return true;
+	    }
+	    return false;
 	}
 
 	/**
