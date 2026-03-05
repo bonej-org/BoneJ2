@@ -82,15 +82,15 @@ public final class ElementUtil {
 	 *         nonlinear axes, or calibration units cannot be converted.
 	 */
 	public static <T extends AnnotatedSpace<CalibratedAxis>> double
-		calibratedSpatialElementSize(final T space, final UnitService unitService)
+	calibratedSpatialElementSize(final T space, final UnitService unitService)
 	{
 		final Optional<String> optional = AxisUtils.getSpatialUnit(space,
-			unitService);
+				unitService);
 		if (!optional.isPresent() || hasNonLinearSpatialAxes(space)) {
 			return Double.NaN;
 		}
 		final double elementSize = spatialAxisStream(space).map(a -> a.averageScale(
-			0, 1)).reduce((x, y) -> x * y).orElse(0.0);
+				0, 1)).reduce((x, y) -> x * y).orElse(0.0);
 		// DefaultUnitService handles microns as "um" instead of "µm",
 		final String outputUnit = optional.get().replaceFirst("^µ[mM]$", "um");
 		if (outputUnit.isEmpty()) {
@@ -98,7 +98,7 @@ public final class ElementUtil {
 			return elementSize;
 		}
 		final List<CalibratedAxis> axes = spatialAxisStream(space).collect(
-			Collectors.toList());
+				Collectors.toList());
 		double unitCoeff = 1.0;
 		for (int i = 1; i < axes.size(); i++) {
 			final String inputUnit = axes.get(i).unit().replaceFirst("^µ[mM]$", "um");
@@ -117,14 +117,14 @@ public final class ElementUtil {
 	 *         or has more values.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> boolean isBinary(
-		final IterableInterval<T> interval)
+			final IterableInterval<T> interval)
 	{
 		if (interval.size() == 0) {
 			return false;
 		}
 
 		if (BooleanType.class.isAssignableFrom(interval.firstElement()
-			.getClass()))
+				.getClass()))
 		{
 			// by definition the elements can only be 0 or 1 so must be binary
 			return true;
@@ -134,7 +134,7 @@ public final class ElementUtil {
 		double a = interval.firstElement().getRealDouble();
 		double b = a;
 		double c;
-		
+
 		final Cursor<T> cursor = interval.cursor();
 		while (cursor.hasNext()){
 			c = cursor.next().getRealDouble();
@@ -149,11 +149,11 @@ public final class ElementUtil {
 		//the next while is skipped, and we return true.
 		//Otherwise check the rest of the pixels
 		while (cursor.hasNext()) {
-		  c = cursor.next().getRealDouble();
-		  //if c is neither a or b the image is not binary
-		  if (c == a || c == b)
-		  	continue;
-		  return false;
+			c = cursor.next().getRealDouble();
+			//if c is neither a or b the image is not binary
+			if (c == a || c == b)
+				continue;
+			return false;
 		}
 		return true;
 	}
@@ -167,69 +167,73 @@ public final class ElementUtil {
 	 * @return true if the interval is a binary image (only 0 and 255 values), false otherwise.
 	 */
 	public static <T extends RealType<T> & NativeType<T>> boolean isImageJ1Binary(
-	    final RandomAccessibleInterval<T> interval)
+			final RandomAccessibleInterval<T> interval)
 	{
-	    // Check if the interval is empty
-	    if (interval.size() == 0) {
-	        return false;
-	    }
+		// Check if the interval is empty
+		if (interval.size() == 0) {
+			return false;
+		}
 
-	    // Check if the type is UnsignedByteType (8-bit)
-	    if (!(interval.firstElement() instanceof UnsignedByteType)) {
-	        return false;
-	    }
+		// Check if the type is UnsignedByteType (8-bit)
+		if (!(interval.firstElement() instanceof UnsignedByteType)) {
+			return false;
+		}
 
-	    // Use a thread-safe flag to track if a non-binary value is found
-	    final AtomicBoolean isBinary = new AtomicBoolean(true);
+		// Use a thread-safe flag to track if a non-binary value is found
+		final AtomicBoolean isBinary = new AtomicBoolean(true);
 
-	    // Determine the number of threads to use
-	    final int numThreads = Runtime.getRuntime().availableProcessors();
+		// Determine the number of threads to use
+		final int numThreads = Runtime.getRuntime().availableProcessors();
 
-	    // Split the work into chunks
-	    final long numElements = interval.size();
-	    final long chunkSize = (numElements + numThreads - 1) / numThreads;
+		// Split the work into chunks
+		final long numElements = interval.size();
+		final long chunkSize = (numElements + numThreads - 1) / numThreads;
 
-	    // Create a thread pool
-	    final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+		// Create a thread pool
+		final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
-	    try {
-	        // Process chunks in parallel
-	        final List<CompletableFuture<Void>> futures = new ArrayList<>();
+		try {
+			// Process chunks in parallel
+			final List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-	        for (int i = 0; i < numThreads; i++) {
-	            final long start = i * chunkSize;
-	            final long end = Math.min((i + 1) * chunkSize, numElements);
+			for (int i = 0; i < numThreads; i++) {
+				final long start = i * chunkSize;
+				final long end = Math.min((i + 1) * chunkSize, numElements);
 
-	            if (start >= end) continue;
+				if (start >= end) continue;
 
-	            futures.add(CompletableFuture.runAsync(() -> {
-	                final Cursor<T> cursor = Views.flatIterable(interval).cursor();
-	                cursor.jumpFwd(start);
+				futures.add(CompletableFuture.runAsync(() -> {
+					final Cursor<T> cursor = Views.flatIterable(interval).cursor();
+					cursor.jumpFwd(start);
 
-	                for (long j = start; j < end && cursor.hasNext(); j++) {
-	                    final double value = cursor.next().getRealDouble();
-	                    if (value != 0.0 && value != 255.0) {
-	                        isBinary.set(false);
-	                        return; // Early exit if non-binary value found
-	                    }
-	                }
-	            }, executor));
-	        }
+					for (long j = start; j < end && cursor.hasNext(); j++) {
+						//check whether another thread found a non-binary pixel and quit if so
+						if (!isBinary.get()) {
+							return;
+						}
+						final double value = cursor.next().getRealDouble();
+						if (value != 0.0 && value != 255.0) {
+							isBinary.set(false);
+							return; // Early exit if non-binary value found
+						}
+					}
+				}, executor));
+			}
 
-	        // Wait for all tasks to complete
-	        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+			// Wait for all tasks to complete
+			CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-	        // Early exit if any thread found a non-binary value
-	        if (!isBinary.get()) {
-	            return false;
-	        }
-	    } finally {
-	        executor.shutdownNow();
-	    }
-	    return true;
+			// Early exit if any thread found a non-binary value
+			if (!isBinary.get()) {
+				return false;
+			}
+		} finally {
+			executor.shutdownNow();
+		}
+		return true;
 	}
 
-	
+
 	//@region -- Helper methods --
 	/**
 	 * Checks if the given space has any non-linear spatial dimensions.
@@ -240,10 +244,10 @@ public final class ElementUtil {
 	 * @return true if there are any power, logarithmic or other non-linear axes.
 	 */
 	private static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
-		hasNonLinearSpatialAxes(final S space)
+	hasNonLinearSpatialAxes(final S space)
 	{
 		return axisStream(space).anyMatch(a -> !(a instanceof LinearAxis) && a
-			.type().isSpatial());
+				.type().isSpatial());
 	}
 	//@endregion
 }
