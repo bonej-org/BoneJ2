@@ -44,12 +44,15 @@ import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imagej.axis.PowerAxis;
 import net.imagej.units.UnitService;
+import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.integer.ByteType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.DoubleType;
+import net.imglib2.view.Views;
 
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -216,6 +219,184 @@ public class ElementUtilTest {
 
 		assertTrue("Monochrome image should be binary", result);
 	}
+	
+    // Helper method to create an ImgPlus with specified dimensions and axes
+    private ImgPlus<UnsignedByteType> createImgPlus(long[] dimensions, String[] axisTypes) {
+        Img<UnsignedByteType> img = ArrayImgs.unsignedBytes(dimensions);
+        ImgPlus<UnsignedByteType> imgPlus = new ImgPlus<>(img, "test");
+
+        // Set axes if provided
+        if (axisTypes != null && axisTypes.length == dimensions.length) {
+            for (int i = 0; i < axisTypes.length; i++) {
+                switch (axisTypes[i]) {
+                    case "X": imgPlus.axis(i).setType(Axes.X); break;
+                    case "Y": imgPlus.axis(i).setType(Axes.Y); break;
+                    case "Z": imgPlus.axis(i).setType(Axes.Z); break;
+                    case "T": imgPlus.axis(i).setType(Axes.TIME); break;
+                    case "C": imgPlus.axis(i).setType(Axes.CHANNEL); break;
+                }
+            }
+        }
+
+        return imgPlus;
+    }
+
+    // 2D Tests (XY)
+
+    @Test
+    public void test2DAllZerosIsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10}, new String[]{"X", "Y"});
+        assertTrue("2D all-zero image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test2DAll255IsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10}, new String[]{"X", "Y"});
+        Cursor<UnsignedByteType> cursor = imgPlus.cursor();
+        while (cursor.hasNext()) {
+            cursor.next().set(255);
+        }
+        assertTrue("2D all-255 image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test2DMixed0And255IsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10}, new String[]{"X", "Y"});
+        Cursor<UnsignedByteType> cursor = imgPlus.cursor();
+        int i = 0;
+        while (cursor.hasNext()) {
+            cursor.next().set(i++ % 2 == 0 ? 0 : 255);
+        }
+        assertTrue("2D mixed 0/255 image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test2DWithNonBinaryValueIsNotBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10}, new String[]{"X", "Y"});
+        Views.flatIterable(imgPlus).cursor().next().set(128);
+        assertFalse("2D image with non-binary value should not be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    // 3D Tests (XYZ)
+
+    @Test
+    public void test3DAllZerosIsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5}, new String[]{"X", "Y", "Z"});
+        assertTrue("3D all-zero image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test3DMixed0And255IsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5}, new String[]{"X", "Y", "Z"});
+        Cursor<UnsignedByteType> cursor = imgPlus.cursor();
+        int i = 0;
+        while (cursor.hasNext()) {
+            cursor.next().set(i++ % 2 == 0 ? 0 : 255);
+        }
+        assertTrue("3D mixed 0/255 image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test3DWithNonBinaryValueIsNotBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5}, new String[]{"X", "Y", "Z"});
+        Views.flatIterable(imgPlus).cursor().next().set(128);
+        assertFalse("3D image with non-binary value should not be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    // 4D Tests (XYZT)
+
+    @Test
+    public void test4DAllZerosIsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5, 3}, new String[]{"X", "Y", "Z", "T"});
+        assertTrue("4D all-zero image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test4DMixed0And255IsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5, 3}, new String[]{"X", "Y", "Z", "T"});
+        Cursor<UnsignedByteType> cursor = imgPlus.cursor();
+        int i = 0;
+        while (cursor.hasNext()) {
+            cursor.next().set(i++ % 2 == 0 ? 0 : 255);
+        }
+        assertTrue("4D mixed 0/255 image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test4DWithNonBinaryValueIsNotBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5, 3}, new String[]{"X", "Y", "Z", "T"});
+        Views.flatIterable(imgPlus).cursor().next().set(128);
+        assertFalse("4D image with non-binary value should not be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    // 5D Tests (XYZCT)
+
+    @Test
+    public void test5DAllZerosIsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5, 3, 2}, new String[]{"X", "Y", "Z", "T", "C"});
+        assertTrue("5D all-zero image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test5DMixed0And255IsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5, 3, 2}, new String[]{"X", "Y", "Z", "T", "C"});
+        Cursor<UnsignedByteType> cursor = imgPlus.cursor();
+        int i = 0;
+        while (cursor.hasNext()) {
+            cursor.next().set(i++ % 2 == 0 ? 0 : 255);
+        }
+        assertTrue("5D mixed 0/255 image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void test5DWithNonBinaryValueIsNotBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{10, 10, 5, 3, 2}, new String[]{"X", "Y", "Z", "T", "C"});
+        Views.flatIterable(imgPlus).cursor().next().set(128);
+        assertFalse("5D image with non-binary value should not be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    // Edge Cases
+
+    @Test
+    public void testSinglePixelZeroIsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{1, 1}, new String[]{"X", "Y"});
+        assertTrue("Single pixel zero image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void testSinglePixel255IsBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{1, 1}, new String[]{"X", "Y"});
+        Views.flatIterable(imgPlus).cursor().next().set(255);
+        assertTrue("Single pixel 255 image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void testSinglePixelNonBinaryIsNotBinary() {
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{1, 1}, new String[]{"X", "Y"});
+        Views.flatIterable(imgPlus).cursor().next().set(128);
+        assertFalse("Single pixel non-binary image should not be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void testEarlyTerminationWithNonBinaryValue() {
+        // Create a large image with a non-binary value at the beginning
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{100, 100}, new String[]{"X", "Y"});
+        Views.flatIterable(imgPlus).cursor().next().set(128);
+        assertFalse("Image with early non-binary value should terminate early and not be binary",
+                    ElementUtil.isImageJ1Binary(imgPlus));
+    }
+
+    @Test
+    public void testLargeBinaryImage() {
+        // Create a large binary image
+        ImgPlus<UnsignedByteType> imgPlus = createImgPlus(new long[]{1000, 1000}, new String[]{"X", "Y"});
+        Cursor<UnsignedByteType> cursor = imgPlus.cursor();
+        int i = 0;
+        while (cursor.hasNext()) {
+            cursor.next().set(i++ % 2 == 0 ? 0 : 255);
+        }
+        assertTrue("Large binary image should be binary", ElementUtil.isImageJ1Binary(imgPlus));
+    }
 
 	@AfterClass
 	public static void oneTimeTearDown() {

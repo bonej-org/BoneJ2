@@ -33,8 +33,13 @@ package org.bonej.utilities;
 import static org.bonej.utilities.Streamers.axisStream;
 import static org.bonej.utilities.Streamers.spatialAxisStream;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import net.imagej.axis.CalibratedAxis;
@@ -44,9 +49,12 @@ import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.view.Views;
 
 /**
  * Various utility methods for inspecting image element properties
@@ -150,6 +158,78 @@ public final class ElementUtil {
 		return true;
 	}
 
+	/**
+	 * Checks whether the interval is a binary image according to the ImageJ1 convention:
+	 * 8-bit (e.g., UnsignedByteType) with only 0 and 255 values.
+	 *
+	 * @param interval a random accessible interval, such as a {@link net.imagej.ImgPlus} or {@link net.imglib2.img}
+	 * @param <T> type of the elements in the interval.
+	 * @return true if the interval is a binary image (only 0 and 255 values), false otherwise.
+	 */
+	public static <T extends RealType<T> & NativeType<T>> boolean isImageJ1Binary(
+	    final RandomAccessibleInterval<T> interval)
+	{
+	    // Check if the interval is empty
+	    if (interval.size() == 0) {
+	        return false;
+	    }
+
+	    // Check if the type is UnsignedByteType (8-bit)
+	    if (!(interval.firstElement() instanceof UnsignedByteType)) {
+	        return false;
+	    }
+
+	    // Use a thread-safe flag to track if a non-binary value is found
+	    final AtomicBoolean isBinary = new AtomicBoolean(true);
+
+	    // Determine the number of threads to use
+	    final int numThreads = Runtime.getRuntime().availableProcessors();
+
+	    // Split the work into chunks
+	    final long numElements = interval.size();
+	    final long chunkSize = (numElements + numThreads - 1) / numThreads;
+
+	    // Create a thread pool
+	    final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+
+	    try {
+	        // Process chunks in parallel
+	        final List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+	        for (int i = 0; i < numThreads; i++) {
+	            final long start = i * chunkSize;
+	            final long end = Math.min((i + 1) * chunkSize, numElements);
+
+	            if (start >= end) continue;
+
+	            futures.add(CompletableFuture.runAsync(() -> {
+	                final Cursor<T> cursor = Views.flatIterable(interval).cursor();
+	                cursor.jumpFwd(start);
+
+	                for (long j = start; j < end && cursor.hasNext(); j++) {
+	                    final double value = cursor.next().getRealDouble();
+	                    if (value != 0.0 && value != 255.0) {
+	                        isBinary.set(false);
+	                        return; // Early exit if non-binary value found
+	                    }
+	                }
+	            }, executor));
+	        }
+
+	        // Wait for all tasks to complete
+	        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+	        // Early exit if any thread found a non-binary value
+	        if (!isBinary.get()) {
+	            return false;
+	        }
+	    } finally {
+	        executor.shutdownNow();
+	    }
+	    return true;
+	}
+
+	
 	//@region -- Helper methods --
 	/**
 	 * Checks if the given space has any non-linear spatial dimensions.
