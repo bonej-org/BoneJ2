@@ -43,6 +43,7 @@ import ij.measure.ResultsTable;
  *
  * @author Michael Doube
  */
+@Deprecated
 public final class ResultInserter {
 
 	private static final ResultInserter INSTANCE = new ResultInserter();
