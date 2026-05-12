@@ -40,7 +40,11 @@ import java.util.List;
 import org.bonej.menuWrappers.ThicknessHelper;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.BoneJCommand;
 import org.jogamp.vecmath.Point3f;
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 
 import Jama.EigenvalueDecomposition;
 
@@ -49,7 +53,6 @@ import ij.ImagePlus;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
-import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
 import ij3d.Image3DUniverse;
 import sc.fiji.analyzeSkeleton.SkeletonResult;
@@ -64,9 +67,9 @@ import sc.fiji.analyzeSkeleton.SkeletonResult;
  *
  * @author Michael Doube
  */
-public class ParticleCounter implements PlugIn, DialogListener {
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Analyze>Particle Analyser")
+public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListener {
 
-	
 	/* (non-Javadoc)
 	 * @see ij.gui.DialogListener#dialogItemChanged(ij.gui.GenericDialog, java.awt.AWTEvent)
 	 */
@@ -96,6 +99,14 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		return true;
 	}
 
+	/**
+	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 */
+	@Override
+	public void run() {
+		run("");
+	}
+	
 	/* (non-Javadoc)
 	 * @see ij.plugin.PlugIn#run(java.lang.String)
 	 */
@@ -292,54 +303,52 @@ public class ParticleCounter implements PlugIn, DialogListener {
 		}
 
 		// Show numerical results
-		final ResultsTable rt = new ResultsTable();
+		SharedTable.reset();
 		for (int i = 1; i < volumes.length; i++) {
 			if (volumes[i] > 0) {
-				rt.incrementCounter();
-				rt.addLabel(imp.getTitle());
-				rt.addValue("ID", i);
-				rt.addValue("Vol. (" + units + "³)", volumes[i]);
-				rt.addValue("x Cent (" + units + ")", centroids[i][0]);
-				rt.addValue("y Cent (" + units + ")", centroids[i][1]);
-				rt.addValue("z Cent (" + units + ")", centroids[i][2]);
+				SharedTable.add(imp.getTitle(),"ID", i);
+				SharedTable.add(imp.getTitle(),"Vol. (" + units + "³)", volumes[i]);
+				SharedTable.add(imp.getTitle(),"x Cent (" + units + ")", centroids[i][0]);
+				SharedTable.add(imp.getTitle(),"y Cent (" + units + ")", centroids[i][1]);
+				SharedTable.add(imp.getTitle(),"z Cent (" + units + ")", centroids[i][2]);
 				if (doAlignedBoxes) {
-					rt.addValue("Box x (" + units + ")", alignedBoxes[i][0]);
-					rt.addValue("Box y (" + units + ")", alignedBoxes[i][1]);
-					rt.addValue("Box z (" + units + ")", alignedBoxes[i][2]);
-					rt.addValue("Box l0 (" + units + ")", alignedBoxes[i][3]);
-					rt.addValue("Box l1 (" + units + ")", alignedBoxes[i][4]);
-					rt.addValue("Box l2 (" + units + ")", alignedBoxes[i][5]);
+					SharedTable.add(imp.getTitle(),"Box x (" + units + ")", alignedBoxes[i][0]);
+					SharedTable.add(imp.getTitle(),"Box y (" + units + ")", alignedBoxes[i][1]);
+					SharedTable.add(imp.getTitle(),"Box z (" + units + ")", alignedBoxes[i][2]);
+					SharedTable.add(imp.getTitle(),"Box l0 (" + units + ")", alignedBoxes[i][3]);
+					SharedTable.add(imp.getTitle(),"Box l1 (" + units + ")", alignedBoxes[i][4]);
+					SharedTable.add(imp.getTitle(),"Box l2 (" + units + ")", alignedBoxes[i][5]);
 				}
 				if (doSurfaceArea) {
-					rt.addValue("SA (" + units + "²)", surfaceAreas[i]);
+					SharedTable.add(imp.getTitle(),"SA (" + units + "²)", surfaceAreas[i]);
 				}
 				if (doFeret) {
-					rt.addValue("Feret (" + units + ")", ferets[i][0]);
-					rt.addValue("FeretAx (" + units + ")", ferets[i][1]);
-					rt.addValue("FeretAy (" + units + ")", ferets[i][2]);
-					rt.addValue("FeretAz (" + units + ")", ferets[i][3]);
-					rt.addValue("FeretBx (" + units + ")", ferets[i][4]);
-					rt.addValue("FeretBy (" + units + ")", ferets[i][5]);
-					rt.addValue("FeretBz (" + units + ")", ferets[i][6]);
+					SharedTable.add(imp.getTitle(),"Feret (" + units + ")", ferets[i][0]);
+					SharedTable.add(imp.getTitle(),"FeretAx (" + units + ")", ferets[i][1]);
+					SharedTable.add(imp.getTitle(),"FeretAy (" + units + ")", ferets[i][2]);
+					SharedTable.add(imp.getTitle(),"FeretAz (" + units + ")", ferets[i][3]);
+					SharedTable.add(imp.getTitle(),"FeretBx (" + units + ")", ferets[i][4]);
+					SharedTable.add(imp.getTitle(),"FeretBy (" + units + ")", ferets[i][5]);
+					SharedTable.add(imp.getTitle(),"FeretBz (" + units + ")", ferets[i][6]);
 				}
 				if (doSurfaceVolume) {
-					rt.addValue("Encl. Vol. (" + units + "³)", surfaceVolumes[i]);
+					SharedTable.add(imp.getTitle(),"Encl. Vol. (" + units + "³)", surfaceVolumes[i]);
 				}
 				if (doMoments) {
 					final EigenvalueDecomposition E = eigens[i];
-					rt.addValue("I1", E.getD().get(2, 2));
-					rt.addValue("I2", E.getD().get(1, 1));
-					rt.addValue("I3", E.getD().get(0, 0));
-					rt.addValue("vX", E.getV().get(0, 0));
-					rt.addValue("vY", E.getV().get(1, 0));
-					rt.addValue("vZ", E.getV().get(2, 0));
+					SharedTable.add(imp.getTitle(),"I1", E.getD().get(2, 2));
+					SharedTable.add(imp.getTitle(),"I2", E.getD().get(1, 1));
+					SharedTable.add(imp.getTitle(),"I3", E.getD().get(0, 0));
+					SharedTable.add(imp.getTitle(),"vX", E.getV().get(0, 0));
+					SharedTable.add(imp.getTitle(),"vY", E.getV().get(1, 0));
+					SharedTable.add(imp.getTitle(),"vZ", E.getV().get(2, 0));
 					if (doVerboseUnitVectors) {
-						rt.addValue("vX1", E.getV().get(0, 1));
-						rt.addValue("vY1", E.getV().get(1, 1));
-						rt.addValue("vZ1", E.getV().get(2, 1));
-						rt.addValue("vX2", E.getV().get(0, 2));
-						rt.addValue("vY2", E.getV().get(1, 2));
-						rt.addValue("vZ2", E.getV().get(2, 2));
+						SharedTable.add(imp.getTitle(),"vX1", E.getV().get(0, 1));
+						SharedTable.add(imp.getTitle(),"vY1", E.getV().get(1, 1));
+						SharedTable.add(imp.getTitle(),"vZ1", E.getV().get(2, 1));
+						SharedTable.add(imp.getTitle(),"vX2", E.getV().get(0, 2));
+						SharedTable.add(imp.getTitle(),"vY2", E.getV().get(1, 2));
+						SharedTable.add(imp.getTitle(),"vZ2", E.getV().get(2, 2));
 					}
 				}
 				if (doSkeletons) {
@@ -353,18 +362,18 @@ public class ParticleCounter implements PlugIn, DialogListener {
 					    branchesLength = skeletonResults[i].getAverageBranchLength()[0]
 					    		* nBranches;
 					}
-					rt.addValue("n Branches", nBranches);
-					rt.addValue("Branches length ("+units+")", branchesLength);
+					SharedTable.add(imp.getTitle(),"n Branches", nBranches);
+					SharedTable.add(imp.getTitle(),"Branches length ("+units+")", branchesLength);
 				}
 				if (doEulerCharacters) {
-					rt.addValue("Euler (χ)", eulerCharacters[i][0]);
-					rt.addValue("Holes (β1)", eulerCharacters[i][1]);
-					rt.addValue("Cavities (β2)", eulerCharacters[i][2]);
+					SharedTable.add(imp.getTitle(),"Euler (χ)", eulerCharacters[i][0]);
+					SharedTable.add(imp.getTitle(),"Holes (β1)", eulerCharacters[i][1]);
+					SharedTable.add(imp.getTitle(),"Cavities (β2)", eulerCharacters[i][2]);
 				}
 				if (doThickness) {
-					rt.addValue("Thickness (" + units + ")", thick[i][0]);
-					rt.addValue("SD Thickness (" + units + ")", thick[i][1]);
-					rt.addValue("Max Thickness (" + units + ")", thick[i][2]);
+					SharedTable.add(imp.getTitle(),"Thickness (" + units + ")", thick[i][0]);
+					SharedTable.add(imp.getTitle(),"SD Thickness (" + units + ")", thick[i][1]);
+					SharedTable.add(imp.getTitle(),"Max Thickness (" + units + ")", thick[i][2]);
 				}
 				if (doEllipsoids) {
 					final double[] rad;
@@ -380,25 +389,24 @@ public class ParticleCounter implements PlugIn, DialogListener {
 						rad = (double[]) el[1];
 						unitV = (double[][]) el[2];
 					}
-					rt.addValue("Major radius (" + units + ")", rad[0]);
-					rt.addValue("Int. radius (" + units + ")", rad[1]);
-					rt.addValue("Minor radius (" + units + ")", rad[2]);
+					SharedTable.add(imp.getTitle(),"Major radius (" + units + ")", rad[0]);
+					SharedTable.add(imp.getTitle(),"Int. radius (" + units + ")", rad[1]);
+					SharedTable.add(imp.getTitle(),"Minor radius (" + units + ")", rad[2]);
 					if (doVerboseUnitVectors) {
-						rt.addValue("V00", unitV[0][0]);
-						rt.addValue("V01", unitV[0][1]);
-						rt.addValue("V02", unitV[0][2]);
-						rt.addValue("V10", unitV[1][0]);
-						rt.addValue("V11", unitV[1][1]);
-						rt.addValue("V12", unitV[1][2]);
-						rt.addValue("V20", unitV[2][0]);
-						rt.addValue("V21", unitV[2][1]);
-						rt.addValue("V22", unitV[2][2]);
+						SharedTable.add(imp.getTitle(),"V00", unitV[0][0]);
+						SharedTable.add(imp.getTitle(),"V01", unitV[0][1]);
+						SharedTable.add(imp.getTitle(),"V02", unitV[0][2]);
+						SharedTable.add(imp.getTitle(),"V10", unitV[1][0]);
+						SharedTable.add(imp.getTitle(),"V11", unitV[1][1]);
+						SharedTable.add(imp.getTitle(),"V12", unitV[1][2]);
+						SharedTable.add(imp.getTitle(),"V20", unitV[2][0]);
+						SharedTable.add(imp.getTitle(),"V21", unitV[2][1]);
+						SharedTable.add(imp.getTitle(),"V22", unitV[2][2]);
 					}
 				}
-				rt.updateResults();
 			}
 		}
-		rt.show("Results");
+		resultsTable = SharedTable.getTable();
 
 		// Show resulting image stacks
 		if (doParticleImage) {
