@@ -110,6 +110,12 @@
             <artifactId>bonej-utilities</artifactId>
             <version>${project.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>bonej-plugins</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- ImageJ dependencies -->
         <dependency>
