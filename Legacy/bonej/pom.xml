@@ -105,6 +105,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.bonej</groupId>
+            <artifactId>bonej-utilities</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- ImageJ dependencies -->
         <dependency>
             <groupId>net.imagej</groupId>
