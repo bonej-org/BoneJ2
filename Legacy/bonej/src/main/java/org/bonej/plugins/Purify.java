@@ -40,7 +40,11 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.GenericDialog;
-import ij.measure.ResultsTable;
+
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.BoneJCommand;
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 import ij.plugin.PlugIn;
 
 /**
@@ -66,8 +70,17 @@ import ij.plugin.PlugIn;
  * @author Michael Doube
  * @version 1.0
  */
-public class Purify implements PlugIn {
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Purify")
+public class Purify extends BoneJCommand implements PlugIn {
 
+	/**
+	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 */
+	@Override
+	public void run() {
+		run("");
+	}
+	
 	@Override
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
@@ -108,15 +121,12 @@ public class Purify implements PlugIn {
 	 * @param duration time elapsed in purifying.
 	 * @param imp the purified image.
 	 */
-	private static void showResults(final double duration, final ImagePlus imp)
+	private void showResults(final double duration, final ImagePlus imp)
 	{
-		final ResultsTable rt = ResultsTable.getResultsTable();
-		rt.incrementCounter();
-		rt.addLabel(imp.getTitle());
-		rt.addValue("Threads", Runtime.getRuntime().availableProcessors());
-		rt.addValue("Slices", imp.getImageStackSize());
-		rt.addValue("Duration (s)", duration);
-		rt.show("Results");
+		SharedTable.add(imp.getTitle(), "Purify Threads", Runtime.getRuntime().availableProcessors());
+		SharedTable.add(imp.getTitle(), "Slices", imp.getImageStackSize());
+		SharedTable.add(imp.getTitle(), "Duration (s)", duration);
+		resultsTable = SharedTable.getTable();
 	}
 
 	/**
