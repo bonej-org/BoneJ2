@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
-//import org.bonej.util.ResultInserter;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
 import org.scijava.command.Command;
