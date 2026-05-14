@@ -43,10 +43,13 @@ import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.MatrixUtils;
 import org.bonej.util.Multithreader;
-import org.bonej.util.ResultInserter;
 import org.bonej.util.ThresholdGuesser;
 import org.jogamp.vecmath.Color3f;
 import org.jogamp.vecmath.Point3f;
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.BoneJCommand;
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
@@ -71,7 +74,8 @@ import ij3d.Image3DUniverse;
  *
  * @author Michael Doube
  */
-public class Moments implements PlugIn, DialogListener {
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Moments of Inertia")
+public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 
 	private boolean fieldUpdated;
 	private Calibration cal;
@@ -110,6 +114,14 @@ public class Moments implements PlugIn, DialogListener {
 	// conversion coefficient from mm^5 to kg.m² = 1.8*10^-12
 	// double cc = 1.8*Math.pow(10, -12);
 
+	/**
+	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 */
+	@Override
+	public void run() {
+		run("");
+	}
+	
 	@Override
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
@@ -187,33 +199,32 @@ public class Moments implements PlugIn, DialogListener {
 		final double[] moments = (double[]) momentResults[1];
 
 		final String units = imp.getCalibration().getUnits();
-		final ResultInserter ri = ResultInserter.getInstance();
-		ri.setResultInRow(imp, "Xc (" + units + ")", centroid[0]);
-		ri.setResultInRow(imp, "Yc (" + units + ")", centroid[1]);
-		ri.setResultInRow(imp, "Zc (" + units + ")", centroid[2]);
-		ri.setResultInRow(imp, "Vol (" + units + "³)", moments[0]);
-		ri.setResultInRow(imp, "Mass (g)", moments[1]);
-		ri.setResultInRow(imp, "Icxx (kg.m²)", moments[2]);
-		ri.setResultInRow(imp, "Icyy (kg.m²)", moments[3]);
-		ri.setResultInRow(imp, "Iczz (kg.m²)", moments[4]);
-		ri.setResultInRow(imp, "Icxy (kg.m²)", moments[5]);
-		ri.setResultInRow(imp, "Icxz (kg.m²)", moments[6]);
-		ri.setResultInRow(imp, "Icyz (kg.m²)", moments[7]);
-		ri.setResultInRow(imp, "I1 (kg.m²)", E.getD().get(2, 2));
-		ri.setResultInRow(imp, "I2 (kg.m²)", E.getD().get(1, 1));
-		ri.setResultInRow(imp, "I3 (kg.m²)", E.getD().get(0, 0));
+		SharedTable.add(imp.getTitle(), "Xc (" + units + ")", centroid[0]);
+		SharedTable.add(imp.getTitle(), "Yc (" + units + ")", centroid[1]);
+		SharedTable.add(imp.getTitle(), "Zc (" + units + ")", centroid[2]);
+		SharedTable.add(imp.getTitle(), "Vol (" + units + "³)", moments[0]);
+		SharedTable.add(imp.getTitle(), "Mass (g)", moments[1]);
+		SharedTable.add(imp.getTitle(), "Icxx (kg.m²)", moments[2]);
+		SharedTable.add(imp.getTitle(), "Icyy (kg.m²)", moments[3]);
+		SharedTable.add(imp.getTitle(), "Iczz (kg.m²)", moments[4]);
+		SharedTable.add(imp.getTitle(), "Icxy (kg.m²)", moments[5]);
+		SharedTable.add(imp.getTitle(), "Icxz (kg.m²)", moments[6]);
+		SharedTable.add(imp.getTitle(), "Icyz (kg.m²)", moments[7]);
+		SharedTable.add(imp.getTitle(), "I1 (kg.m²)", E.getD().get(2, 2));
+		SharedTable.add(imp.getTitle(), "I2 (kg.m²)", E.getD().get(1, 1));
+		SharedTable.add(imp.getTitle(), "I3 (kg.m²)", E.getD().get(0, 0));
 		if (doVerboseUnitVectors) {
-			ri.setResultInRow(imp, "vX0", E.getV().get(0, 0));
-			ri.setResultInRow(imp, "vY0", E.getV().get(1, 0));
-			ri.setResultInRow(imp, "vZ0", E.getV().get(2, 0));
-			ri.setResultInRow(imp, "vX1", E.getV().get(0, 1));
-			ri.setResultInRow(imp, "vY1", E.getV().get(1, 1));
-			ri.setResultInRow(imp, "vZ1", E.getV().get(2, 1));
-			ri.setResultInRow(imp, "vX2", E.getV().get(0, 2));
-			ri.setResultInRow(imp, "vY2", E.getV().get(1, 2));
-			ri.setResultInRow(imp, "vZ2", E.getV().get(2, 2));
+			SharedTable.add(imp.getTitle(), "vX0", E.getV().get(0, 0));
+			SharedTable.add(imp.getTitle(), "vY0", E.getV().get(1, 0));
+			SharedTable.add(imp.getTitle(), "vZ0", E.getV().get(2, 0));
+			SharedTable.add(imp.getTitle(), "vX1", E.getV().get(0, 1));
+			SharedTable.add(imp.getTitle(), "vY1", E.getV().get(1, 1));
+			SharedTable.add(imp.getTitle(), "vZ1", E.getV().get(2, 1));
+			SharedTable.add(imp.getTitle(), "vX2", E.getV().get(0, 2));
+			SharedTable.add(imp.getTitle(), "vY2", E.getV().get(1, 2));
+			SharedTable.add(imp.getTitle(), "vZ2", E.getV().get(2, 2));
 		}
-		ri.updateTable();
+		resultsTable = SharedTable.getTable();
 
 		if (doAlign) alignToPrincipalAxes(imp, E.getV(), centroid, startSlice,
 			endSlice, min, max, doAxes).show();

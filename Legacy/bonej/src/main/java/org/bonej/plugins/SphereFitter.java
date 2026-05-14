@@ -39,7 +39,10 @@ import java.util.List;
 import org.bonej.geometry.FitSphere;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
-import org.bonej.util.ResultInserter;
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.BoneJCommand;
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -61,7 +64,8 @@ import ij.process.ImageProcessor;
  *
  * @author Michael Doube and Angelo Tardugno
  */
-public class SphereFitter implements PlugIn, DialogListener {
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fit Sphere")
+public class SphereFitter extends BoneJCommand implements PlugIn, DialogListener {
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
@@ -80,6 +84,14 @@ public class SphereFitter implements PlugIn, DialogListener {
 		return true;
 	}
 
+	/**
+	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 */
+	@Override
+	public void run() {
+		run("");
+	}
+	
 	@Override
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
@@ -152,12 +164,11 @@ public class SphereFitter implements PlugIn, DialogListener {
 		}
 
 		final String units = imp.getCalibration().getUnits();
-		final ResultInserter ri = ResultInserter.getInstance();
-		ri.setResultInRow(imp, "X centroid (" + units + ")", sphereDim[0]);
-		ri.setResultInRow(imp, "Y centroid (" + units + ")", sphereDim[1]);
-		ri.setResultInRow(imp, "Z centroid (" + units + ")", sphereDim[2]);
-		ri.setResultInRow(imp, "Radius (" + units + ")", sphereDim[3]);
-		ri.updateTable();
+		SharedTable.add(imp.getTitle(), "X centroid (" + units + ")", sphereDim[0]);
+		SharedTable.add(imp.getTitle(), "Y centroid (" + units + ")", sphereDim[1]);
+		SharedTable.add(imp.getTitle(), "Z centroid (" + units + ")", sphereDim[2]);
+		SharedTable.add(imp.getTitle(), "Radius (" + units + ")", sphereDim[3]);
+		resultsTable = SharedTable.getTable();
 
 		if (doCopy) copySphere(imp, padding, cropFactor, sphereDim).show();
 		if (doInnerCube) copyInnerCube(imp, cropFactor, sphereDim).show();

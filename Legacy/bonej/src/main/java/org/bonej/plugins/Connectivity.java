@@ -34,7 +34,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
-import org.bonej.util.ResultInserter;
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.BoneJCommand;
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -98,7 +101,8 @@ import ij.plugin.PlugIn;
  *      </p>
  *
  */
-public class Connectivity implements PlugIn {
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity>Connectivity")
+public class Connectivity extends BoneJCommand implements PlugIn {
 
 	private final static int[] EULER_LUT = fillEulerLUT();
 	
@@ -109,8 +113,19 @@ public class Connectivity implements PlugIn {
 	private int height = 0;
 
 	/** working image depth */
-	private int depth = 0; 
+	private int depth = 0;
 
+	/**
+	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 */
+	@Override
+	public void run() {
+		run("");
+	}
+
+	/**
+	 * Legacy ImageJ1 plugin
+	 */
 	@Override
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
@@ -132,12 +147,11 @@ public class Connectivity implements PlugIn {
 					+ "particles or enclosed cavities.\n\n" + "Try running Purify prior to Connectivity.");
 		}
 
-		final ResultInserter ri = ResultInserter.getInstance();
-		ri.setResultInRow(imp, "Euler ch.", sumEuler);
-		ri.setResultInRow(imp, "Δ(χ)", deltaChi);
-		ri.setResultInRow(imp, "Connectivity", connectivity);
-		ri.setResultInRow(imp, "Conn.D (" + imp.getCalibration().getUnit() + "^-3)", connDensity);
-		ri.updateTable();
+		SharedTable.add(imp.getTitle(), "Euler ch.", sumEuler);
+		SharedTable.add(imp.getTitle(), "Δ(χ)", deltaChi);
+		SharedTable.add(imp.getTitle(), "Connectivity", connectivity);
+		SharedTable.add(imp.getTitle(), "Conn.D (" + imp.getCalibration().getUnit() + "^-3)", connDensity);
+		resultsTable = SharedTable.getTable();
 		return;
 	}
 

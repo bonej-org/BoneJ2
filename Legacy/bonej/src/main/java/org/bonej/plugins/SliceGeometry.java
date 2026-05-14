@@ -43,8 +43,12 @@ import org.bonej.util.BoneList;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.ThresholdGuesser;
+import org.bonej.utilities.SharedTable;
+import org.bonej.wrapperPlugins.BoneJCommand;
 import org.jogamp.vecmath.Color3f;
 import org.jogamp.vecmath.Point3f;
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 
 import customnode.CustomPointMesh;
 import ij.IJ;
@@ -56,7 +60,6 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.gui.Wand;
 import ij.measure.Calibration;
-import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
 import ij.process.ByteProcessor;
@@ -73,8 +76,8 @@ import ij3d.Image3DUniverse;
  *
  * @author Michael Doube
  */
-
-public class SliceGeometry implements PlugIn, DialogListener {
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Slice Geometry")
+public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListener {
 
 	private Calibration cal;
 	private int al;
@@ -197,6 +200,14 @@ public class SliceGeometry implements PlugIn, DialogListener {
 		return true;
 	}
 
+	/**
+	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 */
+	@Override
+	public void run() {
+		run("");
+	}
+	
 	@Override
 	public void run(final String arg) {
 		final ImagePlus imp = IJ.getImage();
@@ -319,43 +330,40 @@ public class SliceGeometry implements PlugIn, DialogListener {
 
 		// TODO locate centroids of multiple sections in a single plane
 
-		final ResultsTable rt = ResultsTable.getResultsTable();
-		if (clearResults) rt.reset();
+		if (clearResults) SharedTable.reset();
 
 		final String title = imp.getTitle();
 		for (int s = startSlice; s <= endSlice; s++) {
-			rt.incrementCounter();
-			rt.addLabel(title);
-			rt.addValue("Bone Code", boneID);
-			rt.addValue("Slice", s);
-			rt.addValue("CSA (" + units + "²)", cortArea[s]);
-			rt.addValue("X cent. (" + units + ")", sliceCentroids[0][s]);
-			rt.addValue("Y cent. (" + units + ")", sliceCentroids[1][s]);
-			rt.addValue("Density", meanDensity[s]);
-			rt.addValue("wX cent. (" + units + ")", weightedCentroids[0][s]);
-			rt.addValue("wY cent. (" + units + ")", weightedCentroids[1][s]);
-			rt.addValue("Theta (rad)", theta[s]);
-			rt.addValue("R1 (" + units + ")", maxRadMax[s]);
-			rt.addValue("R2 (" + units + ")", maxRadMin[s]);
-			rt.addValue("Imin (" + units + "^4)", Imin[s]);
-			rt.addValue("Imax (" + units + "^4)", Imax[s]);
-			rt.addValue("Ipm (" + units + "^4)", Ipm[s]);
-			rt.addValue("Zmin (" + units + "³)", Zmin[s]);
-			rt.addValue("Zmax (" + units + "³)", Zmax[s]);
-			rt.addValue("Zpol (" + units + "³)", Zpol[s]);
-			rt.addValue("Feret Min (" + units + ")", feretMin[s]);
-			rt.addValue("Feret Max (" + units + ")", feretMax[s]);
-			rt.addValue("Feret Angle (rad)", feretAngle[s]);
-			rt.addValue("Perimeter (" + units + ")", perimeter[s]);
+			SharedTable.add(title, "Bone Code", boneID);
+			SharedTable.add(title, "Slice", s);
+			SharedTable.add(title, "CSA (" + units + "²)", cortArea[s]);
+			SharedTable.add(title, "X cent. (" + units + ")", sliceCentroids[0][s]);
+			SharedTable.add(title, "Y cent. (" + units + ")", sliceCentroids[1][s]);
+			SharedTable.add(title, "Density", meanDensity[s]);
+			SharedTable.add(title, "wX cent. (" + units + ")", weightedCentroids[0][s]);
+			SharedTable.add(title, "wY cent. (" + units + ")", weightedCentroids[1][s]);
+			SharedTable.add(title, "Theta (rad)", theta[s]);
+			SharedTable.add(title, "R1 (" + units + ")", maxRadMax[s]);
+			SharedTable.add(title, "R2 (" + units + ")", maxRadMin[s]);
+			SharedTable.add(title, "Imin (" + units + "^4)", Imin[s]);
+			SharedTable.add(title, "Imax (" + units + "^4)", Imax[s]);
+			SharedTable.add(title, "Ipm (" + units + "^4)", Ipm[s]);
+			SharedTable.add(title, "Zmin (" + units + "³)", Zmin[s]);
+			SharedTable.add(title, "Zmax (" + units + "³)", Zmax[s]);
+			SharedTable.add(title, "Zpol (" + units + "³)", Zpol[s]);
+			SharedTable.add(title, "Feret Min (" + units + ")", feretMin[s]);
+			SharedTable.add(title, "Feret Max (" + units + ")", feretMax[s]);
+			SharedTable.add(title, "Feret Angle (rad)", feretAngle[s]);
+			SharedTable.add(title, "Perimeter (" + units + ")", perimeter[s]);
 			if (doThickness3D) {
-				rt.addValue("Max Thick 3D (" + units + ")", maxCortThick3D[s]);
-				rt.addValue("Mean Thick 3D (" + units + ")", meanCortThick3D[s]);
-				rt.addValue("SD Thick 3D (" + units + ")", stdevCortThick3D[s]);
+				SharedTable.add(title, "Max Thick 3D (" + units + ")", maxCortThick3D[s]);
+				SharedTable.add(title, "Mean Thick 3D (" + units + ")", meanCortThick3D[s]);
+				SharedTable.add(title, "SD Thick 3D (" + units + ")", stdevCortThick3D[s]);
 			}
 			if (doThickness2D) {
-				rt.addValue("Max Thick 2D (" + units + ")", maxCortThick2D[s]);
-				rt.addValue("Mean Thick 2D (" + units + ")", meanCortThick2D[s]);
-				rt.addValue("SD Thick 2D (" + units + ")", stdevCortThick2D[s]);
+				SharedTable.add(title, "Max Thick 2D (" + units + ")", maxCortThick2D[s]);
+				SharedTable.add(title, "Mean Thick 2D (" + units + ")", meanCortThick2D[s]);
+				SharedTable.add(title, "SD Thick 2D (" + units + ")", stdevCortThick2D[s]);
 			}
 			if (!doOriented || orienteer == null) {
 				continue;
@@ -364,20 +372,20 @@ public class SliceGeometry implements PlugIn, DialogListener {
 			if (dirs == null) {
 				continue;
 			}
-			rt.addValue(dirs[0] + " (rad)", orienteer.getOrientation(imp, dirs[0]));
-			rt.addValue(dirs[2] + " (rad)", orienteer.getOrientation(imp, dirs[2]));
-			rt.addValue("I" + dirs[0] + dirs[1] + "(" + units + "^4)", I1[s]);
-			rt.addValue("I" + dirs[2] + dirs[3] + "(" + units + "^4)", I2[s]);
-			rt.addValue("Z" + dirs[0] + dirs[1] + "(" + units + "³)", Z1[s]);
-			rt.addValue("Z" + dirs[2] + dirs[3] + "(" + units + "³)", Z2[s]);
-			rt.addValue("R" + dirs[0] + dirs[1] + "(" + units + ")", maxRad2[s]);
-			rt.addValue("R" + dirs[2] + dirs[3] + "(" + units + ")", maxRad1[s]);
-			rt.addValue("D" + dirs[0] + dirs[1] + "(" + units + ")",
+			SharedTable.add(title, dirs[0] + " (rad)", orienteer.getOrientation(imp, dirs[0]));
+			SharedTable.add(title, dirs[2] + " (rad)", orienteer.getOrientation(imp, dirs[2]));
+			SharedTable.add(title, "I" + dirs[0] + dirs[1] + "(" + units + "^4)", I1[s]);
+			SharedTable.add(title, "I" + dirs[2] + dirs[3] + "(" + units + "^4)", I2[s]);
+			SharedTable.add(title, "Z" + dirs[0] + dirs[1] + "(" + units + "³)", Z1[s]);
+			SharedTable.add(title, "Z" + dirs[2] + dirs[3] + "(" + units + "³)", Z2[s]);
+			SharedTable.add(title, "R" + dirs[0] + dirs[1] + "(" + units + ")", maxRad2[s]);
+			SharedTable.add(title, "R" + dirs[2] + dirs[3] + "(" + units + ")", maxRad1[s]);
+			SharedTable.add(title, "D" + dirs[0] + dirs[1] + "(" + units + ")",
 					principalDiameter[s]);
-			rt.addValue("D" + dirs[2] + dirs[3] + "(" + units + ")",
+			SharedTable.add(title, "D" + dirs[2] + dirs[3] + "(" + units + ")",
 					secondaryDiameter[s]);
 		}
-		rt.show("Results");
+		resultsTable = SharedTable.getTable();
 
 		if (doAxes || doCentroids) {
 			if (!doCopy) {
