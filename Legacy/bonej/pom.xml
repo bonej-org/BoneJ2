@@ -122,7 +122,12 @@
             <groupId>net.imagej</groupId>
             <artifactId>ij</artifactId>
         </dependency>
-
+        
+        <dependency>
+          <groupId>net.imagej</groupId>
+          <artifactId>imagej</artifactId>
+        </dependency>
+        
         <!-- Fiji dependencies -->
         <dependency>
             <groupId>sc.fiji</groupId>
