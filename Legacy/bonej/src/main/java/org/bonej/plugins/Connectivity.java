@@ -105,7 +105,7 @@ import net.imagej.Dataset;
  *      </p>
  *
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity>Connectivity")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity")
 public class Connectivity extends BoneJCommand implements Command, PlugIn {
 
 	private final static int[] EULER_LUT = fillEulerLUT();
