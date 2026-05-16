@@ -37,6 +37,9 @@ import org.bonej.util.Multithreader;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ij.IJ;
@@ -45,6 +48,7 @@ import ij.ImageStack;
 import ij.macro.Interpreter;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
+import net.imagej.Dataset;
 
 /**
  * <p>
@@ -102,7 +106,7 @@ import ij.plugin.PlugIn;
  *
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity>Connectivity")
-public class Connectivity extends BoneJCommand implements PlugIn {
+public class Connectivity extends BoneJCommand implements Command, PlugIn {
 
 	private final static int[] EULER_LUT = fillEulerLUT();
 	
@@ -115,12 +119,32 @@ public class Connectivity extends BoneJCommand implements PlugIn {
 	/** working image depth */
 	private int depth = 0;
 
+	/* IJ2 parameters */
+	@Parameter
+    private Dataset inputDataset;
+	
+	@Parameter
+	private ConvertService convertService;
+	
+	@Parameter
+	private LogService logService;
+	
 	/**
-	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 * Modern scijava Plugin entry point.
 	 */
 	@Override
 	public void run() {
-		run("");
+        ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+        if (!ImageCheck.isBinary(imp)) {
+        	String errorMsg = "Connectivity requires a binary image. " +
+        			"The provided image (" + imp.getTitle() + ") is not binary.";
+
+        	// Log to console/file (safe in headless mode)
+        	logService.error(errorMsg);
+
+        	return;
+		}
+        process(imp);
 	}
 
 	/**
@@ -133,7 +157,10 @@ public class Connectivity extends BoneJCommand implements PlugIn {
 			IJ.error("Connectivity requires a binary image.");
 			return;
 		}
-
+		process(imp);
+	}
+	
+	private void process(ImagePlus imp) {
 		final double sumEuler = getSumEuler(imp);
 
 		final double deltaChi = getDeltaChi(imp, sumEuler);
