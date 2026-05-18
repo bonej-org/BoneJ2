@@ -135,6 +135,12 @@ public class Connectivity extends BoneJCommand implements Command, PlugIn {
 	@Override
 	public void run() {
         ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+        
+        if (imp == null) {
+            logService.error("Connectivity: Failed to convert Dataset to ImagePlus.");
+            return;
+        }
+        
         if (!ImageCheck.isBinary(imp)) {
         	String errorMsg = "Connectivity requires a binary image. " +
         			"The provided image (" + imp.getTitle() + ") is not binary.";
