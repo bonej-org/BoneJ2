@@ -43,9 +43,18 @@ import ij.gui.GenericDialog;
 
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
+import org.scijava.display.DisplayService;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
+
 import ij.plugin.PlugIn;
+import net.imagej.Dataset;
+import net.imagej.DatasetService;
 
 /**
  * <p>
@@ -67,18 +76,148 @@ import ij.plugin.PlugIn;
  * /8756-3282(93)90245-6</a>
  * </p>
  *
+ * * <p>
+ * Python Usage Example (PyImageJ with SharedTable):
+ * </p>
+ * <pre>
+ * from imagej import ImageJ
+ *
+ * # Initialize ImageJ2
+ * ij = ImageJ()
+ *
+ * # Open a binary image
+ * dataset = ij.io().open("path/to/binary_image.tif")
+ *
+ * # Run the Purify plugin with performance logging enabled
+ * purify_command = ij.command().run(
+ *     "org.bonej.plugins.Purify",
+ *     {
+ *         "inputDataset": dataset,
+ *         "makeCopy": True,
+ *         "showPerformance": True  # Enable performance logging
+ *     }
+ * )
+ *
+ * # Access the Results table (SharedTable) from BoneJ
+ * # Note: SharedTable is a static utility in BoneJ, so we access it via the plugin's context.
+ * # In PyImageJ, you can retrieve the Results table as a Python dictionary.
+ * results_table = purify_command.getContext().getService("org.bonej.utilities.SharedTable").getTable()
+ *
+ * # Convert the Results table to a Python-friendly format (e.g., a dictionary)
+ * # The SharedTable in BoneJ is typically a SciJava Table object, which can be converted to a list of rows.
+ * # Here's how to extract the performance metrics for the purified image:
+ * results_dict = {}
+ * for row in results_table:
+ *     image_title = row[0]  # First column: image title (e.g., "image_purified")
+ *     metric_name = row[1]  # Second column: metric name (e.g., "Purify Threads")
+ *     metric_value = row[2]  # Third column: metric value (e.g., 8)
+ *     if image_title not in results_dict:
+ *         results_dict[image_title] = {}
+ *     results_dict[image_title][metric_name] = metric_value
+ *
+ * # Print the performance metrics for the purified image
+ * purified_title = dataset.getName() + "_purified"  # Match the title used in the plugin
+ * if purified_title in results_dict:
+ *     print(f"Performance metrics for {purified_title}:")
+ *     for metric, value in results_dict[purified_title].items():
+ *         print(f"  {metric}: {value}")
+ * else:
+ *     print(f"No metrics found for {purified_title}")
+ * </pre>
+ *
  * @author Michael Doube
- * @version 1.0
+ * @version 2.0
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Purify")
-public class Purify extends BoneJCommand implements PlugIn {
+public class Purify extends BoneJCommand implements Command, PlugIn {
 
+	/* IJ2 parameters */
+	@Parameter(type = ItemIO.BOTH)
+    private Dataset inputDataset;
+	
+	@Parameter(type = ItemIO.OUTPUT, required = false)
+	private Dataset outputDataset;
+	
+	@Parameter
+	private ConvertService convertService;
+	
+	@Parameter
+	private DatasetService datasetService;
+	
+	@Parameter
+	private UIService uiService;
+	
+	@Parameter
+	private DisplayService displayService;
+	
+	@Parameter
+	private LogService logService;
+	
+	@Parameter(label = "Performance Log",
+			   description = "Show performance metrics in the Results table")
+	private boolean showPerformance = false;
+	
+	@Parameter(label = "Make copy",
+			   description = "Return the purified image as a new Dataset")
+	private boolean makeCopy = true;
+	
 	/**
-	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 * Modern scijava Plugin entry point.
 	 */
 	@Override
 	public void run() {
-		run("");
+        ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+        
+        if (imp == null) {
+            logService.error("Purify: Failed to convert Dataset to ImagePlus.");
+            return;
+        }
+        
+        if (!ImageCheck.isBinary(imp)) {
+        	String errorMsg = "Connectivity requires a binary image. " +
+        			"The provided image (" + imp.getTitle() + ") is not binary.";
+
+        	// Log to console/file (safe in headless mode)
+        	logService.error(errorMsg);
+
+        	return;
+		}
+        
+        final long startTime = System.currentTimeMillis();
+        ImagePlus purified = purify(imp);
+        
+        if (purified != null) {
+            
+        	if (makeCopy) {
+        		//create a new Dataset containing the purified image data
+        		outputDataset = convertService.convert(purified, Dataset.class);
+        		purified.close();
+            	if (outputDataset == null) {
+            		throw new RuntimeException("Failed to convert purified ImagePlus to Dataset");
+            	}
+            	
+        		//if there is a UI, display the dataset
+        		if (uiService != null && uiService.isVisible())
+        			uiService.show(outputDataset);
+            	
+        	} else {
+        		//replace the input image with the purified image and update the window title
+        		convertService.convert(purified, Dataset.class).copyInto(inputDataset);
+        		inputDataset.setName(purified.getTitle());
+                if (displayService != null) {
+                    displayService.getDisplays(inputDataset).forEach(display -> {
+                        display.setName(purified.getTitle());
+                    });
+                }
+        	}
+        	
+            if (showPerformance) {
+                final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
+                showResults(duration, purified);
+            }
+        } else {
+        	logService.error("purified ImagePlus was null");
+        }
 	}
 	
 	@Override
@@ -184,7 +323,7 @@ public class Purify extends BoneJCommand implements PlugIn {
 		for (int z = 0; z < nSlices; z++) {
 			stack.addSlice(imp.getStack().getSliceLabel(z + 1), workArray[z]);
 		}
-		final ImagePlus purified = new ImagePlus("Purified", stack);
+		final ImagePlus purified = new ImagePlus(imp.getTitle()+"_purified", stack);
 		purified.setCalibration(imp.getCalibration());
 		IJ.showStatus("Image Purified");
 		IJ.showProgress(1.0);
