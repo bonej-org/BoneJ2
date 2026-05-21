@@ -86,11 +86,11 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 		final Checkbox vvvBox = (Checkbox) checkboxes.get(9);
 		vvvBox.setEnabled(elBox.getState() || momBox.getState());
 		// link show stack 3d to volume resampling
-		final Checkbox box = (Checkbox) checkboxes.get(18);
+		final Checkbox box = (Checkbox) checkboxes.get(21);
 		final TextField numb = (TextField) numbers.get(4);
 		numb.setEnabled(box.getState());
 		// link show surfaces, gradient choice and split value
-		final Checkbox surfbox = (Checkbox) checkboxes.get(14);
+		final Checkbox surfbox = (Checkbox) checkboxes.get(15);
 		final Choice col = (Choice) choices.get(0);
 		final TextField split = (TextField) numbers.get(3);
 		col.setEnabled(surfbox.getState());
