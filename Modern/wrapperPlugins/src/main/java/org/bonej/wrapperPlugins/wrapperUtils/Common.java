@@ -60,6 +60,9 @@ import ij.process.LUT;
  * @author Michael Doube
  */
 public final class Common {
+	
+	/** Number of colour bins for the LUT */
+	private static final int COLOUR_BYTES = 256;
 
 	/**
 	 * Generates the 'fire' look-up table (LUT) and returns it as an IJ1 LUT
@@ -68,11 +71,21 @@ public final class Common {
 	 * @return fire LUT
 	 */
 	public static LUT makeFire() {
-		final int colourBytes = 256;
 		final byte[][] colors = ColorTables.FIRE.getValues();
-		return new LUT(8, colourBytes, colors[0], colors[1], colors[2]);
+		return new LUT(8, COLOUR_BYTES, colors[0], colors[1], colors[2]);
 	}
 
+	/**
+	 * Generates the '3-3-2 RGB' look-up table (LUT) and returns it as an IJ1 LUT
+	 * object
+	 *
+	 * @return 3-3-2 RGB LUT
+	 */
+	public static LUT make332RGB() {
+		final byte[][] colors = ColorTables.RGB332.getValues();
+		return new LUT(8, COLOUR_BYTES, colors[0], colors[1], colors[2]);
+	}
+	
 	/**
 	 * Converts the {@link ImgPlus} to a new ImgPlus with {@link BitType}
 	 * elements.
