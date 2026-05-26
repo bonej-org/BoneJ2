@@ -174,7 +174,7 @@ public class Purify extends BoneJCommand implements Command, PlugIn {
         }
         
         if (!ImageCheck.isBinary(imp)) {
-        	String errorMsg = "Connectivity requires a binary image. " +
+        	String errorMsg = "Purify requires a binary image. " +
         			"The provided image (" + imp.getTitle() + ") is not binary.";
 
         	// Log to console/file (safe in headless mode)
