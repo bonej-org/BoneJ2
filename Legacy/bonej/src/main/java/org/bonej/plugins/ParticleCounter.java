@@ -33,18 +33,29 @@ package org.bonej.plugins;
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.Choice;
+import java.awt.GraphicsEnvironment;
 import java.awt.TextField;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.bonej.menuWrappers.ThicknessHelper;
 import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.utilities.SharedTable;
+import org.bonej.utilities.Visualiser;
 import org.bonej.wrapperPlugins.BoneJCommand;
+import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.jogamp.vecmath.Point3f;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
+import org.scijava.display.DisplayService;
+import org.scijava.log.LogLevel;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
 
 import Jama.EigenvalueDecomposition;
 
@@ -55,6 +66,10 @@ import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import ij3d.Image3DUniverse;
+import net.imagej.Dataset;
+import net.imagej.DatasetService;
+import net.imagej.display.ColorTables;
+import net.imglib2.display.ColorTable;
 import sc.fiji.analyzeSkeleton.SkeletonResult;
 
 /**
@@ -67,9 +82,129 @@ import sc.fiji.analyzeSkeleton.SkeletonResult;
  *
  * @author Michael Doube
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Analyze>Particle Analyser")
-public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListener {
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Particle Analyser")
+public class ParticleCounter extends BoneJCommand implements Command, PlugIn, DialogListener {
 
+	/* IJ2 parameters */
+	@Parameter(type = ItemIO.INPUT)
+    private Dataset inputDataset;
+	
+	@Parameter(type = ItemIO.OUTPUT, required = false)
+	private Dataset thickDataset;
+	
+	@Parameter(type = ItemIO.OUTPUT, required = false)
+	private Dataset particleDataset;
+	
+	@Parameter(type = ItemIO.OUTPUT, required = false)
+	private Dataset sizeDataset;
+	
+	@Parameter(type = ItemIO.OUTPUT, required = false)
+	private Dataset ellipsoidDataset;
+	
+	@Parameter
+	private ConvertService convertService;
+	
+	@Parameter
+	private DatasetService datasetService;
+	
+	@Parameter
+	private UIService uiService;
+	
+	@Parameter
+	private DisplayService displayService;
+	
+	@Parameter
+	private LogService logService;
+	
+	@Parameter(label = "Exclude on sides")
+	private boolean doExclude = false;
+
+	@Parameter(label = "Surface area")
+	private boolean doSurfaceArea = true;
+
+	@Parameter(label = "Feret diameter")
+	private boolean doFeret = false;
+
+	@Parameter(label = "Enclosed volume")
+	private boolean doSurfaceVolume = true;
+
+	@Parameter(label = "Moments of inertia")
+	private boolean doMoments = true;
+
+	@Parameter(label = "Euler characteristic")
+	private boolean doEulerCharacters = true;
+
+	@Parameter(label = "Thickness")
+	private boolean doThickness = true;
+
+	@Parameter(label = "Mask thickness map")
+	private boolean doMask = false;
+
+	@Parameter(label = "Ellipsoids")
+	private boolean doEllipsoids = true;
+
+	@Parameter(label = "Record unit vectors")
+	private boolean doVerboseUnitVectors = false;
+
+	@Parameter(label = "Skeletons")
+	private boolean doSkeletons = false;
+
+	@Parameter(label = "Aligned boxes")
+	private boolean doAlignedBoxes = false;
+
+	@Parameter(label = "Minimum volume", style = "format:0.000", min = "0.0")
+	private double minVol = 0.0;
+
+	@Parameter(label = "Maximum volume", style = "format:0.000")
+	private double maxVol = Double.POSITIVE_INFINITY;
+
+	@Parameter(label = "Surface resampling", style = "spinner", min = "0")
+	private int surfaceResampling = 2;
+
+	// Graphical Results
+	@Parameter(label = "Show particle stack")
+	private boolean doParticleImage = true;
+
+	@Parameter(label = "Show size stack")
+	private boolean doParticleSizeImage = false;
+
+	@Parameter(label = "Show thickness stack")
+	private boolean doThickImage = false;
+	
+	@Parameter(label = "Draw ellipsoids")
+	private boolean doEllipsoidStack = false;
+
+	@Parameter(label = "Show surfaces (3D)")
+	private boolean doSurfaceImage = true;
+
+	@Parameter(label = "Show centroids (3D)")
+	private boolean doCentroidImage = true;
+
+	@Parameter(label = "Show axes (3D)")
+	private boolean doAxesImage = true;
+
+	@Parameter(label = "Show ellipsoids (3D)")
+	private boolean doEllipsoidImage = true;
+
+	@Parameter(label = "Show original stack (3D)")
+	private boolean do3DOriginal = true;
+
+	@Parameter(label = "Show aligned boxes (3D)")
+	private boolean doAlignedBoxesImage = false;
+
+	@Parameter(label = "Surface colours", choices = {"Gradient", "Split", "Orientation"})
+	private String surfaceColours = "Gradient";
+	 //for hybrid use
+	static final String[] COLOUR_CHOICES = {"Gradient", "Split", "Orientation"};
+	private int colourMode;
+
+	@Parameter(label = "Split value", style = "format:0.000", min = "0")
+	private double splitValue = 0.0;
+
+	@Parameter(label = "Volume resampling", style = "spinner", min = "0")
+	private int origResampling = 2;
+	
+	
 	/* (non-Javadoc)
 	 * @see ij.gui.DialogListener#dialogItemChanged(ij.gui.GenericDialog, java.awt.AWTEvent)
 	 */
@@ -100,11 +235,38 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 	}
 
 	/**
-	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 * Modern scijava Plugin entry point.
 	 */
 	@Override
 	public void run() {
-		run("");
+        ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+        
+        if (imp == null) {
+            logService.error("Particle Counter: Failed to convert Dataset to ImagePlus.");
+            return;
+        }
+        
+        if (!ImageCheck.isBinary(imp)) {
+        	String errorMsg = "Particle Counter requires a binary image. " +
+        			"The provided image (" + imp.getTitle() + ") is not binary.";
+
+        	// Log to console/file (safe in headless mode)
+        	logService.error(errorMsg);
+
+        	return;
+		}
+        
+        final long start = System.nanoTime();
+		ConnectedComponents connector = new ConnectedComponents();
+		final Object[] result = getParticles(connector, imp, minVol, maxVol,
+				ConnectedComponents.FORE, doExclude);
+		// calculate particle labelling time in ms
+		final long time = (System.nanoTime() - start) / 1000000;
+		logService.log(LogLevel.INFO, "Particle labelling finished in " + time + " ms");
+		
+		//do the analysis on the result
+		colourMode = Arrays.asList(COLOUR_CHOICES).indexOf(surfaceColours);
+        doAnalysis(imp, result);        
 	}
 	
 	/* (non-Javadoc)
@@ -180,7 +342,7 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 		labels2[9] = "Show_aligned_boxes (3D)";
 		defaultValues2[9] = false;
 		gd.addCheckboxGroup(5, 2, labels2, defaultValues2, headers2);
-		final String[] items = { "Gradient", "Split", "Orientation"};
+		final String[] items = COLOUR_CHOICES;
 		gd.addChoice("Surface colours", items, items[0]);
 		gd.addNumericField("Split value", 0, 3, 7, units + "³");
 		gd.addNumericField("Volume_resampling", 2, 0);
@@ -193,31 +355,31 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 		final double minVol = gd.getNextNumber();
 		final double maxVol = gd.getNextNumber();
 		final boolean doExclude = gd.getNextBoolean();
-		final boolean doSurfaceArea = gd.getNextBoolean();
-		final boolean doFeret = gd.getNextBoolean();
-		final boolean doSurfaceVolume = gd.getNextBoolean();
-		final int resampling = (int) Math.floor(gd.getNextNumber());
-		final boolean doMoments = gd.getNextBoolean();
-		final boolean doEulerCharacters = gd.getNextBoolean();
-		final boolean doThickness = gd.getNextBoolean();
-		final boolean doMask = gd.getNextBoolean();
-		final boolean doEllipsoids = gd.getNextBoolean();
-		final boolean doVerboseUnitVectors = gd.getNextBoolean();
-		final boolean doSkeletons = gd.getNextBoolean();
-		final boolean doAlignedBoxes = gd.getNextBoolean();
-		final boolean doParticleImage = gd.getNextBoolean();
-		final boolean doParticleSizeImage = gd.getNextBoolean();
-		final boolean doThickImage = gd.getNextBoolean();
-		final boolean doSurfaceImage = gd.getNextBoolean();
-		final int colourMode = gd.getNextChoiceIndex();
-		final double splitValue = gd.getNextNumber();
-		final boolean doCentroidImage = gd.getNextBoolean();
-		final boolean doAxesImage = gd.getNextBoolean();
-		final boolean doEllipsoidImage = gd.getNextBoolean();
-		final boolean do3DOriginal = gd.getNextBoolean();
-		final boolean doEllipsoidStack = gd.getNextBoolean();
-		final boolean doAlignedBoxesImage = gd.getNextBoolean();
-		final int origResampling = (int) Math.floor(gd.getNextNumber());
+		doSurfaceArea = gd.getNextBoolean();
+		doFeret = gd.getNextBoolean();
+		doSurfaceVolume = gd.getNextBoolean();
+		surfaceResampling = (int) Math.floor(gd.getNextNumber());
+		doMoments = gd.getNextBoolean();
+		doEulerCharacters = gd.getNextBoolean();
+		doThickness = gd.getNextBoolean();
+		doMask = gd.getNextBoolean();
+		doEllipsoids = gd.getNextBoolean();
+		doVerboseUnitVectors = gd.getNextBoolean();
+		doSkeletons = gd.getNextBoolean();
+		doAlignedBoxes = gd.getNextBoolean();
+		doParticleImage = gd.getNextBoolean();
+		doParticleSizeImage = gd.getNextBoolean();
+		doThickImage = gd.getNextBoolean();
+		doSurfaceImage = gd.getNextBoolean();
+		colourMode = gd.getNextChoiceIndex();
+		splitValue = gd.getNextNumber();
+		doCentroidImage = gd.getNextBoolean();
+		doAxesImage = gd.getNextBoolean();
+		doEllipsoidImage = gd.getNextBoolean();
+		do3DOriginal = gd.getNextBoolean();
+		doEllipsoidStack = gd.getNextBoolean();
+		doAlignedBoxesImage = gd.getNextBoolean();
+		origResampling = (int) Math.floor(gd.getNextNumber());
 
 		// get the particles and do the analysis
 		final long start = System.nanoTime();
@@ -227,6 +389,13 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 		// calculate particle labelling time in ms
 		final long time = (System.nanoTime() - start) / 1000000;
 		IJ.log("Particle labelling finished in " + time + " ms");
+		doAnalysis(imp, result);
+	}
+	
+	private void doAnalysis(ImagePlus imp, Object[] result) {
+		
+		//if inputDataset is present, we are in modern mode
+		final boolean isModernMode = (inputDataset != null);		
 		
 		//start of analysis
 		final int[][] particleLabels = (int[][]) result[1];
@@ -234,7 +403,7 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 		final int nParticles = particleSizes.length;
 		
 		if (nParticles > ConnectedComponents.MAX_FINAL_LABEL)
-			IJ.log("Number of particles ("+nParticles+") exceeds the accurate display range (2^23) of the 32-bit float particle image");
+			logService.warn("Number of particles ("+nParticles+") exceeds the accurate display range (2^23) of the 32-bit float particle image");
 
 		final double[] volumes = ParticleAnalysis.getVolumes(imp, particleSizes);
 		
@@ -258,7 +427,7 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 		if (doSurfaceArea || doSurfaceVolume || doSurfaceImage || doEllipsoids ||
 			doFeret || doEllipsoidStack)
 		{
-			surfacePoints = ParticleAnalysis.getSurfacePoints(imp, particleLabels, limits, resampling, nParticles);
+			surfacePoints = ParticleAnalysis.getSurfacePoints(imp, particleLabels, limits, surfaceResampling, nParticles);
 		}
 		// calculate dimensions
 		double[] surfaceAreas = new double[nParticles];
@@ -286,11 +455,21 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 				for (int i = 1; i < nParticles; i++) {
 					max = Math.max(max, thick[i][2]);
 				}
+				thickImp.setLut(Common.makeFire());
 				thickImp.getProcessor().setMinAndMax(0, max);
 				thickImp.setTitle(imp.getShortTitle() + "_thickness");
-				thickImp.show();
-				thickImp.setSlice(1);
-				IJ.run("Fire");
+				if (isModernMode) {
+					thickDataset = convertService.convert(thickImp, Dataset.class);
+					thickImp.close();
+					thickDataset.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+					thickDataset.setChannelMinimum(0, 0);
+					thickDataset.setChannelMaximum(0, max);
+					if (uiService != null && uiService.isVisible())
+	        			uiService.show(thickDataset);
+				} else {
+					thickImp.show();
+					thickImp.setSlice(1);
+				}
 			}
 		}
 		Object[] ellipsoids = new Object[nParticles][10];
@@ -303,6 +482,7 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 		}
 
 		// Show numerical results
+		final String units = imp.getCalibration().getUnits();
 		SharedTable.reset();
 		for (int i = 1; i < volumes.length; i++) {
 			if (volumes[i] > 0) {
@@ -356,7 +536,7 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 					double branchesLength = Double.NaN;
 					final SkeletonResult skeletonResult = skeletonResults[i];
 					if (skeletonResult.getNumOfTrees() == 0) {
-						IJ.log("No skeleton found for particle "+i);
+						logService.warn("No skeleton found for particle "+i);
 					} else {
 					    nBranches = skeletonResults[i].getBranches()[0];
 					    branchesLength = skeletonResults[i].getAverageBranchLength()[0]
@@ -407,29 +587,77 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 			}
 		}
 		resultsTable = SharedTable.getTable();
-
+	
 		// Show resulting image stacks
 		if (doParticleImage) {
-			ParticleDisplay.displayParticleLabels(particleLabels, imp).show();
-			IJ.run("3-3-2 RGB");
+			ImagePlus particleImp = ParticleDisplay.displayParticleLabels(particleLabels, imp);
+			particleImp.setLut(Common.make332RGB());
+			particleImp.getProcessor().setMinAndMax(0, nParticles - 1);
+			if (isModernMode) {
+				particleDataset = convertService.convert(particleImp, Dataset.class);
+				particleImp.close();
+				particleDataset.getImgPlus().setColorTable(ColorTables.RGB332, 0);
+				particleDataset.getImgPlus().setChannelMinimum(0, 0);
+				particleDataset.getImgPlus().setChannelMaximum(0, nParticles - 1);
+				if (uiService != null && uiService.isVisible())
+        			uiService.show(particleDataset);
+			} else {
+				particleImp.show();
+			}
 		}
 		if (doParticleSizeImage) {
-			ParticleDisplay.displayParticleValues(imp, particleLabels, volumes).show();
-			IJ.run("Fire");
+			ImagePlus sizeImp = ParticleDisplay.displayParticleValues(imp, particleLabels, volumes);
+			sizeImp.setLut(Common.makeFire());
+			double maxSize = 0;
+			for (int i = 0; i < nParticles; i++)
+				maxSize = Math.max(maxSize, volumes[i]);
+			sizeImp.getProcessor().setMinAndMax(0, maxSize);
+			if (isModernMode) {
+				sizeDataset = convertService.convert(sizeImp, Dataset.class);
+				sizeImp.close();
+				sizeDataset.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+				sizeDataset.setChannelMinimum(0, 0);
+				sizeDataset.setChannelMaximum(0, maxSize);
+				if (uiService != null && uiService.isVisible())
+        			uiService.show(sizeDataset);
+			} else {
+				sizeImp.show();
+			}
 		}
 		if (doEllipsoidStack) {
-			ParticleDisplay.displayParticleEllipsoids(imp, ellipsoids).show();
+			ImagePlus ellipsoidImp = ParticleDisplay.displayParticleEllipsoids(imp, ellipsoids);
+			if (isModernMode) {
+				ellipsoidDataset = convertService.convert(ellipsoidImp, Dataset.class);
+				ellipsoidImp.close();
+				if (uiService != null && uiService.isVisible())
+        			uiService.show(ellipsoidDataset);
+			} else {
+				ellipsoidImp.show();
+			}
 		}
 
+		show3DRenderings(imp, surfacePoints, volumes, eigens, centroids, particleSizes, ferets, ellipsoids, alignedBoxes);
+
+		logService.info("Particle analysis complete");
+	}
+	
+	private void show3DRenderings(ImagePlus imp, List<List<Point3f>> surfacePoints, double[] volumes, EigenvalueDecomposition[] eigens,
+			double[][] centroids, long[] particleSizes, double[][] ferets, Object[] ellipsoids,
+			double[][] alignedBoxes) {
 		// show 3D renderings
 		if (doSurfaceImage || doCentroidImage || doAxesImage || do3DOriginal ||
 			doEllipsoidImage || doAlignedBoxesImage)
 		{
+			//don't try to do 3D rendering in an unsupported environment
+			if (uiService.isHeadless()) {
+				logService.warn("3D rendering skipped: no suitable display environment available");
+				return;
+			}
 
 			final Image3DUniverse univ = new Image3DUniverse();
 			if (doSurfaceImage) {
 				ParticleDisplay.displayParticleSurfaces(univ, surfacePoints, colourMode, volumes,
-					splitValue, eigens);
+						splitValue, eigens);
 			}
 			if (doCentroidImage) {
 				ParticleDisplay.displayCentroids(centroids, univ);
@@ -455,10 +683,8 @@ public class ParticleCounter extends BoneJCommand implements PlugIn, DialogListe
 			}
 			univ.show();
 		}
-		IJ.showProgress(1.0);
-		IJ.showStatus("Particle Analysis Complete");
 	}
-	
+
 	/**
 	 * Get particles, particle labels and particle sizes from a 3D ImagePlus
 	 * 
