@@ -48,8 +48,14 @@ import org.jogamp.vecmath.Color3f;
 import org.jogamp.vecmath.Point3f;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
+import org.scijava.display.DisplayService;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
@@ -66,6 +72,8 @@ import ij.process.ImageProcessor;
 import ij.process.StackConverter;
 import ij3d.Content;
 import ij3d.Image3DUniverse;
+import net.imagej.Dataset;
+import net.imagej.DatasetService;
 
 /**
  * Calculate centroid and principal axes of a thresholded stack; originally
@@ -75,8 +83,65 @@ import ij3d.Image3DUniverse;
  * @author Michael Doube
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Moments of Inertia")
-public class Moments extends BoneJCommand implements PlugIn, DialogListener {
+public class Moments extends BoneJCommand implements Command, PlugIn, DialogListener {
 
+	/* IJ2 parameters */
+	@Parameter(type = ItemIO.INPUT)
+    private Dataset inputDataset;
+	
+	@Parameter(type = ItemIO.OUTPUT, required = false)
+	private Dataset outputDataset;
+	
+	@Parameter
+	private ConvertService convertService;
+	
+	@Parameter
+	private DatasetService datasetService;
+	
+	@Parameter
+	private UIService uiService;
+	
+	@Parameter
+	private DisplayService displayService;
+	
+	@Parameter
+	private LogService logService;
+	
+	// Numeric Fields
+	@Parameter(label = "Start Slice", style = "format:0")
+	private int startSlice = 1;
+
+	@Parameter(label = "End Slice", style = "format:0")
+	private int endSlice = -1; // Will be initialized to image stack size in run()
+
+	@Parameter(label = "Bone Min", style = "format:0.0")
+	private double minThreshold = Double.NEGATIVE_INFINITY;
+
+	@Parameter(label = "Bone Max", style = "format:0.0")
+	private double maxThreshold = Double.POSITIVE_INFINITY;
+
+	@Parameter(label = "Density Slope (m)", style = "format:0.0000")
+	private double densitySlope = 0.0;
+
+	@Parameter(label = "Density Intercept (c)", style = "format:0.0000")
+	private double densityIntercept = 1.8;
+
+	// Checkboxes (Booleans)
+	@Parameter(label = "HU Calibrated")
+	private boolean huCalibrated;
+
+	@Parameter(label = "Align Result")
+	private boolean doAlign = true;
+
+	@Parameter(label = "Show Axes (2D)")
+	private boolean doAxes2D = false;
+
+	@Parameter(label = "Show Axes (3D)")
+	private boolean doAxes3D = true;
+
+	@Parameter(label = "Record Unit Vectors")
+	private boolean doVerboseUnitVectors;
+	
 	private boolean fieldUpdated;
 	private Calibration cal;
 
@@ -115,11 +180,91 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 	// double cc = 1.8*Math.pow(10, -12);
 
 	/**
-	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 * Modern scijava Plugin entry point.
 	 */
 	@Override
 	public void run() {
-		run("");
+        ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+        
+        if (imp == null) {
+            logService.error("Moments: Failed to convert Dataset to ImagePlus.");
+            return;
+        }
+        
+        cal = imp.getCalibration();
+        
+        if (endSlice == -1) { 
+        	endSlice = imp.getStackSize();
+        	logService.info("Setting end slice to "+endSlice);
+        }
+        
+        if (huCalibrated && !ImageCheck.huCalibrated(imp)) {
+            // Warn user or adjust logic if HU calibration is forced but image isn't
+            logService.warn("HU Calibration selected but image is not HU calibrated.");
+        }
+        
+        //raw threshold defaults
+        final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
+        
+        //if user hasn't provided thresholds, use the default thresholds
+        //and leave them as raw
+        if (minThreshold == Double.NEGATIVE_INFINITY) {
+        	minThreshold = thresholds[0];
+        //otherwise check if HU calibration was ticked
+        } else {
+        	//and if so convert the harvested value (in HU) to raw
+            if (huCalibrated) {
+            	minThreshold = cal.getRawValue(minThreshold);
+            }
+        }
+        
+        if (maxThreshold == Double.POSITIVE_INFINITY) {
+        	maxThreshold = thresholds[1];
+        //otherwise check if HU calibration was ticked
+        } else {
+        	//and if so convert the harvested value (in HU) to raw
+            if (huCalibrated) {
+            	maxThreshold = cal.getRawValue(maxThreshold);
+            }
+        }
+        
+        logService.info("Moments: using pixels between "+minThreshold+" and "+maxThreshold+" (raw) for calculations");
+        
+        double[] centroid = getCentroid3D(imp, startSlice, endSlice, minThreshold, maxThreshold, 
+                densitySlope, densityIntercept);
+
+        if (centroid[0] < 0) {
+        	logService.error("Empty Stack: No voxels available for calculation.");
+        	return;
+        }
+        
+        Object[] momentResults = calculateMoments(imp, startSlice, endSlice, centroid, 
+                minThreshold, maxThreshold, densitySlope, densityIntercept);
+
+		populateResultsTable(imp, centroid, momentResults);
+		
+		final EigenvalueDecomposition E =
+				(EigenvalueDecomposition) momentResults[0];
+		
+		if (doAlign) {
+			ImagePlus alignedImp = alignToPrincipalAxes(imp, E.getV(), centroid, startSlice,
+			endSlice, minThreshold, maxThreshold, doAxes2D);
+			
+			outputDataset = convertService.convert(alignedImp, Dataset.class);
+    		alignedImp.close();
+        	if (outputDataset == null) {
+        		throw new RuntimeException("Failed to convert aligned ImagePlus to Dataset");
+        	}
+        	outputDataset.setChannelMinimum(0, inputDataset.getChannelMinimum(0));
+        	outputDataset.setChannelMaximum(0, inputDataset.getChannelMaximum(0));
+        	//if there is a UI, display the dataset
+    		if (uiService != null && uiService.isVisible())
+    			uiService.show(outputDataset);
+		}
+
+		if (!uiService.isHeadless() && doAxes3D)
+			show3DAxes(imp, E.getV(), centroid, startSlice, endSlice, minThreshold,	maxThreshold);
+    
 	}
 	
 	@Override
@@ -161,44 +306,57 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 		if (gd.wasCanceled()) {
 			return;
 		}
-		final int startSlice = (int) gd.getNextNumber();
-		final int endSlice = (int) gd.getNextNumber();
-		final boolean isHUCalibrated = gd.getNextBoolean();
-		double min = gd.getNextNumber();
-		double max = gd.getNextNumber();
+		startSlice = (int) gd.getNextNumber();
+		endSlice = (int) gd.getNextNumber();
+		huCalibrated = gd.getNextBoolean();
+		minThreshold = gd.getNextNumber();
+		maxThreshold = gd.getNextNumber();
 
-		double m = gd.getNextNumber();
-		double c = gd.getNextNumber();
-		if (isHUCalibrated) {
-			min = cal.getRawValue(min);
-			max = cal.getRawValue(max);
+		densitySlope = gd.getNextNumber();
+		densityIntercept = gd.getNextNumber();
+		if (huCalibrated) {
+			minThreshold = cal.getRawValue(minThreshold);
+			maxThreshold = cal.getRawValue(maxThreshold);
 
 			// convert HU->density user input into raw->density coefficients
 			// for use in later calculations
-			c = m * cal.getCoefficients()[0] + c;
-			m = m * cal.getCoefficients()[1];
+			densityIntercept = densitySlope * cal.getCoefficients()[0] + densityIntercept;
+			densitySlope = densitySlope * cal.getCoefficients()[1];
 		}
 
-		final boolean doAlign = gd.getNextBoolean();
-		final boolean doAxes = gd.getNextBoolean();
-		final boolean doAxes3D = gd.getNextBoolean();
-		final boolean doVerboseUnitVectors = gd.getNextBoolean();
+		doAlign = gd.getNextBoolean();
+		doAxes2D = gd.getNextBoolean();
+		doAxes3D = gd.getNextBoolean();
+		doVerboseUnitVectors = gd.getNextBoolean();
 
-		final double[] centroid = getCentroid3D(imp, startSlice, endSlice, min, max,
-			m, c);
+		final double[] centroid = getCentroid3D(imp, startSlice, endSlice, minThreshold, maxThreshold,
+			densitySlope, densityIntercept);
 		if (centroid[0] < 0) {
 			IJ.error("Empty Stack", "No voxels are available for calculation.\n" +
 				"Check your ROI and threshold.");
 			return;
 		}
 		final Object[] momentResults = calculateMoments(imp, startSlice, endSlice,
-			centroid, min, max, m, c);
+			centroid, minThreshold, maxThreshold, densitySlope, densityIntercept);
 
+		populateResultsTable(imp, centroid, momentResults);
+		
 		final EigenvalueDecomposition E =
-			(EigenvalueDecomposition) momentResults[0];
+				(EigenvalueDecomposition) momentResults[0];
+		
+		if (doAlign) alignToPrincipalAxes(imp, E.getV(), centroid, startSlice,
+			endSlice, minThreshold, maxThreshold, doAxes2D).show();
+
+		if (doAxes3D) show3DAxes(imp, E.getV(), centroid, startSlice, endSlice, minThreshold,
+			maxThreshold);
+	}
+
+	private void populateResultsTable(ImagePlus imp, double[] centroid, Object[] momentResults) {
+		final EigenvalueDecomposition E =
+				(EigenvalueDecomposition) momentResults[0];
 		final double[] moments = (double[]) momentResults[1];
 
-		final String units = imp.getCalibration().getUnits();
+		final String units = cal.getUnits();
 		SharedTable.add(imp.getTitle(), "Xc (" + units + ")", centroid[0]);
 		SharedTable.add(imp.getTitle(), "Yc (" + units + ")", centroid[1]);
 		SharedTable.add(imp.getTitle(), "Zc (" + units + ")", centroid[2]);
@@ -224,13 +382,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 			SharedTable.add(imp.getTitle(), "vY2", E.getV().get(1, 2));
 			SharedTable.add(imp.getTitle(), "vZ2", E.getV().get(2, 2));
 		}
-		resultsTable = SharedTable.getTable();
-
-		if (doAlign) alignToPrincipalAxes(imp, E.getV(), centroid, startSlice,
-			endSlice, min, max, doAxes).show();
-
-		if (doAxes3D) show3DAxes(imp, E.getV(), centroid, startSlice, endSlice, min,
-			max);
+		resultsTable = SharedTable.getTable();		
 	}
 
 	/**
@@ -244,7 +396,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 	 * @return aligned ImagePlus
 	 */
 	@Deprecated
-	public static ImagePlus alignImage(final ImagePlus imp, final Matrix E,
+	public ImagePlus alignImage(final ImagePlus imp, final Matrix E,
 		final int endSlice)
 	{
 		final double[] centroid = getCentroid3D(imp, 1, endSlice, 128.0, 255.0, 0.0,
@@ -264,7 +416,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 	 * @param doAxes if true, draw axes on the aligned copy
 	 * @return ImagePlus copy of the input image
 	 */
-	private static ImagePlus alignToPrincipalAxes(final ImagePlus imp,
+	private ImagePlus alignToPrincipalAxes(final ImagePlus imp,
 		final Matrix E, final double[] centroid, final int startSlice,
 		final int endSlice, final double min, final double max,
 		final boolean doAxes)
@@ -303,43 +455,43 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 		final int wi = sides[0];
 		final int hi = sides[1];
 		final int di = sides[2];
-
-		MatrixUtils.printToIJLog(E, "Original Rotation Matrix (Source -> Target)");
+		MatrixUtils matrixUtils = new MatrixUtils();
+		matrixUtils.printToIJ2Log(logService, E, "Original Rotation Matrix (Source -> Target)");
 		Matrix rotation;
 
 		// put long axis in z, middle axis in y and short axis in x
 		if (wi <= hi && hi <= di) {
-			IJ.log("Case 0");
+			logService.info("Case 0");
 			rotation = E;
 		}
 		else if (wi <= di && di <= hi) {
-			IJ.log("Case 1");
+			logService.info("Case 1");
 			rotation = E.times(RotX);
 		}
 		else if (hi <= wi && wi <= di) {
-			IJ.log("Case 2");
+			logService.info("Case 2");
 			rotation = E.times(RotZ);
 		}
 		else if (di <= hi && hi <= wi) {
-			IJ.log("Case 3");
+			logService.info("Case 3");
 			rotation = E.times(RotY);
 		}
 		else if (hi <= di) {
-			IJ.log("Case 4");
+			logService.info("Case 4");
 			rotation = E.times(RotY).times(RotZ);
 		}
 		else if (wi <= hi) {
-			IJ.log("Case 5");
+			logService.info("Case 5");
 			rotation = E.times(RotX).times(RotZ);
 		}
 		else {
-			IJ.log("Case 6");
+			logService.info("Case 6");
 			rotation = E;
 		}
 		// Check for z-flipping
 		if (isZFlipped(rotation)) {
 			rotation = rotation.times(RotX).times(RotX);
-			IJ.log("Corrected Z-flipping");
+			logService.info("Corrected Z-flipping");
 		}
 
 		// Check for reflection
@@ -350,13 +502,14 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 			reflectY[2][2] = 1;
 			final Matrix RefY = new Matrix(reflectY);
 			rotation = rotation.times(RefY);
-			IJ.log("Reflected the rotation matrix");
+			logService.info("Reflected the rotation matrix");
 		}
-		MatrixUtils.printToIJLog(rotation, "Rotation Matrix (Source -> Target)");
+		
+		matrixUtils.printToIJ2Log(logService, rotation, "Rotation Matrix (Source -> Target)");
 
 		final Matrix eVecInv = rotation.inverse();
-		MatrixUtils.printToIJLog(eVecInv,
-			"Inverse Rotation Matrix (Target -> Source)");
+
+		matrixUtils.printToIJ2Log(logService, eVecInv, "Inverse Rotation Matrix (Target -> Source)");
 		final double[][] eigenVecInv = eVecInv.getArrayCopy();
 
 		// create the target stack
@@ -439,7 +592,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 		return impTarget;
 	}
 
-	private static Object[] calculateMoments(final ImagePlus imp,
+	private Object[] calculateMoments(final ImagePlus imp,
 		final int startSlice, final int endSlice, final double[] centroid,
 		final double min, final double max, final double m, final double c)
 	{
@@ -545,8 +698,9 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 		// do the Eigenvalue decomposition
 		final EigenvalueDecomposition E = new EigenvalueDecomposition(
 			inertiaTensorMatrix);
-		MatrixUtils.printToIJLog(E.getD(), "Eigenvalues");
-		MatrixUtils.printToIJLog(E.getV(), "Eigenvectors");
+		MatrixUtils matrixUtils = new MatrixUtils();
+		matrixUtils.printToIJ2Log(logService, E.getD(), "Eigenvalues");
+		matrixUtils.printToIJ2Log(logService, E.getV(), "Eigenvectors");
 
 		final double sumVoxVol = Arrays.stream(sliceSumVoxVol).sum();
 		final double sumVoxMass = Arrays.stream(sliceSumVoxMass).sum();
@@ -834,7 +988,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 	 * @param min lower threshold
 	 * @param max upper threshold
 	 */
-	private static void show3DAxes(final ImagePlus imp, final Matrix E,
+	private void show3DAxes(final ImagePlus imp, final Matrix E,
 		final double[] centroid, final int startSlice, final int endSlice,
 		final double min, final double max)
 	{
@@ -875,7 +1029,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 			univ.addCustomMesh(mesh, "Centroid").setLocked(true);
 		}
 		catch (final NullPointerException npe) {
-			IJ.log("3D Viewer was closed before rendering completed.");
+			logService.warn("3D Viewer was closed before rendering completed.");
 			return;
 		}
 
@@ -929,7 +1083,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 			univ.addLineMesh(axes, aColour, "Principal axes", false).setLocked(true);
 		}
 		catch (final NullPointerException npe) {
-			IJ.log("3D Viewer was closed before rendering completed.");
+			logService.warn("3D Viewer was closed before rendering completed.");
 			return;
 		}
 
@@ -940,7 +1094,7 @@ public class Moments extends BoneJCommand implements PlugIn, DialogListener {
 			c.setLocked(true);
 		}
 		catch (final NullPointerException npe) {
-			IJ.log("3D Viewer was closed before rendering completed.");
+			logService.warn("3D Viewer was closed before rendering completed.");
 		}
 	}
 

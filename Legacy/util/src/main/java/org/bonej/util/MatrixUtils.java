@@ -30,6 +30,8 @@
 
 package org.bonej.util;
 
+import org.scijava.log.LogService;
+
 import Jama.Matrix;
 import ij.IJ;
 
@@ -41,7 +43,7 @@ import ij.IJ;
  */
 public final class MatrixUtils {
 
-	private MatrixUtils() {}
+	public MatrixUtils() {}
 
 	/**
 	 * Get the diagonal of the matrix as a column vector
@@ -65,7 +67,7 @@ public final class MatrixUtils {
 	 * @param matrix a JAMA matrix.
 	 * @param title Title of the Matrix
 	 */
-	public static void printToIJLog(final Matrix matrix, final String title) {
+	public static void printToIJLgog(final Matrix matrix, final String title) {
 		if (!title.isEmpty()) IJ.log(title);
 		final int nCols = matrix.getColumnDimension();
 		final int nRows = matrix.getRowDimension();
@@ -79,5 +81,21 @@ public final class MatrixUtils {
 			IJ.log(row.toString());
 		}
 		IJ.log("");
+	}
+	
+	public void printToIJ2Log(LogService logService, final Matrix matrix, final String title) {
+		if (!title.isEmpty()) logService.info(title);
+		final int nCols = matrix.getColumnDimension();
+		final int nRows = matrix.getRowDimension();
+		final double[][] eVal = matrix.getArrayCopy();
+		for (int r = 0; r < nRows; r++) {
+			final StringBuilder row = new StringBuilder("||");
+			for (int c = 0; c < nCols; c++) {
+				row.append(IJ.d2s(eVal[r][c], 3)).append("|");
+			}
+			row.append("|");
+			logService.info(row.toString());
+		}
+		logService.info("");
 	}
 }
