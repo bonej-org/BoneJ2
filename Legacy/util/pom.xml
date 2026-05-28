@@ -110,6 +110,12 @@
             <groupId>gov.nist.math</groupId>
             <artifactId>jama</artifactId>
         </dependency>
+        
+        <!-- SciJava dependencies for backported functionality -->
+        <dependency>
+            <groupId>org.scijava</groupId>
+            <artifactId>scijava-common</artifactId>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>
