@@ -47,13 +47,20 @@ import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
 import org.jogamp.vecmath.Color3f;
 import org.jogamp.vecmath.Point3f;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
+import org.scijava.display.DisplayService;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
 
 import customnode.CustomPointMesh;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.WindowManager;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.gui.PolygonRoi;
@@ -68,6 +75,7 @@ import ij.process.ImageProcessor;
 import ij.process.StackConverter;
 import ij3d.Content;
 import ij3d.Image3DUniverse;
+import net.imagej.Dataset;
 
 /**
  * <p>
@@ -77,18 +85,103 @@ import ij3d.Image3DUniverse;
  * @author Michael Doube
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Slice Geometry")
-public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListener {
+public class SliceGeometry extends BoneJCommand implements Command, PlugIn, DialogListener {
 
+	/* IJ2 parameters */
+	@Parameter(type = ItemIO.BOTH)
+    private Dataset inputDataset;
+	
+	@Parameter(type = ItemIO.OUTPUT, required = false)
+	private Dataset outputDataset;
+
+	//copy pasted from BoneList because of annotation processing limitation
+    @Parameter(label = "Bone", choices = { "unknown", "scapula", "humerus",
+    		"radius", "ulna", "metacarpal", "pelvis", "femur", "tibia", "fibula",
+    		"metatarsal", "calcaneus", "tibiotarsus", "tarsometatarsal", "sacrum",
+    		"mandible", "clavicle", "rib", "ilium", "os_penis", "os_clitoridis",
+    		"coracoid", "proximal_phalanx", "distal_phalanx", "middle_phalanx", 
+    		"intermediate_phalanx", "basihyoid", "ceratohyoid", "epihyoid", "thyrohyoid",
+    		"stylohyoid", "tympanohyoid", "malleus", "incus", "stapes", "columella",
+    		"ischium", "patella", "talus" })
+    private String boneSelection = "unknown";
+
+    @Parameter(label = "Calculate 2D Thickness")
+    private boolean doThickness2D = true;
+
+    @Parameter(label = "Calculate 3D Thickness")
+    private boolean doThickness3D = false;
+
+    @Parameter(label = "Mask Thickness Map")
+    private boolean doMask = true;
+
+    @Parameter(label = "Draw Principal Axes")
+    private boolean doAxes = true;
+
+    @Parameter(label = "Show Centroids")
+    private boolean doCentroids = true;
+
+    @Parameter(label = "Create Annotated Copy")
+    private boolean doCopy = true;
+
+    @Parameter(label = "3D Annotation")
+    private boolean do3DAnnotation = false;
+
+    @Parameter(label = "Process Whole Stack")
+    private boolean doStack = false;
+
+    @Parameter(label = "Clear Results Table")
+    private boolean clearResults = false;
+
+    @Parameter(label = "Use Anatomical Orientation")
+    private boolean doOriented = false;
+
+    @Parameter(label = "HU Calibrated")
+    private boolean huCalibrated = false;
+
+	@Parameter(label = "Bone Min", style = "format:0.0")
+	private double minThreshold = Double.NEGATIVE_INFINITY;
+
+	@Parameter(label = "Bone Max", style = "format:0.0")
+	private double maxThreshold = Double.POSITIVE_INFINITY;
+
+    @Parameter(label = "Density Slope")
+    private double m = 0.0;
+
+    @Parameter(label = "Density Intercept")
+    private double c = 1.8;
+
+    @Parameter(label = "Partial Volume Compensation")
+    private boolean doPartialVolume = false;
+
+    @Parameter(label = "Background Value", style = "format:0.0")
+    private double background = Double.NEGATIVE_INFINITY;
+
+    @Parameter(label = "Foreground Value", style = "format:0.0")
+    private double foreground = Double.POSITIVE_INFINITY;
+
+    // --- Services ---
+    @Parameter
+    private LogService logService;
+
+    @Parameter
+    private UIService uiService;
+    
+	@Parameter
+	private ConvertService convertService;
+	
+	@Parameter
+	private DisplayService displayService;
+	
 	private Calibration cal;
 	private int al;
-	private int startSlice;
-	private int endSlice;
+	private int startSlice = 1;
+	private int endSlice = 1;
 	private double vW;
 	private double vH;
 	/** Show slice centroid */
-	private boolean doCentroids;
+//	private boolean doCentroids;
 	/** Show principal axes */
-	private boolean doAxes;
+//	private boolean doAxes;
 	/** Number of thresholded pixels in each slice */
 	private double[] cslice;
 	/** Cross-sectional area */
@@ -140,8 +233,8 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 	/** List of slice centroids */
 	private double[][] sliceCentroids;
 	private double[] meanDensity;
-	private double m;
-	private double c;
+//	private double m;
+//	private double c;
 	private double[][] weightedCentroids;
 	private boolean fieldUpdated;
 	/** List of perimeter lengths */
@@ -150,7 +243,7 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 	private double[] Zpol;
 	private Orienteer orienteer;
 	/** Flag to use anatomic orientation */
-	private boolean doOriented;
+//	private boolean doOriented;
 	/** Second moment of area around primary axis */
 	private double[] I1;
 	/** Second moment of area around secondary axis */
@@ -165,11 +258,11 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 	private double[] Z2;
 	private double[] principalDiameter;
 	private double[] secondaryDiameter;
-	/** Use the masked version of thickness, which trims the 1px overhang */
-	private boolean doMask;
-	private double background;
-	private double foreground;
-	private boolean doPartialVolume;
+//	/** Use the masked version of thickness, which trims the 1px overhang */
+//	private boolean doMask;
+//	private double background;
+//	private double foreground;
+//	private boolean doPartialVolume;
 
 	@Override
 	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
@@ -201,11 +294,173 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 	}
 
 	/**
-	 * Modern scijava Plugin entry point. Calls the Legacy {@link #run(String)} method
+	 * Modern scijava Plugin entry point.
 	 */
 	@Override
 	public void run() {
-		run("");
+		ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+		
+        if (imp == null) {
+            logService.error("Slice Geometry: Failed to convert Dataset to ImagePlus.");
+            return;
+        }
+		
+        //calibration is set during the Dataset -> ImagePlus conversion
+        cal = imp.getCalibration();
+        //cal should not be null after a getCalibration() call
+        if (cal == null) {
+        	logService.warn("Calibration is null");
+        } else {
+        	logService.info("Pixel spacing in x is "+cal.pixelWidth+" "+cal.getUnits());
+        }
+        
+		vW = cal.pixelWidth;
+		vH = cal.pixelHeight;
+		al = imp.getStackSize() + 1;
+        
+        if (!uiService.isHeadless()) {
+        	//should be null, because it is not carried over in the Dataset -> ImagePlus conversion
+        	Roi roi = imp.getRoi();
+        	try {
+        		//try getting an ROI from the IJ1 window manager
+        		roi = WindowManager.getCurrentImage().getRoi();
+        	} catch (NullPointerException npe) {}
+        	if (roi == null) {
+        		logService.info("No ROI provided");
+        	}
+        	else if (roi.getType() != Roi.RECTANGLE) {
+        		logService.error("Slice Geometry expects only one rectangular ROI");
+        		return;
+        	} else {
+            	logService.info("ROI width and height are "+roi.getBounds().width+", "+roi.getBounds().height);
+            	imp.setRoi(roi);
+        	}
+        }
+            
+        if (doStack) {
+        	startSlice = 1;
+        	endSlice = imp.getImageStackSize();
+        }
+        //just do the first slice (or only slice for 2D) in headless mode
+        //TODO consider adding a @Parameter option to enter a slice number to process
+        else if (uiService.isHeadless()){
+        	startSlice = 1;
+        	endSlice = 1;
+        	//otherwise we are in interactive mode and want a single slice, use the selected one
+        	//like legacy behaviour
+        } else {
+        	try {
+        		int slice = WindowManager.getCurrentImage().getCurrentSlice();
+        		startSlice = slice;
+        		endSlice = slice;
+        	} catch (NullPointerException npe) {}
+        }
+		
+        final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
+        
+        if (minThreshold == Double.NEGATIVE_INFINITY) {
+        	minThreshold = thresholds[0];
+        //otherwise check if HU calibration was ticked
+        } else {
+        	//and if so convert the harvested value (in HU) to raw
+            if (huCalibrated) {
+            	minThreshold = cal.getRawValue(minThreshold);
+            }
+        }
+        
+        if (maxThreshold == Double.POSITIVE_INFINITY) {
+        	maxThreshold = thresholds[1];
+        //otherwise check if HU calibration was ticked
+        } else {
+        	//and if so convert the harvested value (in HU) to raw
+            if (huCalibrated) {
+            	maxThreshold = cal.getRawValue(maxThreshold);
+            }
+        }
+        
+        //handle the thresholds and partial volume scaling limits
+        //both have infinity as sentinels meaning the user didn't set them
+		if (background >= foreground || minThreshold >= maxThreshold) {
+			logService.error("Slice Geometry: Background value must be less than foreground value and min threshold must be less than max threshold.");
+			return;
+		}
+        
+        logService.info("Slice Geometry: using pixels between "+minThreshold+" and "+maxThreshold+" (raw) for calculations");
+        
+		// convert HU->density user input into raw->density coefficients
+		// for use in later calculations
+        if (huCalibrated) {
+        	c = m * cal.getCoefficients()[0] + c;
+        	m = m * cal.getCoefficients()[1];
+        }
+		
+        logService.info("Slice Geometry: pixel value to density scaling function is "+m+"x + "+c);
+        
+        if (doPartialVolume) {
+            if (background == Double.NEGATIVE_INFINITY) {
+            	background = thresholds[0];
+            //otherwise check if HU calibration was ticked
+            } else {
+            	//and if so convert the harvested value (in HU) to raw
+                if (huCalibrated) {
+                	background = cal.getRawValue(background);
+                }
+            }
+            
+            if (foreground == Double.POSITIVE_INFINITY) {
+            	foreground = thresholds[1];
+            //otherwise check if HU calibration was ticked
+            } else {
+            	//and if so convert the harvested value (in HU) to raw
+                if (huCalibrated) {
+                	foreground = cal.getRawValue(foreground);
+                }
+            }
+            logService.info("Slice Geometry: scaling pixel weighting between "+background+" and "+foreground+" (raw) for partial volume compensation");
+        }
+        
+		if (calculateCentroids(imp, minThreshold, maxThreshold) == 0) {
+			logService.error("Slice Geometry: No pixels available to calculate. Please check the threshold and ROI.");
+			return;
+		}
+        
+        orienteer = Orienteer.getInstance();
+        
+		calculateMoments(imp, minThreshold, maxThreshold);
+		if (doThickness3D) calculateThickness3D(imp, minThreshold, maxThreshold);
+		if (doThickness2D) calculateThickness2D(imp, minThreshold, maxThreshold);
+
+		roiMeasurements(imp, minThreshold, maxThreshold);
+        
+        populateResultsTable(imp, BoneList.getBoneID(boneSelection));
+        
+		if (doAxes || doCentroids) {
+			final ImagePlus annImp = annotateImage(imp);
+			if (doCopy) {
+        		//create a new Dataset containing the purified image data
+        		outputDataset = convertService.convert(annImp, Dataset.class);
+        		annImp.close();
+            	if (outputDataset == null) {
+            		throw new RuntimeException("Failed to convert purified ImagePlus to Dataset");
+            	}
+            	
+        		//if there is a UI, display the dataset
+        		if (uiService != null && uiService.isVisible())
+        			uiService.show(outputDataset);
+			} else {
+				convertService.convert(annImp, Dataset.class).copyInto(inputDataset);
+        		inputDataset.setName(annImp.getTitle());
+                if (displayService != null) {
+                    displayService.getDisplays(inputDataset).forEach(display -> {
+                        display.setName(annImp.getTitle());
+                    });
+                }
+			}
+		}
+		
+		if (!uiService.isHeadless() && do3DAnnotation) {
+			show3DAxes(imp);
+		}
 	}
 	
 	@Override
@@ -224,8 +479,6 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 		cal = imp.getCalibration();
 		vW = cal.pixelWidth;
 		vH = cal.pixelHeight;
-		// Linear unit of measure
-		final String units = cal.getUnits();
 		al = imp.getStackSize() + 1;
 
 		final String pixUnits;
@@ -268,19 +521,19 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 		gd.addDialogListener(this);
 		gd.showDialog();
 		final String bone = gd.getNextChoice();
-		boneID = BoneList.guessBone(bone);
-		final boolean doThickness2D = gd.getNextBoolean();
-		final boolean doThickness3D = gd.getNextBoolean();
+		boneID = BoneList.getBoneID(bone);
+		doThickness2D = gd.getNextBoolean();
+		doThickness3D = gd.getNextBoolean();
 		doMask = gd.getNextBoolean();
 		doAxes = gd.getNextBoolean();
 		doCentroids = gd.getNextBoolean();
 		// if true, show annotation in a new window
-		final boolean doCopy = gd.getNextBoolean();
-		final boolean do3DAnnotation = gd.getNextBoolean();
+		doCopy = gd.getNextBoolean();
+		do3DAnnotation = gd.getNextBoolean();
 		// If true, process the whole stack
-		final boolean doStack = gd.getNextBoolean();
+		doStack = gd.getNextBoolean();
 		// Flag to clear the results table or concatenate
-		final boolean clearResults = gd.getNextBoolean();
+		clearResults = gd.getNextBoolean();
 		doOriented = gd.getNextBoolean();
 		if (doStack) {
 			startSlice = 1;
@@ -291,21 +544,21 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 			endSlice = imp.getCurrentSlice();
 		}
 
-		final boolean isHUCalibrated = gd.getNextBoolean();
-		double min = gd.getNextNumber();
-		double max = gd.getNextNumber();
+		huCalibrated = gd.getNextBoolean();
+		minThreshold = gd.getNextNumber();
+		maxThreshold = gd.getNextNumber();
 		m = gd.getNextNumber();
 		c = gd.getNextNumber();
 		doPartialVolume = gd.getNextBoolean();
 		background = gd.getNextNumber();
 		foreground = gd.getNextNumber();
-		if (background >= foreground || min >= max) {
+		if (background >= foreground || minThreshold >= maxThreshold) {
 			IJ.showMessage("Slice Geometry", "Background value must be less than foreground value.");
 			return;
 		}
-		if (isHUCalibrated) {
-			min = cal.getRawValue(min);
-			max = cal.getRawValue(max);
+		if (huCalibrated) {
+			minThreshold = cal.getRawValue(minThreshold);
+			maxThreshold = cal.getRawValue(maxThreshold);
 			background = cal.getRawValue(background);
 			foreground = cal.getRawValue(foreground);
 
@@ -316,23 +569,42 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 		}
 		if (gd.wasCanceled()) return;
 
-		if (calculateCentroids(imp, min, max) == 0) {
+		if (calculateCentroids(imp, minThreshold, maxThreshold) == 0) {
 			IJ.error("No pixels available to calculate.\n" +
 					"Please check the threshold and ROI.");
 			return;
 		}
 
-		calculateMoments(imp, min, max);
-		if (doThickness3D) calculateThickness3D(imp, min, max);
-		if (doThickness2D) calculateThickness2D(imp, min, max);
+		calculateMoments(imp, minThreshold, maxThreshold);
+		if (doThickness3D) calculateThickness3D(imp, minThreshold, maxThreshold);
+		if (doThickness2D) calculateThickness2D(imp, minThreshold, maxThreshold);
 
-		roiMeasurements(imp, min, max);
+		roiMeasurements(imp, minThreshold, maxThreshold);
 
 		// TODO locate centroids of multiple sections in a single plane
+		
+		populateResultsTable(imp, boneID);
 
+		if (doAxes || doCentroids) {
+			if (!doCopy) {
+				final ImagePlus annImp = annotateImage(imp);
+				imp.setStack(null, annImp.getImageStack());
+			}
+			else {
+				annotateImage(imp).show();
+			}
+		}
+		if (do3DAnnotation) {
+			show3DAxes(imp);
+		}
+	}
+
+	private void populateResultsTable(ImagePlus imp, int boneID) {
 		if (clearResults) SharedTable.reset();
 
 		final String title = imp.getTitle();
+		final String units = cal.getUnits();
+		
 		for (int s = startSlice; s <= endSlice; s++) {
 			SharedTable.add(title, "Bone Code", boneID);
 			SharedTable.add(title, "Slice", s);
@@ -380,27 +652,12 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 			SharedTable.add(title, "Z" + dirs[2] + dirs[3] + "(" + units + "³)", Z2[s]);
 			SharedTable.add(title, "R" + dirs[0] + dirs[1] + "(" + units + ")", maxRad2[s]);
 			SharedTable.add(title, "R" + dirs[2] + dirs[3] + "(" + units + ")", maxRad1[s]);
-			SharedTable.add(title, "D" + dirs[0] + dirs[1] + "(" + units + ")",
-					principalDiameter[s]);
-			SharedTable.add(title, "D" + dirs[2] + dirs[3] + "(" + units + ")",
-					secondaryDiameter[s]);
+			SharedTable.add(title, "D" + dirs[0] + dirs[1] + "(" + units + ")", principalDiameter[s]);
+			SharedTable.add(title, "D" + dirs[2] + dirs[3] + "(" + units + ")", secondaryDiameter[s]);
 		}
 		resultsTable = SharedTable.getTable();
-
-		if (doAxes || doCentroids) {
-			if (!doCopy) {
-				final ImagePlus annImp = annotateImage(imp);
-				imp.setStack(null, annImp.getImageStack());
-			}
-			else {
-				annotateImage(imp).show();
-			}
-		}
-		if (do3DAnnotation) {
-			show3DAxes(imp);
-		}
 	}
-
+	
 	private void initOrientationCheckBox(final GenericDialog gd) {
 		gd.addCheckbox("Use_Orientation", (orienteer != null));
 		final Checkbox checkBox = (Checkbox) gd.getCheckboxes().lastElement();
@@ -505,7 +762,7 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 			for (int y = ry; y < roiYEnd; y++) {
 				for (int x = rx; x < roiXEnd; x++) {
 					final double pixel = ip.get(x, y);
-					if (pixel >= min && pixel <= max) {
+					if (pixel >= minThreshold && pixel <= max) {
 						count++;
 						final double areaFraction = doPartialVolume ? filledFraction(pixel) : 1;
 						sumAreaFractions += areaFraction;
@@ -579,7 +836,7 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 			for (int y = ry; y < roiYEnd; y++) {
 				for (int x = rx; x < roiXEnd; x++) {
 					final double pixel = ip.get(x, y);
-					if (pixel >= min && pixel <= max) {
+					if (pixel >= minThreshold && pixel <= max) {
 						final double xVw = x * vW;
 						final double yVh = y * vH;
 						final double areaFraction = doPartialVolume ? filledFraction(pixel) : 1;
@@ -698,7 +955,7 @@ public class SliceGeometry extends BoneJCommand implements PlugIn, DialogListene
 					final double yYc = y * vH - yC;
 					for (int x = rx; x < roiXEnd; x++) {
 						final double pixel = ip.get(x, y);
-						if (pixel >= min && pixel <= max) {
+						if (pixel >= minThreshold && pixel <= max) {
 							final double areaFraction = doPartialVolume ? filledFraction(
 									pixel)
 									: 1;
