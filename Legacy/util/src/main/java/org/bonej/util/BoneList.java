@@ -81,4 +81,21 @@ public final class BoneList {
 		}
 		return boneID;
 	}
+	
+	/**
+	 * Get the bone ID for a given bone name
+	 * 
+	 * @param boneName
+	 * @return an integer bone ID or 0 if not found / unknown
+	 */
+	public static int getBoneID(String boneName) {
+		if (boneName == null) return 0; // Default to first option
+	    
+	    for (int i = 0; i < boneList.length; i++) {
+	        if (boneName.equals(boneList[i])) {
+	            return i;
+	        }
+	    }
+	    return 0; // Default if not found
+	}
 }
