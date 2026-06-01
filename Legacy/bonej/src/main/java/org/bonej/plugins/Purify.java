@@ -39,7 +39,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.GenericDialog;
 
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
@@ -52,7 +51,6 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
-import ij.plugin.PlugIn;
 import net.imagej.Dataset;
 import net.imagej.DatasetService;
 
@@ -129,7 +127,7 @@ import net.imagej.DatasetService;
  * @version 2.0
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Purify")
-public class Purify extends BoneJCommand implements Command, PlugIn {
+public class Purify extends BoneJCommand implements Command {
 
 	/* IJ2 parameters */
 	@Parameter(type = ItemIO.BOTH)
@@ -220,38 +218,6 @@ public class Purify extends BoneJCommand implements Command, PlugIn {
         }
 	}
 	
-	@Override
-	public void run(final String arg) {
-		final ImagePlus imp = IJ.getImage();
-		if (!ImageCheck.isBinary(imp)) {
-			IJ.error("Purify requires a binary image");
-			return;
-		}
-		final GenericDialog gd = new GenericDialog("Setup");
-		gd.addCheckbox("Performance Log", false);
-		gd.addCheckbox("Make_copy", true);
-		gd.showDialog();
-		if (gd.wasCanceled()) return;
-		final boolean showPerformance = gd.getNextBoolean();
-		final boolean doCopy = gd.getNextBoolean();
-		final long startTime = System.currentTimeMillis();
-		final ImagePlus purified = purify(imp);
-		if (null != purified) {
-			if (doCopy) {
-				purified.show();
-				if (imp.isInvertedLut() && !purified.isInvertedLut()) IJ.run(
-					"Invert LUT");
-			}
-			else {
-				imp.setStack(null, purified.getStack());
-				if (!imp.isInvertedLut()) IJ.run("Invert LUT");
-			}
-		}
-		final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
-		if (showPerformance) {
-			showResults(duration, imp);
-		}
-	}
 
 
 	/**

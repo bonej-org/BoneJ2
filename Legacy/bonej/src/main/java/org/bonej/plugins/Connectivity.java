@@ -47,7 +47,6 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.macro.Interpreter;
 import ij.measure.Calibration;
-import ij.plugin.PlugIn;
 import net.imagej.Dataset;
 
 /**
@@ -106,7 +105,7 @@ import net.imagej.Dataset;
  *
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Connectivity")
-public class Connectivity extends BoneJCommand implements Command, PlugIn {
+public class Connectivity extends BoneJCommand implements Command {
 
 	private final static int[] EULER_LUT = fillEulerLUT();
 	
@@ -153,19 +152,6 @@ public class Connectivity extends BoneJCommand implements Command, PlugIn {
         process(imp);
 	}
 
-	/**
-	 * Legacy ImageJ1 plugin
-	 */
-	@Override
-	public void run(final String arg) {
-		final ImagePlus imp = IJ.getImage();
-		if (!ImageCheck.isBinary(imp)) {
-			IJ.error("Connectivity requires a binary image.");
-			return;
-		}
-		process(imp);
-	}
-	
 	private void process(ImagePlus imp) {
 		final double sumEuler = getSumEuler(imp);
 

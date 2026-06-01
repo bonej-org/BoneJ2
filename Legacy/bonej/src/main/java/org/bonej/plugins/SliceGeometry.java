@@ -30,18 +30,13 @@
 
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
 import java.awt.Color;
 import java.awt.Rectangle;
-import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.bonej.menuWrappers.ThicknessHelper;
 import org.bonej.util.BoneList;
-import org.bonej.util.DialogModifier;
-import org.bonej.util.ImageCheck;
 import org.bonej.util.ThresholdGuesser;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
@@ -61,14 +56,11 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.WindowManager;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.gui.Wand;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
-import ij.plugin.PlugIn;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
@@ -85,7 +77,7 @@ import net.imagej.Dataset;
  * @author Michael Doube
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Slice Geometry")
-public class SliceGeometry extends BoneJCommand implements Command, PlugIn, DialogListener {
+public class SliceGeometry extends BoneJCommand implements Command {
 
 	/* IJ2 parameters */
 	@Parameter(type = ItemIO.BOTH)
@@ -236,7 +228,6 @@ public class SliceGeometry extends BoneJCommand implements Command, PlugIn, Dial
 //	private double m;
 //	private double c;
 	private double[][] weightedCentroids;
-	private boolean fieldUpdated;
 	/** List of perimeter lengths */
 	private double[] perimeter;
 	/** List of polar section moduli */
@@ -263,35 +254,6 @@ public class SliceGeometry extends BoneJCommand implements Command, PlugIn, Dial
 //	private double background;
 //	private double foreground;
 //	private boolean doPartialVolume;
-
-	@Override
-	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
-		final List<?> checkboxes = gd.getCheckboxes();
-		final List<?> nFields = gd.getNumericFields();
-		final Checkbox calibration = (Checkbox) checkboxes.get(10);
-		final boolean isHUCalibrated = calibration.getState();
-		final TextField minT = (TextField) nFields.get(0);
-		final TextField maxT = (TextField) nFields.get(1);
-
-		final double min = Double.parseDouble(minT.getText());
-		final double max = Double.parseDouble(maxT.getText());
-		if (isHUCalibrated && !fieldUpdated) {
-			minT.setText("" + cal.getCValue(min));
-			maxT.setText("" + cal.getCValue(max));
-			fieldUpdated = true;
-		}
-		if (!isHUCalibrated && fieldUpdated) {
-			minT.setText("" + cal.getRawValue(min));
-			maxT.setText("" + cal.getRawValue(max));
-			fieldUpdated = false;
-		}
-		if (isHUCalibrated) DialogModifier.replaceUnitString(gd, "grey", "HU");
-		else DialogModifier.replaceUnitString(gd, "HU", "grey");
-
-		DialogModifier.registerMacroValues(gd, gd.getComponents());
-		return true;
-	}
 
 	/**
 	 * Modern scijava Plugin entry point.
@@ -463,142 +425,6 @@ public class SliceGeometry extends BoneJCommand implements Command, PlugIn, Dial
 		}
 	}
 	
-	@Override
-	public void run(final String arg) {
-		final ImagePlus imp = IJ.getImage();
-		if (null == imp) {
-			IJ.noImage();
-			return;
-		}
-		Roi roi = imp.getRoi();
-		if (roi == null) {}
-		else if (roi.getType() != Roi.RECTANGLE) {
-			IJ.showMessage("ROI Error", "Slice Geometry expects only one rectangular ROI");
-			return;
-		}
-		cal = imp.getCalibration();
-		vW = cal.pixelWidth;
-		vH = cal.pixelHeight;
-		al = imp.getStackSize() + 1;
-
-		final String pixUnits;
-		if (ImageCheck.huCalibrated(imp)) {
-			pixUnits = "HU";
-			fieldUpdated = true;
-		}
-		else pixUnits = "grey";
-
-		final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
-		orienteer = Orienteer.getInstance();
-
-		final GenericDialog gd = new GenericDialog("Options");
-
-		int boneID = BoneList.guessBone(imp.getTitle());
-		final String[] bones = BoneList.get();
-		gd.addChoice("Bone: ", bones, bones[boneID]);
-
-		gd.addCheckbox("2D_Thickness", true);
-		gd.addCheckbox("3D_Thickness", false);
-		gd.addCheckbox("Mask thickness map", false);
-		gd.addCheckbox("Draw_Axes", true);
-		gd.addCheckbox("Draw_Centroids", true);
-		gd.addCheckbox("Annotated_Copy_(2D)", true);
-		gd.addCheckbox("3D_Annotation", false);
-		gd.addCheckbox("Process_Stack", false);
-		gd.addCheckbox("Clear_results", false);
-		initOrientationCheckBox(gd);
-		gd.addCheckbox("HU_Calibrated", ImageCheck.huCalibrated(imp));
-		gd.addNumericField("Bone_Min:", thresholds[0], 1, 6, pixUnits + " ");
-		gd.addNumericField("Bone_Max:", thresholds[1], 1, 6, pixUnits + " ");
-		gd.addMessage("Only pixels >= bone min\n" + "and <= bone max are used.");
-		gd.addMessage("Density calibration coefficients");
-		gd.addNumericField("Slope", 0, 4, 6, "g.cm^-3 / " + pixUnits + " ");
-		gd.addNumericField("Y_Intercept", 1.8, 4, 6, "g.cm^-3");
-		gd.addCheckbox("Partial_volume_compensation", false);
-		gd.addNumericField("Background", thresholds[0], 1, 6, pixUnits + " ");
-		gd.addNumericField("Foreground", thresholds[1], 1, 6, pixUnits + " ");
-		gd.addHelp("https://imagej.github.io/plugins/bonej#slice-geometry");
-		gd.addDialogListener(this);
-		gd.showDialog();
-		final String bone = gd.getNextChoice();
-		boneID = BoneList.getBoneID(bone);
-		doThickness2D = gd.getNextBoolean();
-		doThickness3D = gd.getNextBoolean();
-		doMask = gd.getNextBoolean();
-		doAxes = gd.getNextBoolean();
-		doCentroids = gd.getNextBoolean();
-		// if true, show annotation in a new window
-		doCopy = gd.getNextBoolean();
-		do3DAnnotation = gd.getNextBoolean();
-		// If true, process the whole stack
-		doStack = gd.getNextBoolean();
-		// Flag to clear the results table or concatenate
-		clearResults = gd.getNextBoolean();
-		doOriented = gd.getNextBoolean();
-		if (doStack) {
-			startSlice = 1;
-			endSlice = imp.getImageStackSize();
-		}
-		else {
-			startSlice = imp.getCurrentSlice();
-			endSlice = imp.getCurrentSlice();
-		}
-
-		huCalibrated = gd.getNextBoolean();
-		minThreshold = gd.getNextNumber();
-		maxThreshold = gd.getNextNumber();
-		m = gd.getNextNumber();
-		c = gd.getNextNumber();
-		doPartialVolume = gd.getNextBoolean();
-		background = gd.getNextNumber();
-		foreground = gd.getNextNumber();
-		if (background >= foreground || minThreshold >= maxThreshold) {
-			IJ.showMessage("Slice Geometry", "Background value must be less than foreground value.");
-			return;
-		}
-		if (huCalibrated) {
-			minThreshold = cal.getRawValue(minThreshold);
-			maxThreshold = cal.getRawValue(maxThreshold);
-			background = cal.getRawValue(background);
-			foreground = cal.getRawValue(foreground);
-
-			// convert HU->density user input into raw->density coefficients
-			// for use in later calculations
-			c = m * cal.getCoefficients()[0] + c;
-			m = m * cal.getCoefficients()[1];
-		}
-		if (gd.wasCanceled()) return;
-
-		if (calculateCentroids(imp, minThreshold, maxThreshold) == 0) {
-			IJ.error("No pixels available to calculate.\n" +
-					"Please check the threshold and ROI.");
-			return;
-		}
-
-		calculateMoments(imp, minThreshold, maxThreshold);
-		if (doThickness3D) calculateThickness3D(imp, minThreshold, maxThreshold);
-		if (doThickness2D) calculateThickness2D(imp, minThreshold, maxThreshold);
-
-		roiMeasurements(imp, minThreshold, maxThreshold);
-
-		// TODO locate centroids of multiple sections in a single plane
-		
-		populateResultsTable(imp, boneID);
-
-		if (doAxes || doCentroids) {
-			if (!doCopy) {
-				final ImagePlus annImp = annotateImage(imp);
-				imp.setStack(null, annImp.getImageStack());
-			}
-			else {
-				annotateImage(imp).show();
-			}
-		}
-		if (do3DAnnotation) {
-			show3DAxes(imp);
-		}
-	}
-
 	private void populateResultsTable(ImagePlus imp, int boneID) {
 		if (clearResults) SharedTable.reset();
 
@@ -658,13 +484,6 @@ public class SliceGeometry extends BoneJCommand implements Command, PlugIn, Dial
 		resultsTable = SharedTable.getTable();
 	}
 	
-	private void initOrientationCheckBox(final GenericDialog gd) {
-		gd.addCheckbox("Use_Orientation", (orienteer != null));
-		final Checkbox checkBox = (Checkbox) gd.getCheckboxes().lastElement();
-		checkBox.setState(orienteer != null);
-		checkBox.setEnabled(orienteer != null);
-	}
-
 	/**
 	 * Draw centroids and / or principal axes on a copy of the original image
 	 *
