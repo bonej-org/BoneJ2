@@ -30,20 +30,13 @@
 
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
-import java.awt.Choice;
-import java.awt.GraphicsEnvironment;
-import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.bonej.menuWrappers.ThicknessHelper;
-import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.utilities.SharedTable;
-import org.bonej.utilities.Visualiser;
 import org.bonej.wrapperPlugins.BoneJCommand;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.jogamp.vecmath.Point3f;
@@ -59,17 +52,11 @@ import org.scijava.ui.UIService;
 
 import Jama.EigenvalueDecomposition;
 
-import ij.IJ;
 import ij.ImagePlus;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
-import ij.measure.Calibration;
-import ij.plugin.PlugIn;
 import ij3d.Image3DUniverse;
 import net.imagej.Dataset;
 import net.imagej.DatasetService;
 import net.imagej.display.ColorTables;
-import net.imglib2.display.ColorTable;
 import sc.fiji.analyzeSkeleton.SkeletonResult;
 
 /**
@@ -83,7 +70,7 @@ import sc.fiji.analyzeSkeleton.SkeletonResult;
  * @author Michael Doube
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Particle Analyser")
-public class ParticleCounter extends BoneJCommand implements Command, PlugIn, DialogListener {
+public class ParticleCounter extends BoneJCommand implements Command {
 
 	/* IJ2 parameters */
 	@Parameter(type = ItemIO.INPUT)
@@ -205,35 +192,6 @@ public class ParticleCounter extends BoneJCommand implements Command, PlugIn, Di
 	private int origResampling = 2;
 	
 	
-	/* (non-Javadoc)
-	 * @see ij.gui.DialogListener#dialogItemChanged(ij.gui.GenericDialog, java.awt.AWTEvent)
-	 */
-	@Override
-	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
-		final List<?> choices = gd.getChoices();
-		final List<?> checkboxes = gd.getCheckboxes();
-		final List<?> numbers = gd.getNumericFields();
-
-		// link moments and ellipsoid choice to unit vector choice
-		final Checkbox momBox = (Checkbox) checkboxes.get(4);
-		final Checkbox elBox = (Checkbox) checkboxes.get(8);
-		final Checkbox vvvBox = (Checkbox) checkboxes.get(9);
-		vvvBox.setEnabled(elBox.getState() || momBox.getState());
-		// link show stack 3d to volume resampling
-		final Checkbox box = (Checkbox) checkboxes.get(21);
-		final TextField numb = (TextField) numbers.get(4);
-		numb.setEnabled(box.getState());
-		// link show surfaces, gradient choice and split value
-		final Checkbox surfbox = (Checkbox) checkboxes.get(15);
-		final Choice col = (Choice) choices.get(0);
-		final TextField split = (TextField) numbers.get(3);
-		col.setEnabled(surfbox.getState());
-		split.setEnabled(surfbox.getState() && col.getSelectedIndex() == 1);
-		DialogModifier.registerMacroValues(gd, gd.getComponents());
-		return true;
-	}
-
 	/**
 	 * Modern scijava Plugin entry point.
 	 */
@@ -268,130 +226,7 @@ public class ParticleCounter extends BoneJCommand implements Command, PlugIn, Di
 		colourMode = Arrays.asList(COLOUR_CHOICES).indexOf(surfaceColours);
         doAnalysis(imp, result);        
 	}
-	
-	/* (non-Javadoc)
-	 * @see ij.plugin.PlugIn#run(java.lang.String)
-	 */
-	@Override
-	public void run(final String arg) {
-		final ImagePlus imp = IJ.getImage();
-		if (null == imp) {
-			IJ.noImage();
-			return;
-		}
-		if (!ImageCheck.isBinary(imp)) {
-			IJ.error("Binary image required");
-			return;
-		}
-		final Calibration cal = imp.getCalibration();
-		final String units = cal.getUnits();
-		final GenericDialog gd = new GenericDialog("Setup");
-		final String[] headers = { "Measurement Options", " " };
-		final String[] labels = new String[12];
-		final boolean[] defaultValues = new boolean[12];
-		labels[0] = "Exclude on sides";
-		defaultValues[0] = false;
-		labels[1] = "Surface_area";
-		defaultValues[1] = true;
-		labels[2] = "Feret diameter";
-		defaultValues[2] = false;
-		labels[3] = "Enclosed_volume";
-		defaultValues[3] = true;
-		labels[4] = "Moments of inertia";
-		defaultValues[4] = true;
-		labels[5] = "Euler characteristic";
-		defaultValues[5] = true;
-		labels[6] = "Thickness";
-		defaultValues[6] = true;
-		labels[7] = "Mask thickness map";
-		defaultValues[7] = false;
-		labels[8] = "Ellipsoids";
-		defaultValues[8] = true;
-		labels[9] = "Record unit vectors";
-		defaultValues[9] = false;
-		labels[10] = "Skeletons";
-		defaultValues[10] = false;
-		labels[11] = "Aligned boxes";
-		defaultValues[11] = false;
-		gd.addCheckboxGroup(6, 2, labels, defaultValues, headers);
-		gd.addNumericField("Min Volume", 0, 3, 7, units + "³");
-		gd.addNumericField("Max Volume", Double.POSITIVE_INFINITY, 3, 7, units +
-			"³");
-		gd.addNumericField("Surface_resampling", 2, 0);
-		final String[] headers2 = { "Graphical Results", " " };
-		final String[] labels2 = new String[10];
-		final boolean[] defaultValues2 = new boolean[10];
-		labels2[0] = "Show_particle stack";
-		defaultValues2[0] = true;
-		labels2[1] = "Show_size stack";
-		defaultValues2[1] = false;
-		labels2[2] = "Show_thickness stack";
-		defaultValues2[2] = false;
-		labels2[3] = "Show_surfaces (3D)";
-		defaultValues2[3] = true;
-		labels2[4] = "Show_centroids (3D)";
-		defaultValues2[4] = true;
-		labels2[5] = "Show_axes (3D)";
-		defaultValues2[5] = true;
-		labels2[6] = "Show_ellipsoids (3D)";
-		defaultValues2[6] = true;
-		labels2[7] = "Show_stack (3D)";
-		defaultValues2[7] = true;
-		labels2[8] = "Draw_ellipsoids";
-		defaultValues2[8] = false;
-		labels2[9] = "Show_aligned_boxes (3D)";
-		defaultValues2[9] = false;
-		gd.addCheckboxGroup(5, 2, labels2, defaultValues2, headers2);
-		final String[] items = COLOUR_CHOICES;
-		gd.addChoice("Surface colours", items, items[0]);
-		gd.addNumericField("Split value", 0, 3, 7, units + "³");
-		gd.addNumericField("Volume_resampling", 2, 0);
-		gd.addHelp("https://imagej.github.io/plugins/bonej#particle-analyser");
-		gd.addDialogListener(this);
-		gd.showDialog();
-		if (gd.wasCanceled()) {
-			return;
-		}
-		final double minVol = gd.getNextNumber();
-		final double maxVol = gd.getNextNumber();
-		final boolean doExclude = gd.getNextBoolean();
-		doSurfaceArea = gd.getNextBoolean();
-		doFeret = gd.getNextBoolean();
-		doSurfaceVolume = gd.getNextBoolean();
-		surfaceResampling = (int) Math.floor(gd.getNextNumber());
-		doMoments = gd.getNextBoolean();
-		doEulerCharacters = gd.getNextBoolean();
-		doThickness = gd.getNextBoolean();
-		doMask = gd.getNextBoolean();
-		doEllipsoids = gd.getNextBoolean();
-		doVerboseUnitVectors = gd.getNextBoolean();
-		doSkeletons = gd.getNextBoolean();
-		doAlignedBoxes = gd.getNextBoolean();
-		doParticleImage = gd.getNextBoolean();
-		doParticleSizeImage = gd.getNextBoolean();
-		doThickImage = gd.getNextBoolean();
-		doSurfaceImage = gd.getNextBoolean();
-		colourMode = gd.getNextChoiceIndex();
-		splitValue = gd.getNextNumber();
-		doCentroidImage = gd.getNextBoolean();
-		doAxesImage = gd.getNextBoolean();
-		doEllipsoidImage = gd.getNextBoolean();
-		do3DOriginal = gd.getNextBoolean();
-		doEllipsoidStack = gd.getNextBoolean();
-		doAlignedBoxesImage = gd.getNextBoolean();
-		origResampling = (int) Math.floor(gd.getNextNumber());
 
-		// get the particles and do the analysis
-		final long start = System.nanoTime();
-		ConnectedComponents connector = new ConnectedComponents();
-		final Object[] result = getParticles(connector, imp, minVol, maxVol,
-				ConnectedComponents.FORE, doExclude);
-		// calculate particle labelling time in ms
-		final long time = (System.nanoTime() - start) / 1000000;
-		IJ.log("Particle labelling finished in " + time + " ms");
-		doAnalysis(imp, result);
-	}
-	
 	private void doAnalysis(ImagePlus imp, Object[] result) {
 		
 		//if inputDataset is present, we are in modern mode

@@ -30,16 +30,12 @@
 
 package org.bonej.plugins;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
 import java.awt.Rectangle;
-import java.awt.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.bonej.util.DialogModifier;
 import org.bonej.util.ImageCheck;
 import org.bonej.util.MatrixUtils;
 import org.bonej.util.Multithreader;
@@ -63,11 +59,8 @@ import customnode.CustomPointMesh;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
-import ij.plugin.PlugIn;
 import ij.process.ImageProcessor;
 import ij.process.StackConverter;
 import ij3d.Content;
@@ -83,7 +76,7 @@ import net.imagej.DatasetService;
  * @author Michael Doube
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Moments of Inertia")
-public class Moments extends BoneJCommand implements Command, PlugIn, DialogListener {
+public class Moments extends BoneJCommand implements Command {
 
 	/* IJ2 parameters */
 	@Parameter(type = ItemIO.INPUT)
@@ -141,43 +134,8 @@ public class Moments extends BoneJCommand implements Command, PlugIn, DialogList
 
 	@Parameter(label = "Record Unit Vectors")
 	private boolean doVerboseUnitVectors;
-	
-	private boolean fieldUpdated;
+
 	private Calibration cal;
-
-	@Override
-	public boolean dialogItemChanged(final GenericDialog gd, final AWTEvent e) {
-		if (DialogModifier.hasInvalidNumber(gd.getNumericFields())) return false;
-		final List<?> checkboxes = gd.getCheckboxes();
-		final List<?> nFields = gd.getNumericFields();
-		final Checkbox box0 = (Checkbox) checkboxes.get(0);
-		final boolean isHUCalibrated = box0.getState();
-		final TextField minT = (TextField) nFields.get(2);
-		final TextField maxT = (TextField) nFields.get(3);
-		final double min = Double.parseDouble(minT.getText());
-		final double max = Double.parseDouble(maxT.getText());
-		if (isHUCalibrated && !fieldUpdated) {
-			minT.setText("" + cal.getCValue(min));
-			maxT.setText("" + cal.getCValue(max));
-			fieldUpdated = true;
-		}
-		if (!isHUCalibrated && fieldUpdated) {
-			minT.setText("" + cal.getRawValue(min));
-			maxT.setText("" + cal.getRawValue(max));
-			fieldUpdated = false;
-		}
-		if (isHUCalibrated) DialogModifier.replaceUnitString(gd, "grey", "HU");
-		else DialogModifier.replaceUnitString(gd, "HU", "grey");
-		DialogModifier.registerMacroValues(gd, gd.getComponents());
-		return true;
-	}
-
-	// cortical bone apparent density (material density * volume fraction) from
-	// Mow & Huiskes (2005) p.140
-	// using 1.8 g.cm^-3: 1mm³ = 0.0018 g = 0.0000018 kg = 1.8*10^-6 kg; 1mm²
-	// = 10^-6 m²
-	// conversion coefficient from mm^5 to kg.m² = 1.8*10^-12
-	// double cc = 1.8*Math.pow(10, -12);
 
 	/**
 	 * Modern scijava Plugin entry point.
@@ -267,90 +225,6 @@ public class Moments extends BoneJCommand implements Command, PlugIn, DialogList
     
 	}
 	
-	@Override
-	public void run(final String arg) {
-		final ImagePlus imp = IJ.getImage();
-		if (null == imp) {
-			IJ.noImage();
-			return;
-		}
-		cal = imp.getCalibration();
-		final double[] thresholds = ThresholdGuesser.setDefaultThreshold(imp);
-		final String pixUnits;
-		if (ImageCheck.huCalibrated(imp)) {
-			pixUnits = "HU";
-			fieldUpdated = true;
-		}
-		else pixUnits = "grey";
-		final GenericDialog gd = new GenericDialog("Setup");
-		gd.addNumericField("Start Slice:", 1, 0);
-		gd.addNumericField("End Slice:", imp.getStackSize(), 0);
-
-		gd.addCheckbox("HU Calibrated", ImageCheck.huCalibrated(imp));
-		gd.addNumericField("Bone_Min:", thresholds[0], 1, 6, pixUnits + " ");
-		gd.addNumericField("Bone_Max:", thresholds[1], 1, 6, pixUnits + " ");
-		gd.addMessage("Only pixels >= bone min\n" + "and <= bone max are used.");
-		gd.addMessage("Density calibration coefficients");
-		gd.addNumericField("Slope", 0, 4, 6, "g.cm^-3 / " + pixUnits + " ");
-		gd.addNumericField("Y_Intercept", 1.8, 4, 6, "g.cm^-3");
-		if (isInvalidUnit(cal.getUnits())) {
-			gd.addMessage(
-				"Spatial dimensions uncalibrated.\nAssuming 1 mm pixel spacing.");
-		}
-		gd.addCheckbox("Align result", true);
-		gd.addCheckbox("Show axes (2D)", false);
-		gd.addCheckbox("Show axes (3D)", true);
-		gd.addCheckbox("Record unit vectors", false);
-		gd.addDialogListener(this);
-		gd.showDialog();
-		if (gd.wasCanceled()) {
-			return;
-		}
-		startSlice = (int) gd.getNextNumber();
-		endSlice = (int) gd.getNextNumber();
-		huCalibrated = gd.getNextBoolean();
-		minThreshold = gd.getNextNumber();
-		maxThreshold = gd.getNextNumber();
-
-		densitySlope = gd.getNextNumber();
-		densityIntercept = gd.getNextNumber();
-		if (huCalibrated) {
-			minThreshold = cal.getRawValue(minThreshold);
-			maxThreshold = cal.getRawValue(maxThreshold);
-
-			// convert HU->density user input into raw->density coefficients
-			// for use in later calculations
-			densityIntercept = densitySlope * cal.getCoefficients()[0] + densityIntercept;
-			densitySlope = densitySlope * cal.getCoefficients()[1];
-		}
-
-		doAlign = gd.getNextBoolean();
-		doAxes2D = gd.getNextBoolean();
-		doAxes3D = gd.getNextBoolean();
-		doVerboseUnitVectors = gd.getNextBoolean();
-
-		final double[] centroid = getCentroid3D(imp, startSlice, endSlice, minThreshold, maxThreshold,
-			densitySlope, densityIntercept);
-		if (centroid[0] < 0) {
-			IJ.error("Empty Stack", "No voxels are available for calculation.\n" +
-				"Check your ROI and threshold.");
-			return;
-		}
-		final Object[] momentResults = calculateMoments(imp, startSlice, endSlice,
-			centroid, minThreshold, maxThreshold, densitySlope, densityIntercept);
-
-		populateResultsTable(imp, centroid, momentResults);
-		
-		final EigenvalueDecomposition E =
-				(EigenvalueDecomposition) momentResults[0];
-		
-		if (doAlign) alignToPrincipalAxes(imp, E.getV(), centroid, startSlice,
-			endSlice, minThreshold, maxThreshold, doAxes2D).show();
-
-		if (doAxes3D) show3DAxes(imp, E.getV(), centroid, startSlice, endSlice, minThreshold,
-			maxThreshold);
-	}
-
 	private void populateResultsTable(ImagePlus imp, double[] centroid, Object[] momentResults) {
 		final EigenvalueDecomposition E =
 				(EigenvalueDecomposition) momentResults[0];
@@ -924,10 +798,6 @@ public class Moments extends BoneJCommand implements Command, PlugIn, DialogList
 		final int tD = (int) Math.floor(2 * zTmax / vS) + 5;
 
 		return new int[] { tW, tH, tD };
-	}
-
-	private static boolean isInvalidUnit(final String units) {
-		return units.contains("pixels");
 	}
 
 	/**
