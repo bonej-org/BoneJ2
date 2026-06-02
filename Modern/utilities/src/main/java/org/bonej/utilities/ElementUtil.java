@@ -35,8 +35,10 @@ import static org.bonej.utilities.Streamers.spatialAxisStream;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
+import net.imagej.Dataset;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.LinearAxis;
 import net.imagej.axis.TypedAxis;
@@ -44,9 +46,11 @@ import net.imagej.space.AnnotatedSpace;
 import net.imagej.units.UnitService;
 import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccess;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 
 /**
  * Various utility methods for inspecting image element properties
@@ -55,6 +59,8 @@ import net.imglib2.type.numeric.RealType;
  * @author Michael Doube
  */
 public final class ElementUtil {
+	
+	private static final Random RNG = new Random(42); 
 
 	private ElementUtil() {}
 
@@ -150,6 +156,74 @@ public final class ElementUtil {
 		return true;
 	}
 
+	/**
+	 * Check whether a Dataset's pixels conform to the IJ1 binary definition,
+	 * 8-bit and only 0,255.
+	 * 
+	 * If the image has fewer pixels than n, it scans ALL pixels.
+	 * Otherwise, it randomly samples n pixels.
+	 * 
+	 * @param ds The dataset to check.
+	 * @param n The maximum number of pixels to check.
+	 * @return true if all checked pixels are 0 or 255.
+	 */
+	public static boolean isIJ1Binary(Dataset ds, long n) {
+		// 1. Check Type
+		if (!(ds.getType() instanceof UnsignedByteType)) {
+			return false;
+		}
+
+		long totalPixels = ds.size();
+
+		// 2. Decide strategy: Full Scan vs. Random Sample
+		if (totalPixels <= n) {
+			// --- FULL SCAN (Deterministic) ---
+			// Guaranteed to find any non-binary pixel in small images
+			@SuppressWarnings("rawtypes")
+			Cursor cursor = ds.cursor();
+
+			while (cursor.hasNext()) {
+				// Cast the element to UnsignedByteType
+				UnsignedByteType pixel = (UnsignedByteType) cursor.next();
+				int val = pixel.get();
+
+				if (val != 0 && val != 255) {
+					return false;
+				}
+			}
+			return true;
+		} else {
+			// --- RANDOM SAMPLE (Probabilistic) ---
+			// Fast for large images
+			int sampleSize = (int) n;
+			RandomAccess<RealType<?>> access = ds.randomAccess();
+
+			int numDims = ds.numDimensions();
+			long[] dims = new long[numDims];
+			for (int d = 0; d < numDims; d++) {
+				dims[d] = ds.dimension(d);
+			}
+			long[] pos = new long[numDims];
+
+			for (int i = 0; i < sampleSize; i++) {
+				long idx = (long) (RNG.nextDouble() * totalPixels);
+
+				// Convert flat index to n-dimensional coordinates
+				for (int d = 0; d < numDims; d++) {
+					pos[d] = idx % dims[d];
+					idx /= dims[d];
+				}
+
+				access.setPosition(pos);
+				int val = ((UnsignedByteType) access.get()).get();
+				if (val != 0 && val != 255) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+	
 	//@region -- Helper methods --
 	/**
 	 * Checks if the given space has any non-linear spatial dimensions.

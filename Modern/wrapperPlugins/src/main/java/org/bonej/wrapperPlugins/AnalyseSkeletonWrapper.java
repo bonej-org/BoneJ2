@@ -41,7 +41,6 @@ import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
-import ij.measure.Calibration;
 
 import io.scif.FormatException;
 import io.scif.services.FormatService;
@@ -53,11 +52,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.imagej.Dataset;
+import net.imagej.axis.Axes;
+import net.imagej.display.ColorTables;
+import net.imagej.legacy.LegacyService;
 import net.imagej.patcher.LegacyInjector;
 
 import org.apache.commons.math3.util.MathArrays;
 import org.bonej.utilities.AxisUtils;
-import org.bonej.utilities.ImagePlusUtil;
+import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -98,7 +100,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	@Parameter(label = "Input image", validater = "validateImage",
 		persist = false)
-	private ImagePlus inputImage;
+	private Dataset inputDataset;
 
 	@Parameter(label = "Cycle pruning method",
 		description = "Which method is used to prune cycles in the skeleton graph",
@@ -142,14 +144,14 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 	 * {@link #displaySkeletons} option.
 	 */
 	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus labelledSkeleton;
+	private Dataset labelledSkeleton;
 
 	/**
 	 * The shortest paths image, null if user didn't check the
 	 * {@link #displaySkeletons} option.
 	 */
 	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus shortestPaths;
+	private Dataset shortestPaths;
 
 	@Parameter
 	private UIService uiService;
@@ -168,6 +170,9 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	@Parameter
 	private StatusService statusService;
+	
+	@Parameter
+	private LegacyService legacyService;
 
 	private ImagePlus intensityImage;
 
@@ -179,11 +184,19 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 				return;
 			}
 		}
+		
+        ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+        
+        if (imp == null) {
+            logService.error("Connectivity: Failed to convert Dataset to ImagePlus.");
+            return;
+        }
+		
 		statusService.showStatus("Analyse skeleton: skeletonising");
-		final ImagePlus skeleton = skeletonise(inputImage);
+		final ImagePlus skeleton = skeletonise(imp);
 		final int pruneIndex = mapPruneCycleMethod(pruneCycleMethod);
 		final AnalyzeSkeleton_ analyzeSkeleton_ = new AnalyzeSkeleton_();
-		final Roi roi = excludeRoi ? inputImage.getRoi() : null;
+		final Roi roi = excludeRoi ? imp.getRoi() : null;
 		analyzeSkeleton_.setup("", skeleton);
 		statusService.showStatus("Analyse skeleton: analysing skeletons");
 		// "Silent" parameter cannot be controlled by the user in the original
@@ -198,14 +211,26 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		showAdditionalResults(results);
 		if (displaySkeletons) {
 			final ImageStack labelledStack = analyzeSkeleton_.getResultImage(false);
-			labelledSkeleton = new ImagePlus(inputImage.getTitle() +
+			ImagePlus labelSkeleton = new ImagePlus(imp.getTitle() +
 				"-labelled-skeletons", labelledStack);
-			labelledSkeleton.setCalibration(inputImage.getCalibration());
+			labelSkeleton.setCalibration(imp.getCalibration());
+			labelledSkeleton = convertService.convert(labelSkeleton, Dataset.class);
+			labelSkeleton.close();
+			labelledSkeleton.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+			//if there is a UI, display the dataset
+    		if (uiService != null && uiService.isVisible())
+    			uiService.show(labelledSkeleton);
 			if (calculateShortestPaths) {
 				final ImageStack stack = analyzeSkeleton_.getResultImage(true);
-				final String title = inputImage.getShortTitle() + "-shortest-paths";
-				shortestPaths = new ImagePlus(title, stack);
-				shortestPaths.setCalibration(inputImage.getCalibration());
+				final String title = imp.getShortTitle() + "-shortest-paths";
+				ImagePlus shortPaths = new ImagePlus(title, stack);
+				shortPaths.setCalibration(imp.getCalibration());
+				shortestPaths = convertService.convert(shortPaths, Dataset.class);
+				shortPaths.close();
+				shortestPaths.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+				//if there is a UI, display the dataset
+        		if (uiService != null && uiService.isVisible())
+        			uiService.show(shortestPaths);
 			}
 		}
 	}
@@ -238,8 +263,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			cancelMacroSafe(this, "The intensity image can't have a channel dimension");
 			return false;
 		}
-		if (AxisUtils.countSpatialDimensions(dataset) != inputImage
-			.getNDimensions())
+		if (AxisUtils.countSpatialDimensions(dataset) != AxisUtils.countSpatialDimensions(inputDataset))
 		{
 			cancelMacroSafe(this,
 				"The intensity image should match the dimensionality of the input image");
@@ -265,13 +289,42 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	// region -- Helper methods --
 	private void openIntensityImage() {
+	    // 1. Determine the initial directory
+	    File initialDirectory = null;
+	    String sourceString = inputDataset.getSource();
+
+	    if (sourceString != null && !sourceString.isEmpty()) {
+	        try {
+	            // Try to interpret the source string as a file path
+	            File sourceFile = new File(sourceString);
+	            
+	            // If it's a valid file, use its parent directory
+	            if (sourceFile.exists() && sourceFile.isFile()) {
+	                initialDirectory = sourceFile.getParentFile();
+	            } 
+	            // If it's a directory itself (rare for a dataset source, but possible)
+	            else if (sourceFile.isDirectory()) {
+	                initialDirectory = sourceFile;
+	            }
+	        } catch (Exception e) {
+	            // If parsing fails (e.g., it's a URL like "http://..."), ignore
+	            logService.debug("Source string is not a local file path: " + sourceString);
+	        }
+	    }
+
+	    // Fallback: If no source or parsing failed, use user home
+	    if (initialDirectory == null) {
+	        initialDirectory = new File(System.getProperty("user.home"));
+	    }
+	    
+	    final File file = uiService.chooseFile(initialDirectory, FileWidget.OPEN_STYLE);
+	    
 		// (String, File, String) variant throws UnsupportedOperationException
-		final File file = uiService.chooseFile(new File(inputImage.getTitle()),
-			FileWidget.OPEN_STYLE);
 		if (file == null) {
 			// User pressed cancel on dialog
 			return;
 		}
+		
 		try {
 			FileLocation location = new FileLocation(file.getAbsolutePath()); 
 			formatService.getFormat(location);
@@ -309,7 +362,10 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 				"average intensity (inner 3rd)"), new DoubleColumn(
 					"average intensity"));
 		final Graph[] graphs = results.getGraph();
-		final Calibration cal = inputImage.getCalibration();
+		final double pixelWidth = AxisUtils.getScale(inputDataset, Axes.X);
+		final double pixelHeight = AxisUtils.getScale(inputDataset, Axes.Y);
+		final double pixelDepth = AxisUtils.getScale(inputDataset, Axes.Z);
+		
 		for (int i = 0; i < graphs.length; i++) {
 			final ArrayList<Edge> edges = graphs[i].getEdges();
 			// Sort into descending order by length
@@ -320,18 +376,18 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 				((IntColumn) columns.get(1)).add((j + 1));
 				((DoubleColumn) columns.get(2)).add((edge.getLength()));
 				final Point point = edge.getV1().getPoints().get(0);
-				((DoubleColumn) columns.get(3)).add((point.x) * cal.pixelWidth);
-				((DoubleColumn) columns.get(4)).add((point.y) * cal.pixelHeight);
-				((DoubleColumn) columns.get(5)).add((point.z) * cal.pixelDepth);
+				((DoubleColumn) columns.get(3)).add((point.x) * pixelWidth);
+				((DoubleColumn) columns.get(4)).add((point.y) * pixelHeight);
+				((DoubleColumn) columns.get(5)).add((point.z) * pixelDepth);
 				final Point point2 = edge.getV2().getPoints().get(0);
-				((DoubleColumn) columns.get(6)).add((point2.x) * cal.pixelWidth);
-				((DoubleColumn) columns.get(7)).add((point2.y) * cal.pixelHeight);
-				((DoubleColumn) columns.get(8)).add((point2.z) * cal.pixelDepth);
+				((DoubleColumn) columns.get(6)).add((point2.x) * pixelWidth);
+				((DoubleColumn) columns.get(7)).add((point2.y) * pixelHeight);
+				((DoubleColumn) columns.get(8)).add((point2.z) * pixelDepth);
 				final double distance = MathArrays.distance(
-					new double[] { point.x * cal.pixelWidth,
-						point.y * cal.pixelHeight, point.z * cal.pixelDepth },
-					new double[] { point2.x * cal.pixelWidth, 
-						point2.y * cal.pixelHeight, point2.z * cal.pixelDepth });
+					new double[] { point.x * pixelWidth,
+						point.y * pixelHeight, point.z * pixelDepth },
+					new double[] { point2.x * pixelWidth, 
+						point2.y * pixelHeight, point2.z * pixelDepth });
 				((DoubleColumn) columns.get(9)).add((distance));
 				((DoubleColumn) columns.get(10)).add((edge.getLength_ra()));
 				((DoubleColumn) columns.get(11)).add((edge.getColor3rd()));
@@ -348,7 +404,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			"Average Branch Length", "# Triple points", "# Quadruple points",
 			"Maximum Branch Length", "Longest Shortest Path", "spx", "spy", "spz" };
 
-		final String label = inputImage.getTitle();
+		final String label = inputDataset.getName();
 		for (int i = 0; i < results.getNumOfTrees(); i++) {
 			SharedTable.add(label, headers[0], i + 1);
 			SharedTable.add(label, headers[1], results.getBranches()[i]);
@@ -376,7 +432,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 	{
 		final int iterations = skeletoniser.getThinningIterations();
 		if (iterations > 1) {
-			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
+			skeleton.setTitle("Skeleton of " + inputDataset.getName());
 			uiService.show(skeleton);
 		}
 	}
@@ -400,13 +456,12 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-
-		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
-			.getBitDepth() != 8)
+		
+		if (!ElementUtil.isIJ1Binary(inputDataset, 10000))
 		{
 			// AnalyzeSkeleton_ and Skeletonize_ cast to byte[], anything else than
 			// 8-bit will crash
@@ -414,14 +469,13 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			return;
 		}
 
-		if (inputImage.getNChannels() > 1) {
+		if (inputDataset.dimension(Axes.CHANNEL) > 1) {
 			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
-		if (inputImage.getNFrames() > 1) {
+		if (inputDataset.dimension(Axes.TIME) > 1) {
 			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 	}
-
 	// endregion
 }
