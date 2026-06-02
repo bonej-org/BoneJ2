@@ -53,6 +53,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.linalg.rotate.Rotate3d;
@@ -132,7 +133,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 			ellipsoid -> 1.0 - (1.0/(ellipsoid.getC() * ellipsoid.getC())) / (1.0/(ellipsoid.getA() * ellipsoid.getA()));
 	
 	@Parameter(validater = "validateImage")
-	private ImgPlus<T> inputImage;
+	private Dataset inputDataset;
 	
 	@Parameter(label = "Directions",
 		description = "The number of times sampling is performed from different directions",
@@ -202,6 +203,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	public void run() {
 		sections = (long) Math.sqrt(lines);
 		statusService.showStatus("Anisotropy: initialising");
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
 		subspaces = find3DSubspaces(inputImage);
 		calculateMILLength(subspaces.get(0).interval);
 		matchOps(subspaces.get(0).interval);
@@ -230,7 +233,7 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	private void addResult(final Subspace<BitType> subspace,
 		final double anisotropy, final Ellipsoid ellipsoid)
 	{
-		final String imageName = inputImage.getName();
+		final String imageName = inputDataset.getName();
 		final String suffix = subspace.toString();
 		final String label = suffix.isEmpty() ? imageName : imageName + " " +
 			suffix;
@@ -434,6 +437,10 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
+		
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
+		
 		if (inputImage == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
