@@ -35,6 +35,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.WEIRD_SPATIAL;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
@@ -83,7 +84,7 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 {
 
 	@Parameter(validater = "validateImage")
-	private ImgPlus<T> inputImage;
+	private Dataset inputDataset;
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -105,6 +106,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	public void run() {
 		statusService.showStatus("Element fraction: initializing");
 		prepareResultDisplay();
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
 		final String name = inputImage.getName();
 
 		//get the number of slices, channels and time points to iterate over
@@ -240,6 +243,8 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
 	// region -- Helper methods --
 	private void prepareResultDisplay() {
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
 		final char exponent = ResultUtils.getExponent(inputImage);
 		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
 				String.valueOf(exponent));
@@ -255,35 +260,34 @@ public class ElementFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
 		final long spatialDimensions = AxisUtils.countSpatialDimensions(inputImage);
 		if (spatialDimensions < 2 || spatialDimensions > 3) {
-			inputImage = null;
+			inputDataset = null;
 			cancelMacroSafe(this, WEIRD_SPATIAL);
 			return;
 		}
 		
 		if (!AxisUtils.hasXYDimensions(inputImage)) {
-			inputImage = null;
+			inputDataset = null;
 			cancelMacroSafe(this, WEIRD_SPATIAL);
 			return;
 		}
 		
 		if (AxisUtils.hasNonXYZCTDimension(inputImage)) {
-			inputImage = null;
+			inputDataset = null;
 			cancelMacroSafe(this, CommonMessages.HAS_NONSTANDARD_DIMENSIONS);
 		}
 
-		T type = inputImage.firstElement();
-		//enforce 8-bit (IJ1 binary is 0 and 255)
-		if (type instanceof UnsignedByteType)
-			return;
-		else {
-			inputImage = null;
+		//check if binary. Only light checking is needed because every pixel is checked
+		//during foreground counting
+		if (!ElementUtil.isIJ1Binary(inputDataset, 1000)) {
+			inputDataset = null;
 			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
