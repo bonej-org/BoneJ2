@@ -38,7 +38,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import net.imagej.Dataset;
 import net.imagej.axis.Axes;
+import net.imagej.axis.AxisType;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.axis.TypedAxis;
 import net.imagej.space.AnnotatedSpace;
@@ -282,5 +284,26 @@ public final class AxisUtils {
 		}
 		return true;
 	}
-	// endregion
+	
+	/**
+	 * Get the interval spacing in real units along an axis
+	 * 
+	 * @param ds
+	 * @param type
+	 * @return the average sample spacing in calibrated units along the given axis
+	 */
+	public static double getScale(Dataset ds, AxisType type) {
+		
+	    long numPixels = ds.dimension(type);
+	    if (numPixels <= 1) return 1.0;
+	    
+	    Optional<CalibratedAxis> opt = ds.axis(type);
+
+	    if (opt.isPresent()) {
+	        CalibratedAxis axis = opt.get();
+	        return Math.abs(axis.calibratedValue(numPixels - 1)
+	        		- axis.calibratedValue(0)) / (numPixels - 1);
+	    }
+	    return 1.0;
+	}
 }
