@@ -62,6 +62,8 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.LongType;
+import net.imagej.Dataset;
+import net.imagej.DatasetService;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.special.function.BinaryFunctionOp;
@@ -144,10 +146,12 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	@SuppressWarnings("unused")
     @Parameter
 	private UnitService unitService;
+	@Parameter
+	private DatasetService datasetService;
 	//main input image
 	@SuppressWarnings("unused")
 	@Parameter(validater = "validateImage")
-	private ImgPlus<T> inputImage;
+	private Dataset inputDataset;
 
 	//algorithm parameters
 	@Parameter(label = "Vectors")
@@ -188,18 +192,20 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	private boolean showSecondaryImages = false;
 
 	@Parameter (label = "EF Output Images", type = ItemIO.OUTPUT)
-	private List<ImgPlus> ellipsoidFactorOutputImages;
+	private List<Dataset> ellipsoidFactorOutputImages;
 	@Parameter(label = "Seed Points", type = ItemIO.OUTPUT)
-	private ImgPlus<ByteType> seedPointImage;// 0=not a seed, 1=medial seed
-
+    // 0=not a seed, 1=medial seed
+	private Dataset seedPointDataset;
+	
 	private ImgPlus<BitType> inputAsBitType;
 
 	@Override
 	public void run() {
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
 		inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 
 		int totalEllipsoids = 0;
-		List<ImgPlus> outputList = null;
+		List<ImgPlus> outputImgPlusList = null;
 		final EllipsoidFactorErrorTracking errorTracking =
 				new EllipsoidFactorErrorTracking(opService);
 
@@ -227,19 +233,19 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			final List<ImgPlus> currentOutputList = (List<ImgPlus>) opService.run(EllipsoidFactorOutputGenerator.class, ellipsoidIdentityImage,
 					ellipsoids, showFlinnPlots, showSecondaryImages, inputImage.getName().split("\\.")[0]);
 
-			if(outputList!=null)
+			if(outputImgPlusList!=null)
 			{
-				outputList = sumOutput(outputList, currentOutputList, counter);
+				outputImgPlusList = sumOutput(outputImgPlusList, currentOutputList, counter);
 				if(showConvergence)
 				{
-					final Map<String, Double> errors = errorTracking.calculate(outputList.get(0));
+					final Map<String, Double> errors = errorTracking.calculate(outputImgPlusList.get(0));
 					errors.forEach((stat,value) -> logService.info(stat+": "+value.toString()));
 					medianErrors[i] = errors.get("Median");
 					maxErrors[i] = errors.get("Max");
 				}
 			}
 			else{
-				outputList = currentOutputList;
+				outputImgPlusList = currentOutputList;
 				if(showConvergence)
 				{
 					medianErrors[i] = 2.0; // start with maximum possible error in first run (as no previous runs exist)
@@ -256,15 +262,19 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 
 		if(runs>1)
 		{
-			outputList = divideOutput(outputList, runs);
+			outputImgPlusList = divideOutput(outputImgPlusList, runs);
 		}
 
-		ellipsoidFactorOutputImages = outputList;
+		ellipsoidFactorOutputImages= new ArrayList<Dataset>(1);
+		for (ImgPlus imgPlus : outputImgPlusList) {
+			ellipsoidFactorOutputImages.add(datasetService.create(imgPlus));
+		}
 
 		//calibrate output images
 		final double voxelVolume = ElementUtil.calibratedSpatialElementSize(inputImage, unitService);
-		for(final ImgPlus imgPlus : ellipsoidFactorOutputImages)
+		for(final Dataset ds : ellipsoidFactorOutputImages)
 		{
+			ImgPlus imgPlus = ds.getImgPlus();
 			if(imgPlus.numDimensions()>=3)
 			{
 				// set spatial axis for first 3 dimensions (ID is 4d)
@@ -285,7 +295,7 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			}
 		}
 
-		final ImgPlus EF = ellipsoidFactorOutputImages.get(0);
+		final ImgPlus EF = ellipsoidFactorOutputImages.get(0).getImgPlus();
 		final double numberOfForegroundVoxels = countTrue(inputAsBitType);
 		final double numberOfAssignedVoxels = countAssignedVoxels(EF);
 		final double fillingPercentage = 100.0 * (numberOfAssignedVoxels / numberOfForegroundVoxels);
@@ -402,7 +412,6 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 		final List<QuickEllipsoid> quickEllipsoids = new ArrayList<>();
 		final OptimisationParameters parameters = new OptimisationParameters(vectorIncrement, nVectors, contactSensitivity, maxIterations, maxDrift);
 		if (seedOnDistanceRidge) {
-			final ImgPlus<BitType> inputAsBitType = Common.toBitTypeImgPlus(opService, inputImage);
 			List<Vector3d> ridgePoints = getDistanceRidgePoints(inputAsBitType);
 			ridgePoints = applySkipRatio(ridgePoints);
 			addPointsToDisplay(ridgePoints, seedImage, (byte) 1);
@@ -440,6 +449,8 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			quickEllipsoids.addAll(skeletonSeededEllipsoids);
 		}
 
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
 		if(showSecondaryImages)
 		{
 			final DefaultLinearAxis xAxis = (DefaultLinearAxis) inputImage.axis(0);
@@ -448,9 +459,10 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 			xAxis.setUnit(inputImage.axis(0).unit());
 			yAxis.setUnit(inputImage.axis(1).unit());
 			zAxis.setUnit(inputImage.axis(2).unit());
-			seedPointImage = new ImgPlus<>(seedImage, inputImage.getName().split("\\.")[0]+"_seed_points", xAxis, yAxis, zAxis);
+			ImgPlus<ByteType> seedPointImage = new ImgPlus<>(seedImage, inputImage.getName().split("\\.")[0]+"_seed_points", xAxis, yAxis, zAxis);
 			seedPointImage.setChannelMaximum(0, 1);
 			seedPointImage.setChannelMinimum(0, 0);
+			seedPointDataset = datasetService.create(seedPointImage);
 		}
 		quickEllipsoids.sort((a, b) -> Double.compare(b.getVolume(), a.getVolume()));
 		final long stop = System.currentTimeMillis();
@@ -589,18 +601,20 @@ public class EllipsoidFactorWrapper <T extends RealType<T> & NativeType<T>> exte
 	}
 
 	private void addResults(final int totalEllipsoids, final double fillingPercentage) {
-		final String label = inputImage.getName();
+		final String label = inputDataset.getName();
 		SharedTable.add(label, "filling percentage", fillingPercentage);
 		SharedTable.add(label, "number of ellipsoids found in total", totalEllipsoids);
 	}
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
+		
 		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
