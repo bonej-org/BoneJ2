@@ -83,7 +83,7 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
+			FractalDimensionWrapper.class, true, "inputDataset", imgPlus,
 			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
 			"translations", 0L, "showPoints", true).get();
 
@@ -122,7 +122,7 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			FractalDimensionWrapper.class, true, "inputImage", imgPlus,
+			FractalDimensionWrapper.class, true, "inputDataset", imgPlus,
 			"startBoxSize", 4, "smallestBoxSize", 1, "scaleFactor", 2.0,
 			"translations", 0L).get();
 
