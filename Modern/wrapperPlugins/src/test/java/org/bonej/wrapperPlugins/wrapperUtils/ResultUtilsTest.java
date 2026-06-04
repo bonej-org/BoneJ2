@@ -39,6 +39,7 @@ import static org.mockito.Mockito.when;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+import net.imagej.Dataset;
 import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
@@ -179,7 +180,14 @@ public class ResultUtilsTest {
 
 	@Test(expected = NullPointerException.class)
 	public void testGetUnitHeaderThrowsNPEIfImagePlusNull() {
-		ResultUtils.getUnitHeader(null);
+		ImagePlus imp = null;
+		ResultUtils.getUnitHeader(imp);
+	}
+	
+	@Test(expected = NullPointerException.class)
+	public void testGetUnitHeaderThrowsNPEIfDatasetNull() {
+		Dataset ds = null;
+		ResultUtils.getUnitHeader(ds);
 	}
 
 	@Test
