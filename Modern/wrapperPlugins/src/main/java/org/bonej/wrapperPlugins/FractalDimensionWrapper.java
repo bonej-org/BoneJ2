@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.ops.OpService;
 import net.imagej.ops.Ops.Morphology.Outline;
@@ -92,7 +93,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 {
 
 	@Parameter(validater = "validateImage")
-	private ImgPlus<T> inputImage;
+	private Dataset inputDataset;
 
 	@Parameter(label = "Starting box size (px)",
 		description = "The size of the sampling boxes in the first iteration",
@@ -148,7 +149,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 
 		final List<Double> dimensions = new ArrayList<>();
 		final List<Double> rSquared = new ArrayList<>();
-		subspaces = find3DSubspaces(inputImage);
+		subspaces = find3DSubspaces((ImgPlus<T>) inputDataset.getImgPlus());
 		matchOps(subspaces.get(0).interval);
 		subspaces.forEach(subspace -> {
 			final RandomAccessibleInterval<BitType> interval = subspace.interval;
@@ -223,7 +224,7 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 	private void fillResultsTable(final List<Subspace<BitType>> subspaces,
 		final List<Double> fractalDimensions, final List<Double> rSquared)
 	{
-		final String imageName = inputImage.getName();
+		final String imageName = inputDataset.getName();
 		final int results = fractalDimensions.size();
 		for (int i = 0; i < results; i++) {
 			final String suffix = subspaces.get(i).toString();
@@ -255,11 +256,11 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 
 	@SuppressWarnings("unused")
 	private void initAutoParam() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			return;
 		}
-		final long[] dimensions = new long[inputImage.numDimensions()];
-		inputImage.dimensions(dimensions);
+		final long[] dimensions = new long[inputDataset.numDimensions()];
+		inputDataset.dimensions(dimensions);
 		final long maxDimension = Arrays.stream(dimensions).max().orElse(0);
 		autoMax = maxDimension / 4;
 	}
@@ -283,11 +284,11 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-		if (!ElementUtil.isBinary(inputImage)) {
+		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000)) {
 			cancelMacroSafe(this, NOT_BINARY);
 		}
 	}
