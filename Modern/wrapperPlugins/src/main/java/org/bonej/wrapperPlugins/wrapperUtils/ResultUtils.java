@@ -35,6 +35,7 @@ import ij.ImagePlus;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import net.imagej.Dataset;
 import net.imagej.axis.Axes;
 import net.imagej.axis.AxisType;
 import net.imagej.axis.CalibratedAxis;
@@ -165,6 +166,30 @@ public final class ResultUtils {
 		return "(" + unit + ")";
 	}
 
+	/**
+	 * Get a formatted unit string for use in the result table header.
+	 * 
+	 * Consider using AxisUtils.getSpatialUnit() instead.
+	 * 
+	 * @param ds image dataset
+	 * @return a formatted unit string like (mm). The unit of the lowest ordered spatial axis is used.
+	 */
+	public static String getUnitHeader(final Dataset ds) {
+		final int nD = ds.numDimensions();
+		String unit = null;
+		for (int d = 0; d < nD; d++) {
+			if (ds.axis(d).type().isSpatial()) {
+				unit = ds.axis(d).unit();
+				break;
+			}
+		}
+		if (StringUtils.isNullOrEmpty(unit))
+		{
+			return "";
+		}
+		return "(" + unit + ")";
+	}
+	
 	/**
 	 * If needed, converts the given index to the ImageJ1 convention where Z,
 	 * Channel and Time axes start from 1.

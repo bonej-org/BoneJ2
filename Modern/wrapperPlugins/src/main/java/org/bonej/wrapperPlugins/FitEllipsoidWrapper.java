@@ -35,31 +35,33 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
-import ij.ImagePlus;
-import ij.measure.Calibration;
+import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 
+import java.awt.Point;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import net.imagej.Dataset;
+import net.imagej.axis.Axes;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.ops.OpService;
 import net.imagej.ops.stats.regression.leastSquares.Quadric;
 import net.imagej.patcher.LegacyInjector;
+import net.imagej.units.UnitService;
 
 import org.bonej.ops.ellipsoid.Ellipsoid;
 import org.bonej.ops.ellipsoid.QuadricToEllipsoid;
-import org.bonej.utilities.ImagePlusUtil;
-import org.bonej.utilities.RoiManagerUtil;
+import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.SharedTable;
-import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.joml.Matrix4dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -68,9 +70,11 @@ import org.scijava.ui.UIService;
 /**
  * A command that takes point ROIs from the ROI manager, and tries to fit an
  * ellipsoid on them. If the fitting succeeds, it reports the properties of the
- * ellipsoid.
+ * ellipsoid. It uses the calibration of a Dataset to scale the ROI points (in pixels)
+ * to real units.
  *
  * @author Richard Domander
+ * @author Michael Doube
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Fit ellipsoid")
 public class FitEllipsoidWrapper extends BoneJCommand {
@@ -84,7 +88,7 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 	// Take in ImagePlus because there's already legacy dependencies (ROIs), and
 	// there's no stable ROI system for ImageJ2 classes yet.
 	@Parameter(validater = "validateImage")
-	private ImagePlus inputImage;
+	private Dataset inputDataset;
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -93,13 +97,16 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 	private UIService uiService;
 	@Parameter
 	private LogService logService;
-
-	private List<Vector3d> points;
+	@Parameter
+	private ConvertService convertService;
+	@Parameter
+	private UnitService unitService;
 
 	@Override
 	public void run() {
-		if (!initPointROIs()) {
-			cancelMacroSafe(this, "Please populate ROI Manager with at least "
+	    List<Vector3d> points = new ArrayList<>();
+		if (!initPointROIs(points)) {
+			cancelMacroSafe(this, "Found "+points.size()+" points. Please populate ROI Manager with at least "
 					+ MIN_DATA + " point ROIs");
 			return;
 		}
@@ -121,8 +128,8 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 	}
 
 	private void addResults(final Ellipsoid ellipsoid) {
-		final String unitHeader = ResultUtils.getUnitHeader(inputImage);
-		final String label = inputImage.getTitle();
+		final String unitHeader = ResultUtils.getUnitHeader(inputDataset);
+		final String label = inputDataset.getName();
 		final Vector3dc centroid = ellipsoid.getCentroid();
 		SharedTable.add(label, "Centroid x " + unitHeader, centroid.x());
 		SharedTable.add(label, "Centroid y " + unitHeader, centroid.y());
@@ -132,37 +139,60 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 		SharedTable.add(label, "Radius c " + unitHeader, ellipsoid.getC());
 	}
 
-	private boolean initPointROIs() {
+	private boolean initPointROIs(List<Vector3d> points) {
 		// You can't have a RoiManager as a @Parameter with its own validator method
 		final RoiManager manager = RoiManager.getInstance();
 		if (manager == null) {
+			logService.error("ROI Manager is not available");
 			return false;
 		}
-		final Calibration calibration = inputImage.getCalibration();
-		final Function<Vector3d, Vector3d> calibrate = v -> {
-			v.x *= calibration.pixelWidth;
-			v.y *= calibration.pixelHeight;
-			v.z *= calibration.pixelDepth;
-			return v;
-		};
-		points = RoiManagerUtil.pointROICoordinates(manager).stream().filter(
-			p -> !RoiManagerUtil.isActiveOnAllSlices((int) p.z)).map(calibrate)
-			.collect(Collectors.toList());
+
+		CalibratedAxis axisX = inputDataset.axis(Axes.X).get();
+		CalibratedAxis axisY = inputDataset.axis(Axes.Y).get();
+		CalibratedAxis axisZ = inputDataset.axis(Axes.Z).get();
+
+		Roi[] roiArray = manager.getRoisAsArray();
+		if (roiArray.length < MIN_DATA)
+			return false;
+		
+		for (Roi roi : roiArray) {
+			if (roi.getType() != Roi.POINT)
+				continue;
+
+			Point p = roi.getContainedPoints()[0];
+	        if (p == null) continue;
+			
+	        int zPos = roi.getPosition();
+	        if (zPos <= 0) {
+	        	//can't use points that lack a z coordinate.
+	        	//roi manager reports stack number, starting from 1
+	        	continue;
+	        }
+	        
+			points.add(
+					new Vector3d(
+							axisX.calibratedValue(p.x),
+				            axisY.calibratedValue(p.y),
+				            axisZ.calibratedValue(zPos - 1)
+				            )
+					);
+		}
 		return points.size() >= MIN_DATA;
 	}
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-		if (!ImagePlusUtil.is3D(inputImage)) {
+		
+		if (!AxisUtils.has3SpatialDimensions(inputDataset) ||
+				AxisUtils.hasChannelDimensions(inputDataset) ||
+				AxisUtils.hasNonXYZCTDimension(inputDataset) ||
+				AxisUtils.hasTimeDimensions(inputDataset)) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
-		}
-		if (!Common.warnAnisotropy(inputImage, uiService, logService)) {
-			cancel(null);
 		}
 	}
 }

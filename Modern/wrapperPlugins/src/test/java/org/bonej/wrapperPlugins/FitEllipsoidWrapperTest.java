@@ -60,12 +60,6 @@ public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 	}
 
 	@Test
-	public void testAnisotropicImageShowsWarningDialog() {
-		CommonWrapperTests.testAnisotropyWarning(imageJ(),
-			FitEllipsoidWrapper.class);
-	}
-
-	@Test
 	public void testNullImageCancelsPlugin() {
 		CommonWrapperTests.testNullImageCancelsPlugin(imageJ(),
 			FitEllipsoidWrapper.class);

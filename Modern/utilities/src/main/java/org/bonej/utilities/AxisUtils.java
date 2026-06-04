@@ -306,4 +306,28 @@ public final class AxisUtils {
 	    }
 	    return 1.0;
 	}
+	
+	/**
+	 * Check whether the dataset has exactly 3 spatial dimensions.
+	 * 
+	 * Ignores whether there are (or are not) any other dimensions.
+	 * 
+	 * @param ds
+	 * @return
+	 */
+	public static boolean has3SpatialDimensions(Dataset ds) {
+		final int nD = ds.numDimensions();
+		if (nD < 3) return false;
+		
+		int nSpatialAxes = 0;
+		for (int d = 0; d < nD; d++) {
+			if (ds.axis(d).type().isSpatial())
+				nSpatialAxes++;
+		}
+		
+		if (nSpatialAxes == 3)
+			return true;
+		
+		return false;
+	}	
 }
