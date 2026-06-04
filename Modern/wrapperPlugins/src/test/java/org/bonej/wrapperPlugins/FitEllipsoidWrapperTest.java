@@ -72,7 +72,7 @@ public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			FitEllipsoidWrapper.class, true, "inputImage", imagePlus).get();
+			FitEllipsoidWrapper.class, true, "inputDataset", imagePlus).get();
 
 		// VERIFY
 		assertTrue("No ROI Manager should have cancelled the plugin", module

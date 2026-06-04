@@ -46,6 +46,7 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -58,9 +59,12 @@ import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
 import org.scijava.command.Command;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
+
+import com.jogamp.nativewindow.awt.AWTPrintLifecycle.Context;
 
 import ij.ImagePlus;
 import ij.gui.NewImage;
@@ -84,7 +88,7 @@ public final class CommonWrapperTests {
 		try {
 			// EXECUTE
 			final CommandModule module =
-					imageJ.command().run(commandClass, true, "inputImage", null).get();
+					imageJ.command().run(commandClass, true, "inputDataset", null).get();
 
 			// VERIFY
 			assertTrue("Null image should have canceled the plugin", module.isCanceled());
@@ -114,7 +118,7 @@ public final class CommonWrapperTests {
 		try {
 			// EXECUTE
 			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputImage", imgPlus).get();
+					"inputDataset", imgPlus).get();
 
 			// VERIFY
 			assertTrue("2D image should have cancelled the plugin", module
@@ -149,7 +153,7 @@ public final class CommonWrapperTests {
 		try {
 			// EXECUTE
 			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputImage", imgPlus).get();
+					"inputDataset", imgPlus).get();
 
 			// VERIFY
 			assertTrue(
@@ -181,11 +185,13 @@ public final class CommonWrapperTests {
 		stats.histogram[0xFF] = 1;
 		when(nonBinaryImage.getStatistics()).thenReturn(stats);
 		when(nonBinaryImage.getNSlices()).thenReturn(2);
-
+		final ConvertService convertService = imageJ.context().service(ConvertService.class);
+		Dataset ds = convertService.convert(nonBinaryImage, Dataset.class);
+		
 		try {
 			// EXECUTE
 			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputImage", nonBinaryImage).get();
+					"inputDataset", ds).get();
 
 			// VERIFY
 			assertTrue(
@@ -210,10 +216,13 @@ public final class CommonWrapperTests {
 		final ImagePlus image = mock(ImagePlus.class);
 		when(image.getNSlices()).thenReturn(1);
 
+		final ConvertService convertService = imageJ.context().service(ConvertService.class);
+		Dataset ds = convertService.convert(image, Dataset.class);
+		
 		try {
 			// EXECUTE
 			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputImage", image).get();
+					"inputDataset", ds).get();
 
 			// VERIFY
 			assertTrue("2D image should have cancelled the plugin", module
@@ -258,11 +267,13 @@ public final class CommonWrapperTests {
 		calibration.pixelDepth = 1;
 		final ImagePlus imagePlus = NewImage.createByteImage("", 5, 5, 5, 1);
 		imagePlus.setCalibration(calibration);
-
+		final ConvertService convertService = imageJ.context().service(ConvertService.class);
+		final Dataset ds = convertService.convert(imagePlus, Dataset.class);
+		
 		try {
 			// EXECUTE
 			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputImage", imagePlus).get();
+					"inputDataset", ds).get();
 
 			// VERIFY
 			verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(

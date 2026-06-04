@@ -99,7 +99,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-				true, "inputImage", imgPlus, "lines", 10, "directions", 10, "displayMILVectors", false).get();
+				true, "inputDataset", imgPlus, "lines", 10, "directions", 10, "displayMILVectors", false).get();
 
 		// VERIFY
 		assertFalse(module.isCanceled());
@@ -126,7 +126,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-			true, "inputImage", imgPlus, "lines", 10, "directions", 10).get();
+			true, "inputDataset", imgPlus, "lines", 10, "directions", 10).get();
 
 		// VERIFY
 		assertTrue(module.isCanceled());
@@ -148,7 +148,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-			true, "inputImage", hyperSheets, "lines", 1, "directions", 9).get();
+			true, "inputDataset", hyperSheets, "lines", 1, "directions", 9).get();
 
 		assertTrue(module.isCanceled());
 		assertEquals(
@@ -171,7 +171,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	@Test
 	public void testTooFewPointsCancelsPlugin() throws Exception {
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-			true, "inputImage", hyperSheets, "lines", 1, "directions", 1).get();
+			true, "inputDataset", hyperSheets, "lines", 1, "directions", 1).get();
 
 		assertTrue(module.isCanceled());
 		assertEquals("Anisotropy could not be calculated - too few points", module
@@ -183,7 +183,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 		final double expectedIncrement = Math.round(Math.sqrt(3.0) * 100.0) / 100.0;
 
 		final CommandModule module = command()
-				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
+				.run(AnisotropyWrapper.class, true, "inputDataset", hyperSheets, "lines", 1,
 						"directions", 1, "samplingIncrement", 0).get();
 
 		final Double increment = (Double) module.getInput("samplingIncrement");
@@ -195,7 +195,7 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 		final double inputIncrement = 5.0;
 
 		final CommandModule module = command()
-				.run(AnisotropyWrapper.class, true, "inputImage", hyperSheets, "lines", 1,
+				.run(AnisotropyWrapper.class, true, "inputDataset", hyperSheets, "lines", 1,
 						"directions", 1, "samplingIncrement", inputIncrement).get();
 
 		final Double increment = (Double) module.getInput("samplingIncrement");

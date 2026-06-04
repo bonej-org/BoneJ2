@@ -90,7 +90,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", line,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", line,
 			"pruneCycleMethod", "None", "verbose", true, "pruneEnds", false).get();
 
 		// VERIFY
@@ -120,7 +120,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", pixel,
 			"pruneCycleMethod", "None", "verbose", false).get();
 
 		// VERIFY
@@ -136,7 +136,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", imagePlus).get();
 
 		// VERIFY
 		assertTrue("A composite image should have cancelled the plugin", module
@@ -160,7 +160,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", pixel,
 			"pruneCycleMethod", "None").get();
 
 		// VERIFY
@@ -177,7 +177,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", imagePlus,
 			"pruneCycleMethod", "None").get();
 
 		// VERIFY
@@ -209,7 +209,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		CommandModule module = command().run(AnalyseSkeletonWrapper.class,
-			true, "inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons",
+			true, "inputDataset", pixel, "pruneCycleMethod", "None", "displaySkeletons",
 			false, "calculateShortestPaths", true).get();
 
 		// VERIFY
@@ -218,7 +218,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		module = command().run(AnalyseSkeletonWrapper.class, true,
-			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
+			"inputDataset", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", false).get();
 
 		// VERIFY
@@ -227,7 +227,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		module = command().run(AnalyseSkeletonWrapper.class, true,
-			"inputImage", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
+			"inputDataset", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", true).get();
 
 		// VERIFY
@@ -263,7 +263,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", pixels,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", pixels,
 			"pruneCycleMethod", "None", "calculateShortestPaths", true).get();
 
 		// VERIFY
@@ -298,7 +298,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", pixel,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", pixel,
 			"pruneCycleMethod", "None", "calculateShortestPaths", false).get();
 
 		// VERIFY
@@ -323,7 +323,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", square,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", square,
 			"pruneCycleMethod", "None").get();
 
 		// VERIFY
@@ -342,7 +342,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", imagePlus).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", imagePlus).get();
 
 		// VERIFY
 		assertTrue("An image with time dimension should have cancelled the plugin",
@@ -364,7 +364,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", blank).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", blank).get();
 
 		// VERIFY
 		assertTrue("Sanity check failed: method didn't cancel", module
@@ -382,7 +382,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputImage", image).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", image).get();
 
 		// VERIFY
 		assertFalse("Sanity check failed: method cancelled", module.isCanceled());
