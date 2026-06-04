@@ -113,7 +113,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 		
 		// EXECUTE
 		final CommandModule module = command().run(
-			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+			ElementFractionWrapper.class, true, "inputDataset", imgPlus).get();
 
 		//Make sure the plugin wasn't cancelled
 		assertTrue(module.getCancelReason(), !module.isCanceled());
@@ -167,7 +167,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		final CommandModule module = command().run(
-			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+			ElementFractionWrapper.class, true, "inputDataset", imgPlus).get();
 		
 		//Make sure the plugin wasn't cancelled
 		assertTrue(module.getCancelReason(), !module.isCanceled());
@@ -208,7 +208,7 @@ public class ElementFractionWrapperTest extends AbstractWrapperTest {
 
 		// Run command
 		final CommandModule module = command().run(
-			ElementFractionWrapper.class, true, "inputImage", imgPlus).get();
+			ElementFractionWrapper.class, true, "inputDataset", imgPlus).get();
 
 		assertTrue("A non 2D and 3D image should have cancelled the plugin", module
 			.isCanceled());
