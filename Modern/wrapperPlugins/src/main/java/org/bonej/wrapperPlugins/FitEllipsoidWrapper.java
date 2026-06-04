@@ -106,7 +106,7 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 	public void run() {
 	    List<Vector3d> points = new ArrayList<>();
 		if (!initPointROIs(points)) {
-			cancelMacroSafe(this, "Found "+points.size()+" points. Please populate ROI Manager with at least "
+			cancelMacroSafe(this, "Please populate ROI Manager with at least "
 					+ MIN_DATA + " point ROIs");
 			return;
 		}
