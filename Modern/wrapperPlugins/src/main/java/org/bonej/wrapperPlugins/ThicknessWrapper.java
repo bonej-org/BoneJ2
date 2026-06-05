@@ -30,7 +30,6 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
@@ -39,7 +38,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
-import ij.process.LUT;
 import ij.process.StackStatistics;
 
 import java.util.ArrayList;
@@ -47,15 +45,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.imagej.Dataset;
+import net.imagej.display.ColorTables;
 import net.imagej.patcher.LegacyInjector;
+import net.imagej.units.UnitService;
 
-import org.bonej.utilities.ImagePlusUtil;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.bonej.wrapperPlugins.wrapperUtils.ResultUtils;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -76,8 +79,8 @@ public class ThicknessWrapper extends BoneJCommand {
 		LegacyInjector.preinit();
 	}
 
-	@Parameter(validater = "validateImage")
-	private ImagePlus inputImage;
+	@Parameter(validater = "validateImage", type = ItemIO.INPUT)
+	private Dataset inputDataset;
 
 	@Parameter(label = "Calculate:",
 		description = "Which thickness measures to calculate",
@@ -96,10 +99,10 @@ public class ThicknessWrapper extends BoneJCommand {
 	private boolean maskArtefacts = true;
 
 	@Parameter(label = "Trabecular thickness", type = ItemIO.OUTPUT)
-	private ImagePlus trabecularMap;
+	private Dataset trabecularMap;
 
 	@Parameter(label = "Trabecular separation", type = ItemIO.OUTPUT)
-	private ImagePlus separationMap;
+	private Dataset separationMap;
 
 	@Parameter
 	private UIService uiService;
@@ -107,6 +110,10 @@ public class ThicknessWrapper extends BoneJCommand {
 	private LogService logService;
 	@Parameter
 	private StatusService statusService;
+	@Parameter
+	private ConvertService convertService;
+	@Parameter
+	private UnitService unitService;
 
 	private boolean foreground;
 	private LocalThicknessWrapper localThickness;
@@ -127,18 +134,23 @@ public class ThicknessWrapper extends BoneJCommand {
 		});
 		resultsTable = SharedTable.getTable();
 		if (showMaps) {
-			final LUT fire = Common.makeFire();
-			trabecularMap = thicknessMaps.get(true);
+			trabecularMap = convertService.convert(thicknessMaps.get(true), Dataset.class);
 			if (trabecularMap != null) {
-				final StackStatistics trabecularStats = new StackStatistics(trabecularMap);
-				trabecularMap.setDisplayRange(0.0, trabecularStats.max);
-				trabecularMap.setLut(fire);	
+				final StackStatistics trabecularStats = new StackStatistics(thicknessMaps.get(true));
+				trabecularMap.getImgPlus().setChannelMinimum(0, 0.0);
+				trabecularMap.getImgPlus().setChannelMaximum(0, trabecularStats.max);
+				trabecularMap.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+				if (uiService != null && uiService.isVisible())
+        			uiService.show(trabecularMap);
 			}
-			separationMap = thicknessMaps.get(false);
+			separationMap = convertService.convert(thicknessMaps.get(false), Dataset.class);
 			if (separationMap != null) {
-				final StackStatistics separationStats = new StackStatistics(separationMap);
-				separationMap.setDisplayRange(0.0, separationStats.max);
-				separationMap.setLut(fire);
+				final StackStatistics separationStats = new StackStatistics(thicknessMaps.get(false));
+				separationMap.getImgPlus().setChannelMinimum(0, 0.0);
+				separationMap.getImgPlus().setChannelMaximum(0, separationStats.max);
+				separationMap.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+				if (uiService != null && uiService.isVisible())
+        			uiService.show(separationMap);
 			}
 		}
 	}
@@ -147,7 +159,7 @@ public class ThicknessWrapper extends BoneJCommand {
 		if (map == null) {
 			return;
 		}
-		final String label = inputImage.getTitle();
+		final String label = inputDataset.getName();
 		final String unitHeader = ResultUtils.getUnitHeader(map);
 		final String prefix = foreground ? "Tb.Th" : "Tb.Sp";
 		final StackStatistics resultStats = new StackStatistics(map);
@@ -178,8 +190,8 @@ public class ThicknessWrapper extends BoneJCommand {
 	private ImagePlus createMap() {
 		final ImagePlus image;
 
-		image = cleanDuplicate(inputImage);
-
+		image = convertService.convert(inputDataset, ImagePlus.class).duplicate();
+		
 		return localThickness.processImage(image);
 	}
 
@@ -211,35 +223,35 @@ public class ThicknessWrapper extends BoneJCommand {
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
-		if (!ImagePlusUtil.is3D(inputImage)) {
+		if (!AxisUtils.has3SpatialDimensions(inputDataset)) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
 
-		if (inputImage.getNChannels() > 1) {
+		if (AxisUtils.hasChannelDimensions(inputDataset)) {
 			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
-		if (inputImage.getNFrames() > 1) {
+		if (AxisUtils.hasTimeDimensions(inputDataset)) {
 			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 			return;
 		}
 
-		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
-			.getBitDepth() != 8)
+		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000))
 		{
 			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 
 		if (!anisotropyWarned) {
-			if (!Common.warnAnisotropy(inputImage, uiService, logService)) {
-				cancel(null);
+			if (!AxisUtils.isSpatialCalibrationsIsotropic(inputDataset, 0.01, unitService)) {
+				if (!Common.warnAnisotropy(AxisUtils.getAnisotropy(inputDataset, unitService), uiService, logService))
+					cancel(null);
 			}
 			anisotropyWarned = true;
 		}
