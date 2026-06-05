@@ -42,11 +42,13 @@ import static org.mockito.Mockito.verify;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
+import net.imagej.Dataset;
 
 /**
  * Tests for {@link SkeletoniseWrapper}
@@ -62,10 +64,11 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 		final String expectedMessage = CommonMessages.HAS_CHANNEL_DIMENSIONS +
 			". Please split the channels.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
-
+		Dataset ds = command().context().getService(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(SkeletoniseWrapper.class,
-			true, "inputImage", imagePlus).get();
+			true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("A composite image should have cancelled the plugin", module
@@ -96,10 +99,11 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 		final Calibration calibration = new Calibration();
 		calibration.setUnit("my unit");
 		imagePlus.setCalibration(calibration);
+		Dataset ds = command().context().getService(ConvertService.class).convert(imagePlus, Dataset.class);
 
 		// EXECUTE
 		final CommandModule module = command().run(SkeletoniseWrapper.class,
-			true, "inputImage", imagePlus).get();
+			true, "inputDataset", ds).get();
 
 		// VERIFY
 		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeleton");
@@ -118,10 +122,11 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 		final String expectedMessage = CommonMessages.HAS_TIME_DIMENSIONS +
 			". Please split the hyperstack.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
+		Dataset ds = command().context().getService(ConvertService.class).convert(imagePlus, Dataset.class);
 
 		// EXECUTE
 		final CommandModule module = command().run(SkeletoniseWrapper.class,
-			true, "inputImage", imagePlus).get();
+			true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("An image with time dimension should have cancelled the plugin",
