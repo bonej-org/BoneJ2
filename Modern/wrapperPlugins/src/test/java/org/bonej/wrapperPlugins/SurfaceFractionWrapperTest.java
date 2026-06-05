@@ -35,6 +35,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -46,6 +47,7 @@ import net.imglib2.type.logic.BitType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.table.DefaultColumn;
 
 /**
@@ -129,9 +131,11 @@ public class SurfaceFractionWrapperTest extends AbstractWrapperTest {
 			}
 		}
 
+		Dataset ds = command().context().getService(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			SurfaceFractionWrapper.class, true, "inputImage", imgPlus).get();
+			SurfaceFractionWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")
