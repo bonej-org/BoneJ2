@@ -30,21 +30,24 @@
 
 package org.bonej.wrapperPlugins;
 
-import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
+import net.imagej.Dataset;
 import net.imagej.patcher.LegacyInjector;
 
-import org.bonej.utilities.ImagePlusUtil;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
 
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
@@ -62,49 +65,51 @@ public class SkeletoniseWrapper extends BoneJCommand {
 		LegacyInjector.preinit();
 	}
 
-	/**
-	 * Use ImagePlus because of conversion issues of composite images.
-	 */
-	@Parameter(validater = "validateImage")
-	private ImagePlus inputImage;
+	@Parameter(type = ItemIO.INPUT, validater = "validateImage")
+	private Dataset inputDataset;
 
-	/**
-	 * Use ImagePlus because a (converted) Dataset has display issues with a
-	 * composite image.
-	 */
 	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus skeleton;
+	private Dataset skeletonDataset;
 
 	@Parameter
 	private StatusService statusService;
+	
+	@Parameter
+	private ConvertService convertService;
+	
+	@Parameter
+	private UIService uiService;
 
 	@Override
 	public void run() {
-		skeleton = cleanDuplicate(inputImage);
-		skeleton.setTitle("Skeleton of " + inputImage.getTitle());
+		ImagePlus skeleton = convertService.convert(inputDataset, ImagePlus.class).duplicate();
+		skeleton.setTitle("skeleton_" + inputDataset.getName());
 		final PlugInFilter skeletoniser = new Skeletonize3D_();
 		statusService.showStatus("Skeletonise: skeletonising");
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
+		skeletonDataset = convertService.convert(skeleton, Dataset.class);
+		skeleton.close();
+        if (uiService != null && uiService.isVisible())
+			uiService.show(skeletonDataset);
 	}
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-		if (!ImagePlusUtil.isBinaryColour(inputImage) || inputImage
-			.getBitDepth() != 8)
+		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000))
 		{
 			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
-		if (inputImage.getNChannels() > 1) {
+		if (AxisUtils.hasChannelDimensions(inputDataset)) {
 			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
-		if (inputImage.getNFrames() > 1) {
+		if (AxisUtils.hasTimeDimensions(inputDataset)) {
 			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
 	}
