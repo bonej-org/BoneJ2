@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.mesh.Mesh;
 import net.imagej.mesh.Triangle;
@@ -93,7 +94,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 		"Cannot scale result because axis calibrations don't match";
 
 	@Parameter(validater = "validateImage")
-	private ImgPlus<T> inputImage;
+	private Dataset inputDataset;
 	
 	@Parameter(label = "Export STL",
 		description = "Create a binary STL file from the surface mesh",
@@ -122,6 +123,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	private double areaScale;
 	private String unitHeader = "";
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
 		statusService.showStatus("Surface area: initialising");
@@ -129,7 +131,8 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 			logService.log(logService.getLevel(), "You asked to save the STL file but no path was given.");
 			return;
 		}
-		subspaces = find3DSubspaces(inputImage);
+		
+		subspaces = find3DSubspaces((ImgPlus<T>) inputDataset.getImgPlus());
 		matchOps(subspaces.get(0).interval);
 		prepareResults();
 		final Map<String, Mesh> meshes = createMeshes(subspaces);
@@ -190,7 +193,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 
 	private void calculateAreas(final Map<String, Mesh> meshes) {
 		statusService.showStatus("Surface area: calculating areas");
-		final String name = inputImage.getName();
+		final String name = inputDataset.getName();
 		meshes.forEach((suffix, mesh) -> {
 			final double area = areaOp.calculate(mesh).get();
 			final String label = suffix.isEmpty() ? name : name + " " + suffix;
@@ -221,10 +224,10 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 	}
 
 	private void prepareResults() {
-		unitHeader = ResultUtils.getUnitHeader(inputImage, unitService, "²");
+		unitHeader = ResultUtils.getUnitHeader(inputDataset, unitService, "²");
 
-		if (AxisUtils.isSpatialCalibrationsIsotropic(inputImage, 0.001, unitService)) {
-			final double scale = inputImage.axis(0).averageScale(0.0, 1.0);
+		if (AxisUtils.isSpatialCalibrationsIsotropic(inputDataset, 0.001, unitService)) {
+			final double scale = inputDataset.axis(0).averageScale(0.0, 1.0);
 			areaScale = scale * scale;
 		}
 		else {
@@ -239,7 +242,7 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 		meshes.forEach((key, subspaceMesh) -> {
 			final String subspaceId = key.replace(' ', '_').replaceAll("[,:]", "");
 			final String filePath = stlDirectory.getAbsolutePath() + 
-					stripFileExtension(inputImage.getName()) + "_" + subspaceId + ".stl";
+					stripFileExtension(inputDataset.getName()) + "_" + subspaceId + ".stl";
 			try {
 				writeBinarySTLFile(filePath, subspaceMesh);
 			}
@@ -268,16 +271,16 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
-		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+		if (!AxisUtils.has3SpatialDimensions(inputDataset)) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
 		}
 
-		if (!ElementUtil.isBinary(inputImage)) {
+		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000)) {
 			cancelMacroSafe(this, NOT_BINARY);
 		}
 	}
