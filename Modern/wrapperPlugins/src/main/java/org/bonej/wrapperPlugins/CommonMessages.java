@@ -46,6 +46,7 @@ public final class CommonMessages {
 	static final String NO_IMAGE_OPEN = "No image open";
 	static final String NO_SKELETONS = "Image contained no skeletons";
 	static final String HAS_NONSTANDARD_DIMENSIONS = "Image has non-standard dimensions";
+	public static final String HAS_ANISOTROPIC_AXES = "Image spatial axes are anisotropic";
 
 	private CommonMessages() {}
 }

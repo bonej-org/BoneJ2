@@ -34,6 +34,8 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 import static org.scijava.ui.DialogPrompt.OptionType.OK_CANCEL_OPTION;
 import static org.scijava.ui.DialogPrompt.Result.OK_OPTION;
 
+import org.bonej.utilities.ImagePlusUtil;
+
 import net.imagej.ImgPlus;
 import net.imagej.axis.CalibratedAxis;
 import net.imagej.display.ColorTables;
@@ -44,7 +46,6 @@ import net.imglib2.img.Img;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.ComplexType;
 
-import org.bonej.utilities.ImagePlusUtil;
 import org.scijava.Context;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogService;
@@ -112,12 +113,39 @@ public final class Common {
 	 * Shows a warning dialog about image anisotropy, and asks if the user wants
 	 * to continue. If the plugin is running in headless mode, execution continues anyway, and a warning is printed to the log.
 	 *
+	 * @param anisotropy the anisotropy as a value between 0 (isotropic) and infinity (totally anisotropic)
+	 * @param uiService used to display the warning dialog.
+	 * @param logService handles the warning text if the UI is headless
+	 * @return true if user chose OK_OPTION, or
+	 * execution is headless. False if user chose 'cancel' or they closed the dialog.
+	 */
+	public static boolean warnAnisotropy(double anisotropy, final UIService uiService, final LogService logService)
+	{
+		final String anisotropyPercent = String.format("(%.1f %%)", anisotropy *
+			100.0);
+		if (uiService.isHeadless()) {
+			logService.warn("The image is anisotropic " +
+					anisotropyPercent + ". Continuing anyway, but results "
+							+ "may be unreliable");
+			return true;
+		}
+		return uiService.showDialog("The image is anisotropic " +
+			anisotropyPercent + ". Continue anyway?", WARNING_MESSAGE,
+			OK_CANCEL_OPTION) == OK_OPTION;
+	}
+
+	/**
+	 * Shows a warning dialog about image anisotropy, and asks if the user wants
+	 * to continue. If the plugin is running in headless mode, execution continues anyway, and a warning is printed to the log.
+	 *
 	 * @param image the current image open in ImageJ.
 	 * @param uiService used to display the warning dialog.
 	 * @param logService handles the warning text if the UI is headless
 	 * @return true if user chose OK_OPTION, or image is not anisotropic, or
 	 * execution is headless. False if user chose 'cancel' or they closed the dialog.
+	 * @deprecated Phase out this method because of the shift towards Datasets for IO and IO validation.
 	 */
+	@Deprecated
 	public static boolean warnAnisotropy(final ImagePlus image,
 		final UIService uiService, final LogService logService)
 	{
@@ -137,7 +165,7 @@ public final class Common {
 			anisotropyPercent + ". Continue anyway?", WARNING_MESSAGE,
 			OK_CANCEL_OPTION) == OK_OPTION;
 	}
-
+	
 	/**
 	 * Cancels a command so that it won't show a dialog if a macro is running
 	 * <p>
