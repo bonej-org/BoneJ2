@@ -35,6 +35,7 @@ import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.mesh.Mesh;
 import net.imagej.mesh.naive.NaiveFloatMesh;
@@ -83,7 +84,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	private static UnaryFunctionOp<RandomAccessibleInterval<?>, RandomAccessibleInterval> raiCopy;
 
 	@Parameter(validater = "validateImage")
-	private ImgPlus<T> inputImage;
+	private Dataset inputDataset;
 	@Parameter
 	private OpService opService;
 	@Parameter
@@ -100,12 +101,12 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	@Override
 	public void run() {
 		statusService.showStatus("Surface fraction: initializing");
-		subspaces = find3DSubspaces(inputImage);
+		subspaces = find3DSubspaces((ImgPlus<T>) inputDataset.getImgPlus());
 		matchOps(subspaces.get(0).interval);
 		prepareResultDisplay();
 		for (int i = 0; i < subspaces.size(); i++) {
 			calculateSubspaceVolumes(subspaces.get(i), i + 1);
-			statusService.showProgress(i, subspaces.size());
+			statusService.showProgress(i, subspaces.size() - 1);
 		}
 		resultsTable = SharedTable.getTable();
 	}
@@ -140,7 +141,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 			"Surface fraction: calculating volumes for subspace #" + subspaceNumber);
 		final double[] results = calculateMeshVolumes(foregroundMesh, totalMesh);
 		final String suffix = subspace.toString();
-		final String name = inputImage.getName();
+		final String name = inputDataset.getName();
 		final String label = suffix.isEmpty() ? name : name + " " + suffix;
 		addResults(label, results);
 	}
@@ -169,28 +170,28 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 	}
 
 	private void prepareResultDisplay() {
-		final char exponent = ResultUtils.getExponent(inputImage);
-		final String unitHeader = ResultUtils.getUnitHeader(inputImage, unitService,
+		final char exponent = ResultUtils.getExponent(inputDataset);
+		final String unitHeader = ResultUtils.getUnitHeader(inputDataset, unitService,
 			String.valueOf(exponent));
 		bVHeader = "BV " + unitHeader;
 		tVHeader = "TV " + unitHeader;
-		elementSize = ElementUtil.calibratedSpatialElementSize(inputImage,
+		elementSize = ElementUtil.calibratedSpatialElementSize(inputDataset,
 			unitService);
 	}
 
 	@SuppressWarnings("unused")
 	private void validateImage() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
 
-		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+		if (!AxisUtils.has3SpatialDimensions(inputDataset)) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
             return;
 		}
 
-		if (!ElementUtil.isBinary(inputImage)) {
+		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000)) {
 			cancelMacroSafe(this, NOT_BINARY);
 		}
 	}
