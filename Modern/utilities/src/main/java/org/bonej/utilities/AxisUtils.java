@@ -231,22 +231,82 @@ public final class AxisUtils {
 			throw new IllegalArgumentException(
 				"Isotropy cannot be determined: units of spatial calibrations are inconvertible");
 		}
-		final String outputUnit = commonUnit.get();
-		final double[] scales = spatialAxisStream(space).mapToDouble(
-			axis -> unitService.value(axis.averageScale(0, 1), axis.unit(),
-				outputUnit)).sorted().toArray();
-		for (int i = 0; i < scales.length - 1; i++) {
-			for (int j = i + 1; j < scales.length; j++) {
-				final double anisotropy = scales[j] / scales[i] - 1.0;
-				// Allow small error
-				if (anisotropy - tolerance > 1e-12) {
-					return false;
-				}
-			}
+		
+		final double anisotropy = getAnisotropy(space, unitService);
+		
+		if (anisotropy - tolerance > 1e-12) {
+			return false;
 		}
+		
 		return true;
 	}
 
+	/**
+	 * Calculates the worst-case anisotropy deviation between spatial axes in the given space.
+	 * <p>
+	 * This method determines the ratio of the coarsest resolution (largest scale) to the finest
+	 * resolution (smallest scale) among all spatial dimensions, after converting them to a common unit.
+	 * The result represents the relative deviation from isotropy:
+	 * </p>
+	 * <ul>
+	 *   <li><b>{@code 0.0}</b>: The space is perfectly isotropic (all spatial scales are equal).</li>
+	 *   <li><b>{@code > 0.0}</b>: The space is anisotropic. A value of {@code X} indicates that the
+	 *       coarsest axis is {@code (X * 100)}% larger than the finest axis.
+	 *       (e.g., {@code 2.0} means the coarsest voxel is 3 times larger than the finest).</li>
+	 *   <li><b>{@code Double.POSITIVE_INFINITY}</b>: Returned if the finest scale is zero or negative,
+	 *       indicating undefined or infinite anisotropy.</li>
+	 * </ul>
+	 * <p>
+	 * The calculation formula is: {@code (max_scale / min_scale) - 1.0}.
+	 * </p>
+	 *
+	 * @param <S> the type of the annotated space (e.g., {@link Dataset})
+	 * @param <A> the type of the calibrated axis
+	 * @param space the annotated space containing calibration data
+	 * @param unitService the {@link UnitService} used to convert axis units to a common denominator
+	 * @return the anisotropy deviation value (0.0 for isotropic, positive for anisotropic, infinity if min scale is <= 0)
+	 * @throws IllegalArgumentException if:
+	 *         <ul>
+	 *           <li>{@code space} has no spatial dimensions (X, Y, or Z)</li>
+	 *           <li>the spatial units cannot be converted to a common unit (e.g., mixing time and length)</li>
+	 *           <li>{@code unitService} is null</li>
+	 *         </ul>
+	 * 
+	 * @see #getSpatialUnit(AnnotatedSpace, UnitService)
+	 * @see CalibratedAxis#averageScale(long, long)
+	 */
+	public static <S extends AnnotatedSpace<A>, A extends CalibratedAxis> double getAnisotropy(
+			final S space, final UnitService unitService) throws IllegalArgumentException {
+		
+		if (!hasSpatialDimensions(space)) {
+			throw new IllegalArgumentException("Isotropy cannot be determined: no spatial axes");
+		}
+		
+		final Optional<String> commonUnit = getSpatialUnit(space, unitService);
+		if (!commonUnit.isPresent()) {
+			throw new IllegalArgumentException(
+				"Isotropy cannot be determined: units of spatial calibrations are inconvertible");
+		}
+		
+		final String outputUnit = commonUnit.get();
+		
+		final double[] scales = spatialAxisStream(space).mapToDouble(
+				axis -> unitService.value(axis.averageScale(0, 1), axis.unit(),
+					outputUnit)).sorted().toArray();
+		
+		if (scales.length < 2)
+			return 0;
+		
+	    double minScale = scales[0];
+	    double maxScale = scales[scales.length - 1];
+	    
+	    if (minScale <= 0.0) {
+	        return Double.POSITIVE_INFINITY;
+	    }
+	    
+	    return (maxScale / minScale) - 1.0;
+	}
+	
 	// region -- Helper methods --
 
 	/**

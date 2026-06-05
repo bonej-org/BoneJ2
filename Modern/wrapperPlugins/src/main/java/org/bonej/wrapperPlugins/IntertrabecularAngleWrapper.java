@@ -38,7 +38,6 @@ import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
 import ij.ImagePlus;
-import ij.measure.Calibration;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,18 +47,24 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.DoubleStream;
 
+import net.imagej.Dataset;
+import net.imagej.axis.Axes;
+import net.imagej.axis.CalibratedAxis;
 import net.imagej.patcher.LegacyInjector;
 import net.imagej.table.DefaultResultsTable;
 import net.imagej.table.ResultsTable;
+import net.imagej.units.UnitService;
 import net.imglib2.util.ValuePair;
 
-import org.bonej.utilities.ImagePlusUtil;
+import org.bonej.utilities.AxisUtils;
+import org.bonej.utilities.ElementUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.joml.Vector3d;
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
+import org.scijava.convert.ConvertService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -104,8 +109,8 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		LegacyInjector.preinit();
 	}
 
-	@Parameter(validater = "imageValidater")
-	private ImagePlus inputImage;
+	@Parameter(type = ItemIO.INPUT, validater = "imageValidater")
+	private Dataset inputDataset;
 	@Parameter(label = "Minimum valence", min = "3", max = "50", stepSize = "1",
 		description = "Minimum number of outgoing branches needed for a trabecular node to be included in analysis",
 		style = NumberWidget.SLIDER_STYLE, persistKey = "ITA_min_valence",
@@ -158,25 +163,27 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 	 * Skeletonised image
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "Skeleton")
-	private ImagePlus skeletonImage;
+	private Dataset skeletonDataset;
 	@Parameter
 	private StatusService statusService;
 	@Parameter
 	private UIService uiService;
 	@Parameter
 	private LogService logService;
+	@Parameter
+	private ConvertService convertService;
+	@Parameter
+	private UnitService unitService;
 
 	private double[] pixelSpacing;
-	private boolean anisotropyWarned;
+	private boolean anisotropyChecked = false;
 
 	@Override
-	public void run() {
+	public void run() {		
 		statusService.showStatus("Intertrabecular angles: Initialising...");
 		initRealLength();
 		statusService.showStatus("Intertrabecular angles: skeletonising");
 		final ImagePlus skeleton = skeletonise();
-		if (showSkeleton)
-			skeletonImage = skeleton.duplicate();
 		statusService.showStatus("Intertrabecular angles: analysing skeletons");
 		statusService.showProgress(0, PROGRESS_STEPS);
 		final Graph[] graphs = analyzeSkeleton(skeleton);
@@ -207,10 +214,17 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		addResults(radianMap);
 		printEdgeCentroids(cleanGraph.getEdges());
 		printCulledEdgePercentages(pruningResult.b);
+		if (showSkeleton) {
+	        // Also set the output parameter if you need it for downstream plugins
+	        skeletonDataset = convertService.convert(skeleton, Dataset.class);
+	        skeleton.close();
+	        if (uiService != null && uiService.isVisible())
+    			uiService.show(skeletonDataset);
+		}
 	}
 
 	private void addResults(final Map<Integer, DoubleStream> anglesMap) {
-		final String label = inputImage.getTitle();
+		final String label = inputDataset.getName();
 		anglesMap.forEach((valence, angles) -> {
 			final String heading = valence.toString();
 			angles.forEach(angle -> SharedTable.add(label, heading, angle));
@@ -255,50 +269,57 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 
 	@SuppressWarnings("unused")
 	private void imageValidater() {
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, CommonMessages.NO_IMAGE_OPEN);
 			return;
 		}
-		if (inputImage.getBitDepth() != 8 || !ImagePlusUtil.isBinaryColour(
-			inputImage))
+		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000))
 		{
 			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
 			return;
 		}
 
-		if (inputImage.getNChannels() > 1) {
+		if (AxisUtils.hasChannelDimensions(inputDataset)) {
 			cancelMacroSafe(this, HAS_CHANNEL_DIMENSIONS + ". Please split the channels.");
 			return;
 		}
 
-		if (inputImage.getNFrames() > 1) {
+		if (AxisUtils.hasTimeDimensions(inputDataset)) {
 			cancelMacroSafe(this, HAS_TIME_DIMENSIONS + ". Please split the hyperstack.");
 		}
-		// Without anisotropyWarned the warning is shown twice
-		if (!anisotropyWarned) {
-			if (!Common.warnAnisotropy(inputImage, uiService, logService)) {
-				cancel(null);
+		
+		if (!anisotropyChecked) {
+			anisotropyChecked = true;
+			if(!AxisUtils.isSpatialCalibrationsIsotropic(inputDataset, 0.01, unitService)) {
+				if (!Common.warnAnisotropy(AxisUtils.getAnisotropy(inputDataset, unitService), uiService, logService)) {
+					cancel(null);
+				}
 			}
-			anisotropyWarned = true;
 		}
 	}
 
 	private void initRealLength() {
-		if (inputImage == null || inputImage.getCalibration() == null) {
-			pixelSpacing = new double[] { 1.0, 1.0, 1.0 };
-		}
-		else {
-			final Calibration calibration = inputImage.getCalibration();
-			pixelSpacing = new double[] { calibration.pixelWidth,
-				calibration.pixelHeight, calibration.pixelDepth };
-		}
+	    if (inputDataset == null) {
+	        pixelSpacing = new double[] { 1.0, 1.0, 1.0 };
+	    }
+	    else {
+	        CalibratedAxis axisX = inputDataset.axis(Axes.X).orElse(null);
+	        CalibratedAxis axisY = inputDataset.axis(Axes.Y).orElse(null);
+	        CalibratedAxis axisZ = inputDataset.axis(Axes.Z).orElse(null);
+
+	        pixelSpacing = new double[] {
+	            axisX != null ? axisX.averageScale(0, 1) : 1.0,
+	            axisY != null ? axisY.averageScale(0, 1) : 1.0,
+	            axisZ != null ? axisZ.averageScale(0, 1) : 1.0
+	        };
+	    }
 	}
 	
 	private boolean isCloseToBoundary(final Vertex v) {
 		final Vector3d centroid = PointUtils.centroid(v.getPoints());
-		final int width = inputImage.getWidth();
-		final int height = inputImage.getHeight();
-		final int depth = inputImage.getNSlices();
+		final long width = inputDataset.dimension(Axes.X);
+		final long height = inputDataset.dimension(Axes.Y);
+		final long depth = inputDataset.dimension(Axes.Z);
 		return centroid.x < marginCutOff || centroid.x > width - marginCutOff ||
 			centroid.y < marginCutOff || centroid.y > height - marginCutOff ||
 			depth != 1 && (centroid.z < marginCutOff || centroid.z > depth -
@@ -359,16 +380,11 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 
 	private ImagePlus skeletonise() {
 		// Skeletonise input image
-		final ImagePlus skeleton = ImagePlusUtil.cleanDuplicate(inputImage);
+		final ImagePlus skeleton = convertService.convert(inputDataset, ImagePlus.class).duplicate();
+		skeleton.setTitle("skeleton_" + inputDataset.getName());
 		final Skeletonize3D_ skeletoniser = new Skeletonize3D_();
 		skeletoniser.setup("", skeleton);
 		skeletoniser.run(null);
-
-		// check whether input image was skeletonised already
-		final int iterations = skeletoniser.getThinningIterations();
-		if (iterations > 1) {
-			skeleton.setTitle("Skeleton of " + inputImage.getTitle());
-		}
 		return skeleton;
 	}
 
