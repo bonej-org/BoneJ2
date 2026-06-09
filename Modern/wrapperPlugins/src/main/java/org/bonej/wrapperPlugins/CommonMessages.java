@@ -37,15 +37,15 @@ package org.bonej.wrapperPlugins;
  */
 public final class CommonMessages {
 
-	static final String WEIRD_SPATIAL = "Need a 2D (X, Y) or 3D (X, Y, Z) image";
-	static final String NOT_3D_IMAGE = "Need a 3D (X, Y, Z) image";
-	static final String HAS_TIME_DIMENSIONS = "Image cannot have time axis";
-	static final String HAS_CHANNEL_DIMENSIONS = "Image cannot be composite";
-	static final String NOT_BINARY = "Need a binary image";
-//	static final String NOT_8_BIT_BINARY_IMAGE = "Need an 8-bit binary (0,255) image";
-	static final String NO_IMAGE_OPEN = "No image open";
-	static final String NO_SKELETONS = "Image contained no skeletons";
-	static final String HAS_NONSTANDARD_DIMENSIONS = "Image has non-standard dimensions";
+	public static final String WEIRD_SPATIAL = "Need a 2D (X, Y) or 3D (X, Y, Z) image";
+	public static final String NOT_3D_IMAGE = "Need a 3D (X, Y, Z) image";
+	public static final String HAS_TIME_DIMENSIONS = "Image cannot have time axis";
+	public static final String HAS_CHANNEL_DIMENSIONS = "Image cannot be composite";
+	public static final String NOT_BINARY = "Need a binary image";
+//	public static final String NOT_8_BIT_BINARY_IMAGE = "Need an 8-bit binary (0,255) image";
+	public static final String NO_IMAGE_OPEN = "No image open";
+	public static final String NO_SKELETONS = "Image contained no skeletons";
+	public static final String HAS_NONSTANDARD_DIMENSIONS = "Image has non-standard dimensions";
 	public static final String HAS_ANISOTROPIC_AXES = "Image spatial axes are anisotropic";
 
 	private CommonMessages() {}
