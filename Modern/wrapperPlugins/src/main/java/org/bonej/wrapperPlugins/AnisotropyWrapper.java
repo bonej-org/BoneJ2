@@ -32,7 +32,6 @@ package org.bonej.wrapperPlugins;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.generate;
-import static org.bonej.utilities.AxisUtils.isSpatialCalibrationsIsotropic;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
