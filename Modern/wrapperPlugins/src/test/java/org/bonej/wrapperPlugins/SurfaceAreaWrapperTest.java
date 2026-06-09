@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -68,6 +69,7 @@ import net.imglib2.type.logic.BitType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
@@ -100,6 +102,8 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 		final ImgPlus<BitType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, zAxis);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		// Mock UI
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);
 		when(MOCK_UI.chooseFile(any(File.class), anyString())).thenReturn(
@@ -108,7 +112,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 			ERROR_MESSAGE), any())).thenReturn(mockPrompt);
 
 		// Run plugin
-		command().run(SurfaceAreaWrapper.class, true, "inputImage", imgPlus,
+		command().run(SurfaceAreaWrapper.class, true, "inputDataset", ds,
 			"exportSTL", true).get();
 
 		// Verify that write error dialog got shown
@@ -170,9 +174,11 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 			}
 		}
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+				
 		// EXECUTE
 		final CommandModule module = command().run(SurfaceAreaWrapper.class,
-			true, "inputImage", imgPlus, "exportSTL", false, "stlDirectory", "./").get();
+			true, "inputDataset", ds, "exportSTL", false, "stlDirectory", "./").get();
 
 		// VERIFY
 		@SuppressWarnings("unchecked")

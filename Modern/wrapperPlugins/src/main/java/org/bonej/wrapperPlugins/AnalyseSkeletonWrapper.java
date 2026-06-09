@@ -33,7 +33,7 @@ package org.bonej.wrapperPlugins;
 import static org.bonej.utilities.ImagePlusUtil.cleanDuplicate;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
@@ -178,6 +178,8 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	@Override
 	public void run() {
+		//stop if validation failed and plugin was cancelled
+		if (isCanceled()) return;
 		if (isIntensityNeeded()) {
 			openIntensityImage();
 			if (intensityImage == null) {
@@ -465,7 +467,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		{
 			// AnalyzeSkeleton_ and Skeletonize_ cast to byte[], anything else than
 			// 8-bit will crash
-			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
+			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
 

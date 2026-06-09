@@ -33,7 +33,7 @@ package org.bonej.wrapperPlugins;
 import static java.util.stream.Collectors.toList;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_SKELETONS;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
@@ -275,7 +275,7 @@ public class IntertrabecularAngleWrapper extends BoneJCommand {
 		}
 		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000))
 		{
-			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
+			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
 

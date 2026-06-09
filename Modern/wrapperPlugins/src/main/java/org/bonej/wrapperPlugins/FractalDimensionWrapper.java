@@ -49,6 +49,7 @@ import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.ops.special.hybrid.BinaryHybridCF;
 import net.imagej.ops.special.hybrid.Hybrids;
+import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -288,8 +289,9 @@ public class FractalDimensionWrapper<T extends RealType<T> & NativeType<T>> exte
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000)) {
+		if (!ElementUtil.isBinary((IterableInterval<T>) inputDataset.getImgPlus())) {
 			cancelMacroSafe(this, NOT_BINARY);
+			return;
 		}
 	}
 

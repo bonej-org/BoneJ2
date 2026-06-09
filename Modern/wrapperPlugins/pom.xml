@@ -124,7 +124,7 @@
         <dependency>
             <groupId>org.bonej</groupId>
             <artifactId>bonej-ops</artifactId>
-<!--            <version>${project.version}</version>-->
+            <version>${project.version}</version>
         </dependency>
         
         <!-- ImageJ dependencies -->

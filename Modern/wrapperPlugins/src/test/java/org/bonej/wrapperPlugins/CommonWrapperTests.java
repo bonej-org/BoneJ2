@@ -54,6 +54,7 @@ import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.type.numeric.real.DoubleType;
 
+import org.bonej.utilities.AxisUtils;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 import org.scijava.Gateway;
@@ -64,12 +65,9 @@ import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.UserInterface;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
-import com.jogamp.nativewindow.awt.AWTPrintLifecycle.Context;
-
 import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
-import ij.process.ImageStatistics;
 
 /**
  * Common tests for wrapper plugins
@@ -115,10 +113,12 @@ public final class CommonWrapperTests {
 		final ImgPlus<DoubleType> imgPlus = new ImgPlus<>(img, "Test image", xAxis,
 			yAxis, cAxis);
 
+		Dataset ds = imageJ.context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		try {
 			// EXECUTE
 			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputDataset", imgPlus).get();
+					"inputDataset", ds).get();
 
 			// VERIFY
 			assertTrue("2D image should have cancelled the plugin", module
@@ -150,10 +150,12 @@ public final class CommonWrapperTests {
 			.iterator();
 		imgPlus.cursor().forEachRemaining(e -> e.setReal(intIterator.next()));
 
+		Dataset ds = imageJ.context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		try {
 			// EXECUTE
 			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputDataset", imgPlus).get();
+					"inputDataset", ds).get();
 
 			// VERIFY
 			assertTrue(
@@ -170,74 +172,7 @@ public final class CommonWrapperTests {
 			imageJ.ui().setDefaultUI(oldUI);
 		}
 	}
-
-	static <C extends Command> void testNonBinaryImagePlusCancelsPlugin(
-		final Gateway imageJ, final Class<C> commandClass) {
-		// SETUP
-		final UserInterface oldUI = imageJ.ui().getDefaultUI();
-		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
-		final ImagePlus nonBinaryImage = mock(ImagePlus.class);
-		final ImageStatistics stats = new ImageStatistics();
-		stats.pixelCount = 3;
-		stats.histogram = new int[256];
-		stats.histogram[0x00] = 1;
-		stats.histogram[0x01] = 1;
-		stats.histogram[0xFF] = 1;
-		when(nonBinaryImage.getStatistics()).thenReturn(stats);
-		when(nonBinaryImage.getNSlices()).thenReturn(2);
-		final ConvertService convertService = imageJ.context().service(ConvertService.class);
-		Dataset ds = convertService.convert(nonBinaryImage, Dataset.class);
-		
-		try {
-			// EXECUTE
-			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputDataset", ds).get();
-
-			// VERIFY
-			assertTrue(
-					"An image with more than two values should have cancelled the plugin",
-					module.isCanceled());
-			assertEquals("Cancel reason is incorrect",
-					CommonMessages.NOT_8_BIT_BINARY_IMAGE, module.getCancelReason());
-			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-					any());
-		} catch (InterruptedException | ExecutionException e) {
-			Assert.fail("Test timed out");
-		} finally {
-			imageJ.ui().setDefaultUI(oldUI);
-		}
-	}
-
-	static <C extends Command> void test2DImagePlusCancelsPlugin(
-		final Gateway imageJ, final Class<C> commandClass) {
-		// SETUP
-		final UserInterface oldUI = imageJ.ui().getDefaultUI();
-		final UserInterface mockUI = mockUIDialogPrompt(imageJ);
-		final ImagePlus image = mock(ImagePlus.class);
-		when(image.getNSlices()).thenReturn(1);
-
-		final ConvertService convertService = imageJ.context().service(ConvertService.class);
-		Dataset ds = convertService.convert(image, Dataset.class);
-		
-		try {
-			// EXECUTE
-			final CommandModule module = imageJ.command().run(commandClass, true,
-					"inputDataset", ds).get();
-
-			// VERIFY
-			assertTrue("2D image should have cancelled the plugin", module
-					.isCanceled());
-			assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
-					module.getCancelReason());
-			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-					any());
-		} catch (InterruptedException | ExecutionException e) {
-			Assert.fail("Test timed out");
-		} finally {
-			imageJ.ui().setDefaultUI(oldUI);
-		}
-	}
-
+	
 	private static UserInterface mockUIDialogPrompt(final Gateway imageJ) {
 		final UserInterface mockUI = mock(UserInterface.class);
 		final SwingDialogPrompt mockPrompt = mock(SwingDialogPrompt.class);

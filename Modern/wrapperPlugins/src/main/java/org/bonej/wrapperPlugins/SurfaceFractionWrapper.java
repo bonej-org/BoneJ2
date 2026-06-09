@@ -100,6 +100,13 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
 
 	@Override
 	public void run() {
+//		SharedTable.reset();
+//		System.out.println("Surface fraction wrapper created a new table with "+SharedTable.getTable().getRowCount()+" rows");
+		
+		if (isCanceled()) {
+			System.out.println("Surface fraction wrapper can't run - was cancelled (probably by validation)");
+			return;
+		}
 		statusService.showStatus("Surface fraction: initializing");
 		subspaces = find3DSubspaces((ImgPlus<T>) inputDataset.getImgPlus());
 		matchOps(subspaces.get(0).interval);
@@ -191,7 +198,7 @@ public class SurfaceFractionWrapper<T extends RealType<T> & NativeType<T>> exten
             return;
 		}
 
-		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000)) {
+		if (!ElementUtil.isBinary((IterableInterval<T>) inputDataset)) {
 			cancelMacroSafe(this, NOT_BINARY);
 		}
 	}

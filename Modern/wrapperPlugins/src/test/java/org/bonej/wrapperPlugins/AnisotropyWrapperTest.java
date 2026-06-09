@@ -45,6 +45,7 @@ import static org.scijava.ui.DialogPrompt.MessageType.WARNING_MESSAGE;
 
 import java.util.concurrent.ExecutionException;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -58,6 +59,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.ui.DialogPrompt.Result;
 import org.scijava.ui.swing.sdi.SwingDialogPrompt;
 
@@ -97,9 +99,11 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 		when(MOCK_UI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
 				WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-				true, "inputDataset", imgPlus, "lines", 10, "directions", 10, "displayMILVectors", false).get();
+				true, "inputDataset", ds, "lines", 10, "directions", 10, "displayMILVectors", false).get();
 
 		// VERIFY
 		assertFalse(module.isCanceled());
@@ -124,9 +128,11 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 		when(MOCK_UI.dialogPrompt(startsWith(expectedStart), anyString(), eq(
 			WARNING_MESSAGE), any())).thenReturn(mockPrompt);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-			true, "inputDataset", imgPlus, "lines", 10, "directions", 10).get();
+			true, "inputDataset", ds, "lines", 10, "directions", 10).get();
 
 		// VERIFY
 		assertTrue(module.isCanceled());
@@ -147,8 +153,11 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	// despite there being just 9 points
 	@Test
 	public void testEllipsoidFittingFailingCancelsPlugins() throws Exception {
+		
+		Dataset ds = command().context().service(ConvertService.class).convert(hyperSheets, Dataset.class);
+		
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-			true, "inputDataset", hyperSheets, "lines", 1, "directions", 9).get();
+			true, "inputDataset", ds, "lines", 1, "directions", 9).get();
 
 		assertTrue(module.isCanceled());
 		assertEquals(
@@ -170,8 +179,12 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testTooFewPointsCancelsPlugin() throws Exception {
+		
+		Dataset ds = command().context().service(ConvertService.class).convert(hyperSheets, Dataset.class);
+		
+		
 		final CommandModule module = command().run(AnisotropyWrapper.class,
-			true, "inputDataset", hyperSheets, "lines", 1, "directions", 1).get();
+			true, "inputDataset", ds, "lines", 1, "directions", 1).get();
 
 		assertTrue(module.isCanceled());
 		assertEquals("Anisotropy could not be calculated - too few points", module
@@ -182,8 +195,10 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	public void testMinimumIncrementIsEnforced() throws Exception {
 		final double expectedIncrement = Math.round(Math.sqrt(3.0) * 100.0) / 100.0;
 
+		Dataset ds = command().context().service(ConvertService.class).convert(hyperSheets, Dataset.class);
+		
 		final CommandModule module = command()
-				.run(AnisotropyWrapper.class, true, "inputDataset", hyperSheets, "lines", 1,
+				.run(AnisotropyWrapper.class, true, "inputDataset", ds, "lines", 1,
 						"directions", 1, "samplingIncrement", 0).get();
 
 		final Double increment = (Double) module.getInput("samplingIncrement");
@@ -194,8 +209,10 @@ public class AnisotropyWrapperTest extends AbstractWrapperTest {
 	public void testIncrementGreaterThanMinimumIsAllowed() throws Exception {
 		final double inputIncrement = 5.0;
 
+		Dataset ds = command().context().service(ConvertService.class).convert(hyperSheets, Dataset.class);
+		
 		final CommandModule module = command()
-				.run(AnisotropyWrapper.class, true, "inputDataset", hyperSheets, "lines", 1,
+				.run(AnisotropyWrapper.class, true, "inputDataset", ds, "lines", 1,
 						"directions", 1, "samplingIncrement", inputIncrement).get();
 
 		final Double increment = (Double) module.getInput("samplingIncrement");

@@ -58,6 +58,7 @@ import net.imagej.ops.Ops.Geometric.MarchingCubes;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imagej.units.UnitService;
+import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.logic.BitType;
@@ -278,10 +279,12 @@ public class SurfaceAreaWrapper<T extends RealType<T> & NativeType<T>> extends B
 
 		if (!AxisUtils.has3SpatialDimensions(inputDataset)) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
+			return;
 		}
 
-		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000)) {
+		if (!ElementUtil.isBinary((IterableInterval<T>) inputDataset)) {
 			cancelMacroSafe(this, NOT_BINARY);
+			return;
 		}
 	}
 

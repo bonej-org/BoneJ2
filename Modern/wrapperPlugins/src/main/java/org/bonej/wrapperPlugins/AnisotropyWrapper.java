@@ -201,6 +201,8 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 
 	@Override
 	public void run() {
+		//stop if validation failed and plugin was cancelled
+		if (isCanceled()) return;
 		sections = (long) Math.sqrt(lines);
 		statusService.showStatus("Anisotropy: initialising");
 		@SuppressWarnings("unchecked")
@@ -438,22 +440,29 @@ public class AnisotropyWrapper<T extends RealType<T> & NativeType<T>> extends Bo
 	@SuppressWarnings("unused")
 	private void validateImage() {
 		
-		@SuppressWarnings("unchecked")
-		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
-		
-		if (inputImage == null) {
+		if (inputDataset == null) {
 			cancelMacroSafe(this, NO_IMAGE_OPEN);
 			return;
 		}
-		if (AxisUtils.countSpatialDimensions(inputImage) != 3) {
+		
+		if (!AxisUtils.has3SpatialDimensions(inputDataset)) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
 			return;
 		}
+		
+		@SuppressWarnings("unchecked")
+		ImgPlus<T> inputImage = (ImgPlus<T>) inputDataset.getImgPlus();
+		
+	    if (inputImage == null) {
+	        cancelMacroSafe(this, NO_IMAGE_OPEN);
+	        return;
+	    }
+		
 		if (!ElementUtil.isBinary(inputImage)) {
 			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
-		if (!isSpatialCalibrationsIsotropic(inputImage, 0.01, unitService) &&
+		if (!AxisUtils.isSpatialCalibrationsIsotropic(inputImage, 0.01, unitService) &&
 			!calibrationWarned)
 		{
 			final Result result = uiService.showDialog(

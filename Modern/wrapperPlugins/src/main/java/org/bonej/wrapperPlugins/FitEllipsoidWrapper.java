@@ -187,8 +187,12 @@ public class FitEllipsoidWrapper extends BoneJCommand {
 			return;
 		}
 		
-		if (!AxisUtils.has3SpatialDimensions(inputDataset) ||
-				AxisUtils.hasChannelDimensions(inputDataset) ||
+		if (!AxisUtils.has3SpatialDimensions(inputDataset)) {
+			cancelMacroSafe(this, NOT_3D_IMAGE);
+			return;
+		}
+		
+		if (	AxisUtils.hasChannelDimensions(inputDataset) ||
 				AxisUtils.hasNonXYZCTDimension(inputDataset) ||
 				AxisUtils.hasTimeDimensions(inputDataset)) {
 			cancelMacroSafe(this, NOT_3D_IMAGE);
