@@ -55,7 +55,7 @@ public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsPlugin() {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ(),
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
 			FitEllipsoidWrapper.class);
 	}
 

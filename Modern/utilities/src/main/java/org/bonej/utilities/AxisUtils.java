@@ -376,8 +376,32 @@ public final class AxisUtils {
 	 * @return
 	 */
 	public static boolean has3SpatialDimensions(Dataset ds) {
+		return hasNSpatialDimensions(ds, 3);
+	}
+	
+	/**
+	 * Check whether the dataset has exactly 2 spatial dimensions.
+	 * 
+	 * Ignores whether there are (or are not) any other dimensions.
+	 * 
+	 * @param ds
+	 * @return
+	 */
+	public static boolean has2SpatialDimensions(Dataset ds) {
+		return hasNSpatialDimensions(ds, 2);
+	}	
+	
+	/**
+	 * Check whether the dataset has exactly N spatial dimensions.
+	 * 
+	 * Ignores whether there are (or are not) any other dimensions.
+	 * 
+	 * @param ds
+	 * @return
+	 */
+	public static boolean hasNSpatialDimensions(Dataset ds, int n) {
 		final int nD = ds.numDimensions();
-		if (nD < 3) return false;
+		if (nD < n) return false;
 		
 		int nSpatialAxes = 0;
 		for (int d = 0; d < nD; d++) {
@@ -385,9 +409,10 @@ public final class AxisUtils {
 				nSpatialAxes++;
 		}
 		
-		if (nSpatialAxes == 3)
+		if (nSpatialAxes == n)
 			return true;
 		
 		return false;
 	}	
+	
 }

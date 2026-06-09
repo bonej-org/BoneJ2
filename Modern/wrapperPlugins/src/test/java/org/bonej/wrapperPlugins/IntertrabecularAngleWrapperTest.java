@@ -56,11 +56,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import net.imagej.Dataset;
 import net.imagej.table.DefaultResultsTable;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.table.DefaultColumn;
 
 /**
@@ -82,9 +84,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assert resource != null;
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 		
+		Dataset ds = command().context().service(ConvertService.class).convert(skelly, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 0, "useClusters", true, "iteratePruning", false).get();
 
@@ -124,9 +128,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		cal.pixelWidth = 2;
 		skelly.setCalibration(cal);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(skelly, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 4,
 			"marginCutOff", 0, "useClusters", true, "iteratePruning", false).get();
 
@@ -166,9 +172,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		cal.pixelWidth = 0.1;
 		skelly.setCalibration(cal);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(skelly, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 0.2,
 			"marginCutOff", 0, "useClusters", true, "iteratePruning", false).get();
 
@@ -207,9 +215,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 			". Please split the channels.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("A composite image should have cancelled the plugin", module
@@ -228,9 +238,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assert resource != null;
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
+		Dataset ds = command().context().service(ConvertService.class).convert(skelly, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 10, "useClusters", true, "iteratePruning", false).get();
 
@@ -260,14 +272,16 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assert resource != null;
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
+		Dataset ds = command().context().service(ConvertService.class).convert(skelly, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 0, "useClusters", true, "iteratePruning", false, "showSkeleton", true).get();
 
 		// VERIFY
-		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeletonImage");
+		final Dataset skeleton = (Dataset) module.getOutput("skeletonDataset");
 		assertNotNull(skeleton);
 		assertNotSame("Original image should not have been overwritten", skelly,
 			skeleton);
@@ -287,14 +301,16 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assert resource != null;
 		final ImagePlus skelly = IJ.openImage(resource.getFile());
 
+		Dataset ds = command().context().service(ConvertService.class).convert(skelly, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", skelly,
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 2,
 			"marginCutOff", 0, "useClusters", true, "iteratePruning", false, "showSkeleton", false).get();
 
 		// VERIFY
-		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeletonImage");
+		final Dataset skeleton = (Dataset) module.getOutput("skeletonDataset");
 		assertNull(skeleton);
 		assertNotSame("Original image should not have been overwritten", skelly,
 			skeleton);
@@ -308,9 +324,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(pixel, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", pixel).get();
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("Plugin should have cancelled", module.isCanceled());
@@ -325,9 +343,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		// SETUP
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("Plugin should have cancelled", module.isCanceled());
@@ -339,7 +359,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			IntertrabecularAngleWrapper.class);
 	}
 
@@ -359,9 +379,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		line.getStack().getProcessor(1).set(2, 1, (byte) 0xFF);
 		line.getStack().getProcessor(1).set(3, 1, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(line, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", line,
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds,
 			"minimumTrabecularLength", 0, "printCentroids", true).get();
 
 		final DefaultResultsTable centroids = (DefaultResultsTable) module
@@ -393,9 +415,11 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 			". Please split the hyperstack.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, true, "inputImage", imagePlus).get();
+			IntertrabecularAngleWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("An image with time dimension should have cancelled the plugin",
@@ -403,7 +427,7 @@ public class IntertrabecularAngleWrapperTest extends AbstractWrapperTest {
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
 		//TODO reinstate if scijava and Mockito start playing well together again
-//		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
-//			any());
+		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(anyString(), anyString(), any(),
+			any());
 	}
 }

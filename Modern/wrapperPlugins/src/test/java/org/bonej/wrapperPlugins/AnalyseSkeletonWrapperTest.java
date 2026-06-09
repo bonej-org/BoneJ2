@@ -48,6 +48,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
+import net.imagej.Dataset;
 
 import java.util.Collection;
 import java.util.List;
@@ -56,6 +57,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.PrimitiveColumn;
@@ -88,9 +90,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		final String[] expectedValues = { "1", "1", length, "0.5", "0.5", "0.0", "1.0", "1.0",
 			"0.0", length, length, "255.0", "255.0" };
 
+		Dataset ds = command().context().service(ConvertService.class).convert(line, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", line,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds,
 			"pruneCycleMethod", "None", "verbose", true, "pruneEnds", false).get();
 
 		// VERIFY
@@ -118,9 +122,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(pixel, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", pixel,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds,
 			"pruneCycleMethod", "None", "verbose", false).get();
 
 		// VERIFY
@@ -134,9 +140,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			". Please split the channels.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", imagePlus).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("A composite image should have cancelled the plugin", module
@@ -158,9 +166,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(pixel, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", pixel,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds,
 			"pruneCycleMethod", "None").get();
 
 		// VERIFY
@@ -175,9 +185,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		// SETUP
 		final ImagePlus imagePlus = IJ.createImage("test", 3, 3, 3, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", imagePlus,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds,
 			"pruneCycleMethod", "None").get();
 
 		// VERIFY
@@ -190,7 +202,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			AnalyseSkeletonWrapper.class);
 	}
 
@@ -207,9 +219,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(pixel, Dataset.class);
+		
 		// EXECUTE
 		CommandModule module = command().run(AnalyseSkeletonWrapper.class,
-			true, "inputDataset", pixel, "pruneCycleMethod", "None", "displaySkeletons",
+			true, "inputDataset", ds, "pruneCycleMethod", "None", "displaySkeletons",
 			false, "calculateShortestPaths", true).get();
 
 		// VERIFY
@@ -218,7 +232,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		module = command().run(AnalyseSkeletonWrapper.class, true,
-			"inputDataset", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
+			"inputDataset", ds, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", false).get();
 
 		// VERIFY
@@ -227,19 +241,19 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		// EXECUTE
 		module = command().run(AnalyseSkeletonWrapper.class, true,
-			"inputDataset", pixel, "pruneCycleMethod", "None", "displaySkeletons", true,
+			"inputDataset", ds, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", true).get();
 
 		// VERIFY
-		final ImagePlus labelledSkeleton = (ImagePlus) module.getOutput(
+		final Dataset labelledSkeleton = (Dataset) module.getOutput(
 			"labelledSkeleton");
 		assertNotNull(labelledSkeleton);
-		final ImagePlus shortestPaths = (ImagePlus) module.getOutput(
+		final Dataset shortestPaths = (Dataset) module.getOutput(
 			"shortestPaths");
 		assertNotNull(shortestPaths);
-		assertNotSame("Input image should not have been overwritten", pixel,
+		assertNotSame("Input image should not have been overwritten", ds,
 			labelledSkeleton);
-		assertNotSame("Input image should not have been overwritten", pixel,
+		assertNotSame("Input image should not have been overwritten", ds,
 			shortestPaths);
 	}
 
@@ -261,9 +275,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 				0 }, { 0, 0 }, { 0.0, 0.0 }, { 0.0, 0.0 }, { 1.0,
 					3.0 }, { 1.0, 3.0 }, { 0.0, 0.0 } };
 
+		Dataset ds = command().context().service(ConvertService.class).convert(pixels, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", pixels,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds,
 			"pruneCycleMethod", "None", "calculateShortestPaths", true).get();
 
 		// VERIFY
@@ -296,9 +312,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 		pixel.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(pixel, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", pixel,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds,
 			"pruneCycleMethod", "None", "calculateShortestPaths", false).get();
 
 		// VERIFY
@@ -321,9 +339,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		square.getStack().getProcessor(1).set(2, 1, (byte) 0xFF);
 		square.getStack().getProcessor(1).set(2, 2, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(square, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", square,
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds,
 			"pruneCycleMethod", "None").get();
 
 		// VERIFY
@@ -340,16 +360,19 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			". Please split the hyperstack.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", imagePlus).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("An image with time dimension should have cancelled the plugin",
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		//Mocking results in the UI getting triggered twice, so we add .times(2)
+		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -362,9 +385,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		final ImagePlus blank = NewImage.createByteImage("Blank", 4, 4, 1,
 			FILL_BLACK);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(blank, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", blank).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("Sanity check failed: method didn't cancel", module
@@ -380,9 +405,11 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			FILL_BLACK);
 		image.getStack().getProcessor(1).set(1, 1, (byte) 0xFF);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(image, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			AnalyseSkeletonWrapper.class, true, "inputDataset", image).get();
+			AnalyseSkeletonWrapper.class, true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertFalse("Sanity check failed: method cancelled", module.isCanceled());

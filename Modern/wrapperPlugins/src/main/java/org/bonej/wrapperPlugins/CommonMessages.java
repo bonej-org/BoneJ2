@@ -42,7 +42,7 @@ public final class CommonMessages {
 	static final String HAS_TIME_DIMENSIONS = "Image cannot have time axis";
 	static final String HAS_CHANNEL_DIMENSIONS = "Image cannot be composite";
 	static final String NOT_BINARY = "Need a binary image";
-	static final String NOT_8_BIT_BINARY_IMAGE = "Need an 8-bit binary image";
+//	static final String NOT_8_BIT_BINARY_IMAGE = "Need an 8-bit binary (0,255) image";
 	static final String NO_IMAGE_OPEN = "No image open";
 	static final String NO_SKELETONS = "Image contained no skeletons";
 	static final String HAS_NONSTANDARD_DIMENSIONS = "Image has non-standard dimensions";

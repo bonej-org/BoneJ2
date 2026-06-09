@@ -39,6 +39,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import java.util.Optional;
+
+import org.bonej.utilities.AxisUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
@@ -49,6 +52,8 @@ import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
 import net.imagej.Dataset;
+import net.imagej.axis.Axes;
+import net.imagej.units.UnitService;
 
 /**
  * Tests for {@link SkeletoniseWrapper}
@@ -75,13 +80,13 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			SkeletoniseWrapper.class);
 	}
 
@@ -94,7 +99,7 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 	@Test
 	public void testRun() throws Exception {
 		// SETUP
-		final String expectedTitle = "Skeleton of Test";
+		final String expectedTitle = "skeleton_Test";
 		final ImagePlus imagePlus = NewImage.createImage("Test", 5, 5, 5, 8, 1);
 		final Calibration calibration = new Calibration();
 		calibration.setUnit("my unit");
@@ -106,13 +111,11 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 			true, "inputDataset", ds).get();
 
 		// VERIFY
-		final ImagePlus skeleton = (ImagePlus) module.getOutput("skeleton");
+		final Dataset skeleton = (Dataset) module.getOutput("skeletonDataset");
 		assertNotNull("Skeleton image should not be null", skeleton);
-		assertEquals("Skeleton has wrong title", expectedTitle, skeleton
-			.getTitle());
-		assertEquals("Skeleton should have same calibration", "my unit", skeleton
-			.getCalibration().getUnit());
-		assertNotSame("Original image should not have been overwritten", imagePlus,
+		assertEquals("Skeleton has wrong title", expectedTitle, skeleton.getName());
+		assertEquals("Skeleton should have same calibration", "my unit", ds.axis(Axes.X).get().unit());
+		assertNotSame("Original image should not have been overwritten", ds,
 			skeleton);
 	}
 

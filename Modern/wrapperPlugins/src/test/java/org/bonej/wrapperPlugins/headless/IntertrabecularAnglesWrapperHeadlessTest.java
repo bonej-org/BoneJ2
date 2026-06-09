@@ -38,11 +38,13 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
+import net.imagej.Dataset;
 import net.imagej.table.DefaultResultsTable;
 
 import org.bonej.wrapperPlugins.IntertrabecularAngleWrapper;
 import org.junit.Test;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DefaultGenericTable;
 import org.scijava.table.DoubleColumn;
@@ -78,9 +80,11 @@ public class IntertrabecularAnglesWrapperHeadlessTest extends AbstractWrapperHea
 		cal.pixelWidth = 0.1;
 		skelly.setCalibration(cal);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(skelly, Dataset.class);
+		
 		//EXECUTE
 		final CommandModule module = command().run(
-			IntertrabecularAngleWrapper.class, false, "inputImage", skelly,
+			IntertrabecularAngleWrapper.class, false, "inputDataset", ds,
 			"minimumValence", 3, "maximumValence", 50, "minimumTrabecularLength", 0.2,
 			"marginCutOff", 0, "useClusters", true, "printCentroids", true,
 			"iteratePruning", false, "showSkeleton", true).get();
@@ -92,8 +96,8 @@ public class IntertrabecularAnglesWrapperHeadlessTest extends AbstractWrapperHea
 		logOutputNameAndClass(module);
 		
 		//check the output image exists and is an ImagePlus
-		assertNotNull(module.getOutput("skeletonImage"));
-		assertTrue(outputs.get("skeletonImage") instanceof ImagePlus);
+		assertNotNull(module.getOutput("skeletonDataset"));
+		assertTrue(outputs.get("skeletonDataset") instanceof Dataset);
 
 		//check that the angle table exists and is a DefaultGenericTable
 		assertNotNull(module.getOutput("resultsTable"));

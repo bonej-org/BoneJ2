@@ -46,6 +46,9 @@ import ij.ImagePlus;
 import ij.gui.NewImage;
 import ij.measure.Calibration;
 import ij.process.LUT;
+import net.imagej.Dataset;
+import net.imagej.display.ColorTables;
+import net.imglib2.display.ColorTable;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -54,6 +57,7 @@ import org.bonej.wrapperPlugins.wrapperUtils.Common;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.table.DefaultColumn;
 
 /**
@@ -66,7 +70,7 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 
 	@Test
 	public void test2DImageCancelsPlugin() {
-		CommonWrapperTests.test2DImagePlusCancelsPlugin(imageJ(),
+		CommonWrapperTests.test2DImageCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
@@ -82,9 +86,11 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 			". Please split the channels.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 3, 3, 1, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus).get();
+			true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("A composite image should have cancelled the plugin", module
@@ -100,24 +106,23 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		InterruptedException
 	{
 		// SETUP
-		final LUT fireLUT = Common.makeFire();
 		final ImagePlus imagePlus = NewImage.createByteImage("TinyTestImage", 2, 2,
 			2, 1);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			true, "inputDataset", ds, "mapChoice", "Both", "showMaps", true)
 			.get();
 
 		// VERIFY
-		final LUT trabecularMap = ((ImagePlus) module.getOutput("trabecularMap"))
-			.getLuts()[0];
-		final LUT separationMap = ((ImagePlus) module.getOutput("separationMap"))
-			.getLuts()[0];
-		assertArrayEquals("Trabecular map doesn't have the 'fire' LUT", fireLUT.getBytes(),
-				trabecularMap.getBytes());
-		assertArrayEquals("Spacing map doesn't have the 'fire' LUT", fireLUT
-				.getBytes(), separationMap.getBytes());
+		final ColorTable ctt = ((Dataset) module.getOutput("trabecularMap")).getColorTable(0);
+		final ColorTable cts = ((Dataset) module.getOutput("separationMap")).getColorTable(0);
+		assertEquals("Trabecular map doesn't have the 'fire' LUT", ctt,
+				ColorTables.FIRE);
+		assertEquals("Separation map doesn't have the 'fire' LUT", cts,
+				ColorTables.FIRE);
 	}
 
 	@Test
@@ -127,9 +132,11 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);		
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", true)
+			true, "inputDataset", ds, "mapChoice", "Both", "showMaps", true)
 			.get();
 
 		// VERIFY
@@ -144,9 +151,11 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Both", "showMaps", false)
+			true, "inputDataset", ds, "mapChoice", "Both", "showMaps", false)
 			.get();
 
 		// VERIFY
@@ -161,16 +170,18 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Trabecular separation",
+			true, "inputDataset", ds, "mapChoice", "Trabecular separation",
 			"showMaps", true).get();
 
 		// VERIFY
-		final ImagePlus separationMap = (ImagePlus) module.getOutput("separationMap");
+		final Dataset separationMap = (Dataset) module.getOutput("separationMap");
 		assertNotNull(separationMap);
 		assertNull(module.getOutput("trabecularMap"));
-		assertNotSame("Original image should not have been overwritten", imagePlus,
+		assertNotSame("Original image should not have been overwritten", ds,
 			separationMap);
 	}
 
@@ -181,23 +192,25 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		// SETUP
 		final ImagePlus imagePlus = NewImage.createByteImage("image", 2, 2, 2, 1);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Trabecular thickness",
+			true, "inputDataset", ds, "mapChoice", "Trabecular thickness",
 			"showMaps", true).get();
 
 		// VERIFY
-		final ImagePlus trabecularMap = (ImagePlus) module.getOutput(
+		final Dataset trabecularMap = (Dataset) module.getOutput(
 			"trabecularMap");
 		assertNotNull(trabecularMap);
 		assertNull(module.getOutput("separationMap"));
-		assertNotSame("Original image should not have been overwritten", imagePlus,
+		assertNotSame("Original image should not have been overwritten", ds,
 			trabecularMap);
 	}
 
 	@Test
 	public void testNonBinaryImageCancelsPlugin() {
-		CommonWrapperTests.testNonBinaryImagePlusCancelsPlugin(imageJ(),
+		CommonWrapperTests.testNonBinaryImageCancelsPlugin(imageJ(),
 			ThicknessWrapper.class);
 	}
 
@@ -221,9 +234,11 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 		final Double[][] expectedValues = { { Double.NaN }, { Double.NaN }, {
 			Double.NaN }, { 10.392304420471191 }, { 0.0 }, { 10.392304420471191 } };
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus, "mapChoice", "Both", "maskArtefacts",
+			true, "inputDataset", ds, "mapChoice", "Both", "maskArtefacts",
 			false, "showMaps", false).get();
 
 		// VERIFY
@@ -249,9 +264,11 @@ public class ThicknessWrapperTest extends AbstractWrapperTest {
 			". Please split the hyperstack.";
 		final ImagePlus imagePlus = IJ.createHyperStack("test", 3, 3, 1, 3, 3, 8);
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imagePlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(ThicknessWrapper.class,
-			true, "inputImage", imagePlus).get();
+			true, "inputDataset", ds).get();
 
 		// VERIFY
 		assertTrue("An image with time dimension should have cancelled the plugin",

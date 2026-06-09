@@ -33,7 +33,7 @@ package org.bonej.wrapperPlugins;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_CHANNEL_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.HAS_TIME_DIMENSIONS;
 import static org.bonej.wrapperPlugins.CommonMessages.NOT_3D_IMAGE;
-import static org.bonej.wrapperPlugins.CommonMessages.NOT_8_BIT_BINARY_IMAGE;
+import static org.bonej.wrapperPlugins.CommonMessages.NOT_BINARY;
 import static org.bonej.wrapperPlugins.CommonMessages.NO_IMAGE_OPEN;
 import static org.bonej.wrapperPlugins.wrapperUtils.Common.cancelMacroSafe;
 
@@ -244,7 +244,7 @@ public class ThicknessWrapper extends BoneJCommand {
 
 		if (!ElementUtil.isIJ1Binary(inputDataset, 1000000))
 		{
-			cancelMacroSafe(this, NOT_8_BIT_BINARY_IMAGE);
+			cancelMacroSafe(this, NOT_BINARY);
 			return;
 		}
 

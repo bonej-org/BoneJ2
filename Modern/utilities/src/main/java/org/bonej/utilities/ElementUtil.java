@@ -108,7 +108,8 @@ public final class ElementUtil {
 
 	/**
 	 * Checks whether the interval contains only two distinct values.
-	 *
+	 * Use for BitType images, not ImageJ1 8-bit (0,255) images.
+	 * 
 	 * @param interval an iterable interval.
 	 * @param <T> type of the elements in the interval.
 	 * @return true if only two distinct values, false if interval is empty
@@ -159,6 +160,8 @@ public final class ElementUtil {
 	/**
 	 * Check whether a Dataset's pixels conform to the IJ1 binary definition,
 	 * 8-bit and only 0,255.
+	 * 
+	 * Do not use for BitType inputs.
 	 * 
 	 * If the image has fewer pixels than n, it scans ALL pixels.
 	 * Otherwise, it randomly samples n pixels.

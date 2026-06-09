@@ -36,6 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
@@ -48,6 +49,7 @@ import net.imglib2.view.Views;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.scijava.command.CommandModule;
+import org.scijava.convert.ConvertService;
 import org.scijava.table.Column;
 import org.scijava.table.DefaultColumn;
 import org.scijava.table.DoubleColumn;
@@ -81,9 +83,11 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 		final double[] cubeCounts = new double[] { Math.log(1), Math.log(8) };
 		final ImgPlus<BitType> imgPlus = createTestHyperStack();
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			FractalDimensionWrapper.class, true, "inputDataset", imgPlus,
+			FractalDimensionWrapper.class, true, "inputDataset", ds,
 			"startBoxSize", 4, "smallestBoxSize", 2, "scaleFactor", 2.0,
 			"translations", 0L, "showPoints", true).get();
 
@@ -120,9 +124,11 @@ public class FractalDimensionWrapperTest extends AbstractWrapperTest {
 			0.7500000000000002, 0.7500000000000002, Double.NaN).iterator();
 		final ImgPlus<BitType> imgPlus = createTestHyperStack();
 
+		Dataset ds = command().context().service(ConvertService.class).convert(imgPlus, Dataset.class);
+		
 		// EXECUTE
 		final CommandModule module = command().run(
-			FractalDimensionWrapper.class, true, "inputDataset", imgPlus,
+			FractalDimensionWrapper.class, true, "inputDataset", ds,
 			"startBoxSize", 4, "smallestBoxSize", 1, "scaleFactor", 2.0,
 			"translations", 0L).get();
 
