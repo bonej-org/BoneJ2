@@ -27,7 +27,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2  
 
       - name: Set up Maven settings
-        uses: s4u/maven-settings-action@v4
+        uses: s4u/maven-settings-action@v4.0.0
         with:
           servers: '[{"id": "github", "username": "${{ github.actor }}", "password": "${{ secrets.BONEJ_PLUS_REPO }}"}]'
           githubServer: false
