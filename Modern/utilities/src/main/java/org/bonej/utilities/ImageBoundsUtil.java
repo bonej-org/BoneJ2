@@ -30,8 +30,23 @@ package org.bonej.utilities;
 
 import net.imglib2.Dimensions;
 
+/**
+ * Utility methods for checking image bounds.
+ */
 public final class ImageBoundsUtil {
 
+    /**
+     * Prevent instantiation.
+     */
+    private ImageBoundsUtil() {}
+
+    /**
+     * Checks whether a pixel position falls outside the bounds of the given dimensions.
+     *
+     * @param dimensions the dimensions of the image
+     * @param currentPixelPosition the pixel coordinates to check
+     * @return {@code true} if any coordinate is negative or exceeds the corresponding dimension, {@code false} otherwise
+     */
     public static boolean outOfBounds(final Dimensions dimensions, final long[] currentPixelPosition) {
         for (int i = 0; i < currentPixelPosition.length; i++) {
             final long position = currentPixelPosition[i];
