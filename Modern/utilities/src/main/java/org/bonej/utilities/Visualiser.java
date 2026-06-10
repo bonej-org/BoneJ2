@@ -47,9 +47,13 @@ import static java.util.stream.Collectors.toList;
  * Helpful for debugging and for users to visualise their results.
  * 
  * @author Michael Doube
- *
  */
 public class Visualiser {
+	/**
+	 * Prevents instantiation of utility class.
+	 */
+	private Visualiser() {}
+
 	/**
 	 * Plot a set of 3D coordinates in Benjamin Schmidt's ImageJ 3D Viewer
 	 *

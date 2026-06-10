@@ -132,8 +132,10 @@ public final class AxisUtils {
 	/**
 	 * Checks if the given annotated space contains both X and Y axes.
 	 *
-	 * @param space the annotated space to check
-	 * @return true if both X and Y axes are present, false otherwise
+	 * @param space the annotated space to check.
+	 * @param <S> type of the space.
+	 * @param <A> type of axes in the space.
+	 * @return true if both X and Y axes are present, false otherwise.
 	 */
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
 	    hasXYDimensions(final S space)
@@ -264,7 +266,7 @@ public final class AxisUtils {
 	 * @param <A> the type of the calibrated axis
 	 * @param space the annotated space containing calibration data
 	 * @param unitService the {@link UnitService} used to convert axis units to a common denominator
-	 * @return the anisotropy deviation value (0.0 for isotropic, positive for anisotropic, infinity if min scale is <= 0)
+	 * @return the anisotropy deviation value (0.0 for isotropic, positive for anisotropic, infinity if min scale is &lt;= 0)
 	 * @throws IllegalArgumentException if:
 	 *         <ul>
 	 *           <li>{@code space} has no spatial dimensions (X, Y, or Z)</li>
@@ -348,8 +350,8 @@ public final class AxisUtils {
 	/**
 	 * Get the interval spacing in real units along an axis
 	 * 
-	 * @param ds
-	 * @param type
+	 * @param ds the dataset to inspect
+	 * @param type the type of axis to check
 	 * @return the average sample spacing in calibrated units along the given axis
 	 */
 	public static double getScale(Dataset ds, AxisType type) {
@@ -372,8 +374,8 @@ public final class AxisUtils {
 	 * 
 	 * Ignores whether there are (or are not) any other dimensions.
 	 * 
-	 * @param ds
-	 * @return
+	 * @param ds the dataset to check
+	 * @return true if the dataset has exactly 3 spatial dimensions
 	 */
 	public static boolean has3SpatialDimensions(Dataset ds) {
 		return hasNSpatialDimensions(ds, 3);
@@ -384,8 +386,8 @@ public final class AxisUtils {
 	 * 
 	 * Ignores whether there are (or are not) any other dimensions.
 	 * 
-	 * @param ds
-	 * @return
+	 * @param ds the dataset to check
+	 * @return true if the dataset has exactly 2 spatial dimensions
 	 */
 	public static boolean has2SpatialDimensions(Dataset ds) {
 		return hasNSpatialDimensions(ds, 2);
@@ -396,8 +398,9 @@ public final class AxisUtils {
 	 * 
 	 * Ignores whether there are (or are not) any other dimensions.
 	 * 
-	 * @param ds
-	 * @return
+	 * @param ds the dataset to check
+	 * @param n the number of spatial dimensions required
+	 * @return true if the dataset has exactly n spatial dimensions
 	 */
 	public static boolean hasNSpatialDimensions(Dataset ds, int n) {
 		final int nD = ds.numDimensions();

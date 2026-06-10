@@ -62,6 +62,9 @@ import org.scijava.table.Table;
  */
 public final class SharedTable {
 
+	/**
+	 * Sentinel value indicating an empty cell in the table.
+	 */
 	public static final Double EMPTY_CELL = null;
 
 	/**
@@ -164,6 +167,11 @@ public final class SharedTable {
 		return publicCopy;
 	}
 
+	/**
+	 * Checks whether the table contains any non-null data values.
+	 *
+	 * @return {@code true} if at least one cell contains a non-null value, {@code false} otherwise
+	 */
 	public static boolean hasData() {
 		return table.stream().flatMap(Collection::stream).anyMatch(
 			Objects::nonNull);
