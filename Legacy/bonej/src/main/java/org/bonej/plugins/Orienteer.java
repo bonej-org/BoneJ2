@@ -96,23 +96,40 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 		{ "east", "west", "E", "W" }, { "up", "down", "Up", "D" }, { "right",
 			"left", "R", "L" } };
 	private static Orienteer instance;
+	/** Map of image IDs to orientation angles in radians. */
 	private final Map<Integer, Double> thetaHash = new Hashtable<>();
+	/** Map of image IDs to axis lengths. */
 	private final Map<Integer, Integer> lengthHash = new Hashtable<>();
+	/** Map of image IDs to compass centre coordinates. */
 	private final Map<Integer, Point> centreHash = new Hashtable<>();
+	/** Map of image IDs to direction indicator paths. */
 	private final Map<Integer, GeneralPath> pathHash = new Hashtable<>();
+	/** Map of image IDs to axis direction indices. */
 	private final Map<Integer, int[]> axisHash = new Hashtable<>();
+	/** Map of image IDs to reflection states for each axis. */
 	private final Map<Integer, boolean[]> reflectHash = new Hashtable<>();
+	/** Map of image IDs to angular unit preferences (degrees/radians). */
 	private final Map<Integer, boolean[]> unitHash = new Hashtable<>();
+	/** Overlay for drawing the direction indicator on images. */
 	private final Overlay overlay = new Overlay();
+	/** Font size for direction labels. */
 	private final int fontSize = 12;
+	/** Scrollbar for adjusting the orientation angle. */
 	private final Scrollbar slider = new Scrollbar(Scrollbar.HORIZONTAL, 0, 1, 0,
 		360);
+	/** Dropdown for selecting the principal direction. */
 	private final Choice axis0Choice = new Choice();
+	/** Dropdown for selecting the secondary direction. */
 	private final Choice axis1Choice = new Choice();
+	/** Checkbox to reflect the principal direction. */
 	private final Checkbox reflect0 = new Checkbox("Reflect");
+	/** Checkbox to reflect the secondary direction. */
 	private final Checkbox reflect1 = new Checkbox("Reflect");
+	/** Text field displaying the current orientation angle. */
 	private final TextField text = new TextField(IJ.d2s(0.0, 3), 7);
+	/** Checkbox to display angles in degrees. */
 	private final Checkbox deg = new Checkbox("deg", true);
+	/** Checkbox to display angles in radians. */
 	private final Checkbox rad = new Checkbox("rad", false);
 	/** Current principal direction choice */
 	private int axis0 = 1;
@@ -127,11 +144,17 @@ public final class Orienteer extends PlugInFrame implements AdjustmentListener,
 	private int length;
 	/** Compass centre coordinates */
 	private Point p;
+	/** ID of the currently active image. */
 	private Integer activeImpID;
+	/** Display scale factor for stroke and font sizing. */
 	private double scale = 1;
+	/** Path shape for the direction indicator cross. */
 	private GeneralPath path;
+	/** Stroke style for the direction indicator lines. */
 	private BasicStroke stroke;
+	/** Whether the principal direction is reflected. */
 	private boolean isReflected0;
+	/** Whether the secondary direction is reflected. */
 	private boolean isReflected1;
 
 	public Orienteer() {

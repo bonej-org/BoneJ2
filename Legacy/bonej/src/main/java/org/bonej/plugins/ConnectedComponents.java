@@ -1144,6 +1144,8 @@ public class ConnectedComponents {
 	}
 
 	/**
+	 * Returns the number of particles detected in the image.
+	 *
 	 * @return number of particles in the image
 	 */
 	public int getNParticles() {
@@ -1151,6 +1153,8 @@ public class ConnectedComponents {
 	}
 
 	/**
+	 * Returns the binary work array containing foreground and background pixels.
+	 *
 	 * @return binary work array containing foreground and background pixels
 	 */
 	public byte[][] getWorkArray() {

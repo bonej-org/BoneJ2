@@ -46,7 +46,19 @@ import org.scijava.table.Table;
 
 import static java.util.stream.Collectors.toList;
 
+/**
+ * Abstract base class for BoneJ command plugins.
+ * Provides common functionality and fields shared across all BoneJ commands.
+ */
 public abstract class BoneJCommand extends ContextCommand {
+    
+    /**
+     * Default constructor for BoneJ command plugin instantiation by SciJava framework.
+     */
+    protected BoneJCommand() {
+        // Implicitly calls super()
+    }
+
     protected List<Subspace<BitType>> subspaces;
 
 
