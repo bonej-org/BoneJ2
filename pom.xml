@@ -119,21 +119,21 @@
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
-        <maven.compiler.release>8</maven.compiler.release>
+        <!-- SciJava is enforcing Java 11 -->
+        <maven.compiler.release>11</maven.compiler.release>
     </properties>
     
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
-                <configuration>
-                <release>${maven.compiler.release}</release>
-                </configuration>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.14.0</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                    </configuration>
                 </plugin>
-            
             </plugins>
         </pluginManagement>
     </build>
