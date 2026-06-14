@@ -119,7 +119,8 @@
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
         <releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
         <tagNameFormat>bonej-@{project.version}</tagNameFormat>
-        <maven.compiler.release>17</maven.compiler.release>
+        <!-- SciJava is enforcing Java 11 -->
+        <maven.compiler.release>11</maven.compiler.release>
     </properties>
     
     <build>
