@@ -7,14 +7,15 @@ import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.basictypeaccess.array.ArrayDataAccess;
+import net.imglib2.img.basictypeaccess.array.ByteArray;
+import net.imglib2.img.basictypeaccess.array.FloatArray;
+import net.imglib2.img.basictypeaccess.array.ShortArray;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.ShortType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -212,143 +213,208 @@ public final class DatasetUtil {
 
 		boolean fastPathUsed = false;
 
-		// --- Fast Path: Use ArrayDataAccess to get the backing array ---
-		if (img instanceof ArrayImg && img instanceof ArrayDataAccess) {
+		System.out.println("img class = " + img.getClass().getName());
+		long start = System.nanoTime();
+		long end = start;
+		if (img instanceof ArrayImg) {
+			System.out.println("Using fast path for Dataset-> RAW");
 			try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-				ArrayDataAccess<?> access = (ArrayDataAccess<?>) img;
-				Object storage = access.getCurrentStorageArray();
 
-				if (storage instanceof byte[]) {
-					fos.write((byte[]) storage);
+				ArrayImg<?, ?> arrayImg = (ArrayImg<?, ?>) img;
+				Object access = arrayImg.update(null);
+				System.out.println("access class = " + access.getClass().getName());
+
+				if (access instanceof ByteArray) {
+					fos.write(((ByteArray) access).getCurrentStorageArray());
 					fastPathUsed = true;
-				} else if (storage instanceof short[]) {
-					short[] shorts = (short[]) storage;
-					ByteBuffer buffer = ByteBuffer.allocate(shorts.length * 2)
-							.order(littleEndian ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
+				}
+				else if (access instanceof ShortArray) {
+
+					short[] shorts =
+							((ShortArray) access).getCurrentStorageArray();
+
+					ByteBuffer buffer =
+							ByteBuffer.allocate(shorts.length * 2)
+							.order(littleEndian
+									? ByteOrder.LITTLE_ENDIAN
+											: ByteOrder.BIG_ENDIAN);
+
 					buffer.asShortBuffer().put(shorts);
+
 					fos.write(buffer.array());
 					fastPathUsed = true;
-				} else if (storage instanceof float[]) {
-					float[] floats = (float[]) storage;
-					ByteBuffer buffer = ByteBuffer.allocate(floats.length * 4)
-							.order(littleEndian ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
+				}
+				else if (access instanceof FloatArray) {
+
+					float[] floats =
+							((FloatArray) access).getCurrentStorageArray();
+
+					ByteBuffer buffer =
+							ByteBuffer.allocate(floats.length * 4)
+							.order(littleEndian
+									? ByteOrder.LITTLE_ENDIAN
+											: ByteOrder.BIG_ENDIAN);
+
 					buffer.asFloatBuffer().put(floats);
+
 					fos.write(buffer.array());
 					fastPathUsed = true;
 				}
 			}
+			end = System.nanoTime();
 		}
 
 		// --- Fallback: Cursor Iteration (if not an ArrayImg or access failed) ---
 		if (!fastPathUsed) {
+			System.out.println("Writing Dataset to RAW using the slow path");
 			try (FileOutputStream fos = new FileOutputStream(outputFile)) {
 				fallbackCursorWrite(fos, img, bytesPerPixel, littleEndian);
 			}
+			end = System.nanoTime();
 		}
+		System.out.println("RAW file written in "+(long)((end - start) / 1E6)+" ms");
 	}
 
 	/**
 	 * Fallback method for non-array images.
 	 * Iterates pixels and writes them sequentially.
+	 * Type checking is performed once before iteration for efficiency.
 	 */
-	private static void fallbackCursorWrite(OutputStream fos, 
-			RandomAccessibleInterval<?> img, 
-			int bytesPerPixel, 
+	private static void fallbackCursorWrite(OutputStream fos,
+			RandomAccessibleInterval<?> img,
+			int bytesPerPixel,
 			boolean littleEndian) throws IOException {
 
-		int batchSize = 65536 / bytesPerPixel; 
+		int batchSize = 65536 / bytesPerPixel;
 		if (batchSize < 1) batchSize = 1;
 		byte[] batchBuffer = new byte[batchSize * bytesPerPixel];
+
+		// Determine the pixel type ONCE before iterating
+		Object typeSample = img.firstElement();
+
+		if (typeSample instanceof UnsignedByteType || typeSample instanceof ByteType) {
+			write8Bit(fos, img, batchBuffer);
+		} else if (typeSample instanceof UnsignedShortType) {
+			write16BitUnsigned(fos, img, batchBuffer, littleEndian);
+		} else if (typeSample instanceof ShortType) {
+			write16BitSigned(fos, img, batchBuffer, littleEndian);
+		} else if (typeSample instanceof FloatType) {
+			write32BitFloat(fos, img, batchBuffer, littleEndian);
+		} else {
+			throw new UnsupportedOperationException(
+					"Unsupported pixel type in cursor fallback: " + typeSample.getClass().getSimpleName());
+		}
+	}
+
+	private static void write8Bit(OutputStream fos, RandomAccessibleInterval<?> img, byte[] batchBuffer)
+			throws IOException {
+
+		@SuppressWarnings("unchecked")
+		var cursor = ((RandomAccessibleInterval<IntegerType<?>>) img).cursor();
 		int batchCount = 0;
 
-		// Cursor does NOT implement AutoCloseable
-		var cursor = img.cursor();
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			batchBuffer[batchCount++] = (byte) (cursor.get().getIntegerLong() & 0xFF);
 
-		try {
-			while (cursor.hasNext()) {
-				cursor.fwd();
-				Object pixelObj = cursor.get();
-
-				if (bytesPerPixel == 1) {
-					// For 8-bit, we need an integer value between 0-255 (or -128 to 127)
-					// Use getLong() from IntegerType which handles both signed/unsigned
-					long val = -1;
-
-					if (pixelObj instanceof IntegerType<?>) {
-						val = ((IntegerType<?>) pixelObj).getIntegerLong();
-						// Mask to ensure we get the lower 8 bits correctly for unsigned display if needed
-						// But usually raw writes just want the bits.
-						batchBuffer[batchCount++] = (byte) (val & 0xFF);
-					} else if (pixelObj instanceof RealType<?>) {
-						double dVal = ((RealType<?>) pixelObj).getRealDouble();
-						batchBuffer[batchCount++] = (byte) ((int) dVal & 0xFF);
-					} else {
-						throw new IllegalStateException("Unknown pixel type for 8-bit conversion");
-					}
-
-				} else if (bytesPerPixel == 2) {
-					// 16-bit short
-					long val = -1;
-					if (pixelObj instanceof IntegerType<?>) {
-						val = ((IntegerType<?>) pixelObj).getIntegerLong();
-					} else if (pixelObj instanceof RealType<?>) {
-						double dVal = ((RealType<?>) pixelObj).getRealDouble();
-						val = (long) dVal;
-					} else {
-						throw new IllegalStateException("Unknown pixel type for 16-bit conversion");
-					}
-
-					// Ensure we treat it as unsigned 16-bit for writing? 
-					// Actually, we just write the bits.
-					int iv = (int) (val & 0xFFFF);
-
-					if (littleEndian) {
-						batchBuffer[batchCount++] = (byte) (iv & 0xFF);
-						batchBuffer[batchCount++] = (byte) ((iv >> 8) & 0xFF);
-					} else {
-						batchBuffer[batchCount++] = (byte) ((iv >> 8) & 0xFF);
-						batchBuffer[batchCount++] = (byte) (iv & 0xFF);
-					}
-
-				} else if (bytesPerPixel == 4) {
-					// 32-bit float
-					float fVal = 0f;
-					if (pixelObj instanceof FloatType) {
-						fVal = ((FloatType) pixelObj).get();
-					} else if (pixelObj instanceof RealType<?>) {
-						fVal = (float) ((RealType<?>) pixelObj).getRealDouble();
-					} else if (pixelObj instanceof IntegerType<?>) {
-						fVal = ((IntegerType<?>) pixelObj).getIntegerLong();
-					} else {
-						throw new IllegalStateException("Unknown pixel type for 32-bit conversion");
-					}
-
-					int bits = Float.floatToIntBits(fVal);
-					if (littleEndian) {
-						batchBuffer[batchCount++] = (byte) (bits);
-						batchBuffer[batchCount++] = (byte) (bits >> 8);
-						batchBuffer[batchCount++] = (byte) (bits >> 16);
-						batchBuffer[batchCount++] = (byte) (bits >> 24);
-					} else {
-						batchBuffer[batchCount++] = (byte) (bits >> 24);
-						batchBuffer[batchCount++] = (byte) (bits >> 16);
-						batchBuffer[batchCount++] = (byte) (bits >> 8);
-						batchBuffer[batchCount++] = (byte) (bits);
-					}
-				}
-
-				if (batchCount >= batchBuffer.length) {
-					fos.write(batchBuffer, 0, batchCount);
-					batchCount = 0;
-				}
-			}
-
-			if (batchCount > 0) {
+			if (batchCount >= batchBuffer.length) {
 				fos.write(batchBuffer, 0, batchCount);
+				batchCount = 0;
 			}
-		} finally {
-			// No explicit close needed for Cursor
-			cursor = null;
+		}
+		if (batchCount > 0) {
+			fos.write(batchBuffer, 0, batchCount);
+		}
+	}
+
+	private static void write16BitUnsigned(OutputStream fos, RandomAccessibleInterval<?> img,
+			byte[] batchBuffer, boolean littleEndian) throws IOException {
+
+		@SuppressWarnings("unchecked")
+		var cursor = ((RandomAccessibleInterval<UnsignedShortType>) img).cursor();
+		int batchCount = 0;
+
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			int val = cursor.get().get();
+
+			if (littleEndian) {
+				batchBuffer[batchCount++] = (byte) (val & 0xFF);
+				batchBuffer[batchCount++] = (byte) ((val >> 8) & 0xFF);
+			} else {
+				batchBuffer[batchCount++] = (byte) ((val >> 8) & 0xFF);
+				batchBuffer[batchCount++] = (byte) (val & 0xFF);
+			}
+
+			if (batchCount >= batchBuffer.length) {
+				fos.write(batchBuffer, 0, batchCount);
+				batchCount = 0;
+			}
+		}
+		if (batchCount > 0) {
+			fos.write(batchBuffer, 0, batchCount);
+		}
+	}
+
+	private static void write16BitSigned(OutputStream fos, RandomAccessibleInterval<?> img,
+			byte[] batchBuffer, boolean littleEndian) throws IOException {
+
+		@SuppressWarnings("unchecked")
+		var cursor = ((RandomAccessibleInterval<ShortType>) img).cursor();
+		int batchCount = 0;
+
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			int val = cursor.get().get() & 0xFFFF; // Preserve bit pattern
+
+			if (littleEndian) {
+				batchBuffer[batchCount++] = (byte) (val & 0xFF);
+				batchBuffer[batchCount++] = (byte) ((val >> 8) & 0xFF);
+			} else {
+				batchBuffer[batchCount++] = (byte) ((val >> 8) & 0xFF);
+				batchBuffer[batchCount++] = (byte) (val & 0xFF);
+			}
+
+			if (batchCount >= batchBuffer.length) {
+				fos.write(batchBuffer, 0, batchCount);
+				batchCount = 0;
+			}
+		}
+		if (batchCount > 0) {
+			fos.write(batchBuffer, 0, batchCount);
+		}
+	}
+
+	private static void write32BitFloat(OutputStream fos, RandomAccessibleInterval<?> img,
+			byte[] batchBuffer, boolean littleEndian) throws IOException {
+
+		@SuppressWarnings("unchecked")
+		var cursor = ((RandomAccessibleInterval<FloatType>) img).cursor();
+		int batchCount = 0;
+
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			int bits = Float.floatToIntBits(cursor.get().get());
+
+			if (littleEndian) {
+				batchBuffer[batchCount++] = (byte) (bits);
+				batchBuffer[batchCount++] = (byte) (bits >> 8);
+				batchBuffer[batchCount++] = (byte) (bits >> 16);
+				batchBuffer[batchCount++] = (byte) (bits >> 24);
+			} else {
+				batchBuffer[batchCount++] = (byte) (bits >> 24);
+				batchBuffer[batchCount++] = (byte) (bits >> 16);
+				batchBuffer[batchCount++] = (byte) (bits >> 8);
+				batchBuffer[batchCount++] = (byte) (bits);
+			}
+
+			if (batchCount >= batchBuffer.length) {
+				fos.write(batchBuffer, 0, batchCount);
+				batchCount = 0;
+			}
+		}
+		if (batchCount > 0) {
+			fos.write(batchBuffer, 0, batchCount);
 		}
 	}
 
