@@ -4,7 +4,6 @@ import net.imagej.Dataset;
 import net.imagej.DatasetService;
 
 import org.bonej.utilities.DatasetUtil;
-import org.scijava.Context;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
@@ -17,9 +16,8 @@ import java.io.IOException;
 
 /**
  * Test command to save the current active Dataset as a raw file using DatasetUtil.
- * Verifies that the fast-path array dump works correctly.
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Test: Save Active as Raw")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Analyze>Save Active as Raw")
 public class TestSaveRawCommand implements Command {
 
 	@Parameter(type = ItemIO.INPUT)
@@ -33,6 +31,10 @@ public class TestSaveRawCommand implements Command {
 			choices = {"Little-endian", "Big-endian"}, 
 			required = true)
 	private String byteOrderStr;
+	
+    @Parameter(label = "(0,1) binary",
+    		description= "Convert ImageJ 8-bit (0,255) binary to 8-bit (0,1) binary")
+    private boolean zeroOneBinary = false;
 
 	@Parameter
 	private UIService uiService;
@@ -61,7 +63,7 @@ public class TestSaveRawCommand implements Command {
 			logService.info("Saving " + dataset.getName() + " to " + outputPath.getName() + "...");
 
 			// Direct call to utility
-			DatasetUtil.saveAsRaw(dataset, outputPath, littleEndian);
+			DatasetUtil.saveAsRaw(dataset, outputPath, littleEndian, zeroOneBinary);
 
 			logService.info("Save completed successfully.");
 			logService.info("File size: " + outputPath.length() + " bytes");
@@ -76,6 +78,7 @@ public class TestSaveRawCommand implements Command {
 					(int)dataset.dimension(1), 
 					(int)dataset.dimension(2),
 					determineTypeString(dataset),
+					zeroOneBinary,
 					byteOrderStr,
 					1.0, 1.0, 1.0, // Dummy spacing for test
 					datasetService

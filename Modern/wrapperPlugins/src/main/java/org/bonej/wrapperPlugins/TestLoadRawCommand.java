@@ -17,7 +17,7 @@ import java.io.IOException;
  * Test command to load raw data using DatasetUtil and display it.
  * Use this to verify endianness and calibration settings before running large pipelines.
  */
-@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Test: Load Raw")
+@Plugin(type = Command.class, menuPath = "Plugins>BoneJ>Analyze>Load Raw")
 public class TestLoadRawCommand implements Command {
 
     @Parameter(label = "File Path", required = true, style = "file")
@@ -37,6 +37,10 @@ public class TestLoadRawCommand implements Command {
 
     @Parameter(label = "Pixel Type", choices = {"uint8", "uint16", "int16", "float32"}, required = true)
     private String pixelTypeStr;
+    
+    @Parameter(label = "(0,1) binary",
+    		description= "Convert 8-bit (0,1) binary to ImageJ 8-bit (0,255) binary")
+    private boolean zeroOneBinary = false;
 
     @Parameter(label = "Byte Order", choices = {"Little-endian", "Big-endian"}, required = true)
     private String byteOrderStr;
@@ -75,6 +79,7 @@ public class TestLoadRawCommand implements Command {
                 height,
                 depth,
                 pixelTypeStr,
+                zeroOneBinary,
                 byteOrderStr,
                 spacingX,
                 spacingY,
