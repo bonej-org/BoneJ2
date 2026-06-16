@@ -43,6 +43,7 @@ public final class DatasetUtil {
 	 * @param height        Image height (Y dimension)
 	 * @param depth         Image depth (Z dimension)
 	 * @param pixelType     One of: "uint8", "uint16", "int16", "float32"
+	 * @param zeroOneBinary true if the raw data is (0,1) binary and we want (0,255) binary
 	 * @param byteOrder     One of: "Little-endian", "Big-endian"
 	 * @param spacingX      Voxel spacing in X (mm)
 	 * @param spacingY      Voxel spacing in Y (mm)
@@ -59,6 +60,7 @@ public final class DatasetUtil {
 			int height,
 			int depth,
 			String pixelType,
+			boolean zeroOneBinary,
 			String byteOrder,
 			double spacingX,
 			double spacingY,
@@ -84,6 +86,10 @@ public final class DatasetUtil {
 			throw new IllegalArgumentException("Unsupported pixel type: " + pixelType);
 		}
 
+		if (bytesPerPixel != 1 && zeroOneBinary) {
+			throw new IllegalArgumentException("Unexpected (0,1) binary image flag set for image of type " + pixelType);
+		}
+		
 		long totalPixels = (long) width * height * depth;
 		long expectedDataBytes = totalPixels * bytesPerPixel;
 		long expectedTotalBytes = headerOffset + expectedDataBytes;
@@ -97,6 +103,22 @@ public final class DatasetUtil {
 
 		// --- Read raw bytes, skipping header ---
 		byte[] rawData = readRawBytes(filePath, headerOffset, (int) expectedDataBytes);
+		
+		//multiply 1s by 255 so that we have an ImageJ convention (0,255) binary image
+		if (zeroOneBinary) {
+			for (int i = 0; i < expectedDataBytes; i++) {
+				byte byteValue = rawData[i];
+				if ((byteValue & ~1) != 0) {
+		            // Provide context about the bad value
+		            throw new IllegalArgumentException(
+		                String.format("Non-binary value detected at index %d: %d (0x%02X)", 
+		                              i, byteValue, byteValue & 0xFF));
+		        }
+		        
+		        // Convert: 0 -> 0, 1 -> 255 (stored as -1)
+		        rawData[i] = (byte) ((byteValue * 255) & 0xFF);
+		    }
+		}
 
 		// --- Determine byte order ---
 		ByteOrder order = "Big-endian".equalsIgnoreCase(byteOrder)
@@ -144,6 +166,38 @@ public final class DatasetUtil {
 		return rawData;
 	}
 
+	/**
+	 * Overloaded version of loadRaw3D that does no (0,1) -> (0,255) binary conversion.
+	 * 
+	 * @param filePath
+	 * @param headerOffset
+	 * @param width
+	 * @param height
+	 * @param depth
+	 * @param pixelType
+	 * @param byteOrder
+	 * @param spacingX
+	 * @param spacingY
+	 * @param spacingZ
+	 * @param datasetService
+	 * @return
+	 * @throws IOException
+	 */
+	public static Dataset loadRaw3D(
+			File filePath,
+			long headerOffset,
+			int width,
+			int height,
+			int depth,
+			String pixelType,
+			String byteOrder,
+			double spacingX,
+			double spacingY,
+			double spacingZ,
+			DatasetService datasetService) throws IOException {
+		return loadRaw3D(filePath, headerOffset, width, height, depth, pixelType, false, byteOrder, spacingX, spacingY, spacingZ, datasetService);
+	}
+	
 	/**
 	 * Constructs a Dataset from raw bytes based on pixel type.
 	 * Each branch uses the concrete type so Java infers generics correctly.
