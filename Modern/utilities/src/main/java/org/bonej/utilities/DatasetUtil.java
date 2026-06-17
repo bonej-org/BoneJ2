@@ -17,6 +17,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -43,6 +44,7 @@ public final class DatasetUtil {
 	 * @param height        Image height (Y dimension)
 	 * @param depth         Image depth (Z dimension)
 	 * @param pixelType     One of: "uint8", "uint16", "int16", "float32"
+	 * @param zeroOneBinary true if the raw data is (0,1) binary and we want (0,255) binary. Ignored if image is not 8-bit.
 	 * @param byteOrder     One of: "Little-endian", "Big-endian"
 	 * @param spacingX      Voxel spacing in X (mm)
 	 * @param spacingY      Voxel spacing in Y (mm)
@@ -59,6 +61,7 @@ public final class DatasetUtil {
 			int height,
 			int depth,
 			String pixelType,
+			boolean zeroOneBinary,
 			String byteOrder,
 			double spacingX,
 			double spacingY,
@@ -97,6 +100,22 @@ public final class DatasetUtil {
 
 		// --- Read raw bytes, skipping header ---
 		byte[] rawData = readRawBytes(filePath, headerOffset, (int) expectedDataBytes);
+
+		//multiply 1s by 255 so that we have an ImageJ convention (0,255) binary image
+		if (zeroOneBinary && bytesPerPixel == 1) {
+			for (int i = 0; i < rawData.length; i++) {
+				byte byteValue = rawData[i];
+				if ((byteValue & ~1) != 0) {
+					// Provide context about the bad value
+					throw new IllegalArgumentException(
+							String.format("Non-binary value detected at index %d: %d (0x%02X)", 
+									i, byteValue, byteValue & 0xFF));
+				}
+
+				// Convert: 0 -> 0, 1 -> 255 (stored as -1)
+				rawData[i] = (byte) ((byteValue * 255) & 0xFF);
+			}
+		}
 
 		// --- Determine byte order ---
 		ByteOrder order = "Big-endian".equalsIgnoreCase(byteOrder)
@@ -145,6 +164,38 @@ public final class DatasetUtil {
 	}
 
 	/**
+	 * Overloaded version of loadRaw3D that does no (0,1) -> (0,255) binary conversion.
+	 * 
+	 * @param filePath
+	 * @param headerOffset
+	 * @param width
+	 * @param height
+	 * @param depth
+	 * @param pixelType
+	 * @param byteOrder
+	 * @param spacingX
+	 * @param spacingY
+	 * @param spacingZ
+	 * @param datasetService
+	 * @return
+	 * @throws IOException
+	 */
+	public static Dataset loadRaw3D(
+			File filePath,
+			long headerOffset,
+			int width,
+			int height,
+			int depth,
+			String pixelType,
+			String byteOrder,
+			double spacingX,
+			double spacingY,
+			double spacingZ,
+			DatasetService datasetService) throws IOException {
+		return loadRaw3D(filePath, headerOffset, width, height, depth, pixelType, false, byteOrder, spacingX, spacingY, spacingZ, datasetService);
+	}
+
+	/**
 	 * Constructs a Dataset from raw bytes based on pixel type.
 	 * Each branch uses the concrete type so Java infers generics correctly.
 	 */
@@ -190,8 +241,9 @@ public final class DatasetUtil {
 	 * @param dataset      The source 3D Dataset.
 	 * @param outputFile   The destination file path.
 	 * @param littleEndian If true, writes as Little-Endian (default). If false, writes Big-Endian.
+	 * @param zeroOneBinary If true, converts 8-bit (0,255) binary to 8-bit (0,1) binary. Ignored if the image is not 8-bit.
 	 */
-	public static void saveAsRaw(Dataset dataset, File outputFile, boolean littleEndian) throws IOException {
+	public static void saveAsRaw(Dataset dataset, File outputFile, boolean littleEndian, boolean zeroOneBinary) throws IOException {
 		if (dataset.numDimensions() != 3) {
 			throw new IllegalArgumentException("Expected 3D Dataset, got " + dataset.numDimensions() + "D");
 		}
@@ -218,14 +270,28 @@ public final class DatasetUtil {
 		long end = start;
 		if (img instanceof ArrayImg) {
 			System.out.println("Using fast path for Dataset-> RAW");
-			try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+			try (FileOutputStream fos = new FileOutputStream(outputFile);
+					BufferedOutputStream bos = new BufferedOutputStream(fos)) {
 
 				ArrayImg<?, ?> arrayImg = (ArrayImg<?, ?>) img;
 				Object access = arrayImg.update(null);
 				System.out.println("access class = " + access.getClass().getName());
 
 				if (access instanceof ByteArray) {
-					fos.write(((ByteArray) access).getCurrentStorageArray());
+					byte[] storageArray = ((ByteArray) access).getCurrentStorageArray();
+
+					if (zeroOneBinary) {
+						for (byte b : storageArray) {
+							if (b != 0 && b != -1) {
+								throw new IllegalArgumentException("Invalid binary value: " + (b & 0xFF));
+							}
+							// Write transformed byte immediately
+							bos.write(b & 1); 
+						}
+
+					} else {
+						bos.write(storageArray);
+					}
 					fastPathUsed = true;
 				}
 				else if (access instanceof ShortArray) {
@@ -268,7 +334,7 @@ public final class DatasetUtil {
 		if (!fastPathUsed) {
 			System.out.println("Writing Dataset to RAW using the slow path");
 			try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-				fallbackCursorWrite(fos, img, bytesPerPixel, littleEndian);
+				fallbackCursorWrite(fos, img, bytesPerPixel, littleEndian, zeroOneBinary);
 			}
 			end = System.nanoTime();
 		}
@@ -283,7 +349,8 @@ public final class DatasetUtil {
 	private static void fallbackCursorWrite(OutputStream fos,
 			RandomAccessibleInterval<?> img,
 			int bytesPerPixel,
-			boolean littleEndian) throws IOException {
+			boolean littleEndian,
+			boolean zeroOneBinary) throws IOException {
 
 		int batchSize = 65536 / bytesPerPixel;
 		if (batchSize < 1) batchSize = 1;
@@ -293,7 +360,7 @@ public final class DatasetUtil {
 		Object typeSample = img.firstElement();
 
 		if (typeSample instanceof UnsignedByteType || typeSample instanceof ByteType) {
-			write8Bit(fos, img, batchBuffer);
+			write8Bit(fos, img, batchBuffer, zeroOneBinary);
 		} else if (typeSample instanceof UnsignedShortType) {
 			write16BitUnsigned(fos, img, batchBuffer, littleEndian);
 		} else if (typeSample instanceof ShortType) {
@@ -306,22 +373,37 @@ public final class DatasetUtil {
 		}
 	}
 
-	private static void write8Bit(OutputStream fos, RandomAccessibleInterval<?> img, byte[] batchBuffer)
-			throws IOException {
+	private static void write8Bit(OutputStream fos, RandomAccessibleInterval<?> img,
+			byte[] batchBuffer, boolean zeroOneBinary) throws IOException {
 
 		@SuppressWarnings("unchecked")
 		var cursor = ((RandomAccessibleInterval<IntegerType<?>>) img).cursor();
 		int batchCount = 0;
 
-		while (cursor.hasNext()) {
-			cursor.fwd();
-			batchBuffer[batchCount++] = (byte) (cursor.get().getIntegerLong() & 0xFF);
-
-			if (batchCount >= batchBuffer.length) {
-				fos.write(batchBuffer, 0, batchCount);
-				batchCount = 0;
+		if (zeroOneBinary) {
+			while (cursor.hasNext()) {
+				cursor.fwd();
+				byte b = (byte) (cursor.get().getIntegerLong() & 0xFF);
+				if (b != 0 && b != -1) {
+					throw new IllegalArgumentException("Invalid binary value: " + (b & 0xFF));
+				}
+				batchBuffer[batchCount++] = (byte) (b & 1);
+				if (batchCount >= batchBuffer.length) {
+					fos.write(batchBuffer, 0, batchCount);
+					batchCount = 0;
+				}
+			}
+		} else {
+			while (cursor.hasNext()) {
+				cursor.fwd();
+				batchBuffer[batchCount++] = (byte) (cursor.get().getIntegerLong() & 0xFF);
+				if (batchCount >= batchBuffer.length) {
+					fos.write(batchBuffer, 0, batchCount);
+					batchCount = 0;
+				}
 			}
 		}
+
 		if (batchCount > 0) {
 			fos.write(batchBuffer, 0, batchCount);
 		}
@@ -418,7 +500,11 @@ public final class DatasetUtil {
 		}
 	}
 
+	public static void saveAsRaw(Dataset dataset, File outputFile, boolean littleEndian) throws IOException {
+		saveAsRaw(dataset, outputFile, littleEndian, false);
+	}
+	
 	public static void saveAsRaw(Dataset dataset, File outputFile) throws IOException {
-		saveAsRaw(dataset, outputFile, true);
+		saveAsRaw(dataset, outputFile, true, false);
 	}
 }
