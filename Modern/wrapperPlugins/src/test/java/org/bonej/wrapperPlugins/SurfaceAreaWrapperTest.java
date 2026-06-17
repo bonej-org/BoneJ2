@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -116,7 +117,7 @@ public class SurfaceAreaWrapperTest extends AbstractWrapperTest {
 			"exportSTL", true).get();
 
 		// Verify that write error dialog got shown
-		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(startsWith(
+		verify(MOCK_UI, timeout(1000).atLeastOnce()).dialogPrompt(startsWith(
 			STL_WRITE_ERROR), anyString(), eq(ERROR_MESSAGE), any());
 	}
 

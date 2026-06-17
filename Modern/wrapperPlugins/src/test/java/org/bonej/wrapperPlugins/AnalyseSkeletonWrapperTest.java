@@ -41,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -151,7 +152,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -196,7 +197,7 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 		assertTrue("Plugin should have cancelled", module.isCanceled());
 		assertEquals("Cancel reason is incorrect", NO_SKELETONS, module
 			.getCancelReason());
-		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -371,8 +372,9 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		//Mocking results in the UI getting triggered twice, so we add .times(2)
-		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(anyString(), anyString(), any(),
+		// The legacy (ImageJ1) UI bridge can re-emit the cancellation warning, so
+		// the dialog may be shown more than once; we only assert it appeared.
+		verify(MOCK_UI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 

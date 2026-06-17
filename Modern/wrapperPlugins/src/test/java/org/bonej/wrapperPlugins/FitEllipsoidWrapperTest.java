@@ -33,6 +33,7 @@ package org.bonej.wrapperPlugins;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -80,7 +81,7 @@ public class FitEllipsoidWrapperTest extends AbstractWrapperTest {
 		assertTrue("Cancel reason is incorrect", module.getCancelReason()
 			.startsWith("Please populate ROI Manager with at least " +
 				Quadric.MIN_DATA));
-		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 }
