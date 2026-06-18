@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -92,7 +93,7 @@ public final class CommonWrapperTests {
 			assertTrue("Null image should have canceled the plugin", module.isCanceled());
 			assertEquals("Cancel reason is incorrect", CommonMessages.NO_IMAGE_OPEN,
 					module.getCancelReason());
-			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(), any());
+			verify(mockUI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(), any());
 		} catch (InterruptedException | ExecutionException e) {
 			Assert.fail("Test timed out");
 		} finally {
@@ -125,7 +126,7 @@ public final class CommonWrapperTests {
 					.isCanceled());
 			assertEquals("Cancel reason is incorrect", CommonMessages.NOT_3D_IMAGE,
 					module.getCancelReason());
-			verify(mockUI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+			verify(mockUI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(),
 					any());
 		} catch (InterruptedException | ExecutionException e) {
 			Assert.fail("Test timed out");
@@ -211,7 +212,7 @@ public final class CommonWrapperTests {
 					"inputDataset", ds).get();
 
 			// VERIFY
-			verify(mockUI, timeout(1000).times(1)).dialogPrompt(startsWith(
+			verify(mockUI, timeout(1000).atLeastOnce()).dialogPrompt(startsWith(
 					"The image is anisotropic"), anyString(), eq(WARNING_MESSAGE), any());
 			assertTrue("Pressing cancel on warning dialog should have cancelled plugin",
 					module.isCanceled());

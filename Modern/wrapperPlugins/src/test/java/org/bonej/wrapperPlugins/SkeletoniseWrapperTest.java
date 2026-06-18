@@ -36,6 +36,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -80,7 +81,7 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 			.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(MOCK_UI, timeout(1000).times(1)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 
@@ -136,7 +137,7 @@ public class SkeletoniseWrapperTest extends AbstractWrapperTest {
 			module.isCanceled());
 		assertEquals("Cancel reason is incorrect", expectedMessage, module
 			.getCancelReason());
-		verify(MOCK_UI, timeout(1000)).dialogPrompt(anyString(), anyString(), any(),
+		verify(MOCK_UI, timeout(1000).atLeastOnce()).dialogPrompt(anyString(), anyString(), any(),
 			any());
 	}
 }

@@ -109,9 +109,6 @@
         <license.licenseName>bsd_2</license.licenseName>
         <license.projectName>High-level BoneJ2 commands.</license.projectName>
         <license.copyrightOwners>Michael Doube, BoneJ developers</license.copyrightOwners>
-
-        <!-- HACK: Avoid exception during test phase. -->
-        <junit.version>4.10</junit.version>
     </properties>
  
      <dependencies>
@@ -232,25 +229,11 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.hamcrest</groupId>
-                    <artifactId>hamcrest-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <!-- TODO remove this version override once scijava catches up -->
-            <version>5.20.0</version>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.hamcrest</groupId>
-                    <artifactId>hamcrest-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
