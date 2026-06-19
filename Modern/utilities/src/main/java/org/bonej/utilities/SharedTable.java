@@ -73,6 +73,9 @@ public final class SharedTable {
 	private static Table<DefaultColumn<Double>, Double> table = createTable();
 
 	private static Table<DefaultColumn<Double>, Double> publicCopy;
+	
+	// Dedicated lock object for thread safety
+	private static final Object LOCK = new Object();
 
 	private SharedTable() {}
 
@@ -125,13 +128,16 @@ public final class SharedTable {
 			throw new IllegalArgumentException("Header cannot be empty");
 		}
 
-		final int columns = table.getColumnCount();
-		final int columnIndex = headerIndex(header);
+		// Synchronize the entire operation to prevent race conditions
+		synchronized (LOCK) {
+			final int columns = table.getColumnCount();
+			final int columnIndex = headerIndex(header);
 
-		if (columnIndex == columns) {
-			appendEmptyColumn(header);
+			if (columnIndex == columns) {
+				appendEmptyColumn(header);
+			}
+			insertIntoNextFreeRow(label, columnIndex, value);
 		}
-		insertIntoNextFreeRow(label, columnIndex, value);
 	}
 
 	/**
@@ -146,25 +152,27 @@ public final class SharedTable {
 	 * @return the persistent copy instance.
 	 */
 	public static Table<DefaultColumn<Double>, Double> getTable() {
-		if (publicCopy == null) {
-			publicCopy = createTable();
+		synchronized (LOCK) {
+			if (publicCopy == null) {
+				publicCopy = createTable();
+			}
+			else {
+				// Calling publicCopy.clear() would be simpler, but it breaks the tests of
+				// the class. However, the tests fail only when run together, individually
+				// they pass.
+				publicCopy.setRowCount(0);
+				publicCopy.setColumnCount(0);
+			}
+			publicCopy.addAll(table);
+			// Just calling publicCopy::add is not enough to update size info
+			// (ThicknessWrapperTests fail)
+			publicCopy.setRowCount(table.getRowCount());
+			publicCopy.setColumnCount(table.getColumnCount());
+			for (int i = 0; i < table.getRowCount(); i++) {
+				publicCopy.setRowHeader(i, table.getRowHeader(i));
+			}
+			return publicCopy;
 		}
-		else {
-			// Calling publicCopy.clear() would be simpler, but it breaks the tests of
-			// the class. However, the tests fail only when run together, individually
-			// they pass.
-			publicCopy.setRowCount(0);
-			publicCopy.setColumnCount(0);
-		}
-		publicCopy.addAll(table);
-		// Just calling publicCopy::add is not enough to update size info
-		// (ThicknessWrapperTests fail)
-		publicCopy.setRowCount(table.getRowCount());
-		publicCopy.setColumnCount(table.getColumnCount());
-		for (int i = 0; i < table.getRowCount(); i++) {
-			publicCopy.setRowHeader(i, table.getRowHeader(i));
-		}
-		return publicCopy;
 	}
 
 	/**
@@ -173,13 +181,17 @@ public final class SharedTable {
 	 * @return {@code true} if at least one cell contains a non-null value, {@code false} otherwise
 	 */
 	public static boolean hasData() {
-		return table.stream().flatMap(Collection::stream).anyMatch(
-			Objects::nonNull);
+		synchronized (LOCK) {
+			return table.stream().flatMap(Collection::stream).anyMatch(
+				Objects::nonNull);
+		}
 	}
 
 	/** Initializes the table into a new empty table */
 	public static void reset() {
-		table = createTable();
+		synchronized (LOCK) {
+			table = createTable();
+		}
 	}
 
 	// region -- Helper methods --
