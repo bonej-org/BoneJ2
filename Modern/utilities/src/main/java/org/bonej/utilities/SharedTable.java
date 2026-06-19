@@ -90,7 +90,7 @@ public final class SharedTable {
 	public static void add(final String label, final String header,
 		final long value)
 	{
-		add(label, header, new Double(value));
+		add(label, header, value);
 	}
 
 	/**
@@ -104,7 +104,7 @@ public final class SharedTable {
 	public static void add(final String label, final String header,
 		final double value)
 	{
-		add(label, header, new Double(value));
+		add(label, header, value);
 	}
 
 	/**
