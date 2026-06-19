@@ -140,6 +140,9 @@ public class Connectivity extends BoneJCommand implements Command {
             return;
         }
         
+        imp = imp.duplicate();
+        imp.setTitle(inputDataset.getName());
+        
         if (!ImageCheck.isBinary(imp)) {
         	String errorMsg = "Connectivity requires a binary image. " +
         			"The provided image (" + imp.getTitle() + ") is not binary.";
