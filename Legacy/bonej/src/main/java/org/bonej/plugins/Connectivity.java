@@ -150,9 +150,7 @@ public class Connectivity extends BoneJCommand implements Command {
 			return;
 		}
 		
-		//default to use inputImagePlus if it was provided
-		ImagePlus imp = inputImagePlus;
-		logService.info("Connectivity loading ImagePlus");
+		ImagePlus imp = null;
 		
 		//in case no ImagePlus was provided use the Dataset input
 		if (inputImagePlus == null) {
@@ -161,7 +159,12 @@ public class Connectivity extends BoneJCommand implements Command {
 	            logService.error("Connectivity failed to convert Dataset to ImagePlus.");
 	            return;
 	        }
+			imp.setTitle(inputDataset.getName());
 			logService.info("Connectivity loaded Dataset and converted it to ImagePlus");
+		} else {
+			//default to use inputImagePlus if it was provided
+			logService.info("Connectivity loading ImagePlus");
+			imp = inputImagePlus;
 		}
 		
 		//duplicate the dataset-derived imp if it's not native, to make it a native imp
