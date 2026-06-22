@@ -28,13 +28,18 @@
  */
 package org.bonej.utilities;
 
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.process.ByteProcessor;
+import ij.process.FloatProcessor;
+import ij.process.ShortProcessor;
+
 import net.imagej.Dataset;
 import net.imagej.DatasetService;
 import net.imagej.axis.Axes;
 import net.imagej.axis.DefaultLinearAxis;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.array.ArrayImg;
-import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.img.basictypeaccess.array.ShortArray;
@@ -54,8 +59,15 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.scijava.convert.ConvertService;
+
 /**
  * Utility class for loading raw binary 3D image data into ImageJ2 Datasets.
+ * <p>
+ * This class constructs Datasets by wrapping native ImageJ1 ImagePlus objects.
+ * This ensures that when legacy plugins convert these Datasets back to ImagePlus,
+ * they receive the original native byte[]/short[]/float[] arrays, avoiding the
+ * performance overhead of imglib2 wrappers.
  */
 public final class DatasetUtil {
 
@@ -78,7 +90,7 @@ public final class DatasetUtil {
 	 * @param spacingY      Voxel spacing in Y (mm)
 	 * @param spacingZ      Voxel spacing in Z (mm)
 	 * @param datasetService The DatasetService for creating the Dataset
-	 * @return A calibrated 3D Dataset
+	 * @return A calibrated 3D Dataset backed by a native ImagePlus
 	 * @throws IOException if the file cannot be read or is too small
 	 * @throws IllegalArgumentException if parameters are invalid
 	 */
@@ -107,12 +119,12 @@ public final class DatasetUtil {
 		String pt = pixelType.toLowerCase();
 		int bytesPerPixel;
 		switch (pt) {
-		case "uint8":   bytesPerPixel = 1; break;
-		case "uint16":  bytesPerPixel = 2; break;
-		case "int16":   bytesPerPixel = 2; break;
-		case "float32": bytesPerPixel = 4; break;
-		default:
-			throw new IllegalArgumentException("Unsupported pixel type: " + pixelType);
+			case "uint8":   bytesPerPixel = 1; break;
+			case "uint16":  bytesPerPixel = 2; break;
+			case "int16":   bytesPerPixel = 2; break;
+			case "float32": bytesPerPixel = 4; break;
+			default:
+				throw new IllegalArgumentException("Unsupported pixel type: " + pixelType);
 		}
 
 		long totalPixels = (long) width * height * depth;
@@ -129,18 +141,16 @@ public final class DatasetUtil {
 		// --- Read raw bytes, skipping header ---
 		byte[] rawData = readRawBytes(filePath, headerOffset, (int) expectedDataBytes);
 
-		//multiply 1s by 255 so that we have an ImageJ convention (0,255) binary image
+		// Convert 0/1 binary to 0/255 if requested (for 8-bit only)
 		if (zeroOneBinary && bytesPerPixel == 1) {
 			for (int i = 0; i < rawData.length; i++) {
 				byte byteValue = rawData[i];
 				if ((byteValue & ~1) != 0) {
-					// Provide context about the bad value
 					throw new IllegalArgumentException(
 							String.format("Non-binary value detected at index %d: %d (0x%02X)", 
 									i, byteValue, byteValue & 0xFF));
 				}
-
-				// Convert: 0 -> 0, 1 -> 255 (stored as -1)
+				// Convert: 0 -> 0, 1 -> 255 (stored as -1 in signed byte)
 				rawData[i] = (byte) ((byteValue * 255) & 0xFF);
 			}
 		}
@@ -150,7 +160,7 @@ public final class DatasetUtil {
 				? ByteOrder.BIG_ENDIAN
 						: ByteOrder.LITTLE_ENDIAN;
 
-		// --- Build Dataset ---
+		// --- Build Dataset (via Native ImagePlus) ---
 		Dataset dataset = buildDataset(rawData, width, height, depth, pt, order, datasetService);
 
 		// --- Apply metadata ---
@@ -193,20 +203,6 @@ public final class DatasetUtil {
 
 	/**
 	 * Overloaded version of loadRaw3D that does no (0,1) -> (0,255) binary conversion.
-	 * 
-	 * @param filePath
-	 * @param headerOffset
-	 * @param width
-	 * @param height
-	 * @param depth
-	 * @param pixelType
-	 * @param byteOrder
-	 * @param spacingX
-	 * @param spacingY
-	 * @param spacingZ
-	 * @param datasetService
-	 * @return
-	 * @throws IOException
 	 */
 	public static Dataset loadRaw3D(
 			File filePath,
@@ -224,8 +220,8 @@ public final class DatasetUtil {
 	}
 
 	/**
-	 * Constructs a Dataset from raw bytes based on pixel type.
-	 * Each branch uses the concrete type so Java infers generics correctly.
+	 * Constructs a Dataset by creating a native ImagePlus first, then wrapping it.
+	 * This ensures fast access for legacy plugins that expect native byte[] arrays.
 	 */
 	static Dataset buildDataset(
 			byte[] rawData,
@@ -234,42 +230,76 @@ public final class DatasetUtil {
 			ByteOrder byteOrder,
 			DatasetService datasetService) {
 
-		Dataset dataset;
+		ImagePlus imp;
 
 		if ("uint8".equals(pixelType)) {
-			var img = ArrayImgs.unsignedBytes(rawData, width, height, depth);
-			dataset = datasetService.create(img);
+			// Create native ImageStack with byte[] slices
+			ImageStack stack = new ImageStack(width, height);
+			int sliceSize = width * height;
+			for (int z = 0; z < depth; z++) {
+				byte[] slicePixels = new byte[sliceSize];
+				System.arraycopy(rawData, z * sliceSize, slicePixels, 0, sliceSize);
+				ByteProcessor bp = new ByteProcessor(width, height, slicePixels);
+				stack.addSlice("", bp);
+			}
+			imp = new ImagePlus("", stack);
 
 		} else if ("uint16".equals(pixelType)) {
+			// Unpack to short array first
 			short[] pixels = new short[rawData.length / 2];
 			ByteBuffer.wrap(rawData).order(byteOrder).asShortBuffer().get(pixels);
-			var img = ArrayImgs.unsignedShorts(pixels, width, height, depth);
-			dataset = datasetService.create(img);
+
+			ImageStack stack = new ImageStack(width, height);
+			int sliceSize = width * height;
+			for (int z = 0; z < depth; z++) {
+				short[] slicePixels = new short[sliceSize];
+				System.arraycopy(pixels, z * sliceSize, slicePixels, 0, sliceSize);
+				ShortProcessor sp = new ShortProcessor(width, height, slicePixels, null);
+				stack.addSlice("", sp);
+			}
+			imp = new ImagePlus("", stack);
 
 		} else if ("int16".equals(pixelType)) {
+			// Unpack to short array (signed)
 			short[] pixels = new short[rawData.length / 2];
 			ByteBuffer.wrap(rawData).order(byteOrder).asShortBuffer().get(pixels);
-			var img = ArrayImgs.shorts(pixels, width, height, depth);
-			dataset = datasetService.create(img);
+
+			ImageStack stack = new ImageStack(width, height);
+			int sliceSize = width * height;
+			for (int z = 0; z < depth; z++) {
+				short[] slicePixels = new short[sliceSize];
+				System.arraycopy(pixels, z * sliceSize, slicePixels, 0, sliceSize);
+				ShortProcessor sp = new ShortProcessor(width, height, slicePixels, null);
+				stack.addSlice("", sp);
+			}
+			imp = new ImagePlus("", stack);
 
 		} else { // float32
 			float[] pixels = new float[rawData.length / 4];
 			ByteBuffer.wrap(rawData).order(byteOrder).asFloatBuffer().get(pixels);
-			var img = ArrayImgs.floats(pixels, width, height, depth);
-			dataset = datasetService.create(img);
+
+			ImageStack stack = new ImageStack(width, height);
+			int sliceSize = width * height;
+			for (int z = 0; z < depth; z++) {
+				float[] slicePixels = new float[sliceSize];
+				System.arraycopy(pixels, z * sliceSize, slicePixels, 0, sliceSize);
+				FloatProcessor fp = new FloatProcessor(width, height, slicePixels);
+				stack.addSlice("", fp);
+			}
+			imp = new ImagePlus("", stack);
 		}
 
-		return dataset;
+		// Convert the native ImagePlus to a Dataset.
+		// This preserves the underlying native arrays, enabling fast round-trips.
+		ConvertService convertService = datasetService.getContext().getService(ConvertService.class);
+		return convertService.convert(imp, Dataset.class);
 	}
 
 	/**
 	 * Writes the pixel data of a 3D Dataset to a raw binary file.
 	 * Uses ArrayDataAccess to get the backing array efficiently (no reflection).
-	 *
-	 * @param dataset      The source 3D Dataset.
-	 * @param outputFile   The destination file path.
-	 * @param littleEndian If true, writes as Little-Endian (default). If false, writes Big-Endian.
-	 * @param zeroOneBinary If true, converts 8-bit (0,255) binary to 8-bit (0,1) binary. Ignored if the image is not 8-bit.
+	 * If the Dataset is backed by a native ImagePlus (not an ArrayImg), it falls back
+	 * to cursor iteration to write the data correctly.
 	 */
 	public static void saveAsRaw(Dataset dataset, File outputFile, boolean littleEndian, boolean zeroOneBinary) throws IOException {
 		if (dataset.numDimensions() != 3) {
@@ -296,6 +326,7 @@ public final class DatasetUtil {
 		System.out.println("img class = " + img.getClass().getName());
 		long start = System.nanoTime();
 		long end = start;
+		
 		if (img instanceof ArrayImg) {
 			System.out.println("Using fast path for Dataset-> RAW");
 			try (FileOutputStream fos = new FileOutputStream(outputFile);
@@ -534,5 +565,21 @@ public final class DatasetUtil {
 	
 	public static void saveAsRaw(Dataset dataset, File outputFile) throws IOException {
 		saveAsRaw(dataset, outputFile, true, false);
+	}
+	
+	/**
+	 * Converts a Dataset to an ImagePlus
+	 * 
+	 * @param dataset
+	 * @param datasetService
+	 * @return A legacy ImagePlus backed by in-memory ImageStack primitive arrays.
+	 */
+	public static ImagePlus toImagePlus(Dataset dataset, DatasetService datasetService) {
+		ConvertService convertService = (ConvertService) datasetService.getContext().getService(DatasetService.class);
+		ImagePlus imp = convertService.convert(dataset, ImagePlus.class);
+		if (!ImagePlusUtil.isNativeStack(imp))
+			imp = imp.duplicate();
+		imp.setTitle(dataset.getName());
+		return imp;
 	}
 }

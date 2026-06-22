@@ -34,13 +34,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
+import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
+import org.bonej.wrapperPlugins.CommonMessages;
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.convert.ConvertService;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.ui.UIService;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -119,8 +123,12 @@ public class Connectivity extends BoneJCommand implements Command {
 	private int depth = 0;
 
 	/* IJ2 parameters */
-	@Parameter
+	@Parameter (type = ItemIO.INPUT, required = false)
     private Dataset inputDataset;
+
+	/* Algorithm is faster on native ImagePlus if it can be provided */
+	@Parameter (type = ItemIO.INPUT, required = false)
+    private ImagePlus inputImagePlus;
 	
 	@Parameter
 	private ConvertService convertService;
@@ -128,16 +136,41 @@ public class Connectivity extends BoneJCommand implements Command {
 	@Parameter
 	private LogService logService;
 	
+	@Parameter
+	private UIService uiService;
+	
 	/**
 	 * Modern scijava Plugin entry point.
 	 */
 	@Override
 	public void run() {
-        ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
-        
-        if (imp == null) {
-            logService.error("Connectivity: Failed to convert Dataset to ImagePlus.");
-            return;
+		
+		if (inputImagePlus == null && inputDataset == null) {
+			logService.error(CommonMessages.NO_IMAGE_OPEN);
+			return;
+		}
+		
+		//default to use inputImagePlus if it was provided
+		ImagePlus imp = inputImagePlus;
+		logService.info("Connectivity loading ImagePlus");
+		
+		//in case no ImagePlus was provided use the Dataset input
+		if (inputImagePlus == null) {
+			imp = convertService.convert(inputDataset, ImagePlus.class);
+			if (imp == null) {
+	            logService.error("Connectivity failed to convert Dataset to ImagePlus.");
+	            return;
+	        }
+			logService.info("Connectivity loaded Dataset and converted it to ImagePlus");
+		}
+		
+		//duplicate the dataset-derived imp if it's not native, to make it a native imp
+		//also loads VirtualStacks to memory.
+        if (!ImagePlusUtil.isNativeStack(imp)) {
+        	String title = imp.getTitle();
+        	imp = imp.duplicate();
+        	imp.setTitle(title);
+        	logService.info("Connectivity made a native ImagePlus in memory");
         }
         
         if (!ImageCheck.isBinary(imp)) {
