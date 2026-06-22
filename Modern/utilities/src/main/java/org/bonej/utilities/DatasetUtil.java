@@ -59,6 +59,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.scijava.Context;
 import org.scijava.convert.ConvertService;
 
 /**
@@ -174,6 +175,12 @@ public final class DatasetUtil {
 
 	/**
 	 * Reads raw pixel bytes from a file, skipping the header offset.
+	 *
+	 * @param file        The file to read from
+	 * @param headerOffset Number of bytes to skip at the start
+	 * @param dataLength  The number of bytes to read after the header
+	 * @return The raw byte array containing pixel data
+	 * @throws IOException if the file cannot be read or is too small
 	 */
 	static byte[] readRawBytes(File file, long headerOffset, int dataLength) throws IOException {
 		byte[] rawData = new byte[dataLength];
@@ -202,7 +209,23 @@ public final class DatasetUtil {
 	}
 
 	/**
-	 * Overloaded version of loadRaw3D that does no (0,1) -> (0,255) binary conversion.
+	 * Overloaded version of {@link #loadRaw3D(File, long, int, int, int, String, boolean, String, double, double, double, DatasetService)}
+	 * that does not perform (0,1) to (0,255) binary conversion.
+	 *
+	 * @param filePath      Path to the raw file on disk
+	 * @param headerOffset  Number of bytes to skip at the start of the file
+	 * @param width         Image width (X dimension)
+	 * @param height        Image height (Y dimension)
+	 * @param depth         Image depth (Z dimension)
+	 * @param pixelType     One of: "uint8", "uint16", "int16", "float32"
+	 * @param byteOrder     One of: "Little-endian", "Big-endian"
+	 * @param spacingX      Voxel spacing in X (mm)
+	 * @param spacingY      Voxel spacing in Y (mm)
+	 * @param spacingZ      Voxel spacing in Z (mm)
+	 * @param datasetService The DatasetService for creating the Dataset
+	 * @return A calibrated 3D Dataset backed by a native ImagePlus
+	 * @throws IOException if the file cannot be read or is too small
+	 * @throws IllegalArgumentException if parameters are invalid
 	 */
 	public static Dataset loadRaw3D(
 			File filePath,
@@ -222,6 +245,15 @@ public final class DatasetUtil {
 	/**
 	 * Constructs a Dataset by creating a native ImagePlus first, then wrapping it.
 	 * This ensures fast access for legacy plugins that expect native byte[] arrays.
+	 *
+	 * @param rawData       The raw pixel data array
+	 * @param width         Image width
+	 * @param height        Image height
+	 * @param depth         Image depth
+	 * @param pixelType     Type string ("uint8", "uint16", "int16", "float32")
+	 * @param byteOrder     Byte order for multi-byte types
+	 * @param datasetService The DatasetService used for conversion
+	 * @return A Dataset backed by a native ImagePlus
 	 */
 	static Dataset buildDataset(
 			byte[] rawData,
@@ -300,6 +332,14 @@ public final class DatasetUtil {
 	 * Uses ArrayDataAccess to get the backing array efficiently (no reflection).
 	 * If the Dataset is backed by a native ImagePlus (not an ArrayImg), it falls back
 	 * to cursor iteration to write the data correctly.
+	 *
+	 * @param dataset       The 3D Dataset to save
+	 * @param outputFile    The output file path
+	 * @param littleEndian  True for little-endian byte order, false for big-endian
+	 * @param zeroOneBinary True if writing (0,1) binary data where 1 should be written as 1 byte (not 255)
+	 * @throws IOException if the file cannot be written
+	 * @throws IllegalArgumentException if the dataset is not 3D
+	 * @throws UnsupportedOperationException if the pixel type is unsupported
 	 */
 	public static void saveAsRaw(Dataset dataset, File outputFile, boolean littleEndian, boolean zeroOneBinary) throws IOException {
 		if (dataset.numDimensions() != 3) {
@@ -404,6 +444,13 @@ public final class DatasetUtil {
 	 * Fallback method for non-array images.
 	 * Iterates pixels and writes them sequentially.
 	 * Type checking is performed once before iteration for efficiency.
+	 *
+	 * @param fos           Output stream to write to
+	 * @param img           The image to iterate
+	 * @param bytesPerPixel Number of bytes per pixel
+	 * @param littleEndian  Endianness flag
+	 * @param zeroOneBinary Binary conversion flag
+	 * @throws IOException if writing fails
 	 */
 	private static void fallbackCursorWrite(OutputStream fos,
 			RandomAccessibleInterval<?> img,
@@ -432,6 +479,15 @@ public final class DatasetUtil {
 		}
 	}
 
+	/**
+	 * Writes 8-bit pixel data using a cursor.
+	 *
+	 * @param fos           Output stream
+	 * @param img           Image to read
+	 * @param batchBuffer   Buffer for batching writes
+	 * @param zeroOneBinary Flag for 0/1 binary conversion
+	 * @throws IOException if writing fails
+	 */
 	private static void write8Bit(OutputStream fos, RandomAccessibleInterval<?> img,
 			byte[] batchBuffer, boolean zeroOneBinary) throws IOException {
 
@@ -468,6 +524,15 @@ public final class DatasetUtil {
 		}
 	}
 
+	/**
+	 * Writes 16-bit unsigned pixel data.
+	 *
+	 * @param fos           Output stream
+	 * @param img           Image to read
+	 * @param batchBuffer   Buffer for batching writes
+	 * @param littleEndian  Endianness flag
+	 * @throws IOException if writing fails
+	 */
 	private static void write16BitUnsigned(OutputStream fos, RandomAccessibleInterval<?> img,
 			byte[] batchBuffer, boolean littleEndian) throws IOException {
 
@@ -497,6 +562,15 @@ public final class DatasetUtil {
 		}
 	}
 
+	/**
+	 * Writes 16-bit signed pixel data.
+	 *
+	 * @param fos           Output stream
+	 * @param img           Image to read
+	 * @param batchBuffer   Buffer for batching writes
+	 * @param littleEndian  Endianness flag
+	 * @throws IOException if writing fails
+	 */
 	private static void write16BitSigned(OutputStream fos, RandomAccessibleInterval<?> img,
 			byte[] batchBuffer, boolean littleEndian) throws IOException {
 
@@ -526,6 +600,15 @@ public final class DatasetUtil {
 		}
 	}
 
+	/**
+	 * Writes 32-bit float pixel data.
+	 *
+	 * @param fos           Output stream
+	 * @param img           Image to read
+	 * @param batchBuffer   Buffer for batching writes
+	 * @param littleEndian  Endianness flag
+	 * @throws IOException if writing fails
+	 */
 	private static void write32BitFloat(OutputStream fos, RandomAccessibleInterval<?> img,
 			byte[] batchBuffer, boolean littleEndian) throws IOException {
 
@@ -559,27 +642,64 @@ public final class DatasetUtil {
 		}
 	}
 
+	/**
+	 * Convenience method to save a Dataset to a raw file with default little-endian byte order.
+	 *
+	 * @param dataset     The 3D Dataset to save
+	 * @param outputFile  The output file path
+	 * @param littleEndian Byte order flag
+	 * @throws IOException if the file cannot be written
+	 */
 	public static void saveAsRaw(Dataset dataset, File outputFile, boolean littleEndian) throws IOException {
 		saveAsRaw(dataset, outputFile, littleEndian, false);
 	}
 	
+	/**
+	 * Convenience method to save a Dataset to a raw file with default little-endian byte order and no binary conversion.
+	 *
+	 * @param dataset     The 3D Dataset to save
+	 * @param outputFile  The output file path
+	 * @throws IOException if the file cannot be written
+	 */
 	public static void saveAsRaw(Dataset dataset, File outputFile) throws IOException {
 		saveAsRaw(dataset, outputFile, true, false);
 	}
 	
 	/**
-	 * Converts a Dataset to an ImagePlus
-	 * 
-	 * @param dataset
-	 * @param datasetService
+	 * Converts a Dataset to a native ImagePlus backed by in-memory primitive arrays.
+	 *
+	 * @param dataset       The Dataset to convert
+	 * @param convertService The SciJava ConvertService to perform the conversion
 	 * @return A legacy ImagePlus backed by in-memory ImageStack primitive arrays.
 	 */
-	public static ImagePlus toImagePlus(Dataset dataset, DatasetService datasetService) {
-		ConvertService convertService = (ConvertService) datasetService.getContext().getService(DatasetService.class);
+	public static ImagePlus toImagePlus(Dataset dataset, ConvertService convertService) {
 		ImagePlus imp = convertService.convert(dataset, ImagePlus.class);
 		if (!ImagePlusUtil.isNativeStack(imp))
 			imp = imp.duplicate();
 		imp.setTitle(dataset.getName());
 		return imp;
 	}
+	
+	/**
+	 * Converts a Dataset to a native ImagePlus using a Context to retrieve the ConvertService.
+	 *
+	 * @param dataset   The Dataset to convert
+	 * @param context   The SciJava Context
+	 * @return A legacy ImagePlus backed by in-memory ImageStack primitive arrays.
+	 */
+	public static ImagePlus toImagePlus(Dataset dataset, Context context) {
+		return toImagePlus(dataset, context.getService(ConvertService.class));
+	}
+	
+	/**
+	 * Converts a Dataset to a native ImagePlus using a DatasetService to retrieve the Context and ConvertService.
+	 *
+	 * @param dataset       The Dataset to convert
+	 * @param datasetService The DatasetService providing the Context
+	 * @return A legacy ImagePlus backed by in-memory ImageStack primitive arrays.
+	 */
+	public static ImagePlus toImagePlus(Dataset dataset, DatasetService datasetService) {
+		return toImagePlus(dataset, datasetService.getContext());
+	}
+	
 }
