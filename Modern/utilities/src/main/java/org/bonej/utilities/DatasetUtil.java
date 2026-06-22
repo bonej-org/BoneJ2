@@ -566,4 +566,20 @@ public final class DatasetUtil {
 	public static void saveAsRaw(Dataset dataset, File outputFile) throws IOException {
 		saveAsRaw(dataset, outputFile, true, false);
 	}
+	
+	/**
+	 * Converts a Dataset to an ImagePlus
+	 * 
+	 * @param dataset
+	 * @param datasetService
+	 * @return A legacy ImagePlus backed by in-memory ImageStack primitive arrays.
+	 */
+	public static ImagePlus toImagePlus(Dataset dataset, DatasetService datasetService) {
+		ConvertService convertService = (ConvertService) datasetService.getContext().getService(DatasetService.class);
+		ImagePlus imp = convertService.convert(dataset, ImagePlus.class);
+		if (!ImagePlusUtil.isNativeStack(imp))
+			imp = imp.duplicate();
+		imp.setTitle(dataset.getName());
+		return imp;
+	}
 }

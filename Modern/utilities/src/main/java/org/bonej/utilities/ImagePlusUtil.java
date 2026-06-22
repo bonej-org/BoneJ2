@@ -33,6 +33,7 @@ package org.bonej.utilities;
 import java.util.Arrays;
 
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.measure.Calibration;
 
 /**
@@ -113,5 +114,37 @@ public final class ImagePlusUtil {
 	public static boolean isBinaryColour(final ImagePlus image) {
 		return Arrays.stream(image.getStatistics().histogram).filter(p -> p > 0)
 			.count() <= 2;
+	}
+	
+	/**
+	 * Checks if the ImageStack contains native arrays that can be accessed directly from the heap.
+	 * Returns true if safe to access directly without duplication.
+	 * Returns false if the stack uses wrappers, VirtualStacks, or other non-native representations.
+	 * 
+	 * @param imp ImagePlus to check
+	 * @return true if safe to access imp directly without duplication or false if the stack
+	 * uses wrappers, VirtualStacks, or other non-native representations, or if there was an exception.
+	 */
+	public static boolean isNativeStack(final ImagePlus imp) {
+		try {
+			ImageStack stack = imp.getStack();
+			
+			// Check if the stack itself is a VirtualStack (which implies lazy loading/wrapping)
+			if (stack instanceof ij.VirtualStack) {
+				return false;
+			}
+
+			// Get the pixels for the first slice (1-based index)
+			Object pixels = stack.getPixels(1);
+			
+			// Verify it is a primitive byte, short, float or int array
+			return (pixels instanceof byte[] ||
+					pixels instanceof short[] ||
+					pixels instanceof float[] ||
+					pixels instanceof int[]);
+		} catch (Exception e) {
+			// If anything fails (e.g., empty stack, weird state), assume non-native to be safe
+			return false;
+		}
 	}
 }
