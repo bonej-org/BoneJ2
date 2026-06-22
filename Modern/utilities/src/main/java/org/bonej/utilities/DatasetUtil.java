@@ -59,6 +59,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.scijava.Context;
 import org.scijava.convert.ConvertService;
 
 /**
@@ -568,18 +569,26 @@ public final class DatasetUtil {
 	}
 	
 	/**
-	 * Converts a Dataset to an ImagePlus
+	 * Converts a Dataset to a native ImagePlus backed by in-memory primitive arrays
 	 * 
 	 * @param dataset
 	 * @param datasetService
 	 * @return A legacy ImagePlus backed by in-memory ImageStack primitive arrays.
 	 */
-	public static ImagePlus toImagePlus(Dataset dataset, DatasetService datasetService) {
-		ConvertService convertService = (ConvertService) datasetService.getContext().getService(DatasetService.class);
+	public static ImagePlus toImagePlus(Dataset dataset, ConvertService convertService) {
 		ImagePlus imp = convertService.convert(dataset, ImagePlus.class);
 		if (!ImagePlusUtil.isNativeStack(imp))
 			imp = imp.duplicate();
 		imp.setTitle(dataset.getName());
 		return imp;
 	}
+	
+	public static ImagePlus toImagePlus(Dataset dataset, Context context) {
+		return toImagePlus(dataset, context.getService(ConvertService.class));
+	}
+	
+	public static ImagePlus toImagePlus(Dataset dataset, DatasetService datasetService) {
+		return toImagePlus(dataset, datasetService.getContext());
+	}
+	
 }

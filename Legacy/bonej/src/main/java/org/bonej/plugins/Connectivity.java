@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bonej.util.ImageCheck;
 import org.bonej.util.Multithreader;
+import org.bonej.utilities.DatasetUtil;
 import org.bonej.utilities.ImagePlusUtil;
 import org.bonej.utilities.SharedTable;
 import org.bonej.wrapperPlugins.BoneJCommand;
@@ -154,12 +155,11 @@ public class Connectivity extends BoneJCommand implements Command {
 		
 		//in case no ImagePlus was provided use the Dataset input
 		if (inputImagePlus == null) {
-			imp = convertService.convert(inputDataset, ImagePlus.class);
+			imp = DatasetUtil.toImagePlus(inputDataset, convertService);
 			if (imp == null) {
 	            logService.error("Connectivity failed to convert Dataset to ImagePlus.");
 	            return;
 	        }
-			imp.setTitle(inputDataset.getName());
 			logService.info("Connectivity loaded Dataset and converted it to ImagePlus");
 		} else {
 			//default to use inputImagePlus if it was provided
