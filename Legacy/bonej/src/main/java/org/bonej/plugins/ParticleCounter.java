@@ -204,6 +204,8 @@ public class ParticleCounter extends BoneJCommand implements Command {
             return;
         }
         
+        imp.setTitle(inputDataset.getName());
+        
         if (!ImageCheck.isBinary(imp)) {
         	String errorMsg = "Particle Counter requires a binary image. " +
         			"The provided image (" + imp.getTitle() + ") is not binary.";
