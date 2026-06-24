@@ -98,60 +98,166 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		LegacyInjector.preinit();
 	}
 
+	/** The binary 3D image to skeletonize and analyze. */
 	@Parameter(label = "Input image", validater = "validateImage",
 		persist = false)
 	private Dataset inputDataset;
 
+	/**
+	 * Cycle pruning method for the skeleton graph.
+	 * <ul>
+	 *   <li>"None" — no pruning</li>
+	 *   <li>"Shortest branch" — remove the shortest branch in each cycle</li>
+	 *   <li>"Lowest intensity voxel" — break cycle at the darkest voxel</li>
+	 *   <li>"Lowest intensity branch" — break cycle at the darkest branch</li>
+	 * </ul>
+	 * The latter two require an additional grayscale intensity image.
+	 */
 	@Parameter(label = "Cycle pruning method",
 		description = "Which method is used to prune cycles in the skeleton graph",
 		required = false, style = ChoiceWidget.LIST_BOX_STYLE, choices = { "None",
 			"Shortest branch", "Lowest intensity voxel", "Lowest intensity branch" })
 	private String pruneCycleMethod = "None";
 
+	/** If true, prune terminal branches (very short edges with no slab voxels). */
 	@Parameter(label = "Prune ends",
 		description = "Prune very short edges with no slabs", required = false)
 	private boolean pruneEnds;
 
+	/**
+	 * If true, the current ROI is excluded from end-branch pruning.
+	 * Voxels inside the ROI are spared even if they are end-points.
+	 * Ignored in headless/batch mode.
+	 */
 	@Parameter(label = "Exclude ROI from pruning",
 		description = "Exclude the current selection from pruning",
 		required = false, visibility = ItemVisibility.INVISIBLE, persist = false)
 	private boolean excludeRoi;
 
+	/**
+	 * If true, compute the longest shortest path (graph diameter) for each
+	 * skeleton tree using the Floyd–Warshall algorithm.
+	 * Populates the {@link #shortestPaths} output image and the
+	 * "Longest Shortest Path" / "spx" / "spy" / "spz" columns in the results table.
+	 */
 	@Parameter(label = "Calculate largest shortest paths",
 		description = "Calculate and display the largest shortest skeleton paths",
 		required = false)
 	private boolean calculateShortestPaths;
 
+	/**
+	 * If true, populate the {@link #verboseTable} with per-branch details
+	 * (lengths, vertex coordinates, intensities, Euclidean distances).
+	 */
 	@Parameter(label = "Show detailed info",
 		description = "Show detailed branch info in an additional table",
 		required = false)
 	private boolean verbose;
 
-	@Parameter(label = "Display labelled skeletons",
-		description = "Show skeleton images labelled with their IDs",
+	/**
+	 * If true, populate the {@link #taggedImage} and {@link #treeLabeledImage}
+	 * output images. If false, both will be null (saving memory for batch jobs
+	 * that only need numeric results).
+	 */
+	@Parameter(label = "Display skeleton images",
+		description = "Output topology-tagged and tree-labeled skeleton images",
 		required = false)
 	private boolean displaySkeletons;
 
 	/**
-	 * Additional analysis details in a {@link DefaultGenericTable}, null if
-	 * {@link #verbose} is false, or there are no results.
+	 * Topology-tagged skeleton image (8-bit).
+	 * <p>
+	 * Each foreground voxel is labeled with its topological role in the
+	 * skeleton graph:
+	 * </p>
+	 * <ul>
+	 *   <li>{@code 0} — background</li>
+	 *   <li>{@code 30} ({@link AnalyzeSkeleton_#END_POINT END_POINT}) —
+	 *       terminal endpoint (1 neighbor)</li>
+	 *   <li>{@code 70} ({@link AnalyzeSkeleton_#JUNCTION JUNCTION}) —
+	 *       junction vertex (3+ neighbors)</li>
+	 *   <li>{@code 127} ({@link AnalyzeSkeleton_#SLAB SLAB}) —
+	 *       slab voxel (exactly 2 neighbors)</li>
+	 * </ul>
+	 * <p>
+	 * Source: {@code AnalyzeSkeleton_.getResultImage(false)} which returns
+	 * the internal {@code taggedImage} stack.
+	 * </p>
+	 * <p>
+	 * Null if {@link #displaySkeletons} is false.
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "Tagged topology skeleton")
+	private Dataset taggedImage;
+
+	/**
+	 * Tree-labeled skeleton image (float32).
+	 * <p>
+	 * Each foreground voxel is assigned the integer ID of the skeleton tree
+	 * (connected component) it belongs to. Background is 0.
+	 * </p>
+	 * <ul>
+	 *   <li>{@code 0.0} — background</li>
+	 *   <li>{@code 1.0} — first skeleton tree</li>
+	 *   <li>{@code 2.0} — second skeleton tree</li>
+	 *   <li>{@code N.0} — N-th skeleton tree</li>
+	 * </ul>
+	 * <p>
+	 * Stored as float32 (not uint8) because the number of distinct trees
+	 * can exceed 255. Float can exactly represent integer IDs up to
+	 * 2&#x2074;&#x00B2; without loss of precision.
+	 * </p>
+	 * <p>
+	 * Source: {@code AnalyzeSkeleton_.getLabeledSkeletons()} which returns
+	 * the internal {@code labeledSkeletons} stack.
+	 * </p>
+	 * <p>
+	 * <b>Naming note:</b> This corresponds to the field called
+	 * {@code labeledSkeletons} inside {@code AnalyzeSkeleton_}. It is
+	 * <em>not</em> the same as the tagged image (confusingly, the original
+	 * wrapper named its output {@code labelledSkeleton} but it actually held
+	 * the tagged image). This field is now renamed to avoid that ambiguity.
+	 * </p>
+	 * <p>
+	 * Null if {@link #displaySkeletons} is false.
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "Tree-labeled skeleton")
+	private Dataset treeLabeledImage;
+
+	/**
+	 * Longest-shortest-path image (8-bit).
+	 * <p>
+	 * A copy of the input skeleton stack where voxels lying on the
+	 * longest shortest path (graph diameter) of each tree are overwritten
+	 * with value {@code 96} ({@link AnalyzeSkeleton_#SHORTEST_PATH SHORTEST_PATH}).
+	 * All other skeleton voxels retain their original intensity.
+	 * </p>
+	 * <p>
+	 * Source: {@code AnalyzeSkeleton_.getResultImage(true)} which returns
+	 * the internal {@code shortPathImage} stack.
+	 * </p>
+	 * <p>
+	 * Null if {@link #calculateShortestPaths} is false.
+	 * </p>
+	 */
+	@Parameter(type = ItemIO.OUTPUT, label = "Shortest paths")
+	private Dataset shortestPaths;
+
+	/**
+	 * Per-branch detail table (only populated if {@link #verbose} is true).
+	 * <p>
+	 * Columns: {@code # Skeleton}, {@code # Branch}, {@code Branch length},
+	 * {@code V1 x}, {@code V1 y}, {@code V1 z}, {@code V2 x}, {@code V2 y},
+	 * {@code V2 z}, {@code Euclidean distance}, {@code running average length},
+	 * {@code average intensity (inner 3rd)}, {@code average intensity}.
+	 * </p>
+	 * <p>
+	 * Null if {@link #verbose} is false.
+	 * </p>
 	 */
 	@Parameter(type = ItemIO.OUTPUT, label = "Branch information")
 	private DefaultGenericTable verboseTable;
-
-	/**
-	 * The labelled skeletons image, null if user didn't check the
-	 * {@link #displaySkeletons} option.
-	 */
-	@Parameter(type = ItemIO.OUTPUT)
-	private Dataset labelledSkeleton;
-
-	/**
-	 * The shortest paths image, null if user didn't check the
-	 * {@link #displaySkeletons} option.
-	 */
-	@Parameter(type = ItemIO.OUTPUT)
-	private Dataset shortestPaths;
 
 	@Parameter
 	private UIService uiService;
@@ -170,7 +276,7 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 
 	@Parameter
 	private StatusService statusService;
-	
+
 	@Parameter
 	private LegacyService legacyService;
 
@@ -187,12 +293,12 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 			}
 		}
 		
-        ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
-        
-        if (imp == null) {
-            logService.error("Connectivity: Failed to convert Dataset to ImagePlus.");
-            return;
-        }
+		ImagePlus imp = convertService.convert(inputDataset, ImagePlus.class);
+		
+		if (imp == null) {
+			logService.error("AnalyseSkeleton: Failed to convert Dataset to ImagePlus.");
+			return;
+		}
 		
 		statusService.showStatus("Analyse skeleton: skeletonising");
 		final ImagePlus skeleton = skeletonise(imp);
@@ -211,18 +317,34 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 		}
 		showResults(results);
 		showAdditionalResults(results);
+
 		if (displaySkeletons) {
-			final ImageStack labelledStack = analyzeSkeleton_.getResultImage(false);
-			ImagePlus labelSkeleton = new ImagePlus(imp.getTitle() +
-				"-labelled-skeletons", labelledStack);
-			labelSkeleton.setCalibration(imp.getCalibration());
-			labelledSkeleton = convertService.convert(labelSkeleton, Dataset.class);
-			labelSkeleton.close();
-			labelledSkeleton.getImgPlus().setColorTable(ColorTables.FIRE, 0);
-			//if there is a UI, display the dataset
-    		if (uiService != null && uiService.isVisible())
-    			uiService.show(labelledSkeleton);
+			// --- Tree-labeled image (float32, IDs 1, 2, 3...) ---
+			final ImageStack treeLabeledStack = analyzeSkeleton_.getLabeledSkeletons();
+			if (treeLabeledStack != null) {
+				ImagePlus treeLabeledImp = new ImagePlus(imp.getTitle() +
+					"-tree-labels", treeLabeledStack);
+				treeLabeledImp.setCalibration(imp.getCalibration());
+				treeLabeledImage = convertService.convert(treeLabeledImp, Dataset.class);
+				treeLabeledImp.close();
+				treeLabeledImage.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+				if (uiService != null && uiService.isVisible())
+					uiService.show(treeLabeledImage);
+			}
+
+			// --- Tagged topology image (8-bit, values 0, 30, 70, 127) ---
+			final ImageStack taggedStack = analyzeSkeleton_.getResultImage(false);
+			ImagePlus taggedSkeleton = new ImagePlus(imp.getTitle() +
+				"-tagged-skeletons", taggedStack);
+			taggedSkeleton.setCalibration(imp.getCalibration());
+			taggedImage = convertService.convert(taggedSkeleton, Dataset.class);
+			taggedSkeleton.close();
+			taggedImage.getImgPlus().setColorTable(ColorTables.FIRE, 0);
+			if (uiService != null && uiService.isVisible())
+				uiService.show(taggedImage);
+
 			if (calculateShortestPaths) {
+				// --- Shortest path image (8-bit, path voxels = 96) ---
 				final ImageStack stack = analyzeSkeleton_.getResultImage(true);
 				final String title = imp.getShortTitle() + "-shortest-paths";
 				ImagePlus shortPaths = new ImagePlus(title, stack);
@@ -230,13 +352,11 @@ public class AnalyseSkeletonWrapper extends BoneJCommand {
 				shortestPaths = convertService.convert(shortPaths, Dataset.class);
 				shortPaths.close();
 				shortestPaths.getImgPlus().setColorTable(ColorTables.FIRE, 0);
-				//if there is a UI, display the dataset
-        		if (uiService != null && uiService.isVisible())
-        			uiService.show(shortestPaths);
+				if (uiService != null && uiService.isVisible())
+					uiService.show(shortestPaths);
 			}
 		}
 	}
-
 	private boolean hasNoSkeletons(final AnalyzeSkeleton_ analyzeSkeleton_) {
 		final Graph[] graphs = analyzeSkeleton_.getGraphs();
 		return graphs == null || graphs.length == 0;
