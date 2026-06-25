@@ -461,14 +461,26 @@ public class DatasetUtilTest {
 	}
 
 	/**
-	 * Ensure saveAsRaw rejects non-3D datasets.
+	 * Ensure saveAsRaw rejects 1D datasets (minimum supported is 2D).
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testSaveAsRaw_Non3DDataset() throws Exception {
-		ArrayImg<UnsignedByteType, ByteArray> img = ArrayImgs.unsignedBytes(4, 3);
-		Dataset ds = wrapInMockDataset(img, 4, 3);
+	public void testSaveAsRaw_Rejects1DDataset() throws Exception {
+		ArrayImg<UnsignedByteType, ByteArray> img = ArrayImgs.unsignedBytes(10);
+		Dataset ds = wrapInMockDataset(img, 10);
 
-		File outFile = tempFolder.newFile("out_2d.raw");
+		File outFile = tempFolder.newFile("out_1d.raw");
+		DatasetUtil.saveAsRaw(ds, outFile);
+	}
+
+	/**
+	 * Ensure saveAsRaw rejects 4D datasets (maximum supported is 3D).
+	 */
+	@Test(expected = IllegalArgumentException.class)
+	public void testSaveAsRaw_Rejects4DDataset() throws Exception {
+		ArrayImg<UnsignedByteType, ByteArray> img = ArrayImgs.unsignedBytes(4, 3, 2, 2);
+		Dataset ds = wrapInMockDataset(img, 4, 3, 2, 2);
+
+		File outFile = tempFolder.newFile("out_4d.raw");
 		DatasetUtil.saveAsRaw(ds, outFile);
 	}
 

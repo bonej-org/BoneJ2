@@ -77,7 +77,7 @@ public final class DatasetUtil {
 	}
 
 	/**
-	 * Loads a raw binary file as a 3D Dataset with spatial calibration.
+	 * Loads a raw file as a 3D Dataset with spatial calibration.
 	 *
 	 * @param filePath      Path to the raw file on disk
 	 * @param headerOffset  Number of bytes to skip at the start of the file
@@ -168,7 +168,9 @@ public final class DatasetUtil {
 		dataset.setName(filePath.getName());
 		dataset.setAxis(new DefaultLinearAxis(Axes.X, "mm", spacingX), 0);
 		dataset.setAxis(new DefaultLinearAxis(Axes.Y, "mm", spacingY), 1);
-		dataset.setAxis(new DefaultLinearAxis(Axes.Z, "mm", spacingZ), 2);
+		//implicitly handle 2D images as 3D iamges with a single slice
+		if (dataset.numDimensions() == 3)
+			dataset.setAxis(new DefaultLinearAxis(Axes.Z, "mm", spacingZ), 2);
 
 		return dataset;
 	}
@@ -242,6 +244,39 @@ public final class DatasetUtil {
 		return loadRaw3D(filePath, headerOffset, width, height, depth, pixelType, false, byteOrder, spacingX, spacingY, spacingZ, datasetService);
 	}
 
+	/**
+	 * Loads a raw file as a 2D Dataset with spatial calibration.
+	 * 
+	 *
+	 * @param filePath      Path to the raw file on disk
+	 * @param headerOffset  Number of bytes to skip at the start of the file
+	 * @param width         Image width (X dimension)
+	 * @param height        Image height (Y dimension)
+	 * @param pixelType     One of: "uint8", "uint16", "int16", "float32"
+	 * @param zeroOneBinary true if the raw data is (0,1) binary and we want (0,255) binary. Ignored if image is not 8-bit.
+	 * @param byteOrder     One of: "Little-endian", "Big-endian"
+	 * @param spacingX      Voxel spacing in X (mm)
+	 * @param spacingY      Voxel spacing in Y (mm)
+	 * @param datasetService The DatasetService for creating the Dataset
+	 * @return A calibrated 3D Dataset backed by a native ImagePlus
+	 * @throws IOException if the file cannot be read or is too small
+	 * @throws IllegalArgumentException if parameters are invalid
+	 */
+	public static Dataset loadRaw2D(
+			File filePath,
+			long headerOffset,
+			int width,
+			int height,
+			String pixelType,
+			boolean zeroOneBinary,
+			String byteOrder,
+			double spacingX,
+			double spacingY,
+			DatasetService datasetService) throws IOException {
+		return loadRaw3D(filePath, headerOffset, width, height,	1, pixelType,
+				zeroOneBinary, byteOrder, spacingX, spacingY, 1, datasetService);
+	}
+	
 	/**
 	 * Constructs a Dataset by creating a native ImagePlus first, then wrapping it.
 	 * This ensures fast access for legacy plugins that expect native byte[] arrays.
@@ -342,8 +377,9 @@ public final class DatasetUtil {
 	 * @throws UnsupportedOperationException if the pixel type is unsupported
 	 */
 	public static void saveAsRaw(Dataset dataset, File outputFile, boolean littleEndian, boolean zeroOneBinary) throws IOException {
-		if (dataset.numDimensions() != 3) {
-			throw new IllegalArgumentException("Expected 3D Dataset, got " + dataset.numDimensions() + "D");
+		if (dataset.numDimensions() > 3 || dataset.numDimensions() < 2
+			|| AxisUtils.hasChannelDimensions(dataset) || AxisUtils.hasTimeDimensions(dataset)) {
+			throw new IllegalArgumentException("Expected 2D or 3D Dataset");
 		}
 
 		final var img = dataset.getImgPlus().getImg();

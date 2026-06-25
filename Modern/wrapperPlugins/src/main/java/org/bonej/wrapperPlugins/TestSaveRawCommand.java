@@ -31,6 +31,7 @@ package org.bonej.wrapperPlugins;
 import net.imagej.Dataset;
 import net.imagej.DatasetService;
 
+import org.bonej.utilities.AxisUtils;
 import org.bonej.utilities.DatasetUtil;
 import org.scijava.ItemIO;
 import org.scijava.command.Command;
@@ -80,9 +81,10 @@ public class TestSaveRawCommand implements Command {
 			throw new IllegalStateException("No active Dataset found.");
 		}
 
-		if (dataset.numDimensions() != 3) {
-			logService.error("Active dataset is not 3D. Found: " + dataset.numDimensions() + "D");
-			throw new IllegalStateException("Active dataset must be 3D.");
+		if (dataset.numDimensions() > 3 || dataset.numDimensions() < 2
+				|| AxisUtils.hasChannelDimensions(dataset) || AxisUtils.hasTimeDimensions(dataset)) {
+			logService.error("Active dataset has unhandled dimensionality - requires 2D or 3D spatial only");
+			throw new IllegalStateException("Active dataset must be 2D or 3D.");
 		}
 
 		boolean littleEndian = !"Big-endian".equalsIgnoreCase(byteOrderStr);
@@ -99,12 +101,16 @@ public class TestSaveRawCommand implements Command {
 			// Optional: Verify by trying to load it back immediately
 			// This is a strong test of round-trip integrity
 
+			//check if 2D or 3D
+			int nDims = dataset.numDimensions();
+			int zSize = nDims == 2 ? 1 : (int)dataset.dimension(2);
+			
 			logService.info("Attempting round-trip verification...");
 			Dataset reloaded = DatasetUtil.loadRaw3D(
 					outputPath, 0, 
 					(int)dataset.dimension(0), 
 					(int)dataset.dimension(1), 
-					(int)dataset.dimension(2),
+					zSize,
 					determineTypeString(dataset),
 					zeroOneBinary,
 					byteOrderStr,
