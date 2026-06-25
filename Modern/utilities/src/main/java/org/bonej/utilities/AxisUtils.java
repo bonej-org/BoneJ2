@@ -112,7 +112,9 @@ public final class AxisUtils {
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
 		hasChannelDimensions(final S space)
 	{
-		return axisStream(space).anyMatch(a -> a.type() == Axes.CHANNEL);
+		return axisStream(space)
+				.filter(a -> a != null)
+				.anyMatch(a -> a.type() == Axes.CHANNEL);
 	}
 
 	/**
@@ -126,7 +128,9 @@ public final class AxisUtils {
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
 		hasSpatialDimensions(final S space)
 	{
-		return axisStream(space).anyMatch(a -> a.type().isSpatial());
+		return axisStream(space)
+				.filter(a -> a != null)
+				.anyMatch(a -> a.type().isSpatial());
 	}
 	
 	/**
@@ -143,6 +147,7 @@ public final class AxisUtils {
 	    boolean hasX = false;
 	    boolean hasY = false;
 	    for (A axis : axisStream(space).collect(Collectors.toList())) {
+	    	if (axis == null) continue;
 	        if (axis.type() == Axes.X) hasX = true;
 	        if (axis.type() == Axes.Y) hasY = true;
 	        if (hasX && hasY) return true;
@@ -161,7 +166,9 @@ public final class AxisUtils {
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
 		hasTimeDimensions(final S space)
 	{
-		return axisStream(space).anyMatch(a -> a.type() == Axes.TIME);
+		return axisStream(space)
+				.filter(a -> a != null)
+				.anyMatch(a -> a.type() == Axes.TIME);
 	}
 
 	/**
@@ -185,7 +192,9 @@ public final class AxisUtils {
 	public static <S extends AnnotatedSpace<A>, A extends TypedAxis> boolean
 		hasNonXYZCTDimension(final S space)
 	{
-		return axisStream(space).anyMatch(a -> (
+		return axisStream(space)
+				.filter(a -> a != null)
+				.anyMatch(a -> (
 			a.type() != Axes.X &&
 			a.type() != Axes.Y &&
 			a.type() != Axes.Z &&

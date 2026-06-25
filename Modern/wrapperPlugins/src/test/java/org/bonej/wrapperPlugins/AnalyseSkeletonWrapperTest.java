@@ -222,42 +222,48 @@ public class AnalyseSkeletonWrapperTest extends AbstractWrapperTest {
 
 		Dataset ds = command().context().service(ConvertService.class).convert(pixel, Dataset.class);
 		
-		// EXECUTE
+		// EXECUTE (1: No images)
 		CommandModule module = command().run(AnalyseSkeletonWrapper.class,
 			true, "inputDataset", ds, "pruneCycleMethod", "None", "displaySkeletons",
 			false, "calculateShortestPaths", true).get();
 
 		// VERIFY
-		assertNull(module.getOutput("labelledSkeleton"));
+		assertNull(module.getOutput("taggedImage")); // Updated from "labelledSkeleton"
+		assertNull(module.getOutput("treeLabeledImage")); // Updated from "labelledSkeleton"
 		assertNull(module.getOutput("shortestPaths"));
 
-		// EXECUTE
+		// EXECUTE (2: Display skeletons only)
 		module = command().run(AnalyseSkeletonWrapper.class, true,
 			"inputDataset", ds, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", false).get();
 
 		// VERIFY
-		assertNotNull(module.getOutput("labelledSkeleton"));
+		assertNotNull(module.getOutput("taggedImage"));
+		assertNotNull(module.getOutput("treeLabeledImage")); // Was expecting "labelledSkeleton" here
 		assertNull(module.getOutput("shortestPaths"));
 
-		// EXECUTE
+		// EXECUTE (3: Display skeletons + shortest paths)
 		module = command().run(AnalyseSkeletonWrapper.class, true,
 			"inputDataset", ds, "pruneCycleMethod", "None", "displaySkeletons", true,
 			"calculateShortestPaths", true).get();
 
 		// VERIFY
-		final Dataset labelledSkeleton = (Dataset) module.getOutput(
-			"labelledSkeleton");
-		assertNotNull(labelledSkeleton);
-		final Dataset shortestPaths = (Dataset) module.getOutput(
-			"shortestPaths");
+		// The variable name can stay, but the retrieval key must match the new field name
+		final Dataset treeLabeledImage = (Dataset) module.getOutput("treeLabeledImage");
+		assertNotNull(treeLabeledImage);
+		
+		final Dataset taggedImage = (Dataset) module.getOutput("taggedImage");
+		assertNotNull(taggedImage);
+		
+		final Dataset shortestPaths = (Dataset) module.getOutput("shortestPaths");
 		assertNotNull(shortestPaths);
+		
 		assertNotSame("Input image should not have been overwritten", ds,
-			labelledSkeleton);
+			treeLabeledImage);
 		assertNotSame("Input image should not have been overwritten", ds,
 			shortestPaths);
 	}
-
+	
 	@Test
 	public void testResultsTable() throws Exception {
 		// SETUP
