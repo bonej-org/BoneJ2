@@ -43,6 +43,7 @@ import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
 import net.imglib2.img.basictypeaccess.array.ShortArray;
+import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.ShortType;
@@ -387,7 +388,7 @@ public final class DatasetUtil {
 		final int bytesPerPixel;
 
 		// Determine bytes per pixel
-		if (type instanceof UnsignedByteType || type instanceof ByteType) {
+		if (type instanceof UnsignedByteType || type instanceof ByteType || type instanceof BitType) {
 			bytesPerPixel = 1;
 		} else if (type instanceof UnsignedShortType || type instanceof ShortType) {
 			bytesPerPixel = 2;
@@ -403,7 +404,7 @@ public final class DatasetUtil {
 		long start = System.nanoTime();
 		long end = start;
 		
-		if (img instanceof ArrayImg) {
+		if (img instanceof ArrayImg && !(type instanceof BitType)) {
 			System.out.println("Using fast path for Dataset-> RAW");
 			try (FileOutputStream fos = new FileOutputStream(outputFile);
 					BufferedOutputStream bos = new BufferedOutputStream(fos)) {
@@ -488,33 +489,92 @@ public final class DatasetUtil {
 	 * @param zeroOneBinary Binary conversion flag
 	 * @throws IOException if writing fails
 	 */
-	private static void fallbackCursorWrite(OutputStream fos,
-			RandomAccessibleInterval<?> img,
-			int bytesPerPixel,
-			boolean littleEndian,
-			boolean zeroOneBinary) throws IOException {
+    private static void fallbackCursorWrite(OutputStream fos,
+            RandomAccessibleInterval<?> img,
+            int bytesPerPixel,
+            boolean littleEndian,
+            boolean zeroOneBinary) throws IOException {
 
-		int batchSize = 65536 / bytesPerPixel;
-		if (batchSize < 1) batchSize = 1;
-		byte[] batchBuffer = new byte[batchSize * bytesPerPixel];
+        int batchSize = 65536 / bytesPerPixel;
+        if (batchSize < 1) batchSize = 1;
+        byte[] batchBuffer = new byte[batchSize * bytesPerPixel];
 
-		// Determine the pixel type ONCE before iterating
-		Object typeSample = img.firstElement();
+        Object typeSample = img.firstElement();
 
-		if (typeSample instanceof UnsignedByteType || typeSample instanceof ByteType) {
-			write8Bit(fos, img, batchBuffer, zeroOneBinary);
-		} else if (typeSample instanceof UnsignedShortType) {
-			write16BitUnsigned(fos, img, batchBuffer, littleEndian);
-		} else if (typeSample instanceof ShortType) {
-			write16BitSigned(fos, img, batchBuffer, littleEndian);
-		} else if (typeSample instanceof FloatType) {
-			write32BitFloat(fos, img, batchBuffer, littleEndian);
+        if (typeSample instanceof BitType) {
+            // Handle BitType by unpacking bits to bytes (0 or 1)
+            writeBitType(fos, img, batchBuffer, zeroOneBinary);
+        } else if (typeSample instanceof UnsignedByteType || typeSample instanceof ByteType) {
+            write8Bit(fos, img, batchBuffer, zeroOneBinary);
+        } else if (typeSample instanceof UnsignedShortType) {
+            write16BitUnsigned(fos, img, batchBuffer, littleEndian);
+        } else if (typeSample instanceof ShortType) {
+            write16BitSigned(fos, img, batchBuffer, littleEndian);
+        } else if (typeSample instanceof FloatType) {
+            write32BitFloat(fos, img, batchBuffer, littleEndian);
+        } else {
+            throw new UnsupportedOperationException(
+                    "Unsupported pixel type in cursor fallback: " + typeSample.getClass().getSimpleName());
+        }
+    }
+
+	/**
+	 * Writes BitType data by unpacking each bit into a separate byte.
+	 * 
+	 * Logic based on 'zeroOneBinary' flag:
+	 * - If true: Output bytes are 0 and 1.
+	 * - If false: Output bytes are 0 and 255.
+	 *
+	 * @param fos           Output stream
+	 * @param img           Image to read (BitType)
+	 * @param batchBuffer   Buffer for batching writes
+	 * @param zeroOneBinary Flag determining output values (0/1 or 0/255)
+	 * @throws IOException if writing fails
+	 */
+	private static void writeBitType(OutputStream fos, RandomAccessibleInterval<?> img,
+			byte[] batchBuffer, boolean zeroOneBinary) throws IOException {
+
+		@SuppressWarnings("unchecked")
+		var cursor = ((RandomAccessibleInterval<BitType>) img).cursor();
+		int batchCount = 0;
+		BitType bit = null;
+		
+		if (zeroOneBinary) {
+			// Output: 0 or 1
+			while (cursor.hasNext()) {
+				cursor.fwd();
+				bit = cursor.get();
+				
+				// Write 1 as byte 1, 0 as byte 0
+				batchBuffer[batchCount++] = bit.get() ? (byte) 1 : (byte) 0;
+				
+				if (batchCount >= batchBuffer.length) {
+					fos.write(batchBuffer, 0, batchCount);
+					batchCount = 0;
+				}
+			}
 		} else {
-			throw new UnsupportedOperationException(
-					"Unsupported pixel type in cursor fallback: " + typeSample.getClass().getSimpleName());
+			// Output: 0 or 255
+			while (cursor.hasNext()) {
+				cursor.fwd();
+				bit = cursor.get();
+				
+				// Write 1 as byte 255 (-1), 0 as byte 0
+				batchBuffer[batchCount++] = bit.get() ? (byte) 255 : (byte) 0;
+				
+				if (batchCount >= batchBuffer.length) {
+					fos.write(batchBuffer, 0, batchCount);
+					batchCount = 0;
+				}
+			}
+		}
+
+		// Flush remaining buffer
+		if (batchCount > 0) {
+			fos.write(batchBuffer, 0, batchCount);
 		}
 	}
-
+    
 	/**
 	 * Writes 8-bit pixel data using a cursor.
 	 *
