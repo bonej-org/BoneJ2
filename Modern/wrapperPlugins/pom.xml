@@ -224,6 +224,11 @@
             <groupId>org.jocl</groupId>
             <artifactId>jocl</artifactId>
         </dependency>
+        <dependency>
+  <groupId>ch.beancounter</groupId>
+  <artifactId>beancounter</artifactId>
+  <version>0.0.5</version>
+</dependency>
         <!-- Testing dependencies -->
         <dependency>
             <groupId>junit</groupId>
