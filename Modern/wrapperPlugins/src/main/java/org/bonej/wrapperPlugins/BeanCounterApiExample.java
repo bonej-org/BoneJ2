@@ -13,15 +13,15 @@ import ch.beancounter.BeanCounter;
 import ch.beancounter.BeanCounterPlugin;
 
 /**
- * BeanCounter API example using ImgLib2.
+ * BeanCounter API example using a SciJava Command.
  * 
  * This plugin demonstrates how to use beans based on the total pixel count
  * of an input image. The important API calls are:
  * 
- * {@link ch.beancounter.BeanCounter#redeem(String, long)} uses the amount of beans
- * that the client code requests after a job is complete.
  * {@link ch.beancounter.BeanCounter#canRedeem(long)} checks that the user has the
  * ability to cover an anticipated amount of usage.
+ * {@link ch.beancounter.BeanCounter#redeem(String, long)} uses the amount of beans
+ * that the client code requests after a job is complete.
  * 
  */
 @Plugin(type = Command.class, menuPath = "Plugins>BeanCounter API Example")
